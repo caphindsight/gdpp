@@ -264,6 +264,17 @@ func (p Path) Ls() []Path {
 	return children
 }
 
+// IsEmptyDir reports whether p is a directory with no entries, counting
+// hidden ones too.
+func (p Path) IsEmptyDir() bool {
+	if !p.IsDir() {
+		return false
+	}
+	entries, err := fsys.ReadDir(p.GetOsPath())
+	Check(err, "Failed to list %s", p.ToString())
+	return len(entries) == 0
+}
+
 // ReadString returns the contents of the file at p.
 func (p Path) ReadString() string {
 	data, err := fsys.ReadFile(p.GetOsPath())
