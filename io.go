@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -27,8 +28,14 @@ const (
 	Gray      Style = "90"
 )
 
-// isTTY is true when stdout is a terminal.
-var isTTY = func() bool {
+// isStdinTTY is true when stdin is a terminal.
+var isStdinTTY = func() bool {
+	fi, err := os.Stdin.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+}()
+
+// isStdoutTTY is true when stdout is a terminal.
+var isStdoutTTY = func() bool {
 	fi, err := os.Stdout.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }()
@@ -36,7 +43,7 @@ var isTTY = func() bool {
 // Styled wraps text in the given styles, e.g. Styled("done", Bold, Green).
 // Returns text unchanged if stdout is not a terminal or no styles are given.
 func Styled(text string, styles ...Style) string {
-	if !isTTY || len(styles) == 0 {
+	if !isStdoutTTY || len(styles) == 0 {
 		return text
 	}
 	codes := make([]string, len(styles))
@@ -71,6 +78,36 @@ func LogError(format string, params ...any) {
 func LogFatal(format string, params ...any) {
 	LogError(format, params...)
 	Fail()
+}
+
+// Confirm prints a formatted yes/no prompt and blocks until the user answers.
+// If the user answers no, it exits the program via LogFatal. If stdin is not
+// a terminal, it assumes no rather than blocking on an answer that can't come.
+func Confirm(format string, params ...any) {
+	msg := fmt.Sprintf(format, params...)
+	msg = strings.ReplaceAll(msg, "\n", "\n    ")
+	fmt.Print("[" + Styled("?", Bold, Magenta) + "] " + msg + " [y/n] ")
+
+	if !isStdinTTY {
+		fmt.Println("n")
+		LogFatal("Input is not a tty, use -f to confirm.")
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			LogFatal("Operation canceled by user.")
+		}
+		switch strings.ToLower(strings.TrimSpace(line)) {
+		case "y", "yes":
+			return
+		case "n", "no":
+			LogFatal("Operation canceled by user.")
+		default:
+			fmt.Print("Please answer yes or no: ")
+		}
+	}
 }
 
 // cleanups holds functions to run before the program exits via Fail.

@@ -7,15 +7,38 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
-// withTTY sets isTTY for the duration of a test and restores the prior value.
+// withStdoutTTY sets isStdoutTTY for the duration of a test and restores the prior value.
 // Tests in this file must not call t.Parallel(): they mutate this package-level var.
-func withTTY(t *testing.T, tty bool) {
-	orig := isTTY
-	isTTY = tty
-	t.Cleanup(func() { isTTY = orig })
+func withStdoutTTY(t *testing.T, tty bool) {
+	orig := isStdoutTTY
+	isStdoutTTY = tty
+	t.Cleanup(func() { isStdoutTTY = orig })
+}
+
+// withStdinTTY sets isStdinTTY for the duration of a test and restores the prior value.
+func withStdinTTY(t *testing.T, tty bool) {
+	orig := isStdinTTY
+	isStdinTTY = tty
+	t.Cleanup(func() { isStdinTTY = orig })
+}
+
+// withStdin replaces os.Stdin with a pipe fed with content, for the duration of a test.
+func withStdin(t *testing.T, content string) {
+	orig := os.Stdin
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe: %v", err)
+	}
+	go func() {
+		io.WriteString(w, content)
+		w.Close()
+	}()
+	os.Stdin = r
+	t.Cleanup(func() { os.Stdin = orig })
 }
 
 // captureStdout runs fn with os.Stdout redirected to a pipe and returns what it wrote.
@@ -54,7 +77,7 @@ func TestStyled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			withTTY(t, c.tty)
+			withStdoutTTY(t, c.tty)
 			if got := Styled(c.text, c.styles...); got != c.want {
 				t.Errorf("Styled(%q, %v) = %q, want %q", c.text, c.styles, got, c.want)
 			}
@@ -65,7 +88,7 @@ func TestStyled(t *testing.T) {
 func TestLogInfo(t *testing.T) {
 	// Force non-TTY so the "[>] " prefix is a plain literal, independent of
 	// Styled's ANSI-wrapping behavior (covered separately by TestStyled).
-	withTTY(t, false)
+	withStdoutTTY(t, false)
 
 	cases := []struct {
 		name   string
@@ -88,7 +111,7 @@ func TestLogInfo(t *testing.T) {
 }
 
 func TestLogWarn(t *testing.T) {
-	withTTY(t, false)
+	withStdoutTTY(t, false)
 
 	cases := []struct {
 		name   string
@@ -139,6 +162,100 @@ func runFailHelper(t *testing.T, name string) (stdout string, exitCode int) {
 	return string(out), exitErr.ExitCode()
 }
 
+// runFailHelperWithStdin is like runFailHelper, but feeds stdin to the child process.
+func runFailHelperWithStdin(t *testing.T, name string, stdin string) (stdout string, exitCode int) {
+	cmd := exec.Command(os.Args[0], "-test.run=^"+name+"$")
+	cmd.Env = append(os.Environ(), "GDPP_FAIL_HELPER=1")
+	cmd.Stdin = strings.NewReader(stdin)
+	out, err := cmd.Output()
+	if err == nil {
+		t.Fatalf("%s: process exited 0, want nonzero", name)
+	}
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("%s: cmd.Output: %v", name, err)
+	}
+	return string(out), exitErr.ExitCode()
+}
+
+func TestConfirmYes(t *testing.T) {
+	withStdoutTTY(t, false)
+	withStdinTTY(t, true)
+
+	cases := []string{"y", "Y", "yes", "YES", "  yes  "}
+	for _, in := range cases {
+		t.Run(in, func(t *testing.T) {
+			withStdin(t, in+"\n")
+			out := captureStdout(t, func() { Confirm("Proceed?") })
+			if want := "[?] Proceed? [y/n] "; out != want {
+				t.Errorf("Confirm output = %q, want %q", out, want)
+			}
+		})
+	}
+}
+
+func TestConfirmRetriesOnInvalidInput(t *testing.T) {
+	withStdoutTTY(t, false)
+	withStdinTTY(t, true)
+	withStdin(t, "maybe\ny\n")
+
+	out := captureStdout(t, func() { Confirm("Proceed?") })
+	if want := "[?] Proceed? [y/n] Please answer yes or no: "; out != want {
+		t.Errorf("Confirm output = %q, want %q", out, want)
+	}
+}
+
+func TestConfirmNo(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isStdoutTTY = false
+		isStdinTTY = true
+		Confirm("Delete %s?", "file.txt")
+		return
+	}
+
+	out, code := runFailHelperWithStdin(t, "TestConfirmNo", "n\n")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[?] Delete file.txt? [y/n] [!] Operation canceled by user.\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+func TestConfirmEOF(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isStdoutTTY = false
+		isStdinTTY = true
+		Confirm("Delete %s?", "file.txt")
+		return
+	}
+
+	out, code := runFailHelperWithStdin(t, "TestConfirmEOF", "")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[?] Delete file.txt? [y/n] [!] Operation canceled by user.\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+func TestConfirmNonTTY(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isStdoutTTY = false
+		isStdinTTY = false
+		Confirm("Delete %s?", "file.txt")
+		return
+	}
+
+	out, code := runFailHelper(t, "TestConfirmNonTTY")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[?] Delete file.txt? [y/n] n\n[!] Input is not a tty, use -f to confirm.\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
 func TestFail(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		Cleanup(func() { fmt.Print("first;") })
@@ -158,7 +275,7 @@ func TestFail(t *testing.T) {
 
 func TestLogFatal(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
+		isStdoutTTY = false
 		Cleanup(func() { fmt.Print("cleaned up") })
 		LogFatal("boom: %s", "oops")
 		return
@@ -174,7 +291,7 @@ func TestLogFatal(t *testing.T) {
 }
 
 func TestLogError(t *testing.T) {
-	withTTY(t, false)
+	withStdoutTTY(t, false)
 
 	cases := []struct {
 		name   string
