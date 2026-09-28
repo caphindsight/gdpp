@@ -3,6 +3,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"io/fs"
 	"os"
 	"path"
@@ -245,6 +247,14 @@ func (p Path) WriteString(text string) {
 	Check(err, "Failed to write %s", p.ToString())
 }
 
+// GetFileSha256 returns the hex-encoded sha256 sum of the file at p.
+func (p Path) GetFileSha256() string {
+	data, err := fsys.ReadFile(p.GetOsPath())
+	Check(err, "Failed to read %s", p.ToString())
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
 // CreateFile creates an empty file at p, asserting it doesn't already exist.
 func (p Path) CreateFile() {
 	Assert(!p.Exists(), "Path %s already exists.", p.ToString())
@@ -316,6 +326,64 @@ func copyDir(src, dst Path) {
 			copyDir(childSrc, childDst)
 		} else {
 			copyFile(childSrc, childDst)
+		}
+	}
+}
+
+// Sync copies the file or directory at p to another, like Copy, but merges
+// into a destination that may already exist: files are only overwritten
+// when their contents differ, and destination entries missing from p are
+// deleted.
+func (p Path) Sync(to Path) {
+	Assert(p.Exists(), "Path %s does not exist.", p.ToString())
+	syncPath(p, to)
+}
+
+// syncPath merges src into dst, recursing into matching directories.
+func syncPath(src, dst Path) {
+	if src.IsDir() {
+		syncDir(src, dst)
+	} else {
+		syncFile(src, dst)
+	}
+}
+
+// syncFile copies the regular file at src to dst if dst is missing or its
+// contents differ. Anything else at dst is removed first.
+func syncFile(src, dst Path) {
+	if dst.IsDir() {
+		dst.Remove()
+	}
+	if !dst.Exists() || src.GetFileSha256() != dst.GetFileSha256() {
+		copyFile(src, dst)
+	}
+}
+
+// syncDir merges the directory at src into dst, creating dst if needed,
+// syncing each entry of src, and deleting dst entries absent from src.
+// Anything other than a directory at dst is removed first.
+func syncDir(src, dst Path) {
+	if dst.IsFile() {
+		dst.Remove()
+	}
+	if !dst.Exists() {
+		err := fsys.Mkdir(dst.GetOsPath(), 0755)
+		Check(err, "Failed to create %s", dst.ToString())
+	}
+
+	srcEntries, err := fsys.ReadDir(src.GetOsPath())
+	Check(err, "Failed to list %s", src.ToString())
+	srcNames := make(map[string]bool, len(srcEntries))
+	for _, entry := range srcEntries {
+		srcNames[entry.Name()] = true
+		syncPath(src.Cd(entry.Name()), dst.Cd(entry.Name()))
+	}
+
+	dstEntries, err := fsys.ReadDir(dst.GetOsPath())
+	Check(err, "Failed to list %s", dst.ToString())
+	for _, entry := range dstEntries {
+		if !srcNames[entry.Name()] {
+			dst.Cd(entry.Name()).Remove()
 		}
 	}
 }
