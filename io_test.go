@@ -3,8 +3,10 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -105,6 +107,69 @@ func TestLogWarn(t *testing.T) {
 				t.Errorf("LogWarn(%q, %v) printed %q, want %q", c.format, c.params, got, c.want)
 			}
 		})
+	}
+}
+
+func TestCleanup(t *testing.T) {
+	orig := cleanups
+	cleanups = nil
+	t.Cleanup(func() { cleanups = orig })
+
+	Cleanup(func() {})
+	Cleanup(func() {})
+	if len(cleanups) != 2 {
+		t.Errorf("len(cleanups) = %d, want 2", len(cleanups))
+	}
+}
+
+// runFailHelper re-execs the test binary to run f (a top-level function in
+// this file whose name is passed as -test.run), since Fail calls os.Exit and
+// would otherwise kill the test process.
+func runFailHelper(t *testing.T, name string) (stdout string, exitCode int) {
+	cmd := exec.Command(os.Args[0], "-test.run=^"+name+"$")
+	cmd.Env = append(os.Environ(), "GDPP_FAIL_HELPER=1")
+	out, err := cmd.Output()
+	if err == nil {
+		t.Fatalf("%s: process exited 0, want nonzero", name)
+	}
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("%s: cmd.Output: %v", name, err)
+	}
+	return string(out), exitErr.ExitCode()
+}
+
+func TestFail(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		Cleanup(func() { fmt.Print("first;") })
+		Cleanup(func() { fmt.Print("second;") })
+		Fail()
+		return
+	}
+
+	out, code := runFailHelper(t, "TestFail")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "second;first;"; out != want {
+		t.Errorf("cleanups ran in order %q, want %q (LIFO)", out, want)
+	}
+}
+
+func TestLogFatal(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		Cleanup(func() { fmt.Print("cleaned up") })
+		LogFatal("boom: %s", "oops")
+		return
+	}
+
+	out, code := runFailHelper(t, "TestLogFatal")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[!] boom: oops\ncleaned up"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 

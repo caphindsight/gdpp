@@ -66,3 +66,25 @@ func LogError(format string, params ...any) {
 	msg = strings.ReplaceAll(msg, "\n", "\n    ")
 	fmt.Println("[" + Styled("!", Bold, Red) + "] " + msg)
 }
+
+// LogFatal prints a formatted error, then exits the program via Fail.
+func LogFatal(format string, params ...any) {
+	LogError(format, params...)
+	Fail()
+}
+
+// cleanups holds functions to run before the program exits via Fail.
+var cleanups []func()
+
+// Cleanup registers a function to run if the program exits via Fail.
+func Cleanup(f func()) {
+	cleanups = append(cleanups, f)
+}
+
+// Fail runs all registered cleanups in reverse order, then exits with status 1.
+func Fail() {
+	for i := len(cleanups) - 1; i >= 0; i-- {
+		cleanups[i]()
+	}
+	os.Exit(1)
+}
