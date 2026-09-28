@@ -4,6 +4,7 @@ package main
 
 import (
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -97,5 +98,63 @@ func TestCd(t *testing.T) {
 		if got := p.Cd(c.segments...); got.absolutePath != c.want {
 			t.Errorf("Path{%q}.Cd(%v).absolutePath = %q, want %q", c.base, c.segments, got.absolutePath, c.want)
 		}
+	}
+}
+
+func TestExistsIsDirIsFile(t *testing.T) {
+	dir := NewPath(t.TempDir())
+	file := dir.Cd("file.txt")
+	if err := os.WriteFile(file.GetOsPath(), []byte("x"), 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	missing := dir.Cd("missing")
+
+	cases := []struct {
+		name                  string
+		p                     Path
+		exists, isDir, isFile bool
+	}{
+		{"dir", dir, true, true, false},
+		{"file", file, true, false, true},
+		{"missing", missing, false, false, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := c.p.Exists(); got != c.exists {
+				t.Errorf("Exists() = %v, want %v", got, c.exists)
+			}
+			if got := c.p.IsDir(); got != c.isDir {
+				t.Errorf("IsDir() = %v, want %v", got, c.isDir)
+			}
+			if got := c.p.IsFile(); got != c.isFile {
+				t.Errorf("IsFile() = %v, want %v", got, c.isFile)
+			}
+		})
+	}
+}
+
+func TestLs(t *testing.T) {
+	dir := NewPath(t.TempDir())
+	for _, name := range []string{"b.txt", "a.txt", ".hidden", "sub", ".git"} {
+		p := dir.Cd(name).GetOsPath()
+		var err error
+		if name == "sub" || name == ".git" {
+			err = os.Mkdir(p, 0755)
+		} else {
+			err = os.WriteFile(p, nil, 0644)
+		}
+		if err != nil {
+			t.Fatalf("creating %s: %v", name, err)
+		}
+	}
+
+	var names []string
+	for _, child := range dir.Ls() {
+		names = append(names, child.Name())
+	}
+
+	want := []string{"a.txt", "b.txt", "sub"}
+	if !reflect.DeepEqual(names, want) {
+		t.Errorf("Ls() names = %v, want %v", names, want)
 	}
 }
