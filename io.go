@@ -325,13 +325,18 @@ func (t *Task) Fail() {
 }
 
 // label returns the task message prefixed with status. If status is set, the
-// first letter of the message is lowercased to follow it.
+// first letter of the message is lowercased to follow it. The succeeded/failed
+// statuses also drop a trailing "...", since the task is no longer pending.
 func (t *Task) label(status string) string {
-	if status == "" {
-		return t.msg
+	msg := t.msg
+	if status == "Task succeeded: " || status == "Task failed: " {
+		msg = strings.TrimSuffix(msg, "...")
 	}
-	_, size := utf8.DecodeRuneInString(t.msg)
-	return status + strings.ToLower(t.msg[:size]) + t.msg[size:]
+	if status == "" {
+		return msg
+	}
+	_, size := utf8.DecodeRuneInString(msg)
+	return status + strings.ToLower(msg[:size]) + msg[size:]
 }
 
 // finish prints the task message with the final icon and status prefix, unless

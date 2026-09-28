@@ -527,6 +527,9 @@ func TestTaskLabel(t *testing.T) {
 		{"build", "Task failed: ", "Task failed: build"},
 		{"ÄB", "Task failed: ", "Task failed: äB"},
 		{"", "Task failed: ", "Task failed: "},
+		{"Build...", "Task failed: ", "Task failed: build"},
+		{"Build...", "Task succeeded: ", "Task succeeded: build"},
+		{"Build...", "Running task: ", "Running task: build..."},
 	}
 	for _, c := range cases {
 		if got := (&Task{msg: c.msg}).label(c.status); got != c.want {
@@ -583,6 +586,8 @@ func TestLogStyle(t *testing.T) {
 					rule, ok = "end with \"?\"", strings.HasSuffix(msg, "?")
 				case "Check": // the error is appended, then a period
 					rule, ok = "not end with \".\"", !strings.HasSuffix(msg, ".")
+				case "LogTask":
+					rule, ok = "end with \"...\"", strings.HasSuffix(msg, "...")
 				}
 				first, _ := utf8.DecodeRuneInString(msg)
 				if !unicode.IsUpper(first) || !ok {

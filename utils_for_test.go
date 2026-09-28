@@ -232,6 +232,15 @@ func withMemFS(t *testing.T, cwd string, tree map[string]string) *memFS {
 	return m
 }
 
+// withRealFS installs the real, disk-backed fileSystem for the duration of a
+// test, for tests (like Exec's) that run real subprocesses against real
+// directories, so memFS's fake paths can't be used.
+func withRealFS(t *testing.T) {
+	orig := fsys
+	fsys = osFS{}
+	t.Cleanup(func() { fsys = orig })
+}
+
 // withTTY sets isTTY for the duration of a test and restores the prior value.
 // Tests in this file must not call t.Parallel(): they mutate this package-level var.
 func withTTY(t *testing.T, tty bool) {
