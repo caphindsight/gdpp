@@ -129,8 +129,6 @@ func (c ProjectDepCache) Remove(name string) {
 
 // moveDep moves a dep directory to dst, creating dst's parents as needed.
 func moveDep(src, dst Path) {
-	if parent := dst.BaseDir(); !parent.Exists() {
-		parent.CreateDirectory()
-	}
+	dst.CreateParentDirectory()
 	src.Move(dst)
 }

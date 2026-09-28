@@ -175,8 +175,8 @@ func (s *Silencer) End() {
 	silenceDepth--
 }
 
-// Log messages are capitalized sentences ending with a period, and prompts end
-// with a question mark. Check messages have no period, since Check appends the
+// Log messages are capitalized sentences ending with a period or exclamation
+// mark, and prompts end with a question mark. Check messages have no period, since Check appends the
 // error. TestLogStyle enforces this.
 
 // LogInfo prints a formatted info message. Suppressed by -q/--quiet or Silence.

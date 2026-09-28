@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"io/fs"
 	"os"
@@ -53,6 +54,7 @@ func (i memInfo) Mode() fs.FileMode {
 // fs.ErrPermission.
 type memFS struct {
 	cwd   string
+	home  string
 	nodes map[string]*memNode
 	fail  string
 }
@@ -80,6 +82,13 @@ func (m *memFS) Getwd() (string, error) {
 		return "", err
 	}
 	return m.cwd, nil
+}
+
+func (m *memFS) UserHomeDir() (string, error) {
+	if err := m.check("UserHomeDir"); err != nil {
+		return "", err
+	}
+	return m.home, nil
 }
 
 func (m *memFS) Stat(name string) (fs.FileInfo, error) {
@@ -209,6 +218,56 @@ func (m *memFS) Rename(oldName, newName string) error {
 	return nil
 }
 
+// memFile is a memFS file opened for reading, over its contents when opened.
+type memFile struct {
+	*bytes.Reader
+	info memInfo
+}
+
+func (f memFile) Close() error               { return nil }
+func (f memFile) Stat() (fs.FileInfo, error) { return f.info, nil }
+
+func (m *memFS) Open(name string) (readFile, error) {
+	if err := m.check("Open"); err != nil {
+		return nil, err
+	}
+	n := m.nodes[name]
+	if n == nil {
+		return nil, m.err("open", name, fs.ErrNotExist)
+	}
+	if n.dir {
+		return nil, m.err("read", name, syscall.EISDIR)
+	}
+	return memFile{bytes.NewReader(n.data), memInfo{path.Base(name), n}}, nil
+}
+
+// memWriter is a memFS file opened for writing. Its contents are saved on Close.
+type memWriter struct {
+	bytes.Buffer
+	node *memNode
+}
+
+func (w *memWriter) Close() error {
+	w.node.data = w.Bytes()
+	return nil
+}
+
+// Create creates or truncates the file right away, like os.OpenFile.
+func (m *memFS) Create(name string, perm fs.FileMode) (io.WriteCloser, error) {
+	if err := m.check("Create"); err != nil {
+		return nil, err
+	}
+	if !m.parentIsDir(name) {
+		return nil, m.err("open", name, fs.ErrNotExist)
+	}
+	if n := m.nodes[name]; n != nil && n.dir {
+		return nil, m.err("open", name, syscall.EISDIR)
+	}
+	n := &memNode{}
+	m.nodes[name] = n
+	return &memWriter{node: n}, nil
+}
+
 // tree returns the filesystem contents in the format withMemFS takes, except
 // that "/" is left out.
 func (m *memFS) tree() map[string]string {
@@ -230,7 +289,7 @@ func (m *memFS) tree() map[string]string {
 // ending in "/" is a directory, other keys are files with the value as their
 // contents. Missing parent directories are created.
 func withMemFS(t *testing.T, cwd string, tree map[string]string) *memFS {
-	m := &memFS{cwd: cwd, nodes: map[string]*memNode{"/": {dir: true}}}
+	m := &memFS{cwd: cwd, home: "/home/user", nodes: map[string]*memNode{"/": {dir: true}}}
 	mkdirAll := func(p string) {
 		for ; m.nodes[p] == nil; p = path.Dir(p) {
 			m.nodes[p] = &memNode{dir: true}

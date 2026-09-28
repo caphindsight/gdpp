@@ -246,6 +246,36 @@ func TestToString(t *testing.T) {
 	}
 }
 
+func TestParsePath(t *testing.T) {
+	withMemFS(t, "/proj/src", map[string]string{
+		"/proj/" + projectFileName: "",
+		"/proj/" + packageFileName: "",
+	})
+
+	cases := []struct {
+		name string
+		s    string
+		want string
+	}{
+		{"absolute", "/a/b", "/a/b"},
+		{"relative", "a/../b", "/proj/src/b"},
+		{"res", "res://a/b", "/proj/a/b"},
+		{"pkg", "pkg://a", "/proj/a"},
+		{"home", "~", "/home/user"},
+		{"under home", "~/a/b", "/home/user/a/b"},
+		{"home with trailing slash", "~/", "/home/user"},
+		{"tilde name", "~foo", "/proj/src/~foo"},
+		{"tilde user", "~bob/a", "/proj/src/~bob/a"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := ParsePath(c.s); got != NewPath(c.want) {
+				t.Errorf("ParsePath(%q) = %q, want %q", c.s, got.absolutePath, c.want)
+			}
+		})
+	}
+}
+
 func TestLs(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
 		"/d/b.txt":   "",
@@ -443,6 +473,8 @@ func TestFileOpsFail(t *testing.T) {
 			"Path . is not contained in a Godot project."},
 		{"package root outside package", "", func() { GetPackageRoot(p("/work")) },
 			"Path . is not contained in a GD++ package."},
+		{"home error", "UserHomeDir", func() { ParsePath("~/a") },
+			"Failed to get the home directory: permission denied."},
 		{"read missing", "", func() { p("/work/missing").ReadString() },
 			"Failed to read missing: open /work/missing: file does not exist."},
 		{"read dir", "", func() { p("/work/full").ReadString() },
@@ -469,7 +501,7 @@ func TestFileOpsFail(t *testing.T) {
 			"Path missing does not exist."},
 		{"copy onto existing", "", func() { p("/work/a.txt").Copy(p("/work/full")) },
 			"Path full already exists."},
-		{"copy error", "WriteFile", func() { p("/work/a.txt").Copy(p("/work/b.txt")) },
+		{"copy error", "Create", func() { p("/work/a.txt").Copy(p("/work/b.txt")) },
 			"Failed to write b.txt: permission denied."},
 	}
 	for _, c := range cases {

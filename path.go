@@ -5,6 +5,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -18,6 +19,7 @@ import (
 // an in-memory fake.
 type fileSystem interface {
 	Getwd() (string, error)
+	UserHomeDir() (string, error)
 	Stat(name string) (fs.FileInfo, error)
 	ReadDir(name string) ([]fs.DirEntry, error)
 	ReadFile(name string) ([]byte, error)
@@ -26,12 +28,29 @@ type fileSystem interface {
 	MkdirAll(name string, perm fs.FileMode) error
 	RemoveAll(name string) error
 	Rename(oldName, newName string) error
+	Open(name string) (readFile, error)
+	Create(name string, perm fs.FileMode) (io.WriteCloser, error)
+}
+
+// readFile is a file opened for reading by fileSystem.Open. Zip needs
+// ReaderAt and Stat, to read entries in any order.
+type readFile interface {
+	io.Reader
+	io.ReaderAt
+	io.Closer
+	Stat() (fs.FileInfo, error)
 }
 
 // osFS is the real filesystem.
 type osFS struct{}
 
+func (osFS) Open(name string) (readFile, error) { return os.Open(name) }
+func (osFS) Create(name string, perm fs.FileMode) (io.WriteCloser, error) {
+	return os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
+}
+
 func (osFS) Getwd() (string, error)                     { return os.Getwd() }
+func (osFS) UserHomeDir() (string, error)               { return os.UserHomeDir() }
 func (osFS) Stat(name string) (fs.FileInfo, error)      { return os.Stat(name) }
 func (osFS) ReadDir(name string) ([]fs.DirEntry, error) { return os.ReadDir(name) }
 func (osFS) ReadFile(name string) ([]byte, error)       { return os.ReadFile(name) }
@@ -70,11 +89,21 @@ func Cwd() Path {
 	return NewPath(wd)
 }
 
+// Home returns the user's home directory as a Path.
+func Home() Path {
+	home, err := fsys.UserHomeDir()
+	Check(err, "Failed to get the home directory")
+	return NewPath(home)
+}
+
 // ParsePath resolves a string into a Path. Absolute paths are used as-is,
-// relative paths are resolved against Cwd(), "res://" paths are resolved
-// against the project root, and "pkg://" paths are resolved against the
-// package root.
+// relative paths are resolved against Cwd(), "~" and "~/" paths are resolved
+// against Home() ("~\" too on Windows), "res://" paths are resolved against
+// the project root, and "pkg://" paths are resolved against the package root.
 func ParsePath(s string) Path {
+	if rest, ok := strings.CutPrefix(s, "~"); ok && (rest == "" || os.IsPathSeparator(rest[0])) {
+		return Home().Cd(rest)
+	}
 	if rest, ok := strings.CutPrefix(s, "res://"); ok {
 		return GetProjectRoot(Cwd()).Cd(rest)
 	}
@@ -249,12 +278,36 @@ func (p Path) WriteString(text string) {
 	Check(err, "Failed to write %s", p.ToString())
 }
 
+// open opens the file at p for reading, and returns it with its info. The
+// caller must close it.
+func (p Path) open() (readFile, fs.FileInfo) {
+	f, err := fsys.Open(p.GetOsPath())
+	Check(err, "Failed to read %s", p.ToString())
+	info, err := f.Stat()
+	Check(err, "Failed to stat %s", p.ToString())
+	return f, info
+}
+
+// writeFrom streams r into the file at p, creating it with perm if needed and
+// truncating any existing contents.
+func (p Path) writeFrom(r io.Reader, perm fs.FileMode) {
+	w, err := fsys.Create(p.GetOsPath(), perm)
+	Check(err, "Failed to write %s", p.ToString())
+	_, err = io.Copy(w, r)
+	if closeErr := w.Close(); err == nil {
+		err = closeErr
+	}
+	Check(err, "Failed to write %s", p.ToString())
+}
+
 // GetFileSha256 returns the hex-encoded sha256 sum of the file at p.
 func (p Path) GetFileSha256() string {
-	data, err := fsys.ReadFile(p.GetOsPath())
+	f, _ := p.open()
+	defer f.Close()
+	h := sha256.New()
+	_, err := io.Copy(h, f)
 	Check(err, "Failed to read %s", p.ToString())
-	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:])
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // CreateFile creates an empty file at p, asserting it doesn't already exist.
@@ -270,6 +323,14 @@ func (p Path) CreateDirectory() {
 	Assert(!p.Exists(), "Path %s already exists.", p.ToString())
 	err := fsys.MkdirAll(p.GetOsPath(), 0755)
 	Check(err, "Failed to create %s", p.ToString())
+}
+
+// CreateParentDirectory creates the parent directory of p and any missing
+// parents, if they don't exist yet.
+func (p Path) CreateParentDirectory() {
+	if parent := p.BaseDir(); !parent.Exists() {
+		parent.CreateDirectory()
+	}
 }
 
 // Remove deletes the file or directory at p, asserting it exists. Removing a
@@ -308,12 +369,11 @@ func (p Path) Copy(another Path) {
 	}
 }
 
-// copyFile copies the regular file at src to dst.
+// copyFile copies the regular file at src to dst, keeping its permissions.
 func copyFile(src, dst Path) {
-	data, err := fsys.ReadFile(src.GetOsPath())
-	Check(err, "Failed to read %s", src.ToString())
-	err = fsys.WriteFile(dst.GetOsPath(), data, 0644)
-	Check(err, "Failed to write %s", dst.ToString())
+	f, info := src.open()
+	defer f.Close()
+	dst.writeFrom(f, info.Mode().Perm())
 }
 
 // copyDir recursively copies the directory at src to dst.

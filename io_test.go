@@ -602,8 +602,8 @@ func TestTaskLabel(t *testing.T) {
 }
 
 // TestLogStyle checks that literal messages passed to the logging helpers are
-// capitalized sentences ending with a period, or with a question mark for
-// prompts. Check messages must not end with a period, since Check appends the
+// capitalized sentences ending with a period or exclamation mark, or with a
+// question mark for prompts. Check messages must not end with a period, since Check appends the
 // error and a period.
 func TestLogStyle(t *testing.T) {
 	// Index of the format argument, per helper.
@@ -643,7 +643,7 @@ func TestLogStyle(t *testing.T) {
 					return true
 				}
 				msg, _ := strconv.Unquote(lit.Value)
-				rule, ok := "end with \".\"", strings.HasSuffix(msg, ".")
+				rule, ok := "end with \".\" or \"!\"", strings.HasSuffix(msg, ".") || strings.HasSuffix(msg, "!")
 				switch name.Name {
 				case "Confirm", "Audit":
 					rule, ok = "end with \"?\"", strings.HasSuffix(msg, "?")
