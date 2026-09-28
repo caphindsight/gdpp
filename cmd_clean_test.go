@@ -72,6 +72,34 @@ func TestCleanProj(t *testing.T) {
 	}
 }
 
+func TestCleanBin(t *testing.T) {
+	m := withCleanFS(t, "/games/my_game")
+	libs := []string{"libpkg.linux.template_debug.x86_64.so", "libpkg.windows.template_release.x86_32.dll", "libpkg.macos.template_debug.arm64.dylib"}
+	kept := []string{"libpkg.so", "libpkgx.linux.template_debug.x86_64.so", "libother.linux.template_debug.x86_64.so", "libpkg.linux.template_debug.x86_64.so.txt", "pkg.gdextension"}
+	for _, name := range append(libs, kept...) {
+		m.nodes["/games/my_game/src/pkg/"+name] = &memNode{}
+	}
+	m.nodes["/games/my_game/src/other/libother.linux.template_debug.x86_64.so"] = &memNode{}
+	out := captureStderr(t, (&CmdClean{Bin: true, Paths: []string{"src/pkg", "src/other"}}).Run)
+	if want := "[>] Cleaning res://src/pkg...\n[>] Cleaning res://src/other...\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	tree := m.tree()
+	for _, name := range libs {
+		if _, ok := tree["/games/my_game/src/pkg/"+name]; ok {
+			t.Errorf("%s was not deleted", name)
+		}
+	}
+	for _, name := range kept {
+		if _, ok := tree["/games/my_game/src/pkg/"+name]; !ok {
+			t.Errorf("%s was deleted", name)
+		}
+	}
+	if _, ok := tree["/games/my_game/src/other/libother.linux.template_debug.x86_64.so"]; ok {
+		t.Errorf("libother.linux.template_debug.x86_64.so was not deleted")
+	}
+}
+
 func TestCleanProjWithPaths(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false

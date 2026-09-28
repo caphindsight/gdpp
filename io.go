@@ -86,6 +86,16 @@ func Styled(text string, styles ...Style) string {
 	return "\x1b[" + strings.Join(codes, ";") + "m" + text + "\x1b[0m"
 }
 
+// endStyles returns line followed by the ANSI code that ends all styles, if
+// it has any, so styles in a subprocess's log line, e.g. compiler colors,
+// can't leak past it even if it's cut short.
+func endStyles(line string) string {
+	if !strings.Contains(line, "\x1b") {
+		return line
+	}
+	return line + "\x1b[0m"
+}
+
 // WrapText splits each line of text into lines of at most width visible
 // characters, breaking at spaces where possible and inside words otherwise.
 // ANSI escape codes count as zero width. Returns text unchanged if width < 1.
@@ -354,7 +364,7 @@ func (t *Task) Fail() {
 		width, _, _ := term.GetSize(int(os.Stderr.Fd()))
 		for _, line := range t.logs {
 			line = WrapText(line, width-len(taskLogIndent))
-			fmt.Fprintln(os.Stderr, taskLogIndent+strings.ReplaceAll(line, "\n", "\n"+taskLogIndent))
+			fmt.Fprintln(os.Stderr, endStyles(taskLogIndent+strings.ReplaceAll(line, "\n", "\n"+taskLogIndent)))
 		}
 		if isTTY && len(t.logs) > Args.LogDepth {
 			fmt.Fprintln(os.Stderr, formatMsg(failIcon, t.failedName())) // repeated so the failure is visible below a long log
@@ -438,7 +448,7 @@ func (t *Task) render(icon, msg string, running bool) {
 			if i < len(logs) {
 				// Keep each log line to one row, so the row count stays exact.
 				line, _, _ := strings.Cut(WrapText(logs[i], width-len(taskLogIndent)), "\n")
-				block += taskLogIndent + line
+				block += taskLogIndent + endStyles(line)
 			}
 		}
 	}

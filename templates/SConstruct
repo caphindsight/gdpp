@@ -17,6 +17,12 @@ env = env.Clone()
 env["CXXFLAGS"] = [f for f in env["CXXFLAGS"] if not str(f).startswith(("-std=", "/std:"))]
 env.Append(CXXFLAGS=[("/std:" if env.get("is_msvc", False) else "-std=") + {{printf "%q" .CppStandard}}])
 env.Append(CPPPATH=[package_root, project_root])
+{{- if .Color}}
+# GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
+# the build signature, so it doesn't trigger rebuilds.
+if not env.get("is_msvc", False):
+    env.Append(CCFLAGS=["$(", "-fdiagnostics-color=always", "$)"])
+{{- end}}
 
 objects = "build/" + env["suffix"][1:] + "/"
 # Object names keep the source's extension, so foo.c and foo.cpp don't clash.
