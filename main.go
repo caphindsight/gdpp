@@ -9,6 +9,7 @@ var Args struct {
 	Verbose bool      `arg:"-v,--verbose" help:"print more logs"`
 	Force   bool      `arg:"-f,--yes" help:"assume yes on confirmation prompts"`
 	ForceNo bool      `arg:"-n,--no" help:"assume no on confirmation prompts"`
+	Audit   bool      `arg:"--audit" help:"audit potentially dangerous operations"`
 }
 
 func main() {
@@ -19,6 +20,9 @@ func main() {
 	}
 	if Args.Force && Args.ForceNo {
 		LogFatal("Invalid arguments: -f/--yes and -n/--no cannot be used together.")
+	}
+	if Args.Force && Args.Audit {
+		LogFatal("Invalid arguments: -f/--yes and --audit cannot be used together.")
 	}
 
 	switch {

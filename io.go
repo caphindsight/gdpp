@@ -404,6 +404,15 @@ func Confirm(format string, params ...any) {
 	}
 }
 
+// Audit prints a formatted yes/no prompt via Confirm, but only if --audit was
+// passed. Otherwise it does nothing.
+func Audit(format string, params ...any) {
+	if !Args.Audit {
+		return
+	}
+	Confirm(format, params...)
+}
+
 // cleanups holds functions to run before the program exits via Fail.
 var cleanups []func()
 

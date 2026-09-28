@@ -45,6 +45,7 @@ func (c *CmdHello) Run() {
 	LogInfo("Silence lifted, logging is back")
 
 	Confirm("Continue to the failing task")
+	Audit("About to run a potentially dangerous operation")
 
 	t = LogTask("Running a task that fails")
 	time.Sleep(logDelay)
