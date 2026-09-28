@@ -3,6 +3,7 @@
 package main
 
 import (
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -10,6 +11,35 @@ import (
 	"sort"
 	"strings"
 )
+
+// fileSystem is the set of filesystem calls Path makes. Tests swap fsys for
+// an in-memory fake.
+type fileSystem interface {
+	Getwd() (string, error)
+	Stat(name string) (fs.FileInfo, error)
+	ReadDir(name string) ([]fs.DirEntry, error)
+	ReadFile(name string) ([]byte, error)
+	WriteFile(name string, data []byte, perm fs.FileMode) error
+	Mkdir(name string, perm fs.FileMode) error
+	RemoveAll(name string) error
+	Rename(oldName, newName string) error
+}
+
+// osFS is the real filesystem.
+type osFS struct{}
+
+func (osFS) Getwd() (string, error)                     { return os.Getwd() }
+func (osFS) Stat(name string) (fs.FileInfo, error)      { return os.Stat(name) }
+func (osFS) ReadDir(name string) ([]fs.DirEntry, error) { return os.ReadDir(name) }
+func (osFS) ReadFile(name string) ([]byte, error)       { return os.ReadFile(name) }
+func (osFS) WriteFile(name string, data []byte, perm fs.FileMode) error {
+	return os.WriteFile(name, data, perm)
+}
+func (osFS) Mkdir(name string, perm fs.FileMode) error { return os.Mkdir(name, perm) }
+func (osFS) RemoveAll(name string) error               { return os.RemoveAll(name) }
+func (osFS) Rename(oldName, newName string) error      { return os.Rename(oldName, newName) }
+
+var fsys fileSystem = osFS{}
 
 // Path is an absolute file or directory path. Internally it always uses
 // forward slashes, regardless of platform.
@@ -31,7 +61,7 @@ func (p Path) GetOsPath() string {
 
 // Cwd returns the current working directory as a Path.
 func Cwd() Path {
-	wd, err := os.Getwd()
+	wd, err := fsys.Getwd()
 	Check(err, "Failed to get current working directory")
 	return NewPath(wd)
 }
@@ -83,7 +113,7 @@ func (p Path) Cd(segments ...string) Path {
 
 // Exists reports whether the path exists.
 func (p Path) Exists() bool {
-	_, err := os.Stat(p.GetOsPath())
+	_, err := fsys.Stat(p.GetOsPath())
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -95,7 +125,7 @@ func (p Path) Exists() bool {
 
 // IsDir reports whether the path exists and is a directory.
 func (p Path) IsDir() bool {
-	info, err := os.Stat(p.GetOsPath())
+	info, err := fsys.Stat(p.GetOsPath())
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -105,7 +135,7 @@ func (p Path) IsDir() bool {
 
 // IsFile reports whether the path exists and is a regular file.
 func (p Path) IsFile() bool {
-	info, err := os.Stat(p.GetOsPath())
+	info, err := fsys.Stat(p.GetOsPath())
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -187,7 +217,7 @@ func (p Path) ToString() string {
 // Ls returns the children of a directory in lexicographic order, skipping
 // entries whose name starts with ".".
 func (p Path) Ls() []Path {
-	entries, err := os.ReadDir(p.GetOsPath())
+	entries, err := fsys.ReadDir(p.GetOsPath())
 	Check(err, "Failed to list %s", p.ToString())
 
 	children := make([]Path, 0, len(entries))
@@ -203,7 +233,7 @@ func (p Path) Ls() []Path {
 
 // ReadString returns the contents of the file at p.
 func (p Path) ReadString() string {
-	data, err := os.ReadFile(p.GetOsPath())
+	data, err := fsys.ReadFile(p.GetOsPath())
 	Check(err, "Failed to read %s", p.ToString())
 	return string(data)
 }
@@ -211,21 +241,81 @@ func (p Path) ReadString() string {
 // WriteString writes text to the file at p, creating it if needed and
 // truncating any existing contents.
 func (p Path) WriteString(text string) {
-	err := os.WriteFile(p.GetOsPath(), []byte(text), 0644)
+	err := fsys.WriteFile(p.GetOsPath(), []byte(text), 0644)
 	Check(err, "Failed to write %s", p.ToString())
 }
 
 // CreateFile creates an empty file at p, asserting it doesn't already exist.
 func (p Path) CreateFile() {
 	Assert(!p.Exists(), "Path %s already exists.", p.ToString())
-	f, err := os.Create(p.GetOsPath())
+	err := fsys.WriteFile(p.GetOsPath(), nil, 0644)
 	Check(err, "Failed to create %s", p.ToString())
-	Check(f.Close(), "Failed to create %s", p.ToString())
 }
 
-// RemoveFile removes the file at p, asserting it is a regular file.
-func (p Path) RemoveFile() {
-	Assert(p.IsFile(), "Path %s is not a regular file.", p.ToString())
-	err := os.Remove(p.GetOsPath())
+// CreateDirectory creates an empty directory at p, asserting it doesn't
+// already exist.
+func (p Path) CreateDirectory() {
+	Assert(!p.Exists(), "Path %s already exists.", p.ToString())
+	err := fsys.Mkdir(p.GetOsPath(), 0755)
+	Check(err, "Failed to create %s", p.ToString())
+}
+
+// Remove deletes the file or directory at p, asserting it exists. Removing a
+// non-empty directory drops everything inside it, so this audits first.
+func (p Path) Remove() {
+	Assert(p.Exists(), "Path %s does not exist.", p.ToString())
+	if p.IsDir() {
+		entries, err := fsys.ReadDir(p.GetOsPath())
+		Check(err, "Failed to list %s", p.ToString())
+		if len(entries) > 0 {
+			Audit("Delete %s and everything inside it?", p.ToString())
+		}
+	}
+	err := fsys.RemoveAll(p.GetOsPath())
 	Check(err, "Failed to remove %s", p.ToString())
+}
+
+// Move moves the file or directory at p to another, asserting p exists and
+// another doesn't.
+func (p Path) Move(another Path) {
+	Assert(p.Exists(), "Path %s does not exist.", p.ToString())
+	Assert(!another.Exists(), "Path %s already exists.", another.ToString())
+	err := fsys.Rename(p.GetOsPath(), another.GetOsPath())
+	Check(err, "Failed to move %s to %s", p.ToString(), another.ToString())
+}
+
+// Copy copies the file or directory at p to another, asserting p exists and
+// another doesn't. Directories are copied recursively.
+func (p Path) Copy(another Path) {
+	Assert(p.Exists(), "Path %s does not exist.", p.ToString())
+	Assert(!another.Exists(), "Path %s already exists.", another.ToString())
+	if p.IsDir() {
+		copyDir(p, another)
+	} else {
+		copyFile(p, another)
+	}
+}
+
+// copyFile copies the regular file at src to dst.
+func copyFile(src, dst Path) {
+	data, err := fsys.ReadFile(src.GetOsPath())
+	Check(err, "Failed to read %s", src.ToString())
+	err = fsys.WriteFile(dst.GetOsPath(), data, 0644)
+	Check(err, "Failed to write %s", dst.ToString())
+}
+
+// copyDir recursively copies the directory at src to dst.
+func copyDir(src, dst Path) {
+	err := fsys.Mkdir(dst.GetOsPath(), 0755)
+	Check(err, "Failed to create %s", dst.ToString())
+	entries, err := fsys.ReadDir(src.GetOsPath())
+	Check(err, "Failed to list %s", src.ToString())
+	for _, entry := range entries {
+		childSrc, childDst := src.Cd(entry.Name()), dst.Cd(entry.Name())
+		if entry.IsDir() {
+			copyDir(childSrc, childDst)
+		} else {
+			copyFile(childSrc, childDst)
+		}
+	}
 }

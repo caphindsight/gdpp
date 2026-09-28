@@ -1,11 +1,10 @@
-// path_test.go: tests for path.go.
+// path_test.go: tests for path.go. Filesystem tests run on memFS and never
+// touch the real disk.
 
 package main
 
 import (
 	"os"
-	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -58,22 +57,9 @@ func TestGetOsPath(t *testing.T) {
 }
 
 func TestCwd(t *testing.T) {
-	dir := t.TempDir()
-	old, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("os.Chdir: %v", err)
-	}
-	defer os.Chdir(old)
-
-	want, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd: %v", err)
-	}
-	if got := Cwd(); got != NewPath(want) {
-		t.Errorf("Cwd() = %v, want %v", got, NewPath(want))
+	withMemFS(t, "/work/dir", nil)
+	if got, want := Cwd(), NewPath("/work/dir"); got != want {
+		t.Errorf("Cwd() = %v, want %v", got, want)
 	}
 }
 
@@ -146,31 +132,27 @@ func TestCd(t *testing.T) {
 }
 
 func TestExistsIsDirIsFile(t *testing.T) {
-	dir := NewPath(t.TempDir())
-	file := dir.Cd("file.txt")
-	if err := os.WriteFile(file.GetOsPath(), []byte("x"), 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-	missing := dir.Cd("missing")
+	withMemFS(t, "/", map[string]string{"/d/file.txt": "x"})
 
 	cases := []struct {
 		name                  string
-		p                     Path
+		p                     string
 		exists, isDir, isFile bool
 	}{
-		{"dir", dir, true, true, false},
-		{"file", file, true, false, true},
-		{"missing", missing, false, false, false},
+		{"dir", "/d", true, true, false},
+		{"file", "/d/file.txt", true, false, true},
+		{"missing", "/d/missing", false, false, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := c.p.Exists(); got != c.exists {
+			p := NewPath(c.p)
+			if got := p.Exists(); got != c.exists {
 				t.Errorf("Exists() = %v, want %v", got, c.exists)
 			}
-			if got := c.p.IsDir(); got != c.isDir {
+			if got := p.IsDir(); got != c.isDir {
 				t.Errorf("IsDir() = %v, want %v", got, c.isDir)
 			}
-			if got := c.p.IsFile(); got != c.isFile {
+			if got := p.IsFile(); got != c.isFile {
 				t.Errorf("IsFile() = %v, want %v", got, c.isFile)
 			}
 		})
@@ -178,35 +160,29 @@ func TestExistsIsDirIsFile(t *testing.T) {
 }
 
 func TestIsProjectRootIsPackageRoot(t *testing.T) {
-	projectDir := NewPath(t.TempDir())
-	if err := os.WriteFile(projectDir.Cd(projectFileName).GetOsPath(), nil, 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-
-	packageDir := NewPath(t.TempDir())
-	if err := os.WriteFile(packageDir.Cd(packageFileName).GetOsPath(), nil, 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-
-	emptyDir := NewPath(t.TempDir())
-	file := projectDir.Cd(projectFileName)
+	withMemFS(t, "/", map[string]string{
+		"/proj/" + projectFileName: "",
+		"/pkg/" + packageFileName:  "",
+		"/empty/":                  "",
+	})
 
 	cases := []struct {
 		name             string
-		p                Path
+		p                string
 		isProject, isPkg bool
 	}{
-		{"project dir", projectDir, true, false},
-		{"package dir", packageDir, false, true},
-		{"empty dir", emptyDir, false, false},
-		{"file", file, false, false},
+		{"project dir", "/proj", true, false},
+		{"package dir", "/pkg", false, true},
+		{"empty dir", "/empty", false, false},
+		{"file", "/proj/" + projectFileName, false, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := c.p.IsProjectRoot(); got != c.isProject {
+			p := NewPath(c.p)
+			if got := p.IsProjectRoot(); got != c.isProject {
 				t.Errorf("IsProjectRoot() = %v, want %v", got, c.isProject)
 			}
-			if got := c.p.IsPackageRoot(); got != c.isPkg {
+			if got := p.IsPackageRoot(); got != c.isPkg {
 				t.Errorf("IsPackageRoot() = %v, want %v", got, c.isPkg)
 			}
 		})
@@ -214,18 +190,13 @@ func TestIsProjectRootIsPackageRoot(t *testing.T) {
 }
 
 func TestGetProjectRootGetPackageRoot(t *testing.T) {
-	root := NewPath(t.TempDir())
-	if err := os.WriteFile(root.Cd(projectFileName).GetOsPath(), nil, 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-	if err := os.WriteFile(root.Cd(packageFileName).GetOsPath(), nil, 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-	nested := root.Cd("a", "b")
-	if err := os.MkdirAll(nested.GetOsPath(), 0755); err != nil {
-		t.Fatalf("os.MkdirAll: %v", err)
-	}
-	outside := NewPath(t.TempDir())
+	withMemFS(t, "/", map[string]string{
+		"/root/" + projectFileName: "",
+		"/root/" + packageFileName: "",
+		"/root/a/b/":               "",
+		"/outside/":                "",
+	})
+	root, nested, outside := NewPath("/root"), NewPath("/root/a/b"), NewPath("/outside")
 
 	if got, ok := GetProjectRootMaybe(nested); !ok || got != root {
 		t.Errorf("GetProjectRootMaybe(nested) = (%v, %v), want (%v, true)", got, ok, root)
@@ -248,81 +219,27 @@ func TestGetProjectRootGetPackageRoot(t *testing.T) {
 	}
 }
 
-func TestGetProjectRootFailsOutsideProject(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		GetProjectRoot(NewPath(os.TempDir()))
-		return
-	}
-
-	out, code := runFailHelper(t, "TestGetProjectRootFailsOutsideProject")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-	if !strings.HasSuffix(out, "is not contained in a Godot project.\n") {
-		t.Errorf("output = %q, want suffix %q", out, "is not contained in a Godot project.\n")
-	}
-}
-
-func TestGetPackageRootFailsOutsidePackage(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		GetPackageRoot(NewPath(os.TempDir()))
-		return
-	}
-
-	out, code := runFailHelper(t, "TestGetPackageRootFailsOutsidePackage")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-	if !strings.HasSuffix(out, "is not contained in a GD++ package.\n") {
-		t.Errorf("output = %q, want suffix %q", out, "is not contained in a GD++ package.\n")
-	}
-}
-
 func TestToString(t *testing.T) {
-	root := NewPath(t.TempDir())
-	if err := os.WriteFile(root.Cd(projectFileName).GetOsPath(), nil, 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-	nested := root.Cd("foo", "bar")
-	if err := os.MkdirAll(nested.GetOsPath(), 0755); err != nil {
-		t.Fatalf("os.MkdirAll: %v", err)
-	}
-
-	base := NewPath(t.TempDir())
-	cwd := base.Cd("x", "y")
-	if err := os.MkdirAll(cwd.GetOsPath(), 0755); err != nil {
-		t.Fatalf("os.MkdirAll: %v", err)
-	}
-	far := base.Cd("a", "b")
-	if err := os.MkdirAll(far.GetOsPath(), 0755); err != nil {
-		t.Fatalf("os.MkdirAll: %v", err)
-	}
-
-	old, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd: %v", err)
-	}
-	if err := os.Chdir(cwd.GetOsPath()); err != nil {
-		t.Fatalf("os.Chdir: %v", err)
-	}
-	defer os.Chdir(old)
+	withMemFS(t, "/base/x/y", map[string]string{
+		"/proj/" + projectFileName: "",
+		"/proj/foo/bar/":           "",
+		"/base/a/b/":               "",
+	})
 
 	cases := []struct {
 		name string
-		p    Path
+		p    string
 		want string
 	}{
-		{"project root", root, "res://"},
-		{"nested in project", nested, "res://foo/bar"},
-		{"cwd itself", cwd, "."},
-		{"nested under cwd", cwd.Cd("a", "b"), "a/b"},
-		{"through parents", far, "../../a/b"},
+		{"project root", "/proj", "res://"},
+		{"nested in project", "/proj/foo/bar", "res://foo/bar"},
+		{"cwd itself", "/base/x/y", "."},
+		{"nested under cwd", "/base/x/y/a/b", "a/b"},
+		{"through parents", "/base/a/b", "../../a/b"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := c.p.ToString(); got != c.want {
+			if got := NewPath(c.p).ToString(); got != c.want {
 				t.Errorf("ToString() = %q, want %q", got, c.want)
 			}
 		})
@@ -330,22 +247,16 @@ func TestToString(t *testing.T) {
 }
 
 func TestLs(t *testing.T) {
-	dir := NewPath(t.TempDir())
-	for _, name := range []string{"b.txt", "a.txt", ".hidden", "sub", ".git"} {
-		p := dir.Cd(name).GetOsPath()
-		var err error
-		if name == "sub" || name == ".git" {
-			err = os.Mkdir(p, 0755)
-		} else {
-			err = os.WriteFile(p, nil, 0644)
-		}
-		if err != nil {
-			t.Fatalf("creating %s: %v", name, err)
-		}
-	}
+	withMemFS(t, "/", map[string]string{
+		"/d/b.txt":   "",
+		"/d/a.txt":   "",
+		"/d/.hidden": "",
+		"/d/sub/":    "",
+		"/d/.git/":   "",
+	})
 
 	var names []string
-	for _, child := range dir.Ls() {
+	for _, child := range NewPath("/d").Ls() {
 		names = append(names, child.Name())
 	}
 
@@ -356,7 +267,8 @@ func TestLs(t *testing.T) {
 }
 
 func TestReadStringWriteString(t *testing.T) {
-	file := NewPath(t.TempDir()).Cd("f.txt")
+	withMemFS(t, "/work", nil)
+	file := NewPath("/work/f.txt")
 	file.WriteString("hello")
 	if got := file.ReadString(); got != "hello" {
 		t.Errorf("ReadString() = %q, want %q", got, "hello")
@@ -367,141 +279,209 @@ func TestReadStringWriteString(t *testing.T) {
 	}
 }
 
-func TestReadStringFailsOnMissingFile(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		NewPath(os.TempDir()).Cd("gdpp-test-missing-read").ReadString()
-		return
-	}
-	out, code := runFailHelper(t, "TestReadStringFailsOnMissingFile")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-	if !strings.Contains(out, "Failed to read") {
-		t.Errorf("output = %q, want to contain %q", out, "Failed to read")
-	}
-}
-
-func TestReadStringFailsOnDirectory(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		NewPath(os.TempDir()).ReadString()
-		return
-	}
-	out, code := runFailHelper(t, "TestReadStringFailsOnDirectory")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-	if !strings.Contains(out, "Failed to read") {
-		t.Errorf("output = %q, want to contain %q", out, "Failed to read")
-	}
-}
-
-func TestWriteStringFailsOnDirectory(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		NewPath(os.TempDir()).WriteString("x")
-		return
-	}
-	out, code := runFailHelper(t, "TestWriteStringFailsOnDirectory")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-	if !strings.Contains(out, "Failed to write") {
-		t.Errorf("output = %q, want to contain %q", out, "Failed to write")
-	}
-}
-
-func TestCreateFileRemoveFile(t *testing.T) {
-	file := NewPath(t.TempDir()).Cd("f.txt")
+func TestCreateFileCreateDirectory(t *testing.T) {
+	withMemFS(t, "/work", nil)
+	file, dir := NewPath("/work/f.txt"), NewPath("/work/d")
 	file.CreateFile()
+	dir.CreateDirectory()
 	if !file.IsFile() {
 		t.Errorf("IsFile() = false after CreateFile(), want true")
 	}
 	if got := file.ReadString(); got != "" {
 		t.Errorf("ReadString() = %q, want empty", got)
 	}
-	file.RemoveFile()
-	if file.Exists() {
-		t.Errorf("Exists() = true after RemoveFile(), want false")
+	if !dir.IsDir() {
+		t.Errorf("IsDir() = false after CreateDirectory(), want true")
 	}
 }
 
-func TestCreateFileFailsIfExists(t *testing.T) {
+// dirTree returns a small directory tree rooted at root, in withMemFS format.
+// It has a dot-file, a nested dir, and an empty dir.
+func dirTree(root string) map[string]string {
+	return map[string]string{
+		root + "/":           "",
+		root + "/.hidden":    "h",
+		root + "/sub/":       "",
+		root + "/sub/c.txt":  "c",
+		root + "/sub/empty/": "",
+	}
+}
+
+// mergeTrees returns the union of the given trees.
+func mergeTrees(trees ...map[string]string) map[string]string {
+	out := map[string]string{}
+	for _, t := range trees {
+		for k, v := range t {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// Trees shared by the Remove, Move and Copy tests. cwd is /work.
+var (
+	workDir  = map[string]string{"/work/": ""}
+	fileA    = map[string]string{"/work/a.txt": "a"}
+	emptyDir = map[string]string{"/work/empty/": ""}
+	fullDir  = dirTree("/work/full")
+	baseTree = mergeTrees(workDir, fileA, emptyDir, fullDir)
+)
+
+// runFileOp runs op on a fresh memFS holding baseTree, and checks the
+// resulting tree against want.
+func runFileOp(t *testing.T, op func(), want map[string]string) {
+	m := withMemFS(t, "/work", baseTree)
+	op()
+	if got := m.tree(); !reflect.DeepEqual(got, want) {
+		t.Errorf("tree = %v, want %v", got, want)
+	}
+}
+
+func TestRemove(t *testing.T) {
+	cases := []struct {
+		name   string
+		target string
+		audit  bool // with audit on and no TTY, a prompt would fail the test
+		want   map[string]string
+	}{
+		{"file", "/work/a.txt", true, mergeTrees(workDir, emptyDir, fullDir)},
+		{"empty dir", "/work/empty", true, mergeTrees(workDir, fileA, fullDir)},
+		{"non-empty dir", "/work/full", false, mergeTrees(workDir, fileA, emptyDir)},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			withTTY(t, false)
+			withAudit(t, c.audit)
+			runFileOp(t, func() { NewPath(c.target).Remove() }, c.want)
+		})
+	}
+}
+
+func TestRemoveAuditYes(t *testing.T) {
+	withTTY(t, true)
+	withAudit(t, true)
+	withStdin(t, "y\n")
+	var out string
+	runFileOp(t, func() {
+		out = captureStdout(t, func() { NewPath("/work/full").Remove() })
+	}, mergeTrees(workDir, fileA, emptyDir))
+	if want := "Delete full and everything inside it?"; !strings.Contains(out, want) {
+		t.Errorf("output = %q, want to contain %q", out, want)
+	}
+}
+
+func TestRemoveAuditNo(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		NewPath(os.TempDir()).CreateFile()
+		isTTY = true
+		withAudit(t, true)
+		withMemFS(t, "/work", baseTree)
+		NewPath("/work/full").Remove()
 		return
 	}
-	out, code := runFailHelper(t, "TestCreateFileFailsIfExists")
+	out, code := runFailHelperWithStdin(t, "TestRemoveAuditNo", "n\n")
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if !strings.HasSuffix(out, "already exists.\n") {
-		t.Errorf("output = %q, want suffix %q", out, "already exists.\n")
+	if want := "Operation canceled by user."; !strings.Contains(out, want) {
+		t.Errorf("output = %q, want to contain %q", out, want)
 	}
 }
 
-func TestRemoveFileFailsOnDirectory(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		NewPath(os.TempDir()).RemoveFile()
-		return
+func TestMove(t *testing.T) {
+	cases := []struct {
+		name     string
+		src, dst string
+		want     map[string]string
+	}{
+		{"file", "/work/a.txt", "/work/b.txt",
+			mergeTrees(workDir, map[string]string{"/work/b.txt": "a"}, emptyDir, fullDir)},
+		{"dir", "/work/full", "/work/empty/moved",
+			mergeTrees(workDir, fileA, emptyDir, dirTree("/work/empty/moved"))},
 	}
-	out, code := runFailHelper(t, "TestRemoveFileFailsOnDirectory")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-	if !strings.HasSuffix(out, "is not a regular file.\n") {
-		t.Errorf("output = %q, want suffix %q", out, "is not a regular file.\n")
-	}
-}
-
-func TestRemoveFileFailsIfMissing(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		NewPath(os.TempDir()).Cd("gdpp-test-missing-remove").RemoveFile()
-		return
-	}
-	out, code := runFailHelper(t, "TestRemoveFileFailsIfMissing")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-	if !strings.HasSuffix(out, "is not a regular file.\n") {
-		t.Errorf("output = %q, want suffix %q", out, "is not a regular file.\n")
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			runFileOp(t, func() { NewPath(c.src).Move(NewPath(c.dst)) }, c.want)
+		})
 	}
 }
 
-func TestWriteStringFailsOnPermissionDenied(t *testing.T) {
-	if os.Geteuid() == 0 {
-		t.Skip("running as root: permission checks don't apply")
+func TestCopy(t *testing.T) {
+	cases := []struct {
+		name     string
+		src, dst string
+		want     map[string]string
+	}{
+		{"file", "/work/a.txt", "/work/b.txt",
+			mergeTrees(baseTree, map[string]string{"/work/b.txt": "a"})},
+		{"dir", "/work/full", "/work/empty/copy",
+			mergeTrees(baseTree, dirTree("/work/empty/copy"))},
 	}
-	if target := os.Getenv("GDPP_TEST_TARGET"); target != "" {
-		isTTY = false
-		NewPath(target).WriteString("x")
-		return
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			runFileOp(t, func() { NewPath(c.src).Copy(NewPath(c.dst)) }, c.want)
+		})
 	}
+}
 
-	roDir := filepath.Join(t.TempDir(), "ro")
-	if err := os.Mkdir(roDir, 0555); err != nil {
-		t.Fatalf("os.Mkdir: %v", err)
+// TestFileOpsFail checks operations that exit via Fail. Each case re-execs the
+// test binary, which runs op on a memFS holding baseTree (cwd /work) with the
+// fail method returning fs.ErrPermission.
+func TestFileOpsFail(t *testing.T) {
+	p := NewPath
+	cases := []struct {
+		name string
+		fail string
+		op   func()
+		want string
+	}{
+		{"project root outside project", "", func() { GetProjectRoot(p("/work")) },
+			"Path . is not contained in a Godot project."},
+		{"package root outside package", "", func() { GetPackageRoot(p("/work")) },
+			"Path . is not contained in a GD++ package."},
+		{"read missing", "", func() { p("/work/missing").ReadString() },
+			"Failed to read missing: open /work/missing: file does not exist."},
+		{"read dir", "", func() { p("/work/full").ReadString() },
+			"Failed to read full: read /work/full: is a directory."},
+		{"write dir", "", func() { p("/work/full").WriteString("x") },
+			"Failed to write full: open /work/full: is a directory."},
+		{"write error", "WriteFile", func() { p("/work/a.txt").WriteString("x") },
+			"Failed to write a.txt: permission denied."},
+		{"create file exists", "", func() { p("/work/a.txt").CreateFile() },
+			"Path a.txt already exists."},
+		{"create dir exists", "", func() { p("/work/full").CreateDirectory() },
+			"Path full already exists."},
+		{"remove missing", "", func() { p("/work/missing").Remove() },
+			"Path missing does not exist."},
+		{"remove error", "RemoveAll", func() { p("/work/a.txt").Remove() },
+			"Failed to remove a.txt: permission denied."},
+		{"move missing", "", func() { p("/work/missing").Move(p("/work/b.txt")) },
+			"Path missing does not exist."},
+		{"move onto existing", "", func() { p("/work/a.txt").Move(p("/work/full")) },
+			"Path full already exists."},
+		{"move error", "Rename", func() { p("/work/a.txt").Move(p("/work/b.txt")) },
+			"Failed to move a.txt to b.txt: permission denied."},
+		{"copy missing", "", func() { p("/work/missing").Copy(p("/work/b.txt")) },
+			"Path missing does not exist."},
+		{"copy onto existing", "", func() { p("/work/a.txt").Copy(p("/work/full")) },
+			"Path full already exists."},
+		{"copy error", "WriteFile", func() { p("/work/a.txt").Copy(p("/work/b.txt")) },
+			"Failed to write b.txt: permission denied."},
 	}
-	target := filepath.Join(roDir, "f.txt")
-
-	cmd := exec.Command(os.Args[0], "-test.run=^TestWriteStringFailsOnPermissionDenied$")
-	cmd.Env = append(os.Environ(), "GDPP_FAIL_HELPER=1", "GDPP_TEST_TARGET="+target)
-	out, err := cmd.Output()
-	if err == nil {
-		t.Fatalf("process exited 0, want nonzero")
-	}
-	exitErr, ok := err.(*exec.ExitError)
-	if !ok {
-		t.Fatalf("cmd.Output: %v", err)
-	}
-	if exitErr.ExitCode() != 1 {
-		t.Errorf("exit code = %d, want 1", exitErr.ExitCode())
-	}
-	if !strings.Contains(string(out), "Failed to write") {
-		t.Errorf("output = %q, want to contain %q", out, "Failed to write")
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+				isTTY = false
+				withMemFS(t, "/work", baseTree).fail = c.fail
+				c.op()
+				return
+			}
+			out, code := runFailHelper(t, t.Name())
+			if code != 1 {
+				t.Errorf("exit code = %d, want 1", code)
+			}
+			if want := "[!] " + c.want + "\n"; out != want {
+				t.Errorf("output = %q, want %q", out, want)
+			}
+		})
 	}
 }
