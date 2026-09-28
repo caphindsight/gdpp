@@ -5,6 +5,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -25,11 +26,55 @@ func intPtr(n int) *int { return &n }
 
 func TestInitProject(t *testing.T) {
 	out, after := runInit(t, CmdInit{Vcs: "git"}, nil)
-	if want := "[>] Created res://gd++proj.toml.\n[>] Set the VCS to git.\n[>] Success!\n"; out != want {
+	want := "" +
+		"[>] Created res://gd++proj.toml.\n" +
+		"[>] Set the VCS to git.\n" +
+		"[>] Created res://.gitignore.\n" +
+		"[>] Success!\n"
+	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got, want := after[projectConfigFileName], "vcs = \"git\"\n"; got != want {
 		t.Errorf("config = %q, want %q", got, want)
+	}
+	if got := after[gitignoreFileName]; got != projectBlock {
+		t.Errorf(".gitignore = %q, want %q", got, projectBlock)
+	}
+}
+
+func TestInitProjectVcsNone(t *testing.T) {
+	tree := withPackages(map[string]string{"src/pkg": syncPkgConfig})
+	tree["/games/my_game/"+projectConfigFileName] = "vcs = \"git\"\n"
+	tree["/games/my_game/.gitignore"] = "user\n\n" + projectBlock
+	tree["/games/my_game/src/pkg/.gitignore"] = packageBlock
+	m := withMemFS(t, "/games/my_game", tree)
+	withQuiet(t, false)
+	withTTY(t, false)
+	want := "" +
+		"[>] Set the VCS to none.\n" +
+		"[>] Updated res://.gitignore.\n" +
+		"[>] Deleted res://src/pkg/.gitignore.\n" +
+		"[>] Success!\n"
+	if out := captureStderr(t, (&CmdInit{Vcs: "none"}).Run); out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	after := subtree(m.tree(), "/games/my_game/")
+	if got := after[gitignoreFileName]; got != "user\n" {
+		t.Errorf(".gitignore = %q, want %q", got, "user\n")
+	}
+	if _, ok := after["src/pkg/"+gitignoreFileName]; ok {
+		t.Errorf("tree = %v, want no src/pkg/.gitignore", after)
+	}
+}
+
+func TestInitProjectNoVcsChange(t *testing.T) {
+	// Only a change of VCS touches the .gitignore files.
+	out, after := runInit(t, CmdInit{Vcs: "none"}, nil)
+	if want := "[>] Created res://gd++proj.toml.\n[>] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if _, ok := after[gitignoreFileName]; ok {
+		t.Errorf("tree = %v, want no .gitignore", after)
 	}
 }
 
@@ -55,6 +100,22 @@ func TestInitNewPackage(t *testing.T) {
 	}
 	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++17\"\n"; got != want {
 		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
+func TestInitNewPackageGit(t *testing.T) {
+	for _, path := range []string{"src/pkg", "."} {
+		tree := withPackages(nil)
+		tree["/games/my_game/"+projectConfigFileName] = "vcs = \"git\"\n"
+		tree["/games/my_game/.gitignore"] = "user\n"
+		m := withMemFS(t, "/games/my_game", tree)
+		withQuiet(t, true)
+		(&CmdInit{Path: path, Bind: "4.3", Spec: "4.3"}).Run()
+		after := subtree(m.tree(), "/games/my_game/")
+		want := map[string]string{"src/pkg": packageBlock, ".": "user\n\n" + packageBlock}[path]
+		if got := after[strings.TrimPrefix(path+"/", "./")+gitignoreFileName]; got != want {
+			t.Errorf("%s: .gitignore = %q, want %q", path, got, want)
+		}
 	}
 }
 

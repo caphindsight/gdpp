@@ -67,15 +67,19 @@ func writeConfig(file Path, text string, changes []string) bool {
 func (c *CmdInit) initProject() {
 	Assert(c.Vcs == "" || c.Vcs == "none" || c.Vcs == "git", "Invalid arguments: --vcs must be none or git.")
 	p := LoadProject(Cwd())
-	config := p.Config
 	var changes []string
-	if c.Vcs != "" && c.Vcs != config.VCS {
-		config.VCS = c.Vcs
+	vcsChanged := c.Vcs != "" && c.Vcs != p.Config.VCS
+	if vcsChanged {
+		p.Config.VCS = c.Vcs
 		changes = append(changes, "the VCS to "+c.Vcs)
 	}
-	if writeConfig(p.Root.Cd(projectConfigFileName), config.Encode(), changes) {
-		LogInfo("Success!")
+	if !writeConfig(p.Root.Cd(projectConfigFileName), p.Config.Encode(), changes) {
+		return
 	}
+	if vcsChanged {
+		SyncGitignores(p)
+	}
+	LogInfo("Success!")
 }
 
 // Package-level inits.
@@ -88,6 +92,9 @@ func (c *CmdInit) newPackage(p Project, root Path) {
 		root.CreateDirectory()
 	}
 	writeConfig(root.Cd(packageFileName), config.Encode(), nil)
+	if p.Config.VCS == "git" {
+		EditGitignore(root, func(text string) string { return packageGitignore.set(text, true) })
+	}
 	warnMissingDeps(p, config)
 	LogInfo("Success!")
 }

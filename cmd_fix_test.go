@@ -56,7 +56,7 @@ func TestFix(t *testing.T) {
 
 func TestFixConfig(t *testing.T) {
 	out, _, after := runFix(t, map[string]string{"/games/my_game/" + projectConfigFileName: `vcs="git"`})
-	if want := "[>] Reformatted res://gd++proj.toml.\n[>] Success!\n"; out != want {
+	if want := "[>] Reformatted res://gd++proj.toml.\n[>] Created res://.gitignore.\n[>] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got, want := after[projectConfigFileName], "vcs = \"git\"\n"; got != want {
@@ -68,6 +68,7 @@ func TestFixNothingToDo(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
 		"/games/my_game/.gd++proj/bind/4.3/a.h":   "a",
 		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\n",
+		"/games/my_game/.gitignore":               projectBlock,
 	})
 	if want := "[>] The project is already tidy.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
@@ -85,5 +86,20 @@ func TestFixPackageConfig(t *testing.T) {
 	want := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
 	if got := after["src/pkg/"+packageFileName]; got != want {
 		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
+func TestFixGitignores(t *testing.T) {
+	out, _, after := runFix(t, map[string]string{
+		"/games/my_game/src/pkg/" + packageFileName:   syncPkgConfig + "syntax = 0\nstd = \"c++20\"\n",
+		"/games/my_game/.gitignore":                   "user\n\n" + projectBlock,
+		"/games/my_game/src/pkg/" + gitignoreFileName: packageBlock,
+	})
+	want := "[>] Updated res://.gitignore.\n[>] Deleted res://src/pkg/.gitignore.\n[>] Success!\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got := after[gitignoreFileName]; got != "user\n" {
+		t.Errorf(".gitignore = %q, want %q", got, "user\n")
 	}
 }

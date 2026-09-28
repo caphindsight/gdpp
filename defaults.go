@@ -8,6 +8,7 @@ const (
 	projectFileName       = "project.godot"
 	projectConfigFileName = "gd++proj.toml"
 	packageFileName       = "gd++pkg.toml"
+	gitignoreFileName     = ".gitignore"
 
 	// Dep caches: each lives in a subdirectory of both the checked in and the
 	// ephemeral directory, at the project root.
