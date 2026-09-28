@@ -62,15 +62,16 @@ func TestFetchInvalidArgs(t *testing.T) {
 		c    CmdFetch
 		want string
 	}{
-		"nothing":         {CmdFetch{}, "an --index, --bind, --spec or --engine option is required"},
-		"index_and_dep":   {CmdFetch{IndexSpec: true, Bind: []string{"a"}}, "--index options cannot be used with --bind, --spec or --engine options"},
-		"index_and_all":   {CmdFetch{Index: true, EngineAll: true}, "--index options cannot be used with --bind, --spec or --engine options"},
+		"nothing":         {CmdFetch{}, "an --index, --bind, --spec, --engine or --missing option is required"},
+		"index_and_dep":   {CmdFetch{IndexSpec: true, Bind: []string{"a"}}, "--index options cannot be used with --bind, --spec, --engine or --missing options"},
+		"index_and_all":   {CmdFetch{Index: true, EngineAll: true}, "--index options cannot be used with --bind, --spec, --engine or --missing options"},
 		"index_twice":     {CmdFetch{Index: true, IndexBind: true}, "--index cannot be used with --index-bind, --index-spec or --index-engine"},
+		"index_missing":   {CmdFetch{IndexBind: true, Missing: true}, "--index options cannot be used with --bind, --spec, --engine or --missing options"},
 		"index_checkin":   {CmdFetch{IndexEngine: true, CheckIn: true}, "--checkin cannot be used with --index options"},
 		"names_and_all":   {CmdFetch{Spec: []string{"a"}, SpecAll: true}, "--spec and --spec-all cannot be used together"},
 		"bad_name":        {CmdFetch{Engine: []string{"4.3", "../a"}}, `"../a" is not a valid dependency name`},
-		"checkin_nothing": {CmdFetch{CheckIn: true}, "an --index, --bind, --spec or --engine option is required"},
-		"plain_alone":     {CmdFetch{Plain: true}, "an --index, --bind, --spec or --engine option is required"},
+		"checkin_nothing": {CmdFetch{CheckIn: true}, "an --index, --bind, --spec, --engine or --missing option is required"},
+		"plain_alone":     {CmdFetch{Plain: true}, "an --index, --bind, --spec, --engine or --missing option is required"},
 		"plain_deps":      {CmdFetch{Plain: true, SpecAll: true}, "--plain requires exactly one of --index-bind, --index-spec or --index-engine"},
 		"plain_index":     {CmdFetch{Plain: true, Index: true}, "--plain requires exactly one of --index-bind, --index-spec or --index-engine"},
 		"plain_two":       {CmdFetch{Plain: true, IndexBind: true, IndexSpec: true}, "--plain requires exactly one of --index-bind, --index-spec or --index-engine"},

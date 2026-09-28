@@ -21,6 +21,7 @@ type CmdFetch struct {
 	SpecAll     bool     `arg:"--spec-all" help:"fetch all Godot API specs"`
 	Engine      []string `arg:"--engine" placeholder:"NAME" help:"fetch these Godot engines"`
 	EngineAll   bool     `arg:"--engine-all" help:"fetch all Godot engines"`
+	Missing     bool     `arg:"--missing" help:"fetch the bindings and specs packages use but the project lacks"`
 	CheckIn     bool     `arg:"--checkin" help:"fetch into the checked in cache instead of the ephemeral one"`
 	Url         string   `arg:"--url" default:"https://github.com/caphindsight/gdpp-dep.git" placeholder:"URL" help:"the repository to fetch from"`
 	Branch      string   `arg:"--branch" default:"master" placeholder:"BRANCH" help:"the branch of the repository"`
@@ -45,6 +46,10 @@ func (c *CmdFetch) Run() {
 	Cleanup(p.Cleanup)
 	for i, cache := range []ProjectDepCache{p.BindingsCache, p.ApiSpecsCache, p.EnginesCache} {
 		kinds[i].cache = cache
+	}
+	if c.Missing && !c.addMissing(p, kinds) {
+		LogInfo("No dependencies are missing.")
+		return
 	}
 
 	repo := c.clone(p)
@@ -84,12 +89,26 @@ func (c *CmdFetch) validate(kinds []fetchKind) bool {
 		index = index || k.list
 		deps = deps || len(k.names) > 0 || k.all
 	}
+	deps = deps || c.Missing
 	Assert(!c.Index || countTrue(c.IndexBind, c.IndexSpec, c.IndexEngine) == 0, "Invalid arguments: --index cannot be used with --index-bind, --index-spec or --index-engine.")
-	Assert(index || deps, "Invalid arguments: an --index, --bind, --spec or --engine option is required.")
-	Assert(!index || !deps, "Invalid arguments: --index options cannot be used with --bind, --spec or --engine options.")
+	Assert(index || deps, "Invalid arguments: an --index, --bind, --spec, --engine or --missing option is required.")
+	Assert(!index || !deps, "Invalid arguments: --index options cannot be used with --bind, --spec, --engine or --missing options.")
 	Assert(!index || !c.CheckIn, "Invalid arguments: --checkin cannot be used with --index options.")
 	Assert(!c.Plain || countTrue(c.IndexBind, c.IndexSpec, c.IndexEngine) == 1, "Invalid arguments: --plain requires exactly one of --index-bind, --index-spec or --index-engine.")
 	return index
+}
+
+// addMissing adds the bindings and specs packages use but the caches lack to
+// kinds, and returns whether there are any deps to fetch.
+func (c *CmdFetch) addMissing(p Project, kinds []fetchKind) bool {
+	for _, pkg := range p.ListPackages() {
+		for i, name := range []string{pkg.Config.Bindings, pkg.Config.ApiSpec} {
+			if k := &kinds[i]; !k.cache.Has(name) && !slices.Contains(k.names, name) {
+				k.names = append(k.names, name)
+			}
+		}
+	}
+	return slices.ContainsFunc(kinds, func(k fetchKind) bool { return len(k.names) > 0 || k.all })
 }
 
 // clone makes a sparse clone of the dep repository in a temp dir, with only

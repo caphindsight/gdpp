@@ -86,12 +86,28 @@ func TestLoadPackageOutsideProject(t *testing.T) {
 	}
 }
 
+func TestListPackagesRoot(t *testing.T) {
+	config := "bind = \"a\"\nspec = \"b\"\n"
+	tree := withPackages(map[string]string{"b": config})
+	tree["/games/my_game/"+packageFileName] = config
+	withMemFS(t, "/", tree)
+	p := LoadProject(NewPath("/games/my_game"))
+	pkgs := p.ListPackages()
+	var got []string
+	for _, pkg := range pkgs {
+		got = append(got, pkg.Root.ToString())
+	}
+	if want := []string{"res://", "res://b"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("ListPackages() = %v, want %v", got, want)
+	}
+}
+
 func TestListPackages(t *testing.T) {
 	config := "bind = \"a\"\nspec = \"b\"\n"
 	withMemFS(t, "/", withPackages(map[string]string{
 		"b":             config,
 		"a/deep/pkg":    config,
-		"b/nested":      config, // inside a package: skipped
+		"b/nested":      config, // inside a package: listed too
 		".hidden":       config, // hidden: skipped
 		"_gd++proj/pkg": config, // checked in caches: skipped
 		"other":         config, // gets a project.godot below: skipped
@@ -103,7 +119,7 @@ func TestListPackages(t *testing.T) {
 	for _, pkg := range p.ListPackages() {
 		got = append(got, pkg.Root.ToString())
 	}
-	if want := []string{"res://a/deep/pkg", "res://b"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"res://a/deep/pkg", "res://b", "res://b/nested"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("ListPackages() = %v, want %v", got, want)
 	}
 }

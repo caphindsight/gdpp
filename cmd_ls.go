@@ -7,16 +7,21 @@ import (
 )
 
 // CmdLs prints an overview of the project: its settings, its cached
-// dependencies and its packages.
+// dependencies and its packages. It expands the package containing the path,
+// and lists the others in one line each.
 type CmdLs struct {
-	All  bool `arg:"--all" help:"show all details"`
-	Deps bool `arg:"--deps" help:"show project dependencies"`
+	Path string `arg:"positional" help:"expand the package containing this path [default: the current directory]"`
+	All  bool   `arg:"-a,--all" help:"show all details"`
+	Deps bool   `arg:"--deps" help:"show project dependencies"`
+	Pkgs bool   `arg:"-l,--pkgs" help:"expand all packages"`
 }
 
-// lsPackage is what ls shows about a package.
+// lsPackage is what ls shows about a package. Only expanded packages show
+// their details.
 type lsPackage struct {
 	Package
-	Classes []lsClass
+	Expanded bool
+	Classes  []lsClass
 }
 
 // lsClass is a class of a package. A zero Icon means the class has none.
@@ -26,111 +31,166 @@ type lsClass struct {
 }
 
 func (c *CmdLs) Run() {
-	p := LoadProject(Cwd())
+	all := c.Pkgs || c.All
+	Assert(!all || c.Path == "", "Invalid arguments: -l/--pkgs and -a/--all cannot be used with a path.")
+	path := Cwd()
+	if c.Path != "" {
+		path = ParsePath(c.Path)
+	}
+	p := LoadProject(path)
+	root, _ := GetPackageRootMaybe(path)
 	var pkgs []lsPackage
 	for _, pkg := range p.ListPackages() {
-		pkgs = append(pkgs, lsPackage{Package: pkg}) // classes will be listed once they can be loaded
+		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: all || pkg.Root == root}) // classes will be listed once they can be loaded
 	}
 	PrintResult(lsProject(p, pkgs, c.Deps || c.All))
 }
 
+// lsKind is one kind of dependency. of returns the version a package uses;
+// nil if packages don't choose one.
+type lsKind struct {
+	header string
+	cache  ProjectDepCache
+	of     func(Package) string
+}
+
+// isUnused reports whether no package uses version name of k. Without
+// packages, nothing is unused.
+func (k lsKind) isUnused(name string, pkgs []lsPackage) bool {
+	return k.of != nil && len(pkgs) > 0 && !slices.ContainsFunc(pkgs, func(pkg lsPackage) bool { return k.of(pkg.Package) == name })
+}
+
+func lsKey(s string) string     { return Styled(s+":", Bold) }
+func lsSep() string             { return Styled(unicodeOr("  •  ", "  *  "), Bold) }
+func lsMissing(s string) string { return Styled(unicodeOr("✗ ", "x ")+s, Red) }
+
 // lsProject renders the overview of p and its packages. With deps, it lists
 // every dependency instead of counting them.
 func lsProject(p Project, pkgs []lsPackage, deps bool) string {
-	sep, cross := Styled(unicodeOr("  •  ", "  *  "), Bold), unicodeOr("✗ ", "x ")
-	key := func(s string) string { return Styled(s+":", Bold) }
-	var out strings.Builder
-	out.WriteString(Styled("Project:", Bold, BrightBlue) + " " + Styled(p.Name, Bold) + "  " + Styled("["+p.Id+"]", Gray) + "\n")
-	out.WriteString("  " + strings.Join([]string{key("Godot") + " " + p.GodotVersion, key("GD++ CLI") + " " + gdppVersion, key("VCS") + " " + p.Config.VCS}, sep) + "\n")
-
-	// of returns the version of the kind a package uses; nil if packages
-	// don't choose one.
-	kinds := []struct {
-		header, flag string
-		cache        ProjectDepCache
-		of           func(lsPackage) string
-	}{
-		{"Godot C++ bindings", "--bind", p.BindingsCache, func(pkg lsPackage) string { return pkg.Config.Bindings }},
-		{"Godot API specs", "--spec", p.ApiSpecsCache, func(pkg lsPackage) string { return pkg.Config.ApiSpec }},
-		{"Godot engines", "--engine", p.EnginesCache, nil},
+	kinds := []lsKind{
+		{"Godot C++ bindings", p.BindingsCache, func(pkg Package) string { return pkg.Config.Bindings }},
+		{"Godot API specs", p.ApiSpecsCache, func(pkg Package) string { return pkg.Config.ApiSpec }},
+		{"Godot engines", p.EnginesCache, nil},
 	}
+	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(kinds, pkgs, deps) + lsPackages(kinds, pkgs)
+}
 
+// lsSummary renders the project's name and settings.
+func lsSummary(p Project) string {
+	return Styled("Project:", Bold, BrightBlue) + " " + Styled(p.Name, Bold, Cyan) + " " + Styled("["+p.Id+"]", Gray) + "\n" +
+		AlignColumns([][]string{{lsKey("Godot"), p.GodotVersion}, {lsKey("VCS"), p.Config.VCS}}, "  ")
+}
+
+// lsDeps renders the cached dependencies: with deps, one row each,
+// otherwise their counts per kind.
+func lsDeps(kinds []lsKind, pkgs []lsPackage, deps bool) string {
 	var rows [][]string
 	for _, k := range kinds {
 		names := k.cache.Ls()
 		slices.Reverse(names) // newest first
-		checkedIn, cached, unused := 0, 0, 0
+		if len(names) == 0 {
+			rows = append(rows, []string{lsKey(k.header), "none"})
+			continue
+		}
+		checkedIn, unused := 0, 0
 		for i, name := range names {
-			status := k.cache.Status(name)
+			usage := ""
 			if k.cache.IsCheckedIn(name) {
 				checkedIn++
-			} else {
-				cached++
 			}
-			if k.of != nil && len(pkgs) > 0 && !slices.ContainsFunc(pkgs, func(pkg lsPackage) bool { return k.of(pkg) == name }) {
-				status += sep + Styled("unused", Yellow)
+			if k.isUnused(name, pkgs) {
+				usage = Styled("unused", Yellow)
 				unused++
 			}
 			if deps {
 				label := ""
 				if i == 0 {
-					label = key(k.header)
+					label = lsKey(k.header)
 				}
-				rows = append(rows, []string{label, name, status})
+				rows = append(rows, []string{label, name, k.cache.Status(name), usage})
 			}
 		}
-		if len(names) == 0 {
-			rows = append(rows, []string{key(k.header), "none"})
-		} else if !deps {
-			var counts []string
-			for _, c := range []struct {
-				n    int
-				what string
-			}{{checkedIn, Styled("checked in", Magenta)}, {cached, "cached"}, {unused, Styled("unused", Yellow)}} {
-				if c.n > 0 {
-					counts = append(counts, strconv.Itoa(c.n)+" "+c.what)
-				}
-			}
-			rows = append(rows, []string{key(k.header), strings.Join(counts, sep)})
+		if !deps {
+			rows = append(rows, []string{lsKey(k.header), lsCounts(checkedIn, len(names)-checkedIn, unused)})
 		}
 	}
-	out.WriteString("\n" + Styled("Dependencies", Bold, BrightBlue) + "\n" + AlignColumns(rows, "  "))
+	return AlignColumns(rows, "  ")
+}
 
-	var fix []string
-	for _, pkg := range pkgs {
-		rows = nil
-		for _, k := range kinds {
-			if k.of == nil {
-				continue
-			}
-			name, status := k.of(pkg), ""
-			if !k.cache.Has(name) {
-				status = Styled(cross+"missing", Red)
-				if arg := k.flag + " " + name; !slices.Contains(fix, arg) {
-					fix = append(fix, arg)
-				}
-			}
-			rows = append(rows, []string{key(k.cache.Desc), name, status})
+// lsCounts renders the nonzero counts of a kind's dependencies.
+func lsCounts(checkedIn, cached, unused int) string {
+	var counts []string
+	for _, c := range []struct {
+		n    int
+		what string
+	}{{checkedIn, Styled("checked in", Magenta)}, {cached, "cached"}, {unused, Styled("unused", Yellow)}} {
+		if c.n > 0 {
+			counts = append(counts, strconv.Itoa(c.n)+" "+c.what)
 		}
-		rows = append(rows, []string{key("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{key("C++ standard"), pkg.Config.CppStandard})
-		if len(pkg.Classes) > 0 {
-			// In the same table, so both align.
-			rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Include", Bold), Styled("Icon", Bold)})
-		}
-		for _, class := range pkg.Classes {
-			icon := "none"
-			if class.Icon != (Path{}) {
-				icon = class.Icon.ToString()
-				if !class.Icon.IsFile() {
-					icon = Styled(cross+icon, Red)
-				}
-			}
-			rows = append(rows, []string{class.Name, class.Include, icon})
-		}
-		out.WriteString("\n" + Styled("Package "+pkg.Root.ToString(), Bold, BrightBlue) + "\n" + AlignColumns(rows, "  "))
 	}
-	if len(fix) > 0 {
-		out.WriteString("\nTo fix: gd++ fetch " + strings.Join(fix, " ") + "\n")
+	return strings.Join(counts, lsSep())
+}
+
+// lsPackages renders the packages: expanded ones in full, with blank lines
+// around them, and collapsed ones in one line each, grouped together. It ends
+// with a hint if any package misses dependencies.
+func lsPackages(kinds []lsKind, pkgs []lsPackage) string {
+	var out strings.Builder
+	anyMissing, prevExpanded := false, true
+	for _, pkg := range pkgs {
+		rows, missing := lsPackageRows(kinds, pkg)
+		anyMissing = anyMissing || missing
+		if pkg.Expanded || prevExpanded {
+			out.WriteString("\n")
+		}
+		prevExpanded = pkg.Expanded
+		name := pkg.Root.ToString()
+		out.WriteString(Styled("Package:", Bold, BrightBlue) + " " + Styled(name, Bold, Cyan))
+		if name == "res://" { // otherwise the path shows the id
+			out.WriteString(" " + Styled("["+pkg.Id+"]", Gray))
+		}
+		switch {
+		case pkg.Expanded:
+			out.WriteString("\n" + AlignColumns(rows, "  "))
+		case missing:
+			out.WriteString("  " + lsMissing("missing dependencies") + "\n")
+		default:
+			out.WriteString("\n")
+		}
+	}
+	if anyMissing {
+		out.WriteString("\nTo fix: gd++ fetch --missing\n")
 	}
 	return out.String()
+}
+
+// lsPackageRows returns the rows of pkg's details, and whether it misses any
+// dependencies.
+func lsPackageRows(kinds []lsKind, pkg lsPackage) (rows [][]string, missing bool) {
+	for _, k := range kinds {
+		if k.of == nil {
+			continue
+		}
+		name, status := k.of(pkg.Package), ""
+		if !k.cache.Has(name) {
+			status, missing = lsMissing("missing"), true
+		}
+		rows = append(rows, []string{lsKey(k.cache.Desc), name, status})
+	}
+	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard})
+	if len(pkg.Classes) > 0 {
+		// In the same table, so both align.
+		rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Include", Bold), Styled("Icon", Bold)})
+	}
+	for _, class := range pkg.Classes {
+		icon := "none"
+		if class.Icon != (Path{}) {
+			icon = class.Icon.ToString()
+			if !class.Icon.IsFile() {
+				icon = lsMissing(icon)
+			}
+		}
+		rows = append(rows, []string{class.Name, class.Include, icon})
+	}
+	return rows, missing
 }

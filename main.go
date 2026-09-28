@@ -7,6 +7,7 @@ var Args struct {
 	CheckIn  *CmdCheckIn `arg:"subcommand:checkin" help:"check in dependencies from the ephemeral cache, or undo it"`
 	Fetch    *CmdFetch   `arg:"subcommand:fetch" help:"download dependencies from a repository, or list them"`
 	Fix      *CmdFix     `arg:"subcommand:fix" help:"tidy up the project, e.g. delete leftover temporary files"`
+	Init     *CmdInit    `arg:"subcommand:init" help:"set up the project, or create or update a package"`
 	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
 	Vendor   *CmdVendor  `arg:"subcommand:vendor" help:"copy a dependency into or out of the project's cache"`
 	Quiet    bool        `arg:"-q,--quiet" help:"print fewer logs"`
@@ -14,7 +15,7 @@ var Args struct {
 	Force    bool        `arg:"-f,--yes" help:"assume yes on confirmation prompts"`
 	ForceNo  bool        `arg:"-n,--no" help:"assume no on confirmation prompts"`
 	Audit    bool        `arg:"--audit" help:"audit potentially dangerous operations"`
-	LogDepth int         `arg:"-l,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
+	LogDepth int         `arg:"-L,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
 }
 
 func main() {
@@ -37,6 +38,8 @@ func main() {
 		Args.Fetch.Run()
 	case Args.Fix != nil:
 		Args.Fix.Run()
+	case Args.Init != nil:
+		Args.Init.Run()
 	case Args.Ls != nil:
 		Args.Ls.Run()
 	case Args.Vendor != nil:

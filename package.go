@@ -2,7 +2,11 @@
 
 package main
 
-import "github.com/BurntSushi/toml"
+import (
+	"strings"
+
+	"github.com/BurntSushi/toml"
+)
 
 // Package is a GD++ package: a directory inside a project with a
 // gd++pkg.toml file.
@@ -25,6 +29,13 @@ type PackageConfig struct {
 // keys; the mandatory keys are left empty.
 func DefaultPackageConfig() PackageConfig {
 	return PackageConfig{Syntax: defaultPackageSyntax, CppStandard: defaultPackageCppStandard}
+}
+
+// Encode returns c in TOML format.
+func (c PackageConfig) Encode() string {
+	var b strings.Builder
+	Check(toml.NewEncoder(&b).Encode(c), "Failed to encode the package config")
+	return b.String()
 }
 
 // LoadPackage reads the package containing p, which must be inside a
@@ -52,19 +63,18 @@ func LoadPackage(p Path) Package {
 	}
 }
 
-// ListPackages returns all packages in the project, sorted by path. It
-// skips hidden directories, res://_gd++proj, nested Godot projects, and
-// the insides of packages.
+// ListPackages returns all packages in the project, including the root and
+// packages nested in other packages, sorted by path. It skips hidden
+// directories, res://_gd++proj, and nested Godot projects.
 func (p *Project) ListPackages() []Package {
 	var pkgs []Package
 	var walk func(dir Path)
 	walk = func(dir Path) {
+		if dir.IsPackageRoot() {
+			pkgs = append(pkgs, LoadPackage(dir))
+		}
 		for _, child := range dir.Ls() {
-			switch {
-			case !child.IsDir() || child.IsProjectRoot() || child == p.Root.Cd(checkedInDepsDirName):
-			case child.IsPackageRoot():
-				pkgs = append(pkgs, LoadPackage(child))
-			default:
+			if child.IsDir() && !child.IsProjectRoot() && child != p.Root.Cd(checkedInDepsDirName) {
 				walk(child)
 			}
 		}

@@ -76,3 +76,14 @@ func TestFixNothingToDo(t *testing.T) {
 		t.Errorf("tree = %v, want it unchanged: %v", after, before)
 	}
 }
+
+func TestFixPackageConfig(t *testing.T) {
+	out, _, after := runFix(t, map[string]string{"/games/my_game/src/pkg/" + packageFileName: `bind="4.3"` + "\n" + `spec="4.3"`})
+	if want := "[>] Reformatted res://src/pkg/gd++pkg.toml.\n[>] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	want := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}

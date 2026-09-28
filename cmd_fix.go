@@ -1,7 +1,8 @@
 package main
 
 // CmdFix brings the project into its canonical state: it reformats the config
-// file, and deletes leftover temporary files and empty cache directories.
+// files of the project and its packages, and deletes leftover temporary files
+// and empty cache directories.
 type CmdFix struct{}
 
 func (c *CmdFix) Run() {
@@ -12,11 +13,17 @@ func (c *CmdFix) Run() {
 		LogInfo("Deleted %s %s.", what, dir.ToString())
 		changed = true
 	}
+	format := func(file Path, text string) {
+		if file.Exists() && file.ReadString() != text {
+			file.WriteString(text)
+			LogInfo("Reformatted %s.", file.ToString())
+			changed = true
+		}
+	}
 
-	if file := p.Root.Cd(projectConfigFileName); file.Exists() && file.ReadString() != p.Config.Encode() {
-		file.WriteString(p.Config.Encode())
-		LogInfo("Reformatted %s.", file.ToString())
-		changed = true
+	format(p.Root.Cd(projectConfigFileName), p.Config.Encode())
+	for _, pkg := range p.ListPackages() {
+		format(pkg.Root.Cd(packageFileName), pkg.Config.Encode())
 	}
 	if temp := p.tempDir(); temp.Exists() {
 		remove(temp, "the temporary directory")
