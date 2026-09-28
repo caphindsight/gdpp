@@ -31,7 +31,7 @@ func TestDepIndexTable(t *testing.T) {
 		"/p/_gd++proj/spec/4.9-stable/a":  "a",
 		"/p/.gd++proj/spec/4.10-stable/b": "b",
 	})
-	cache := newProjectDepCache(NewPath("/p"), "spec", "spec")
+	cache := newProjectDepCache(NewPath("/p"), DepKind{"spec", "spec", "spec"})
 	idx := parseDepIndex("latest=4.10-stable\nstable=4.10-stable\n4.10-stable\n4.9-stable\n4.8\n")
 	want := "" +
 		"  4.10-stable  latest, stable  cached\n" +

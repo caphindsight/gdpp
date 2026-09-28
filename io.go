@@ -111,12 +111,7 @@ func WrapText(text string, width int) string {
 			}
 			inEsc := false
 			for _, r := range word {
-				switch {
-				case r == '\x1b':
-					inEsc = true
-				case inEsc:
-					inEsc = r == '[' || r < '@' || r > '~'
-				default:
+				if !isEscape(r, &inEsc) {
 					if col == width {
 						out.WriteByte('\n')
 						col = 0
@@ -164,16 +159,25 @@ func stripStyles(s string) string {
 	var out strings.Builder
 	inEsc := false
 	for _, r := range s {
-		switch {
-		case r == '\x1b':
-			inEsc = true
-		case inEsc:
-			inEsc = r == '[' || r < '@' || r > '~'
-		default:
+		if !isEscape(r, &inEsc) {
 			out.WriteRune(r)
 		}
 	}
 	return out.String()
+}
+
+// isEscape reports whether r, the next rune of a string, is part of an ANSI
+// escape code. inEsc tracks whether an escape code is open, starting false.
+func isEscape(r rune, inEsc *bool) bool {
+	switch {
+	case r == '\x1b':
+		*inEsc = true
+	case *inEsc:
+		*inEsc = r == '[' || r < '@' || r > '~'
+	default:
+		return false
+	}
+	return true
 }
 
 // PrintResult prints s, a command's result, to stdout. Never suppressed by
@@ -223,26 +227,22 @@ func (s *Silencer) End() {
 // mark, and prompts end with a question mark. Check messages have no period, since Check appends the
 // error. TestLogStyle enforces this.
 
-// LogInfo prints a formatted info message. Suppressed by -q/--quiet or Silence.
-func LogInfo(format string, params ...any) {
-	if quiet() {
-		return
+// logMsg prints a formatted message with icon, unless suppressible and
+// suppressed by -q/--quiet or Silence.
+func logMsg(icon string, suppressible bool, format string, params []any) {
+	if !suppressible || !quiet() {
+		fmt.Fprintln(os.Stderr, formatMsg(icon, fmt.Sprintf(format, params...)))
 	}
-	fmt.Fprintln(os.Stderr, formatMsg(Styled(">", Green), fmt.Sprintf(format, params...)))
 }
+
+// LogInfo prints a formatted info message. Suppressed by -q/--quiet or Silence.
+func LogInfo(format string, params ...any) { logMsg(Styled(">", Green), true, format, params) }
 
 // LogWarn prints a formatted warning. Suppressed by -q/--quiet or Silence.
-func LogWarn(format string, params ...any) {
-	if quiet() {
-		return
-	}
-	fmt.Fprintln(os.Stderr, formatMsg(Styled("!", Bold, Yellow), fmt.Sprintf(format, params...)))
-}
+func LogWarn(format string, params ...any) { logMsg(Styled("!", Bold, Yellow), true, format, params) }
 
 // LogError prints a formatted error.
-func LogError(format string, params ...any) {
-	fmt.Fprintln(os.Stderr, formatMsg(Styled("!", Bold, Red), fmt.Sprintf(format, params...)))
-}
+func LogError(format string, params ...any) { logMsg(Styled("!", Bold, Red), false, format, params) }
 
 // LogFatal prints a formatted error, then exits the program via Fail.
 func LogFatal(format string, params ...any) {
@@ -374,8 +374,13 @@ func (t *Task) label(status string) string {
 	if status == "" {
 		return msg
 	}
-	_, size := utf8.DecodeRuneInString(msg)
-	return status + strings.ToLower(msg[:size]) + msg[size:]
+	return status + lowerFirst(msg)
+}
+
+// lowerFirst returns s with its first letter lowercased.
+func lowerFirst(s string) string {
+	_, size := utf8.DecodeRuneInString(s)
+	return strings.ToLower(s[:size]) + s[size:]
 }
 
 // finalName returns the task name shown on a terminal once a task is done,
@@ -388,9 +393,7 @@ func (t *Task) finalName() string {
 // first letter to follow it. Used for the failure line repeated below a long
 // log, since the header replacing the progress line already showed the name.
 func (t *Task) failedName() string {
-	name := t.finalName()
-	_, size := utf8.DecodeRuneInString(name)
-	return "Failed: " + strings.ToLower(name[:size]) + name[size:]
+	return "Failed: " + lowerFirst(t.finalName())
 }
 
 // finish prints icon with the task's final message. On a terminal, where the

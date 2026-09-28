@@ -52,18 +52,15 @@ func (c *CmdLs) Run() {
 	PrintResult(lsProject(p, pkgs, c.Deps || c.All))
 }
 
-// lsKind is one kind of dependency. of returns the version a package uses;
-// nil if packages don't choose one.
-type lsKind struct {
-	header string
-	cache  ProjectDepCache
-	of     func(Package) string
-}
-
-// isUnused reports whether no package uses version name of k. Without
-// packages, nothing is unused.
-func (k lsKind) isUnused(name string, pkgs []lsPackage) bool {
-	return k.of != nil && len(pkgs) > 0 && !slices.ContainsFunc(pkgs, func(pkg lsPackage) bool { return k.of(pkg.Package) == name })
+// isUnused reports whether packages choose deps of cache's kind, but none
+// uses the dep name. Without packages, nothing is unused.
+func isUnused(cache ProjectDepCache, name string, pkgs []lsPackage) bool {
+	for _, pkg := range pkgs {
+		if dep, ok := pkg.Config.Dep(cache.Name); !ok || dep == name {
+			return false
+		}
+	}
+	return len(pkgs) > 0
 }
 
 func lsKey(s string) string     { return Styled(s+":", Bold) }
@@ -73,12 +70,7 @@ func lsMissing(s string) string { return Styled(unicodeOr("✗ ", "x ")+s, Red) 
 // lsProject renders the overview of p and its packages. With deps, it lists
 // every dependency instead of counting them.
 func lsProject(p Project, pkgs []lsPackage, deps bool) string {
-	kinds := []lsKind{
-		{"Godot C++ bindings", p.BindingsCache, func(pkg Package) string { return pkg.Config.Bindings }},
-		{"Godot API specs", p.ApiSpecsCache, func(pkg Package) string { return pkg.Config.ApiSpec }},
-		{"Godot engines", p.EnginesCache, nil},
-	}
-	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(kinds, pkgs, deps) + lsPackages(kinds, pkgs)
+	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(p.Caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
 }
 
 // lsSummary renders the project's name and settings.
@@ -89,35 +81,35 @@ func lsSummary(p Project) string {
 
 // lsDeps renders the cached dependencies: with deps, one row each,
 // otherwise their counts per kind.
-func lsDeps(kinds []lsKind, pkgs []lsPackage, deps bool) string {
+func lsDeps(caches []ProjectDepCache, pkgs []lsPackage, deps bool) string {
 	var rows [][]string
-	for _, k := range kinds {
-		names := k.cache.Ls()
+	for _, cache := range caches {
+		names := cache.Ls()
 		slices.Reverse(names) // newest first
 		if len(names) == 0 {
-			rows = append(rows, []string{lsKey(k.header), "none"})
+			rows = append(rows, []string{lsKey(cache.Plural), "none"})
 			continue
 		}
 		checkedIn, unused := 0, 0
 		for i, name := range names {
 			usage := ""
-			if k.cache.IsCheckedIn(name) {
+			if cache.IsCheckedIn(name) {
 				checkedIn++
 			}
-			if k.isUnused(name, pkgs) {
+			if isUnused(cache, name, pkgs) {
 				usage = Styled("unused", Yellow)
 				unused++
 			}
 			if deps {
 				label := ""
 				if i == 0 {
-					label = lsKey(k.header)
+					label = lsKey(cache.Plural)
 				}
-				rows = append(rows, []string{label, name, k.cache.Status(name), usage})
+				rows = append(rows, []string{label, name, cache.Status(name), usage})
 			}
 		}
 		if !deps {
-			rows = append(rows, []string{lsKey(k.header), lsCounts(checkedIn, len(names)-checkedIn, unused)})
+			rows = append(rows, []string{lsKey(cache.Plural), lsCounts(checkedIn, len(names)-checkedIn, unused)})
 		}
 	}
 	return AlignColumns(rows, "  ")
@@ -140,11 +132,11 @@ func lsCounts(checkedIn, cached, unused int) string {
 // lsPackages renders the packages: expanded ones in full, with blank lines
 // around them, and collapsed ones in one line each, grouped together. It ends
 // with a hint if any package misses dependencies.
-func lsPackages(kinds []lsKind, pkgs []lsPackage) string {
+func lsPackages(caches []ProjectDepCache, pkgs []lsPackage) string {
 	var out strings.Builder
 	anyMissing, prevExpanded := false, true
 	for _, pkg := range pkgs {
-		rows, missing := lsPackageRows(kinds, pkg)
+		rows, missing := lsPackageRows(caches, pkg)
 		anyMissing = anyMissing || missing
 		if pkg.Expanded || prevExpanded {
 			out.WriteString("\n")
@@ -172,16 +164,17 @@ func lsPackages(kinds []lsKind, pkgs []lsPackage) string {
 
 // lsPackageRows returns the rows of pkg's details, and whether it misses any
 // dependencies.
-func lsPackageRows(kinds []lsKind, pkg lsPackage) (rows [][]string, missing bool) {
-	for _, k := range kinds {
-		if k.of == nil {
+func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, missing bool) {
+	for _, cache := range caches {
+		name, ok := pkg.Config.Dep(cache.Name)
+		if !ok {
 			continue
 		}
-		name, status := k.of(pkg.Package), ""
-		if !k.cache.Has(name) {
+		status := ""
+		if !cache.Has(name) {
 			status, missing = lsMissing("missing"), true
 		}
-		rows = append(rows, []string{lsKey(k.cache.Desc), name, status})
+		rows = append(rows, []string{lsKey(cache.Desc), name, status})
 	}
 	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard})
 	if len(pkg.Classes) > 0 {

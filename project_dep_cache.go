@@ -10,23 +10,36 @@ import (
 	"strings"
 )
 
+// DepKind is a kind of dep. Its Name is both its cache directory name and
+// its command line flag, e.g. "spec" for res://_gd++proj/spec and --spec.
+type DepKind struct {
+	Name, Desc, Plural string // e.g. "spec", "Godot API spec", "Godot API specs"
+}
+
+// depKinds lists every kind of dep, in the order of Project.Caches.
+var depKinds = []DepKind{
+	{"bind", "Godot C++ bindings", "Godot C++ bindings"},
+	{"spec", "Godot API spec", "Godot API specs"},
+	{"engine", "Godot engine", "Godot engines"},
+}
+
 // ProjectDepCache keeps deps as directories named after the dep, e.g.
 // "10.0.0-stable", in one of two cache directories: a checked in one, meant
 // for version control, or an ephemeral one, which isn't. Otherwise the two
 // are treated the same.
 type ProjectDepCache struct {
+	DepKind
 	CheckedInDir Path
 	EphemeralDir Path
-	Desc         string // the kind of deps, for messages, e.g. "Godot API spec"
 }
 
-// newProjectDepCache returns the cache of desc deps stored under
-// res://_gd++proj/<dir> (checked in) and res://.gd++proj/<dir> (ephemeral).
-func newProjectDepCache(root Path, dir, desc string) ProjectDepCache {
+// newProjectDepCache returns the cache of kind's deps stored under
+// res://_gd++proj/<name> (checked in) and res://.gd++proj/<name> (ephemeral).
+func newProjectDepCache(root Path, kind DepKind) ProjectDepCache {
 	return ProjectDepCache{
-		CheckedInDir: root.Cd(checkedInDepsDirName, dir),
-		EphemeralDir: root.Cd(ephemeralDepsDirName, dir),
-		Desc:         desc,
+		DepKind:      kind,
+		CheckedInDir: root.Cd(checkedInDepsDirName, kind.Name),
+		EphemeralDir: root.Cd(ephemeralDepsDirName, kind.Name),
 	}
 }
 
@@ -142,9 +155,7 @@ func (c ProjectDepCache) Remove(name string) {
 // needed. If dst already exists, it's kept and src is deleted instead.
 func moveDep(src, dst Path) {
 	if dst.Exists() {
-		if src.Exists() {
-			src.Remove()
-		}
+		src.RemoveIfExists()
 		return
 	}
 	dst.CreateParentDirectory()

@@ -35,7 +35,6 @@ type CmdRm struct {
 // rmKind is what to remove of one kind of dep: the named deps, or with no
 // names, all deps; either way only their checked in and/or ephemeral copies.
 type rmKind struct {
-	flag, plural         string // e.g. "bind", "Godot C++ bindings"
 	names                []string
 	checkedIn, ephemeral bool
 	cache                ProjectDepCache
@@ -70,8 +69,9 @@ func (c *CmdRm) Run() {
 		return
 	}
 	p := LoadProject(Cwd())
-	kinds[0].cache, kinds[1].cache, kinds[2].cache = p.BindingsCache, p.ApiSpecsCache, p.EnginesCache
-	for _, k := range kinds {
+	for i := range kinds {
+		k := &kinds[i]
+		k.cache = p.Caches[i]
 		for _, name := range k.names {
 			k.cache.GetPath(name) // asserts it exists, before any prompt
 		}
@@ -93,7 +93,7 @@ func (c *CmdRm) Run() {
 				group = append(group, k.paths(name)...)
 			}
 			if len(group) > 0 && !depGroup {
-				Confirm("Remove all %s?", rmGroup(k.checkedIn, k.ephemeral, k.plural))
+				Confirm("Remove all %s?", rmGroup(k.checkedIn, k.ephemeral, k.cache.Plural))
 			}
 			deps = append(deps, group...)
 		}
@@ -153,10 +153,10 @@ func (c *CmdRm) validate() []rmKind {
 	}
 	Assert(c.Path != "" || !classes, "Invalid arguments: --class and --class-all require a package path.")
 	Assert(len(c.Class) == 0 || !c.ClassAll, "Invalid arguments: --class and --class-all cannot be used together.")
-	kinds := []rmKind{
-		{"bind", "Godot C++ bindings", c.Bind, c.BindAll || c.BindCheckedIn, c.BindAll || c.BindEphemeral, ProjectDepCache{}},
-		{"spec", "Godot API specs", c.Spec, c.SpecAll || c.SpecCheckedIn, c.SpecAll || c.SpecEphemeral, ProjectDepCache{}},
-		{"engine", "Godot engines", c.Engine, c.EngineAll || c.EngineCheckedIn, c.EngineAll || c.EngineEphemeral, ProjectDepCache{}},
+	kinds := []rmKind{ // in the order of depKinds
+		{names: c.Bind, checkedIn: c.BindAll || c.BindCheckedIn, ephemeral: c.BindAll || c.BindEphemeral},
+		{names: c.Spec, checkedIn: c.SpecAll || c.SpecCheckedIn, ephemeral: c.SpecAll || c.SpecEphemeral},
+		{names: c.Engine, checkedIn: c.EngineAll || c.EngineCheckedIn, ephemeral: c.EngineAll || c.EngineEphemeral},
 	}
 	counts := []int{
 		countTrue(len(c.Bind) > 0, c.BindAll, c.BindCheckedIn, c.BindEphemeral),
@@ -167,14 +167,12 @@ func (c *CmdRm) validate() []rmKind {
 	Assert(depFlags <= 1, "Invalid arguments: only one of --dep-all, --dep-checked-in and --dep-ephemeral can be used.")
 	Assert(depFlags == 0 || counts[0]+counts[1]+counts[2] == 0, "Invalid arguments: --dep options cannot be used with --bind, --spec or --engine options.")
 	for i := range kinds {
-		k := &kinds[i]
-		Assert(counts[i] <= 1, "Invalid arguments: only one of --%s, --%s-all, --%s-checked-in and --%s-ephemeral can be used.", k.flag, k.flag, k.flag, k.flag)
+		k, flag := &kinds[i], depKinds[i].Name
+		Assert(counts[i] <= 1, "Invalid arguments: only one of --%s, --%s-all, --%s-checked-in and --%s-ephemeral can be used.", flag, flag, flag, flag)
 		for _, name := range k.names {
 			assertDepName(name)
 		}
-		k.names = slices.Clone(k.names) // deduplicated, so each is confirmed once
-		slices.SortFunc(k.names, compareDepNames)
-		k.names = slices.Compact(k.names)
+		k.names = uniqueSorted(k.names, compareDepNames) // so each is confirmed once
 		if len(k.names) > 0 {
 			k.checkedIn, k.ephemeral = true, true
 		}
@@ -218,11 +216,8 @@ func (c *CmdRm) packageRoots(p Project) []Path {
 // removeClasses removes the classes given by --class or --class-all from the
 // package at root.
 func (c *CmdRm) removeClasses(root Path) {
-	Assert(root.IsPackageRoot(), "There is no GD++ package at %s.", root.ToString())
-	config := LoadPackage(root).Config
-	names := slices.Clone(c.Class) // deduplicated, so each is confirmed once
-	slices.Sort(names)
-	names = slices.Compact(names)
+	config := LoadPackageAt(root).Config
+	names := uniqueSorted(c.Class, strings.Compare) // so each is confirmed once
 	for _, name := range names {
 		Assert(slices.ContainsFunc(config.Classes, func(k PackageClass) bool { return k.Name == name }), "There is no class %s in %s.", name, root.ToString())
 	}

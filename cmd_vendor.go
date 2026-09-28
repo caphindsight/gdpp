@@ -21,17 +21,16 @@ type CmdVendor struct {
 func (c *CmdVendor) Run() {
 	name := c.validate()
 	p := LoadProject(Cwd())
-	Cleanup(p.Cleanup)
-	kind, cache := c.depCache(p)
+	defer p.Cleanup()
+	cache := c.depCache(p)
 	c.confirmExtension()
 
 	if c.From != "" {
-		c.vendorFrom(p, cache, kind, name)
+		c.vendorFrom(p, cache, name)
 	} else {
 		c.vendorTo(cache, name)
 	}
 
-	p.Cleanup()
 	LogInfo("Success!")
 }
 
@@ -46,16 +45,10 @@ func (c *CmdVendor) validate() string {
 	return name
 }
 
-// depCache returns a description of the dep kind chosen by the arguments,
-// and the project's cache for it.
-func (c *CmdVendor) depCache(p Project) (string, ProjectDepCache) {
-	switch {
-	case c.Spec != "":
-		return "Godot API spec", p.ApiSpecsCache
-	case c.Engine != "":
-		return "Godot engine", p.EnginesCache
-	}
-	return "Godot C++ bindings", p.BindingsCache
+// depCache returns the project's cache for the kind of dep chosen by the
+// arguments.
+func (c *CmdVendor) depCache(p Project) ProjectDepCache {
+	return p.Caches[slices.IndexFunc([]string{c.Bind, c.Spec, c.Engine}, func(s string) bool { return s != "" })]
 }
 
 // confirmExtension asks the user to confirm an archive path whose extension
@@ -76,7 +69,7 @@ func (c *CmdVendor) confirmExtension() {
 
 // vendorFrom copies --from into the ephemeral cache, or the checked in one
 // with --checkin, unpacking archives into a temp dir first.
-func (c *CmdVendor) vendorFrom(p Project, cache ProjectDepCache, kind, name string) {
+func (c *CmdVendor) vendorFrom(p Project, cache ProjectDepCache, name string) {
 	from := ParsePath(c.From)
 	src := from
 	if c.Tar || c.Zip {
@@ -92,7 +85,7 @@ func (c *CmdVendor) vendorFrom(p Project, cache ProjectDepCache, kind, name stri
 		dir, move = cache.CheckedInDir, cache.CheckIn
 	}
 	if cache.Has(name) {
-		Confirm("Overwrite %s %s in the cache?", kind, name)
+		Confirm("Overwrite %s %s in the cache?", cache.Desc, name)
 		move(name) // so the dep is overwritten where --checkin wants it
 	}
 	to := dir.Cd(name)
@@ -109,9 +102,7 @@ func (c *CmdVendor) vendorTo(cache ProjectDepCache, name string) {
 	}
 	to.CreateParentDirectory()
 	if c.Tar || c.Zip {
-		if to.Exists() {
-			to.Remove()
-		}
+		to.RemoveIfExists()
 		c.pack(from, to)
 	} else {
 		from.Sync(to)

@@ -36,14 +36,16 @@ func TestLoadProject(t *testing.T) {
 
 	root := NewPath("/games/my_game")
 	want := Project{
-		Root:          root,
-		Id:            "my_game",
-		Name:          `My "Game"`,
-		GodotVersion:  "4.3",
-		Config:        DefaultProjectConfig(),
-		BindingsCache: ProjectDepCache{root.Cd("_gd++proj/bind"), root.Cd(".gd++proj/bind"), "Godot C++ bindings"},
-		ApiSpecsCache: ProjectDepCache{root.Cd("_gd++proj/spec"), root.Cd(".gd++proj/spec"), "Godot API spec"},
-		EnginesCache:  ProjectDepCache{root.Cd("_gd++proj/engine"), root.Cd(".gd++proj/engine"), "Godot engine"},
+		Root:         root,
+		Id:           "my_game",
+		Name:         `My "Game"`,
+		GodotVersion: "4.3",
+		Config:       DefaultProjectConfig(),
+		Caches: []ProjectDepCache{
+			{DepKind{"bind", "Godot C++ bindings", "Godot C++ bindings"}, root.Cd("_gd++proj/bind"), root.Cd(".gd++proj/bind")},
+			{DepKind{"spec", "Godot API spec", "Godot API specs"}, root.Cd("_gd++proj/spec"), root.Cd(".gd++proj/spec")},
+			{DepKind{"engine", "Godot engine", "Godot engines"}, root.Cd("_gd++proj/engine"), root.Cd(".gd++proj/engine")},
+		},
 	}
 	if got := LoadProject(NewPath("/games/my_game/src")); !reflect.DeepEqual(got, want) {
 		t.Errorf("LoadProject() = %+v, want %+v", got, want)

@@ -20,9 +20,7 @@ import (
 func walkTree(dir Path, fn func(rel string, p Path, info fs.FileInfo, r io.Reader)) {
 	var walk func(rel string)
 	walk = func(rel string) {
-		entries, err := fsys.ReadDir(dir.Cd(rel).GetOsPath())
-		Check(err, "Failed to list %s", dir.Cd(rel).ToString())
-		for _, entry := range entries {
+		for _, entry := range dir.Cd(rel).readDir() {
 			childRel, child := path.Join(rel, entry.Name()), dir.Cd(rel, entry.Name())
 			if entry.IsDir() {
 				info, err := entry.Info()

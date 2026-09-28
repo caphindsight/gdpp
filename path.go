@@ -144,36 +144,33 @@ func (p Path) Cd(segments ...string) Path {
 	return Path{absolutePath: path.Join(joined...)}
 }
 
+// stat returns the info of the path, or nil if it doesn't exist.
+func (p Path) stat() fs.FileInfo {
+	info, err := fsys.Stat(p.GetOsPath())
+	if os.IsNotExist(err) {
+		return nil
+	}
+	// Not p.ToString(): stat is on ToString's own dependency path (via
+	// GetProjectRootMaybe), so calling it here would recurse forever.
+	Check(err, "Failed to stat path")
+	return info
+}
+
 // Exists reports whether the path exists.
 func (p Path) Exists() bool {
-	_, err := fsys.Stat(p.GetOsPath())
-	if os.IsNotExist(err) {
-		return false
-	}
-	// Not p.ToString(): IsDir/IsFile/Exists are on ToString's own dependency
-	// path (via GetProjectRootMaybe), so calling it here would recurse forever.
-	Check(err, "Failed to stat path")
-	return true
+	return p.stat() != nil
 }
 
 // IsDir reports whether the path exists and is a directory.
 func (p Path) IsDir() bool {
-	info, err := fsys.Stat(p.GetOsPath())
-	if os.IsNotExist(err) {
-		return false
-	}
-	Check(err, "Failed to stat path") // not p.ToString(); see Exists
-	return info.IsDir()
+	info := p.stat()
+	return info != nil && info.IsDir()
 }
 
 // IsFile reports whether the path exists and is a regular file.
 func (p Path) IsFile() bool {
-	info, err := fsys.Stat(p.GetOsPath())
-	if os.IsNotExist(err) {
-		return false
-	}
-	Check(err, "Failed to stat path") // not p.ToString(); see Exists
-	return info.Mode().IsRegular()
+	info := p.stat()
+	return info != nil && info.Mode().IsRegular()
 }
 
 // IsProjectRoot reports whether the path is a directory containing a
@@ -250,9 +247,7 @@ func (p Path) ToString() string {
 // Ls returns the children of a directory in lexicographic order, skipping
 // entries whose name starts with ".".
 func (p Path) Ls() []Path {
-	entries, err := fsys.ReadDir(p.GetOsPath())
-	Check(err, "Failed to list %s", p.ToString())
-
+	entries := p.readDir()
 	children := make([]Path, 0, len(entries))
 	for _, entry := range entries {
 		if strings.HasPrefix(entry.Name(), ".") {
@@ -267,12 +262,14 @@ func (p Path) Ls() []Path {
 // IsEmptyDir reports whether p is a directory with no entries, counting
 // hidden ones too.
 func (p Path) IsEmptyDir() bool {
-	if !p.IsDir() {
-		return false
-	}
+	return p.IsDir() && len(p.readDir()) == 0
+}
+
+// readDir returns the entries of the directory at p, counting hidden ones too.
+func (p Path) readDir() []fs.DirEntry {
 	entries, err := fsys.ReadDir(p.GetOsPath())
 	Check(err, "Failed to list %s", p.ToString())
-	return len(entries) == 0
+	return entries
 }
 
 // ReadString returns the contents of the file at p.
@@ -348,15 +345,21 @@ func (p Path) CreateParentDirectory() {
 // non-empty directory drops everything inside it, so this audits first.
 func (p Path) Remove() {
 	Assert(p.Exists(), "Path %s does not exist.", p.ToString())
-	if p.IsDir() {
-		entries, err := fsys.ReadDir(p.GetOsPath())
-		Check(err, "Failed to list %s", p.ToString())
-		if len(entries) > 0 {
-			Audit("Delete %s and everything inside it?", p.ToString())
-		}
+	if p.IsDir() && len(p.readDir()) > 0 {
+		Audit("Delete %s and everything inside it?", p.ToString())
 	}
 	err := fsys.RemoveAll(p.GetOsPath())
 	Check(err, "Failed to remove %s", p.ToString())
+}
+
+// RemoveIfExists deletes the file or directory at p, like Remove, if it
+// exists. Returns whether it did.
+func (p Path) RemoveIfExists() bool {
+	if !p.Exists() {
+		return false
+	}
+	p.Remove()
+	return true
 }
 
 // Move moves the file or directory at p to another, asserting p exists and
@@ -391,9 +394,7 @@ func copyFile(src, dst Path) {
 func copyDir(src, dst Path) {
 	err := fsys.Mkdir(dst.GetOsPath(), 0755)
 	Check(err, "Failed to create %s", dst.ToString())
-	entries, err := fsys.ReadDir(src.GetOsPath())
-	Check(err, "Failed to list %s", src.ToString())
-	for _, entry := range entries {
+	for _, entry := range src.readDir() {
 		childSrc, childDst := src.Cd(entry.Name()), dst.Cd(entry.Name())
 		if entry.IsDir() {
 			copyDir(childSrc, childDst)
@@ -444,17 +445,14 @@ func syncDir(src, dst Path) {
 		Check(err, "Failed to create %s", dst.ToString())
 	}
 
-	srcEntries, err := fsys.ReadDir(src.GetOsPath())
-	Check(err, "Failed to list %s", src.ToString())
+	srcEntries := src.readDir()
 	srcNames := make(map[string]bool, len(srcEntries))
 	for _, entry := range srcEntries {
 		srcNames[entry.Name()] = true
 		syncPath(src.Cd(entry.Name()), dst.Cd(entry.Name()))
 	}
 
-	dstEntries, err := fsys.ReadDir(dst.GetOsPath())
-	Check(err, "Failed to list %s", dst.ToString())
-	for _, entry := range dstEntries {
+	for _, entry := range dst.readDir() {
 		if !srcNames[entry.Name()] {
 			dst.Cd(entry.Name()).Remove()
 		}

@@ -6,8 +6,6 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-
-	"github.com/BurntSushi/toml"
 )
 
 // Package is a GD++ package: a directory inside a project with a
@@ -55,6 +53,18 @@ func (pkg Package) ClassPath(s string) Path {
 	return Path{}
 }
 
+// Dep returns the name of the dep of the given kind (a DepKind's Name) the
+// package uses, and whether packages choose deps of that kind at all.
+func (c PackageConfig) Dep(kind string) (string, bool) {
+	switch kind {
+	case "bind":
+		return c.Bindings, true
+	case "spec":
+		return c.ApiSpec, true
+	}
+	return "", false
+}
+
 // DefaultPackageConfig returns the config with defaults for the optional
 // keys; the mandatory keys are left empty.
 func DefaultPackageConfig() PackageConfig {
@@ -68,9 +78,7 @@ func (c *PackageConfig) SortClasses() {
 
 // Encode returns c in TOML format.
 func (c PackageConfig) Encode() string {
-	var b strings.Builder
-	Check(toml.NewEncoder(&b).Encode(c), "Failed to encode the package config")
-	return b.String()
+	return encodeToml(c)
 }
 
 // LoadPackage reads the package containing p, which must be inside a
@@ -81,11 +89,7 @@ func LoadPackage(p Path) Package {
 	file := root.Cd(packageFileName)
 
 	config := DefaultPackageConfig()
-	meta, err := toml.Decode(file.ReadString(), &config)
-	Check(err, "Failed to parse %s", file.ToString())
-	if unknown := meta.Undecoded(); len(unknown) > 0 {
-		LogFatal("Unknown key %s in %s.", unknown[0], file.ToString())
-	}
+	meta := decodeToml(file, &config)
 	for _, key := range []string{"bind", "spec"} {
 		Assert(meta.IsDefined(key), "Missing key %s in %s.", key, file.ToString())
 	}
@@ -105,6 +109,13 @@ func LoadPackage(p Path) Package {
 		Config:     config,
 		BuildCache: root.Cd(packageBuildCacheDirName),
 	}
+}
+
+// LoadPackageAt reads the package at root, asserting root is a package
+// root rather than a directory inside one.
+func LoadPackageAt(root Path) Package {
+	Assert(root.IsPackageRoot(), "There is no GD++ package at %s.", root.ToString())
+	return LoadPackage(root)
 }
 
 // ListPackages returns all packages in the project, including the root and

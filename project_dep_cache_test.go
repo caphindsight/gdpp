@@ -14,7 +14,7 @@ func TestProjectDepCache(t *testing.T) {
 		"/p/.gd++proj/bind/2.0/b.h": "b",
 		"/p/_gd++proj/bind/stray":   "not a dep",
 	})
-	c := newProjectDepCache(NewPath("/p"), "bind", "bind")
+	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})
 
 	if got, want := c.Ls(), []string{"1.0", "2.0"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("Ls() = %v, want %v", got, want)
@@ -75,7 +75,7 @@ func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 		"/p/_gd++proj/bind/2.0/a.h": "checked in",
 		"/p/.gd++proj/bind/2.0/a.h": "ephemeral",
 	})
-	c := newProjectDepCache(NewPath("/p"), "bind", "bind")
+	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})
 
 	c.CheckIn("1.0")
 	c.MakeEphemeral("2.0")
@@ -91,7 +91,7 @@ func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 
 func TestProjectDepCacheCreatesMissingDirs(t *testing.T) {
 	withMemFS(t, "/", map[string]string{"/p/_gd++proj/spec/4.3/api.json": "{}"})
-	c := newProjectDepCache(NewPath("/p"), "spec", "spec")
+	c := newProjectDepCache(NewPath("/p"), DepKind{"spec", "spec", "spec"})
 
 	c.MakeEphemeral("4.3")
 	if !c.IsEphemeral("4.3") {

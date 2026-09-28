@@ -116,8 +116,7 @@ func (c *CmdInit) newPackage(p Project, root Path) {
 }
 
 func (c *CmdInit) updatePackage(p Project, root Path) {
-	Assert(root.IsPackageRoot(), "There is no GD++ package at %s.", root.ToString())
-	config := LoadPackage(root).Config
+	config := LoadPackageAt(root).Config
 	changes := c.setPackageFlags(&config)
 	changed := writeConfig(root.Cd(packageFileName), config.Encode(), changes)
 	warnMissingDeps(p, config)
@@ -135,8 +134,7 @@ func (c *CmdInit) initClass(root Path) {
 	for _, p := range []string{c.Include, c.Icon} {
 		Assert(p == "" || isClassPath(p), "Invalid arguments: %s must start with pkg:// or res://.", p)
 	}
-	Assert(root.IsPackageRoot(), "There is no GD++ package at %s.", root.ToString())
-	config := LoadPackage(root).Config
+	config := LoadPackageAt(root).Config
 	i := slices.IndexFunc(config.Classes, func(k PackageClass) bool { return k.Name == c.Class })
 	Assert(i >= 0 || !c.Update, "There is no class %s in %s.", c.Class, root.ToString())
 	if i < 0 && c.Include == "" && !c.NoInclude {
@@ -200,12 +198,9 @@ func (c *CmdInit) setPackageFlags(config *PackageConfig) (changes []string) {
 // bindings or API spec.
 func warnMissingDeps(p Project, config PackageConfig) {
 	var missing []string
-	for _, d := range []struct {
-		cache ProjectDepCache
-		name  string
-	}{{p.BindingsCache, config.Bindings}, {p.ApiSpecsCache, config.ApiSpec}} {
-		if !d.cache.Has(d.name) {
-			missing = append(missing, d.cache.Desc+" "+d.name)
+	for _, cache := range p.Caches {
+		if name, ok := config.Dep(cache.Name); ok && !cache.Has(name) {
+			missing = append(missing, cache.Desc+" "+name)
 		}
 	}
 	if len(missing) > 0 {

@@ -14,34 +14,26 @@ type CmdCheckIn struct {
 }
 
 func (c *CmdCheckIn) Run() {
-	type kind struct {
-		flag  string
+	// In the order of depKinds.
+	kinds := []struct {
 		names []string
 		all   bool
 		cache ProjectDepCache
-	}
-	kinds := []kind{
-		{"bind", c.Bind, c.BindAll || c.All, ProjectDepCache{}},
-		{"spec", c.Spec, c.SpecAll || c.All, ProjectDepCache{}},
-		{"engine", c.Engine, c.EngineAll || c.All, ProjectDepCache{}},
-	}
+	}{{names: c.Bind, all: c.BindAll || c.All}, {names: c.Spec, all: c.SpecAll || c.All}, {names: c.Engine, all: c.EngineAll || c.All}}
 	Assert(!c.All || countTrue(len(c.Bind) > 0, len(c.Spec) > 0, len(c.Engine) > 0, c.BindAll, c.SpecAll, c.EngineAll) == 0, "Invalid arguments: --all cannot be used with other --bind, --spec or --engine options.")
 	chosen := false
-	for _, k := range kinds {
-		Assert(len(k.names) == 0 || !k.all, "Invalid arguments: --%s and --%s-all cannot be used together.", k.flag, k.flag)
-		for _, name := range k.names {
-			assertDepName(name)
-		}
+	for i, k := range kinds {
+		assertDepFlags(depKinds[i].Name, k.names, k.all)
 		chosen = chosen || len(k.names) > 0 || k.all
 	}
 	Assert(chosen, "Invalid arguments: a --bind, --spec, --engine or --all option is required.")
 
 	p := LoadProject(Cwd())
-	Cleanup(p.Cleanup)
-	kinds[0].cache, kinds[1].cache, kinds[2].cache = p.BindingsCache, p.ApiSpecsCache, p.EnginesCache
-	for i, k := range kinds {
+	for i := range kinds {
+		k := &kinds[i]
+		k.cache = p.Caches[i]
 		if k.all {
-			kinds[i].names = k.cache.Ls()
+			k.names = k.cache.Ls()
 		}
 		for _, name := range k.names { // before moving anything, so a typo changes nothing
 			k.cache.GetPath(name) // asserts it exists
@@ -59,6 +51,5 @@ func (c *CmdCheckIn) Run() {
 			move(name) // still needed, to delete a copy in the other cache
 		}
 	}
-	p.Cleanup()
 	LogInfo("Success!")
 }

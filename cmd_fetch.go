@@ -29,23 +29,22 @@ type CmdFetch struct {
 
 // fetchKind is one kind of dep, with the arguments given for it.
 type fetchKind struct {
-	dir, desc, header string // e.g. "spec", "Godot API spec", "Godot API specs"
-	cache             ProjectDepCache
-	names             []string
-	all, list         bool
+	names     []string
+	all, list bool
+	cache     ProjectDepCache
 }
 
 func (c *CmdFetch) Run() {
-	kinds := []fetchKind{
-		{bindingsCacheDirName, "Godot C++ bindings", "Godot C++ bindings", ProjectDepCache{}, c.Bind, c.BindAll, c.Index || c.IndexBind},
-		{apiSpecsCacheDirName, "Godot API spec", "Godot API specs", ProjectDepCache{}, c.Spec, c.SpecAll, c.Index || c.IndexSpec},
-		{enginesCacheDirName, "Godot engine", "Godot engines", ProjectDepCache{}, c.Engine, c.EngineAll, c.Index || c.IndexEngine},
+	kinds := []fetchKind{ // in the order of depKinds
+		{names: c.Bind, all: c.BindAll, list: c.Index || c.IndexBind},
+		{names: c.Spec, all: c.SpecAll, list: c.Index || c.IndexSpec},
+		{names: c.Engine, all: c.EngineAll, list: c.Index || c.IndexEngine},
 	}
 	index := c.validate(kinds)
 	p := LoadProject(Cwd())
-	Cleanup(p.Cleanup)
-	for i, cache := range []ProjectDepCache{p.BindingsCache, p.ApiSpecsCache, p.EnginesCache} {
-		kinds[i].cache = cache
+	defer p.Cleanup()
+	for i := range kinds {
+		kinds[i].cache = p.Caches[i]
 	}
 	if c.Missing && !c.addMissing(p, kinds) {
 		LogInfo("No dependencies are missing.")
@@ -59,21 +58,19 @@ func (c *CmdFetch) Run() {
 			if !k.list {
 				continue
 			}
-			idx := parseDepIndex(repo.Cd("index", k.dir).ReadString())
+			idx := parseDepIndex(repo.Cd("index", k.cache.Name).ReadString())
 			if c.Plain {
 				for i := len(idx.versions) - 1; i >= 0; i-- {
 					PrintResult(idx.versions[i] + "\n")
 				}
 				continue
 			}
-			PrintResult(sep + Styled(k.header+":", Bold) + "\n" + idx.Table(k.cache))
+			PrintResult(sep + Styled(k.cache.Plural+":", Bold) + "\n" + idx.Table(k.cache))
 			sep = "\n"
 		}
-		p.Cleanup()
 		return
 	}
 	c.fetch(repo, kinds)
-	p.Cleanup()
 	LogInfo("Success!")
 }
 
@@ -81,11 +78,8 @@ func (c *CmdFetch) Run() {
 // they choose index mode.
 func (c *CmdFetch) validate(kinds []fetchKind) bool {
 	index, deps := false, false
-	for _, k := range kinds {
-		Assert(len(k.names) == 0 || !k.all, "Invalid arguments: --%s and --%s-all cannot be used together.", k.dir, k.dir)
-		for _, name := range k.names {
-			assertDepName(name)
-		}
+	for i, k := range kinds {
+		assertDepFlags(depKinds[i].Name, k.names, k.all)
 		index = index || k.list
 		deps = deps || len(k.names) > 0 || k.all
 	}
@@ -102,8 +96,9 @@ func (c *CmdFetch) validate(kinds []fetchKind) bool {
 // kinds, and returns whether there are any deps to fetch.
 func (c *CmdFetch) addMissing(p Project, kinds []fetchKind) bool {
 	for _, pkg := range p.ListPackages() {
-		for i, name := range []string{pkg.Config.Bindings, pkg.Config.ApiSpec} {
-			if k := &kinds[i]; !k.cache.Has(name) && !slices.Contains(k.names, name) {
+		for i := range kinds {
+			k := &kinds[i]
+			if name, ok := pkg.Config.Dep(k.cache.Name); ok && !k.cache.Has(name) && !slices.Contains(k.names, name) {
 				k.names = append(k.names, name)
 			}
 		}
@@ -140,23 +135,23 @@ func (c *CmdFetch) fetch(repo Path, kinds []fetchKind) {
 	var deps []dep
 	var paths []string
 	for _, k := range kinds {
-		idx := parseDepIndex(repo.Cd("index", k.dir).ReadString())
+		idx := parseDepIndex(repo.Cd("index", k.cache.Name).ReadString())
 		names := k.names
 		if k.all {
 			names = idx.versions
 		}
 		for _, name := range names {
-			name = idx.resolve(k.desc, name)
-			path := "data/" + k.dir + "/" + name
+			name = idx.resolve(k.cache.Desc, name)
+			path := "data/" + k.cache.Name + "/" + name
 			if slices.Contains(paths, path) {
 				continue // e.g. both "latest" and the version it names
 			}
 			if k.cache.Has(name) {
 				if k.all {
-					LogWarn("Skipping %s %s, since it is already in the cache.", k.desc, name)
+					LogWarn("Skipping %s %s, since it is already in the cache.", k.cache.Desc, name)
 					continue
 				}
-				Confirm("Overwrite %s %s in the cache?", k.desc, name)
+				Confirm("Overwrite %s %s in the cache?", k.cache.Desc, name)
 			}
 			deps, paths = append(deps, dep{k, name}), append(paths, path)
 		}
@@ -176,7 +171,7 @@ func (c *CmdFetch) fetch(repo Path, kinds []fetchKind) {
 		}
 		to := dir.Cd(d.name)
 		to.CreateParentDirectory()
-		repo.Cd("data", d.k.dir, d.name).Move(to)
+		repo.Cd("data", d.k.cache.Name, d.name).Move(to)
 	}
 }
 

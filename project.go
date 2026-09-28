@@ -7,8 +7,6 @@ import (
 	"encoding/hex"
 	"regexp"
 	"strings"
-
-	"github.com/BurntSushi/toml"
 )
 
 // Project is a Godot project, with settings read from its project.godot file.
@@ -18,10 +16,7 @@ type Project struct {
 	Name         string // application/config/name
 	GodotVersion string // e.g. "4.3", from application/config/features
 	Config       ProjectConfig
-
-	BindingsCache ProjectDepCache // Godot C++ bindings
-	ApiSpecsCache ProjectDepCache // Godot API specs
-	EnginesCache  ProjectDepCache // Godot engine binaries
+	Caches       []ProjectDepCache // one per kind of dep, in the order of depKinds
 }
 
 // ProjectConfig holds the GD++ settings from res://gd++proj.toml.
@@ -37,9 +32,7 @@ func DefaultProjectConfig() ProjectConfig {
 
 // Encode returns c in TOML format.
 func (c ProjectConfig) Encode() string {
-	var b strings.Builder
-	Check(toml.NewEncoder(&b).Encode(c), "Failed to encode the project config")
-	return b.String()
+	return encodeToml(c)
 }
 
 // project.godot is written by Godot's ConfigFile: "[section]" headers, then
@@ -56,8 +49,10 @@ var (
 )
 
 // CreateTempDir creates a new, randomly named, empty directory inside
-// res://.gd++proj/temp, creating that directory too if needed.
+// res://.gd++proj/temp, creating that directory too if needed. The directory
+// is deleted by Cleanup, which also runs if the program exits via Fail.
 func (p *Project) CreateTempDir() Path {
+	Cleanup(p.Cleanup)
 	bytes := make([]byte, 8)
 	_, err := rand.Read(bytes)
 	Check(err, "Failed to generate a random directory name")
@@ -68,9 +63,7 @@ func (p *Project) CreateTempDir() Path {
 
 // Cleanup deletes all directories made by CreateTempDir.
 func (p *Project) Cleanup() {
-	if temp := p.tempDir(); temp.Exists() {
-		temp.Remove()
-	}
+	p.tempDir().RemoveIfExists()
 }
 
 // tempDir returns res://.gd++proj/temp, which holds temporary directories.
@@ -83,7 +76,7 @@ func (p *Project) tempDir() Path {
 func (p *Project) RemoveEmptyCacheDirs() bool {
 	// Caches first, since deleting them may leave their parents empty.
 	var dirs []Path
-	for _, cache := range []ProjectDepCache{p.BindingsCache, p.ApiSpecsCache, p.EnginesCache} {
+	for _, cache := range p.Caches {
 		dirs = append(dirs, cache.CheckedInDir, cache.EphemeralDir)
 	}
 	dirs = append(dirs, p.Root.Cd(checkedInDepsDirName), p.Root.Cd(ephemeralDepsDirName))
@@ -114,22 +107,19 @@ func LoadProject(p Path) Project {
 
 	config := DefaultProjectConfig()
 	if configFile := root.Cd(projectConfigFileName); configFile.Exists() {
-		meta, err := toml.Decode(configFile.ReadString(), &config)
-		Check(err, "Failed to parse %s", configFile.ToString())
-		if unknown := meta.Undecoded(); len(unknown) > 0 {
-			LogFatal("Unknown key %s in %s.", unknown[0], configFile.ToString())
-		}
+		decodeToml(configFile, &config)
 	}
 
+	var caches []ProjectDepCache
+	for _, kind := range depKinds {
+		caches = append(caches, newProjectDepCache(root, kind))
+	}
 	return Project{
 		Root:         root,
 		Id:           root.Name(),
 		Name:         godotStringUnescaper.Replace(name[1]),
 		GodotVersion: version[1],
 		Config:       config,
-
-		BindingsCache: newProjectDepCache(root, bindingsCacheDirName, "Godot C++ bindings"),
-		ApiSpecsCache: newProjectDepCache(root, apiSpecsCacheDirName, "Godot API spec"),
-		EnginesCache:  newProjectDepCache(root, enginesCacheDirName, "Godot engine"),
+		Caches:       caches,
 	}
 }

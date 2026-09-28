@@ -9,11 +9,6 @@ type CmdFix struct{}
 func (c *CmdFix) Run() {
 	p := LoadProject(Cwd())
 	changed := false
-	remove := func(dir Path, what string) {
-		dir.Remove()
-		LogInfo("Deleted %s %s.", what, dir.ToString())
-		changed = true
-	}
 	format := func(file Path, text string) {
 		if file.Exists() && file.ReadString() != text {
 			file.WriteString(text)
@@ -28,8 +23,9 @@ func (c *CmdFix) Run() {
 		format(pkg.Root.Cd(packageFileName), pkg.Config.Encode())
 	}
 	changed = SyncGitignores(p) || changed
-	if temp := p.tempDir(); temp.Exists() {
-		remove(temp, "the temporary directory")
+	if temp := p.tempDir(); temp.RemoveIfExists() {
+		LogInfo("Deleted the temporary directory %s.", temp.ToString())
+		changed = true
 	}
 	changed = p.RemoveEmptyCacheDirs() || changed
 

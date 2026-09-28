@@ -10,13 +10,11 @@ const (
 	packageFileName       = "gd++pkg.toml"
 	gitignoreFileName     = ".gitignore"
 
-	// Dep caches: each lives in a subdirectory of both the checked in and the
-	// ephemeral directory, at the project root.
+	// Dep caches: each lives in a subdirectory named after its kind (see
+	// depKinds) of both the checked in and the ephemeral directory, at the
+	// project root.
 	checkedInDepsDirName = "_gd++proj"
 	ephemeralDepsDirName = ".gd++proj"
-	bindingsCacheDirName = "bind"
-	apiSpecsCacheDirName = "spec"
-	enginesCacheDirName  = "engine"
 
 	// Temporary directories live here, inside the ephemeral directory.
 	tempDirName = "temp"
