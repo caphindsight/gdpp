@@ -8,7 +8,7 @@ import (
 
 // CmdLs prints an overview of the project: its settings, its cached
 // dependencies and its packages. It expands the package containing the path,
-// and lists the others in one line each.
+// or the only package, and lists the others in one line each.
 type CmdLs struct {
 	Path string `arg:"positional" help:"expand the package containing this path [default: the current directory]"`
 	All  bool   `arg:"-a,--all" help:"show all details"`
@@ -24,10 +24,11 @@ type lsPackage struct {
 	Classes  []lsClass
 }
 
-// lsClass is a class of a package. A zero Icon means the class has none.
+// lsClass is a class of a package. A zero Include or Icon means the class
+// has none.
 type lsClass struct {
-	Name, Include string
-	Icon          Path
+	Name          string
+	Include, Icon Path
 }
 
 func (c *CmdLs) Run() {
@@ -39,9 +40,14 @@ func (c *CmdLs) Run() {
 	}
 	p := LoadProject(path)
 	root, _ := GetPackageRootMaybe(path)
+	list := p.ListPackages()
 	var pkgs []lsPackage
-	for _, pkg := range p.ListPackages() {
-		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: all || pkg.Root == root}) // classes will be listed once they can be loaded
+	for _, pkg := range list {
+		var classes []lsClass
+		for _, class := range pkg.Config.Classes {
+			classes = append(classes, lsClass{class.Name, pkg.ClassPath(class.Include), pkg.ClassPath(class.Icon)})
+		}
+		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: all || len(list) == 1 || pkg.Root == root, Classes: classes})
 	}
 	PrintResult(lsProject(p, pkgs, c.Deps || c.All))
 }
@@ -183,14 +189,18 @@ func lsPackageRows(kinds []lsKind, pkg lsPackage) (rows [][]string, missing bool
 		rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Include", Bold), Styled("Icon", Bold)})
 	}
 	for _, class := range pkg.Classes {
-		icon := "none"
-		if class.Icon != (Path{}) {
-			icon = class.Icon.ToString()
-			if !class.Icon.IsFile() {
-				icon = lsMissing(icon)
-			}
-		}
-		rows = append(rows, []string{class.Name, class.Include, icon})
+		rows = append(rows, []string{class.Name, lsClassPath(class.Include), lsClassPath(class.Icon)})
 	}
 	return rows, missing
+}
+
+// lsClassPath renders a class's file, marked if it's missing.
+func lsClassPath(p Path) string {
+	switch {
+	case p == Path{}:
+		return "none"
+	case !p.IsFile():
+		return lsMissing(p.ToString())
+	}
+	return p.ToString()
 }

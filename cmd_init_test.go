@@ -176,12 +176,20 @@ func TestInitInvalidArgs(t *testing.T) {
 		c    CmdInit
 		want string
 	}{
-		"project_bind":   {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax and --std require a package path"},
-		"project_update": {CmdInit{Update: true}, "--update, --bind, --spec, --syntax and --std require a package path"},
-		"project_vcs":    {CmdInit{Vcs: "svn"}, "--vcs must be none or git"},
-		"package_vcs":    {CmdInit{Path: "src/pkg", Vcs: "git"}, "--vcs cannot be used with a package path"},
-		"new_no_spec":    {CmdInit{Path: "lib", Bind: "4.3"}, "--bind and --spec are required for a new package"},
-		"bad_name":       {CmdInit{Path: "src/pkg", Bind: "../a"}, `"../a" is not a valid dependency name`},
+		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std and --class require a package path"},
+		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std and --class require a package path"},
+		"project_icon":    {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon and --noicon require --class"},
+		"package_icon":    {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon and --noicon require --class"},
+		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax and --std cannot be used with --class"},
+		"class_name":      {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
+		"class_include":   {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
+		"class_noinclude": {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},
+		"class_noicon":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Icon: "pkg://a.svg", NoIcon: true}, "--icon and --noicon cannot be used together"},
+		"class_path":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Icon: "a.svg"}, "a.svg must start with pkg:// or res://"},
+		"project_vcs":     {CmdInit{Vcs: "svn"}, "--vcs must be none or git"},
+		"package_vcs":     {CmdInit{Path: "src/pkg", Vcs: "git"}, "--vcs cannot be used with a package path"},
+		"new_no_spec":     {CmdInit{Path: "lib", Bind: "4.3"}, "--bind and --spec are required for a new package"},
+		"bad_name":        {CmdInit{Path: "src/pkg", Bind: "../a"}, `"../a" is not a valid dependency name`},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -196,5 +204,106 @@ func TestInitInvalidArgs(t *testing.T) {
 				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 			}
 		})
+	}
+}
+
+const classPkgConfig = "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
+
+func TestInitNewClass(t *testing.T) {
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "MyNode", Include: "pkg://my_node.h", Icon: "res://my_node.svg"}, map[string]string{"src/pkg": classPkgConfig})
+	want := "" +
+		"[>] Set the include path of class MyNode to pkg://my_node.h.\n" +
+		"[>] Set the icon of class MyNode to res://my_node.svg.\n" +
+		"[>] Success!\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	wantConfig := classPkgConfig + "\n[[class]]\n  name = \"MyNode\"\n  include = \"pkg://my_node.h\"\n  icon = \"res://my_node.svg\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != wantConfig {
+		t.Errorf("config = %q, want %q", got, wantConfig)
+	}
+}
+
+func TestInitUpdateClass(t *testing.T) {
+	config := classPkgConfig + "\n[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\nicon = \"pkg://a.svg\"\n"
+	pkgs := map[string]string{"src/pkg": config}
+	// Without --icon the icon stays.
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "A", Include: "res://a.hpp", Update: true}, pkgs)
+	want := "" +
+		"[>] Set the include path of class A to res://a.hpp.\n" +
+		"[>] Success!\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	wantConfig := classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"res://a.hpp\"\n  icon = \"pkg://a.svg\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != wantConfig {
+		t.Errorf("config = %q, want %q", got, wantConfig)
+	}
+	// --noicon removes it.
+	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoIcon: true, Update: true}, pkgs)
+	if want := "[>] Set the icon of class A to none.\n[>] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	wantConfig = classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != wantConfig {
+		t.Errorf("config = %q, want %q", got, wantConfig)
+	}
+}
+
+func TestInitClassNoInclude(t *testing.T) {
+	config := classPkgConfig + "\n[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\nicon = \"pkg://a.svg\"\n"
+	pkgs := map[string]string{"src/pkg": config}
+	// A new class without a header.
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "B", NoInclude: true}, pkgs)
+	if want := "[>] Set the include path of class B to none.\n[>] Set the icon of class B to none.\n[>] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	wantConfig := classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n  icon = \"pkg://a.svg\"\n\n[[class]]\n  name = \"B\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != wantConfig {
+		t.Errorf("config = %q, want %q", got, wantConfig)
+	}
+	// Removing the header of an existing class; the icon stays.
+	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", NoInclude: true, Update: true}, pkgs)
+	if want := "[>] Set the include path of class A to none.\n[>] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	wantConfig = classPkgConfig + "\n[[class]]\n  name = \"A\"\n  icon = \"pkg://a.svg\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != wantConfig {
+		t.Errorf("config = %q, want %q", got, wantConfig)
+	}
+}
+
+func TestInitClassConfirms(t *testing.T) {
+	config := classPkgConfig + "\n[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\n"
+	cases := map[string]struct {
+		c    CmdInit
+		want string
+	}{
+		"exists":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h"}, "[?] Class A already exists in res://src/pkg. Update it? [y/n] n\n"},
+		"extension": {CmdInit{Path: "src/pkg", Class: "B", Include: "pkg://b.cpp"}, "[?] Include path pkg://b.cpp is not a .h or .hpp file. Continue? [y/n] n\n"},
+		"missing":   {CmdInit{Path: "src/pkg", Class: "B", Include: "pkg://b.h", Update: true}, "[!] There is no class B in res://src/pkg.\n"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+				isTTY = false
+				withMemFS(t, "/games/my_game", withPackages(map[string]string{"src/pkg": config}))
+				tc.c.Run()
+				return
+			}
+			out, code := runFailHelper(t, t.Name())
+			if code != 1 || !strings.HasPrefix(out, tc.want) {
+				t.Errorf("exit code = %d, output = %q, want 1, prefix %q", code, out, tc.want)
+			}
+		})
+	}
+}
+
+func TestInitClassSorted(t *testing.T) {
+	config := classPkgConfig + "\n[[class]]\nname = \"C\"\n\n[[class]]\nname = \"A\"\n"
+	_, after := runInit(t, CmdInit{Path: "src/pkg", Class: "B", NoInclude: true}, map[string]string{"src/pkg": config})
+	want := classPkgConfig + "\n[[class]]\n  name = \"A\"\n\n[[class]]\n  name = \"B\"\n\n[[class]]\n  name = \"C\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != want {
+		t.Errorf("config = %q, want %q", got, want)
 	}
 }

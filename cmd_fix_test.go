@@ -103,3 +103,16 @@ func TestFixGitignores(t *testing.T) {
 		t.Errorf(".gitignore = %q, want %q", got, "user\n")
 	}
 }
+
+func TestFixPackageClasses(t *testing.T) {
+	config := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
+	out, _, after := runFix(t, map[string]string{"/games/my_game/src/pkg/" + packageFileName: config +
+		"\n[[class]]\n  name = \"B\"\n\n[[class]]\n  name = \"A\"\n"})
+	if want := "[>] Reformatted res://src/pkg/gd++pkg.toml.\n[>] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	want := config + "\n[[class]]\n  name = \"A\"\n\n[[class]]\n  name = \"B\"\n"
+	if got := after["src/pkg/"+packageFileName]; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}

@@ -1,9 +1,9 @@
 package main
 
 // CmdFix brings the project into its canonical state: it reformats the config
-// files of the project and its packages, writes or removes the GD++ blocks in
-// their .gitignore files to match the VCS, and deletes leftover temporary
-// files and empty cache directories.
+// files of the project and its packages (sorting their classes), writes or
+// removes the GD++ blocks in their .gitignore files to match the VCS, and
+// deletes leftover temporary files and empty cache directories.
 type CmdFix struct{}
 
 func (c *CmdFix) Run() {
@@ -24,6 +24,7 @@ func (c *CmdFix) Run() {
 
 	format(p.Root.Cd(projectConfigFileName), p.Config.Encode())
 	for _, pkg := range p.ListPackages() {
+		pkg.Config.SortClasses()
 		format(pkg.Root.Cd(packageFileName), pkg.Config.Encode())
 	}
 	changed = SyncGitignores(p) || changed

@@ -40,11 +40,27 @@ func TestLoadPackage(t *testing.T) {
 }
 
 func TestLoadPackageAllKeys(t *testing.T) {
-	withMemFS(t, "/", withPackages(map[string]string{"pkg": "bind = \"a\"\nspec = \"b\"\nsyntax = 2\nstd = \"c++23\"\n"}))
-	want := PackageConfig{Bindings: "a", ApiSpec: "b", Syntax: 2, CppStandard: "c++23"}
-	if got := LoadPackage(NewPath("/games/my_game/pkg")).Config; got != want {
+	config := "bind = \"a\"\nspec = \"b\"\nsyntax = 2\nstd = \"c++23\"\n\n" +
+		"[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\nicon = \"res://a.svg\"\n\n" +
+		"[[class]]\nname = \"B\"\ninclude = \"res://b.hpp\"\n"
+	withMemFS(t, "/", withPackages(map[string]string{"pkg": config}))
+	want := PackageConfig{Bindings: "a", ApiSpec: "b", Syntax: 2, CppStandard: "c++23", Classes: []PackageClass{
+		{Name: "A", Include: "pkg://a.h", Icon: "res://a.svg"},
+		{Name: "B", Include: "res://b.hpp"},
+	}}
+	got := LoadPackage(NewPath("/games/my_game/pkg")).Config
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Config = %+v, want %+v", got, want)
 	}
+}
+
+// classes returns a package config with a [[class]] table per body.
+func classes(bodies ...string) string {
+	s := "bind = \"a\"\nspec = \"b\"\n"
+	for _, body := range bodies {
+		s += "\n[[class]]\n" + body + "\n"
+	}
+	return s
 }
 
 func TestLoadPackageFails(t *testing.T) {
@@ -54,6 +70,9 @@ func TestLoadPackageFails(t *testing.T) {
 		{"MissingBind", `spec = "b"`, "[!] Missing key bind in res://pkg/gd++pkg.toml.\n"},
 		{"MissingSpec", `bind = "a"`, "[!] Missing key spec in res://pkg/gd++pkg.toml.\n"},
 		{"UnknownKey", "bind = \"a\"\nspec = \"b\"\njobs = 4\n", "[!] Unknown key jobs in res://pkg/gd++pkg.toml.\n"},
+		{"ClassName", classes(`name = "a-b"`), "[!] Invalid class name \"a-b\" in res://pkg/gd++pkg.toml.\n"},
+		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[!] Duplicate class A in res://pkg/gd++pkg.toml.\n"},
+		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[!] Path a.svg of class A in res://pkg/gd++pkg.toml must start with pkg:// or res://.\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

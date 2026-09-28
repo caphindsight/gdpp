@@ -5,9 +5,11 @@ import (
 	"strings"
 )
 
-// CmdRm removes deps from the project's caches, and packages from the project.
-// Both can be removed in one run. Every removal is confirmed first.
+// CmdRm removes deps from the project's caches, packages from the project, or
+// classes from a package; one of these per run. Every removal is confirmed
+// first.
 type CmdRm struct {
+	Path            string   `arg:"positional" help:"the package to remove classes from"`
 	Bind            []string `arg:"--bind" placeholder:"NAME" help:"remove these Godot C++ bindings"`
 	BindAll         bool     `arg:"--bind-all" help:"remove all Godot C++ bindings"`
 	BindCheckedIn   bool     `arg:"--bind-checked-in" help:"remove all checked in Godot C++ bindings"`
@@ -26,6 +28,8 @@ type CmdRm struct {
 	Pkg             []string `arg:"--pkg" placeholder:"PATH" help:"remove the packages at these paths"`
 	PkgAll          bool     `arg:"--pkg-all" help:"remove all packages"`
 	Dir             bool     `arg:"--dir" help:"delete the package directories with everything inside, instead of just the GD++ files"`
+	Class           []string `arg:"--class" placeholder:"NAME" help:"remove these classes from the package"`
+	ClassAll        bool     `arg:"--class-all" help:"remove all classes from the package"`
 }
 
 // rmKind is what to remove of one kind of dep: the named deps, or with no
@@ -61,6 +65,10 @@ func rmGroup(checkedIn, ephemeral bool, plural string) string {
 
 func (c *CmdRm) Run() {
 	kinds := c.validate()
+	if len(c.Class) > 0 || c.ClassAll {
+		c.removeClasses(ParsePath(c.Path))
+		return
+	}
 	p := LoadProject(Cwd())
 	kinds[0].cache, kinds[1].cache, kinds[2].cache = p.BindingsCache, p.ApiSpecsCache, p.EnginesCache
 	for _, k := range kinds {
@@ -139,6 +147,12 @@ func (c *CmdRm) confirmPackages(what string, plural bool) {
 // validate asserts the arguments make sense together, and returns what to
 // remove of each kind of dep, without the caches.
 func (c *CmdRm) validate() []rmKind {
+	classes := len(c.Class) > 0 || c.ClassAll
+	if c.Path != "" && !classes {
+		LogFatal("Invalid arguments: the syntax for removing a package is `gd++ rm --pkg %s`.", c.Path)
+	}
+	Assert(c.Path != "" || !classes, "Invalid arguments: --class and --class-all require a package path.")
+	Assert(len(c.Class) == 0 || !c.ClassAll, "Invalid arguments: --class and --class-all cannot be used together.")
 	kinds := []rmKind{
 		{"bind", "Godot C++ bindings", c.Bind, c.BindAll || c.BindCheckedIn, c.BindAll || c.BindEphemeral, ProjectDepCache{}},
 		{"spec", "Godot API specs", c.Spec, c.SpecAll || c.SpecCheckedIn, c.SpecAll || c.SpecEphemeral, ProjectDepCache{}},
@@ -169,7 +183,12 @@ func (c *CmdRm) validate() []rmKind {
 	}
 	Assert(len(c.Pkg) == 0 || !c.PkgAll, "Invalid arguments: --pkg and --pkg-all cannot be used together.")
 	Assert(!c.Dir || len(c.Pkg) > 0 || c.PkgAll, "Invalid arguments: --dir can only be used with --pkg or --pkg-all.")
-	Assert(slices.Max(counts) > 0 || depFlags > 0 || len(c.Pkg) > 0 || c.PkgAll, "Invalid arguments: a --bind, --spec, --engine, --dep or --pkg option is required.")
+	switch countTrue(slices.Max(counts) > 0 || depFlags > 0, len(c.Pkg) > 0 || c.PkgAll, classes) {
+	case 0:
+		LogFatal("Invalid arguments: a --bind, --spec, --engine, --dep, --pkg or --class option is required.")
+	case 2, 3:
+		LogFatal("Invalid arguments: dependencies, packages and classes cannot be removed in the same run.")
+	}
 	return kinds
 }
 
@@ -194,6 +213,38 @@ func (c *CmdRm) packageRoots(p Project) []Path {
 		Assert(!c.Dir || root != p.Root, "Invalid arguments: --dir cannot delete the project root.")
 	}
 	return roots
+}
+
+// removeClasses removes the classes given by --class or --class-all from the
+// package at root.
+func (c *CmdRm) removeClasses(root Path) {
+	Assert(root.IsPackageRoot(), "There is no GD++ package at %s.", root.ToString())
+	config := LoadPackage(root).Config
+	names := slices.Clone(c.Class) // deduplicated, so each is confirmed once
+	slices.Sort(names)
+	names = slices.Compact(names)
+	for _, name := range names {
+		Assert(slices.ContainsFunc(config.Classes, func(k PackageClass) bool { return k.Name == name }), "There is no class %s in %s.", name, root.ToString())
+	}
+	for _, name := range names {
+		Confirm("Remove the class %s from %s?", name, root.ToString())
+	}
+	if c.ClassAll {
+		for _, class := range config.Classes {
+			names = append(names, class.Name)
+		}
+		if len(names) == 0 {
+			LogWarn("Nothing to remove.")
+			return
+		}
+		Confirm("Remove all classes %s from %s?", strings.Join(names, ", "), root.ToString())
+	}
+	config.Classes = slices.DeleteFunc(config.Classes, func(k PackageClass) bool { return slices.Contains(names, k.Name) })
+	root.Cd(packageFileName).WriteString(config.Encode())
+	for _, name := range names {
+		LogInfo("Removed the class %s.", name)
+	}
+	LogInfo("Success!")
 }
 
 // removePackage deletes the package's directory with --dir; otherwise just

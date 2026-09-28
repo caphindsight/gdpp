@@ -3,6 +3,8 @@
 package main
 
 import (
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -19,16 +21,49 @@ type Package struct {
 
 // PackageConfig holds the settings from a package's gd++pkg.toml.
 type PackageConfig struct {
-	Bindings    string `toml:"bind"` // mandatory
-	ApiSpec     string `toml:"spec"` // mandatory
-	Syntax      int    `toml:"syntax"`
-	CppStandard string `toml:"std"`
+	Bindings    string         `toml:"bind"` // mandatory
+	ApiSpec     string         `toml:"spec"` // mandatory
+	Syntax      int            `toml:"syntax"`
+	CppStandard string         `toml:"std"`
+	Classes     []PackageClass `toml:"class,omitempty"`
+}
+
+// PackageClass is a C++ class the package exposes to Godot. Its paths are
+// package-relative (pkg://) or project-relative (res://).
+type PackageClass struct {
+	Name    string `toml:"name"`
+	Include string `toml:"include,omitempty"` // the header declaring the class
+	Icon    string `toml:"icon,omitempty"`
+}
+
+var classNameRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// isClassPath reports whether s is a pkg:// or res:// path.
+func isClassPath(s string) bool {
+	return strings.HasPrefix(s, "pkg://") || strings.HasPrefix(s, "res://")
+}
+
+// ClassPath resolves a class's pkg:// or res:// path s. An empty s gives a
+// zero Path.
+func (pkg Package) ClassPath(s string) Path {
+	if rest, ok := strings.CutPrefix(s, "pkg://"); ok {
+		return pkg.Root.Cd(rest)
+	}
+	if rest, ok := strings.CutPrefix(s, "res://"); ok {
+		return GetProjectRoot(pkg.Root).Cd(rest)
+	}
+	return Path{}
 }
 
 // DefaultPackageConfig returns the config with defaults for the optional
 // keys; the mandatory keys are left empty.
 func DefaultPackageConfig() PackageConfig {
 	return PackageConfig{Syntax: defaultPackageSyntax, CppStandard: defaultPackageCppStandard}
+}
+
+// SortClasses sorts c's classes by name.
+func (c *PackageConfig) SortClasses() {
+	slices.SortFunc(c.Classes, func(a, b PackageClass) int { return strings.Compare(a.Name, b.Name) })
 }
 
 // Encode returns c in TOML format.
@@ -53,6 +88,15 @@ func LoadPackage(p Path) Package {
 	}
 	for _, key := range []string{"bind", "spec"} {
 		Assert(meta.IsDefined(key), "Missing key %s in %s.", key, file.ToString())
+	}
+	names := map[string]bool{}
+	for _, class := range config.Classes {
+		Assert(classNameRegexp.MatchString(class.Name), "Invalid class name %q in %s.", class.Name, file.ToString())
+		Assert(!names[class.Name], "Duplicate class %s in %s.", class.Name, file.ToString())
+		names[class.Name] = true
+		for _, path := range []string{class.Include, class.Icon} {
+			Assert(path == "" || isClassPath(path), "Path %s of class %s in %s must start with pkg:// or res://.", path, class.Name, file.ToString())
+		}
 	}
 
 	return Package{

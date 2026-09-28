@@ -18,6 +18,7 @@ func withLsProject(t *testing.T) {
 		"/games/my_game/_gd++proj/bind/9.1.0-stable/a.h":  "a",
 		"/games/my_game/.gd++proj/spec/4.3-stable/a.json": "a",
 		"/games/my_game/foo/icons/tree.svg":               "svg",
+		"/games/my_game/foo/tree.h":                       "h",
 	})
 	withMemFS(t, "/games/my_game", tree)
 	withTTY(t, false)
@@ -145,6 +146,22 @@ func TestLsCmdRootPackage(t *testing.T) {
 	}
 }
 
+func TestLsCmdOnePackage(t *testing.T) {
+	withLsProject(t)
+	NewPath("/games/my_game/foo").Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n\n" +
+		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\nicon = \"res://foo/icons/tree.svg\"\n\n" +
+		"[[class]]\nname = \"Bush\"\n")
+	out := captureStdout(t, (&CmdLs{}).Run)
+	want := "\n" + lsFooOut +
+		"\n" +
+		"  Classes              Include           Icon\n" +
+		"  Tree                 res://foo/tree.h  res://foo/icons/tree.svg\n" +
+		"  Bush                 none              none\n"
+	if !strings.HasSuffix(out, want) {
+		t.Errorf("output = %q, want it to end with %q", out, want)
+	}
+}
+
 func TestLsCmdAllPackages(t *testing.T) {
 	withLsPackages(t)
 	out := captureStdout(t, (&CmdLs{Pkgs: true}).Run)
@@ -188,23 +205,23 @@ func TestLsPackages(t *testing.T) {
 		Package:  Package{Root: root, Config: PackageConfig{Bindings: "b", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++23"}},
 		Expanded: true,
 		Classes: []lsClass{
-			{"Tree", "foo/tree.h", root.Cd("icons", "tree.svg")},
-			{"Bush", "foo/bush.h", root.Cd("icons", "bush.svg")},
-			{"GrassPatch", "foo/grass_patch.h", Path{}},
+			{"Tree", root.Cd("tree.h"), root.Cd("icons", "tree.svg")},
+			{"Bush", root.Cd("bush.h"), root.Cd("icons", "bush.svg")},
+			{"GrassPatch", Path{}, Path{}},
 		},
 	}}
 	pkgWant := "" +
 		"\n" +
 		"Package: res://foo\n" +
-		"  Godot C++ bindings:  b                  x missing\n" +
+		"  Godot C++ bindings:  b                   x missing\n" +
 		"  Godot API spec:      4.3-stable\n" +
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++23\n" +
 		"\n" +
-		"  Classes              Include            Icon\n" +
-		"  Tree                 foo/tree.h         res://foo/icons/tree.svg\n" +
-		"  Bush                 foo/bush.h         x res://foo/icons/bush.svg\n" +
-		"  GrassPatch           foo/grass_patch.h  none\n" +
+		"  Classes              Include             Icon\n" +
+		"  Tree                 res://foo/tree.h    res://foo/icons/tree.svg\n" +
+		"  Bush                 x res://foo/bush.h  x res://foo/icons/bush.svg\n" +
+		"  GrassPatch           none                none\n" +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
 	for _, c := range []struct {
