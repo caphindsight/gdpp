@@ -46,9 +46,23 @@ func Styled(text string, styles ...Style) string {
 	return "\x1b[" + strings.Join(codes, ";") + "m" + text + "\x1b[0m"
 }
 
-// LogInfo prints a formatted info message to stdout, indenting extra lines to align with the "[>] " prefix.
+// LogInfo prints a formatted info message.
 func LogInfo(format string, params ...any) {
 	msg := fmt.Sprintf(format, params...)
 	msg = strings.ReplaceAll(msg, "\n", "\n    ")
 	fmt.Println("[" + Styled(">", Green) + "] " + msg)
+}
+
+// LogWarn prints a formatted warning.
+func LogWarn(format string, params ...any) {
+	msg := fmt.Sprintf(format, params...)
+	msg = strings.ReplaceAll(msg, "\n", "\n    ")
+	fmt.Println("[" + Styled("!", Bold, Yellow) + "] " + msg)
+}
+
+// LogError prints a formatted error.
+func LogError(format string, params ...any) {
+	msg := fmt.Sprintf(format, params...)
+	msg = strings.ReplaceAll(msg, "\n", "\n    ")
+	fmt.Println("[" + Styled("!", Bold, Red) + "] " + msg)
 }

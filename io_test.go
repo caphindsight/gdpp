@@ -84,3 +84,49 @@ func TestLogInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestLogWarn(t *testing.T) {
+	withTTY(t, false)
+
+	cases := []struct {
+		name   string
+		format string
+		params []any
+		want   string
+	}{
+		{"plain message", "hello", nil, "[!] hello\n"},
+		{"formatted message", "hello, %s! count=%d", []any{"world", 3}, "[!] hello, world! count=3\n"},
+		{"multiline message re-indented", "line1\nline2", nil, "[!] line1\n    line2\n"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := captureStdout(t, func() { LogWarn(c.format, c.params...) })
+			if got != c.want {
+				t.Errorf("LogWarn(%q, %v) printed %q, want %q", c.format, c.params, got, c.want)
+			}
+		})
+	}
+}
+
+func TestLogError(t *testing.T) {
+	withTTY(t, false)
+
+	cases := []struct {
+		name   string
+		format string
+		params []any
+		want   string
+	}{
+		{"plain message", "hello", nil, "[!] hello\n"},
+		{"formatted message", "hello, %s! count=%d", []any{"world", 3}, "[!] hello, world! count=3\n"},
+		{"multiline message re-indented", "line1\nline2", nil, "[!] line1\n    line2\n"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := captureStdout(t, func() { LogError(c.format, c.params...) })
+			if got != c.want {
+				t.Errorf("LogError(%q, %v) printed %q, want %q", c.format, c.params, got, c.want)
+			}
+		})
+	}
+}
