@@ -99,6 +99,17 @@ func (c ProjectDepCache) IsEphemeral(name string) bool {
 	return c.EphemeralDir.Cd(name).IsDir()
 }
 
+// Status returns "checked in" (styled) or "cached" if the dep exists, and ""
+// otherwise.
+func (c ProjectDepCache) Status(name string) string {
+	if c.IsCheckedIn(name) {
+		return Styled("checked in", Magenta)
+	} else if c.IsEphemeral(name) {
+		return "cached"
+	}
+	return ""
+}
+
 // GetPath returns the directory of the dep, asserting it exists.
 func (c ProjectDepCache) GetPath(name string) Path {
 	if c.IsCheckedIn(name) {

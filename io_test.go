@@ -29,7 +29,7 @@ func TestStyled(t *testing.T) {
 		{"styles given, no tty", false, "done", []Style{Bold}, "done"},
 		{"one style, tty", true, "done", []Style{Green}, "\x1b[32mdone\x1b[0m"},
 		{"multiple styles, tty, order preserved", true, "done", []Style{Bold, Green}, "\x1b[1;32mdone\x1b[0m"},
-		{"empty text, tty", true, "", []Style{Red}, "\x1b[31m\x1b[0m"},
+		{"empty text, tty", true, "", []Style{Red}, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -45,17 +45,8 @@ func TestPrintResult(t *testing.T) {
 	withTTY(t, true)
 	withQuiet(t, true)
 	styled := Styled("done", Bold) + " ok\n"
-	for _, c := range []struct {
-		stdoutTTY bool
-		want      string
-	}{{true, styled}, {false, "done ok\n"}} {
-		orig := isStdoutTTY
-		isStdoutTTY = c.stdoutTTY
-		out := captureStdout(t, func() { PrintResult(styled) })
-		isStdoutTTY = orig
-		if out != c.want {
-			t.Errorf("stdout tty %v: printed %q, want %q", c.stdoutTTY, out, c.want)
-		}
+	if out := captureStdout(t, func() { PrintResult(styled) }); out != styled {
+		t.Errorf("printed %q, want %q", out, styled)
 	}
 }
 

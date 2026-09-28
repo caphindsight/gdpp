@@ -3,6 +3,8 @@
 package main
 
 const (
+	gdppVersion = "nightly" // the version of this CLI tool
+
 	projectFileName = "project.godot"
 	packageFileName = "gd++pkg.toml"
 

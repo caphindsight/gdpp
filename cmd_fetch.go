@@ -199,9 +199,7 @@ func (idx depIndex) Table(cache ProjectDepCache) string {
 	if len(idx.versions) == 0 {
 		return "  none\n"
 	}
-	type row struct{ version, tags, status string }
-	var rows []row
-	versionWidth, tagsWidth := 0, 0
+	var rows [][]string
 	for i := len(idx.versions) - 1; i >= 0; i-- {
 		version := idx.versions[i]
 		var tags []string
@@ -211,26 +209,7 @@ func (idx depIndex) Table(cache ProjectDepCache) string {
 			}
 		}
 		slices.Sort(tags)
-		r := row{version: version, tags: strings.Join(tags, ", ")}
-		if cache.IsCheckedIn(version) {
-			r.status = "checked in"
-		} else if cache.IsEphemeral(version) {
-			r.status = "cached"
-		}
-		rows = append(rows, r)
-		versionWidth, tagsWidth = max(versionWidth, len(r.version)), max(tagsWidth, len(r.tags))
+		rows = append(rows, []string{version, Styled(strings.Join(tags, ", "), Cyan), cache.Status(version)})
 	}
-	var out strings.Builder
-	for _, r := range rows {
-		// Padding goes outside Styled, so escape codes don't break the alignment.
-		line := "  " + r.version
-		if r.tags != "" || r.status != "" {
-			line += strings.Repeat(" ", versionWidth-len(r.version)+2) + Styled(r.tags, Cyan)
-		}
-		if r.status != "" {
-			line += strings.Repeat(" ", tagsWidth-len(r.tags)+2) + Styled(r.status, Dim)
-		}
-		out.WriteString(line + "\n")
-	}
-	return out.String()
+	return AlignColumns(rows, "  ")
 }

@@ -7,6 +7,7 @@ var Args struct {
 	CheckIn  *CmdCheckIn `arg:"subcommand:checkin" help:"check in dependencies from the ephemeral cache, or undo it"`
 	Fetch    *CmdFetch   `arg:"subcommand:fetch" help:"download dependencies from a repository, or list them"`
 	Fix      *CmdFix     `arg:"subcommand:fix" help:"tidy up the project, e.g. delete leftover temporary files"`
+	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
 	Vendor   *CmdVendor  `arg:"subcommand:vendor" help:"copy a dependency into or out of the project's cache"`
 	Quiet    bool        `arg:"-q,--quiet" help:"print fewer logs"`
 	Verbose  bool        `arg:"-v,--verbose" help:"print more logs"`
@@ -36,6 +37,8 @@ func main() {
 		Args.Fetch.Run()
 	case Args.Fix != nil:
 		Args.Fix.Run()
+	case Args.Ls != nil:
+		Args.Ls.Run()
 	case Args.Vendor != nil:
 		Args.Vendor.Run()
 	default:

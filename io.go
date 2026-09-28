@@ -19,19 +19,20 @@ import (
 type Style string
 
 const (
-	Bold      Style = "1"
-	Dim       Style = "2"
-	Italic    Style = "3"
-	Underline Style = "4"
-	Blink     Style = "5"
-	Reverse   Style = "7"
-	Red       Style = "31"
-	Green     Style = "32"
-	Yellow    Style = "33"
-	Blue      Style = "34"
-	Magenta   Style = "35"
-	Cyan      Style = "36"
-	Gray      Style = "90"
+	Bold       Style = "1"
+	Dim        Style = "2"
+	Italic     Style = "3"
+	Underline  Style = "4"
+	Blink      Style = "5"
+	Reverse    Style = "7"
+	Red        Style = "31"
+	Green      Style = "32"
+	Yellow     Style = "33"
+	Blue       Style = "34"
+	Magenta    Style = "35"
+	Cyan       Style = "36"
+	Gray       Style = "90"
+	BrightBlue Style = "94"
 )
 
 // Logs, tasks and prompts go to stderr, keeping stdout for command results,
@@ -39,15 +40,13 @@ const (
 
 // isTerminal reports whether f is a terminal.
 func isTerminal(f *os.File) bool {
-	fi, err := f.Stat()
-	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+	return term.IsTerminal(int(f.Fd()))
 }
 
-// isTTY is true when stderr is a terminal, meaning we can be interactive.
-var isTTY = isTerminal(os.Stderr)
-
-// isStdoutTTY is true when stdout is a terminal, so results can be styled.
-var isStdoutTTY = isTerminal(os.Stdout)
+// isTTY is true when both stderr and stdout are terminals, meaning we can be
+// interactive and use styles. If either is redirected, e.g. to a file or a
+// pipe, output stays plain on both.
+var isTTY = isTerminal(os.Stderr) && isTerminal(os.Stdout)
 
 // isUnicode is true when the terminal can likely display the Unicode icons.
 var isUnicode = func() bool {
@@ -75,9 +74,10 @@ func unicodeOr(unicode, ascii string) string {
 }
 
 // Styled wraps text in the given styles, e.g. Styled("done", Bold, Green).
-// Returns text unchanged if stderr is not a terminal or no styles are given.
+// Returns text unchanged if it's empty, stderr is not a terminal or no styles
+// are given.
 func Styled(text string, styles ...Style) string {
-	if !isTTY || len(styles) == 0 {
+	if text == "" || !isTTY || len(styles) == 0 {
 		return text
 	}
 	codes := make([]string, len(styles))
@@ -131,6 +131,30 @@ func WrapText(text string, width int) string {
 	return out.String()
 }
 
+// AlignColumns renders rows as lines starting with indent, with each column
+// padded to its widest cell plus two spaces, and no trailing spaces. ANSI
+// escape codes count as zero width, so styled cells stay aligned.
+func AlignColumns(rows [][]string, indent string) string {
+	var widths []int
+	for _, row := range rows {
+		for i, cell := range row {
+			if i == len(widths) {
+				widths = append(widths, 0)
+			}
+			widths[i] = max(widths[i], visibleLen(cell))
+		}
+	}
+	var out strings.Builder
+	for _, row := range rows {
+		line := indent
+		for i, cell := range row {
+			line += cell + strings.Repeat(" ", widths[i]-visibleLen(cell)+2)
+		}
+		out.WriteString(strings.TrimRight(line, " ") + "\n")
+	}
+	return out.String()
+}
+
 // visibleLen returns the number of runes in s, not counting ANSI escape codes.
 func visibleLen(s string) int {
 	return utf8.RuneCountInString(stripStyles(s))
@@ -154,11 +178,8 @@ func stripStyles(s string) string {
 }
 
 // PrintResult prints s, a command's result, to stdout. Never suppressed by
-// -q/--quiet or Silence. Styles in s are dropped if stdout is not a terminal.
+// -q/--quiet or Silence.
 func PrintResult(s string) {
-	if !isStdoutTTY {
-		s = stripStyles(s)
-	}
 	fmt.Fprint(os.Stdout, s)
 }
 
