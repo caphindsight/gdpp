@@ -156,6 +156,25 @@ func (m *memFS) Mkdir(name string, perm fs.FileMode) error {
 	return nil
 }
 
+func (m *memFS) MkdirAll(name string, perm fs.FileMode) error {
+	if err := m.check("MkdirAll"); err != nil {
+		return err
+	}
+	if n := m.nodes[name]; n != nil {
+		if n.dir {
+			return nil
+		}
+		return m.err("mkdir", name, syscall.ENOTDIR)
+	}
+	if name != "/" {
+		if err := m.MkdirAll(path.Dir(name), perm); err != nil {
+			return err
+		}
+	}
+	m.nodes[name] = &memNode{dir: true}
+	return nil
+}
+
 func (m *memFS) RemoveAll(name string) error {
 	if err := m.check("RemoveAll"); err != nil {
 		return err

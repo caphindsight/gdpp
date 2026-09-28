@@ -293,6 +293,11 @@ func TestCreateFileCreateDirectory(t *testing.T) {
 	if !dir.IsDir() {
 		t.Errorf("IsDir() = false after CreateDirectory(), want true")
 	}
+	nested := NewPath("/work/x/y/z")
+	nested.CreateDirectory()
+	if !nested.IsDir() {
+		t.Errorf("IsDir() = false after nested CreateDirectory(), want true")
+	}
 }
 
 // dirTree returns a small directory tree rooted at root, in withMemFS format.

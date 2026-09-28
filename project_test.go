@@ -1,0 +1,86 @@
+// project_test.go: tests for project.go.
+
+package main
+
+import (
+	"reflect"
+	"testing"
+)
+
+// testProjectTree is a small project at /games/my_game, in withMemFS format.
+var testProjectTree = map[string]string{
+	"/games/my_game/" + projectFileName: `; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+
+config_version=5
+
+[application]
+
+config/name="My \"Game\""
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/icon="res://icon.svg"
+
+[rendering]
+
+config/name="Not this one"
+`,
+	"/games/my_game/src/": "",
+}
+
+func TestLoadProject(t *testing.T) {
+	m := withMemFS(t, "/", testProjectTree)
+	before := m.tree()
+
+	root := NewPath("/games/my_game")
+	want := Project{
+		Root:          root,
+		Id:            "my_game",
+		Name:          `My "Game"`,
+		GodotVersion:  "4.3",
+		BindingsCache: ProjectDepCache{root.Cd("_gd++proj/bind"), root.Cd(".gd++proj/bind")},
+		ApiSpecsCache: ProjectDepCache{root.Cd("_gd++proj/spec"), root.Cd(".gd++proj/spec")},
+		EnginesCache:  ProjectDepCache{root.Cd("_gd++proj/engine"), root.Cd(".gd++proj/engine")},
+	}
+	if got := LoadProject(NewPath("/games/my_game/src")); !reflect.DeepEqual(got, want) {
+		t.Errorf("LoadProject() = %+v, want %+v", got, want)
+	}
+	if got := m.tree(); !reflect.DeepEqual(got, before) {
+		t.Errorf("LoadProject() changed the tree to %v, want %v", got, before)
+	}
+}
+
+func TestCreateTempDir(t *testing.T) {
+	withMemFS(t, "/", testProjectTree)
+	p := LoadProject(NewPath("/games/my_game"))
+
+	a, b := p.CreateTempDir(), p.CreateTempDir()
+	for _, dir := range []Path{a, b} {
+		if want := NewPath("/games/my_game/.gd++proj/temp"); dir.BaseDir() != want {
+			t.Errorf("CreateTempDir() = %v, want a child of %v", dir, want)
+		}
+		if !dir.IsDir() || len(dir.Ls()) != 0 {
+			t.Errorf("CreateTempDir() = %v, want an empty directory", dir)
+		}
+	}
+	if a == b {
+		t.Errorf("CreateTempDir() returned %v twice", a)
+	}
+}
+
+func TestProjectCleanup(t *testing.T) {
+	m := withMemFS(t, "/", testProjectTree)
+	before := m.tree()
+	p := LoadProject(NewPath("/games/my_game"))
+
+	p.Cleanup() // no temp directory yet: does nothing
+	p.CreateTempDir().Cd("f.txt").WriteString("x")
+	p.CreateTempDir()
+	p.Cleanup()
+
+	// .gd++proj itself is left behind, now empty.
+	want := mergeTrees(before, map[string]string{"/games/my_game/.gd++proj/": ""})
+	if got := m.tree(); !reflect.DeepEqual(got, want) {
+		t.Errorf("tree after Cleanup() = %v, want %v", got, want)
+	}
+}

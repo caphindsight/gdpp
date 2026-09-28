@@ -23,6 +23,7 @@ type fileSystem interface {
 	ReadFile(name string) ([]byte, error)
 	WriteFile(name string, data []byte, perm fs.FileMode) error
 	Mkdir(name string, perm fs.FileMode) error
+	MkdirAll(name string, perm fs.FileMode) error
 	RemoveAll(name string) error
 	Rename(oldName, newName string) error
 }
@@ -37,9 +38,10 @@ func (osFS) ReadFile(name string) ([]byte, error)       { return os.ReadFile(nam
 func (osFS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	return os.WriteFile(name, data, perm)
 }
-func (osFS) Mkdir(name string, perm fs.FileMode) error { return os.Mkdir(name, perm) }
-func (osFS) RemoveAll(name string) error               { return os.RemoveAll(name) }
-func (osFS) Rename(oldName, newName string) error      { return os.Rename(oldName, newName) }
+func (osFS) Mkdir(name string, perm fs.FileMode) error    { return os.Mkdir(name, perm) }
+func (osFS) MkdirAll(name string, perm fs.FileMode) error { return os.MkdirAll(name, perm) }
+func (osFS) RemoveAll(name string) error                  { return os.RemoveAll(name) }
+func (osFS) Rename(oldName, newName string) error         { return os.Rename(oldName, newName) }
 
 var fsys fileSystem = osFS{}
 
@@ -262,11 +264,11 @@ func (p Path) CreateFile() {
 	Check(err, "Failed to create %s", p.ToString())
 }
 
-// CreateDirectory creates an empty directory at p, asserting it doesn't
-// already exist.
+// CreateDirectory creates an empty directory at p and any missing parents,
+// asserting p doesn't already exist.
 func (p Path) CreateDirectory() {
 	Assert(!p.Exists(), "Path %s already exists.", p.ToString())
-	err := fsys.Mkdir(p.GetOsPath(), 0755)
+	err := fsys.MkdirAll(p.GetOsPath(), 0755)
 	Check(err, "Failed to create %s", p.ToString())
 }
 
