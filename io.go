@@ -202,6 +202,21 @@ func LogFatal(format string, params ...any) {
 	Fail()
 }
 
+// Assert calls LogFatal with the given message if cond is false.
+func Assert(cond bool, format string, params ...any) {
+	if !cond {
+		LogFatal(format, params...)
+	}
+}
+
+// Check calls LogFatal with the given message, plus err's details, if err is
+// not nil.
+func Check(err error, format string, params ...any) {
+	if err != nil {
+		LogFatal("%s: %v", fmt.Sprintf(format, params...), err)
+	}
+}
+
 // taskLogLines is how many of the latest log lines are shown under a running task.
 const taskLogLines = 4
 

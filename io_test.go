@@ -368,6 +368,52 @@ func TestLogFatal(t *testing.T) {
 	}
 }
 
+func TestAssertPass(t *testing.T) {
+	withTTY(t, false)
+	if out := captureStdout(t, func() { Assert(true, "should not print") }); out != "" {
+		t.Errorf("Assert(true, ...) printed %q, want nothing", out)
+	}
+}
+
+func TestAssertFail(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		Assert(1 == 2, "expected %d to equal %d", 1, 2)
+		return
+	}
+
+	out, code := runFailHelper(t, "TestAssertFail")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[!] expected 1 to equal 2\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+func TestCheckPass(t *testing.T) {
+	withTTY(t, false)
+	if out := captureStdout(t, func() { Check(nil, "should not print") }); out != "" {
+		t.Errorf("Check(nil, ...) printed %q, want nothing", out)
+	}
+}
+
+func TestCheckFail(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		Check(fmt.Errorf("disk full"), "failed to write %s", "file.txt")
+		return
+	}
+
+	out, code := runFailHelper(t, "TestCheckFail")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[!] failed to write file.txt: disk full\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
 func TestLogError(t *testing.T) {
 	withTTY(t, false)
 
