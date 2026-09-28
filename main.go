@@ -4,12 +4,13 @@ import "github.com/alexflint/go-arg"
 
 // Args holds the parsed CLI arguments, available to any function that needs them.
 var Args struct {
-	Hello   *CmdHello `arg:"subcommand:hello" help:"run the demo"`
-	Quiet   bool      `arg:"-q,--quiet" help:"print fewer logs"`
-	Verbose bool      `arg:"-v,--verbose" help:"print more logs"`
-	Force   bool      `arg:"-f,--yes" help:"assume yes on confirmation prompts"`
-	ForceNo bool      `arg:"-n,--no" help:"assume no on confirmation prompts"`
-	Audit   bool      `arg:"--audit" help:"audit potentially dangerous operations"`
+	Hello    *CmdHello `arg:"subcommand:hello" help:"run the demo"`
+	Quiet    bool      `arg:"-q,--quiet" help:"print fewer logs"`
+	Verbose  bool      `arg:"-v,--verbose" help:"print more logs"`
+	Force    bool      `arg:"-f,--yes" help:"assume yes on confirmation prompts"`
+	ForceNo  bool      `arg:"-n,--no" help:"assume no on confirmation prompts"`
+	Audit    bool      `arg:"--audit" help:"audit potentially dangerous operations"`
+	LogDepth int       `arg:"-l,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
 }
 
 func main() {

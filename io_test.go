@@ -11,6 +11,13 @@ import (
 	"testing"
 )
 
+// TestMain sets Args defaults that arg.MustParse would normally fill in, since
+// tests never call it.
+func TestMain(m *testing.M) {
+	Args.LogDepth = 4
+	os.Exit(m.Run())
+}
+
 // withTTY sets isTTY for the duration of a test and restores the prior value.
 // Tests in this file must not call t.Parallel(): they mutate this package-level var.
 func withTTY(t *testing.T, tty bool) {
@@ -495,12 +502,12 @@ func TestLogTaskTTY(t *testing.T) {
 	if len(task.logs) != 6 {
 		t.Errorf("stored %d log lines, want 6", len(task.logs))
 	}
-	// Last render before Done shows the header and the last taskLogLines logs.
+	// Last render before Done shows the header and the last Args.LogDepth logs.
 	if !strings.Contains(got, "\n    line 2\n    line 3\n    line 4\n    line 5\n") {
 		t.Errorf("last logs not shown: %q", got)
 	}
 	// Done clears the header and 4 log rows and prints only the done header.
-	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+taskLogLines, formatMsg(Styled("✓", Bold, Green), "Task succeeded: build"))
+	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+Args.LogDepth, formatMsg(Styled("✓", Bold, Green), "Task succeeded: build"))
 	if !strings.HasSuffix(got, want) {
 		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
 	}
@@ -544,15 +551,15 @@ func runTaskFailTTY(n int) {
 
 // wantTaskFailTTY returns the expected tail of a failed TTY task's output: the
 // failed header replacing the last render, then the entire log of n lines, then
-// the failed header again if n > taskLogLines. Built by hand: this process's
+// the failed header again if n > Args.LogDepth. Built by hand: this process's
 // stdout is not a TTY, so Styled would not style.
 func wantTaskFailTTY(n int) string {
 	header := "[\x1b[1;31m✗\x1b[0m] Task failed: build\n"
-	want := fmt.Sprintf("\x1b[%dF\x1b[J", 1+taskLogLines) + header
+	want := fmt.Sprintf("\x1b[%dF\x1b[J", 1+Args.LogDepth) + header
 	for i := 0; i < n; i++ {
 		want += fmt.Sprint("    line ", i, "\n")
 	}
-	if n > taskLogLines {
+	if n > Args.LogDepth {
 		want += header
 	}
 	return want
@@ -560,28 +567,28 @@ func wantTaskFailTTY(n int) string {
 
 func TestTaskFailTTYLongLog(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		runTaskFailTTY(taskLogLines + 2)
+		runTaskFailTTY(Args.LogDepth + 2)
 		return
 	}
 	out, code := runFailHelper(t, "TestTaskFailTTYLongLog")
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := wantTaskFailTTY(taskLogLines + 2); !strings.HasSuffix(out, want) {
+	if want := wantTaskFailTTY(Args.LogDepth + 2); !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want suffix %q", out, want)
 	}
 }
 
 func TestTaskFailTTYShortLog(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		runTaskFailTTY(taskLogLines)
+		runTaskFailTTY(Args.LogDepth)
 		return
 	}
 	out, code := runFailHelper(t, "TestTaskFailTTYShortLog")
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := wantTaskFailTTY(taskLogLines); !strings.HasSuffix(out, want) {
+	if want := wantTaskFailTTY(Args.LogDepth); !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want suffix %q", out, want)
 	}
 }

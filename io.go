@@ -217,9 +217,6 @@ func Check(err error, format string, params ...any) {
 	}
 }
 
-// taskLogLines is how many of the latest log lines are shown under a running task.
-const taskLogLines = 4
-
 // taskLogIndent prefixes every task log line.
 const taskLogIndent = "    "
 
@@ -316,7 +313,7 @@ func (t *Task) Fail() {
 			line = WrapText(line, width-len(taskLogIndent))
 			fmt.Println(taskLogIndent + strings.ReplaceAll(line, "\n", "\n"+taskLogIndent))
 		}
-		if isTTY && len(t.logs) > taskLogLines {
+		if isTTY && len(t.logs) > Args.LogDepth {
 			fmt.Println(formatMsg(failIcon, t.label("Task failed: "))) // repeated so the failure is visible below a long log
 		}
 	}
@@ -355,7 +352,7 @@ func (t *Task) finish(icon, status string, force bool) {
 
 // render redraws the task message, prefixed with status, over the previous render, leaving the cursor
 // at the start of the line below. While running, it also draws the last
-// taskLogLines log lines, padded with empty rows so the block height is fixed.
+// --log-depth log lines, padded with empty rows so the block height is fixed.
 // The caller must hold t.mu.
 func (t *Task) render(icon, status string, running bool) {
 	width, _, _ := term.GetSize(int(os.Stdout.Fd()))
@@ -365,8 +362,8 @@ func (t *Task) render(icon, status string, running bool) {
 	}
 	block := formatMsg(icon, t.label(status))
 	if running {
-		logs := t.logs[max(0, len(t.logs)-taskLogLines):]
-		for i := 0; i < taskLogLines; i++ {
+		logs := t.logs[max(0, len(t.logs)-Args.LogDepth):]
+		for i := 0; i < Args.LogDepth; i++ {
 			block += "\n"
 			if i < len(logs) {
 				// Keep each log line to one row, so the row count stays exact.
