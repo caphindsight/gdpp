@@ -263,6 +263,13 @@ func withForce(t *testing.T, force bool) {
 	t.Cleanup(func() { Args.Force = orig })
 }
 
+// withQuiet sets Args.Quiet for the duration of a test and restores the prior value.
+func withQuiet(t *testing.T, quiet bool) {
+	orig := Args.Quiet
+	Args.Quiet = quiet
+	t.Cleanup(func() { Args.Quiet = orig })
+}
+
 // withForceNo sets Args.ForceNo for the duration of a test and restores the prior value.
 func withForceNo(t *testing.T, forceNo bool) {
 	orig := Args.ForceNo

@@ -408,7 +408,7 @@ func TestLogTaskTTY(t *testing.T) {
 	withUnicode(t, true)
 	var task *Task
 	got := captureStdout(t, func() {
-		task = LogTask("Build.")
+		task = LogTask("Build...")
 		for i := 0; i < 6; i++ {
 			task.LogString(fmt.Sprint("line ", i))
 		}
@@ -421,8 +421,9 @@ func TestLogTaskTTY(t *testing.T) {
 	if !strings.Contains(got, "\n    line 2\n    line 3\n    line 4\n    line 5\n") {
 		t.Errorf("last logs not shown: %q", got)
 	}
-	// Done clears the header and 4 log rows and prints only the done header.
-	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+Args.LogDepth, formatMsg(Styled("✓", Bold, Green), "Task succeeded: build."))
+	// Done clears the header and 4 log rows and prints just the task name,
+	// case preserved, with "..." replaced by ".".
+	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+Args.LogDepth, formatMsg(Styled("✓", Bold, Green), "Build."))
 	if !strings.HasSuffix(got, want) {
 		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
 	}
@@ -430,6 +431,68 @@ func TestLogTaskTTY(t *testing.T) {
 	case <-task.exited:
 	default:
 		t.Error("animation goroutine still running after Done")
+	}
+}
+
+func TestLogTaskQuietNonTTY(t *testing.T) {
+	withTTY(t, false)
+	withUnicode(t, true)
+	withQuiet(t, true)
+	var task *Task
+	got := captureStdout(t, func() {
+		task = LogTask("Build %d.", 1)
+		task.LogString("a")
+		task.LogString("b")
+		task.Done()
+	})
+	if want := "[$] Running task: build 1.\n[+] Task succeeded: build 1.\n"; got != want {
+		t.Errorf("printed %q, want %q", got, want)
+	}
+	if len(task.logs) != 2 {
+		t.Errorf("stored %d log lines, want 2", len(task.logs))
+	}
+}
+
+func TestLogTaskQuietTTY(t *testing.T) {
+	withTTY(t, true)
+	withUnicode(t, true)
+	withQuiet(t, true)
+	var task *Task
+	got := captureStdout(t, func() {
+		task = LogTask("Build...")
+		task.LogString("hidden")
+		task.Done()
+	})
+	if strings.Contains(got, "hidden") {
+		t.Errorf("log line leaked while quiet: %q", got)
+	}
+	// The progress message is drawn (and replaced by the task name), just
+	// without any log-line rows under it, so only 1 row was ever drawn.
+	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1, formatMsg(Styled("✓", Bold, Green), "Build."))
+	if !strings.HasSuffix(got, want) {
+		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
+	}
+}
+
+func TestTaskFailQuietNonTTY(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		isUnicode = true
+		Args.Quiet = true
+		task := LogTask("Build.")
+		task.LogString("a")
+		task.Fail()
+		return
+	}
+
+	out, code := runFailHelper(t, "TestTaskFailQuietNonTTY")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	// The running-task header is shown despite -q/--quiet, its log line is not,
+	// and the failure still catches up on the entire log.
+	if want := "[$] Running task: build.\n[x] Task failed: build.\n    a\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 
@@ -457,7 +520,7 @@ func TestTaskFailNonTTY(t *testing.T) {
 func runTaskFailTTY(n int) {
 	isTTY = true
 	isUnicode = true
-	task := LogTask("Build.")
+	task := LogTask("Build...")
 	for i := 0; i < n; i++ {
 		task.LogString(fmt.Sprint("line ", i))
 	}
@@ -465,17 +528,17 @@ func runTaskFailTTY(n int) {
 }
 
 // wantTaskFailTTY returns the expected tail of a failed TTY task's output: the
-// failed header replacing the last render, then the entire log of n lines, then
-// the failed header again if n > Args.LogDepth. Built by hand: this process's
-// stdout is not a TTY, so Styled would not style.
+// failed header replacing the last render, then the entire log of n lines,
+// then a "Failed: ..." repeat of the header if n > Args.LogDepth. Built by
+// hand: this process's stdout is not a TTY, so Styled would not style.
 func wantTaskFailTTY(n int) string {
-	header := "[\x1b[1;31m✗\x1b[0m] Task failed: build.\n"
+	header := "[\x1b[1;31m✗\x1b[0m] Build.\n"
 	want := fmt.Sprintf("\x1b[%dF\x1b[J", 1+Args.LogDepth) + header
 	for i := 0; i < n; i++ {
 		want += fmt.Sprint("    line ", i, "\n")
 	}
 	if n > Args.LogDepth {
-		want += header
+		want += "[\x1b[1;31m✗\x1b[0m] Failed: build.\n"
 	}
 	return want
 }

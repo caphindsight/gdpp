@@ -245,19 +245,16 @@ type Task struct {
 }
 
 // LogTask prints a formatted task message and returns the task. On a terminal,
-// the icon is animated and the latest log lines are shown under the message
-// until Done is called.
+// the icon is animated until Done is called, with the latest log lines shown
+// under the message; -q/--quiet or Silence hides those log lines but not the
+// animated message itself.
 func LogTask(format string, params ...any) *Task {
 	t := &Task{msg: fmt.Sprintf(format, params...), stop: make(chan struct{}), exited: make(chan struct{})}
 	if !isTTY {
-		if !quiet() {
-			fmt.Println(formatMsg("$", t.label("Running task: ")))
-		}
+		fmt.Println(formatMsg("$", t.label("Running task: ")))
 		return t
 	}
-	if !quiet() {
-		t.render(spinnerFrame(0), "", true)
-	}
+	t.render(spinnerFrame(0), t.msg, true)
 	go func() {
 		defer close(t.exited)
 		ticker := time.NewTicker(80 * time.Millisecond)
@@ -269,9 +266,7 @@ func LogTask(format string, params ...any) *Task {
 			case <-ticker.C:
 				t.mu.Lock()
 				t.frame++
-				if !quiet() {
-					t.render(spinnerFrame(t.frame), "", true)
-				}
+				t.render(spinnerFrame(t.frame), t.msg, true)
 				t.mu.Unlock()
 			}
 		}
@@ -292,25 +287,24 @@ func (t *Task) LogString(s string) {
 		return
 	}
 	if !quiet() {
-		t.render(spinnerFrame(t.frame), "", true)
+		t.render(spinnerFrame(t.frame), t.msg, true)
 	}
 }
 
 // Done marks the task as completed. On a terminal, it stops the animation and
-// clears the log lines shown under the task message. Suppressed by -q/--quiet
-// or Silence.
+// clears the log lines shown under the task message. Like the task message
+// itself, this is never suppressed by -q/--quiet or Silence.
 func (t *Task) Done() {
-	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ", false)
+	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ")
 }
 
-// Fail marks the task as failed, then exits the program via Fail. Unlike
-// other logs, this is never suppressed by -q/--quiet or Silence: it stops the
-// animation, prints the entire task log (catching up on lines that were
-// hidden while running) and, on a terminal, repeats the failed task message
-// below a long log.
+// Fail marks the task as failed, then exits the program via Fail. Never
+// suppressed by -q/--quiet or Silence: it stops the animation, prints the
+// entire task log (catching up on lines that were hidden while running) and,
+// on a terminal, repeats the failed task message below a long log.
 func (t *Task) Fail() {
 	failIcon := Styled(unicodeOr("✗", "x"), Bold, Red)
-	t.finish(failIcon, "Task failed: ", true)
+	t.finish(failIcon, "Task failed: ")
 	if isTTY || quiet() {
 		width, _, _ := term.GetSize(int(os.Stdout.Fd()))
 		for _, line := range t.logs {
@@ -318,7 +312,7 @@ func (t *Task) Fail() {
 			fmt.Println(taskLogIndent + strings.ReplaceAll(line, "\n", "\n"+taskLogIndent))
 		}
 		if isTTY && len(t.logs) > Args.LogDepth {
-			fmt.Println(formatMsg(failIcon, t.label("Task failed: "))) // repeated so the failure is visible below a long log
+			fmt.Println(formatMsg(failIcon, t.failedName())) // repeated so the failure is visible below a long log
 		}
 	}
 	Fail()
@@ -339,38 +333,52 @@ func (t *Task) label(status string) string {
 	return status + strings.ToLower(msg[:size]) + msg[size:]
 }
 
-// finish prints the task message with the final icon and status prefix, unless
-// suppressed by -q/--quiet or Silence (force overrides this, for task
-// failures). On a terminal, it stops the animation and clears the log lines
-// shown under the task message regardless.
-func (t *Task) finish(icon, status string, force bool) {
+// finalName returns the task name shown on a terminal once a task is done,
+// case preserved, with a trailing "..." replaced by ".".
+func (t *Task) finalName() string {
+	return strings.TrimSuffix(t.msg, "...") + "."
+}
+
+// failedName returns finalName prefixed with "Failed: ", lowercasing the
+// first letter to follow it. Used for the failure line repeated below a long
+// log, since the header replacing the progress line already showed the name.
+func (t *Task) failedName() string {
+	name := t.finalName()
+	_, size := utf8.DecodeRuneInString(name)
+	return "Failed: " + strings.ToLower(name[:size]) + name[size:]
+}
+
+// finish prints icon with the task's final message. On a terminal, where the
+// running message already showed the task name, it's just finalName;
+// otherwise (no running message to overwrite) it's status-prefixed and
+// lowercased, via label. Never suppressed by -q/--quiet or Silence, like the
+// running task message itself. On a terminal, it also stops the animation
+// and clears the log lines shown under the task message.
+func (t *Task) finish(icon, status string) {
 	if !isTTY {
-		if force || !quiet() {
-			fmt.Println(formatMsg(icon, t.label(status)))
-		}
+		fmt.Println(formatMsg(icon, t.label(status)))
 		return
 	}
 	close(t.stop)
 	<-t.exited
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if force || !quiet() {
-		t.render(icon, status, false)
-	}
+	t.render(icon, t.finalName(), false)
 }
 
-// render redraws the task message, prefixed with status, over the previous render, leaving the cursor
-// at the start of the line below. While running, it also draws the last
-// --log-depth log lines, padded with empty rows so the block height is fixed.
-// The caller must hold t.mu.
-func (t *Task) render(icon, status string, running bool) {
+// render redraws msg over the previous render, leaving the cursor at the
+// start of the line below. While running, it also draws the last
+// --log-depth log lines, padded with empty rows so the block height is
+// fixed, unless suppressed by -q/--quiet or Silence. The caller must hold
+// t.mu.
+func (t *Task) render(icon, msg string, running bool) {
 	width, _, _ := term.GetSize(int(os.Stdout.Fd()))
 	var out strings.Builder
 	if t.drawn > 0 {
 		fmt.Fprintf(&out, "\x1b[%dF\x1b[J", t.drawn) // up to the first drawn row, clear below
 	}
-	block := formatMsg(icon, t.label(status))
-	if running {
+	block := formatMsg(icon, msg)
+	if running && !quiet() {
 		logs := t.logs[max(0, len(t.logs)-Args.LogDepth):]
 		for i := 0; i < Args.LogDepth; i++ {
 			block += "\n"

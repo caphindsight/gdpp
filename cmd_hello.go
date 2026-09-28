@@ -37,14 +37,16 @@ func (c *CmdHello) Run() {
 
 	silence := Silence()
 	LogInfo("You should not see this, it's silenced.")
-	t = LogTask("This task's progress is silenced too...")
+	t = LogTask("This task's progress stays visible, but its log lines don't...")
 	time.Sleep(logDelay)
-	t.LogString("working quietly")
+	t.LogString("you should not see this either")
 	t.Done()
 	silence.End()
 	LogInfo("Silence lifted, logging is back.")
 
+  silence = Silence()
 	Exec("Running a subprocess...", Cwd(), "bash", "-c", "echo one; sleep 5; echo two; sleep 5; echo three; echo four; exit 1")
+  silence.End()
 
 	Confirm("Continue to the failing task?")
 	Audit("Run a potentially dangerous operation?")
