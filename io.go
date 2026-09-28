@@ -247,7 +247,7 @@ type Task struct {
 // LogTask prints a formatted task message and returns the task. On a terminal,
 // the icon is animated until Done is called, with the latest log lines shown
 // under the message; -q/--quiet or Silence hides those log lines but not the
-// animated message itself.
+// animated message itself, which is erased once the task succeeds.
 func LogTask(format string, params ...any) *Task {
 	t := &Task{msg: fmt.Sprintf(format, params...), stop: make(chan struct{}), exited: make(chan struct{})}
 	if !isTTY {
@@ -292,10 +292,11 @@ func (t *Task) LogString(s string) {
 }
 
 // Done marks the task as completed. On a terminal, it stops the animation and
-// clears the log lines shown under the task message. Like the task message
-// itself, this is never suppressed by -q/--quiet or Silence.
+// clears the log lines shown under the task message; under -q/--quiet or
+// Silence, it erases the task message too, leaving no trace. Otherwise, it
+// prints the final task message.
 func (t *Task) Done() {
-	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ")
+	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ", quiet())
 }
 
 // Fail marks the task as failed, then exits the program via Fail. Never
@@ -304,7 +305,7 @@ func (t *Task) Done() {
 // on a terminal, repeats the failed task message below a long log.
 func (t *Task) Fail() {
 	failIcon := Styled(unicodeOr("✗", "x"), Bold, Red)
-	t.finish(failIcon, "Task failed: ")
+	t.finish(failIcon, "Task failed: ", false)
 	if isTTY || quiet() {
 		width, _, _ := term.GetSize(int(os.Stdout.Fd()))
 		for _, line := range t.logs {
@@ -351,10 +352,10 @@ func (t *Task) failedName() string {
 // finish prints icon with the task's final message. On a terminal, where the
 // running message already showed the task name, it's just finalName;
 // otherwise (no running message to overwrite) it's status-prefixed and
-// lowercased, via label. Never suppressed by -q/--quiet or Silence, like the
-// running task message itself. On a terminal, it also stops the animation
-// and clears the log lines shown under the task message.
-func (t *Task) finish(icon, status string) {
+// lowercased, via label. On a terminal, it also stops the animation and
+// clears the log lines shown under the task message, and with erase set it
+// clears the task message too instead of printing anything.
+func (t *Task) finish(icon, status string, erase bool) {
 	if !isTTY {
 		fmt.Println(formatMsg(icon, t.label(status)))
 		return
@@ -363,6 +364,11 @@ func (t *Task) finish(icon, status string) {
 	<-t.exited
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	if erase {
+		fmt.Printf("\x1b[%dF\x1b[J", t.drawn) // up to the first drawn row, clear below
+		t.drawn = 0
+		return
+	}
 	t.render(icon, t.finalName(), false)
 }
 

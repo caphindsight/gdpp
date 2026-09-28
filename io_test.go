@@ -454,22 +454,31 @@ func TestLogTaskQuietNonTTY(t *testing.T) {
 }
 
 func TestLogTaskQuietTTY(t *testing.T) {
+	withQuiet(t, true)
+	testLogTaskErasedTTY(t)
+}
+
+func TestLogTaskSilenceTTY(t *testing.T) {
+	defer Silence().End()
+	testLogTaskErasedTTY(t)
+}
+
+// testLogTaskErasedTTY checks that a successful task on a terminal, while
+// quiet, hides its log lines and then erases its progress message.
+func testLogTaskErasedTTY(t *testing.T) {
 	withTTY(t, true)
 	withUnicode(t, true)
-	withQuiet(t, true)
-	var task *Task
 	got := captureStdout(t, func() {
-		task = LogTask("Build...")
+		task := LogTask("Build...")
 		task.LogString("hidden")
 		task.Done()
 	})
-	if strings.Contains(got, "hidden") {
-		t.Errorf("log line leaked while quiet: %q", got)
+	if strings.Contains(got, "hidden") || strings.Contains(got, "✓") {
+		t.Errorf("log line or success message leaked while quiet: %q", got)
 	}
-	// The progress message is drawn (and replaced by the task name), just
-	// without any log-line rows under it, so only 1 row was ever drawn.
-	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1, formatMsg(Styled("✓", Bold, Green), "Build."))
-	if !strings.HasSuffix(got, want) {
+	// The progress message is drawn without log-line rows under it, so only 1
+	// row was ever drawn, and Done erases just that row.
+	if want := "\x1b[1F\x1b[J"; !strings.HasSuffix(got, want) {
 		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
 	}
 }

@@ -4,6 +4,7 @@ import "github.com/alexflint/go-arg"
 
 // Args holds the parsed CLI arguments, available to any function that needs them.
 var Args struct {
+	Fetch    *CmdFetch  `arg:"subcommand:fetch" help:"download deps from the dep repository, or list it"`
 	Vendor   *CmdVendor `arg:"subcommand:vendor" help:"copy a dep into or out of the project's cache"`
 	Quiet    bool       `arg:"-q,--quiet" help:"print fewer logs"`
 	Verbose  bool       `arg:"-v,--verbose" help:"print more logs"`
@@ -27,6 +28,8 @@ func main() {
 	}
 
 	switch {
+	case Args.Fetch != nil:
+		Args.Fetch.Run()
 	case Args.Vendor != nil:
 		Args.Vendor.Run()
 	default:

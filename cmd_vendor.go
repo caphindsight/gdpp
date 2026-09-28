@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -17,17 +16,6 @@ type CmdVendor struct {
 	CheckIn bool   `arg:"--checkin" help:"with --from, use the checked in cache instead of the ephemeral one"`
 	Tar     bool   `arg:"--tar" help:"the path is a .tar.gz file instead of a directory"`
 	Zip     bool   `arg:"--zip" help:"the path is a .zip file instead of a directory"`
-}
-
-// countTrue returns how many of bs are true.
-func countTrue(bs ...bool) int {
-	n := 0
-	for _, b := range bs {
-		if b {
-			n++
-		}
-	}
-	return n
 }
 
 func (c *CmdVendor) Run() {
@@ -54,7 +42,7 @@ func (c *CmdVendor) validate() string {
 	Assert(!c.Tar || !c.Zip, "Invalid arguments: --tar and --zip cannot be used together.")
 	Assert(!c.CheckIn || c.From != "", "Invalid arguments: --checkin can only be used with --from.")
 	name := c.Bind + c.Spec + c.Engine // only one is set
-	Assert(name == filepath.Base(name) && name != "." && name != "..", "Invalid arguments: %q is not a valid dep name.", name)
+	assertDepName(name)
 	return name
 }
 
