@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -31,6 +32,15 @@ func (p Path) GetOsPath() string {
 // Name returns the file or directory name part of the path.
 func (p Path) Name() string {
 	return path.Base(p.absolutePath)
+}
+
+// Windows drive root, e.g. "C:/".
+var driveRootPattern = regexp.MustCompile(`^[A-Za-z]:/?$`)
+
+// IsGlobalRoot reports whether the path is a filesystem root: "/" on Unix,
+// or a drive root such as "C:/" on Windows.
+func (p Path) IsGlobalRoot() bool {
+	return p.absolutePath == "/" || driveRootPattern.MatchString(p.absolutePath)
 }
 
 // BaseDir returns the parent directory of the path.
@@ -71,6 +81,60 @@ func (p Path) IsFile() bool {
 	}
 	Check(err, "Failed to stat %s", p.absolutePath)
 	return info.Mode().IsRegular()
+}
+
+// IsProjectRoot reports whether the path is a directory containing a
+// project.godot file.
+func (p Path) IsProjectRoot() bool {
+	return p.IsDir() && p.Cd(projectFileName).IsFile()
+}
+
+// IsPackageRoot reports whether the path is a directory containing a
+// gd++pkg.toml file.
+func (p Path) IsPackageRoot() bool {
+	return p.IsDir() && p.Cd(packageFileName).IsFile()
+}
+
+// findRoot walks up from p, returning the first ancestor (including p) that
+// satisfies isRoot, or false if none is found before the filesystem root.
+func findRoot(p Path, isRoot func(Path) bool) (Path, bool) {
+	for {
+		if isRoot(p) {
+			return p, true
+		}
+		if p.IsGlobalRoot() {
+			return Path{}, false
+		}
+		p = p.BaseDir()
+	}
+}
+
+// GetProjectRootMaybe returns the nearest project root containing p, and
+// whether one was found.
+func GetProjectRootMaybe(p Path) (Path, bool) {
+	return findRoot(p, Path.IsProjectRoot)
+}
+
+// GetProjectRoot returns the nearest project root containing p, asserting
+// that one exists.
+func GetProjectRoot(p Path) Path {
+	root, ok := GetProjectRootMaybe(p)
+	Assert(ok, "Path %s is not contained in a Godot project.", p.absolutePath)
+	return root
+}
+
+// GetPackageRootMaybe returns the nearest package root containing p, and
+// whether one was found.
+func GetPackageRootMaybe(p Path) (Path, bool) {
+	return findRoot(p, Path.IsPackageRoot)
+}
+
+// GetPackageRoot returns the nearest package root containing p, asserting
+// that one exists.
+func GetPackageRoot(p Path) Path {
+	root, ok := GetPackageRootMaybe(p)
+	Assert(ok, "Path %s is not contained in a GD++ package.", p.absolutePath)
+	return root
 }
 
 // Ls returns the children of a directory in lexicographic order, skipping

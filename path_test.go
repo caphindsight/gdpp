@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -82,6 +83,27 @@ func TestBaseDir(t *testing.T) {
 	}
 }
 
+func TestIsGlobalRoot(t *testing.T) {
+	cases := []struct {
+		input string
+		want  bool
+	}{
+		{"/", true},
+		{"/a", false},
+		{"/a/b", false},
+		{"C:", true},
+		{"C:/", true},
+		{"c:", true},
+		{"C:/Users", false},
+	}
+	for _, c := range cases {
+		p := Path{absolutePath: c.input}
+		if got := p.IsGlobalRoot(); got != c.want {
+			t.Errorf("Path{%q}.IsGlobalRoot() = %v, want %v", c.input, got, c.want)
+		}
+	}
+}
+
 func TestCd(t *testing.T) {
 	cases := []struct {
 		base     string
@@ -130,6 +152,109 @@ func TestExistsIsDirIsFile(t *testing.T) {
 				t.Errorf("IsFile() = %v, want %v", got, c.isFile)
 			}
 		})
+	}
+}
+
+func TestIsProjectRootIsPackageRoot(t *testing.T) {
+	projectDir := NewPath(t.TempDir())
+	if err := os.WriteFile(projectDir.Cd(projectFileName).GetOsPath(), nil, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	packageDir := NewPath(t.TempDir())
+	if err := os.WriteFile(packageDir.Cd(packageFileName).GetOsPath(), nil, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	emptyDir := NewPath(t.TempDir())
+	file := projectDir.Cd(projectFileName)
+
+	cases := []struct {
+		name             string
+		p                Path
+		isProject, isPkg bool
+	}{
+		{"project dir", projectDir, true, false},
+		{"package dir", packageDir, false, true},
+		{"empty dir", emptyDir, false, false},
+		{"file", file, false, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := c.p.IsProjectRoot(); got != c.isProject {
+				t.Errorf("IsProjectRoot() = %v, want %v", got, c.isProject)
+			}
+			if got := c.p.IsPackageRoot(); got != c.isPkg {
+				t.Errorf("IsPackageRoot() = %v, want %v", got, c.isPkg)
+			}
+		})
+	}
+}
+
+func TestGetProjectRootGetPackageRoot(t *testing.T) {
+	root := NewPath(t.TempDir())
+	if err := os.WriteFile(root.Cd(projectFileName).GetOsPath(), nil, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	if err := os.WriteFile(root.Cd(packageFileName).GetOsPath(), nil, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	nested := root.Cd("a", "b")
+	if err := os.MkdirAll(nested.GetOsPath(), 0755); err != nil {
+		t.Fatalf("os.MkdirAll: %v", err)
+	}
+	outside := NewPath(t.TempDir())
+
+	if got, ok := GetProjectRootMaybe(nested); !ok || got != root {
+		t.Errorf("GetProjectRootMaybe(nested) = (%v, %v), want (%v, true)", got, ok, root)
+	}
+	if got := GetProjectRoot(nested); got != root {
+		t.Errorf("GetProjectRoot(nested) = %v, want %v", got, root)
+	}
+	if _, ok := GetProjectRootMaybe(outside); ok {
+		t.Errorf("GetProjectRootMaybe(outside) ok = true, want false")
+	}
+
+	if got, ok := GetPackageRootMaybe(nested); !ok || got != root {
+		t.Errorf("GetPackageRootMaybe(nested) = (%v, %v), want (%v, true)", got, ok, root)
+	}
+	if got := GetPackageRoot(nested); got != root {
+		t.Errorf("GetPackageRoot(nested) = %v, want %v", got, root)
+	}
+	if _, ok := GetPackageRootMaybe(outside); ok {
+		t.Errorf("GetPackageRootMaybe(outside) ok = true, want false")
+	}
+}
+
+func TestGetProjectRootFailsOutsideProject(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		GetProjectRoot(NewPath(os.TempDir()))
+		return
+	}
+
+	out, code := runFailHelper(t, "TestGetProjectRootFailsOutsideProject")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if !strings.HasSuffix(out, "is not contained in a Godot project.\n") {
+		t.Errorf("output = %q, want suffix %q", out, "is not contained in a Godot project.\n")
+	}
+}
+
+func TestGetPackageRootFailsOutsidePackage(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		GetPackageRoot(NewPath(os.TempDir()))
+		return
+	}
+
+	out, code := runFailHelper(t, "TestGetPackageRootFailsOutsidePackage")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if !strings.HasSuffix(out, "is not contained in a GD++ package.\n") {
+		t.Errorf("output = %q, want suffix %q", out, "is not contained in a GD++ package.\n")
 	}
 }
 

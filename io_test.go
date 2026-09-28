@@ -552,36 +552,44 @@ func TestLogStyle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ast.Inspect(f, func(n ast.Node) bool {
-			call, ok := n.(*ast.CallExpr)
-			if !ok {
+		for _, d := range f.Decls {
+			// Helpers forward messages already checked at their call sites.
+			if fd, ok := d.(*ast.FuncDecl); ok && fd.Recv == nil {
+				if _, ok := helpers[fd.Name.Name]; ok {
+					continue
+				}
+			}
+			ast.Inspect(d, func(n ast.Node) bool {
+				call, ok := n.(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+				name, ok := call.Fun.(*ast.Ident)
+				if !ok {
+					return true
+				}
+				i, ok := helpers[name.Name]
+				if !ok || len(call.Args) <= i {
+					return true
+				}
+				lit, ok := call.Args[i].(*ast.BasicLit)
+				if !ok || lit.Kind != token.STRING {
+					return true
+				}
+				msg, _ := strconv.Unquote(lit.Value)
+				rule, ok := "end with \".\"", strings.HasSuffix(msg, ".")
+				switch name.Name {
+				case "Confirm", "Audit":
+					rule, ok = "end with \"?\"", strings.HasSuffix(msg, "?")
+				case "Check": // the error is appended, then a period
+					rule, ok = "not end with \".\"", !strings.HasSuffix(msg, ".")
+				}
+				first, _ := utf8.DecodeRuneInString(msg)
+				if !unicode.IsUpper(first) || !ok {
+					t.Errorf("%s: %s(%s) must start uppercase and %s", fset.Position(lit.Pos()), name.Name, lit.Value, rule)
+				}
 				return true
-			}
-			name, ok := call.Fun.(*ast.Ident)
-			if !ok {
-				return true
-			}
-			i, ok := helpers[name.Name]
-			if !ok || len(call.Args) <= i {
-				return true
-			}
-			lit, ok := call.Args[i].(*ast.BasicLit)
-			if !ok || lit.Kind != token.STRING {
-				return true
-			}
-			msg, _ := strconv.Unquote(lit.Value)
-			rule, ok := "end with \".\"", strings.HasSuffix(msg, ".")
-			switch name.Name {
-			case "Confirm", "Audit":
-				rule, ok = "end with \"?\"", strings.HasSuffix(msg, "?")
-			case "Check": // the error is appended, then a period
-				rule, ok = "not end with \".\"", !strings.HasSuffix(msg, ".")
-			}
-			first, _ := utf8.DecodeRuneInString(msg)
-			if unicode.IsLower(first) || !ok {
-				t.Errorf("%s: %s(%s) must start uppercase and %s", fset.Position(lit.Pos()), name.Name, lit.Value, rule)
-			}
-			return true
-		})
+			})
+		}
 	}
 }
