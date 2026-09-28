@@ -38,9 +38,9 @@ func TestLoadProject(t *testing.T) {
 		Id:            "my_game",
 		Name:          `My "Game"`,
 		GodotVersion:  "4.3",
-		BindingsCache: ProjectDepCache{root.Cd("_gd++proj/bind"), root.Cd(".gd++proj/bind")},
-		ApiSpecsCache: ProjectDepCache{root.Cd("_gd++proj/spec"), root.Cd(".gd++proj/spec")},
-		EnginesCache:  ProjectDepCache{root.Cd("_gd++proj/engine"), root.Cd(".gd++proj/engine")},
+		BindingsCache: ProjectDepCache{root.Cd("_gd++proj/bind"), root.Cd(".gd++proj/bind"), "Godot C++ bindings"},
+		ApiSpecsCache: ProjectDepCache{root.Cd("_gd++proj/spec"), root.Cd(".gd++proj/spec"), "Godot API spec"},
+		EnginesCache:  ProjectDepCache{root.Cd("_gd++proj/engine"), root.Cd(".gd++proj/engine"), "Godot engine"},
 	}
 	if got := LoadProject(NewPath("/games/my_game/src")); !reflect.DeepEqual(got, want) {
 		t.Errorf("LoadProject() = %+v, want %+v", got, want)

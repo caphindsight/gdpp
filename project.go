@@ -77,8 +77,8 @@ func LoadProject(p Path) Project {
 		Name:         godotStringUnescaper.Replace(name[1]),
 		GodotVersion: version[1],
 
-		BindingsCache: newProjectDepCache(root, bindingsCacheDirName),
-		ApiSpecsCache: newProjectDepCache(root, apiSpecsCacheDirName),
-		EnginesCache:  newProjectDepCache(root, enginesCacheDirName),
+		BindingsCache: newProjectDepCache(root, bindingsCacheDirName, "Godot C++ bindings"),
+		ApiSpecsCache: newProjectDepCache(root, apiSpecsCacheDirName, "Godot API spec"),
+		EnginesCache:  newProjectDepCache(root, enginesCacheDirName, "Godot engine"),
 	}
 }

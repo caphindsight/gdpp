@@ -14,7 +14,7 @@ func TestProjectDepCache(t *testing.T) {
 		"/p/.gd++proj/bind/2.0/b.h": "b",
 		"/p/_gd++proj/bind/stray":   "not a dep",
 	})
-	c := newProjectDepCache(NewPath("/p"), "bind")
+	c := newProjectDepCache(NewPath("/p"), "bind", "bind")
 
 	if got, want := c.Ls(), []string{"1.0", "2.0"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("Ls() = %v, want %v", got, want)
@@ -68,9 +68,30 @@ func TestCompareDepNames(t *testing.T) {
 	}
 }
 
+func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
+	withMemFS(t, "/", map[string]string{
+		"/p/_gd++proj/bind/1.0/a.h": "checked in",
+		"/p/.gd++proj/bind/1.0/a.h": "ephemeral",
+		"/p/_gd++proj/bind/2.0/a.h": "checked in",
+		"/p/.gd++proj/bind/2.0/a.h": "ephemeral",
+	})
+	c := newProjectDepCache(NewPath("/p"), "bind", "bind")
+
+	c.CheckIn("1.0")
+	c.MakeEphemeral("2.0")
+	if c.IsEphemeral("1.0") || c.IsCheckedIn("2.0") {
+		t.Errorf("copy in the wrong cache was not deleted")
+	}
+	for path, want := range map[string]string{"/p/_gd++proj/bind/1.0/a.h": "checked in", "/p/.gd++proj/bind/2.0/a.h": "ephemeral"} {
+		if got := NewPath(path).ReadString(); got != want {
+			t.Errorf("%s = %q, want %q", path, got, want)
+		}
+	}
+}
+
 func TestProjectDepCacheCreatesMissingDirs(t *testing.T) {
 	withMemFS(t, "/", map[string]string{"/p/_gd++proj/spec/4.3/api.json": "{}"})
-	c := newProjectDepCache(NewPath("/p"), "spec")
+	c := newProjectDepCache(NewPath("/p"), "spec", "spec")
 
 	c.MakeEphemeral("4.3")
 	if !c.IsEphemeral("4.3") {

@@ -17,5 +17,5 @@ func countTrue(bs ...bool) int {
 
 // assertDepName asserts name can be used as a dep's directory name.
 func assertDepName(name string) {
-	Assert(name == filepath.Base(name) && name != "." && name != "..", "Invalid arguments: %q is not a valid dep name.", name)
+	Assert(name == filepath.Base(name) && name != "." && name != "..", "Invalid arguments: %q is not a valid dependency name.", name)
 }

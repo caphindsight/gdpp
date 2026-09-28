@@ -17,14 +17,16 @@ import (
 type ProjectDepCache struct {
 	CheckedInDir Path
 	EphemeralDir Path
+	Desc         string // the kind of deps, for messages, e.g. "Godot API spec"
 }
 
-// newProjectDepCache returns the cache stored under res://_gd++proj/<dir>
-// (checked in) and res://.gd++proj/<dir> (ephemeral).
-func newProjectDepCache(root Path, dir string) ProjectDepCache {
+// newProjectDepCache returns the cache of desc deps stored under
+// res://_gd++proj/<dir> (checked in) and res://.gd++proj/<dir> (ephemeral).
+func newProjectDepCache(root Path, dir, desc string) ProjectDepCache {
 	return ProjectDepCache{
 		CheckedInDir: root.Cd(checkedInDepsDirName, dir),
 		EphemeralDir: root.Cd(ephemeralDepsDirName, dir),
+		Desc:         desc,
 	}
 }
 
@@ -102,24 +104,22 @@ func (c ProjectDepCache) GetPath(name string) Path {
 	if c.IsCheckedIn(name) {
 		return c.CheckedInDir.Cd(name)
 	}
-	Assert(c.IsEphemeral(name), "Dep %s does not exist in %s or %s.", name, c.CheckedInDir.ToString(), c.EphemeralDir.ToString())
+	Assert(c.IsEphemeral(name), "The %s %s is not in the project cache.", c.Desc, name)
 	return c.EphemeralDir.Cd(name)
 }
 
 // CheckIn moves the dep to the checked in directory, asserting it exists.
-// Does nothing if it's already checked in.
+// If it's already checked in, deletes its ephemeral copy, if any.
 func (c ProjectDepCache) CheckIn(name string) {
-	if src := c.GetPath(name); !c.IsCheckedIn(name) {
-		moveDep(src, c.CheckedInDir.Cd(name))
-	}
+	c.GetPath(name) // asserts it exists
+	moveDep(c.EphemeralDir.Cd(name), c.CheckedInDir.Cd(name))
 }
 
 // MakeEphemeral moves the dep to the ephemeral directory, asserting it
-// exists. Does nothing if it's already ephemeral.
+// exists. If it's already ephemeral, deletes its checked in copy, if any.
 func (c ProjectDepCache) MakeEphemeral(name string) {
-	if src := c.GetPath(name); !c.IsEphemeral(name) {
-		moveDep(src, c.EphemeralDir.Cd(name))
-	}
+	c.GetPath(name) // asserts it exists
+	moveDep(c.CheckedInDir.Cd(name), c.EphemeralDir.Cd(name))
 }
 
 // Remove deletes the dep, asserting it exists.
@@ -127,8 +127,15 @@ func (c ProjectDepCache) Remove(name string) {
 	c.GetPath(name).Remove()
 }
 
-// moveDep moves a dep directory to dst, creating dst's parents as needed.
+// moveDep moves a dep directory from src to dst, creating dst's parents as
+// needed. If dst already exists, it's kept and src is deleted instead.
 func moveDep(src, dst Path) {
+	if dst.Exists() {
+		if src.Exists() {
+			src.Remove()
+		}
+		return
+	}
 	dst.CreateParentDirectory()
 	src.Move(dst)
 }

@@ -131,7 +131,7 @@ func TestVendorInvalidArgs(t *testing.T) {
 		"two_direction": {CmdVendor{Bind: "a", From: "/x", To: "/y"}, "exactly one of --from and --to is required"},
 		"tar_and_zip":   {CmdVendor{Bind: "a", From: "/x", Tar: true, Zip: true}, "--tar and --zip cannot be used together"},
 		"checkin_to":    {CmdVendor{Bind: "a", To: "/x", CheckIn: true}, "--checkin can only be used with --from"},
-		"bad_name":      {CmdVendor{Bind: "../a", From: "/x"}, `"../a" is not a valid dep name`},
+		"bad_name":      {CmdVendor{Bind: "../a", From: "/x"}, `"../a" is not a valid dependency name`},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

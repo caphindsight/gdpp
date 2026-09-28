@@ -10,7 +10,7 @@ import (
 // is cloned sparsely: only index/ and the chosen data/<kind>/<name> are
 // checked out.
 type CmdFetch struct {
-	Index       bool     `arg:"--index" help:"list all deps in the repository"`
+	Index       bool     `arg:"--index" help:"list all dependencies in the repository"`
 	IndexBind   bool     `arg:"--index-bind" help:"list the Godot C++ bindings in the repository"`
 	IndexSpec   bool     `arg:"--index-spec" help:"list the Godot API specs in the repository"`
 	IndexEngine bool     `arg:"--index-engine" help:"list the Godot engines in the repository"`
@@ -22,8 +22,8 @@ type CmdFetch struct {
 	Engine      []string `arg:"--engine" placeholder:"NAME" help:"fetch these Godot engines"`
 	EngineAll   bool     `arg:"--engine-all" help:"fetch all Godot engines"`
 	CheckIn     bool     `arg:"--checkin" help:"fetch into the checked in cache instead of the ephemeral one"`
-	Url         string   `arg:"--url" default:"https://github.com/caphindsight/gdpp-dep.git" placeholder:"URL" help:"the dep repository"`
-	Branch      string   `arg:"--branch" default:"master" placeholder:"BRANCH" help:"the branch of the dep repository"`
+	Url         string   `arg:"--url" default:"https://github.com/caphindsight/gdpp-dep.git" placeholder:"URL" help:"the repository to fetch from"`
+	Branch      string   `arg:"--branch" default:"master" placeholder:"BRANCH" help:"the branch of the repository"`
 }
 
 // fetchKind is one kind of dep, with the arguments given for it.
@@ -96,10 +96,10 @@ func (c *CmdFetch) validate(kinds []fetchKind) bool {
 // index/ checked out, and returns its directory.
 func (c *CmdFetch) clone(p Project) Path {
 	tmp := p.CreateTempDir()
-	git("Cloning the dep repository...", tmp, "clone", "--depth", "1", "--filter=blob:none", "--no-checkout", "--branch", c.Branch, c.Url, "repo")
+	git("Cloning the repository...", tmp, "clone", "--depth", "1", "--filter=blob:none", "--no-checkout", "--branch", c.Branch, c.Url, "repo")
 	repo := tmp.Cd("repo")
-	git("Selecting the dep index...", repo, "sparse-checkout", "set", "index")
-	git("Fetching the dep index...", repo, "checkout")
+	git("Selecting the index...", repo, "sparse-checkout", "set", "index")
+	git("Fetching the index...", repo, "checkout")
 	return repo
 }
 
@@ -127,7 +127,7 @@ func (c *CmdFetch) fetch(repo Path, kinds []fetchKind) {
 			names = idx.versions
 		}
 		for _, name := range names {
-			name = idx.resolve(k.dir, name)
+			name = idx.resolve(k.desc, name)
 			path := "data/" + k.dir + "/" + name
 			if slices.Contains(paths, path) {
 				continue // e.g. both "latest" and the version it names
@@ -145,7 +145,7 @@ func (c *CmdFetch) fetch(repo Path, kinds []fetchKind) {
 	if len(deps) == 0 {
 		return
 	}
-	git("Fetching deps...", repo, append([]string{"sparse-checkout", "add"}, paths...)...)
+	git("Fetching dependencies...", repo, append([]string{"sparse-checkout", "add"}, paths...)...)
 
 	for _, d := range deps {
 		dir := d.k.cache.EphemeralDir
@@ -184,12 +184,12 @@ func parseDepIndex(text string) depIndex {
 }
 
 // resolve returns the version called name, or named by the tag name,
-// asserting it exists. dir names the index in messages.
-func (idx depIndex) resolve(dir, name string) string {
+// asserting it exists. desc is the kind of dep, for messages.
+func (idx depIndex) resolve(desc, name string) string {
 	if version, ok := idx.tags[name]; ok {
 		name = version
 	}
-	Assert(slices.Contains(idx.versions, name), "Dep %s is not in the %s index.", name, dir)
+	Assert(slices.Contains(idx.versions, name), "The %s %s is not in the repository.", desc, name)
 	return name
 }
 

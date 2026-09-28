@@ -31,7 +31,7 @@ func TestDepIndexTable(t *testing.T) {
 		"/p/_gd++proj/spec/4.9-stable/a":  "a",
 		"/p/.gd++proj/spec/4.10-stable/b": "b",
 	})
-	cache := newProjectDepCache(NewPath("/p"), "spec")
+	cache := newProjectDepCache(NewPath("/p"), "spec", "spec")
 	idx := parseDepIndex("latest=4.10-stable\nstable=4.10-stable\n4.10-stable\n4.9-stable\n4.8\n")
 	want := "" +
 		"  4.10-stable  latest, stable  cached\n" +
@@ -48,11 +48,11 @@ func TestDepIndexTable(t *testing.T) {
 func TestParseDepIndexUnknown(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
-		parseDepIndex("latest=4.3\n4.3\n").resolve("spec", "4.4")
+		parseDepIndex("latest=4.3\n4.3\n").resolve("Godot API spec", "4.4")
 		return
 	}
 	out, code := runFailHelper(t, "TestParseDepIndexUnknown")
-	if want := "[!] Dep 4.4 is not in the spec index.\n"; code != 1 || out != want {
+	if want := "[!] The Godot API spec 4.4 is not in the repository.\n"; code != 1 || out != want {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }
@@ -68,7 +68,7 @@ func TestFetchInvalidArgs(t *testing.T) {
 		"index_twice":     {CmdFetch{Index: true, IndexBind: true}, "--index cannot be used with --index-bind, --index-spec or --index-engine"},
 		"index_checkin":   {CmdFetch{IndexEngine: true, CheckIn: true}, "--checkin cannot be used with --index options"},
 		"names_and_all":   {CmdFetch{Spec: []string{"a"}, SpecAll: true}, "--spec and --spec-all cannot be used together"},
-		"bad_name":        {CmdFetch{Engine: []string{"4.3", "../a"}}, `"../a" is not a valid dep name`},
+		"bad_name":        {CmdFetch{Engine: []string{"4.3", "../a"}}, `"../a" is not a valid dependency name`},
 		"checkin_nothing": {CmdFetch{CheckIn: true}, "an --index, --bind, --spec or --engine option is required"},
 		"plain_alone":     {CmdFetch{Plain: true}, "an --index, --bind, --spec or --engine option is required"},
 		"plain_deps":      {CmdFetch{Plain: true, SpecAll: true}, "--plain requires exactly one of --index-bind, --index-spec or --index-engine"},
