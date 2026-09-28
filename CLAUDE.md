@@ -16,3 +16,7 @@ The tool itself is written in Go. C++ is only the language of the Godot projects
 - Comments: only where code is unclear, plus a short header on widely used functions.
 - Docs: simple English, plain logic.
 - Always minimize cognitive load.
+
+## Mandatory rules for AI agents (always obey, no exceptions)
+
+1. You are not allowed to access git under any circumstances. Only the humans are allowed to perform operations on the git repository.

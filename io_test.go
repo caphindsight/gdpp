@@ -312,3 +312,29 @@ func TestLogError(t *testing.T) {
 		})
 	}
 }
+
+func TestWrapText(t *testing.T) {
+	cases := []struct {
+		name  string
+		text  string
+		width int
+		want  string
+	}{
+		{"fits", "hello world", 20, "hello world"},
+		{"exact fit", "hello world", 11, "hello world"},
+		{"wraps at space", "hello big world", 10, "hello big\nworld"},
+		{"splits long word", "abcdefghij", 4, "abcd\nefgh\nij"},
+		{"long word after short one", "hi abcdefgh", 4, "hi\nabcd\nefgh"},
+		{"keeps existing newlines", "aaa bbb\nccc", 4, "aaa\nbbb\nccc"},
+		{"ansi codes are zero width", "\x1b[1;32mhello\x1b[0m world", 11, "\x1b[1;32mhello\x1b[0m world"},
+		{"zero width disables wrapping", "hello world", 0, "hello world"},
+		{"negative width disables wrapping", "hello world", -4, "hello world"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := WrapText(c.text, c.width); got != c.want {
+				t.Errorf("WrapText(%q, %d) = %q, want %q", c.text, c.width, got, c.want)
+			}
+		})
+	}
+}

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 // Style is an ANSI SGR code, used with Styled.
@@ -53,25 +55,91 @@ func Styled(text string, styles ...Style) string {
 	return "\x1b[" + strings.Join(codes, ";") + "m" + text + "\x1b[0m"
 }
 
+// WrapText splits each line of text into lines of at most width visible
+// characters, breaking at spaces where possible and inside words otherwise.
+// ANSI escape codes count as zero width. Returns text unchanged if width < 1.
+func WrapText(text string, width int) string {
+	if width < 1 {
+		return text
+	}
+	var out strings.Builder
+	for i, line := range strings.Split(text, "\n") {
+		if i > 0 {
+			out.WriteByte('\n')
+		}
+		col := 0
+		for j, word := range strings.Split(line, " ") {
+			if j > 0 {
+				if col+1+visibleLen(word) <= width {
+					out.WriteByte(' ')
+					col++
+				} else {
+					out.WriteByte('\n')
+					col = 0
+				}
+			}
+			inEsc := false
+			for _, r := range word {
+				switch {
+				case r == '\x1b':
+					inEsc = true
+				case inEsc:
+					inEsc = r == '[' || r < '@' || r > '~'
+				default:
+					if col == width {
+						out.WriteByte('\n')
+						col = 0
+					}
+					col++
+				}
+				out.WriteRune(r)
+			}
+		}
+	}
+	return out.String()
+}
+
+// visibleLen returns the number of runes in s, not counting ANSI escape codes.
+func visibleLen(s string) int {
+	n, inEsc := 0, false
+	for _, r := range s {
+		switch {
+		case r == '\x1b':
+			inEsc = true
+		case inEsc:
+			inEsc = r == '[' || r < '@' || r > '~'
+		default:
+			n++
+		}
+	}
+	return n
+}
+
+// formatMsg returns msg with a "[icon] " prefix, wrapped to the terminal width
+// if stdout is a terminal, with continuation lines indented under the prefix.
+func formatMsg(icon, msg string) string {
+	width := 0
+	if isStdoutTTY {
+		width, _, _ = term.GetSize(int(os.Stdout.Fd()))
+	}
+	indent := visibleLen(icon) + 3 // "[", icon, "] "
+	msg = WrapText(msg, width-indent)
+	return "[" + icon + "] " + strings.ReplaceAll(msg, "\n", "\n"+strings.Repeat(" ", indent))
+}
+
 // LogInfo prints a formatted info message.
 func LogInfo(format string, params ...any) {
-	msg := fmt.Sprintf(format, params...)
-	msg = strings.ReplaceAll(msg, "\n", "\n    ")
-	fmt.Println("[" + Styled(">", Green) + "] " + msg)
+	fmt.Println(formatMsg(Styled(">", Green), fmt.Sprintf(format, params...)))
 }
 
 // LogWarn prints a formatted warning.
 func LogWarn(format string, params ...any) {
-	msg := fmt.Sprintf(format, params...)
-	msg = strings.ReplaceAll(msg, "\n", "\n    ")
-	fmt.Println("[" + Styled("!", Bold, Yellow) + "] " + msg)
+	fmt.Println(formatMsg(Styled("!", Bold, Yellow), fmt.Sprintf(format, params...)))
 }
 
 // LogError prints a formatted error.
 func LogError(format string, params ...any) {
-	msg := fmt.Sprintf(format, params...)
-	msg = strings.ReplaceAll(msg, "\n", "\n    ")
-	fmt.Println("[" + Styled("!", Bold, Red) + "] " + msg)
+	fmt.Println(formatMsg(Styled("!", Bold, Red), fmt.Sprintf(format, params...)))
 }
 
 // LogFatal prints a formatted error, then exits the program via Fail.
@@ -84,9 +152,7 @@ func LogFatal(format string, params ...any) {
 // If the user answers no, it exits the program via LogFatal. If stdin is not
 // a terminal, it assumes no rather than blocking on an answer that can't come.
 func Confirm(format string, params ...any) {
-	msg := fmt.Sprintf(format, params...)
-	msg = strings.ReplaceAll(msg, "\n", "\n    ")
-	fmt.Print("[" + Styled("?", Bold, Magenta) + "] " + msg + " [y/n] ")
+	fmt.Print(formatMsg(Styled("?", Bold, Magenta), fmt.Sprintf(format, params...)+" [y/n]") + " ")
 
 	if !isStdinTTY {
 		fmt.Println("n")
