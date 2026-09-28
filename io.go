@@ -175,6 +175,10 @@ func (s *Silencer) End() {
 	silenceDepth--
 }
 
+// Log messages are capitalized sentences ending with a period, and prompts end
+// with a question mark. Check messages have no period, since Check appends the
+// error. TestLogStyle enforces this.
+
 // LogInfo prints a formatted info message. Suppressed by -q/--quiet or Silence.
 func LogInfo(format string, params ...any) {
 	if quiet() {
@@ -209,11 +213,11 @@ func Assert(cond bool, format string, params ...any) {
 	}
 }
 
-// Check calls LogFatal with the given message, plus err's details, if err is
-// not nil.
+// Check calls LogFatal with the given message, plus err's details and a final
+// period, if err is not nil.
 func Check(err error, format string, params ...any) {
 	if err != nil {
-		LogFatal("%s: %v", fmt.Sprintf(format, params...), err)
+		LogFatal("%s: %s.", fmt.Sprintf(format, params...), strings.TrimSuffix(err.Error(), "."))
 	}
 }
 

@@ -49,7 +49,7 @@ func (p Path) Exists() bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	Check(err, "failed to stat %s", p.absolutePath)
+	Check(err, "Failed to stat %s", p.absolutePath)
 	return true
 }
 
@@ -59,7 +59,7 @@ func (p Path) IsDir() bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	Check(err, "failed to stat %s", p.absolutePath)
+	Check(err, "Failed to stat %s", p.absolutePath)
 	return info.IsDir()
 }
 
@@ -69,7 +69,7 @@ func (p Path) IsFile() bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	Check(err, "failed to stat %s", p.absolutePath)
+	Check(err, "Failed to stat %s", p.absolutePath)
 	return info.Mode().IsRegular()
 }
 
@@ -77,7 +77,7 @@ func (p Path) IsFile() bool {
 // entries whose name starts with ".".
 func (p Path) Ls() []Path {
 	entries, err := os.ReadDir(p.GetOsPath())
-	Check(err, "failed to list %s", p.absolutePath)
+	Check(err, "Failed to list %s", p.absolutePath)
 
 	children := make([]Path, 0, len(entries))
 	for _, entry := range entries {

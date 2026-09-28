@@ -4,9 +4,16 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"unicode"
+	"unicode/utf8"
 )
 
 func TestStyled(t *testing.T) {
@@ -257,7 +264,7 @@ func TestLogFatal(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
 		Cleanup(func() { fmt.Print("cleaned up") })
-		LogFatal("boom: %s", "oops")
+		LogFatal("Boom: %s.", "oops")
 		return
 	}
 
@@ -265,14 +272,14 @@ func TestLogFatal(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] boom: oops\ncleaned up"; out != want {
+	if want := "[!] Boom: oops.\ncleaned up"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 
 func TestAssertPass(t *testing.T) {
 	withTTY(t, false)
-	if out := captureStdout(t, func() { Assert(true, "should not print") }); out != "" {
+	if out := captureStdout(t, func() { Assert(true, "Should not print.") }); out != "" {
 		t.Errorf("Assert(true, ...) printed %q, want nothing", out)
 	}
 }
@@ -280,7 +287,7 @@ func TestAssertPass(t *testing.T) {
 func TestAssertFail(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
-		Assert(1 == 2, "expected %d to equal %d", 1, 2)
+		Assert(1 == 2, "Expected %d to equal %d.", 1, 2)
 		return
 	}
 
@@ -288,14 +295,14 @@ func TestAssertFail(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] expected 1 to equal 2\n"; out != want {
+	if want := "[!] Expected 1 to equal 2.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 
 func TestCheckPass(t *testing.T) {
 	withTTY(t, false)
-	if out := captureStdout(t, func() { Check(nil, "should not print") }); out != "" {
+	if out := captureStdout(t, func() { Check(nil, "Should not print") }); out != "" {
 		t.Errorf("Check(nil, ...) printed %q, want nothing", out)
 	}
 }
@@ -303,7 +310,7 @@ func TestCheckPass(t *testing.T) {
 func TestCheckFail(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
-		Check(fmt.Errorf("disk full"), "failed to write %s", "file.txt")
+		Check(fmt.Errorf("disk full"), "Failed to write %s", "file.txt")
 		return
 	}
 
@@ -311,7 +318,20 @@ func TestCheckFail(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] failed to write file.txt: disk full\n"; out != want {
+	if want := "[!] Failed to write file.txt: disk full.\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+func TestCheckFailErrorWithPeriod(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		Check(fmt.Errorf("Disk full."), "Failed to write %s", "file.txt")
+		return
+	}
+
+	out, _ := runFailHelper(t, "TestCheckFailErrorWithPeriod")
+	if want := "[!] Failed to write file.txt: Disk full.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -370,12 +390,12 @@ func TestLogTaskNonTTY(t *testing.T) {
 	withUnicode(t, true) // ASCII icons are used anyway, since stdout is not a TTY
 	var task *Task
 	got := captureStdout(t, func() {
-		task = LogTask("Build %d", 1)
+		task = LogTask("Build %d.", 1)
 		task.LogString("a")
 		task.LogString("b")
 		task.Done()
 	})
-	if want := "[$] Running task: build 1\n    a\n    b\n[+] Task succeeded: build 1\n"; got != want {
+	if want := "[$] Running task: build 1.\n    a\n    b\n[+] Task succeeded: build 1.\n"; got != want {
 		t.Errorf("printed %q, want %q", got, want)
 	}
 	if len(task.logs) != 2 {
@@ -388,7 +408,7 @@ func TestLogTaskTTY(t *testing.T) {
 	withUnicode(t, true)
 	var task *Task
 	got := captureStdout(t, func() {
-		task = LogTask("Build")
+		task = LogTask("Build.")
 		for i := 0; i < 6; i++ {
 			task.LogString(fmt.Sprint("line ", i))
 		}
@@ -402,7 +422,7 @@ func TestLogTaskTTY(t *testing.T) {
 		t.Errorf("last logs not shown: %q", got)
 	}
 	// Done clears the header and 4 log rows and prints only the done header.
-	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+Args.LogDepth, formatMsg(Styled("✓", Bold, Green), "Task succeeded: build"))
+	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+Args.LogDepth, formatMsg(Styled("✓", Bold, Green), "Task succeeded: build."))
 	if !strings.HasSuffix(got, want) {
 		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
 	}
@@ -417,7 +437,7 @@ func TestTaskFailNonTTY(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
 		isUnicode = true
-		task := LogTask("Build")
+		task := LogTask("Build.")
 		task.LogString("a")
 		task.Fail()
 		return
@@ -427,7 +447,7 @@ func TestTaskFailNonTTY(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[$] Running task: build\n    a\n[x] Task failed: build\n"; out != want {
+	if want := "[$] Running task: build.\n    a\n[x] Task failed: build.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -437,7 +457,7 @@ func TestTaskFailNonTTY(t *testing.T) {
 func runTaskFailTTY(n int) {
 	isTTY = true
 	isUnicode = true
-	task := LogTask("Build")
+	task := LogTask("Build.")
 	for i := 0; i < n; i++ {
 		task.LogString(fmt.Sprint("line ", i))
 	}
@@ -449,7 +469,7 @@ func runTaskFailTTY(n int) {
 // the failed header again if n > Args.LogDepth. Built by hand: this process's
 // stdout is not a TTY, so Styled would not style.
 func wantTaskFailTTY(n int) string {
-	header := "[\x1b[1;31m✗\x1b[0m] Task failed: build\n"
+	header := "[\x1b[1;31m✗\x1b[0m] Task failed: build.\n"
 	want := fmt.Sprintf("\x1b[%dF\x1b[J", 1+Args.LogDepth) + header
 	for i := 0; i < n; i++ {
 		want += fmt.Sprint("    line ", i, "\n")
@@ -512,5 +532,56 @@ func TestTaskLabel(t *testing.T) {
 		if got := (&Task{msg: c.msg}).label(c.status); got != c.want {
 			t.Errorf("Task{msg: %q}.label(%q) = %q, want %q", c.msg, c.status, got, c.want)
 		}
+	}
+}
+
+// TestLogStyle checks that literal messages passed to the logging helpers are
+// capitalized sentences ending with a period, or with a question mark for
+// prompts. Check messages must not end with a period, since Check appends the
+// error and a period.
+func TestLogStyle(t *testing.T) {
+	// Index of the format argument, per helper.
+	helpers := map[string]int{"LogInfo": 0, "LogWarn": 0, "LogError": 0, "LogFatal": 0, "LogTask": 0, "Assert": 1, "Check": 1, "Confirm": 0, "Audit": 0}
+	files, _ := filepath.Glob("*.go")
+	fset := token.NewFileSet()
+	for _, file := range files {
+		if strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+		f, err := parser.ParseFile(fset, file, nil, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ast.Inspect(f, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			name, ok := call.Fun.(*ast.Ident)
+			if !ok {
+				return true
+			}
+			i, ok := helpers[name.Name]
+			if !ok || len(call.Args) <= i {
+				return true
+			}
+			lit, ok := call.Args[i].(*ast.BasicLit)
+			if !ok || lit.Kind != token.STRING {
+				return true
+			}
+			msg, _ := strconv.Unquote(lit.Value)
+			rule, ok := "end with \".\"", strings.HasSuffix(msg, ".")
+			switch name.Name {
+			case "Confirm", "Audit":
+				rule, ok = "end with \"?\"", strings.HasSuffix(msg, "?")
+			case "Check": // the error is appended, then a period
+				rule, ok = "not end with \".\"", !strings.HasSuffix(msg, ".")
+			}
+			first, _ := utf8.DecodeRuneInString(msg)
+			if unicode.IsLower(first) || !ok {
+				t.Errorf("%s: %s(%s) must start uppercase and %s", fset.Position(lit.Pos()), name.Name, lit.Value, rule)
+			}
+			return true
+		})
 	}
 }

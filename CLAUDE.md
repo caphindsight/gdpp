@@ -15,6 +15,7 @@ The tool itself is written in Go. C++ is only the language of the Godot projects
 - Code: as short as possible.
 - Comments: only where code is unclear, plus a short header on widely used functions.
 - Docs: simple English, plain logic.
+- Log messages: capitalized sentences ending with a period (prompts end with `?`; `Check` messages have no period, since `Check` appends the error and a period).
 - Always minimize cognitive load.
 
 ## Mandatory rules for AI agents (always obey, no exceptions)
