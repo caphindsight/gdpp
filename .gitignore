@@ -1,0 +1,7 @@
+**.swo
+**.swp
+**.tmp
+**/*~
+**/~*
+/gd++
+/playground/**
