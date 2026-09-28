@@ -34,11 +34,20 @@ const (
 	Gray      Style = "90"
 )
 
-// isTTY is true when stdout is a terminal, meaning we can be interactive.
-var isTTY = func() bool {
-	fi, err := os.Stdout.Stat()
+// Logs, tasks and prompts go to stderr, keeping stdout for command results,
+// such as a list meant for scripts.
+
+// isTerminal reports whether f is a terminal.
+func isTerminal(f *os.File) bool {
+	fi, err := f.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
-}()
+}
+
+// isTTY is true when stderr is a terminal, meaning we can be interactive.
+var isTTY = isTerminal(os.Stderr)
+
+// isStdoutTTY is true when stdout is a terminal, so results can be styled.
+var isStdoutTTY = isTerminal(os.Stdout)
 
 // isUnicode is true when the terminal can likely display the Unicode icons.
 var isUnicode = func() bool {
@@ -56,7 +65,7 @@ var isUnicode = func() bool {
 	return false
 }()
 
-// unicodeOr returns unicode if stdout is a terminal that can display it, and
+// unicodeOr returns unicode if stderr is a terminal that can display it, and
 // ascii otherwise.
 func unicodeOr(unicode, ascii string) string {
 	if isUnicode && isTTY {
@@ -66,7 +75,7 @@ func unicodeOr(unicode, ascii string) string {
 }
 
 // Styled wraps text in the given styles, e.g. Styled("done", Bold, Green).
-// Returns text unchanged if stdout is not a terminal or no styles are given.
+// Returns text unchanged if stderr is not a terminal or no styles are given.
 func Styled(text string, styles ...Style) string {
 	if !isTTY || len(styles) == 0 {
 		return text
@@ -124,7 +133,13 @@ func WrapText(text string, width int) string {
 
 // visibleLen returns the number of runes in s, not counting ANSI escape codes.
 func visibleLen(s string) int {
-	n, inEsc := 0, false
+	return utf8.RuneCountInString(stripStyles(s))
+}
+
+// stripStyles returns s without ANSI escape codes.
+func stripStyles(s string) string {
+	var out strings.Builder
+	inEsc := false
 	for _, r := range s {
 		switch {
 		case r == '\x1b':
@@ -132,18 +147,27 @@ func visibleLen(s string) int {
 		case inEsc:
 			inEsc = r == '[' || r < '@' || r > '~'
 		default:
-			n++
+			out.WriteRune(r)
 		}
 	}
-	return n
+	return out.String()
+}
+
+// PrintResult prints s, a command's result, to stdout. Never suppressed by
+// -q/--quiet or Silence. Styles in s are dropped if stdout is not a terminal.
+func PrintResult(s string) {
+	if !isStdoutTTY {
+		s = stripStyles(s)
+	}
+	fmt.Fprint(os.Stdout, s)
 }
 
 // formatMsg returns msg with a "[icon] " prefix, wrapped to the terminal width
-// if stdout is a terminal, with continuation lines indented under the prefix.
+// if stderr is a terminal, with continuation lines indented under the prefix.
 func formatMsg(icon, msg string) string {
 	width := 0
 	if isTTY {
-		width, _, _ = term.GetSize(int(os.Stdout.Fd()))
+		width, _, _ = term.GetSize(int(os.Stderr.Fd()))
 	}
 	indent := visibleLen(icon) + 3 // "[", icon, "] "
 	msg = WrapText(msg, width-indent)
@@ -184,7 +208,7 @@ func LogInfo(format string, params ...any) {
 	if quiet() {
 		return
 	}
-	fmt.Println(formatMsg(Styled(">", Green), fmt.Sprintf(format, params...)))
+	fmt.Fprintln(os.Stderr, formatMsg(Styled(">", Green), fmt.Sprintf(format, params...)))
 }
 
 // LogWarn prints a formatted warning. Suppressed by -q/--quiet or Silence.
@@ -192,12 +216,12 @@ func LogWarn(format string, params ...any) {
 	if quiet() {
 		return
 	}
-	fmt.Println(formatMsg(Styled("!", Bold, Yellow), fmt.Sprintf(format, params...)))
+	fmt.Fprintln(os.Stderr, formatMsg(Styled("!", Bold, Yellow), fmt.Sprintf(format, params...)))
 }
 
 // LogError prints a formatted error.
 func LogError(format string, params ...any) {
-	fmt.Println(formatMsg(Styled("!", Bold, Red), fmt.Sprintf(format, params...)))
+	fmt.Fprintln(os.Stderr, formatMsg(Styled("!", Bold, Red), fmt.Sprintf(format, params...)))
 }
 
 // LogFatal prints a formatted error, then exits the program via Fail.
@@ -251,7 +275,7 @@ type Task struct {
 func LogTask(format string, params ...any) *Task {
 	t := &Task{msg: fmt.Sprintf(format, params...), stop: make(chan struct{}), exited: make(chan struct{})}
 	if !isTTY {
-		fmt.Println(formatMsg("$", t.label("Running task: ")))
+		fmt.Fprintln(os.Stderr, formatMsg("$", t.label("Running task: ")))
 		return t
 	}
 	t.render(spinnerFrame(0), t.msg, true)
@@ -282,7 +306,7 @@ func (t *Task) LogString(s string) {
 	t.logs = append(t.logs, s)
 	if !isTTY {
 		if !quiet() {
-			fmt.Println(taskLogIndent + s)
+			fmt.Fprintln(os.Stderr, taskLogIndent+s)
 		}
 		return
 	}
@@ -307,13 +331,13 @@ func (t *Task) Fail() {
 	failIcon := Styled(unicodeOr("✗", "x"), Bold, Red)
 	t.finish(failIcon, "Task failed: ", false)
 	if isTTY || quiet() {
-		width, _, _ := term.GetSize(int(os.Stdout.Fd()))
+		width, _, _ := term.GetSize(int(os.Stderr.Fd()))
 		for _, line := range t.logs {
 			line = WrapText(line, width-len(taskLogIndent))
-			fmt.Println(taskLogIndent + strings.ReplaceAll(line, "\n", "\n"+taskLogIndent))
+			fmt.Fprintln(os.Stderr, taskLogIndent+strings.ReplaceAll(line, "\n", "\n"+taskLogIndent))
 		}
 		if isTTY && len(t.logs) > Args.LogDepth {
-			fmt.Println(formatMsg(failIcon, t.failedName())) // repeated so the failure is visible below a long log
+			fmt.Fprintln(os.Stderr, formatMsg(failIcon, t.failedName())) // repeated so the failure is visible below a long log
 		}
 	}
 	Fail()
@@ -357,7 +381,7 @@ func (t *Task) failedName() string {
 // clears the task message too instead of printing anything.
 func (t *Task) finish(icon, status string, erase bool) {
 	if !isTTY {
-		fmt.Println(formatMsg(icon, t.label(status)))
+		fmt.Fprintln(os.Stderr, formatMsg(icon, t.label(status)))
 		return
 	}
 	close(t.stop)
@@ -365,7 +389,7 @@ func (t *Task) finish(icon, status string, erase bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if erase {
-		fmt.Printf("\x1b[%dF\x1b[J", t.drawn) // up to the first drawn row, clear below
+		fmt.Fprintf(os.Stderr, "\x1b[%dF\x1b[J", t.drawn) // up to the first drawn row, clear below
 		t.drawn = 0
 		return
 	}
@@ -378,7 +402,7 @@ func (t *Task) finish(icon, status string, erase bool) {
 // fixed, unless suppressed by -q/--quiet or Silence. The caller must hold
 // t.mu.
 func (t *Task) render(icon, msg string, running bool) {
-	width, _, _ := term.GetSize(int(os.Stdout.Fd()))
+	width, _, _ := term.GetSize(int(os.Stderr.Fd()))
 	var out strings.Builder
 	if t.drawn > 0 {
 		fmt.Fprintf(&out, "\x1b[%dF\x1b[J", t.drawn) // up to the first drawn row, clear below
@@ -397,11 +421,11 @@ func (t *Task) render(icon, msg string, running bool) {
 	}
 	out.WriteString(block + "\n")
 	t.drawn = strings.Count(block, "\n") + 1
-	fmt.Print(out.String())
+	fmt.Fprint(os.Stderr, out.String())
 }
 
 // Confirm prints a formatted yes/no prompt and blocks until the user answers.
-// If the user answers no, it exits the program via LogFatal. If stdout is not
+// If the user answers no, it exits the program via LogFatal. If stderr is not
 // a terminal, it assumes no rather than blocking on an answer that can't come.
 // -f/--yes skips the prompt and assumes yes. -n/--no skips the prompt, assumes
 // no, and says so.
@@ -410,15 +434,15 @@ func Confirm(format string, params ...any) {
 		return
 	}
 
-	fmt.Print(formatMsg(Styled("?", Bold, Magenta), fmt.Sprintf(format, params...)+" [y/n]") + " ")
+	fmt.Fprint(os.Stderr, formatMsg(Styled("?", Bold, Magenta), fmt.Sprintf(format, params...)+" [y/n]")+" ")
 
 	if Args.ForceNo {
-		fmt.Println("n")
+		fmt.Fprintln(os.Stderr, "n")
 		LogFatal("Operation canceled by -n/--no.")
 	}
 
 	if !isTTY {
-		fmt.Println("n")
+		fmt.Fprintln(os.Stderr, "n")
 		LogFatal("Output is not a tty, use -f to confirm.")
 	}
 
@@ -434,7 +458,7 @@ func Confirm(format string, params ...any) {
 		case "n", "no":
 			LogFatal("Operation canceled by user.")
 		default:
-			fmt.Print("Please answer yes or no: ")
+			fmt.Fprint(os.Stderr, "Please answer yes or no: ")
 		}
 	}
 }

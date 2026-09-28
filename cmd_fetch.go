@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"slices"
 	"strings"
 )
@@ -17,6 +16,7 @@ type CmdFetch struct {
 	IndexBind   bool     `arg:"--index-bind" help:"list the Godot C++ bindings in the repository"`
 	IndexSpec   bool     `arg:"--index-spec" help:"list the Godot API specs in the repository"`
 	IndexEngine bool     `arg:"--index-engine" help:"list the Godot engines in the repository"`
+	Plain       bool     `arg:"--plain" help:"list only the names, one per line, for scripts; requires one of --index-bind, --index-spec or --index-engine"`
 	Bind        []string `arg:"--bind" placeholder:"NAME" help:"fetch these Godot C++ bindings"`
 	BindAll     bool     `arg:"--bind-all" help:"fetch all Godot C++ bindings"`
 	Spec        []string `arg:"--spec" placeholder:"NAME" help:"fetch these Godot API specs"`
@@ -28,17 +28,17 @@ type CmdFetch struct {
 
 // fetchKind is one kind of dep, with the arguments given for it.
 type fetchKind struct {
-	dir, desc string // e.g. "spec", "Godot API spec"
-	cache     ProjectDepCache
-	names     []string
-	all, list bool
+	dir, desc, header string // e.g. "spec", "Godot API spec", "Godot API specs"
+	cache             ProjectDepCache
+	names             []string
+	all, list         bool
 }
 
 func (c *CmdFetch) Run() {
 	kinds := []fetchKind{
-		{bindingsCacheDirName, "Godot C++ bindings", ProjectDepCache{}, c.Bind, c.BindAll, c.Index || c.IndexBind},
-		{apiSpecsCacheDirName, "Godot API spec", ProjectDepCache{}, c.Spec, c.SpecAll, c.Index || c.IndexSpec},
-		{enginesCacheDirName, "Godot engine", ProjectDepCache{}, c.Engine, c.EngineAll, c.Index || c.IndexEngine},
+		{bindingsCacheDirName, "Godot C++ bindings", "Godot C++ bindings", ProjectDepCache{}, c.Bind, c.BindAll, c.Index || c.IndexBind},
+		{apiSpecsCacheDirName, "Godot API spec", "Godot API specs", ProjectDepCache{}, c.Spec, c.SpecAll, c.Index || c.IndexSpec},
+		{enginesCacheDirName, "Godot engine", "Godot engines", ProjectDepCache{}, c.Engine, c.EngineAll, c.Index || c.IndexEngine},
 	}
 	index := c.validate(kinds)
 	p := LoadProject(Cwd())
@@ -49,10 +49,20 @@ func (c *CmdFetch) Run() {
 
 	repo := c.clone(p)
 	if index {
+		sep := ""
 		for _, k := range kinds {
-			if k.list {
-				LogInfo("Available %s versions: %s.", k.desc, parseDepIndex(repo.Cd("index", k.dir).ReadString()))
+			if !k.list {
+				continue
 			}
+			idx := parseDepIndex(repo.Cd("index", k.dir).ReadString())
+			if c.Plain {
+				for i := len(idx.versions) - 1; i >= 0; i-- {
+					PrintResult(idx.versions[i] + "\n")
+				}
+				continue
+			}
+			PrintResult(sep + Styled(k.header+":", Bold) + "\n" + idx.Table(k.cache))
+			sep = "\n"
 		}
 		p.Cleanup()
 		return
@@ -78,6 +88,7 @@ func (c *CmdFetch) validate(kinds []fetchKind) bool {
 	Assert(index || deps, "Invalid arguments: an --index, --bind, --spec or --engine option is required.")
 	Assert(!index || !deps, "Invalid arguments: --index options cannot be used with --bind, --spec or --engine options.")
 	Assert(!index || !c.CheckIn, "Invalid arguments: --checkin cannot be used with --index options.")
+	Assert(!c.Plain || countTrue(c.IndexBind, c.IndexSpec, c.IndexEngine) == 1, "Invalid arguments: --plain requires exactly one of --index-bind, --index-spec or --index-engine.")
 	return index
 }
 
@@ -100,6 +111,8 @@ func git(taskName string, dir Path, args ...string) {
 }
 
 // fetch checks out the chosen deps in repo, then moves them into the cache.
+// Deps already in the cache are overwritten if named, after confirming, and
+// skipped if chosen by --<kind>-all.
 func (c *CmdFetch) fetch(repo Path, kinds []fetchKind) {
 	type dep struct {
 		k    fetchKind
@@ -120,10 +133,17 @@ func (c *CmdFetch) fetch(repo Path, kinds []fetchKind) {
 				continue // e.g. both "latest" and the version it names
 			}
 			if k.cache.Has(name) {
+				if k.all {
+					LogWarn("Skipping %s %s, since it is already in the cache.", k.desc, name)
+					continue
+				}
 				Confirm("Overwrite %s %s in the cache?", k.desc, name)
 			}
 			deps, paths = append(deps, dep{k, name}), append(paths, path)
 		}
+	}
+	if len(deps) == 0 {
+		return
 	}
 	git("Fetching deps...", repo, append([]string{"sparse-checkout", "add"}, paths...)...)
 
@@ -173,10 +193,17 @@ func (idx depIndex) resolve(dir, name string) string {
 	return name
 }
 
-// String lists the versions, each followed by the tags naming it, if any.
-func (idx depIndex) String() string {
-	var parts []string
-	for _, version := range idx.versions {
+// Table lists the versions newest first, one indented row each, in aligned
+// columns: the version, the tags naming it, and whether cache has it.
+func (idx depIndex) Table(cache ProjectDepCache) string {
+	if len(idx.versions) == 0 {
+		return "  none\n"
+	}
+	type row struct{ version, tags, status string }
+	var rows []row
+	versionWidth, tagsWidth := 0, 0
+	for i := len(idx.versions) - 1; i >= 0; i-- {
+		version := idx.versions[i]
 		var tags []string
 		for tag, v := range idx.tags {
 			if v == version {
@@ -184,10 +211,26 @@ func (idx depIndex) String() string {
 			}
 		}
 		slices.Sort(tags)
-		if len(tags) > 0 {
-			version += " (" + strings.Join(tags, ", ") + ")"
+		r := row{version: version, tags: strings.Join(tags, ", ")}
+		if cache.IsCheckedIn(version) {
+			r.status = "checked in"
+		} else if cache.IsEphemeral(version) {
+			r.status = "cached"
 		}
-		parts = append(parts, version)
+		rows = append(rows, r)
+		versionWidth, tagsWidth = max(versionWidth, len(r.version)), max(tagsWidth, len(r.tags))
 	}
-	return cmp.Or(strings.Join(parts, ", "), "none")
+	var out strings.Builder
+	for _, r := range rows {
+		// Padding goes outside Styled, so escape codes don't break the alignment.
+		line := "  " + r.version
+		if r.tags != "" || r.status != "" {
+			line += strings.Repeat(" ", versionWidth-len(r.version)+2) + Styled(r.tags, Cyan)
+		}
+		if r.status != "" {
+			line += strings.Repeat(" ", tagsWidth-len(r.tags)+2) + Styled(r.status, Dim)
+		}
+		out.WriteString(line + "\n")
+	}
+	return out.String()
 }

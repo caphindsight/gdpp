@@ -398,7 +398,7 @@ func TestRemoveAuditYes(t *testing.T) {
 	withStdin(t, "y\n")
 	var out string
 	runFileOp(t, func() {
-		out = captureStdout(t, func() { NewPath("/work/full").Remove() })
+		out = captureStderr(t, func() { NewPath("/work/full").Remove() })
 	}, mergeTrees(workDir, fileA, emptyDir))
 	if want := "Delete full and everything inside it?"; !strings.Contains(out, want) {
 		t.Errorf("output = %q, want to contain %q", out, want)

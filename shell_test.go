@@ -13,7 +13,7 @@ func TestExec(t *testing.T) {
 	withRealFS(t)
 
 	var got string
-	out := captureStdout(t, func() {
+	out := captureStderr(t, func() {
 		got = Exec("Running a task...", Cwd(), "sh", "-c", "echo one; echo two >&2")
 	})
 	if got != "one\ntwo\n" {
@@ -38,7 +38,7 @@ func TestExecRunsInDir(t *testing.T) {
 	dir := NewPath(t.TempDir())
 
 	var got string
-	out := captureStdout(t, func() {
+	out := captureStderr(t, func() {
 		got = Exec("Running a task...", dir, "pwd")
 	})
 	if got = strings.TrimSuffix(got, "\n"); got != dir.GetOsPath() {

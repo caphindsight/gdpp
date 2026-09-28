@@ -379,15 +379,25 @@ func withStdin(t *testing.T, content string) {
 
 // captureStdout runs fn with os.Stdout redirected to a pipe and returns what it wrote.
 func captureStdout(t *testing.T, fn func()) string {
-	orig := os.Stdout
+	return capture(t, &os.Stdout, fn)
+}
+
+// captureStderr runs fn with os.Stderr redirected to a pipe and returns what
+// it wrote: the logs.
+func captureStderr(t *testing.T, fn func()) string {
+	return capture(t, &os.Stderr, fn)
+}
+
+func capture(t *testing.T, f **os.File, fn func()) string {
+	orig := *f
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("os.Pipe: %v", err)
 	}
-	os.Stdout = w
+	*f = w
 	fn()
 	w.Close()
-	os.Stdout = orig
+	*f = orig
 
 	out, err := io.ReadAll(r)
 	if err != nil {
@@ -399,23 +409,23 @@ func captureStdout(t *testing.T, fn func()) string {
 // runFailHelper re-execs the test binary to run only the test (or subtest)
 // called name, since Fail calls os.Exit and would otherwise kill the test
 // process.
-func runFailHelper(t *testing.T, name string) (stdout string, exitCode int) {
+func runFailHelper(t *testing.T, name string) (output string, exitCode int) {
 	return runFailHelperWithStdin(t, name, "")
 }
 
 // runFailHelperWithStdin is like runFailHelper, but feeds stdin to the child process.
-func runFailHelperWithStdin(t *testing.T, name string, stdin string) (stdout string, exitCode int) {
+func runFailHelperWithStdin(t *testing.T, name string, stdin string) (output string, exitCode int) {
 	// -test.run matches each "/"-separated level separately, so anchor every level.
 	cmd := exec.Command(os.Args[0], "-test.run=^"+strings.ReplaceAll(name, "/", "$/^")+"$")
 	cmd.Env = append(os.Environ(), "GDPP_FAIL_HELPER=1")
 	cmd.Stdin = strings.NewReader(stdin)
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput() // logs go to stderr, results to stdout
 	if err == nil {
 		t.Fatalf("%s: process exited 0, want nonzero", name)
 	}
 	exitErr, ok := err.(*exec.ExitError)
 	if !ok {
-		t.Fatalf("%s: cmd.Output: %v", name, err)
+		t.Fatalf("%s: cmd.CombinedOutput: %v", name, err)
 	}
 	return string(out), exitErr.ExitCode()
 }

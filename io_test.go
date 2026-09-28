@@ -41,6 +41,35 @@ func TestStyled(t *testing.T) {
 	}
 }
 
+func TestPrintResult(t *testing.T) {
+	withTTY(t, true)
+	withQuiet(t, true)
+	styled := Styled("done", Bold) + " ok\n"
+	for _, c := range []struct {
+		stdoutTTY bool
+		want      string
+	}{{true, styled}, {false, "done ok\n"}} {
+		orig := isStdoutTTY
+		isStdoutTTY = c.stdoutTTY
+		out := captureStdout(t, func() { PrintResult(styled) })
+		isStdoutTTY = orig
+		if out != c.want {
+			t.Errorf("stdout tty %v: printed %q, want %q", c.stdoutTTY, out, c.want)
+		}
+	}
+}
+
+func TestLogsGoToStderr(t *testing.T) {
+	withTTY(t, false)
+	withQuiet(t, false)
+	out := captureStdout(t, func() {
+		captureStderr(t, func() { LogInfo("Hi.") })
+	})
+	if out != "" {
+		t.Errorf("stdout = %q, want logs only on stderr", out)
+	}
+}
+
 func TestLogInfo(t *testing.T) {
 	// Force non-TTY so the "[>] " prefix is a plain literal, independent of
 	// Styled's ANSI-wrapping behavior (covered separately by TestStyled).
@@ -58,7 +87,7 @@ func TestLogInfo(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := captureStdout(t, func() { LogInfo(c.format, c.params...) })
+			got := captureStderr(t, func() { LogInfo(c.format, c.params...) })
 			if got != c.want {
 				t.Errorf("LogInfo(%q, %v) printed %q, want %q", c.format, c.params, got, c.want)
 			}
@@ -81,7 +110,7 @@ func TestLogWarn(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := captureStdout(t, func() { LogWarn(c.format, c.params...) })
+			got := captureStderr(t, func() { LogWarn(c.format, c.params...) })
 			if got != c.want {
 				t.Errorf("LogWarn(%q, %v) printed %q, want %q", c.format, c.params, got, c.want)
 			}
@@ -100,7 +129,7 @@ func TestSilence(t *testing.T) {
 	if !quiet() {
 		t.Error("quiet() = false after Silence, want true")
 	}
-	if out := captureStdout(t, func() { LogInfo("hidden") }); out != "" {
+	if out := captureStderr(t, func() { LogInfo("hidden") }); out != "" {
 		t.Errorf("LogInfo printed %q while silenced, want nothing", out)
 	}
 
@@ -118,7 +147,7 @@ func TestSilence(t *testing.T) {
 	if quiet() {
 		t.Error("quiet() = true after ending all Silences, want false")
 	}
-	if out := captureStdout(t, func() { LogInfo("visible") }); out != "[>] visible\n" {
+	if out := captureStderr(t, func() { LogInfo("visible") }); out != "[>] visible\n" {
 		t.Errorf("LogInfo printed %q after Silences ended, want %q", out, "[>] visible\n")
 	}
 }
@@ -144,7 +173,7 @@ func TestConfirmYes(t *testing.T) {
 	for _, in := range cases {
 		t.Run(in, func(t *testing.T) {
 			withStdin(t, in+"\n")
-			out := captureStdout(t, func() { Confirm("Proceed?") })
+			out := captureStderr(t, func() { Confirm("Proceed?") })
 			want := formatMsg(Styled("?", Bold, Magenta), "Proceed? [y/n]") + " "
 			if out != want {
 				t.Errorf("Confirm output = %q, want %q", out, want)
@@ -157,7 +186,7 @@ func TestConfirmRetriesOnInvalidInput(t *testing.T) {
 	withTTY(t, true)
 	withStdin(t, "maybe\ny\n")
 
-	out := captureStdout(t, func() { Confirm("Proceed?") })
+	out := captureStderr(t, func() { Confirm("Proceed?") })
 	want := formatMsg(Styled("?", Bold, Magenta), "Proceed? [y/n]") + " Please answer yes or no: "
 	if out != want {
 		t.Errorf("Confirm output = %q, want %q", out, want)
@@ -186,7 +215,7 @@ func TestConfirmForce(t *testing.T) {
 	withTTY(t, false)
 	withForce(t, true)
 
-	out := captureStdout(t, func() { Confirm("Delete %s?", "file.txt") })
+	out := captureStderr(t, func() { Confirm("Delete %s?", "file.txt") })
 	if out != "" {
 		t.Errorf("Confirm printed %q while -f/--yes is set, want nothing", out)
 	}
@@ -279,7 +308,7 @@ func TestLogFatal(t *testing.T) {
 
 func TestAssertPass(t *testing.T) {
 	withTTY(t, false)
-	if out := captureStdout(t, func() { Assert(true, "Should not print.") }); out != "" {
+	if out := captureStderr(t, func() { Assert(true, "Should not print.") }); out != "" {
 		t.Errorf("Assert(true, ...) printed %q, want nothing", out)
 	}
 }
@@ -302,7 +331,7 @@ func TestAssertFail(t *testing.T) {
 
 func TestCheckPass(t *testing.T) {
 	withTTY(t, false)
-	if out := captureStdout(t, func() { Check(nil, "Should not print") }); out != "" {
+	if out := captureStderr(t, func() { Check(nil, "Should not print") }); out != "" {
 		t.Errorf("Check(nil, ...) printed %q, want nothing", out)
 	}
 }
@@ -351,7 +380,7 @@ func TestLogError(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := captureStdout(t, func() { LogError(c.format, c.params...) })
+			got := captureStderr(t, func() { LogError(c.format, c.params...) })
 			if got != c.want {
 				t.Errorf("LogError(%q, %v) printed %q, want %q", c.format, c.params, got, c.want)
 			}
@@ -389,7 +418,7 @@ func TestLogTaskNonTTY(t *testing.T) {
 	withTTY(t, false)
 	withUnicode(t, true) // ASCII icons are used anyway, since stdout is not a TTY
 	var task *Task
-	got := captureStdout(t, func() {
+	got := captureStderr(t, func() {
 		task = LogTask("Build %d.", 1)
 		task.LogString("a")
 		task.LogString("b")
@@ -407,7 +436,7 @@ func TestLogTaskTTY(t *testing.T) {
 	withTTY(t, true)
 	withUnicode(t, true)
 	var task *Task
-	got := captureStdout(t, func() {
+	got := captureStderr(t, func() {
 		task = LogTask("Build...")
 		for i := 0; i < 6; i++ {
 			task.LogString(fmt.Sprint("line ", i))
@@ -439,7 +468,7 @@ func TestLogTaskQuietNonTTY(t *testing.T) {
 	withUnicode(t, true)
 	withQuiet(t, true)
 	var task *Task
-	got := captureStdout(t, func() {
+	got := captureStderr(t, func() {
 		task = LogTask("Build %d.", 1)
 		task.LogString("a")
 		task.LogString("b")
@@ -468,7 +497,7 @@ func TestLogTaskSilenceTTY(t *testing.T) {
 func testLogTaskErasedTTY(t *testing.T) {
 	withTTY(t, true)
 	withUnicode(t, true)
-	got := captureStdout(t, func() {
+	got := captureStderr(t, func() {
 		task := LogTask("Build...")
 		task.LogString("hidden")
 		task.Done()

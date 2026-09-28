@@ -23,11 +23,24 @@ func TestParseDepIndex(t *testing.T) {
 	if got := idx.resolve("spec", "4.9-stable"); got != "4.9-stable" {
 		t.Errorf("resolve(4.9-stable) = %q, want %q", got, "4.9-stable")
 	}
-	if got, want := idx.String(), "4.9-stable, 4.10-stable (latest, stable)"; got != want {
-		t.Errorf("String() = %q, want %q", got, want)
+}
+
+func TestDepIndexTable(t *testing.T) {
+	withMemFS(t, "/", map[string]string{
+		"/p/_gd++proj/spec/4.9-stable/a":  "a",
+		"/p/.gd++proj/spec/4.10-stable/b": "b",
+	})
+	cache := newProjectDepCache(NewPath("/p"), "spec")
+	idx := parseDepIndex("latest=4.10-stable\nstable=4.10-stable\n4.10-stable\n4.9-stable\n4.8\n")
+	want := "" +
+		"  4.10-stable  latest, stable  cached\n" +
+		"  4.9-stable                   checked in\n" +
+		"  4.8\n"
+	if got := idx.Table(cache); got != want {
+		t.Errorf("Table() = %q, want %q", got, want)
 	}
-	if got := parseDepIndex("").String(); got != "none" {
-		t.Errorf("empty String() = %q, want %q", got, "none")
+	if got := parseDepIndex("").Table(cache); got != "  none\n" {
+		t.Errorf("empty Table() = %q, want %q", got, "  none\n")
 	}
 }
 
@@ -56,6 +69,10 @@ func TestFetchInvalidArgs(t *testing.T) {
 		"names_and_all":   {CmdFetch{Spec: []string{"a"}, SpecAll: true}, "--spec and --spec-all cannot be used together"},
 		"bad_name":        {CmdFetch{Engine: []string{"4.3", "../a"}}, `"../a" is not a valid dep name`},
 		"checkin_nothing": {CmdFetch{CheckIn: true}, "an --index, --bind, --spec or --engine option is required"},
+		"plain_alone":     {CmdFetch{Plain: true}, "an --index, --bind, --spec or --engine option is required"},
+		"plain_deps":      {CmdFetch{Plain: true, SpecAll: true}, "--plain requires exactly one of --index-bind, --index-spec or --index-engine"},
+		"plain_index":     {CmdFetch{Plain: true, Index: true}, "--plain requires exactly one of --index-bind, --index-spec or --index-engine"},
+		"plain_two":       {CmdFetch{Plain: true, IndexBind: true, IndexSpec: true}, "--plain requires exactly one of --index-bind, --index-spec or --index-engine"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -138,7 +155,7 @@ func TestFetchDeps(t *testing.T) {
 	stale := filepath.Join(root, ".gd++proj/spec/4.4-stable/stale.json")
 	writeTree(t, root, map[string]string{".gd++proj/spec/4.4-stable/stale.json": "x"})
 
-	captureStdout(t, (&CmdFetch{Url: url, Branch: "main", Spec: []string{"latest", "4.4-stable"}, CheckIn: true}).Run)
+	captureStderr(t, (&CmdFetch{Url: url, Branch: "main", Spec: []string{"latest", "4.4-stable"}, CheckIn: true}).Run)
 
 	got, err := os.ReadFile(filepath.Join(root, "_gd++proj/spec/4.4-stable/a.json"))
 	if err != nil || string(got) != "4.4" {
@@ -151,24 +168,51 @@ func TestFetchDeps(t *testing.T) {
 	}
 }
 
-func TestFetchIndex(t *testing.T) {
+func TestFetchAllSkipsCached(t *testing.T) {
 	url, root := withFetchFixture(t)
 	withQuiet(t, false)
-	out := captureStdout(t, func() {
-		(&CmdFetch{Url: url, Branch: "main", IndexSpec: true, IndexEngine: true}).Run()
+	cached := filepath.Join(root, ".gd++proj/spec/4.4-stable/cached.json")
+	writeTree(t, root, map[string]string{".gd++proj/spec/4.4-stable/cached.json": "x"})
+
+	out := captureStderr(t, (&CmdFetch{Url: url, Branch: "main", SpecAll: true}).Run)
+
+	if want := "[!] Skipping Godot API spec 4.4-stable, since it is already in the cache.\n"; !strings.Contains(out, want) {
+		t.Errorf("output = %q, want it to contain %q", out, want)
+	}
+	if _, err := os.Stat(cached); err != nil {
+		t.Errorf("cached dep was overwritten: %v", err)
+	}
+	if got, err := os.ReadFile(filepath.Join(root, ".gd++proj/spec/4.3-stable/a.json")); err != nil || string(got) != "4.3" {
+		t.Errorf("a.json = %q, %v, want %q", got, err, "4.3")
+	}
+}
+
+func TestFetchIndex(t *testing.T) {
+	url, root := withFetchFixture(t)
+	withQuiet(t, true) // the index is the command's result, so -q doesn't hide it
+	var out string
+	captureStderr(t, func() {
+		out = captureStdout(t, (&CmdFetch{Url: url, Branch: "main", IndexSpec: true, IndexEngine: true}).Run)
 	})
-	for _, want := range []string{
-		"[>] Available Godot API spec versions: 4.3-stable, 4.4-stable (latest).\n",
-		"[>] Available Godot engine versions: none.\n",
-	} {
-		if !strings.Contains(out, want) {
-			t.Errorf("output = %q, want it to contain %q", out, want)
-		}
+	if want := "Godot API specs:\n  4.4-stable  latest\n  4.3-stable\n\nGodot engines:\n  none\n"; !strings.Contains(out, want) {
+		t.Errorf("output = %q, want it to contain %q", out, want)
 	}
 	if strings.Contains(out, "bindings") || strings.Contains(out, "Success") {
 		t.Errorf("output = %q, want only the chosen indexes and no success message", out)
 	}
 	if _, err := os.Stat(filepath.Join(root, ".gd++proj/temp")); err == nil {
 		t.Errorf("temp directory was not cleaned up")
+	}
+}
+
+func TestFetchIndexPlain(t *testing.T) {
+	url, _ := withFetchFixture(t)
+	withQuiet(t, false) // logs go to stderr, so stdout still has just the names
+	var out string
+	captureStderr(t, func() {
+		out = captureStdout(t, (&CmdFetch{Url: url, Branch: "main", IndexSpec: true, Plain: true}).Run)
+	})
+	if want := "4.4-stable\n4.3-stable\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
 	}
 }
