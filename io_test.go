@@ -11,12 +11,12 @@ import (
 	"testing"
 )
 
-// withStdoutTTY sets isStdoutTTY for the duration of a test and restores the prior value.
+// withTTY sets isTTY for the duration of a test and restores the prior value.
 // Tests in this file must not call t.Parallel(): they mutate this package-level var.
-func withStdoutTTY(t *testing.T, tty bool) {
-	orig := isStdoutTTY
-	isStdoutTTY = tty
-	t.Cleanup(func() { isStdoutTTY = orig })
+func withTTY(t *testing.T, tty bool) {
+	orig := isTTY
+	isTTY = tty
+	t.Cleanup(func() { isTTY = orig })
 }
 
 // withUnicode sets isUnicode for the duration of a test and restores the prior value.
@@ -26,11 +26,18 @@ func withUnicode(t *testing.T, unicode bool) {
 	t.Cleanup(func() { isUnicode = orig })
 }
 
-// withStdinTTY sets isStdinTTY for the duration of a test and restores the prior value.
-func withStdinTTY(t *testing.T, tty bool) {
-	orig := isStdinTTY
-	isStdinTTY = tty
-	t.Cleanup(func() { isStdinTTY = orig })
+// withForce sets Args.Force for the duration of a test and restores the prior value.
+func withForce(t *testing.T, force bool) {
+	orig := Args.Force
+	Args.Force = force
+	t.Cleanup(func() { Args.Force = orig })
+}
+
+// withForceNo sets Args.ForceNo for the duration of a test and restores the prior value.
+func withForceNo(t *testing.T, forceNo bool) {
+	orig := Args.ForceNo
+	Args.ForceNo = forceNo
+	t.Cleanup(func() { Args.ForceNo = orig })
 }
 
 // withStdin replaces os.Stdin with a pipe fed with content, for the duration of a test.
@@ -84,7 +91,7 @@ func TestStyled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			withStdoutTTY(t, c.tty)
+			withTTY(t, c.tty)
 			if got := Styled(c.text, c.styles...); got != c.want {
 				t.Errorf("Styled(%q, %v) = %q, want %q", c.text, c.styles, got, c.want)
 			}
@@ -95,7 +102,7 @@ func TestStyled(t *testing.T) {
 func TestLogInfo(t *testing.T) {
 	// Force non-TTY so the "[>] " prefix is a plain literal, independent of
 	// Styled's ANSI-wrapping behavior (covered separately by TestStyled).
-	withStdoutTTY(t, false)
+	withTTY(t, false)
 
 	cases := []struct {
 		name   string
@@ -118,7 +125,7 @@ func TestLogInfo(t *testing.T) {
 }
 
 func TestLogWarn(t *testing.T) {
-	withStdoutTTY(t, false)
+	withTTY(t, false)
 
 	cases := []struct {
 		name   string
@@ -137,6 +144,40 @@ func TestLogWarn(t *testing.T) {
 				t.Errorf("LogWarn(%q, %v) printed %q, want %q", c.format, c.params, got, c.want)
 			}
 		})
+	}
+}
+
+func TestSilence(t *testing.T) {
+	withTTY(t, false)
+
+	if quiet() {
+		t.Fatal("quiet() = true before any Silence, want false")
+	}
+
+	s1 := Silence()
+	if !quiet() {
+		t.Error("quiet() = false after Silence, want true")
+	}
+	if out := captureStdout(t, func() { LogInfo("hidden") }); out != "" {
+		t.Errorf("LogInfo printed %q while silenced, want nothing", out)
+	}
+
+	s2 := Silence() // nested
+	if !quiet() {
+		t.Error("quiet() = false under nested Silence, want true")
+	}
+
+	s2.End()
+	if !quiet() {
+		t.Error("quiet() = false after ending inner Silence while outer is still active, want true")
+	}
+
+	s1.End()
+	if quiet() {
+		t.Error("quiet() = true after ending all Silences, want false")
+	}
+	if out := captureStdout(t, func() { LogInfo("visible") }); out != "[>] visible\n" {
+		t.Errorf("LogInfo printed %q after Silences ended, want %q", out, "[>] visible\n")
 	}
 }
 
@@ -186,15 +227,17 @@ func runFailHelperWithStdin(t *testing.T, name string, stdin string) (stdout str
 }
 
 func TestConfirmYes(t *testing.T) {
-	withStdoutTTY(t, false)
-	withStdinTTY(t, true)
+	// isTTY must be true for Confirm to read stdin at all, so the prompt icon
+	// comes out styled; build the expected prefix the same way Confirm does.
+	withTTY(t, true)
 
 	cases := []string{"y", "Y", "yes", "YES", "  yes  "}
 	for _, in := range cases {
 		t.Run(in, func(t *testing.T) {
 			withStdin(t, in+"\n")
 			out := captureStdout(t, func() { Confirm("Proceed?") })
-			if want := "[?] Proceed? [y/n] "; out != want {
+			want := formatMsg(Styled("?", Bold, Magenta), "Proceed? [y/n]") + " "
+			if out != want {
 				t.Errorf("Confirm output = %q, want %q", out, want)
 			}
 		})
@@ -202,20 +245,19 @@ func TestConfirmYes(t *testing.T) {
 }
 
 func TestConfirmRetriesOnInvalidInput(t *testing.T) {
-	withStdoutTTY(t, false)
-	withStdinTTY(t, true)
+	withTTY(t, true)
 	withStdin(t, "maybe\ny\n")
 
 	out := captureStdout(t, func() { Confirm("Proceed?") })
-	if want := "[?] Proceed? [y/n] Please answer yes or no: "; out != want {
+	want := formatMsg(Styled("?", Bold, Magenta), "Proceed? [y/n]") + " Please answer yes or no: "
+	if out != want {
 		t.Errorf("Confirm output = %q, want %q", out, want)
 	}
 }
 
 func TestConfirmNo(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isStdoutTTY = false
-		isStdinTTY = true
+		isTTY = true
 		Confirm("Delete %s?", "file.txt")
 		return
 	}
@@ -224,15 +266,43 @@ func TestConfirmNo(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[?] Delete file.txt? [y/n] [!] Operation canceled by user.\n"; out != want {
+	// Built by hand, not via Styled: this process's stdout is not a TTY.
+	want := "[\x1b[1;35m?\x1b[0m] Delete file.txt? [y/n] [\x1b[1;31m!\x1b[0m] Operation canceled by user.\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+func TestConfirmForce(t *testing.T) {
+	withTTY(t, false)
+	withForce(t, true)
+
+	out := captureStdout(t, func() { Confirm("Delete %s?", "file.txt") })
+	if out != "" {
+		t.Errorf("Confirm printed %q while -f/--yes is set, want nothing", out)
+	}
+}
+
+func TestConfirmForceNo(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		Args.ForceNo = true
+		Confirm("Delete %s?", "file.txt")
+		return
+	}
+
+	out, code := runFailHelper(t, "TestConfirmForceNo")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[?] Delete file.txt? [y/n] n\n[!] Operation canceled by -n/--no.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 
 func TestConfirmEOF(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isStdoutTTY = false
-		isStdinTTY = true
+		isTTY = true
 		Confirm("Delete %s?", "file.txt")
 		return
 	}
@@ -241,15 +311,16 @@ func TestConfirmEOF(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[?] Delete file.txt? [y/n] [!] Operation canceled by user.\n"; out != want {
+	// Built by hand, not via Styled: this process's stdout is not a TTY.
+	want := "[\x1b[1;35m?\x1b[0m] Delete file.txt? [y/n] [\x1b[1;31m!\x1b[0m] Operation canceled by user.\n"
+	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 
 func TestConfirmNonTTY(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isStdoutTTY = false
-		isStdinTTY = false
+		isTTY = false
 		Confirm("Delete %s?", "file.txt")
 		return
 	}
@@ -258,7 +329,7 @@ func TestConfirmNonTTY(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[?] Delete file.txt? [y/n] n\n[!] Input is not a tty, use -f to confirm.\n"; out != want {
+	if want := "[?] Delete file.txt? [y/n] n\n[!] Output is not a tty, use -f to confirm.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -282,7 +353,7 @@ func TestFail(t *testing.T) {
 
 func TestLogFatal(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isStdoutTTY = false
+		isTTY = false
 		Cleanup(func() { fmt.Print("cleaned up") })
 		LogFatal("boom: %s", "oops")
 		return
@@ -298,7 +369,7 @@ func TestLogFatal(t *testing.T) {
 }
 
 func TestLogError(t *testing.T) {
-	withStdoutTTY(t, false)
+	withTTY(t, false)
 
 	cases := []struct {
 		name   string
@@ -347,7 +418,7 @@ func TestWrapText(t *testing.T) {
 }
 
 func TestLogTaskNonTTY(t *testing.T) {
-	withStdoutTTY(t, false)
+	withTTY(t, false)
 	withUnicode(t, true) // ASCII icons are used anyway, since stdout is not a TTY
 	var task *Task
 	got := captureStdout(t, func() {
@@ -365,7 +436,7 @@ func TestLogTaskNonTTY(t *testing.T) {
 }
 
 func TestLogTaskTTY(t *testing.T) {
-	withStdoutTTY(t, true)
+	withTTY(t, true)
 	withUnicode(t, true)
 	var task *Task
 	got := captureStdout(t, func() {
@@ -396,7 +467,7 @@ func TestLogTaskTTY(t *testing.T) {
 
 func TestTaskFailNonTTY(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isStdoutTTY = false
+		isTTY = false
 		isUnicode = true
 		task := LogTask("Build")
 		task.LogString("a")
@@ -416,7 +487,7 @@ func TestTaskFailNonTTY(t *testing.T) {
 // runTaskFailTTY is the child-process body of the TaskFailTTY tests: it logs
 // n lines to a TTY task, then fails it.
 func runTaskFailTTY(n int) {
-	isStdoutTTY = true
+	isTTY = true
 	isUnicode = true
 	task := LogTask("Build")
 	for i := 0; i < n; i++ {
@@ -470,7 +541,7 @@ func TestTaskFailTTYShortLog(t *testing.T) {
 }
 
 func TestSpinnerFrame(t *testing.T) {
-	withStdoutTTY(t, false)
+	withTTY(t, false)
 	withUnicode(t, false)
 	if got := spinnerFrame(5); got != "/" {
 		t.Errorf("ASCII spinnerFrame(5) = %q, want %q", got, "/")

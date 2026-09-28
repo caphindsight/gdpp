@@ -34,14 +34,8 @@ const (
 	Gray      Style = "90"
 )
 
-// isStdinTTY is true when stdin is a terminal.
-var isStdinTTY = func() bool {
-	fi, err := os.Stdin.Stat()
-	return err == nil && fi.Mode()&os.ModeCharDevice != 0
-}()
-
-// isStdoutTTY is true when stdout is a terminal.
-var isStdoutTTY = func() bool {
+// isTTY is true when stdout is a terminal, meaning we can be interactive.
+var isTTY = func() bool {
 	fi, err := os.Stdout.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }()
@@ -65,7 +59,7 @@ var isUnicode = func() bool {
 // unicodeOr returns unicode if stdout is a terminal that can display it, and
 // ascii otherwise.
 func unicodeOr(unicode, ascii string) string {
-	if isUnicode && isStdoutTTY {
+	if isUnicode && isTTY {
 		return unicode
 	}
 	return ascii
@@ -74,7 +68,7 @@ func unicodeOr(unicode, ascii string) string {
 // Styled wraps text in the given styles, e.g. Styled("done", Bold, Green).
 // Returns text unchanged if stdout is not a terminal or no styles are given.
 func Styled(text string, styles ...Style) string {
-	if !isStdoutTTY || len(styles) == 0 {
+	if !isTTY || len(styles) == 0 {
 		return text
 	}
 	codes := make([]string, len(styles))
@@ -148,7 +142,7 @@ func visibleLen(s string) int {
 // if stdout is a terminal, with continuation lines indented under the prefix.
 func formatMsg(icon, msg string) string {
 	width := 0
-	if isStdoutTTY {
+	if isTTY {
 		width, _, _ = term.GetSize(int(os.Stdout.Fd()))
 	}
 	indent := visibleLen(icon) + 3 // "[", icon, "] "
@@ -156,13 +150,44 @@ func formatMsg(icon, msg string) string {
 	return "[" + icon + "] " + strings.ReplaceAll(msg, "\n", "\n"+strings.Repeat(" ", indent))
 }
 
-// LogInfo prints a formatted info message.
+// silenceDepth counts active Silence calls, so nested silences compose:
+// logging stays suppressed until every one of them has been ended.
+var silenceDepth int
+
+// quiet reports whether logs should currently be suppressed, per -q/--quiet
+// or an active Silence. -v/--verbose overrides both, always returning false.
+func quiet() bool {
+	return !Args.Verbose && (Args.Quiet || silenceDepth > 0)
+}
+
+// Silencer is a silenced region started by Silence, ended by calling End.
+type Silencer struct{}
+
+// Silence suppresses logs, the same as -q/--quiet, until End is called.
+// Silences nest: logging only resumes once every active Silencer has ended.
+func Silence() *Silencer {
+	silenceDepth++
+	return &Silencer{}
+}
+
+// End stops this silenced region.
+func (s *Silencer) End() {
+	silenceDepth--
+}
+
+// LogInfo prints a formatted info message. Suppressed by -q/--quiet or Silence.
 func LogInfo(format string, params ...any) {
+	if quiet() {
+		return
+	}
 	fmt.Println(formatMsg(Styled(">", Green), fmt.Sprintf(format, params...)))
 }
 
-// LogWarn prints a formatted warning.
+// LogWarn prints a formatted warning. Suppressed by -q/--quiet or Silence.
 func LogWarn(format string, params ...any) {
+	if quiet() {
+		return
+	}
 	fmt.Println(formatMsg(Styled("!", Bold, Yellow), fmt.Sprintf(format, params...)))
 }
 
@@ -208,11 +233,15 @@ type Task struct {
 // until Done is called.
 func LogTask(format string, params ...any) *Task {
 	t := &Task{msg: fmt.Sprintf(format, params...), stop: make(chan struct{}), exited: make(chan struct{})}
-	if !isStdoutTTY {
-		fmt.Println(formatMsg("$", t.label("Running task: ")))
+	if !isTTY {
+		if !quiet() {
+			fmt.Println(formatMsg("$", t.label("Running task: ")))
+		}
 		return t
 	}
-	t.render(spinnerFrame(0), "", true)
+	if !quiet() {
+		t.render(spinnerFrame(0), "", true)
+	}
 	go func() {
 		defer close(t.exited)
 		ticker := time.NewTicker(80 * time.Millisecond)
@@ -224,7 +253,9 @@ func LogTask(format string, params ...any) *Task {
 			case <-ticker.C:
 				t.mu.Lock()
 				t.frame++
-				t.render(spinnerFrame(t.frame), "", true)
+				if !quiet() {
+					t.render(spinnerFrame(t.frame), "", true)
+				}
 				t.mu.Unlock()
 			}
 		}
@@ -232,37 +263,45 @@ func LogTask(format string, params ...any) *Task {
 	return t
 }
 
-// LogString adds a line to the task log.
+// LogString adds a line to the task log. Suppressed by -q/--quiet or Silence,
+// though the line is kept so Fail can still report it.
 func (t *Task) LogString(s string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.logs = append(t.logs, s)
-	if !isStdoutTTY {
-		fmt.Println(taskLogIndent + s)
+	if !isTTY {
+		if !quiet() {
+			fmt.Println(taskLogIndent + s)
+		}
 		return
 	}
-	t.render(spinnerFrame(t.frame), "", true)
+	if !quiet() {
+		t.render(spinnerFrame(t.frame), "", true)
+	}
 }
 
 // Done marks the task as completed. On a terminal, it stops the animation and
-// clears the log lines shown under the task message.
+// clears the log lines shown under the task message. Suppressed by -q/--quiet
+// or Silence.
 func (t *Task) Done() {
-	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ")
+	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ", false)
 }
 
-// Fail marks the task as failed, then exits the program via Fail. On a
-// terminal, it stops the animation, prints the entire task log and, if it
-// is longer than taskLogLines, repeats the failed task message below it.
+// Fail marks the task as failed, then exits the program via Fail. Unlike
+// other logs, this is never suppressed by -q/--quiet or Silence: it stops the
+// animation, prints the entire task log (catching up on lines that were
+// hidden while running) and, on a terminal, repeats the failed task message
+// below a long log.
 func (t *Task) Fail() {
 	failIcon := Styled(unicodeOr("✗", "x"), Bold, Red)
-	t.finish(failIcon, "Task failed: ")
-	if isStdoutTTY {
+	t.finish(failIcon, "Task failed: ", true)
+	if isTTY || quiet() {
 		width, _, _ := term.GetSize(int(os.Stdout.Fd()))
 		for _, line := range t.logs {
 			line = WrapText(line, width-len(taskLogIndent))
 			fmt.Println(taskLogIndent + strings.ReplaceAll(line, "\n", "\n"+taskLogIndent))
 		}
-		if len(t.logs) > taskLogLines {
+		if isTTY && len(t.logs) > taskLogLines {
 			fmt.Println(formatMsg(failIcon, t.label("Task failed: "))) // repeated so the failure is visible below a long log
 		}
 	}
@@ -279,18 +318,24 @@ func (t *Task) label(status string) string {
 	return status + strings.ToLower(t.msg[:size]) + t.msg[size:]
 }
 
-// finish prints the task message with the final icon and status prefix. On a terminal, it stops
-// the animation and clears the log lines shown under the task message.
-func (t *Task) finish(icon, status string) {
-	if !isStdoutTTY {
-		fmt.Println(formatMsg(icon, t.label(status)))
+// finish prints the task message with the final icon and status prefix, unless
+// suppressed by -q/--quiet or Silence (force overrides this, for task
+// failures). On a terminal, it stops the animation and clears the log lines
+// shown under the task message regardless.
+func (t *Task) finish(icon, status string, force bool) {
+	if !isTTY {
+		if force || !quiet() {
+			fmt.Println(formatMsg(icon, t.label(status)))
+		}
 		return
 	}
 	close(t.stop)
 	<-t.exited
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.render(icon, status, false)
+	if force || !quiet() {
+		t.render(icon, status, false)
+	}
 }
 
 // render redraws the task message, prefixed with status, over the previous render, leaving the cursor
@@ -321,14 +366,25 @@ func (t *Task) render(icon, status string, running bool) {
 }
 
 // Confirm prints a formatted yes/no prompt and blocks until the user answers.
-// If the user answers no, it exits the program via LogFatal. If stdin is not
+// If the user answers no, it exits the program via LogFatal. If stdout is not
 // a terminal, it assumes no rather than blocking on an answer that can't come.
+// -f/--yes skips the prompt and assumes yes. -n/--no skips the prompt, assumes
+// no, and says so.
 func Confirm(format string, params ...any) {
+	if Args.Force {
+		return
+	}
+
 	fmt.Print(formatMsg(Styled("?", Bold, Magenta), fmt.Sprintf(format, params...)+" [y/n]") + " ")
 
-	if !isStdinTTY {
+	if Args.ForceNo {
 		fmt.Println("n")
-		LogFatal("Input is not a tty, use -f to confirm.")
+		LogFatal("Operation canceled by -n/--no.")
+	}
+
+	if !isTTY {
+		fmt.Println("n")
+		LogFatal("Output is not a tty, use -f to confirm.")
 	}
 
 	reader := bufio.NewReader(os.Stdin)
