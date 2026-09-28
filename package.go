@@ -111,6 +111,16 @@ func LoadPackage(p Path) Package {
 	}
 }
 
+// packageName describes the package at root in logs: its path, plus its id
+// for the project root package, whose path doesn't show it.
+func packageName(root Path) string {
+	name := root.ToString()
+	if name == "res://" {
+		name += " [" + root.Name() + "]"
+	}
+	return name
+}
+
 // LoadPackageAt reads the package at root, asserting root is a package
 // root rather than a directory inside one.
 func LoadPackageAt(root Path) Package {

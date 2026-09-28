@@ -16,7 +16,7 @@ The tool itself is written in Go. C++ is only the language of the Godot projects
 - Comments: only where code is unclear, plus a short header on widely used functions.
 - Docs: simple English, plain logic.
 - Log messages: capitalized sentences ending with a period or `!` (prompts end with `?`; `Check` messages have no period, since `Check` appends the error and a period).
-- Commands: a successful run that modified the system ends with a single `LogInfo("Success!")`, not a summary of what was done.
+- Commands: a successful run that modified the system ends with a single `LogInfo("Success!")`, not a summary of what was done. Exceptions: `build` and `clean`, whose per-package `Building ...`/`Cleaning ...` lines already say it all.
 - Commands: `cmd_*.go` files never depend on each other; helpers shared between commands live in non-command files (e.g. `utils.go`).
 - Commands: keep the commands in `main.go` sorted alphabetically, both in the `Args` definitions and in the `switch` cases.
 - Paths: never interpolate a Path's raw absolute path (`p.absolutePath`) into a log, `Assert`, or `Check` message; use `p.ToString()` instead, so messages show a `res://`-relative or cwd-relative path rather than leaking the user's filesystem layout. Exception: functions on `ToString()`'s own dependency path (`stat`, `Exists`, `IsDir`, `IsFile`, and `ToString()` itself) must not call `p.ToString()` in their own messages, since Go evaluates call arguments eagerly and that would recurse forever; they omit the path instead.
