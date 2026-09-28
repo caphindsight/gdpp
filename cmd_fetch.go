@@ -10,13 +10,11 @@ import (
 // is cloned sparsely: only index/ and the chosen data/<kind>/<name> are
 // checked out.
 type CmdFetch struct {
-	Url         string   `arg:"--url" default:"https://github.com/caphindsight/gdpp-dep.git" placeholder:"URL" help:"the dep repository"`
-	Branch      string   `arg:"--branch" default:"master" placeholder:"BRANCH" help:"the branch of the dep repository"`
 	Index       bool     `arg:"--index" help:"list all deps in the repository"`
 	IndexBind   bool     `arg:"--index-bind" help:"list the Godot C++ bindings in the repository"`
 	IndexSpec   bool     `arg:"--index-spec" help:"list the Godot API specs in the repository"`
 	IndexEngine bool     `arg:"--index-engine" help:"list the Godot engines in the repository"`
-	Plain       bool     `arg:"--plain" help:"list only the names, one per line, for scripts; requires one of --index-bind, --index-spec or --index-engine"`
+	Plain       bool     `arg:"--plain" help:"list only the names, one per line"`
 	Bind        []string `arg:"--bind" placeholder:"NAME" help:"fetch these Godot C++ bindings"`
 	BindAll     bool     `arg:"--bind-all" help:"fetch all Godot C++ bindings"`
 	Spec        []string `arg:"--spec" placeholder:"NAME" help:"fetch these Godot API specs"`
@@ -24,6 +22,8 @@ type CmdFetch struct {
 	Engine      []string `arg:"--engine" placeholder:"NAME" help:"fetch these Godot engines"`
 	EngineAll   bool     `arg:"--engine-all" help:"fetch all Godot engines"`
 	CheckIn     bool     `arg:"--checkin" help:"fetch into the checked in cache instead of the ephemeral one"`
+	Url         string   `arg:"--url" default:"https://github.com/caphindsight/gdpp-dep.git" placeholder:"URL" help:"the dep repository"`
+	Branch      string   `arg:"--branch" default:"master" placeholder:"BRANCH" help:"the branch of the dep repository"`
 }
 
 // fetchKind is one kind of dep, with the arguments given for it.
