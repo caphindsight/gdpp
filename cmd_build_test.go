@@ -6,6 +6,7 @@ package main
 import (
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -16,10 +17,12 @@ spec = "4.3"
 [[class]]
   name = "Enemy"
   include = "pkg://enemy/enemy.h"
+  icon = "pkg://enemy/enemy.svg"
 
 [[class]]
   name = "Actor"
   include = "res://common/actor.h"
+  icon = "res://common/actor.svg"
 
 [[class]]
   name = "Helper"
@@ -38,6 +41,7 @@ func withBuildFS(t *testing.T) *memFS {
 		".gd++proj/bind/4.3/src/godot.cpp":      "godot",
 		".gd++proj/spec/4.3/extension_api.json": "{}",
 		"src/pkg/main.cpp":                      "",
+		"src/pkg/util.c++":                      "",
 		"src/pkg/enemy/enemy.cc":                "",
 		"src/pkg/enemy/enemy.h":                 "",
 		"src/pkg/enemy/notes.txt":               "",
@@ -53,7 +57,7 @@ func withBuildFS(t *testing.T) *memFS {
 func TestGenerateBuildCache(t *testing.T) {
 	m := withBuildFS(t)
 	p := LoadProject(Cwd())
-	generateBuildCache(p, LoadPackage(Cwd()))
+	captureStderr(t, func() { generateBuildCache(p, LoadPackage(Cwd())) })
 	after := subtree(m.tree(), "/games/my_game/src/pkg/.gd++pkg/")
 
 	for file, want := range map[string]string{"godot-cpp/SConstruct": "bind", "godot-cpp/src/godot.cpp": "godot", "extension_api.json": "{}"} {
@@ -79,12 +83,97 @@ func TestGenerateBuildCache(t *testing.T) {
 		`project_root = "../../.."`,
 		`"-std=") + "c++20"`,
 		`objects + "package/" + "enemy/enemy.cc" + env["SHOBJSUFFIX"], package_root + "/" + "enemy/enemy.cc"))` + "\n" +
-			`sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n\n",
+			`sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n" +
+			`sources.append(env.SharedObject(objects + "package/" + "util.c++" + env["SHOBJSUFFIX"], package_root + "/" + "util.c++"))` + "\n\n",
 		`package_root + "/lib" + "pkg" + env["suffix"]`,
 	} {
 		if !strings.Contains(sconstruct, want) {
 			t.Errorf("SConstruct = %s\nwant it to contain %q", sconstruct, want)
 		}
+	}
+}
+
+func TestGenerateGdextension(t *testing.T) {
+	m := withBuildFS(t)
+	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{"header": {"version_major": 4, "version_minor": 5, "version_patch": 1}}`)
+	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
+	generateGdextension(LoadPackage(Cwd()))
+	tree := m.tree()
+	gdextension := tree["/games/my_game/src/pkg/pkg.gdextension"]
+	for _, want := range []string{
+		"entry_symbol = \"gdpp_library_init\"\ncompatibility_minimum = \"4.5\"\n",
+		"\n\n[libraries]\n\nlinux.debug.arm64 = \"res://src/pkg/libpkg.linux.template_debug.arm64.so\"\n",
+		"macos.release.x86_64 = \"res://src/pkg/libpkg.macos.template_release.x86_64.dylib\"\n",
+		"windows.release.x86_64 = \"res://src/pkg/libpkg.windows.template_release.x86_64.dll\"\n\n[icons]\n\n" +
+			"Actor = \"res://common/actor.svg\"\nEnemy = \"res://src/pkg/enemy/enemy.svg\"\n",
+	} {
+		if !strings.Contains(gdextension, want) {
+			t.Errorf("pkg.gdextension = %s\nwant it to contain %q", gdextension, want)
+		}
+	}
+	if n := strings.Count(gdextension, ".template_"); n != 16 {
+		t.Errorf("pkg.gdextension lists %d libraries, want 16", n)
+	}
+	if strings.Contains(gdextension, "macos.debug.x86_32") {
+		t.Errorf("pkg.gdextension lists macos.x86_32, which godot-cpp doesn't support")
+	}
+	if got, want := tree["/games/my_game/src/pkg/pkg.gdextension.uid"], godotUid("res://src/pkg")+"\n"; got != want {
+		t.Errorf("pkg.gdextension.uid = %q, want %q", got, want)
+	}
+}
+
+func TestGodotUid(t *testing.T) {
+	uid := godotUid("res://src/pkg")
+	if !regexp.MustCompile(`^uid://[a-y0-8]{1,13}$`).MatchString(uid) || uid != godotUid("res://src/pkg") || uid == godotUid("res://src/other") {
+		t.Errorf("godotUid() = %q, want a stable, distinct Godot UID", uid)
+	}
+}
+
+func TestGenerateBuildCacheLogs(t *testing.T) {
+	withBuildFS(t)
+	withTTY(t, false)
+	withQuiet(t, false)
+	generate := func() string {
+		return captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
+	}
+	sync := "[$] Running task: syncing dependencies for res://src/pkg...\n[+] Task succeeded: syncing dependencies for res://src/pkg\n"
+	if got, want := generate(), sync+"[>] Generating type registrations for res://src/pkg...\n"; got != want {
+		t.Errorf("first output = %q, want %q", got, want)
+	}
+	if got := generate(); got != "" {
+		t.Errorf("unchanged output = %q, want none", got)
+	}
+}
+
+func TestGenerateBuildCacheDeps(t *testing.T) {
+	m := withBuildFS(t)
+	generate := func() {
+		captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
+	}
+	generate()
+	deps := "/games/my_game/src/pkg/.gd++pkg/deps.toml"
+	if got, want := m.tree()[deps], "bind = \"4.3\"\nspec = \"4.3\"\n"; got != want {
+		t.Errorf("deps.toml = %q, want %q", got, want)
+	}
+
+	// Same versions: the sync is skipped, even if the bindings changed.
+	NewPath("/games/my_game/.gd++proj/bind/4.3/SConstruct").WriteString("edited")
+	generate()
+	if got := m.tree()["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "bind" {
+		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "bind")
+	}
+
+	// Other versions: synced again.
+	m.nodes["/games/my_game/.gd++proj/spec/4.4/extension_api.json"] = &memNode{data: []byte("{4.4}")}
+	m.nodes["/games/my_game/.gd++proj/spec/4.4"] = &memNode{dir: true}
+	m.nodes["/games/my_game/src/pkg/gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `spec = "4.3"`, `spec = "4.4"`, 1))
+	generate()
+	tree := m.tree()
+	if got, want := tree[deps], "bind = \"4.3\"\nspec = \"4.4\"\n"; got != want {
+		t.Errorf("deps.toml = %q, want %q", got, want)
+	}
+	if got := tree["/games/my_game/src/pkg/.gd++pkg/extension_api.json"]; got != "{4.4}" {
+		t.Errorf("extension_api.json = %q, want %q", got, "{4.4}")
 	}
 }
 
@@ -189,7 +278,7 @@ func TestGenerateBuildCacheColor(t *testing.T) {
 	for _, tty := range []bool{false, true} {
 		m := withBuildFS(t)
 		withTTY(t, tty)
-		generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd()))
+		captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
 		sconstruct := m.tree()["/games/my_game/src/pkg/.gd++pkg/SConstruct"]
 		if got := strings.Contains(sconstruct, `"-fdiagnostics-color=always"`); got != tty {
 			t.Errorf("with a terminal = %v, SConstruct forces colors = %v, want %v", tty, got, tty)

@@ -461,6 +461,29 @@ func TestCopy(t *testing.T) {
 // TestFileOpsFail checks operations that exit via Fail. Each case re-execs the
 // test binary, which runs op on a memFS holding baseTree (cwd /work) with the
 // fail method returning fs.ErrPermission.
+func TestSync(t *testing.T) {
+	m := withMemFS(t, "/work", map[string]string{"/work/src/a.txt": "aaa", "/work/src/sub/b.txt": "b", "/work/dst/stale.txt": ""})
+	src, dst := NewPath("/work/src"), NewPath("/work/dst")
+	src.Sync(dst)
+	want := map[string]string{"a.txt": "aaa", "sub/": "", "sub/b.txt": "b"}
+	if got := subtree(m.tree(), "/work/dst/"); !reflect.DeepEqual(got, want) {
+		t.Errorf("after the first sync, dst = %v, want %v", got, want)
+	}
+
+	// Nothing changed: no file is written.
+	m.fail = "Create"
+	src.Sync(dst)
+	m.fail = ""
+
+	// Same size, other contents: copied.
+	src.Cd("a.txt").WriteString("xxx")
+	src.Sync(dst)
+	want["a.txt"] = "xxx"
+	if got := subtree(m.tree(), "/work/dst/"); !reflect.DeepEqual(got, want) {
+		t.Errorf("after the edit, dst = %v, want %v", got, want)
+	}
+}
+
 func TestFileOpsFail(t *testing.T) {
 	p := NewPath
 	cases := []struct {

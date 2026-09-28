@@ -121,6 +121,16 @@ func packageName(root Path) string {
 	return name
 }
 
+// styledPackageName is packageName styled like `gd++ ls` shows packages.
+func styledPackageName(root Path) string {
+	name := root.ToString()
+	styled := Styled(name, Bold, Cyan)
+	if name == "res://" {
+		styled += " " + Styled("["+root.Name()+"]", Gray)
+	}
+	return styled
+}
+
 // LoadPackageAt reads the package at root, asserting root is a package
 // root rather than a directory inside one.
 func LoadPackageAt(root Path) Package {

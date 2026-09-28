@@ -6,11 +6,12 @@ import (
 )
 
 // CmdClean deletes the build caches of packages, so their next build starts
-// from scratch, and with --bin also their built libraries.
+// from scratch, and with --bin also their built libraries and generated
+// .gdextension files.
 type CmdClean struct {
 	Paths []string `arg:"positional" placeholder:"PATH" help:"clean the packages containing these paths [default: the current directory]"`
 	Proj  bool     `arg:"--proj" help:"clean all packages in the project"`
-	Bin   bool     `arg:"--bin" help:"also delete the built libraries, for all platforms"`
+	Bin   bool     `arg:"--bin" help:"also delete the built libraries, for all platforms, and the .gdextension files"`
 }
 
 func (c *CmdClean) Run() {
@@ -49,16 +50,18 @@ func (c *CmdClean) Run() {
 }
 
 // garbage returns what to delete from the package at root: its build cache,
-// and with --bin its libraries, named like SConstruct names them.
+// and with --bin its libraries, named like SConstruct names them, and the
+// .gdextension and .uid files build generates.
 func (c *CmdClean) garbage(root Path) []Path {
 	var paths []Path
 	if cache := root.Cd(packageBuildCacheDirName); cache.Exists() {
 		paths = append(paths, cache)
 	}
 	if c.Bin {
-		lib := regexp.MustCompile(`^lib` + regexp.QuoteMeta(root.Name()) + `\..+\.(dll|so|dylib)$`)
+		id := regexp.QuoteMeta(root.Name())
+		bin := regexp.MustCompile(`^(lib` + id + `\..+\.(dll|so|dylib)|` + id + `\.gdextension(\.uid)?)$`)
 		for _, child := range root.Ls() {
-			if lib.MatchString(child.Name()) {
+			if bin.MatchString(child.Name()) {
 				paths = append(paths, child)
 			}
 		}

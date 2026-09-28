@@ -74,8 +74,8 @@ func TestCleanProj(t *testing.T) {
 
 func TestCleanBin(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game")
-	libs := []string{"libpkg.linux.template_debug.x86_64.so", "libpkg.windows.template_release.x86_32.dll", "libpkg.macos.template_debug.arm64.dylib"}
-	kept := []string{"libpkg.so", "libpkgx.linux.template_debug.x86_64.so", "libother.linux.template_debug.x86_64.so", "libpkg.linux.template_debug.x86_64.so.txt", "pkg.gdextension"}
+	libs := []string{"libpkg.linux.template_debug.x86_64.so", "libpkg.windows.template_release.x86_32.dll", "libpkg.macos.template_debug.arm64.dylib", "pkg.gdextension", "pkg.gdextension.uid"}
+	kept := []string{"libpkg.so", "libpkgx.linux.template_debug.x86_64.so", "libother.linux.template_debug.x86_64.so", "libpkg.linux.template_debug.x86_64.so.txt", "other.gdextension", "pkg.gdextension.txt"}
 	for _, name := range append(libs, kept...) {
 		m.nodes["/games/my_game/src/pkg/"+name] = &memNode{}
 	}
