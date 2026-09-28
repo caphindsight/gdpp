@@ -19,6 +19,13 @@ func withStdoutTTY(t *testing.T, tty bool) {
 	t.Cleanup(func() { isStdoutTTY = orig })
 }
 
+// withUnicode sets isUnicode for the duration of a test and restores the prior value.
+func withUnicode(t *testing.T, unicode bool) {
+	orig := isUnicode
+	isUnicode = unicode
+	t.Cleanup(func() { isUnicode = orig })
+}
+
 // withStdinTTY sets isStdinTTY for the duration of a test and restores the prior value.
 func withStdinTTY(t *testing.T, tty bool) {
 	orig := isStdinTTY
@@ -336,5 +343,155 @@ func TestWrapText(t *testing.T) {
 				t.Errorf("WrapText(%q, %d) = %q, want %q", c.text, c.width, got, c.want)
 			}
 		})
+	}
+}
+
+func TestLogTaskNonTTY(t *testing.T) {
+	withStdoutTTY(t, false)
+	withUnicode(t, true) // ASCII icons are used anyway, since stdout is not a TTY
+	var task *Task
+	got := captureStdout(t, func() {
+		task = LogTask("Build %d", 1)
+		task.LogString("a")
+		task.LogString("b")
+		task.Done()
+	})
+	if want := "[$] Running task: build 1\n    a\n    b\n[+] Task succeeded: build 1\n"; got != want {
+		t.Errorf("printed %q, want %q", got, want)
+	}
+	if len(task.logs) != 2 {
+		t.Errorf("stored %d log lines, want 2", len(task.logs))
+	}
+}
+
+func TestLogTaskTTY(t *testing.T) {
+	withStdoutTTY(t, true)
+	withUnicode(t, true)
+	var task *Task
+	got := captureStdout(t, func() {
+		task = LogTask("Build")
+		for i := 0; i < 6; i++ {
+			task.LogString(fmt.Sprint("line ", i))
+		}
+		task.Done()
+	})
+	if len(task.logs) != 6 {
+		t.Errorf("stored %d log lines, want 6", len(task.logs))
+	}
+	// Last render before Done shows the header and the last taskLogLines logs.
+	if !strings.Contains(got, "\n    line 2\n    line 3\n    line 4\n    line 5\n") {
+		t.Errorf("last logs not shown: %q", got)
+	}
+	// Done clears the header and 4 log rows and prints only the done header.
+	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+taskLogLines, formatMsg(Styled("✓", Bold, Green), "Task succeeded: build"))
+	if !strings.HasSuffix(got, want) {
+		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
+	}
+	select {
+	case <-task.exited:
+	default:
+		t.Error("animation goroutine still running after Done")
+	}
+}
+
+func TestTaskFailNonTTY(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isStdoutTTY = false
+		isUnicode = true
+		task := LogTask("Build")
+		task.LogString("a")
+		task.Fail()
+		return
+	}
+
+	out, code := runFailHelper(t, "TestTaskFailNonTTY")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[$] Running task: build\n    a\n[x] Task failed: build\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+// runTaskFailTTY is the child-process body of the TaskFailTTY tests: it logs
+// n lines to a TTY task, then fails it.
+func runTaskFailTTY(n int) {
+	isStdoutTTY = true
+	isUnicode = true
+	task := LogTask("Build")
+	for i := 0; i < n; i++ {
+		task.LogString(fmt.Sprint("line ", i))
+	}
+	task.Fail()
+}
+
+// wantTaskFailTTY returns the expected tail of a failed TTY task's output: the
+// failed header replacing the last render, then the entire log of n lines, then
+// the failed header again if n > taskLogLines. Built by hand: this process's
+// stdout is not a TTY, so Styled would not style.
+func wantTaskFailTTY(n int) string {
+	header := "[\x1b[1;31m✗\x1b[0m] Task failed: build\n"
+	want := fmt.Sprintf("\x1b[%dF\x1b[J", 1+taskLogLines) + header
+	for i := 0; i < n; i++ {
+		want += fmt.Sprint("    line ", i, "\n")
+	}
+	if n > taskLogLines {
+		want += header
+	}
+	return want
+}
+
+func TestTaskFailTTYLongLog(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		runTaskFailTTY(taskLogLines + 2)
+		return
+	}
+	out, code := runFailHelper(t, "TestTaskFailTTYLongLog")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := wantTaskFailTTY(taskLogLines + 2); !strings.HasSuffix(out, want) {
+		t.Errorf("output = %q, want suffix %q", out, want)
+	}
+}
+
+func TestTaskFailTTYShortLog(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		runTaskFailTTY(taskLogLines)
+		return
+	}
+	out, code := runFailHelper(t, "TestTaskFailTTYShortLog")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := wantTaskFailTTY(taskLogLines); !strings.HasSuffix(out, want) {
+		t.Errorf("output = %q, want suffix %q", out, want)
+	}
+}
+
+func TestSpinnerFrame(t *testing.T) {
+	withStdoutTTY(t, false)
+	withUnicode(t, false)
+	if got := spinnerFrame(5); got != "/" {
+		t.Errorf("ASCII spinnerFrame(5) = %q, want %q", got, "/")
+	}
+	withUnicode(t, true)
+	if got := spinnerFrame(11); got != "⠙" {
+		t.Errorf("Unicode spinnerFrame(11) = %q, want %q", got, "⠙")
+	}
+}
+
+func TestTaskLabel(t *testing.T) {
+	cases := []struct{ msg, status, want string }{
+		{"Build", "", "Build"},
+		{"Build", "Task failed: ", "Task failed: build"},
+		{"build", "Task failed: ", "Task failed: build"},
+		{"ÄB", "Task failed: ", "Task failed: äB"},
+		{"", "Task failed: ", "Task failed: "},
+	}
+	for _, c := range cases {
+		if got := (&Task{msg: c.msg}).label(c.status); got != c.want {
+			t.Errorf("Task{msg: %q}.label(%q) = %q, want %q", c.msg, c.status, got, c.want)
+		}
 	}
 }

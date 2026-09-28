@@ -6,7 +6,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
+	"time"
+	"unicode/utf8"
 
 	"golang.org/x/term"
 )
@@ -41,6 +45,31 @@ var isStdoutTTY = func() bool {
 	fi, err := os.Stdout.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }()
+
+// isUnicode is true when the terminal can likely display the Unicode icons.
+var isUnicode = func() bool {
+	if runtime.GOOS == "windows" {
+		return os.Getenv("WT_SESSION") != "" // Windows Terminal; the old console may not
+	}
+	if os.Getenv("TERM") == "linux" {
+		return false // Linux text console, whose fonts lack the icons
+	}
+	for _, name := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		if v := strings.ToLower(os.Getenv(name)); v != "" {
+			return strings.Contains(v, "utf-8") || strings.Contains(v, "utf8")
+		}
+	}
+	return false
+}()
+
+// unicodeOr returns unicode if stdout is a terminal that can display it, and
+// ascii otherwise.
+func unicodeOr(unicode, ascii string) string {
+	if isUnicode && isStdoutTTY {
+		return unicode
+	}
+	return ascii
+}
 
 // Styled wraps text in the given styles, e.g. Styled("done", Bold, Green).
 // Returns text unchanged if stdout is not a terminal or no styles are given.
@@ -146,6 +175,149 @@ func LogError(format string, params ...any) {
 func LogFatal(format string, params ...any) {
 	LogError(format, params...)
 	Fail()
+}
+
+// taskLogLines is how many of the latest log lines are shown under a running task.
+const taskLogLines = 4
+
+// taskLogIndent prefixes every task log line.
+const taskLogIndent = "    "
+
+// spinnerFrame returns frame n of the icon animation of a running task.
+func spinnerFrame(n int) string {
+	frames := []string{"|", "/", "-", "\\"}
+	if isUnicode {
+		frames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	}
+	return Styled(frames[n%len(frames)], Cyan)
+}
+
+// Task is a running task started by LogTask.
+type Task struct {
+	msg    string
+	logs   []string   // all log lines, kept in memory
+	mu     sync.Mutex // guards logs, frame, drawn and drawing
+	frame  int
+	drawn  int           // rows drawn by the last render
+	stop   chan struct{} // closed by Done
+	exited chan struct{} // closed when the animation goroutine returns
+}
+
+// LogTask prints a formatted task message and returns the task. On a terminal,
+// the icon is animated and the latest log lines are shown under the message
+// until Done is called.
+func LogTask(format string, params ...any) *Task {
+	t := &Task{msg: fmt.Sprintf(format, params...), stop: make(chan struct{}), exited: make(chan struct{})}
+	if !isStdoutTTY {
+		fmt.Println(formatMsg("$", t.label("Running task: ")))
+		return t
+	}
+	t.render(spinnerFrame(0), "", true)
+	go func() {
+		defer close(t.exited)
+		ticker := time.NewTicker(80 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-t.stop:
+				return
+			case <-ticker.C:
+				t.mu.Lock()
+				t.frame++
+				t.render(spinnerFrame(t.frame), "", true)
+				t.mu.Unlock()
+			}
+		}
+	}()
+	return t
+}
+
+// LogString adds a line to the task log.
+func (t *Task) LogString(s string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.logs = append(t.logs, s)
+	if !isStdoutTTY {
+		fmt.Println(taskLogIndent + s)
+		return
+	}
+	t.render(spinnerFrame(t.frame), "", true)
+}
+
+// Done marks the task as completed. On a terminal, it stops the animation and
+// clears the log lines shown under the task message.
+func (t *Task) Done() {
+	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ")
+}
+
+// Fail marks the task as failed, then exits the program via Fail. On a
+// terminal, it stops the animation, prints the entire task log and, if it
+// is longer than taskLogLines, repeats the failed task message below it.
+func (t *Task) Fail() {
+	failIcon := Styled(unicodeOr("✗", "x"), Bold, Red)
+	t.finish(failIcon, "Task failed: ")
+	if isStdoutTTY {
+		width, _, _ := term.GetSize(int(os.Stdout.Fd()))
+		for _, line := range t.logs {
+			line = WrapText(line, width-len(taskLogIndent))
+			fmt.Println(taskLogIndent + strings.ReplaceAll(line, "\n", "\n"+taskLogIndent))
+		}
+		if len(t.logs) > taskLogLines {
+			fmt.Println(formatMsg(failIcon, t.label("Task failed: "))) // repeated so the failure is visible below a long log
+		}
+	}
+	Fail()
+}
+
+// label returns the task message prefixed with status. If status is set, the
+// first letter of the message is lowercased to follow it.
+func (t *Task) label(status string) string {
+	if status == "" {
+		return t.msg
+	}
+	_, size := utf8.DecodeRuneInString(t.msg)
+	return status + strings.ToLower(t.msg[:size]) + t.msg[size:]
+}
+
+// finish prints the task message with the final icon and status prefix. On a terminal, it stops
+// the animation and clears the log lines shown under the task message.
+func (t *Task) finish(icon, status string) {
+	if !isStdoutTTY {
+		fmt.Println(formatMsg(icon, t.label(status)))
+		return
+	}
+	close(t.stop)
+	<-t.exited
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.render(icon, status, false)
+}
+
+// render redraws the task message, prefixed with status, over the previous render, leaving the cursor
+// at the start of the line below. While running, it also draws the last
+// taskLogLines log lines, padded with empty rows so the block height is fixed.
+// The caller must hold t.mu.
+func (t *Task) render(icon, status string, running bool) {
+	width, _, _ := term.GetSize(int(os.Stdout.Fd()))
+	var out strings.Builder
+	if t.drawn > 0 {
+		fmt.Fprintf(&out, "\x1b[%dF\x1b[J", t.drawn) // up to the first drawn row, clear below
+	}
+	block := formatMsg(icon, t.label(status))
+	if running {
+		logs := t.logs[max(0, len(t.logs)-taskLogLines):]
+		for i := 0; i < taskLogLines; i++ {
+			block += "\n"
+			if i < len(logs) {
+				// Keep each log line to one row, so the row count stays exact.
+				line, _, _ := strings.Cut(WrapText(logs[i], width-len(taskLogIndent)), "\n")
+				block += taskLogIndent + line
+			}
+		}
+	}
+	out.WriteString(block + "\n")
+	t.drawn = strings.Count(block, "\n") + 1
+	fmt.Print(out.String())
 }
 
 // Confirm prints a formatted yes/no prompt and blocks until the user answers.
