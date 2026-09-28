@@ -3,7 +3,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"runtime"
@@ -467,9 +466,8 @@ func Confirm(format string, params ...any) {
 		LogFatal("Output is not a tty, use -f to confirm.")
 	}
 
-	reader := bufio.NewReader(os.Stdin)
 	for {
-		line, err := reader.ReadString('\n')
+		line, err := readLine()
 		if err != nil {
 			LogFatal("Operation canceled by user.")
 		}
@@ -481,6 +479,23 @@ func Confirm(format string, params ...any) {
 		default:
 			fmt.Fprint(os.Stderr, "Please answer yes or no: ")
 		}
+	}
+}
+
+// readLine reads a line from stdin one byte at a time, so that input after
+// the line stays unread for the next prompt.
+func readLine() (string, error) {
+	var line []byte
+	b := make([]byte, 1)
+	for {
+		n, err := os.Stdin.Read(b)
+		if n == 1 && b[0] == '\n' {
+			return string(line), nil
+		}
+		if err != nil {
+			return "", err
+		}
+		line = append(line, b[:n]...)
 	}
 }
 

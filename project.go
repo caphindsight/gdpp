@@ -78,6 +78,26 @@ func (p *Project) tempDir() Path {
 	return p.Root.Cd(ephemeralDepsDirName, tempDirName)
 }
 
+// RemoveEmptyCacheDirs deletes the empty dep cache directories, and their
+// parents if that leaves them empty. Returns whether any was deleted.
+func (p *Project) RemoveEmptyCacheDirs() bool {
+	// Caches first, since deleting them may leave their parents empty.
+	var dirs []Path
+	for _, cache := range []ProjectDepCache{p.BindingsCache, p.ApiSpecsCache, p.EnginesCache} {
+		dirs = append(dirs, cache.CheckedInDir, cache.EphemeralDir)
+	}
+	dirs = append(dirs, p.Root.Cd(checkedInDepsDirName), p.Root.Cd(ephemeralDepsDirName))
+	removed := false
+	for _, dir := range dirs {
+		if dir.IsEmptyDir() {
+			dir.Remove()
+			LogInfo("Deleted the empty directory %s.", dir.ToString())
+			removed = true
+		}
+	}
+	return removed
+}
+
 // LoadProject reads the project containing p. It doesn't create any
 // directories: those are created only when first needed.
 func LoadProject(p Path) Project {

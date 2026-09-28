@@ -30,17 +30,7 @@ func (c *CmdFix) Run() {
 	if temp := p.tempDir(); temp.Exists() {
 		remove(temp, "the temporary directory")
 	}
-	// Caches first, since deleting them may leave their parents empty.
-	var dirs []Path
-	for _, cache := range []ProjectDepCache{p.BindingsCache, p.ApiSpecsCache, p.EnginesCache} {
-		dirs = append(dirs, cache.CheckedInDir, cache.EphemeralDir)
-	}
-	dirs = append(dirs, p.Root.Cd(checkedInDepsDirName), p.Root.Cd(ephemeralDepsDirName))
-	for _, dir := range dirs {
-		if dir.IsEmptyDir() {
-			remove(dir, "the empty directory")
-		}
-	}
+	changed = p.RemoveEmptyCacheDirs() || changed
 
 	if !changed {
 		LogInfo("The project is already tidy.")
