@@ -5,6 +5,7 @@ package main
 
 import (
 	"maps"
+	"strings"
 	"testing"
 )
 
@@ -56,11 +57,39 @@ func TestLsCmdDeps(t *testing.T) {
 	}
 }
 
+func TestLsCmdVCS(t *testing.T) {
+	withLsProject(t)
+	NewPath("/games/my_game").Cd(projectConfigFileName).WriteString(`vcs = "git"`)
+	out := captureStdout(t, (&CmdLs{}).Run)
+	if want := "  Godot: 4.3  *  GD++ CLI: nightly  *  VCS: git\n"; !strings.Contains(out, want) {
+		t.Errorf("output = %q, want it to contain %q", out, want)
+	}
+}
+
+func TestLsCmdPackages(t *testing.T) {
+	withLsProject(t)
+	NewPath("/games/my_game/foo").Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n")
+	out := captureStdout(t, (&CmdLs{}).Run)
+	want := lsHeader +
+		"  Godot C++ bindings:  1 checked in  *  1 cached  *  1 unused\n" +
+		"  Godot API specs:     1 cached\n" +
+		"  Godot engines:       none\n" +
+		"\n" +
+		"Package res://foo\n" +
+		"  Godot C++ bindings:  10.0.0-stable\n" +
+		"  Godot API spec:      4.3-stable\n" +
+		"  GD++ syntax:         0\n" +
+		"  C++ standard:        c++20\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
 func TestLsPackages(t *testing.T) {
 	withLsProject(t)
 	root := NewPath("/games/my_game/foo")
 	pkgs := []lsPackage{{
-		Root: root, Bindings: "b", ApiSpec: "4.3-stable", Syntax: "0", CppStd: "c++23",
+		Package: Package{Root: root, Config: PackageConfig{Bindings: "b", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++23"}},
 		Classes: []lsClass{
 			{"Tree", "foo/tree.h", root.Cd("icons", "tree.svg")},
 			{"Bush", "foo/bush.h", root.Cd("icons", "bush.svg")},

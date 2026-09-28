@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"regexp"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
 // Project is a Godot project, with settings read from its project.godot file.
@@ -15,10 +17,29 @@ type Project struct {
 	Id           string // name of the root directory
 	Name         string // application/config/name
 	GodotVersion string // e.g. "4.3", from application/config/features
+	Config       ProjectConfig
 
 	BindingsCache ProjectDepCache // Godot C++ bindings
 	ApiSpecsCache ProjectDepCache // Godot API specs
 	EnginesCache  ProjectDepCache // Godot engine binaries
+}
+
+// ProjectConfig holds the GD++ settings from res://gd++proj.toml.
+type ProjectConfig struct {
+	VCS string `toml:"vcs"`
+}
+
+// DefaultProjectConfig returns the config used when res://gd++proj.toml
+// doesn't exist.
+func DefaultProjectConfig() ProjectConfig {
+	return ProjectConfig{VCS: "none"}
+}
+
+// Encode returns c in TOML format.
+func (c ProjectConfig) Encode() string {
+	var b strings.Builder
+	Check(toml.NewEncoder(&b).Encode(c), "Failed to encode the project config")
+	return b.String()
 }
 
 // project.godot is written by Godot's ConfigFile: "[section]" headers, then
@@ -71,11 +92,21 @@ func LoadProject(p Path) Project {
 	version := projectVersionPattern.FindStringSubmatch(app)
 	Assert(version != nil, "Failed to find the Godot version in %s.", file.ToString())
 
+	config := DefaultProjectConfig()
+	if configFile := root.Cd(projectConfigFileName); configFile.Exists() {
+		meta, err := toml.Decode(configFile.ReadString(), &config)
+		Check(err, "Failed to parse %s", configFile.ToString())
+		if unknown := meta.Undecoded(); len(unknown) > 0 {
+			LogFatal("Unknown key %s in %s.", unknown[0], configFile.ToString())
+		}
+	}
+
 	return Project{
 		Root:         root,
 		Id:           root.Name(),
 		Name:         godotStringUnescaper.Replace(name[1]),
 		GodotVersion: version[1],
+		Config:       config,
 
 		BindingsCache: newProjectDepCache(root, bindingsCacheDirName, "Godot C++ bindings"),
 		ApiSpecsCache: newProjectDepCache(root, apiSpecsCacheDirName, "Godot API spec"),

@@ -15,9 +15,8 @@ type CmdLs struct {
 
 // lsPackage is what ls shows about a package.
 type lsPackage struct {
-	Root                              Path
-	Bindings, ApiSpec, Syntax, CppStd string
-	Classes                           []lsClass
+	Package
+	Classes []lsClass
 }
 
 // lsClass is a class of a package. A zero Icon means the class has none.
@@ -27,8 +26,12 @@ type lsClass struct {
 }
 
 func (c *CmdLs) Run() {
-	// Packages will be listed once they can be loaded.
-	PrintResult(lsProject(LoadProject(Cwd()), nil, c.Deps || c.All))
+	p := LoadProject(Cwd())
+	var pkgs []lsPackage
+	for _, pkg := range p.ListPackages() {
+		pkgs = append(pkgs, lsPackage{Package: pkg}) // classes will be listed once they can be loaded
+	}
+	PrintResult(lsProject(p, pkgs, c.Deps || c.All))
 }
 
 // lsProject renders the overview of p and its packages. With deps, it lists
@@ -38,8 +41,7 @@ func lsProject(p Project, pkgs []lsPackage, deps bool) string {
 	key := func(s string) string { return Styled(s+":", Bold) }
 	var out strings.Builder
 	out.WriteString(Styled("Project:", Bold, BrightBlue) + " " + Styled(p.Name, Bold) + "  " + Styled("["+p.Id+"]", Gray) + "\n")
-	// The VCS will be a project setting.
-	out.WriteString("  " + strings.Join([]string{key("Godot") + " " + p.GodotVersion, key("GD++ CLI") + " " + gdppVersion, key("VCS") + " none"}, sep) + "\n")
+	out.WriteString("  " + strings.Join([]string{key("Godot") + " " + p.GodotVersion, key("GD++ CLI") + " " + gdppVersion, key("VCS") + " " + p.Config.VCS}, sep) + "\n")
 
 	// of returns the version of the kind a package uses; nil if packages
 	// don't choose one.
@@ -48,8 +50,8 @@ func lsProject(p Project, pkgs []lsPackage, deps bool) string {
 		cache        ProjectDepCache
 		of           func(lsPackage) string
 	}{
-		{"Godot C++ bindings", "--bind", p.BindingsCache, func(pkg lsPackage) string { return pkg.Bindings }},
-		{"Godot API specs", "--spec", p.ApiSpecsCache, func(pkg lsPackage) string { return pkg.ApiSpec }},
+		{"Godot C++ bindings", "--bind", p.BindingsCache, func(pkg lsPackage) string { return pkg.Config.Bindings }},
+		{"Godot API specs", "--spec", p.ApiSpecsCache, func(pkg lsPackage) string { return pkg.Config.ApiSpec }},
 		{"Godot engines", "--engine", p.EnginesCache, nil},
 	}
 
@@ -110,7 +112,7 @@ func lsProject(p Project, pkgs []lsPackage, deps bool) string {
 			}
 			rows = append(rows, []string{key(k.cache.Desc), name, status})
 		}
-		rows = append(rows, []string{key("GD++ syntax"), pkg.Syntax}, []string{key("C++ standard"), pkg.CppStd})
+		rows = append(rows, []string{key("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{key("C++ standard"), pkg.Config.CppStandard})
 		if len(pkg.Classes) > 0 {
 			// In the same table, so both align.
 			rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Include", Bold), Styled("Icon", Bold)})

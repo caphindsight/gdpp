@@ -1,0 +1,109 @@
+// package_test.go: tests for package.go.
+
+package main
+
+import (
+	"maps"
+	"os"
+	"reflect"
+	"testing"
+)
+
+// withPackages returns testProjectTree plus the given gd++pkg.toml files,
+// keyed by package directory relative to the project root.
+func withPackages(pkgs map[string]string) map[string]string {
+	tree := maps.Clone(testProjectTree)
+	for dir, config := range pkgs {
+		tree["/games/my_game/"+dir+"/"+packageFileName] = config
+	}
+	return tree
+}
+
+func TestLoadPackage(t *testing.T) {
+	m := withMemFS(t, "/", withPackages(map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3-stable\"\n"}))
+	m.nodes["/games/my_game/src/pkg/sub"] = &memNode{dir: true}
+	before := m.tree()
+
+	root := NewPath("/games/my_game/src/pkg")
+	want := Package{
+		Root:       root,
+		Id:         "pkg",
+		Config:     PackageConfig{Bindings: "4.3", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++20"},
+		BuildCache: root.Cd(".gd++pkg"),
+	}
+	if got := LoadPackage(root.Cd("sub")); !reflect.DeepEqual(got, want) {
+		t.Errorf("LoadPackage() = %+v, want %+v", got, want)
+	}
+	if got := m.tree(); !reflect.DeepEqual(got, before) {
+		t.Errorf("LoadPackage() changed the tree to %v, want %v", got, before)
+	}
+}
+
+func TestLoadPackageAllKeys(t *testing.T) {
+	withMemFS(t, "/", withPackages(map[string]string{"pkg": "bind = \"a\"\nspec = \"b\"\nsyntax = 2\nstd = \"c++23\"\n"}))
+	want := PackageConfig{Bindings: "a", ApiSpec: "b", Syntax: 2, CppStandard: "c++23"}
+	if got := LoadPackage(NewPath("/games/my_game/pkg")).Config; got != want {
+		t.Errorf("Config = %+v, want %+v", got, want)
+	}
+}
+
+func TestLoadPackageFails(t *testing.T) {
+	tests := []struct {
+		name, config, want string
+	}{
+		{"MissingBind", `spec = "b"`, "[!] Missing key bind in res://pkg/gd++pkg.toml.\n"},
+		{"MissingSpec", `bind = "a"`, "[!] Missing key spec in res://pkg/gd++pkg.toml.\n"},
+		{"UnknownKey", "bind = \"a\"\nspec = \"b\"\njobs = 4\n", "[!] Unknown key jobs in res://pkg/gd++pkg.toml.\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+				isTTY = false
+				withMemFS(t, "/games/my_game", withPackages(map[string]string{"pkg": tt.config}))
+				withQuiet(t, false)
+				LoadPackage(NewPath("/games/my_game/pkg"))
+				return
+			}
+			out, code := runFailHelper(t, "TestLoadPackageFails/"+tt.name)
+			if code != 1 || out != tt.want {
+				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadPackageOutsideProject(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		withMemFS(t, "/work", map[string]string{"/work/pkg/" + packageFileName: "bind = \"a\"\nspec = \"b\"\n"})
+		withQuiet(t, false)
+		LoadPackage(NewPath("/work/pkg"))
+		return
+	}
+	out, code := runFailHelper(t, "TestLoadPackageOutsideProject")
+	if want := "[!] Path pkg is not contained in a Godot project.\n"; code != 1 || out != want {
+		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
+	}
+}
+
+func TestListPackages(t *testing.T) {
+	config := "bind = \"a\"\nspec = \"b\"\n"
+	withMemFS(t, "/", withPackages(map[string]string{
+		"b":             config,
+		"a/deep/pkg":    config,
+		"b/nested":      config, // inside a package: skipped
+		".hidden":       config, // hidden: skipped
+		"_gd++proj/pkg": config, // checked in caches: skipped
+		"other":         config, // gets a project.godot below: skipped
+	}))
+	NewPath("/games/my_game/other").Cd(projectFileName).WriteString("")
+
+	p := LoadProject(NewPath("/games/my_game"))
+	var got []string
+	for _, pkg := range p.ListPackages() {
+		got = append(got, pkg.Root.ToString())
+	}
+	if want := []string{"res://a/deep/pkg", "res://b"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("ListPackages() = %v, want %v", got, want)
+	}
+}

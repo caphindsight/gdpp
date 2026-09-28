@@ -3,6 +3,8 @@
 package main
 
 import (
+	"maps"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -38,6 +40,7 @@ func TestLoadProject(t *testing.T) {
 		Id:            "my_game",
 		Name:          `My "Game"`,
 		GodotVersion:  "4.3",
+		Config:        DefaultProjectConfig(),
 		BindingsCache: ProjectDepCache{root.Cd("_gd++proj/bind"), root.Cd(".gd++proj/bind"), "Godot C++ bindings"},
 		ApiSpecsCache: ProjectDepCache{root.Cd("_gd++proj/spec"), root.Cd(".gd++proj/spec"), "Godot API spec"},
 		EnginesCache:  ProjectDepCache{root.Cd("_gd++proj/engine"), root.Cd(".gd++proj/engine"), "Godot engine"},
@@ -47,6 +50,31 @@ func TestLoadProject(t *testing.T) {
 	}
 	if got := m.tree(); !reflect.DeepEqual(got, before) {
 		t.Errorf("LoadProject() changed the tree to %v, want %v", got, before)
+	}
+}
+
+func TestLoadProjectConfig(t *testing.T) {
+	tree := maps.Clone(testProjectTree)
+	tree["/games/my_game/"+projectConfigFileName] = `vcs = "git"`
+	withMemFS(t, "/", tree)
+	if got, want := LoadProject(NewPath("/games/my_game")).Config, (ProjectConfig{VCS: "git"}); got != want {
+		t.Errorf("Config = %+v, want %+v", got, want)
+	}
+}
+
+func TestLoadProjectConfigUnknownKey(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		tree := maps.Clone(testProjectTree)
+		tree["/games/my_game/"+projectConfigFileName] = "vcs = \"git\"\n[build]\njobs = 4\n"
+		withMemFS(t, "/games/my_game", tree)
+		withQuiet(t, false)
+		LoadProject(NewPath("/games/my_game"))
+		return
+	}
+	out, code := runFailHelper(t, "TestLoadProjectConfigUnknownKey")
+	if want := "[!] Unknown key build in res://gd++proj.toml.\n"; code != 1 || out != want {
+		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }
 

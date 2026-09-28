@@ -54,8 +54,21 @@ func TestFix(t *testing.T) {
 	}
 }
 
+func TestFixConfig(t *testing.T) {
+	out, _, after := runFix(t, map[string]string{"/games/my_game/" + projectConfigFileName: `vcs="git"`})
+	if want := "[>] Reformatted res://gd++proj.toml.\n[>] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got, want := after[projectConfigFileName], "vcs = \"git\"\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
 func TestFixNothingToDo(t *testing.T) {
-	out, before, after := runFix(t, map[string]string{"/games/my_game/.gd++proj/bind/4.3/a.h": "a"})
+	out, before, after := runFix(t, map[string]string{
+		"/games/my_game/.gd++proj/bind/4.3/a.h":   "a",
+		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\n",
+	})
 	if want := "[>] The project is already tidy.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
