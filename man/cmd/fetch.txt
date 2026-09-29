@@ -1,0 +1,108 @@
+gd++ fetch: download dependencies from a repository, or list them
+
+# Synopsis
+
+```
+gd++ fetch --missing [--checkin]
+gd++ fetch [--bind NAME...] [--spec NAME...] [--engine NAME...]
+           [--bind-all] [--spec-all] [--engine-all] [--checkin]
+gd++ fetch --index | --index-bind | --index-spec | --index-engine [--plain]
+Any of these with [--url URL] [--branch BRANCH].
+```
+
+# Description
+
+Downloads dependencies from the GD++ dependency repository, a git repository, into the project's ephemeral cache, res://.gd++proj, or with --checkin into the checked in cache, res://_gd++proj. Or, with an --index option, lists the dependencies that the repository has. See `gd++ man dependencies`.
+
+gd++ makes a shallow, sparse clone of the repository into a temporary directory, checks out only its index and the chosen dependencies, and moves them into the cache. It needs git.
+
+# Options
+
+--missing
+  Fetch the bindings and specs that the project's packages name in their gd++pkg.toml files, but that neither cache has. The usual way to set up a project after cloning it. If nothing is missing, says "No dependencies are missing." and doesn't touch the network. Can be combined with the options below, to fetch more.
+
+--bind NAME...
+  Fetch these Godot C++ bindings. A name can be a version, e.g. 10.0.0-stable, or a tag, e.g. latest.
+
+--bind-all
+  Fetch all Godot C++ bindings in the repository. Those already in the cache are skipped, with a warning.
+
+--spec NAME..., --spec-all
+  Likewise, for Godot API specs.
+
+--engine NAME..., --engine-all
+  Likewise, for Godot engines. Engines are currently unused.
+
+--checkin
+  Fetch into the checked in cache instead of the ephemeral one.
+
+--index
+  List all dependencies in the repository, by kind, newest first: each version, the tags that name it, and whether the project has it, "cached" or "checked in".
+
+--index-bind, --index-spec, --index-engine
+  List only the bindings, the specs or the engines.
+
+--plain
+  List only the names of the versions, one per line, newest first, without tags, styles or headers, e.g. for scripts. Requires exactly one of --index-bind, --index-spec and --index-engine.
+
+--url URL
+  The repository to fetch from. Default: https://github.com/caphindsight/gdpp-dep.git.
+
+--branch BRANCH
+  The branch of the repository. Default: master.
+
+An --index option can't be used with options that fetch, nor --index with the other --index options. --bind and --bind-all can't be used together, and likewise for spec and engine.
+
+# Overwriting
+
+A dependency that you name, and that the project already has, is downloaded again after you confirm. The new copy replaces the old ones, and goes into the cache that --checkin chooses, like any fetched dependency. With --bind-all and the like, dependencies already in the project are skipped instead. A dependency named twice, e.g. by a tag and by its version, is fetched once.
+
+# Examples
+
+Set up a project after cloning it:
+
+```sh
+gd++ fetch --missing
+```
+
+See what's available:
+
+```
+gd++ fetch --index
+
+Godot C++ bindings:
+  10.0.0-stable  latest  cached
+  9.0.0-stable
+
+Godot API specs:
+  4.7.2-stable   latest  checked in
+  4.6.1-stable
+  ...
+```
+
+Fetch the latest spec and commit it with the project:
+
+```sh
+gd++ fetch --spec latest --checkin
+```
+
+Fetch from your team's mirror:
+
+```sh
+gd++ fetch --missing --url https://git.example.com/gdpp-dep.git
+```
+
+The newest spec's name, for a script:
+
+```sh
+gd++ fetch --index-spec --plain | head -n 1
+```
+
+# Errors
+
+- "The Godot API spec NAME is not in the repository." Check the name with `gd++ fetch --index`.
+- "Task failed: cloning the repository" Git failed, e.g. without network access. Its output is shown.
+
+# See also
+
+`gd++ man dependencies`, `gd++ man vendor`, `gd++ man checkin`, `gd++ man rm`.

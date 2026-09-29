@@ -1,0 +1,99 @@
+The GD++ language: an overview
+
+GD++ is a small language that compiles to regular C++. Its one goal: make C++ for Godot easy. This page is an overview of the whole language; each part has its own page, listed at the end of this one.
+
+# Why
+
+To make a Godot class in plain C++ with godot-cpp, you write a header and a source file, a _bind_methods function that registers every method, property and signal, a getter and a setter for every property, #include lines for every class you use, and code that registers the class when the library loads. Most of it repeats what you already said once.
+
+In GD++, you write only the parts that matter: what the class is, what it exposes to Godot, and the code of its functions. GD++ writes the rest, and the result is the C++ you would have written by hand.
+
+# What it looks like
+
+```gd++
+/// The player's character.
+class_name Player
+extends CharacterBody3D
+
+signal died
+signal health_changed(health: int)
+
+@export_range(0, 100, 1)
+var health: int = 100
+
+@export
+var speed: float = 5.0
+
+func hurt(amount: int) -> void {
+  health -= amount;
+  emit health_changed(health);
+  if (health <= 0) {
+    emit died();
+  }
+}
+
+@override
+func _physics_process(delta: float) -> void {
+  Vector3 direction = Vector3(Input::get_singleton()->get_axis("ui_left", "ui_right"), 0, 0);
+  set_velocity(direction * speed);
+  move_and_slide();
+}
+```
+
+The declarations look like GDScript: class_name, extends, signal, var, func and annotations like @export. But GD++ is not GDScript:
+
+- Blocks use braces, not indentation. GD++ doesn't care about whitespace.
+- Function bodies, initial values and the like are plain C++, compiled by a C++ compiler.
+- Types are Godot types, e.g. int, float, Vector3 or Node3D, and GD++ maps each to one C++ type, e.g. int64_t, double, Vector3 and Node3D*.
+- Every variable, parameter and return value has a static type, or is a Variant.
+
+# Two languages in one file
+
+A GD++ file mixes two languages:
+
+- GD++ declarations, in the class declaration scope: classes, functions, variables, signals, enums and so on. GD++ parses these, and turns them into C++ declarations and bindings.
+- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and decl and impl blocks. GD++ copies this code into the generated C++, almost unchanged. It only removes comments, and rewrites a few words of GD++'s own: emit, rpc, rpc_id, This and gd.
+
+In C++ code, everything that godot-cpp offers works: Godot's classes, Variant, memnew, Ref, UtilityFunctions and so on. GD++ adds a few helpers. See `gd++ man runtime`.
+
+# What GD++ generates
+
+Each class becomes a C++ class in namespace godot, with GDCLASS, in a header and a source file named after it, e.g. Player.h and Player.cpp. GD++ generates:
+
+- the class definition, with a field per variable, a method per function, and a getter and setter per variable,
+- _bind_methods, which binds every function, property, signal and constant,
+- the #include lines for every class the code uses,
+- the constructor and destructor, with the initial values of variables,
+- the registration of the class with Godot, when the library loads,
+- the class's documentation, from doc comments, for the editor's help.
+
+`gd++ trans FILE` prints what a file generates. See `gd++ man generated`.
+
+# Building blocks
+
+- Classes: file-level with class_name, or inline with class Name { ... }. See `gd++ man classes`.
+- Functions: func name(params) -> type { C++ }, with attributes like @override, @virtual, @const, @static. See `gd++ man functions`.
+- Variables: var name: type = value, and properties with their own get and set. See `gd++ man variables`.
+- Exports: @export and its family, to show variables in the inspector. See `gd++ man exports`.
+- Signals: signal name(params), sent with emit. See `gd++ man signals`.
+- Enums and constants: enum Name { A B C } and enum NAME = 42. See `gd++ man enums`.
+- Constructors and destructors: ctor { } and dtor { }, and @onready. See `gd++ man lifecycle`.
+- Networking: @rpc, and rpc and rpc_id calls. See `gd++ man rpc`.
+- Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
+- Plain C++: decl, impl and @global blocks. See `gd++ man code`.
+- Includes: automatic, with import and noimport to adjust them. See `gd++ man includes`.
+- Doc comments: /// and /** */, which become the editor's help. See `gd++ man docs`.
+
+# Syntax versions
+
+A package's gd++pkg.toml says which version of the language its GD++ files use: syntax = 0. Currently, 0 is the only version, and this manual describes it. Future versions of GD++ may change the language in ways that break code; they will do so in a new syntax version, and keep supporting the old ones, so existing code keeps building. You choose when to upgrade a package, with `gd++ init PATH --update --syntax N`.
+
+# Learning GD++
+
+- Read the language pages in the order that `gd++ man lang` lists them.
+- Run `gd++ trans` on your files, and read what they generate.
+- Read tutorial/tutorial.gd++ in GD++'s source code: a tour of the language in one file.
+
+# See also
+
+`gd++ man syntax`, `gd++ man files`, `gd++ man grammar`.

@@ -1,0 +1,85 @@
+gd++ doc: show what godot-cpp declares under a name
+
+# Synopsis
+
+```sh
+gd++ doc [PKG] NAME
+gd++ doc [PKG] NAME.MEMBER
+gd++ doc [PKG] [-i]
+```
+
+# Description
+
+Shows the C++ declaration of a name in godot-cpp, like `go doc`: the class, function, alias or enum, its comments, the header to include, and its public members, then the members it inherits, grouped by base class. It's the reference for godot-cpp's own helpers, e.g. TypedArray, Ref, memnew or UtilityFunctions, which Godot's help doesn't describe. Godot's classes are declared there too, e.g. Node3D; for what they do, see Godot's help, which the output points to.
+
+Names come from the bindings of a package, generated from its API spec, so you see exactly what your code can use. PKG is a path in that package; without it, the package that contains the current directory. The first run in a package may take a while, since it generates the bindings. See `gd++ man build-cache`.
+
+Output goes through the pager when it doesn't fit the terminal, with C++ syntax highlighting on terminals. See `gd++ man cli`.
+
+# Arguments and options
+
+PKG
+  A path in the package whose bindings to use. Default: the current directory.
+
+NAME
+  The name to show, e.g. TypedArray, Node3D, Vector3 or memnew. Names are case sensitive.
+
+NAME.MEMBER
+  Show only the members called MEMBER of NAME, with their comments, e.g. Array.push_back. All overloads are shown. If NAME doesn't declare it, its base classes are searched, nearest first, and through aliases too.
+
+-i, --index
+  List every type that godot-cpp declares: its kind, e.g. class, struct, enum, template class or alias, its name, and its base class or what it aliases. This is the default without a name. Can't be used with a name.
+
+# Output
+
+For a class:
+
+```cpp
+template <typename T>
+class TypedArray : public Array
+    #include <godot_cpp/variant/typed_array.hpp>
+
+    TypedArray()
+    void assign(const Array &p_array)
+    ...
+
+Inherited from Array:
+    void push_back(const Variant &p_value)
+    ...
+
+Inherited from Object:
+    ...
+```
+
+The name's declarations come first, each with the comments right before it in the header, then the #include line to use it, then its public members. For an alias, the type it aliases follows in full. Then come the members of each base class, in order. For classes generated from the API spec, a last line says "See Godot's help for a description of NAME.".
+
+The index lists one type per line:
+
+```cpp
+class Array: Object
+alias CharString = CharStringT<char>
+template class TypedArray: Array
+```
+
+# Examples
+
+```sh
+gd++ doc TypedArray                  # a godot-cpp helper, and its members
+gd++ doc Array.push_back             # one member
+gd++ doc Node3D.rotate_y             # a method of a Godot class
+gd++ doc UtilityFunctions.print      # what gd::print is
+gd++ doc tools Ref                   # with the bindings of the package in res://tools
+gd++ doc                             # all types
+gd++ doc | grep Packed               # all packed array types
+```
+
+# Errors
+
+- "There is no name NAME in godot-cpp. Similar names: A, B." The name doesn't exist; the names that contain it, ignoring case, are listed if there are at most 10.
+- "Name NAME has no public member MEMBER."
+- "Path ... is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`."
+- "Failed to find the header ..., run `gd++ clean` to fix this." The build cache is out of date.
+
+# See also
+
+`gd++ man types`, `gd++ man includes`, `gd++ man runtime`.

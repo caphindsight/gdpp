@@ -1,0 +1,64 @@
+The runtime header: gd, float64_t, gd_assert, externs and other helpers
+
+Every file that GD++ generates includes one header, the GD++ runtime: gd++/syntax_0.hpp, for syntax 0. It holds the helpers that generated code needs, and a few that your C++ code can use. It doesn't depend on your code: it's the same for every package. To read it:
+
+```sh
+gd++ trans --runtime
+```
+
+In a build, it's in the build cache, at gdpp/gd++/syntax_0.hpp.
+
+# What it includes
+
+The runtime header includes the godot-cpp headers that generated code always needs, so your code can use their names without GD++ finding them first: Engine, Node, Object, RefCounted, Ref, Resource, ResourceLoader, ProjectSettings, the global constants (e.g. Error and PropertyHint), ClassDB, Variant, TypedArray, TypedDictionary and UtilityFunctions, and <cstdint>, <cstddef> and <type_traits>.
+
+# For your code
+
+gd
+  An alias of UtilityFunctions, Godot's global functions, at global scope: gd::print("Hello"), gd::push_error("Oops"), gd::randi_range(1, 6), gd::lerp(a, b, 0.5), gd::is_instance_valid(obj), and all the others of GDScript's global scope. See `gd++ doc UtilityFunctions` for the list.
+
+float64_t
+  A name for double, the C++ type of Godot's float, to match int64_t.
+
+gd_assert(CONDITION) and gd_assert(CONDITION, MESSAGE)
+  Like GDScript's assert: if CONDITION is false, prints an error, "Assertion failed: CONDITION - MESSAGE.", and goes on. In release builds, it does nothing, and doesn't evaluate CONDITION. It's a macro, since C's assert is one already.
+
+```gd++
+gd_assert(health >= 0);
+gd_assert(target != nullptr, "The target must be set before calling fire().");
+```
+
+memnew_ext(T) and memdelete_ext(OBJECT)
+  Create and delete objects of the extern T, like memnew and memdelete. See `gd++ man externs`.
+
+gdpp::ExtPtr<T>, gdpp::ExtRef<T> and gdpp::Ext<T>
+  The C++ types of externs: a pointer or a reference to an object of an extern's class, whose members are called by name. Ext<T> is ExtRef<T> if T's base is refcounted, and ExtPtr<T> otherwise. See `gd++ man externs`.
+
+gdpp::Emitted
+  What a signal's emit function returns: a [[nodiscard]] struct with the Error of emit_signal, in its field error. See `gd++ man signals`.
+
+GDPP_STRING_NAME("name")
+  A StringName, created the first time the expression runs, and reused after, like the engine's SNAME. Creating a StringName from a string looks it up in a global table, behind a lock, so this is faster for names used over and over, e.g. in calls by name:
+
+```gd++
+node->call(GDPP_STRING_NAME("update"));
+```
+
+# For generated code
+
+These are used by the code that GD++ generates. Your code rarely needs them:
+
+- gdpp::info<T>(name, ...) returns the PropertyInfo of a value of type T, for bindings. A pointer to a Node class gets a node-type hint, so the inspector only accepts nodes of that class.
+- gdpp::add_property_category(class, name) adds an inspector category, for @export_category.
+- gdpp::rpc_config<T>(node, method, ...) configures an RPC, for @rpc. It fails to compile if T doesn't extend Node.
+- gdpp::from_variant<T>(value) converts a Variant to T, enums included, for calls on externs.
+- GDPP_ENUM_TAG(TAG, NAME) makes a class's stand-in type for an enum bind as the enum NAME, e.g. "Player.Suit". See `gd++ man enums`.
+- Specializations of godot-cpp's GetTypeInfo, PtrToArg and VariantCaster for ExtPtr and ExtRef, so bindings see externs as their base classes.
+
+# Stability
+
+The runtime header belongs to a syntax version: code generated with syntax 0 uses syntax_0.hpp. Future syntax versions get their own runtime header, so packages on an older syntax keep working.
+
+# See also
+
+`gd++ man code`, `gd++ man externs`, `gd++ man generated`, `gd++ man trans`.

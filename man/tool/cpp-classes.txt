@@ -1,0 +1,126 @@
+C++ classes: registering plain C++ classes, and mixing them with GD++
+
+You don't have to write every class in GD++. A package can also have plain C++ classes, written the usual godot-cpp way, with GDCLASS and _bind_methods. GD++ compiles them into the package's library, and registers them with Godot, if you tell it about them. You miss out on what GD++ writes for you, but you get full control.
+
+# Writing a C++ class
+
+Put the header and the source anywhere in the package, e.g. pkg://src/spinner.h:
+
+```cpp
+#pragma once
+
+#include <godot_cpp/classes/node3d.hpp>
+
+namespace godot {
+
+class Spinner : public Node3D {
+  GDCLASS(Spinner, Node3D)
+
+public:
+  double speed = 1.0;
+  void _process(double delta) override;
+  void set_speed(double p_speed) { speed = p_speed; }
+  double get_speed() const { return speed; }
+
+protected:
+  static void _bind_methods();
+};
+
+}
+```
+
+and pkg://src/spinner.cpp:
+
+```cpp
+#include "src/spinner.h"
+
+namespace godot {
+
+void Spinner::_bind_methods() {
+  ClassDB::bind_method(D_METHOD("set_speed", "speed"), &Spinner::set_speed);
+  ClassDB::bind_method(D_METHOD("get_speed"), &Spinner::get_speed);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed"), "set_speed", "get_speed");
+}
+
+void Spinner::_process(double delta) {
+  rotate_y(speed * delta);
+}
+
+}
+```
+
+Every .c, .cc, .cpp, .cxx and .c++ file in the package is compiled, so there's nothing to add to a build file. Includes are relative to the package root or the project root. See `gd++ man packages`.
+
+# Registering it
+
+A class is only usable in Godot once it's registered. List it in gd++pkg.toml with `gd++ init`:
+
+```sh
+gd++ init . --class Spinner --include pkg://src/spinner.h --icon pkg://icons/spinner.svg
+```
+
+This adds to gd++pkg.toml:
+
+```toml
+[[class]]
+name = "Spinner"
+include = "pkg://src/spinner.h"
+icon = "pkg://icons/spinner.svg"
+```
+
+name
+  The class's name, as in C++. It must be a C++ identifier: letters, digits and underscores, not starting with a digit.
+
+include
+  The header that declares the class, as a pkg:// or res:// path. The generated registration code includes it: a pkg:// path as "src/spinner.h", relative to the package root, and a res:// path as <shared/spinner.h>, relative to the project root. `gd++ init` asks for confirmation if it doesn't end with .h or .hpp.
+
+icon (optional)
+  The class's icon in the editor, as a pkg:// or res:// path, usually to an SVG file. It goes into the .gdextension file.
+
+A new class needs --include, or --noinclude if another included header declares it already. See `gd++ man init` for how to update or remove the include and the icon later, and `gd++ rm PATH --class NAME` to remove the class. The file lists classes sorted by name.
+
+# How registration works
+
+The build generates __register_types__.cpp in the build cache. It includes the headers of all the package's classes, C++ and GD++, and registers them when Godot loads the library, at the scene initialization level. A class is registered after its base class, if the base is a class of the same package, since Godot requires that. The code is in namespace godot, or sees it with using namespace godot, so C++ classes can be declared in namespace godot or at global scope.
+
+C++ classes are registered with GDREGISTER_CLASS, so their code runs in the editor too, like GD++ classes with @tool. For a runtime-only class, check Engine::get_singleton()->is_editor_hint() in your code.
+
+The library's entry symbol is gdpp_library_init, which the .gdextension file names. Don't define your own entry point.
+
+# Mixing C++ and GD++
+
+C++ classes and GD++ classes live side by side in one package, and are registered together. Their names must differ: the build fails with "Class Spinner is declared in ... and in ...gd++pkg.toml." otherwise. And a GD++ class can't be added to gd++pkg.toml: it's declared in its GD++ file, and `gd++ init --class` refuses it.
+
+GD++ code knows Godot's classes and the package's GD++ classes, but not your C++ classes. So:
+
+- A GD++ class can't use a C++ class as a type in its API, e.g. as the type of a var or a parameter. Use the C++ class's Godot base class instead, e.g. Node3D, and cast in code with Object::cast_to<Spinner>(node).
+- To use a C++ class in the code of a GD++ class, include its header yourself, with a @global block:
+
+```gd++
+class_name Game
+extends Node
+
+@global decl {
+  #include "src/spinner.h"
+}
+
+@override
+func _ready() -> void {
+  Spinner *spinner = memnew(Spinner);
+  add_child(spinner);
+}
+```
+
+- A C++ class can use a GD++ class: include its generated header, which is named after the class, e.g. #include "Player.h". Mind that the generated classes are in namespace godot, and that fields of simple GD++ variables are public, while their getters and setters are the functions Godot calls. See `gd++ man generated`.
+
+A C++ class can also extend a GD++ class of the same package, e.g. class FastPlayer : public Player. It's registered after its base. The other way around doesn't work: a GD++ class can't extend a C++ class, since GD++ doesn't know it.
+
+# In gd++ ls
+
+`gd++ ls` lists a package's C++ classes, with kind "C++", their header and their icon, and marks the ones whose header or icon is missing in red.
+
+```
+Classes  Kind        File                        Icon
+Spinner  C++         res://src/spinner.h         pkg://icons/spinner.svg
+Player   GD++        pkg://player.gd++           none
+```

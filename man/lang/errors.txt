@@ -1,0 +1,154 @@
+Errors: reading GD++ errors, common mistakes, and C++ compiler errors
+
+When a GD++ file has a mistake, GD++ stops and explains it: where it is, what's wrong, and usually how to fix it. This page explains how to read these errors, lists the most common ones, and explains how errors of the C++ compiler relate to your GD++ files.
+
+# Reading an error
+
+```out
+[×] res://player.gd++:1:21: Expected "{" to start the function body, but found ":".
+     1 | func greet() -> void:
+       |                     ^
+    Hint: GD++ uses braces for function bodies, not a colon as in GDScript: "func foo() -> void { ... }".
+```
+
+- The first line has the file, the line and the column, then the message.
+- Then the line of the file, with carets under the part that's wrong.
+- Then, if GD++ has one, a hint about how to fix it.
+
+GD++ reports one error at a time: the first one it finds. Fix it, and run again.
+
+Errors come from three places, in this order:
+
+1. Brackets and comments: GD++ first checks that every bracket is closed by its match, and that every block comment and raw string ends, in the whole file, C++ code included.
+2. Syntax: the declarations must follow GD++'s grammar. See `gd++ man grammar`.
+3. Meaning: names, types, annotations and the like must make sense, e.g. a type must exist, and an annotation must fit its declaration.
+
+`gd++ build` checks every GD++ file of the package before compiling anything. `gd++ trans FILE` checks one file. `gd++ ls` marks files with errors.
+
+# Coming from GDScript
+
+GD++ looks like GDScript, so GDScript habits are the most common mistakes. GD++ recognizes them, and says what to write instead:
+
+```
+func greet() -> void:          Bodies use braces: func greet() -> void { ... }
+var x := 5                     No type inference: var x: int = 5
+const X = 5                    No const: enum X = 5
+static func f()                Attributes are annotations: @static func f()
+onready var x                  Annotations start with @: @onready var x
+pass                           An empty body is {}
+func f(x int)                  Types after a colon: func f(x: int)
+func f() int                   Return types after an arrow: func f() -> int
+var x int                      Types after a colon: var x: int
+```
+
+# Common errors
+
+Unknown names, with suggestions for typos:
+
+```
+Unknown type "Vectr3".                            Hint: Did you mean "Vector3"?
+Unknown base class "Nod3D".                       Hint: Did you mean "Node3D"?
+Unknown annotation @exprot.                       Hint: Did you mean "@export"?
+Expected a declaration, but found name "fucn".    Hint: Did you mean "func"?
+```
+
+Structure:
+
+```
+This func is outside of any class.
+  A file without class_name can only have inline classes, externs and enums at its top level.
+Classes and externs can't be nested, but found keyword "class" inside the body of class "A".
+A file has at most one "class_name", at the very top.
+This doc comment is not followed by a declaration.
+A declaration can have only one doc comment.
+```
+
+Brackets:
+
+```
+This "{" (the body of func "f") is probably never closed.
+  The "}" that closes it is indented differently, so it probably belongs to an outer block.
+This ")" has no matching "(".
+Expected ")" to close the "(" on line 3, but found "]".
+This comment is never closed.
+  Block comments nest in GD++, so every "/*" inside a comment needs its own "*/".
+This raw string is never closed.
+```
+
+Declarations:
+
+```
+The name "x" is declared twice in this file.
+The name "Node" is already declared by a dependency.
+  Names must differ from Godot's, and from those of the package's other classes, externs and enums.
+The name "get_x" is already used by another member.
+  A var x also declares get_x and set_x, and a signal declares its emit function.
+Class A extends itself through its bases.
+Parameter b needs a default value, since a parameter before it has one.
+Property x has no get block.
+The setter's parameter must have the property's type, int.
+Class Foo has two ctors.
+Enum Suit has two values named HEARTS.
+The value 99999999999999999999 does not fit in a 64-bit integer.
+```
+
+Types:
+
+```
+Type void is only allowed as a return type.
+TypedArray is not a Godot type.
+Type Dictionary doesn't take these type arguments.
+Typed collections can't be nested.
+Type Suit can't be used in a typed collection.
+```
+
+Annotations:
+
+```
+Annotation @tool can't be used on a func.
+Annotation @export is used twice.
+Annotation @override takes no arguments.
+Annotations @static and @virtual can't be used together.
+A variable can have only one export annotation.
+Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.
+The icon's path must start with res:// or pkg://.
+The channel must be the last argument of @rpc.
+```
+
+Externs:
+
+```
+Extern functions can't have a body.
+Extern variables can't have an initial value or a property body.
+Externs can't contain a ctor.
+The @deferred function f must return void.
+```
+
+Package-wide, from `gd++ build`:
+
+```
+The name Player is declared in both res://a.gd++ and res://b.gd++.
+Class Spinner is declared in res://spinner.gd++ and in res://gd++pkg.toml.
+```
+
+# C++ compiler errors
+
+GD++ checks the GD++ parts of a file, but not the C++ code in it: that's the C++ compiler's job, during `gd++ build`. When it fails, the build shows the compiler's output. Thanks to #line directives, errors in your C++ code point to the GD++ file and line:
+
+```
+../player.gd++:12:5: error: 'helth' was not declared in this scope
+```
+
+The path is relative to the build cache, where the compiler runs: ../ is the package root. See `gd++ man code`.
+
+Some compiler errors are about the generated code, but caused by the GD++ declarations. The usual ones:
+
+- "marked 'override', but does not override": an @override function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and @const. See `gd++ doc CLASS.FUNCTION`.
+- "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
+- "@rpc can only be used in classes that extend Node.": a static assertion, for @rpc in a class that isn't a node.
+- "ignoring return value ... declared with attribute 'nodiscard'": a signal was called without emit. Write `emit NAME(...)`.
+- Errors in the file NAME.h or NAME.cpp of the build cache point to generated code. Open the file, e.g. res://.gd++pkg/gdpp/Player.cpp, to see what GD++ generated, and which declaration it came from.
+
+# See also
+
+`gd++ man syntax`, `gd++ man grammar`, `gd++ man generated`, `gd++ man cli`.

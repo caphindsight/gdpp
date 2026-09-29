@@ -13,6 +13,7 @@ var Args struct {
 	Init     *CmdInit    `arg:"subcommand:init" help:"set up the project, or create or update a package"`
 	Install  *CmdInstall `arg:"subcommand:install" help:"install the tools GD++ needs to build, e.g. SCons and a C++ compiler"`
 	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
+	Man      *CmdMan     `arg:"subcommand:man" help:"read the reference manual of GD++ and its language, or list its pages"`
 	Rm       *CmdRm      `arg:"subcommand:rm" help:"remove dependencies from the project cache, or packages from the project"`
 	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the C++ it generates, to try out GD++; in a package, with its dependencies"`
 	Vendor   *CmdVendor  `arg:"subcommand:vendor" help:"copy a dependency into or out of the project's cache"`
@@ -65,6 +66,8 @@ func main() {
 		Args.Install.Run()
 	case Args.Ls != nil:
 		Args.Ls.Run()
+	case Args.Man != nil:
+		Args.Man.Run()
 	case Args.Rm != nil:
 		Args.Rm.Run()
 	case Args.Trans != nil:

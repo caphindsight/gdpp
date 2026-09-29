@@ -1,0 +1,45 @@
+Commands: every gd++ command, with all its options
+
+gd++ is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUMENTS]`. Each command has a page here, named after it, e.g. `gd++ man build`, with its synopsis, every option, examples and common errors.
+
+For the options that all commands take, e.g. -q, -v and -f, and for how output, prompts and errors work, see `gd++ man cli`. `gd++ COMMAND --help` prints a command's options in short.
+
+# By task
+
+Setting up:
+
+```sh
+gd++ init       set up the project, or create or update a package
+gd++ install    install the tools GD++ needs, e.g. SCons and a C++ compiler
+```
+
+Dependencies:
+
+```sh
+gd++ fetch      download dependencies, or list what's available
+gd++ checkin    move dependencies into the checked in cache, or back
+gd++ vendor     copy a dependency into or out of the cache
+gd++ rm         remove dependencies, packages or classes
+```
+
+Building:
+
+```sh
+gd++ build      compile packages into GDExtension libraries
+gd++ clean      delete build caches
+```
+
+Looking around:
+
+```sh
+gd++ ls         an overview of the project
+gd++ trans      the C++ that GD++ generates from a file
+gd++ doc        what godot-cpp declares under a name
+gd++ man        this manual
+```
+
+Housekeeping:
+
+```sh
+gd++ fix        tidy up the project
+```

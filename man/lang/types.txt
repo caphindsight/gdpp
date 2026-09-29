@@ -1,0 +1,160 @@
+Types: Godot types, and the C++ types they become
+
+GD++ uses Godot's type system: the types you write in declarations are Godot's, e.g. int, Vector3 or Node. Each one maps to exactly one C++ type, which the generated code uses, and which your C++ code works with. This page lists them all.
+
+# Where types appear
+
+Types appear in declarations only: variables, function parameters and return values, signal parameters, and the element types of typed arrays and dictionaries.
+
+```gd++
+var speed: float
+func hit(target: Node3D, damage: int = 1) -> bool { ... }
+signal scored(points: int, by: Player)
+```
+
+A missing type means Variant, which holds any value:
+
+```gd++
+var anything              // a Variant
+func log(value) -> void   // value is a Variant
+func get_any()            // returns a Variant
+```
+
+GD++ doesn't infer types, so `var x := 5` is an error: write `var x: int = 5`.
+
+void is only allowed as a return type, and means the function returns nothing.
+
+# The mapping
+
+```
+GD++ type                     C++ type                  passed as
+bool                          bool                      bool
+int                           int64_t                   int64_t
+float                         double (float64_t)        double
+Variant, or no type           Variant                   const Variant &
+String, StringName, NodePath  the same name             const T &
+Vector2, Vector3, Color, ...  the same name             const T &
+Array, Dictionary             the same name             const T &
+PackedByteArray, ...          the same name             const T &
+Array[T]                      TypedArray<T>             const TypedArray<T> &
+Dictionary[K, V]              TypedDictionary<K, V>     const TypedDictionary<K, V> &
+Node, Node3D, Object, ...     Node *, Node3D *, ...     the pointer
+RefCounted, Resource, ...     Ref<Resource>, ...        const Ref<T> &
+your GD++ classes             like their base: Player * or Ref<Stats>
+your GD++ enums               the C++ enum class        by value
+externs                       gdpp::ExtPtr<T> or gdpp::ExtRef<T>   by value
+```
+
+"Passed as" is how function parameters and setters take the type. Return values and fields always use the plain C++ type.
+
+Godot's float is a 64-bit double. The runtime header defines float64_t as a name for double, to match int64_t. Note that godot-cpp's own vector types use real_t, which is float in default builds, so e.g. Vector3's components are 32-bit.
+
+# Built-in types
+
+These are Godot's built-in types, which aren't objects:
+
+```gd++
+bool  int  float  Variant
+String  StringName  NodePath  RID  Callable  Signal
+Vector2  Vector2i  Vector3  Vector3i  Vector4  Vector4i
+Rect2  Rect2i  Transform2D  Transform3D  Plane  Quaternion  AABB  Basis  Projection  Color
+Dictionary  Array
+PackedByteArray  PackedInt32Array  PackedInt64Array  PackedFloat32Array  PackedFloat64Array
+PackedStringArray  PackedVector2Array  PackedVector3Array  PackedVector4Array  PackedColorArray
+```
+
+# Classes
+
+Any class of the package's API spec is a type, e.g. Node, Camera3D, Resource or Texture2D, and so is any class that a GD++ file of the package declares.
+
+- A class that extends RefCounted is used through a reference, Ref<T>, which keeps the object alive. Godot deletes it when the last reference goes away.
+- Any other class, i.e. Object and all nodes, is used through a pointer, T*. The pointer doesn't keep the object alive: the object lives until someone deletes it, e.g. a node until it or its parent is freed.
+
+```gd++
+var camera: Camera3D        // Camera3D *camera;
+var mesh: Mesh              // Ref<Mesh> mesh;
+
+func use() -> void {
+  camera->make_current();
+  if (mesh.is_valid()) {
+    gd::print(mesh->get_surface_count());
+  }
+}
+```
+
+Pointers start as nullptr, and references as null references.
+
+GD++ only knows the classes of the package's API spec, so the spec's Godot version decides which classes you can use.
+
+# Typed arrays and dictionaries
+
+```gd++
+var enemies: Array[Enemy]                  // TypedArray<Enemy>
+var scores: Array[int]                     // TypedArray<int64_t>
+var names: Dictionary[String, Node3D]      // TypedDictionary<String, Node3D>
+```
+
+Array[T] is an array that only holds values of type T. Dictionary[K, V] is a dictionary with keys of type K and values of type V. In C++, they are godot-cpp's TypedArray and TypedDictionary, with the element types spelled by name: TypedArray<Node>, not TypedArray<Node *>.
+
+- Only Array and Dictionary take type arguments: Array takes one, Dictionary two.
+- Element types can be built-in types and classes, but not enums or externs, since Godot can't check those.
+- Typed collections can't be nested: Array[Array[int]] is an error. Use Array[Array] instead.
+
+Typed dictionaries need Godot 4.4 or newer.
+
+# Enums
+
+A GD++ enum declared in any GD++ file of the package is a type:
+
+```gd++
+enum Suit { DIAMONDS CLUBS SPADES HEARTS }
+
+var trump: Suit                // Suit trump;
+func play(suit: Suit) -> void { ... }
+```
+
+In C++, it's an enum class with int64_t values, e.g. Suit::HEARTS. Godot sees it as an int, marked as an enum of the class. See `gd++ man enums`.
+
+Godot's own enums, e.g. Error, Key or Node::ProcessMode, can't be GD++ types. Use int, and cast in C++:
+
+```gd++
+func set_mode(mode: int) -> void {
+  set_process_mode(static_cast<Node::ProcessMode>(mode));
+}
+```
+
+# Externs
+
+An extern declared in any GD++ file of the package is a type. In C++, it's a gdpp::ExtPtr<T>, or a gdpp::ExtRef<T> if its base class is refcounted, which calls the members of the object by name. Godot sees it as its base class. See `gd++ man externs`.
+
+# Other names
+
+godot-cpp declares more names than classes, e.g. TypedArray, Ref, UtilityFunctions or memnew. Your C++ code can use them all, and GD++ includes their headers. But they aren't GD++ types:
+
+```out
+[×] res://a.gd++:3:8: TypedArray is not a Godot type.
+     3 | var x: TypedArray
+       |        ^^^^^^^^^^
+    Hint: Types are Godot's built-in types and classes, and the package's classes, externs and enums.
+```
+
+Use Array[T] instead of TypedArray<T>, and a class name instead of Ref<T>.
+
+# Unknown types
+
+A misspelled type is an error, with a suggestion if a known type is close:
+
+```out
+[×] res://a.gd++:3:13: Unknown type "Vectr3".
+     3 | var target: Vectr3
+       |             ^^^^^^
+    Hint: Did you mean "Vector3"?
+```
+
+# In Godot's documentation
+
+The editor's help shows GD++ types like GDScript does: int, float, Vector3, Node3D, int[] for Array[int], and Dictionary[String, Node3D]. Enums show as int, with the enum's name. See `gd++ man docs`.
+
+# See also
+
+`gd++ man variables`, `gd++ man functions`, `gd++ man enums`, `gd++ man externs`.

@@ -1,0 +1,127 @@
+Signals: declaring signals, and sending them with emit
+
+A signal is a message that an object sends, and that other objects can connect to, like a button's pressed signal. GD++ declares signals like GDScript, and sends them with a bit of syntax of its own, emit.
+
+# Declaring signals
+
+```gd++
+signal died
+signal health_changed(health: int)
+signal hit(by: Node3D, damage: int, info)
+```
+
+`signal name`, then optionally the parameters in parentheses, like a function's: `name: Type`, or just `name` for a Variant. The parentheses are optional when there are no parameters. Signal parameters can't have default values. See `gd++ man types`.
+
+Signals take a doc comment, but no annotations.
+
+# Sending signals
+
+```gd++
+func take_damage(amount: int) -> void {
+  health -= amount;
+  emit health_changed(health);
+  if (health <= 0) {
+    emit died();
+  }
+}
+```
+
+`emit NAME(ARGS);` sends the signal, like `NAME.emit(ARGS)` in GDScript. Every connected function is called with the arguments. Note the parentheses, even without arguments: `emit died();`.
+
+emit makes sending a signal look different from calling a function, on purpose: they do different things, so they should read differently.
+
+It also works on other objects of GD++ classes, and on externs:
+
+```gd++
+emit player->died();
+emit terrain->changed();
+```
+
+# How it works
+
+For each signal, GD++ generates a public C++ method with the signal's name and parameters, which emits the signal with emit_signal:
+
+```cpp
+gdpp::Emitted health_changed(int64_t health);
+```
+
+It returns gdpp::Emitted, a struct marked [[nodiscard]], which holds the Error that emit_signal returned. So a plain call, `health_changed(5);`, makes the compiler warn that the result is unused. In C++ code, GD++ replaces the word emit with (void), which uses the result:
+
+```gd++
+emit health_changed(5);      // becomes:  (void) health_changed(5);
+```
+
+To check whether sending worked, use the result instead of emit:
+
+```cpp
+Error err = health_changed(5).error;
+```
+
+GD++ registers each signal in _bind_methods, with its parameter names and types, so the editor's Node dock lists it, and GDScript can connect to it.
+
+Since emit is replaced wherever it appears as a word in C++ code, don't use emit as a name in your C++ code, e.g. for a variable. Comments and strings are safe.
+
+# Names
+
+A signal declares a C++ method, so its name shares its class's namespace with functions, variables and their getters and setters: a signal and a function can't have the same name.
+
+# Connecting to signals
+
+Connect in C++ as in godot-cpp, with callable_mp for methods of your class:
+
+```gd++
+@override
+func _ready() -> void {
+  Button *button = get_node<Button>("Button");
+  button->connect("pressed", callable_mp(this, &This::on_pressed));
+  connect("died", callable_mp(this, &This::on_died));
+}
+
+func on_pressed() -> void {
+  gd::print("Pressed.");
+}
+
+func on_died() -> void {
+  queue_free();
+}
+```
+
+Functions declared with func are bound, so you can also connect them by name, e.g. Callable(this, "on_died"), or in the editor's Node dock. In GDScript, connect as usual: player.died.connect(_on_player_died).
+
+# Enums in signals
+
+A signal parameter can be a GD++ enum. Godot sees it as an int, marked with the enum, and emit converts it for you:
+
+```gd++
+enum State { IDLE RUNNING JUMPING }
+signal state_changed(state: State)
+
+func jump() -> void {
+  emit state_changed(State::JUMPING);
+}
+```
+
+# Example
+
+```gd++
+/// A button that counts its presses.
+class_name CountingButton
+extends Button
+
+/// Sent every tenth press.
+signal tenth_press(total: int)
+
+var presses: int
+
+@override
+func _pressed() -> void {
+  presses++;
+  if (presses % 10 == 0) {
+    emit tenth_press(presses);
+  }
+}
+```
+
+# See also
+
+`gd++ man functions`, `gd++ man externs`, `gd++ man code`.

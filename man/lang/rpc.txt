@@ -1,0 +1,122 @@
+RPC: networked functions with @rpc, and calling them with rpc and rpc_id
+
+Godot's high-level multiplayer calls functions on other peers of a network game: remote procedure calls, or RPCs. GD++ declares them like GDScript, with @rpc, and calls them with a bit of syntax of its own, rpc and rpc_id.
+
+# Declaring RPC functions
+
+```gd++
+@rpc
+func ping() -> void {}
+
+@rpc("any_peer", "call_local", "reliable")
+func take_damage(amount: int) -> void {
+  health -= amount;
+}
+
+@rpc("unreliable_ordered", 2)
+func sync_position(pos: Vector3) -> void {
+  set_position(pos);
+}
+```
+
+@rpc marks a function that other peers may call. Its arguments are the same as in GDScript, all optional, in any order, except that the channel comes last:
+
+mode
+  "authority" (default): only the multiplayer authority of the node can call it remotely. "any_peer": any peer can.
+
+sync
+  "call_remote" (default): calling it with rpc doesn't run it on the calling peer. "call_local": it runs on the calling peer too.
+
+transfer mode
+  "unreliable" (default): packets may be lost or arrive out of order. "unreliable_ordered": may be lost, but never out of order. "reliable": always arrives, in order, but slower.
+
+channel
+  An integer, default 0: the channel to send on. Separate channels don't block each other.
+
+The arguments are strings, in quotes, except the channel. Setting something twice is an error, and so is an unknown value, with a suggestion for typos.
+
+The class must extend Node: RPCs are sent through nodes, and the build fails otherwise, with "@rpc can only be used in classes that extend Node.".
+
+# Calling RPC functions
+
+```gd++
+func hit_everyone() -> void {
+  rpc take_damage(10);                  // on every peer
+}
+
+func hit_one(peer: int) -> void {
+  rpc_id(peer) take_damage(10);         // on one peer
+}
+
+func hit_here() -> void {
+  take_damage(10);                      // locally, as a plain call
+}
+```
+
+`rpc NAME(ARGS);` calls the function on every peer, like NAME.rpc(ARGS) in GDScript. `rpc_id(PEER) NAME(ARGS);` calls it on the peer with the id PEER, like NAME.rpc_id(PEER, ARGS). A plain call runs it locally only. PEER is any C++ expression: 1 is the server, and get_multiplayer()->get_remote_sender_id() is the peer that called the running RPC.
+
+They also work on other objects, and on externs, through -> or ., as long as the objects are named by variables, not by function calls:
+
+```gd++
+rpc other_player->take_damage(5);
+rpc_id(1) game->scores.report(score);
+rpc_id(1) get_game()->report(score);      // wrong: calls get_game as the RPC
+```
+
+Store the object in a variable first when you need a call to get it.
+
+Like emit, rpc makes remote calls look different from local ones. Both forms return the Error of Godot's rpc_id:
+
+```gd++
+Error err = rpc take_damage(10);
+```
+
+A remote call can't return a value, so the return value of an @rpc function is lost when called with rpc or rpc_id. Default values of parameters work, as in plain calls.
+
+# How it works
+
+For each @rpc function, GD++:
+
+- configures the RPC in the class's constructor, with Node::rpc_config, from the @rpc arguments,
+- generates a helper method, `Error _gdpp_rpc_NAME(int64_t p_peer, PARAMS)`, which calls Godot's rpc_id with the function's name and the arguments.
+
+In C++ code, it rewrites the calls:
+
+```gd++
+rpc take_damage(10);                 becomes   _gdpp_rpc_take_damage(0, 10);
+rpc_id(peer) take_damage(10);        becomes   _gdpp_rpc_take_damage(peer, 10);
+rpc other->take_damage(10);          becomes   other->_gdpp_rpc_take_damage(0, 10);
+```
+
+Peer 0 means every peer. The function itself is also bound like any function, so Godot can call it by name when the RPC arrives.
+
+rpc and rpc_id are only rewritten when followed by a call: `rpc NAME(` or `rpc_id(...) NAME(`, possibly with names of objects and -> or . before NAME. Other uses, e.g. Godot's own `rpc_id(1, "ping")`, are left alone. So don't use rpc as a name in your C++ code.
+
+# In externs
+
+An extern can declare a function with @rpc, without arguments, since the class that defines the function configures it:
+
+```gd++
+extern Lobby {
+  extends Node
+  @rpc func join(name: String) -> void
+}
+
+@export var lobby: Lobby
+
+func enter() -> void {
+  rpc_id(1) lobby->join("Me");
+}
+```
+
+See `gd++ man externs`.
+
+# Rules
+
+- @rpc can't be combined with @static, @virtual or @override.
+- The channel must be the last argument.
+- In externs, @rpc takes no arguments.
+
+# See also
+
+`gd++ man functions`, `gd++ man externs`, `gd++ man code`.

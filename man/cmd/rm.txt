@@ -1,0 +1,94 @@
+gd++ rm: remove dependencies, packages or classes
+
+# Synopsis
+
+```sh
+gd++ rm [--bind NAME... | --bind-all | --bind-checked-in | --bind-ephemeral]
+        [--spec NAME... | --spec-all | --spec-checked-in | --spec-ephemeral]
+        [--engine NAME... | --engine-all | --engine-checked-in | --engine-ephemeral]
+gd++ rm --dep-all | --dep-checked-in | --dep-ephemeral
+gd++ rm (--pkg PATH... | --pkg-all) [--dir]
+gd++ rm PATH (--class NAME... | --class-all)
+```
+
+# Description
+
+Removes one of three things per run: dependencies from the project's caches, packages from the project, or C++ classes from a package. Every removal is confirmed first, and gd++ asks all its questions before it removes anything, so answering no changes nothing. See `gd++ man cli` for -f and -n.
+
+After removing dependencies or packages, it deletes cache directories left empty.
+
+# Removing dependencies
+
+--bind NAME...
+  Remove these Godot C++ bindings, from both caches. Each is confirmed on its own.
+
+--bind-all
+  Remove all Godot C++ bindings, checked in and ephemeral. Confirmed once.
+
+--bind-checked-in
+  Remove all checked in Godot C++ bindings, from res://_gd++proj.
+
+--bind-ephemeral
+  Remove all ephemeral Godot C++ bindings, from res://.gd++proj.
+
+--spec..., --engine...
+  Likewise, for Godot API specs and Godot engines.
+
+--dep-all, --dep-checked-in, --dep-ephemeral
+  Likewise, for all dependencies of all kinds at once. Confirmed once. Can't be used with the options above.
+
+Only one option per kind can be used, e.g. not --spec and --spec-all together. Kinds can be combined, e.g. `gd++ rm --bind-ephemeral --spec 4.3-stable`. Every named dependency must exist: gd++ checks them all before asking anything.
+
+Removing a dependency that a package uses breaks its next build, until you fetch it again, but not the package's build cache, which has its own copy. `gd++ ls --deps` shows which dependencies are unused.
+
+# Removing packages
+
+--pkg PATH...
+  Remove the packages at these paths. Each path must be a package root in this project.
+
+--pkg-all
+  Remove all packages of the project.
+
+--dir
+  Delete the package directories with everything inside, including your source files. Without it, only GD++'s files are deleted. Can't delete the project root. The prompt warns about this in bold, blinking red.
+
+Without --dir, removing a package deletes its gd++pkg.toml, its build cache, its libraries and .gdextension files (like `gd++ clean --bin`), and its block in .gitignore. Your GD++ and C++ files stay: the directory is no longer a package, and its files belong to the enclosing package, if any. Nested packages are removed before their parents.
+
+# Removing classes
+
+```sh
+gd++ rm PATH --class NAME...
+gd++ rm PATH --class-all
+```
+
+Removes C++ classes from the gd++pkg.toml of the package at PATH, so the package no longer registers them with Godot. Their files stay. GD++ classes can't be removed this way: delete them from their GD++ files. See `gd++ man cpp-classes`.
+
+--class NAME...
+  Remove these classes. Each is confirmed on its own.
+
+--class-all
+  Remove all C++ classes of the package. Confirmed once. If there are none: "Nothing to remove.".
+
+# Examples
+
+```sh
+gd++ rm --spec 4.3-stable                # an old spec
+gd++ rm --bind-ephemeral --spec-ephemeral  # everything `fetch --missing` can download again
+gd++ rm --dep-all -f                     # all dependencies, without asking
+gd++ rm --pkg tools                      # make res://tools a plain directory again
+gd++ rm --pkg old_stuff --dir            # delete res://old_stuff entirely
+gd++ rm . --class Spinner                # stop registering a C++ class
+```
+
+# Errors
+
+- "Invalid arguments: dependencies, packages and classes cannot be removed in the same run."
+- "Invalid arguments: the syntax for removing a package is `gd++ rm --pkg PATH`." A path without --class.
+- "The Godot API spec NAME is not in the project cache."
+- "There is no GD++ package at PATH."
+- "The package PATH is not in this project."
+- "Class NAME is declared in FILE, so it can only be changed there." It's a GD++ class.
+
+# See also
+
+`gd++ man dependencies`, `gd++ man packages`, `gd++ man cpp-classes`, `gd++ man clean`.

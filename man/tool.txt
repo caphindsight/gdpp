@@ -1,0 +1,45 @@
+The build tool: an overview of projects, packages, dependencies and builds
+
+gd++ is a small build system for Godot C++ code. This page is an overview of how it works; each part has its own page, listed at the end.
+
+# The pieces
+
+A project is a normal Godot project: a directory with a project.godot file. GD++ needs nothing more to work in it. See `gd++ man projects`.
+
+A package is a directory in the project with a gd++pkg.toml file. It builds into one GDExtension library, with every GD++ and C++ file in it. A project can have many packages, e.g. one at its root. See `gd++ man packages`.
+
+Dependencies are the big, versioned downloads that packages build with: the Godot C++ bindings (godot-cpp), and the Godot API spec of the Godot version to target. Each package names the ones it uses. gd++ downloads them into the project's caches, one of which you can commit. See `gd++ man dependencies`.
+
+A build turns a package into libraries, one per target platform, and a .gdextension file, which Godot loads. See `gd++ man building`.
+
+```
+my_game/                     a project
+  project.godot
+  gd++pkg.toml               the package at the project root
+  player.gd++                its GD++ code
+  .gd++proj/                 downloaded dependencies
+  .gd++pkg/                  the package's build cache
+  my_game.gdextension        what Godot loads
+  libmy_game.linux.debug.x86_64.so
+```
+
+# The workflow
+
+```sh
+gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable   # make the project root a package
+gd++ fetch --missing                                    # download what packages need
+gd++ build                                              # build the package you're in
+gd++ ls                                                 # see the state of the project
+```
+
+Then edit code, and run `gd++ build` again. Open the project in Godot: the classes are there.
+
+# Principles
+
+- Batteries included: every feature ships in the single gd++ program. There are no plugins, and nothing else to install but a C++ compiler and SCons, which `gd++ install` sets up.
+- Minimal friction: a new project takes one or two commands. Files are found by their extensions, and nothing needs to be listed.
+- Moderate configurability: packages choose their dependencies, C++ standard and GD++ syntax, and builds choose their targets and optimization. Not much more, on purpose.
+
+# The command line
+
+Every gd++ command follows the same conventions: global options, output, prompts, errors and paths. See `gd++ man cli` and `gd++ man paths`. Each command has its own page under `gd++ man cmd`.

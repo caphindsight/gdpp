@@ -1,0 +1,142 @@
+gd++ init: set up the project, or create or update a package or a class
+
+# Synopsis
+
+```sh
+gd++ init [--vcs none|git]
+gd++ init PATH --bind NAME --spec NAME [--syntax N] [--std STD]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N] [--std STD]
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--update]
+```
+
+# Description
+
+gd++ init does one of three things, depending on its arguments:
+
+- Without PATH, it sets up GD++ in the project that contains the current directory: it writes res://gd++proj.toml.
+- With PATH, it creates the package at PATH, or updates it: it writes PATH/gd++pkg.toml.
+- With PATH and --class, it adds a C++ class to the package at PATH, or updates it.
+
+Every change is logged, e.g. "Set the Godot API spec to 4.7.2-stable.". If the file already says what you asked for, it warns "No changes were made." and changes nothing.
+
+# Setting up the project
+
+```sh
+gd++ init [--vcs none|git]
+```
+
+Writes res://gd++proj.toml, with the project's settings. See `gd++ man projects`.
+
+--vcs none|git
+  The project's version control system. With git, GD++ writes its blocks of ignores into the .gitignore files of the project and every package; with none, it removes them. See `gd++ man vcs`.
+
+Without --vcs, it creates gd++proj.toml with the defaults, or reformats it. The file is optional, so this step is too, unless you want git support.
+
+# Creating a package
+
+```sh
+gd++ init PATH --bind NAME --spec NAME [--syntax N] [--std STD]
+```
+
+Creates the directory PATH if it doesn't exist, and writes PATH/gd++pkg.toml. PATH must be inside a project; "." makes the current directory a package, e.g. the project root. If the project uses git, it also writes the package-level block into PATH/.gitignore. If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`. See `gd++ man packages`.
+
+--bind NAME
+  The package's Godot C++ bindings, e.g. 10.0.0-stable. Required for a new package.
+
+--spec NAME
+  The package's Godot API spec, e.g. 4.7.2-stable. Required for a new package.
+
+--syntax N
+  The package's GD++ syntax version. Default: 0, the only one.
+
+--std STD
+  The package's C++ standard, e.g. c++17, c++20 or c++23. Default: c++20.
+
+To see which bindings and specs exist, run `gd++ fetch --index`.
+
+# Updating a package
+
+```sh
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N] [--std STD]
+```
+
+Changes the given settings of the existing package at PATH, and keeps the others. Without --update, init asks "Package PATH already exists. Update it?" when PATH is a package already. Changing the bindings, spec, syntax or standard makes the package's next build start from scratch.
+
+--update
+  Update an existing package, or class with --class, without asking, instead of creating one. Fails if it doesn't exist.
+
+# Adding or updating a C++ class
+
+```sh
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--update]
+```
+
+Adds the plain C++ class NAME to the gd++pkg.toml of the package at PATH, so the package registers it with Godot, or updates it if it's there already. GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here. See `gd++ man cpp-classes`.
+
+--class NAME
+  The name of the class to add or update. It must be a C++ identifier.
+
+--include PATH
+  The header that declares the class, as a pkg:// or res:// path, e.g. pkg://src/spinner.h. If it doesn't end with .h or .hpp, init asks you to confirm.
+
+--noinclude
+  Remove the class's header, or create the class without one, e.g. when another header already declares it. A new class needs --include or --noinclude.
+
+--icon PATH
+  The class's icon in the editor, as a pkg:// or res:// path, e.g. pkg://icons/spinner.svg.
+
+--noicon
+  Remove the class's icon.
+
+When updating a class, --include and --icon change the path, --noinclude and --noicon clear it, and without either, the path stays. Without --update, init asks "Class NAME already exists in PATH. Update it?".
+
+# Rules
+
+- --vcs works only without PATH.
+- --update, --bind, --spec, --syntax, --std and --class need PATH.
+- --include, --noinclude, --icon and --noicon need --class.
+- --bind, --spec, --syntax and --std can't be used with --class.
+- --include and --noinclude, and --icon and --noicon, can't be used together.
+
+# Examples
+
+A project with git, and one package at its root:
+
+```sh
+gd++ init --vcs git
+gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
+gd++ fetch --missing
+```
+
+A second package, with C++17:
+
+```sh
+gd++ init tools --bind 10.0.0-stable --spec 4.7.2-stable --std c++17
+```
+
+Upgrade a package to a newer spec:
+
+```sh
+gd++ init . --update --spec 4.8-stable
+gd++ fetch --missing
+```
+
+Register a C++ class, then give it an icon, then remove the icon:
+
+```sh
+gd++ init . --class Spinner --include pkg://src/spinner.h
+gd++ init . --class Spinner --update --icon pkg://icons/spinner.svg
+gd++ init . --class Spinner --update --noicon
+```
+
+# Errors
+
+- "Invalid arguments: --bind and --spec are required for a new package."
+- "Invalid arguments: a new class requires --include or --noinclude."
+- "Class NAME is declared in FILE, so it can only be changed there." It's a GD++ class.
+- "There is no class NAME in PATH." With --update, the class must exist.
+- "Path ... is not contained in a Godot project." Run it inside a project.
+
+# See also
+
+`gd++ man projects`, `gd++ man packages`, `gd++ man cpp-classes`, `gd++ man vcs`, `gd++ man rm`.

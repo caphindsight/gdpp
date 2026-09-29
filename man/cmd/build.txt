@@ -1,0 +1,134 @@
+gd++ build: compile a package into a GDExtension library
+
+# Synopsis
+
+```sh
+gd++ build [PATH] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
+           [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [-j N] [--clean]
+gd++ build --proj [options...]
+```
+
+# Description
+
+Builds the package that contains PATH, or the current directory, into GDExtension libraries, one per target, and writes them into the package root, with the package's .gdextension file. Godot loads them from there. With --proj, builds every package in the project instead.
+
+This page lists the options. For how builds work, targets, and debug and release builds in depth, see `gd++ man building`.
+
+# Options
+
+PATH
+  Build the package containing this path. Default: the current directory. Can't be used with --proj.
+
+--proj
+  Build all packages in the project, one after another, sorted by path.
+
+--for PLATFORM.ARCH...
+  Build for each of these targets, e.g. windows.x86_64 or w.x64. Platforms: windows (win, w), linux (lin, l), macos (mac, m). Architectures: x86_32 (x32), x86_64 (x64), arm64 (a64). Duplicates are built once. Default: this machine. Can't be used with -w, --platform or --arch.
+
+-p PLATFORM, --platform PLATFORM
+  Build for this platform, with --arch or this machine's architecture: windows, linux or macos, or their short names. Default: this machine's.
+
+-w
+  Shorthand for --platform windows.
+
+--arch ARCH
+  Build for this CPU architecture: x86_32, x86_64 or arm64, or their short names. Default: this machine's.
+
+--ship
+  Build for release instead of debugging: godot-cpp's template_release target, with link-time optimization, optimized for speed, without documentation. The default is a debug build: godot-cpp's template_debug target, a dev build with debug symbols and hot reload, unoptimized, with documentation.
+
+--opt
+  Optimize for speed. Default with --ship.
+
+--small
+  Optimize for binary size.
+
+--noopt
+  Don't optimize. Default without --ship.
+
+--doc
+  Compile the documentation of GD++ classes into the library, for the editor's help. Default without --ship.
+
+--nodoc
+  Don't compile the documentation. Default with --ship.
+
+-j N, --jobs N
+  Run N compile jobs at once. Default: one per CPU core but one.
+
+--clean
+  Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and .gdextension files, so the build starts from scratch.
+
+Only one of --opt, --small and --noopt, and only one of --doc and --nodoc, can be used.
+
+# Output
+
+For each package and target, a task like:
+
+```out
+[•] Building res://gameplay for windows.x86_64, release, optimized, no docs.
+```
+
+It names the package, the target, debug or release, the optimization, and for packages with GD++ files, whether docs are compiled. On a terminal, the parts that differ from the defaults are highlighted. The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the .gdextension file changed.
+
+Files written into the package root:
+
+```
+lib<id>.<platform>.<debug|release>.<arch>.<so|dll|dylib>
+<id>.gdextension
+<id>.gdextension.uid
+```
+
+where <id> is the name of the package's directory.
+
+# Examples
+
+Build the package you're in, for this machine, in debug mode:
+
+```sh
+gd++ build
+```
+
+Build another package:
+
+```sh
+gd++ build tools/level_editor
+```
+
+Build everything for release, for Linux and Windows:
+
+```sh
+gd++ build --proj --ship --for l.x64 w.x64
+```
+
+Build for Windows on a Linux machine:
+
+```sh
+gd++ build -w
+```
+
+Build a debug build that runs fast, e.g. to profile:
+
+```sh
+gd++ build --opt
+```
+
+Start over after a strange build error:
+
+```sh
+gd++ build --clean
+```
+
+# Errors
+
+- "Missing Godot C++ bindings NAME, run `gd++ fetch --missing` to fix this." The package's dependencies aren't in the project. Run `gd++ fetch --missing`.
+- "Failed to find SCons, see https://scons.org to install it: ..." Run `gd++ install`.
+- "Failed to detect the platform, use --platform to choose one." This machine's platform or architecture isn't one GD++ supports, so name the target.
+- "Invalid arguments: \"x\" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64."
+- An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
+- "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
+- "Class X is declared in FILE and in gd++pkg.toml." A GD++ class and a C++ class have the same name.
+- "Task failed: building ..." The compiler or linker failed. Its whole output follows. Errors in C++ code inside GD++ files point to the GD++ files.
+
+# See also
+
+`gd++ man building`, `gd++ man build-cache`, `gd++ man clean`, `gd++ man shipping`.

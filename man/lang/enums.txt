@@ -1,0 +1,151 @@
+Enums and constants: enum types, integer constants, and how Godot sees them
+
+GD++ has two things declared with enum: enum types, a set of named integer values, and integer constants of a class. Enum types in GD++ work a bit differently from enums in C++, Godot and GDScript: they're global types of the package.
+
+# Enum types
+
+```gd++
+enum Suit {
+  DIAMONDS
+  CLUBS
+  SPADES
+  HEARTS
+}
+
+enum Rank { JACK = 11, QUEEN, KING, ACE = 1 }
+```
+
+`enum Name { ... }` holds the values: names, each with an optional integer value after "=". Separate them with spaces, newlines or commas; a comma after the last one is fine. A value without a number is the previous value plus one, and the first one is 0. So JACK is 11, QUEEN 12, KING 13 and ACE 1.
+
+Values are integers that fit in 64 bits: decimal, negative, hexadecimal, binary, octal, with digit separators. See `gd++ man syntax`. Two values of an enum can't have the same name, but they can have the same number.
+
+```gd++
+enum Flags {
+  NONE = 0
+  VISIBLE = 0x1
+  SOLID = 0x2
+  ALL = 0x3
+}
+```
+
+Each value can have a doc comment, which Godot's help shows. See `gd++ man docs`.
+
+```gd++
+enum Weather {
+  /// Clear sky.
+  SUNNY
+  /// Rain, which makes roads slippery.
+  RAINY
+}
+```
+
+# A global type
+
+A GD++ enum is a type of the whole package: every GD++ file of the package can use it, wherever it's declared. It can be declared:
+
+- at the top level of a file, next to inline classes,
+- inside a class, file-level or inline, which changes nothing about its scope,
+- as a whole file, with enum_name. See `gd++ man files`.
+
+Its name must be unique in the package, like the names of classes and externs.
+
+```gd++
+enum_name Suit
+DIAMONDS
+CLUBS
+SPADES
+HEARTS
+```
+
+# In C++
+
+Each enum becomes a C++ enum class with int64_t values, in namespace godot, in its own header, e.g. Suit.h:
+
+```cpp
+enum class Suit : int64_t {
+  DIAMONDS = 0,
+  CLUBS = 1,
+  SPADES = 2,
+  HEARTS = 3,
+};
+```
+
+So values are scoped: write Suit::HEARTS in C++ code. Convert to and from integers with static_cast:
+
+```gd++
+var trump: Suit = Suit::HEARTS
+
+func trump_index() -> int {
+  return static_cast<int64_t>(trump);
+}
+
+func set_trump_index(i: int) -> void {
+  trump = static_cast<Suit>(i);
+}
+```
+
+GD++ includes the enum's header wherever it's used.
+
+# In Godot
+
+Godot has no global enums of its own: every enum belongs to a class, e.g. Node.ProcessMode. So GD++ gives each class that needs an enum its own copy of it. A class exposes an enum if:
+
+- it uses the enum in its API: the type of a variable, a parameter or return value of a function (except @override functions), or a parameter of a signal,
+- it imports the enum, with `import Suit`,
+- the enum is declared inside it,
+- it's a file-level class, and the enum is declared anywhere in its file.
+
+Unless it has `noimport Suit`, which stops it from exposing the enum. noimport is an error if the class uses the enum in its API, since Godot must know it then.
+
+A class exposes an enum as integer constants of the class, named after the enum and the value, in UPPER_SNAKE_CASE: Suit's HEARTS becomes SUIT_HEARTS, and HTTPCode's NOT_FOUND becomes HTTP_CODE_NOT_FOUND. They belong to an enum of the class named like the GD++ enum, e.g. Table.Suit. In GDScript:
+
+```gd++
+var s: Table.Suit = Table.SUIT_HEARTS
+table.play(Table.SUIT_SPADES)
+```
+
+In the editor's help, values are listed under the class's constants, and variables, parameters and return values of the enum's type show as int, with the enum's name. An exported variable of an enum type shows a drop-down list of the values. See `gd++ man exports`.
+
+Two classes that expose the same enum have equal values: Table.SUIT_HEARTS == Deck.SUIT_HEARTS.
+
+# How it's done
+
+Functions, variables and signals whose types use an enum are bound through a stand-in type per class and enum, named _gdpp_<Class>_<Enum>, e.g. _gdpp_Table_Suit, which Godot sees as the enum Table.Suit. Wrappers named _gdpp_ plus the function's, getter's or setter's name convert between the stand-in and the real enum. Your code never sees them: it uses Suit. See `gd++ man generated`.
+
+# Integer constants
+
+```gd++
+class_name Game
+extends Node
+
+enum MAX_PLAYERS = 4
+enum START_LIVES = 3
+```
+
+`enum NAME = VALUE`, inside a class, declares an integer constant of the class. It's a static constexpr int64_t member in C++, e.g. MAX_PLAYERS or This::MAX_PLAYERS, and an integer constant of the class in Godot, e.g. Game.MAX_PLAYERS in GDScript.
+
+Constants belong to their class, unlike enum types: they can only be declared inside a class, and share its namespace with functions and variables. GDExtension can only expose integer constants to Godot, so GD++ only has integer constants. GD++ has no const keyword. For constants of other types, use a @static function, or a static constexpr member in a decl block:
+
+```gd++
+@static
+func gravity() -> Vector3 {
+  return Vector3(0, -9.8, 0);
+}
+
+decl {
+  static constexpr double PI_2 = 6.28318530718;
+}
+```
+
+Constants take a doc comment, but no annotations.
+
+# Rules
+
+- Enum types and constants take no annotations.
+- An integer constant outside a class is an error: "This enum is outside of any class.".
+- A value that isn't an integer is an error, e.g. `A = 1.5` or `A = B`.
+- An enum can't be the base of a class, nor an element type of Array[T] or Dictionary[K, V]; use int there.
+
+# See also
+
+`gd++ man types`, `gd++ man includes`, `gd++ man exports`, `gd++ man files`.

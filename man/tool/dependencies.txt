@@ -1,0 +1,114 @@
+Dependencies: bindings, API specs and engines, the two caches, and the repository
+
+To build a package, GD++ needs some big, versioned downloads from Godot: its dependencies. GD++ downloads them for you, keeps them in the project, and lets you share them with your team, or keep them out of version control.
+
+# Kinds of dependencies
+
+There are three kinds. Each has a short name, used in directory names and in command options, e.g. `gd++ fetch --spec 4.7.2-stable`.
+
+bind: Godot C++ bindings
+  godot-cpp, the C++ library that GDExtensions are built with: its source code, and its tools that generate the C++ API from a spec. Every package names its bindings in gd++pkg.toml, e.g. bind = "10.0.0-stable".
+
+spec: Godot API specs
+  extension_api.json, the description of every class, method, property and constant of one Godot version, as Godot's `--dump-extension-api` writes it. Every package names its spec in gd++pkg.toml, e.g. spec = "4.7.2-stable". The spec decides which Godot classes your code can use, and the oldest Godot version that can load the library.
+
+engine: Godot engines
+  The source code of the Godot engine. Currently unused: packages don't use it, and you don't need to download it.
+
+A dependency is a directory, named after its version, e.g. 10.0.0-stable. A name can be any directory name, except "." and "..". Custom dependencies can have any name, e.g. my-engine-fork.
+
+# The two caches
+
+Dependencies live in the project, in one of two caches, each with a subdirectory per kind:
+
+res://.gd++proj/ (the ephemeral cache)
+  Where `gd++ fetch` puts dependencies by default. Keep it out of version control: anyone can download it again with `gd++ fetch --missing`. With vcs = "git", GD++ adds it to .gitignore.
+
+res://_gd++proj/ (the checked in cache)
+  For dependencies that you commit to version control, so everyone on your team builds with exactly the same files, even offline, or when a dependency can't be downloaded, e.g. a spec from a custom build of Godot.
+
+The two caches work the same way: a package finds its dependencies in either. A dependency is usually in only one of them. If it's in both, the checked in copy is used.
+
+```
+res://_gd++proj/spec/4.7.2-stable/extension_api.json
+res://.gd++proj/bind/10.0.0-stable/...
+```
+
+Move dependencies between the caches with `gd++ checkin` and `gd++ checkin --undo`. See `gd++ man checkin`.
+
+# Version order
+
+gd++ sorts dependency names like versions, newest last: 4.10 comes after 4.9, and 4.3 before 4.3-stable. Names are split into parts at ".", "-" and "_". Parts are compared one by one: numbers as numbers, other parts as text, and a number is greater than text. If all parts match, the name with fewer parts comes first. Lists, e.g. of `gd++ ls --deps` and `gd++ fetch --index`, show the newest first.
+
+# The repository
+
+gd++ downloads dependencies from a git repository: by default, the GD++ dependency repository at https://github.com/caphindsight/gdpp-dep.git, branch master. `gd++ fetch --url URL --branch BRANCH` uses another one, e.g. your team's mirror.
+
+The repository is large, so gd++ never downloads all of it. It makes a shallow, sparse clone into a temporary directory, checks out only the index and the dependencies you asked for, and moves them into the cache. It needs git to be installed.
+
+A repository has this layout:
+
+```
+index/bind            the versions of the bindings, one per line
+index/spec            the versions of the specs
+index/engine          the versions of the engines
+data/bind/NAME/       the bindings called NAME
+data/spec/NAME/       the spec called NAME, with its extension_api.json
+data/engine/NAME/     the engine called NAME
+```
+
+An index file lists one version per line. Lines like `latest=4.7.2-stable` are tags: names for versions. Wherever you can name a version to fetch, you can name a tag instead, e.g. `gd++ fetch --spec latest` fetches 4.7.2-stable. Tags are only names in the repository: the cache stores the version itself.
+
+```sh
+gd++ fetch --index            # all versions and tags, and which ones you have
+gd++ fetch --index-spec       # only the specs
+gd++ fetch --missing          # what your packages need but the project lacks
+gd++ fetch --spec latest      # the latest spec
+```
+
+See `gd++ man fetch`.
+
+# Custom dependencies
+
+Dependencies that aren't in the repository, e.g. the spec of your own build of Godot, can be copied into the cache with `gd++ vendor`, from a directory, a .tar.gz or a .zip file. The directory must have the same layout as in the repository: a spec is a directory with an extension_api.json file, and bindings are a copy of godot-cpp.
+
+```sh
+godot --headless --dump-extension-api            # writes extension_api.json
+mkdir my-4.7 && mv extension_api.json my-4.7/
+gd++ vendor --spec my-4.7 --from my-4.7 --checkin
+gd++ init . --update --spec my-4.7
+```
+
+`gd++ vendor --to` copies a dependency out of the cache, e.g. to share it as an archive. See `gd++ man vendor`.
+
+# Which dependencies a project uses
+
+`gd++ ls` counts the dependencies in the caches, and `gd++ ls --deps` lists them, marks the checked in ones, and marks as unused the ones that no package names. It also marks packages whose dependencies are missing.
+
+```
+Dependencies:
+  Godot C++ bindings:  10.0.0-stable  checked in
+                       9.0.0-stable   cached      unused
+  Godot API specs:     4.7.2-stable   cached
+  Godot engines:       none
+```
+
+# Removing dependencies
+
+```sh
+gd++ rm --spec 4.3-stable             # one dependency, from both caches
+gd++ rm --bind-ephemeral              # all ephemeral bindings
+gd++ rm --dep-all                     # everything
+```
+
+See `gd++ man rm`.
+
+# How builds use dependencies
+
+Before building a package, gd++ copies its bindings and spec into the package's build cache, and builds there. So builds never change the caches, and many packages can use the same dependencies. If a package's dependencies are missing, the build fails:
+
+```out
+[×] Missing Godot API spec 4.7.2-stable, run `gd++ fetch --missing` to fix this.
+```
+
+Changing a package's bind or spec makes its next build start from scratch. See `gd++ man build-cache`.

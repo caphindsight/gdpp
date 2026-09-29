@@ -1,0 +1,34 @@
+gd++ fix: tidy up the project
+
+# Synopsis
+
+```sh
+gd++ fix
+```
+
+# Description
+
+Brings the project into its canonical state. It takes no options, and is always safe to run. It:
+
+- Reformats res://gd++proj.toml, if it exists, and every package's gd++pkg.toml, into the form gd++ writes them, with the classes in gd++pkg.toml sorted by name. Comments and unusual formatting in these files are lost.
+- Updates the GD++ blocks in the .gitignore files of the project and its packages to match the project's vcs setting: writes missing blocks, updates outdated ones, and removes them if the project doesn't use git. See `gd++ man vcs`.
+- Deletes res://.gd++proj/temp, the temporary files that an interrupted command may have left behind.
+- Deletes empty dependency cache directories, e.g. res://_gd++proj/engine after the last engine was removed.
+
+Each change is logged, e.g. "Reformatted res://gd++pkg.toml.". If nothing needed fixing, it says "The project is already tidy.".
+
+Run it after upgrading gd++, after editing config files by hand, or after moving packages around.
+
+# Example
+
+```
+gd++ fix
+[•] Reformatted res://gameplay/gd++pkg.toml.
+[•] Created res://tools/.gitignore.
+[•] Deleted the temporary directory res://.gd++proj/temp.
+[•] Success!
+```
+
+# See also
+
+`gd++ man vcs`, `gd++ man clean`.

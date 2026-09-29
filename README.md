@@ -131,6 +131,7 @@ Add C++ and GD++ source files, `gd++pkg.toml` and `gd++proj.toml` to the preset'
 ### Other commands
 
 - `gd++ ls`: show an overview of the project, its dependencies and packages.
+- `gd++ man`: read the reference manual, built into gd++. `gd++ man` lists its pages, e.g. `gd++ man classes`.
 - `gd++ init --vcs git`: set up `.gitignore` files for GD++.
 - `gd++ fix`: tidy up the project, e.g. reformat config files and delete leftover temporary files.
 - `gd++ trans file.gd++`: print the C++ that GD++ makes from a file. Great for learning the language.

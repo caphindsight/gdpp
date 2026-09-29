@@ -1,0 +1,165 @@
+Exports: showing variables in the inspector, with @export and its family
+
+An exported variable shows up in the editor's inspector, where you can edit it, and is saved in scenes and resources. GD++ has the export annotations of GDScript. Each one exports the variable, and most also tell the inspector how to edit it.
+
+# @export
+
+```gd++
+@export var speed: float = 5.0
+@export var title: String
+@export var target: Node3D
+@export var texture: Texture2D
+@export var suit: Suit
+```
+
+@export exports the variable, with the editor that fits its type:
+
+- Numbers, strings, vectors, colors and so on get their usual editors.
+- Node types, e.g. Node3D, get a node picker that only accepts nodes of that type.
+- Resource types, e.g. Texture2D, get a resource picker that only accepts that type.
+- GD++ enums get a drop-down list of their values, with names spelled like the editor spells enums: DIAMONDS becomes "Diamonds", and NOT_SET becomes "Not Set".
+- Externs get a picker that only accepts objects of the extern's class. See `gd++ man externs`.
+
+# Numbers
+
+@export_range(MIN, MAX[, STEP][, EXTRAS...])
+  An int or float, edited with a slider from MIN to MAX, in steps of STEP. EXTRAS are Godot's range hints, as strings: "or_greater", "or_less", "exp", "radians_as_degrees", "degrees", "hide_slider", "suffix:m" and so on.
+
+```gd++
+@export_range(0, 100) var volume: int
+@export_range(0, 100, 5) var percent: int
+@export_range(0.0, 1.0, 0.01) var opacity: float
+@export_range(0, 10, 0.1, "or_greater", "suffix:m") var distance: float
+@export_range(-180, 180, 1, "radians_as_degrees") var angle: float
+```
+
+@export_enum(NAMES...)
+  An int, edited with a drop-down list of NAMES; the value is the index of the chosen name, or the number after a colon. Or a String, whose value is the chosen name.
+
+```gd++
+@export_enum("Warrior", "Magician", "Thief") var job: int
+@export_enum("Slow:30", "Average:60", "Fast:200") var speed: int
+@export_enum("Rebecca", "Mary", "Leah") var character_name: String
+```
+
+@export_flags(NAMES...)
+  An int, edited as a set of checkboxes, one per bit. A name can say which bits it stands for after a colon.
+
+```gd++
+@export_flags("Fire", "Water", "Earth", "Wind") var elements: int
+@export_flags("Self:4", "Allies:8", "Foes:16") var targets: int
+```
+
+# Strings
+
+@export_file(FILTERS...)
+  A String, edited with a file picker; FILTERS limit the file types, e.g. "*.png".
+
+```gd++
+@export_file var any_file: String
+@export_file("*.txt") var notes: String
+@export_file("*.png", "*.jpg") var image: String
+```
+
+@export_dir
+  A String, edited with a directory picker.
+
+@export_multiline
+  A String, edited in a large text box with many lines.
+
+@export_placeholder(TEXT)
+  A String, edited in a text field that shows TEXT while it's empty.
+
+```gd++
+@export_dir var output_dir: String
+@export_multiline var description: String
+@export_placeholder("Your name") var player_name: String
+```
+
+# Storage only
+
+@export_storage
+  Saves the variable in scenes and resources, but doesn't show it in the inspector. For state that must survive saving and loading, but that users shouldn't edit.
+
+```gd++
+@export_storage var visits: int
+```
+
+# Sections
+
+Section annotations group the inspector's properties under headings. A section annotation goes on the first variable of its section, and the section holds that variable and all variables after it, in the order of the class, up to the next section of the same or a higher level.
+
+@export_category(NAME)
+  Starts a category: a top-level heading, like the ones that separate a node's classes in the inspector. NAME must not be the name of a member, since Godot adds a category as a property with that name.
+
+@export_group(NAME[, PREFIX])
+  Starts a group: a foldable section. With PREFIX, the inspector groups only the following properties whose names start with PREFIX, and shows their names without it. An empty NAME, "", ends the current group.
+
+@export_subgroup(NAME[, PREFIX])
+  Starts a subgroup inside the current group. Works like @export_group.
+
+Their arguments are strings.
+
+```gd++
+class_name Hero
+extends CharacterBody3D
+
+@export var title: String
+
+@export_category("Hero")
+@export_group("Stats", "stat_")
+@export var stat_health: int = 100
+@export var stat_mana: int = 50
+@export_subgroup("Luck")
+@export var stat_luck: int = 1
+
+@export_group("Movement")
+@export var speed: float = 5.0
+@export var jump_height: float = 2.0
+
+@export_group("")
+@export var notes: String
+```
+
+A variable can have section annotations and one export annotation. Section annotations also work on variables that aren't exported, though the inspector then has nothing to show in them.
+
+# Rules
+
+- A variable can have only one export annotation: @export, @export_range, @export_enum, @export_flags, @export_file, @export_dir, @export_multiline, @export_placeholder or @export_storage.
+- Export annotations only go on variables, and not in externs.
+- @export, @export_dir, @export_multiline and @export_storage take no arguments.
+- Arguments are numbers and strings, written as in GDScript.
+- Each annotation checks the variable's type:
+
+```out
+[×] res://hero.gd++:5:1: Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.
+     5 | @export_range(0, 10) var title: String
+       | ^^^^^^^^^^^^^
+    Hint: E.g. "@export_range(0, 100, 1, \"or_greater\") var hp: int".
+```
+
+# Exports and properties
+
+Properties with get and set can be exported too: the inspector then calls your getter and setter.
+
+```gd++
+@export_range(0, 100)
+var volume: int {
+  decl {
+    int64_t volume_ = 50;
+  }
+  get {
+    return volume_;
+  }
+  set(value) {
+    volume_ = value;
+    AudioServer::get_singleton()->set_bus_volume_db(0, Math::linear_to_db(value / 100.0));
+  }
+}
+```
+
+In a class without @tool, the inspector edits placeholders in the editor, so setters don't run there. See `gd++ man classes`.
+
+# See also
+
+`gd++ man variables`, `gd++ man annotations`, `gd++ man types`.

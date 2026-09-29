@@ -1,0 +1,59 @@
+gd++ man: read the reference manual
+
+# Synopsis
+
+```sh
+gd++ man
+gd++ man PAGE
+gd++ man SECTION/PAGE
+```
+
+# Description
+
+Shows a page of this manual, the reference manual of GD++: the build tool, its commands, and the GD++ language. Without a page, lists all pages, as a tree, with their titles. The manual is built into gd++, so it always matches the version you run, and works offline.
+
+Pages open in a pager when they don't fit the terminal:
+
+```
+Up, Down                 scroll by a line
+Page Up, Page Down       scroll by a page
+Space                    scroll down by a page
+q, Escape, Ctrl+C        quit
+```
+
+On a terminal, pages are wrapped to its width, and headings are bold. When the output is not a terminal, e.g. `gd++ man classes > classes.txt` or `gd++ man classes | grep emit`, pages are printed as plain text, without the pager.
+
+# Arguments
+
+PAGE
+  The name of the page to show, e.g. classes, as the list shows it. Names are unique in the whole manual, so a name is enough. If there is no such page, gd++ lists the pages whose names contain PAGE, or are contained in it.
+
+SECTION/PAGE
+  The path of the page to show, e.g. lang/classes. Works the same as its name.
+
+# The tree of pages
+
+The manual is a tree. At the top are intro, tour, and three sections:
+
+```
+tool     the build tool: projects, packages, dependencies and builds
+cmd      the commands, one page each, named after the command, e.g. cmd/build
+lang     the GD++ language, one page per concept, e.g. lang/signals
+```
+
+A section is a page too: `gd++ man lang` shows an overview of the language, followed by the list of pages in the section. `gd++ man` lists the whole tree, in reading order: read it from top to bottom to learn GD++ from scratch.
+
+# Examples
+
+```sh
+gd++ man                 # list all pages
+gd++ man intro           # start here
+gd++ man lang            # the language, and its pages
+gd++ man lang/functions  # the same as gd++ man functions
+gd++ man functions       # how functions work in GD++
+gd++ man rm              # the rm command
+```
+
+# See also
+
+`gd++ --help`, `gd++ COMMAND --help`, `gd++ man intro`.

@@ -1,0 +1,91 @@
+Version control: git, .gitignore, and what to commit
+
+GD++ projects work with any version control system. With git, GD++ can also keep your .gitignore files up to date, so generated files and caches stay out of your repository.
+
+# Turning it on
+
+```sh
+gd++ init --vcs git
+```
+
+This sets vcs = "git" in res://gd++proj.toml, and writes GD++'s blocks of ignores into the .gitignore files of the project root and of each package root. `gd++ init --vcs none` turns it off, and removes the blocks again. The default is none: GD++ doesn't touch .gitignore files unless you ask.
+
+# The blocks
+
+GD++ manages a block of lines in each .gitignore file. A block starts with a marker comment, and runs to the first empty line. GD++ only ever changes its own blocks: the rest of the file is yours.
+
+The project root's .gitignore gets the project-level block:
+
+```
+# GD++ project-level ignores
+/.gd++proj/**
+**.swo
+**.swp
+**.tmp
+**/*~
+**/~*
+```
+
+It ignores the ephemeral dependency cache, and the backup and swap files of editors, e.g. Vim's.
+
+Each package root's .gitignore gets the package-level block:
+
+```
+# GD++ package-level ignores
+/.gd++pkg/**
+/lib*.dll
+/lib*.so
+/lib*.dylib
+/*.gdextension
+/*.gdextension.uid
+```
+
+It ignores the build cache, the built libraries and the generated .gdextension files. If the project root is also a package, its .gitignore gets both blocks.
+
+Don't edit the blocks by hand: GD++ rewrites them. To ignore more files, add your own lines after an empty line, outside the blocks.
+
+# When the blocks are updated
+
+- `gd++ init --vcs git` or `--vcs none` writes or removes all blocks.
+- `gd++ init PATH ...` adds the package-level block to a new package, if the project uses git.
+- `gd++ rm --pkg PATH` removes the package-level block from the package's .gitignore.
+- `gd++ fix` brings every block in the project up to date: it adds missing ones, removes ones that don't belong, and updates changed ones, e.g. after you upgrade gd++.
+
+A .gitignore file that only held GD++'s blocks is deleted when they're removed. Differences in line endings and trailing empty lines are not changes, so GD++ doesn't rewrite files for them.
+
+# What to commit
+
+Commit:
+
+- your GD++, C++ and other source files,
+- gd++pkg.toml and gd++proj.toml,
+- res://_gd++proj, the checked in dependency cache, if you use it.
+
+Don't commit:
+
+- res://.gd++proj, the ephemeral dependency cache: `gd++ fetch --missing` downloads it again.
+- .gd++pkg, the build caches.
+- the libraries and .gdextension files in package roots: `gd++ build` makes them again.
+
+A teammate who clones the repository runs:
+
+```sh
+gd++ fetch --missing
+gd++ build --proj
+```
+
+and has a working project.
+
+# Checked in dependencies
+
+Dependencies are big, so by default they're downloaded, not committed. Check one in to commit it, e.g. to build offline, to pin exact files, or because it can't be downloaded, like the spec of a custom Godot build:
+
+```sh
+gd++ checkin --spec my-4.7
+```
+
+See `gd++ man dependencies` and `gd++ man checkin`.
+
+# Shipping without committing libraries
+
+Since libraries aren't committed, a build machine must build them before exporting the game. See `gd++ man shipping`.

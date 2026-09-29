@@ -1,0 +1,62 @@
+gd++ install: install the tools that GD++ needs to build
+
+# Synopsis
+
+```sh
+gd++ install [--echo] [--uname PLATFORM]
+```
+
+# Description
+
+Installs the tools that GD++ needs to compile C++, with your system's package manager. GD++ manages Godot's own dependencies, the bindings and the API specs, itself, but it relies on these tools:
+
+- Git 2.25 or newer, to fetch dependencies.
+- SCons 4.0 or newer, and Python 3.8 or newer, which SCons runs on, to build.
+- A C++20 compiler: GCC 10+ or Clang 10+ on Linux, Xcode 14+ on macOS, Visual Studio 2022 (MSVC) on Windows.
+- On Linux and macOS, MinGW-w64 (GCC 10+, with POSIX threads), to build for Windows.
+
+gd++ install shows what it will do and asks for confirmation, then runs each command in turn, attached to your terminal, since sudo and installers may ask for input, e.g. a password. When run as root, it leaves out sudo. It stops at the first command that fails.
+
+This is experimental: it hasn't been tested on every platform. If it fails, install the tools yourself; `gd++ install --echo` shows what's needed.
+
+# Options
+
+--echo
+  Print the install commands instead of running them, e.g. to review them, or to run them yourself.
+
+--uname PLATFORM
+  Install for this platform instead of the detected one. Also useful with --echo, to see the commands for another platform. Platforms:
+
+```
+debian     Debian 11+, Ubuntu 22.04+ and their derivatives (apt); also: ubuntu
+fedora     Fedora (dnf)
+arch       Arch Linux (pacman)
+opensuse   openSUSE Tumbleweed (zypper); also: opensuse-tumbleweed
+macos      macOS, with Homebrew; also: mac
+windows    Windows 10+, with winget; also: win
+```
+
+On Linux, the platform is detected from the ID and ID_LIKE lines of /etc/os-release, so derivatives, e.g. Linux Mint, are detected as their base. If detection fails: "Failed to detect the uname, use --uname to choose one.".
+
+# What it runs
+
+Debian and Ubuntu: installs git, scons, build-essential and the POSIX-threads build of MinGW-w64, and makes it the default MinGW compiler, since the Win32-threads build lacks std::thread and std::mutex.
+
+Fedora, Arch and openSUSE: install git, scons, GCC and MinGW-w64 with their package managers.
+
+macOS: `brew install scons mingw-w64`. Homebrew installs the Xcode Command Line Tools, which have Git and Clang.
+
+Windows: installs Git, Python 3.13 and the Visual Studio 2022 Build Tools with the C++ workload with winget, then SCons with pip. Packages that are already installed and up to date are fine. After installing Python, the running terminal may not find it yet: then gd++ fails with "Failed to find py, install it, or run `gd++ install` again in a new terminal if an earlier step did.". Open a new terminal and run gd++ install again.
+
+# Examples
+
+```sh
+gd++ install                         # install, after confirming
+gd++ install --echo                  # just print the commands
+gd++ install --echo --uname windows  # the commands for Windows
+gd++ install -f                      # install without asking, e.g. in a script
+```
+
+# See also
+
+`gd++ man intro`, `gd++ man building`.

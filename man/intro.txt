@@ -1,0 +1,75 @@
+Introduction: what GD++ is, and how to read this manual
+
+# What GD++ is
+
+GD++ lets you write Godot games in C++, without the boilerplate. It is one command line program, gd++, and it is two things in one:
+
+- A small build system for Godot C++ code. It downloads the Godot C++ bindings (godot-cpp) and the Godot API specs your code needs, keeps them in your project, and compiles your code into GDExtension libraries that Godot loads.
+- The GD++ language. It is a small language that compiles to regular C++. Its declarations look like GDScript, but function bodies are plain C++. GD++ writes the glue code that Godot needs: headers, _bind_methods, getters and setters, #include lines and class registration.
+
+A GD++ class, saved as hello_world.gd++ anywhere in a Godot project:
+
+```gd++
+class_name HelloWorld
+extends Node
+
+@override
+func _ready() -> void {
+  Label *label = memnew(Label);
+  label->set_text("Hello, world!");
+  add_child(label);
+}
+```
+
+Three commands make it a node type that Godot knows, like any built-in node:
+
+```sh
+gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
+gd++ fetch --missing
+gd++ build
+```
+
+GD++ follows the Godot way: everything ships in one tool. It is also designed to be a joy to use: a new project takes one or two commands to set up. You can adapt it to your needs a little, but it is not highly configurable on purpose, since that would make it harder to use.
+
+# What you need
+
+- Godot 4, to run your game.
+- gd++ itself. It is written in Go. To build it from its source code, run `make && sudo make install`, which copies the gd++ binary to /usr/local/bin.
+- The tools that compile C++: Git, SCons, Python and a C++ compiler. `gd++ install` installs them with your system's package manager. See `gd++ man install`.
+
+You don't need to download godot-cpp or anything from Godot yourself: GD++ does it for you.
+
+# How to read this manual
+
+Run `gd++ man` to list all pages, and `gd++ man PAGE` to read one, e.g. `gd++ man classes`. Pages open in a pager when they don't fit the terminal: the up and down keys scroll by a line, page up and page down (or space) by a page, and q, escape or Ctrl+C quit. When the output is not a terminal, e.g. `gd++ man classes > classes.txt`, pages are printed as they are.
+
+The manual is a tree of pages. At its top are this page, `tour`, a walk through a first project, and three sections, each a page with pages under it:
+
+- tool, the build tool: how projects, packages and dependencies work, and how builds work.
+- cmd, the commands: one page per gd++ command, with every option.
+- lang, the GD++ language: one page per concept, from the syntax to the C++ it generates.
+
+A section's page is an overview of the section, and ends with the list of its pages. Every page has a name, which is unique, and a path in the tree: `gd++ man functions` and `gd++ man lang/functions` show the same page. The list of `gd++ man` is in reading order.
+
+Each page starts with a short introduction, then explains every detail, with examples. Pages refer to each other by name, e.g. "see `gd++ man externs`".
+
+In examples, lines like `gd++ build` are commands to type into a shell. Code examples are GD++ unless the page says otherwise.
+
+# Where else to look
+
+- `gd++ --help` and `gd++ COMMAND --help` list the options of each command, in short.
+- `gd++ trans FILE` prints the C++ that GD++ generates from a GD++ file. It is the best way to learn what the language does. See `gd++ man trans`.
+- `gd++ doc NAME` shows what godot-cpp declares under a name. See `gd++ man doc`.
+- Godot's own help, in the editor, describes the engine's classes. Your GD++ classes show up there too, with their doc comments. See `gd++ man docs`.
+- The file tutorial/tutorial.gd++ in GD++'s source code is a tour of the language in one file.
+
+# Words used in this manual
+
+- Project: a Godot project, a directory with a project.godot file. See `gd++ man projects`.
+- Package: a directory in a project with a gd++pkg.toml file. It builds into one GDExtension library. See `gd++ man packages`.
+- Dependency: a versioned download that packages need: Godot C++ bindings, a Godot API spec or a Godot engine. See `gd++ man dependencies`.
+- Bindings: godot-cpp, the C++ library that GDExtensions are written against.
+- API spec: extension_api.json, the description of every class of one Godot version.
+- GD++ file: a file with the extension .gd++, .gdpp or .gg.
+- Build cache: the .gd++pkg directory of a package, where builds happen. See `gd++ man build-cache`.
+- Transpile: turn GD++ code into C++ code.

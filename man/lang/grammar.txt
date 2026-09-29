@@ -1,0 +1,141 @@
+Grammar: the complete syntax of GD++, in one place
+
+This page is the formal summary of GD++'s syntax, for reference. Each part is explained on the page of its topic. For tokens, comments and literals, see `gd++ man syntax`.
+
+# Notation
+
+```
+X?          X is optional
+X*          any number of X, including none
+X | Y       X or Y
+( ... )     grouping
+'word'      the word or punctuation, as written
+Ident       an identifier
+Int         an integer: '-'? Number
+String      a string literal
+Block       '{' C++ code '}', up to the matching '}'
+```
+
+Whitespace, newlines and comments may appear between any two tokens, except inside Expr (see below).
+
+# Files
+
+```
+File        = Code* FileHead? TopItem*
+FileHead    = ClassHead | ExternHead | EnumHead
+ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )?
+ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
+EnumHead    = Doc? Annotation* 'enum_name' Ident EnumEntry*
+TopItem     = Class | Extern | Member
+```
+
+Code before the file head is always an error: decl and impl blocks must be in a class. After class_name or extern_name, every Member belongs to that class or extern. In a file without either, only enum types are allowed as members at the top level. After enum_name, only enum values follow.
+
+# Classes and externs
+
+```
+Class       = Doc? Annotation* 'class' Ident '{' ( 'extends' Type )? Member* '}'
+Extern      = Doc? Annotation* 'extern' Ident '{' ( 'extends' Type )? Member* '}'
+
+Member      = Code
+            | 'ctor' Block
+            | 'dtor' Block
+            | Func
+            | Signal
+            | Var
+            | Enum
+            | 'import' Type
+            | 'noimport' Type
+```
+
+Externs only allow Func, Signal and Var members, without bodies, initial values or default values.
+
+# Code blocks
+
+```
+Code        = Annotation* ( 'decl' 'impl'? | 'impl' ) Block
+```
+
+# Functions
+
+```
+Func        = Doc? Annotation* 'func' Ident '(' ParamList? ')' ( '->' Type )? Block?
+ParamList   = Param ( ',' Param )* ','?
+Param       = Ident ( ':' Type )? ( '=' Default )?
+```
+
+# Signals
+
+```
+Signal      = Doc? Annotation* 'signal' Ident ( '(' ParamList? ')' )?
+```
+
+Signal parameters have no default values.
+
+# Variables and properties
+
+```
+Var         = Doc? Annotation* 'var' Ident ( ':' Type )? ( '=' Init | Property )?
+Property    = '{' Accessor* '}'
+Accessor    = 'decl' Block
+            | 'get' Block
+            | 'set' '(' Ident ( ':' Type )? ')' Block
+```
+
+A property needs exactly one get, at most one set, and any number of decl.
+
+# Enums and constants
+
+```
+Enum        = Doc? Annotation* 'enum' Ident ( '=' Int | '{' EnumEntry* '}' )
+EnumEntry   = Doc? Annotation* Ident ( '=' Int )? ','?
+```
+
+`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type.
+
+# Types
+
+```
+Type        = Ident ( '[' Type ( ',' Type )* ']' )?
+```
+
+Only Array takes one type argument, and Dictionary two.
+
+# Annotations
+
+```
+Annotation  = '@' Ident ( '(' ( Arg ( ',' Arg )* ','? )? ')' )?
+Arg         = String | Char | '-'? Number | Ident
+```
+
+A doc comment can also appear among a declaration's annotations.
+
+# Doc comments
+
+```
+Doc         = DocLine+ | DocBlock
+DocLine     = '///' text to the end of the line
+DocBlock    = '/**' text '*/'
+```
+
+# Values
+
+```
+Init        = Block | Expr
+Default     = Block | Expr
+```
+
+Expr is C++ code that starts after "=" and runs to the end of the line, but continues while a "(", "[" or "{" is open. A Default also ends at a "," outside brackets, and before the ")" that closes the parameter list. A value that starts with "{" is a Block, which returns the value.
+
+# Keywords
+
+```gd++
+class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
+func  get  impl  import  noimport  set  signal  var
+```
+
+In C++ code, GD++ also gives a meaning to emit, rpc, rpc_id, This and gd. See `gd++ man code`.
+
+# See also
+
+`gd++ man syntax`, `gd++ man files`, `gd++ man annotations`.

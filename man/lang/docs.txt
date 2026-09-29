@@ -1,0 +1,101 @@
+Doc comments: documenting classes for the editor's help
+
+Doc comments become real Godot documentation: the editor's help shows your classes, with their descriptions, like it shows Godot's own classes. Press F1 in the editor, or Ctrl+click a class name in a script, to see it.
+
+# Writing doc comments
+
+```gd++
+/// How fast the player runs, in meters per second.
+var speed: float = 5.0
+
+/**
+  Makes the player jump.
+  Does nothing in the air.
+*/
+func jump() -> void {}
+```
+
+A doc comment is a run of lines that start with ///, or a block that starts with /** and ends with */. It documents the declaration right after it.
+
+- In /// lines, GD++ removes the /// and one space after it.
+- In /** */ blocks, GD++ removes the indentation that all lines share, and blank lines at the start and the end. Like other block comments, doc blocks nest.
+
+Doc comments can document:
+
+- classes: before class_name, or before class, with the class's annotations,
+- functions, variables and signals,
+- integer constants, and the values of enums.
+
+Enums and externs can have doc comments too, but they aren't shown anywhere. @override functions aren't documented, since the engine documents them already. decl and impl blocks can't have doc comments.
+
+A declaration has at most one doc comment, which can come before its annotations or between them. A doc comment that isn't followed by a declaration is an error:
+
+```out
+[×] res://a.gd++:5:1: This doc comment is not followed by a declaration.
+     5 | /// Leftover.
+       | ^^^^^^^^^^^^^
+    Hint: Doc comments document the declaration right after them. Use "//" for a regular comment.
+```
+
+# Formatting
+
+GD++ reads doc comments like Godot reads GDScript's ## comments:
+
+- Lines are joined into one paragraph, with spaces. For a line break, write [br].
+- BBCode tags format the text: [b]bold[/b], [i]italic[/i], [code]code[/code], [kbd]Ctrl + S[/kbd], [url=https://example.com]links[/url], and [codeblock] ... [/codeblock] for code on several lines, whose lines are kept as they are.
+- Tags link to other documentation: [Node3D] to a class, [method jump], [member speed], [signal died], [constant MAX_PLAYERS], [enum Suit], and [param amount] for a parameter.
+
+```gd++
+/// Deals [param amount] damage, and sends [signal died] if [member health] drops to 0.
+/// [codeblock]
+/// player.hurt(10)
+/// [/codeblock]
+func hurt(amount: int) -> void { ... }
+```
+
+# Classes
+
+A class's doc comment has two parts: its first paragraph, up to the first blank line, is the brief description, shown in lists and at the top of the class's page; the rest is the full description.
+
+```gd++
+/// A player that runs and jumps.
+///
+/// Add it to a level, and set its [member speed] in the inspector.
+/// It sends [signal died] when it falls off the map.
+///
+/// @tutorial(Movement): https://docs.example.com/movement
+/// @tutorial: https://docs.example.com/player
+class_name Player
+extends CharacterBody3D
+```
+
+Lines starting with @tutorial add links to tutorials, with an optional title in parentheses: `@tutorial: URL` or `@tutorial(TITLE): URL`. Only classes have tutorials.
+
+# Deprecated and experimental
+
+```gd++
+/// Use [method jump] instead.
+/// @deprecated
+func hop() -> void {}
+
+/// @experimental: The API may change.
+func fly() -> void {}
+```
+
+A line @deprecated, or @deprecated: MESSAGE, marks the declaration as deprecated; @experimental, or @experimental: MESSAGE, marks it as experimental. The editor shows these marks, with the message. They work on all documented declarations.
+
+# How it works
+
+In debug builds, the build generates the documentation of each GD++ class in Godot's XML format, the format of Godot's own class reference, into the build cache (gdpp/doc_classes/NAME.xml), and compiles it into the library. The editor loads it with the library. The XML lists the class's brief description, description and tutorials, its methods, members and signals, sorted by name, and its constants, with their types, qualifiers (virtual, const, static) and default values.
+
+Release builds leave the documentation out, since exported games have no editor to show it. Use --doc and --nodoc to choose yourself. See `gd++ man build`.
+
+The editor shows the documentation of GDExtensions from Godot 4.3 on.
+
+# Types in the documentation
+
+The documentation spells types like GDScript: int, float, String, Node3D, int[] for Array[int], Dictionary[String, int] for typed dictionaries. Variables, parameters and return values of a GD++ enum show as int, with the enum's name, e.g. Player.Suit, and the enum's values are listed under the class's constants. See `gd++ man enums`.
+
+# See also
+
+`gd++ man syntax`, `gd++ man classes`, `gd++ man build`.

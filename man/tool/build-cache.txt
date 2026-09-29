@@ -1,0 +1,69 @@
+Build caches: the .gd++pkg directory, and when builds start from scratch
+
+Every package has a build cache: the directory .gd++pkg at its root. Builds happen there, and keep there everything they can reuse, so the next build only compiles what changed. You never need to look inside, but knowing what's there helps when something goes wrong.
+
+# What's inside
+
+```
+my_package/.gd++pkg/
+  build.toml                the package settings of the last sync
+  godot-cpp/                a copy of the package's bindings
+  extension_api.json        a copy of the package's API spec
+  SConstruct                the build script
+  __register_types__.cpp    registers the package's classes with Godot
+  godot_names.toml          what godot-cpp declares, for GD++
+  gdpp/                     the C++ that GD++ generates from the GD++ files
+    gd++/syntax_0.hpp       the GD++ runtime header
+    Player.h, Player.cpp    a header and a source per class
+    Suit.h                  a header per enum and extern
+    doc_classes/Player.xml  a class's documentation, in debug builds
+  build/                    what SCons builds: godot-cpp and object files
+    godot-cpp/              godot-cpp, compiled, with its generated bindings
+    linux.template_debug.dev.x86_64/   object files, one directory per kind of build
+```
+
+All of it is generated: never edit files in the build cache, since builds overwrite them. The cache is ephemeral: deleting it is always safe, it only makes the next build slow. With vcs = "git", GD++ adds it to .gitignore.
+
+# Syncing
+
+At the start of every build, and of `gd++ doc` and `gd++ trans` in a package, gd++ syncs the build cache with the package:
+
+- It compares the package's id and settings (bind, spec, syntax and std, but not its classes) with build.toml. If they differ, or build.toml is missing, it cleans the package like `gd++ clean --bin` does, copies the bindings and the spec into the cache, and writes the new build.toml. So changing the bindings or spec, or moving or renaming the package's directory, makes the next build start from scratch.
+- It writes SConstruct, with the list of the package's C and C++ sources.
+
+The copies make builds independent of the dependency caches: many packages can share a dependency, and deleting a dependency doesn't break a package's cache. When a dependency is synced again, only files whose contents differ are copied.
+
+build.toml is written last, after a successful sync, so an interrupted sync is redone by the next build.
+
+# The names cache
+
+To transpile GD++ code, GD++ must know every name that godot-cpp declares, e.g. Node3D or TypedArray, which header declares it, and whether a class is refcounted. See `gd++ man includes`. The first time it needs them, gd++ generates godot-cpp's bindings from the spec (the "Compiling bindings" step, which only generates C++, and doesn't compile it), scans all of godot-cpp's headers, and saves the names in godot_names.toml. Later builds read that file.
+
+The names cache belongs to the bindings and spec of the last sync, so it's deleted with the rest of the cache when they change. It also has a version: when a new version of gd++ scans differently, it scans again.
+
+# The generated C++
+
+Each build transpiles every GD++ file of the package into the gdpp directory: a header per class, extern and enum, a source per class, and the runtime header. Files whose contents didn't change are left alone, so the C++ compiler doesn't recompile them. Files that no GD++ file generates any more, e.g. after you rename a class, are deleted.
+
+In debug builds, gdpp/doc_classes holds each class's documentation, in Godot's XML format; release builds delete it. See `gd++ man docs`.
+
+The generated C++ is meant to be read: when the compiler reports an error in generated code, open the file it names, e.g. my_package/.gd++pkg/gdpp/Player.cpp. To see it without building, use `gd++ trans`. See `gd++ man generated`.
+
+# Object files
+
+SCons keeps object files in build/, one directory per kind of build, e.g. linux.template_debug.dev.x86_64 and windows.template_release.x86_64. So switching between debug and release builds, or targets, doesn't recompile everything. Object files are named after their sources, with the source's extension kept, e.g. package/src/util.cpp.os on Linux, so foo.c and foo.cpp don't clash.
+
+godot-cpp is compiled into build/godot-cpp, once per kind of build.
+
+# Cleaning
+
+```sh
+gd++ clean                 # this package's build cache
+gd++ clean --bin           # also its libraries and .gdextension files
+gd++ clean --proj          # every package's build cache
+gd++ build --clean         # clean with --bin, then build
+```
+
+Clean when a build keeps failing in a way that makes no sense, e.g. after a crash during a build, or when gd++ says "run `gd++ clean` to fix this". See `gd++ man clean`.
+
+`gd++ clean --bin` deletes every library and .gdextension file in the package root, whatever its name: lib*.dll, lib*.so, lib*.dylib, *.gdextension and *.gdextension.uid. So it also deletes the leftovers of a package that was renamed. Don't keep other files with these names in a package root.

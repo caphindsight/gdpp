@@ -1,0 +1,75 @@
+gd++ checkin: move dependencies into the checked in cache, or back
+
+# Synopsis
+
+```sh
+gd++ checkin [--bind NAME...] [--spec NAME...] [--engine NAME...]
+             [--bind-all] [--spec-all] [--engine-all] [--undo]
+gd++ checkin -a [--undo]
+```
+
+# Description
+
+Moves dependencies from the project's ephemeral cache, res://.gd++proj, to its checked in cache, res://_gd++proj, which you commit to version control. With --undo, moves them back, so they're ephemeral again. Packages find their dependencies in either cache, so this changes nothing for builds. See `gd++ man dependencies`.
+
+A dependency that is already where it should go stays there, with a warning; if it also has a copy in the other cache, that copy is deleted.
+
+gd++ checks that every named dependency exists before it moves anything, so a typo changes nothing.
+
+# Options
+
+--bind NAME...
+  Check in these Godot C++ bindings.
+
+--bind-all
+  Check in all Godot C++ bindings.
+
+--spec NAME...
+  Check in these Godot API specs.
+
+--spec-all
+  Check in all Godot API specs.
+
+--engine NAME...
+  Check in these Godot engines.
+
+--engine-all
+  Check in all Godot engines.
+
+-a, --all
+  Check in all dependencies of all kinds. Can't be used with the other options, except --undo.
+
+--undo
+  Make the dependencies ephemeral instead: move them from the checked in cache to the ephemeral one.
+
+At least one option that chooses dependencies is required. --bind and --bind-all can't be used together, and likewise for spec and engine.
+
+# Examples
+
+Commit the spec of a custom Godot build, so your team gets it with the repository:
+
+```sh
+gd++ checkin --spec my-4.7
+git add _gd++proj
+```
+
+Check in everything the project has:
+
+```sh
+gd++ checkin -a
+```
+
+Stop committing the bindings:
+
+```sh
+gd++ checkin --undo --bind 10.0.0-stable
+```
+
+# Errors
+
+- "The Godot API spec NAME is not in the project cache." Fetch or vendor it first.
+- "Invalid arguments: \"a/b\" is not a valid dependency name." Names are directory names, without slashes.
+
+# See also
+
+`gd++ man dependencies`, `gd++ man vcs`, `gd++ man fetch`.

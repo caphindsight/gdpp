@@ -1,0 +1,68 @@
+Shipping: release builds, and exporting a game with GD++ libraries
+
+Exporting a game with GD++ code works like exporting any game with GDExtensions: build the libraries for every platform you ship, in release mode, then export from Godot as usual.
+
+# 1. Build release libraries
+
+```sh
+gd++ build --proj --ship --for l.x64 w.x64
+```
+
+--proj builds every package in the project, --ship builds in release mode, and --for names the targets. Build for every platform and architecture you export to. See `gd++ man building`.
+
+Release builds are optimized for speed and use link-time optimization. To optimize for size instead, add --small. They don't include the documentation of GD++ classes, which only the editor shows.
+
+If you export in debug mode too, e.g. for testers, also build debug libraries for those targets:
+
+```sh
+gd++ build --proj --for l.x64 w.x64
+```
+
+Each package's .gdextension file lists the libraries of every target, debug and release, so Godot picks the right one. Libraries you haven't built are simply missing: an export for a target without its library fails to load the extension. So check that the package roots have a library for each target you export, e.g. libmy_game.windows.release.x86_64.dll.
+
+# 2. Keep sources out of the export
+
+In Godot's Export dialog, add these to the preset's "Filters to exclude files/folders from project", so they don't end up in the exported game:
+
+```
+*.gd++, *.gdpp, *.gg, *.h, *.hpp, *.c, *.cc, *.cpp, *.cxx, *.c++, gd++pkg.toml, gd++proj.toml
+```
+
+Godot already leaves hidden directories out, e.g. .gd++proj and .gd++pkg. Also exclude _gd++proj/* if you use the checked in dependency cache.
+
+# 3. Export
+
+Export from the Export dialog, or from the command line, e.g.:
+
+```sh
+godot --headless --export-release "Linux" build/my_game.x86_64
+```
+
+Godot copies the right library of each package into the export.
+
+# Cross-compiling
+
+On Linux and macOS, `gd++ install` also installs MinGW-w64, so you can build Windows libraries without Windows:
+
+```sh
+gd++ build --ship --for w.x64
+```
+
+Building for macOS generally needs a Mac with Xcode. Building for Linux needs Linux, or a cross-compiler you set up yourself.
+
+# The minimum Godot version
+
+The library needs at least the Godot version of the package's API spec: the .gdextension file says so, e.g. compatibility_minimum = "4.7", and older versions of Godot refuse to load it. Newer versions load it, since Godot keeps its API compatible. To support older versions of Godot, build against an older spec.
+
+# A build script
+
+A script for a build machine, which exports Linux and Windows builds:
+
+```sh
+gd++ fetch --missing
+gd++ build --proj --ship --for l.x64 w.x64
+godot --headless --export-release "Linux" out/linux/my_game.x86_64
+godot --headless --export-release "Windows Desktop" out/windows/my_game.exe
+```
+
+Use -f with commands that may ask for confirmation, since scripts can't answer prompts. See `gd++ man cli`.

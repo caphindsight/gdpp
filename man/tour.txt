@@ -1,0 +1,123 @@
+Tour: a first project, from nothing to a running game
+
+This page walks through a small project, step by step. Each step links to the pages that explain it in full.
+
+# 1. Install the tools
+
+Build and install gd++ from its source code:
+
+```sh
+make && sudo make install
+```
+
+Then install the tools that compile C++ (Git, SCons, Python and a C++ compiler):
+
+```sh
+gd++ install
+```
+
+It asks before running anything. To see the commands first, run `gd++ install --echo`. See `gd++ man install`.
+
+# 2. Make a Godot project
+
+Create a project in the Godot editor, as usual. GD++ works in any Godot 4 project: a directory with a project.godot file. Open a terminal in the project directory. Every gd++ command finds the project from the current directory, like git finds its repository, so you can run them from any subdirectory too.
+
+# 3. Create a package
+
+A package is a directory whose code builds into one GDExtension library. For a small game, one package at the project root is enough:
+
+```sh
+gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
+```
+
+This writes gd++pkg.toml:
+
+```toml
+bind = "10.0.0-stable"
+spec = "4.7.2-stable"
+syntax = 0
+std = "c++20"
+```
+
+bind names the Godot C++ bindings to build with, and spec names the Godot API spec, i.e. the Godot version to target. The spec must not be newer than the Godot version you run the game with. To see which versions exist, run `gd++ fetch --index`. See `gd++ man packages` and `gd++ man init`.
+
+If you use git, also run `gd++ init --vcs git`: it adds GD++'s files to .gitignore. See `gd++ man vcs`.
+
+# 4. Download the dependencies
+
+```sh
+gd++ fetch --missing
+```
+
+This downloads the bindings and the spec that your packages name, into the project's .gd++proj directory. See `gd++ man dependencies` and `gd++ man fetch`.
+
+# 5. Write a class
+
+Save this as player.gd++, anywhere in the package:
+
+```gd++
+class_name Player
+extends CharacterBody2D
+
+/// How fast the player runs, in pixels per second.
+@export_range(0, 1000, 1)
+var speed: float = 300.0
+
+signal jumped
+
+@override
+func _physics_process(delta: float) -> void {
+  Vector2 direction = Input::get_singleton()->get_vector("ui_left", "ui_right", "ui_up", "ui_down");
+  set_velocity(direction * speed);
+  move_and_slide();
+  if (Input::get_singleton()->is_action_just_pressed("ui_accept")) {
+    emit jumped();
+  }
+}
+```
+
+The lines at the top are GD++: they declare the class, a property that shows up in the inspector, and a signal. The body of _physics_process is plain C++. Note what you didn't write: no header, no #include lines, no _bind_methods, no getter and setter for speed, and no class registration. See `gd++ man lang`.
+
+# 6. Build
+
+```sh
+gd++ build
+```
+
+The first build takes a while, since it compiles godot-cpp. Later builds only compile what changed. The build writes the library, e.g. libmy_game.linux.debug.x86_64.so, and my_game.gdextension into the package root, so Godot loads it right away. See `gd++ man building` and `gd++ man build`.
+
+# 7. Use the class in Godot
+
+Open the project in the Godot editor. Player is now a node type: add it to a scene, set its speed in the inspector, and run the game. Its doc comment shows up in the editor's help.
+
+While the editor is open, change the code and run `gd++ build` again: debug builds support hot reload, so the editor picks up the changes when its window gets focus.
+
+# 8. Look under the hood
+
+```sh
+gd++ trans player.gd++
+```
+
+This prints the C++ that GD++ generates from the file: Player.h and Player.cpp. Read it once, to see what GD++ does for you. See `gd++ man trans` and `gd++ man generated`.
+
+```sh
+gd++ ls
+```
+
+This shows an overview of the project: its dependencies, its packages and their classes. See `gd++ man ls`.
+
+# 9. Ship
+
+Build in release mode, for each platform you ship:
+
+```sh
+gd++ build --ship --for l.x64 w.x64
+```
+
+Then export the game from Godot's Export dialog, as usual. See `gd++ man shipping`.
+
+# Where to go next
+
+- `gd++ man lang`, then the other language pages, to learn GD++ in depth.
+- `gd++ man cli`, for the options that every command takes.
+- `gd++ man`, for the list of all pages.

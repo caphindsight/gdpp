@@ -1,0 +1,70 @@
+gd++ vendor: copy a dependency into or out of the project's cache
+
+# Synopsis
+
+```sh
+gd++ vendor (--bind NAME | --spec NAME | --engine NAME) --from PATH [--tar | --zip] [--checkin]
+gd++ vendor (--bind NAME | --spec NAME | --engine NAME) --to PATH [--tar | --zip]
+```
+
+# Description
+
+Copies one dependency between the project's cache and your disk. With --from, it copies a directory or an archive into the cache, under the name NAME. With --to, it copies the dependency NAME out of the cache, to a directory or an archive. It's how you add dependencies that the GD++ dependency repository doesn't have, e.g. the API spec of your own build of Godot, and how you share them. See `gd++ man dependencies`.
+
+The cache always stores dependencies as directories. The directory must have the dependency's layout: a spec is a directory with an extension_api.json file, bindings are a copy of godot-cpp, with its SConstruct at the top.
+
+# Options
+
+--bind NAME, --spec NAME, --engine NAME
+  The kind of dependency, and its name in the cache. Exactly one is required. The name can be any directory name.
+
+--from PATH
+  Copy into the cache from PATH: a directory, or with --tar or --zip, an archive. Into the ephemeral cache, or with --checkin, the checked in one.
+
+--to PATH
+  Copy out of the cache to PATH: a directory, or with --tar or --zip, an archive. Exactly one of --from and --to is required.
+
+--checkin
+  With --from, copy into the checked in cache, res://_gd++proj, instead of the ephemeral one.
+
+--tar
+  PATH is a gzip-compressed tarball (.tar.gz or .tgz) instead of a directory.
+
+--zip
+  PATH is a .zip file instead of a directory.
+
+# Details
+
+- With --from, the archive's or directory's contents become the dependency's directory: an archive holds the files of the dependency at its top, not in a subdirectory.
+- If the cache already has the dependency, gd++ asks before overwriting it. Files that didn't change are left alone, and files that the new copy lacks are deleted.
+- With --to, if PATH exists, gd++ asks before overwriting it. A directory at PATH becomes an exact copy of the dependency.
+- If PATH's extension doesn't match --tar (.tar.gz, .tgz) or --zip (.zip), gd++ asks whether to use it anyway.
+- Archives keep file permissions. Archives are written to a temporary file first, so a failure never leaves half an archive. Archives with entries that point outside of them are refused.
+
+# Examples
+
+Add the API spec of a custom Godot build, and commit it:
+
+```sh
+./godot.custom --headless --dump-extension-api
+mkdir my-4.7 && mv extension_api.json my-4.7/
+gd++ vendor --spec my-4.7 --from my-4.7 --checkin
+```
+
+Share bindings with a teammate as an archive, and add them on the other side:
+
+```sh
+gd++ vendor --bind 10.0.0-stable --to ~/bind-10.0.0.tar.gz --tar
+gd++ vendor --bind 10.0.0-stable --from ~/bind-10.0.0.tar.gz --tar
+```
+
+Use a patched godot-cpp checkout as bindings:
+
+```sh
+gd++ vendor --bind my-godot-cpp --from ~/src/godot-cpp
+gd++ init . --update --bind my-godot-cpp
+```
+
+# See also
+
+`gd++ man dependencies`, `gd++ man fetch`, `gd++ man checkin`.
