@@ -74,13 +74,13 @@ func TestCleanProj(t *testing.T) {
 
 func TestCleanBin(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game")
-	libs := []string{"libpkg.linux.template_debug.x86_64.so", "libpkg.windows.template_release.x86_32.dll", "libpkg.macos.template_debug.arm64.dylib", "pkg.gdextension", "pkg.gdextension.uid",
-		"libpkg.so", "libold.linux.template_debug.x86_64.so", "old.gdextension", "old.gdextension.uid"}
-	kept := []string{"lib.so", "pkg.so", "libpkg.linux.template_debug.x86_64.so.txt", "pkg.gdextension.txt", ".gdextension"}
+	libs := []string{"libpkg.linux.debug.x86_64.so", "libpkg.windows.release.x86_32.dll", "libpkg.macos.debug.arm64.dylib", "pkg.gdextension", "pkg.gdextension.uid",
+		"libpkg.so", "libold.linux.debug.x86_64.so", "old.gdextension", "old.gdextension.uid"}
+	kept := []string{"lib.so", "pkg.so", "libpkg.linux.debug.x86_64.so.txt", "pkg.gdextension.txt", ".gdextension"}
 	for _, name := range append(libs, kept...) {
 		m.nodes["/games/my_game/src/pkg/"+name] = &memNode{}
 	}
-	m.nodes["/games/my_game/src/other/libother.linux.template_debug.x86_64.so"] = &memNode{}
+	m.nodes["/games/my_game/src/other/libother.linux.debug.x86_64.so"] = &memNode{}
 	out := captureStderr(t, (&CmdClean{Bin: true, Paths: []string{"src/pkg", "src/other"}}).Run)
 	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: cleaning res://src/other...\n[-] Task succeeded: cleaning res://src/other\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
@@ -96,8 +96,8 @@ func TestCleanBin(t *testing.T) {
 			t.Errorf("%s was deleted", name)
 		}
 	}
-	if _, ok := tree["/games/my_game/src/other/libother.linux.template_debug.x86_64.so"]; ok {
-		t.Errorf("libother.linux.template_debug.x86_64.so was not deleted")
+	if _, ok := tree["/games/my_game/src/other/libother.linux.debug.x86_64.so"]; ok {
+		t.Errorf("libother.linux.debug.x86_64.so was not deleted")
 	}
 }
 

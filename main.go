@@ -19,10 +19,19 @@ var Args struct {
 	ForceNo  bool        `arg:"-n,--no" help:"assume no on confirmation prompts"`
 	Audit    bool        `arg:"--audit" help:"audit potentially dangerous operations"`
 	LogDepth int         `arg:"-L,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
+	Version  bool        `arg:"--version" help:"print the version of GD++ and exit"`
 }
 
 func main() {
-	arg.MustParse(&Args)
+	p := arg.MustParse(&Args)
+
+	if Args.Version {
+		if p.Subcommand() != nil {
+			LogFatal("Invalid arguments: --version cannot be used with a subcommand.")
+		}
+		PrintResult(gdppVersion + "\n")
+		return
+	}
 
 	if Args.Quiet && Args.Verbose {
 		LogFatal("Invalid arguments: -q/--quiet and -v/--verbose cannot be used together.")

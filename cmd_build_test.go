@@ -85,7 +85,7 @@ func TestGenerateBuildCache(t *testing.T) {
 		`objects + "package/" + "enemy/enemy.cc" + env["SHOBJSUFFIX"], package_root + "/" + "enemy/enemy.cc"))` + "\n" +
 			`sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n" +
 			`sources.append(env.SharedObject(objects + "package/" + "util.c++" + env["SHOBJSUFFIX"], package_root + "/" + "util.c++"))` + "\n\n",
-		`package_root + "/lib" + "pkg" + env["suffix"]`,
+		`name = ".".join(["lib" + "pkg", env["platform"], env["target"].replace("template_", ""), env["arch"]])`,
 	} {
 		if !strings.Contains(sconstruct, want) {
 			t.Errorf("SConstruct = %s\nwant it to contain %q", sconstruct, want)
@@ -110,16 +110,16 @@ func TestGenerateGdextension(t *testing.T) {
 	gdextension := tree["/games/my_game/src/pkg/pkg.gdextension"]
 	for _, want := range []string{
 		"entry_symbol = \"gdpp_library_init\"\ncompatibility_minimum = \"4.5\"\n",
-		"\n\n[libraries]\n\nlinux.debug.arm64 = \"res://src/pkg/libpkg.linux.template_debug.arm64.so\"\n",
-		"macos.release.x86_64 = \"res://src/pkg/libpkg.macos.template_release.x86_64.dylib\"\n",
-		"windows.release.x86_64 = \"res://src/pkg/libpkg.windows.template_release.x86_64.dll\"\n\n[icons]\n\n" +
+		"\n\n[libraries]\n\nlinux.debug.arm64 = \"res://src/pkg/libpkg.linux.debug.arm64.so\"\n",
+		"macos.release.x86_64 = \"res://src/pkg/libpkg.macos.release.x86_64.dylib\"\n",
+		"windows.release.x86_64 = \"res://src/pkg/libpkg.windows.release.x86_64.dll\"\n\n[icons]\n\n" +
 			"Actor = \"res://common/actor.svg\"\nEnemy = \"res://src/pkg/enemy/enemy.svg\"\n",
 	} {
 		if !strings.Contains(gdextension, want) {
 			t.Errorf("pkg.gdextension = %s\nwant it to contain %q", gdextension, want)
 		}
 	}
-	if n := strings.Count(gdextension, ".template_"); n != 16 {
+	if n := strings.Count(gdextension, "res://src/pkg/libpkg."); n != 16 {
 		t.Errorf("pkg.gdextension lists %d libraries, want 16", n)
 	}
 	if strings.Contains(gdextension, "macos.debug.x86_32") {
@@ -145,7 +145,7 @@ func TestGenerateBuildCacheLogs(t *testing.T) {
 		return captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
 	}
 	sync := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: syncing dependencies for res://src/pkg...\n[-] Task succeeded: syncing dependencies for res://src/pkg\n"
-	if got, want := generate(), sync+"[-] Registering types for res://src/pkg...\n"; got != want {
+	if got, want := generate(), sync+"[-] Registering classes for res://src/pkg...\n"; got != want {
 		t.Errorf("first output = %q, want %q", got, want)
 	}
 	if got := generate(); got != "" {
@@ -171,14 +171,14 @@ func TestGenerateBuildCacheState(t *testing.T) {
 	// Same id and config but classes: nothing is cleaned or synced, even if the bindings changed.
 	NewPath("/games/my_game/.gd++proj/bind/4.3/SConstruct").WriteString("edited")
 	m.nodes["/games/my_game/src/pkg/gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `name = "Hidden"`, `name = "Shown"`, 1))
-	m.nodes["/games/my_game/src/pkg/libpkg.linux.template_debug.x86_64.so"] = &memNode{}
+	m.nodes["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"] = &memNode{}
 	generate()
 	tree := m.tree()
 	if got := tree["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "bind" {
 		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "bind")
 	}
-	if _, ok := tree["/games/my_game/src/pkg/libpkg.linux.template_debug.x86_64.so"]; !ok {
-		t.Errorf("libpkg.linux.template_debug.x86_64.so was deleted")
+	if _, ok := tree["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"]; !ok {
+		t.Errorf("libpkg.linux.debug.x86_64.so was deleted")
 	}
 
 	// Other config: cleaned, libraries included, and synced again.
@@ -197,7 +197,7 @@ func TestGenerateBuildCacheState(t *testing.T) {
 	if got := tree["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "edited" {
 		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "edited")
 	}
-	for _, file := range []string{".gd++pkg/a.o", "libpkg.linux.template_debug.x86_64.so"} {
+	for _, file := range []string{".gd++pkg/a.o", "libpkg.linux.debug.x86_64.so"} {
 		if _, ok := tree["/games/my_game/src/pkg/"+file]; ok {
 			t.Errorf("%s was not deleted", file)
 		}
@@ -242,11 +242,12 @@ func TestBuildSconsArgs(t *testing.T) {
 		c    CmdBuild
 		want []string
 	}{
-		{CmdBuild{}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "optimize=none"}},
-		{CmdBuild{Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "optimize=speed"}},
-		{CmdBuild{Opt: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "optimize=speed"}},
-		{CmdBuild{NoOpt: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "optimize=none"}},
-		{CmdBuild{Small: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "optimize=size"}},
+		{CmdBuild{}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none"}},
+		{CmdBuild{Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=speed"}},
+		{CmdBuild{Opt: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=speed"}},
+		{CmdBuild{NoOpt: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=none"}},
+		{CmdBuild{Small: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=size"}},
+		{CmdBuild{Jobs: 8}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "-j8"}},
 	}
 	for _, tc := range cases {
 		if got := tc.c.sconsArgs("linux.x86_64"); !reflect.DeepEqual(got, tc.want) {
@@ -290,6 +291,7 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"platform": {CmdBuild{Platform: "web"}, "--platform must be one of windows, linux, macos"},
 		"arch":     {CmdBuild{Arch: "mips"}, "--arch must be one of x86_32, x86_64, arm64"},
 		"proj":     {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
+		"jobs":     {CmdBuild{Jobs: -1}, "--jobs cannot be negative"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

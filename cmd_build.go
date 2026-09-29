@@ -32,16 +32,19 @@ var (
 // copy of its bindings and API spec, a generated __register_types__.cpp
 // registering its classes, and a generated SConstruct. After building, the
 // package root gets a generated <id>.gdextension file and its .uid file.
+// Debug builds are godot-cpp dev builds with debug symbols and hot reload;
+// release builds use link-time optimization.
 type CmdBuild struct {
 	Path     string   `arg:"positional" help:"build the package containing this path [default: the current directory]"`
 	For      []string `arg:"--for" placeholder:"PLATFORM.ARCH" help:"build for each of these targets, e.g. windows.x86_64 or w.x64; platforms: windows|win|w, linux|lin|l, macos|mac|m; archs: x86_32|x32, x86_64|x64, arm64|a64 [default: this machine]"`
-	Platform string   `arg:"--platform" placeholder:"windows|linux|macos" help:"the target platform [default: this one]"`
+	Platform string   `arg:"-p,--platform" placeholder:"windows|linux|macos" help:"the target platform [default: this one]"`
 	Windows  bool     `arg:"-w" help:"shorthand for --platform=windows"`
 	Arch     string   `arg:"--arch" placeholder:"x86_32|x86_64|arm64" help:"the target CPU architecture [default: this one]"`
 	Opt      bool     `arg:"--opt" help:"optimize for speed [default: with --ship]"`
 	Small    bool     `arg:"--small" help:"optimize for binary size"`
 	NoOpt    bool     `arg:"--noopt" help:"don't optimize [default: without --ship]"`
 	Ship     bool     `arg:"--ship" help:"build a release library instead of a debug one"`
+	Jobs     int      `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
 	Proj     bool     `arg:"--proj" help:"build all packages in the project, one after another"`
 }
 
@@ -89,6 +92,7 @@ func (c *CmdBuild) targets() []string {
 	Assert(len(c.For) == 0 || !c.Windows && c.Platform == "" && c.Arch == "", "Invalid arguments: --for cannot be used together with -w, --platform or --arch.")
 	Assert(countTrue(c.Opt, c.Small, c.NoOpt) <= 1, "Invalid arguments: --opt, --small and --noopt cannot be used together.")
 	Assert(!c.Proj || c.Path == "", "Invalid arguments: a path and --proj cannot be used together.")
+	Assert(c.Jobs >= 0, "Invalid arguments: --jobs cannot be negative.")
 	if len(c.For) == 0 {
 		if c.Windows {
 			c.Platform = "windows"
@@ -138,11 +142,17 @@ func fullName(names [][]string, s string) string {
 // sconsArgs returns the godot-cpp build options for target.
 func (c *CmdBuild) sconsArgs(target string) []string {
 	platform, arch, _ := strings.Cut(target, ".")
-	args := []string{"platform=" + platform, "arch=" + arch, "target=template_debug"}
+	args := []string{"platform=" + platform, "arch=" + arch}
 	if c.Ship {
-		args[2] = "target=template_release"
+		args = append(args, "target=template_release", "lto=auto")
+	} else {
+		args = append(args, "target=template_debug", "dev_build=yes", "use_hot_reload=yes")
 	}
-	return append(args, "optimize="+c.optimize())
+	args = append(args, "optimize="+c.optimize())
+	if c.Jobs > 0 {
+		args = append(args, fmt.Sprintf("-j%d", c.Jobs))
+	}
+	return args
 }
 
 // optimize returns the godot-cpp optimize option: the chosen one, or by
@@ -225,7 +235,7 @@ func generateBuildCache(p Project, pkg Package) {
 		"Classes":  classes,
 		"Includes": uniqueSorted(includes, strings.Compare),
 	}) {
-		LogInfo("Registering types for %s...", name)
+		LogInfo("Registering classes for %s...", name)
 	}
 
 	projectRoot, err := filepath.Rel(cache.GetOsPath(), p.Root.GetOsPath())
@@ -287,7 +297,7 @@ func generateGdextension(pkg Package) {
 			ext := map[string]string{"windows": "dll", "linux": "so", "macos": "dylib"}[platform[0]]
 			for _, target := range []string{"debug", "release"} {
 				// Named like SConstruct names them.
-				lib := fmt.Sprintf("lib%s.%s.template_%s.%s.%s", pkg.Id, platform[0], target, arch[0], ext)
+				lib := fmt.Sprintf("lib%s.%s.%s.%s.%s", pkg.Id, platform[0], target, arch[0], ext)
 				libs[platform[0]+"."+target+"."+arch[0]] = pkg.Root.Cd(lib).ToString()
 			}
 		}

@@ -31,6 +31,8 @@ sources = [env.SharedObject(objects + "__register_types__.cpp" + env["SHOBJSUFFI
 sources.append(env.SharedObject(objects + "package/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], package_root + "/" + {{printf "%q" .}}))
 {{- end}}
 
-library = env.SharedLibrary(package_root + "/lib" + {{printf "%q" .Id}} + env["suffix"] + env["SHLIBSUFFIX"], sources)
+# Named e.g. libfoo.linux.debug.x86_64.so, shorter than godot-cpp's suffix.
+name = ".".join(["lib" + {{printf "%q" .Id}}, env["platform"], env["target"].replace("template_", ""), env["arch"]])
+library = env.SharedLibrary(package_root + "/" + name + env["SHLIBSUFFIX"], sources)
 env.NoCache(library)
 Default(library)
