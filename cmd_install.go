@@ -89,7 +89,7 @@ func (c *CmdInstall) Run() {
 		PrintResult(text)
 		return
 	}
-	Confirm("Install the build tools for %s, with the commands `gd++ install --echo` prints?", platform)
+	Confirm("Install the build tools for %s, with the commands `gd++ install --echo --uname=%s` prints?", platform, platform)
 	for _, cmd := range cmds {
 		if cmd[0] == "sudo" && os.Geteuid() == 0 {
 			cmd = cmd[1:]
