@@ -166,18 +166,18 @@ func TestLsCmdGdppClasses(t *testing.T) {
 	withLsProject(t)
 	foo := NewPath("/games/my_game/foo")
 	foo.Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n\n" +
-		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\n\n[[class]]\nname = \"Player\"\n")
-	foo.Cd("player.gd++").WriteString("@icon(\"pkg://icons/tree.svg\")\nclass_name Player\nextends Node\n")
+		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\nicon = \"pkg://icons/tree.svg\"\n\n[[class]]\nname = \"Player\"\n")
+	foo.Cd("player.gd++").WriteString("@icon(\"pkg://icons/tree.svg\")\n@tool\nclass_name Player\nextends Node\n")
 	foo.Cd("icons", "helper.gg").WriteString("class Helper {}\nenum Mood { HAPPY }\n")
 	foo.Cd("broken.gdpp").WriteString("fun f() {}\n")
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := "" +
-		"  Classes                   Kind           File                                                 Icon\n" +
-		"  Tree                      C++            res://foo/tree.h                                     none\n" +
-		"  x Player: declared twice  C++            none                                                 none\n" +
-		"  Helper                    GD++           res://foo/icons/helper.gg                            none\n" +
-		"  x Player: declared twice  GD++           res://foo/player.gd++                                res://foo/icons/tree.svg\n" +
-		"  ?                         GD++           x res://foo/broken.gdpp: has errors, see gd++ build  none\n"
+		"  Classes                   Kind           File                                             Icon\n" +
+		"  Tree                      C++            res://foo/tree.h                                 pkg://icons/tree.svg\n" +
+		"  x Player: declared twice  C++            none                                             none\n" +
+		"  Helper                    GD++           pkg://icons/helper.gg                            none\n" +
+		"  x Player: declared twice  GD++ @tool     pkg://player.gd++                                pkg://icons/tree.svg\n" +
+		"  ?                         GD++           x pkg://broken.gdpp: has errors, see gd++ build  none\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}

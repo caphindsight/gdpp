@@ -31,7 +31,10 @@ type lsPackage struct {
 type lsClass struct {
 	Name       string
 	File, Icon Path // The header of a C++ class, or the GD++ file of a GD++ class.
+	FileText   string // For GD++ classes, the file's pkg:// path; if empty, File's.
+	IconText   string // The icon's path as written, e.g. pkg://icon.svg; if empty, Icon's.
 	Gdpp       bool
+	Tool       bool // A GD++ class whose code runs in the editor too.
 	Clash      bool // Another class has the same name.
 }
 
@@ -63,15 +66,15 @@ func (c *CmdLs) Run() {
 func lsClasses(p Project, pkg Package) []lsClass {
 	var classes []lsClass
 	for _, class := range pkg.Config.Classes {
-		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon)})
+		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), IconText: class.Icon})
 	}
 	files := listGdppFiles(p, pkg)
 	for _, class := range gdppClasses(files) {
-		classes = append(classes, lsClass{Name: class.Name, File: class.File.File, Icon: pkg.ClassPath(class.Icon), Gdpp: true})
+		classes = append(classes, lsClass{Name: class.Name, File: class.File.File, FileText: "pkg://" + class.File.Rel, Icon: pkg.ClassPath(class.Icon), IconText: class.Icon, Gdpp: true, Tool: class.Tool})
 	}
 	for _, f := range files {
 		if f.Err != nil {
-			classes = append(classes, lsClass{File: f.File, Gdpp: true})
+			classes = append(classes, lsClass{File: f.File, FileText: "pkg://" + f.Rel, Gdpp: true})
 		}
 	}
 	count := map[string]int{}
@@ -214,28 +217,35 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 		rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Kind", Bold), Styled("File", Bold), Styled("Icon", Bold)})
 	}
 	for _, class := range pkg.Classes {
-		name, kind, file := class.Name, "C++", lsClassPath(class.File)
-		if class.Gdpp {
+		name, kind, file := class.Name, "C++", lsClassPath(class.File, class.FileText)
+		switch {
+		case class.Tool:
+			kind = "GD++ @tool"
+		case class.Gdpp:
 			kind = "GD++"
 		}
 		switch {
 		case class.Name == "":
-			name, file = "?", lsMissing(class.File.ToString()+": has errors, see gd++ build")
+			name, file = "?", lsMissing(class.FileText+": has errors, see gd++ build")
 		case class.Clash:
 			name = lsMissing(class.Name + ": declared twice")
 		}
-		rows = append(rows, []string{name, kind, file, lsClassPath(class.Icon)})
+		rows = append(rows, []string{name, kind, file, lsClassPath(class.Icon, class.IconText)})
 	}
 	return rows, missing
 }
 
-// lsClassPath renders a class's file, marked if it's missing.
-func lsClassPath(p Path) string {
-	switch {
-	case p == Path{}:
+// lsClassPath renders a class's file, marked if it's missing: as text, the
+// path as written (e.g. pkg://icon.svg), or else as p's path.
+func lsClassPath(p Path, text string) string {
+	if p == (Path{}) {
 		return "none"
-	case !p.IsFile():
-		return lsMissing(p.ToString())
 	}
-	return p.ToString()
+	if text == "" {
+		text = p.ToString()
+	}
+	if !p.IsFile() {
+		return lsMissing(text)
+	}
+	return text
 }
