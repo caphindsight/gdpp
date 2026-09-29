@@ -46,12 +46,12 @@ enum Power { WEAK, STRONG = 5 }
 
 // testGodotNames stand in for what scanning godot-cpp finds.
 var testGodotNames = []godotName{
-	{"Node", "<godot_cpp/classes/node.hpp>", trans.Object, ""},
-	{"Node3D", "<godot_cpp/classes/node3d.hpp>", trans.Object, ""},
-	{"Object", "<godot_cpp/classes/object.hpp>", trans.Object, ""},
-	{"RefCounted", "<godot_cpp/classes/ref_counted.hpp>", trans.RefCounted, ""},
-	{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted, ""},
-	{"TypedArray", "<godot_cpp/variant/typed_array.hpp>", trans.Other, ""},
+	{"Node", "<godot_cpp/classes/node.hpp>", trans.Object},
+	{"Node3D", "<godot_cpp/classes/node3d.hpp>", trans.Object},
+	{"Object", "<godot_cpp/classes/object.hpp>", trans.Object},
+	{"RefCounted", "<godot_cpp/classes/ref_counted.hpp>", trans.RefCounted},
+	{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted},
+	{"TypedArray", "<godot_cpp/variant/typed_array.hpp>", trans.Other},
 }
 
 // withGdppFS is withBuildFS plus files (paths relative to the package root).
@@ -83,7 +83,7 @@ func runGdppSteps(docs bool) (classes []gdppClass, generated bool) {
 		cache.WriteString(encodeToml(godotNamesCache{godotNamesVersion, testGodotNames}))
 	}
 	names := loadGodotNames(pkg, func() { generated = true })
-	classes = transpilePackage(pkg, pkg.BuildCache.Cd(gdppDirName), listGdppFiles(p, pkg), names, docs)
+	classes = transpilePackage(pkg, listGdppFiles(p, pkg), names, docs)
 	generateRegisterTypes(pkg, classes)
 	return classes, generated
 }
@@ -171,7 +171,7 @@ func TestLoadGodotNamesOutdated(t *testing.T) {
 	generated := false
 	var names []godotName
 	captureStderr(t, func() { names = loadGodotNames(pkg, func() { generated = true }) })
-	if want := []godotName{{"Ref", "<godot_cpp/classes/ref.hpp>", trans.Other, ""}}; !generated || !reflect.DeepEqual(names, want) {
+	if want := []godotName{{"Ref", "<godot_cpp/classes/ref.hpp>", trans.Other}}; !generated || !reflect.DeepEqual(names, want) {
 		t.Errorf("generated, names = %v, %v, want true, %v", generated, names, want)
 	}
 	if cache := m.tree()[pkgDir+".gd++pkg/godot_names.toml"]; !strings.HasPrefix(cache, "version = 2\n") || !strings.Contains(cache, `name = "Ref"`) {

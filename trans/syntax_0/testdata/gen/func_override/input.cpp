@@ -50,34 +50,6 @@ PackedStringArray Player::_get_configuration_warnings() const {
 #line 51 "input.cpp"
 }
 
-#ifdef GDPP_ENGINE
-
-bool Player::_gdpp_has_virtual(const StringName &p_name) const {
-	return p_name == SNAME("_ready") || p_name == SNAME("_physics_process") || p_name == SNAME("_get_configuration_warnings") || Node::_gdpp_has_virtual(p_name);
-}
-
-bool Player::_gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const {
-	Player *self = const_cast<Player *>(this);
-	if (p_name == SNAME("_ready")) {
-		(void)&Node::_gdvirtual__ready_get_method_info; // Fails to compile if Node has no virtual _ready.
-		call_with_ptr_args(self, &Player::_ready, p_args);
-		return true;
-	}
-	if (p_name == SNAME("_physics_process")) {
-		(void)&Node::_gdvirtual__physics_process_get_method_info; // Fails to compile if Node has no virtual _physics_process.
-		call_with_ptr_args(self, &Player::_physics_process, p_args);
-		return true;
-	}
-	if (p_name == SNAME("_get_configuration_warnings")) {
-		(void)&Node::_gdvirtual__get_configuration_warnings_get_method_info; // Fails to compile if Node has no virtual _get_configuration_warnings.
-		call_with_ptr_args_retc(self, &Player::_get_configuration_warnings, p_args, r_ret);
-		return true;
-	}
-	return Node::_gdpp_call_virtual(p_name, p_args, r_ret);
-}
-
-#endif
-
 #undef This
 
 #define This Walker
@@ -97,26 +69,8 @@ void Walker::_process(double delta) {
 #endif
 #line 22 "input.gd++"
 
-#line 101 "input.cpp"
+#line 73 "input.cpp"
 }
-
-#ifdef GDPP_ENGINE
-
-bool Walker::_gdpp_has_virtual(const StringName &p_name) const {
-	return p_name == SNAME("_process") || Player::_gdpp_has_virtual(p_name);
-}
-
-bool Walker::_gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const {
-	Walker *self = const_cast<Walker *>(this);
-	if (p_name == SNAME("_process")) {
-		(void)&Player::_gdvirtual__process_get_method_info; // Fails to compile if Player has no virtual _process.
-		call_with_ptr_args(self, &Walker::_process, p_args);
-		return true;
-	}
-	return Player::_gdpp_call_virtual(p_name, p_args, r_ret);
-}
-
-#endif
 
 #undef This
 

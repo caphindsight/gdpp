@@ -6,23 +6,6 @@
 #include <cstdint>
 #include <type_traits>
 
-// Engine builds compile against the engine's headers, which have Godot's names in the global namespace.
-#ifdef GDPP_ENGINE
-#include "core/config/engine.h"
-#include "core/config/project_settings.h"
-#include "core/io/resource.h"
-#include "core/io/resource_loader.h"
-#include "core/object/class_db.h"
-#include "core/object/ref_counted.h"
-#include "core/variant/binder_common.h"
-#include "core/variant/method_ptrcall.h"
-#include "core/variant/type_info.h"
-#include "core/variant/typed_array.h"
-#include "core/variant/typed_dictionary.h"
-#include "core/variant/variant.h"
-#include "core/variant/variant_utility.h"
-#include "scene/main/node.h"
-#else
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
@@ -40,71 +23,6 @@
 #include <godot_cpp/variant/typed_dictionary.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/variant.hpp>
-#endif
-
-#ifdef GDPP_ENGINE
-// godot-cpp's UtilityFunctions: the engine's VariantUtilityFunctions, with its functions that take any number of
-// arguments turned into variadic templates, like godot-cpp has them.
-
-// Since Godot 4.4, the engine has a print_verbose macro, and the function is called _print_verbose. No engine header
-// uses the macro, so it can go, for UtilityFunctions::print_verbose to work.
-#undef print_verbose
-
-namespace godot {
-
-struct UtilityFunctions : ::VariantUtilityFunctions {
-private:
-	template <typename R, typename... Args>
-	static R gdpp_call(R (*p_function)(const Variant **, int, Callable::CallError &), const Args &...p_args) {
-		const Variant values[] = { Variant(p_args)... };
-		const Variant *pointers[sizeof...(Args)];
-		for (size_t i = 0; i < sizeof...(Args); i++) {
-			pointers[i] = &values[i];
-		}
-		Callable::CallError error;
-		return p_function(pointers, sizeof...(Args), error);
-	}
-
-	template <typename T>
-	static auto gdpp_print_verbose(int) -> decltype(&T::_print_verbose) { return &T::_print_verbose; }
-	template <typename T>
-	static auto gdpp_print_verbose(long) -> decltype(&T::print_verbose) { return &T::print_verbose; }
-
-public:
-#define GDPP_VARARG(m_name)                                                            \
-	template <typename... Args>                                                        \
-	static auto m_name(const Variant &p_arg, const Args &...p_args) {                   \
-		return gdpp_call(&::VariantUtilityFunctions::m_name, p_arg, p_args...);         \
-	}
-	GDPP_VARARG(max)
-	GDPP_VARARG(min)
-	GDPP_VARARG(str)
-	GDPP_VARARG(print)
-	GDPP_VARARG(print_rich)
-	GDPP_VARARG(printerr)
-	GDPP_VARARG(printt)
-	GDPP_VARARG(prints)
-	GDPP_VARARG(printraw)
-	GDPP_VARARG(push_error)
-	GDPP_VARARG(push_warning)
-#undef GDPP_VARARG
-
-	template <typename... Args>
-	static void print_verbose(const Variant &p_arg, const Args &...p_args) {
-		gdpp_call(gdpp_print_verbose<::VariantUtilityFunctions>(0), p_arg, p_args...);
-	}
-};
-
-} // namespace godot
-#endif
-
-// GDPP_OVERRIDE marks overrides of Godot's virtuals. The engine has no C++ virtuals for them: engine builds patch
-// its GDVIRTUAL macros to call the overrides through Object::_gdpp_call_virtual instead.
-#ifdef GDPP_ENGINE
-#define GDPP_OVERRIDE
-#else
-#define GDPP_OVERRIDE override
-#endif
 
 // The C++ type of Godot's float.
 typedef double float64_t;
@@ -146,22 +64,16 @@ PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DE
 inline void add_property_category(const StringName &p_class, const String &p_name) {
 	PropertyInfo info(Variant::NIL, p_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY);
 	StringName none;
-#ifdef GDPP_ENGINE
-	ClassDB::add_property(p_class, info, none, none);
-#else
 	GDExtensionPropertyInfo gdext_info = { GDEXTENSION_VARIANT_TYPE_NIL, info.name._native_ptr(), info.class_name._native_ptr(),
 		info.hint, info.hint_string._native_ptr(), info.usage };
 	gdextension_interface::classdb_register_extension_class_property(gdextension_interface::library, p_class._native_ptr(),
 			&gdext_info, none._native_ptr(), none._native_ptr());
-#endif
 }
 
 // is_node_ready reports whether p_node was notified of being ready, and not asked to be again with request_ready.
 // Godot 4.0 can't tell, so it reports false there.
 template <typename T>
 auto is_node_ready_(const T *p_node, int) -> decltype(p_node->is_node_ready()) { return p_node->is_node_ready(); }
-template <typename T>
-auto is_node_ready_(const T *p_node, long) -> decltype(p_node->is_ready()) { return p_node->is_ready(); } // Engine builds.
 template <typename T>
 bool is_node_ready_(const T *, ...) { return false; }
 template <typename T>
@@ -268,11 +180,7 @@ ExtPtr<T> memnew_ext() {
 		for (int64_t i = 0; i < classes.size(); i++) {
 			Dictionary c = classes[i];
 			if (StringName(c["class"]) == name) {
-#ifdef GDPP_ENGINE
-				object = ResourceLoader::load(c["path"])->call("new");
-#else
 				object = ResourceLoader::get_singleton()->load(c["path"])->call("new");
-#endif
 				break;
 			}
 		}
@@ -319,29 +227,14 @@ inline String assert_message(const char *p_condition, const String &p_message = 
 #define memnew_ext(m_class) gdpp::memnew_ext<m_class>()
 #define memdelete_ext(m_object) gdpp::memdelete_ext(m_object)
 
-// Engine builds have Godot's types in the global namespace, where their templates must be
-// specialized, and describe types without GDExtension's types.
-#ifdef GDPP_ENGINE
-#define GDPP_BINDINGS_BEGIN
-#define GDPP_BINDINGS_END
-#define GDPP_TYPE_INFO(m_type) \
-	static constexpr Variant::Type VARIANT_TYPE = Variant::m_type; \
-	static constexpr GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE;
-#else
-#define GDPP_BINDINGS_BEGIN namespace godot {
-#define GDPP_BINDINGS_END }
-#define GDPP_TYPE_INFO(m_type) \
-	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_##m_type; \
-	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-#endif
-
-GDPP_BINDINGS_BEGIN
+namespace godot {
 
 // Bindings see an extern as its base class. The hint names the extern, so the editor only accepts matching objects.
 
 template <typename T>
 struct GetTypeInfo<gdpp::ExtPtr<T>> {
-	GDPP_TYPE_INFO(OBJECT)
+	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
+	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
 	static inline PropertyInfo get_class_info() {
 		PropertyHint hint = std::is_base_of_v<Node, typename T::Base> ? PROPERTY_HINT_NODE_TYPE : PROPERTY_HINT_NONE;
 		return PropertyInfo(Variant::OBJECT, "", hint, T::gdpp_name, PROPERTY_USAGE_DEFAULT, T::Base::get_class_static());
@@ -350,7 +243,8 @@ struct GetTypeInfo<gdpp::ExtPtr<T>> {
 
 template <typename T>
 struct GetTypeInfo<gdpp::ExtRef<T>> {
-	GDPP_TYPE_INFO(OBJECT)
+	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
+	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
 	static inline PropertyInfo get_class_info() {
 		PropertyHint hint = std::is_base_of_v<Resource, typename T::Base> ? PROPERTY_HINT_RESOURCE_TYPE : PROPERTY_HINT_NONE;
 		return PropertyInfo(Variant::OBJECT, "", hint, T::gdpp_name, PROPERTY_USAGE_DEFAULT, T::Base::get_class_static());
@@ -393,23 +287,15 @@ struct VariantCaster<gdpp::ExtRef<T>> {
 	}
 };
 
-GDPP_BINDINGS_END
+} // namespace godot
 
 // GDPP_ENUM_TAG makes m_tag, a class's stand-in for one of the package's enums, bind as the enum m_name
-// (e.g. "MyNode.Suit"), since each class exposes its own copy of the enums it uses. Use it in namespace godot; in
-// engine builds, it leaves that namespace for the specializations.
-#ifdef GDPP_ENGINE
+// (e.g. "MyNode.Suit"), since each class exposes its own copy of the enums it uses. Use it in namespace godot.
 #define GDPP_ENUM_TAG(m_tag, m_name) \
-	} \
-	GDPP_ENUM_TAG_SPECIALIZATIONS(godot::m_tag, m_name) \
-	namespace godot {
-#else
-#define GDPP_ENUM_TAG(m_tag, m_name) GDPP_ENUM_TAG_SPECIALIZATIONS(m_tag, m_name)
-#endif
-#define GDPP_ENUM_TAG_SPECIALIZATIONS(m_tag, m_name) \
 	template <> \
 	struct GetTypeInfo<m_tag> { \
-		GDPP_TYPE_INFO(INT) \
+		static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_INT; \
+		static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE; \
 		static inline PropertyInfo get_class_info() { \
 			return PropertyInfo(Variant::INT, "", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM, m_name); \
 		} \

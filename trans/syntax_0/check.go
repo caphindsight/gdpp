@@ -275,7 +275,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
 				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
 		}
-		u.symbols[d.Name] = &symbol{name: d.Name, kind: d.Kind, include: d.Include, cpp: d.Cpp, values: d.Values, gdpp: d.Gdpp}
+		u.symbols[d.Name] = &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, gdpp: d.Gdpp}
 	}
 	for _, s := range u.sortedSymbols() {
 		if s.include == "" && s.kind == 0 {

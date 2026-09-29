@@ -1,5 +1,5 @@
-// build.go: building packages, shared by the build and export commands: build
-// options, GDExtension builds, and the package build cache.
+// build.go: building packages: build options, GDExtension builds, and the
+// package build cache.
 
 package main
 
@@ -19,11 +19,9 @@ import (
 )
 
 var (
-	//go:embed templates/register_classes.cpp
-	registerClassesText string
 	//go:embed templates/__register_types__.cpp
 	registerTypesText     string
-	registerTypesTemplate = parseRegisterTemplate(registerTypesText)
+	registerTypesTemplate = template.Must(template.New("").Parse(registerTypesText))
 	//go:embed templates/SConstruct
 	sconstructText     string
 	sconstructTemplate = template.Must(template.New("").Parse(sconstructText))
@@ -32,22 +30,15 @@ var (
 	gdextensionTemplate = template.Must(template.New("").Parse(gdextensionText))
 )
 
-// parseRegisterTemplate parses a template that registers classes with the
-// shared "register_classes" template.
-func parseRegisterTemplate(text string) *template.Template {
-	return template.Must(template.Must(template.New("").Parse(registerClassesText)).Parse(text))
-}
-
-// BuildOptions are the build options shared by the build and export commands.
+// BuildOptions are the build options of the build command.
 type BuildOptions struct {
-	Opt    bool `arg:"--opt" help:"optimize for speed [default: with --ship or --engine]"`
-	Small  bool `arg:"--small" help:"optimize for binary size"`
-	NoOpt  bool `arg:"--noopt" help:"don't optimize [default: without --ship or --engine]"`
-	Ship   bool `arg:"--ship" help:"build for release instead of debugging"`
-	Jobs   int  `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
-	Doc    bool `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
-	NoDoc  bool `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
-	engine bool // building the engine rather than GDExtension libraries
+	Opt   bool `arg:"--opt" help:"optimize for speed [default: with --ship]"`
+	Small bool `arg:"--small" help:"optimize for binary size"`
+	NoOpt bool `arg:"--noopt" help:"don't optimize [default: without --ship]"`
+	Ship  bool `arg:"--ship" help:"build for release instead of debugging"`
+	Jobs  int  `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
+	Doc   bool `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
+	NoDoc bool `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
 }
 
 // Build platforms and CPU architectures, each a full name followed by its
@@ -109,12 +100,7 @@ func (o BuildOptions) sconsArgs(target string) []string {
 	} else {
 		args = append(args, "target=template_debug", "dev_build=yes", "use_hot_reload=yes")
 	}
-	return append(args, o.commonSconsArgs()...)
-}
-
-// commonSconsArgs returns the options that godot-cpp and the engine share.
-func (o BuildOptions) commonSconsArgs() []string {
-	args := []string{"optimize=" + o.optimize()}
+	args = append(args, "optimize="+o.optimize())
 	if o.Jobs > 0 {
 		args = append(args, fmt.Sprintf("-j%d", o.Jobs))
 	}
@@ -128,14 +114,14 @@ func (o BuildOptions) docs() bool {
 }
 
 // optimize returns the SCons optimize option: the chosen one, or by default
-// speed for release and engine builds, and none for debug builds.
+// speed for release builds, and none for debug builds.
 func (o BuildOptions) optimize() string {
 	switch {
 	case o.Small:
 		return "size"
 	case o.NoOpt:
 		return "none"
-	case o.Opt || o.Ship || o.engine:
+	case o.Opt || o.Ship:
 		return "speed"
 	}
 	return "none"
@@ -154,7 +140,7 @@ func (o BuildOptions) describe(target string, gdpp bool) string {
 	} else {
 		desc += ", debug"
 	}
-	defaults := BuildOptions{Ship: o.Ship, engine: o.engine}
+	defaults := BuildOptions{Ship: o.Ship}
 	opt := map[string]string{"speed": "optimized", "size": "size-optimized", "none": "unoptimized"}[o.optimize()]
 	if o.optimize() != defaults.optimize() {
 		opt = Styled(opt, Bold)
@@ -184,7 +170,7 @@ func preparePackage(p Project, pkg Package, bindArgs []string, docs bool) ([]gdp
 		Exec("Compiling bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(bindArgs, "--gdpp-bindings")...)
 		s.End()
 	})
-	return files, transpilePackage(pkg, pkg.BuildCache.Cd(gdppDirName), files, names, docs)
+	return files, transpilePackage(pkg, files, names, docs)
 }
 
 // buildExtension compiles the package into GDExtension libraries for
@@ -266,11 +252,12 @@ func gdppSources(p Project, pkg Package) []string {
 	return sources
 }
 
-// registeredClasses returns the classes the package registers: those in its
-// config, and the GD++ classes, which must not clash with them; the runtime
-// classes among them (GD++ classes without @tool, whose code doesn't run in
-// the editor); and the includes that declare them.
-func registeredClasses(pkg Package, gdpp []gdppClass) (classes, runtime, includes []string) {
+// generateRegisterTypes writes the build cache's __register_types__.cpp,
+// which registers the package's classes: those in its config, and the GD++
+// classes, which must not clash with them. Runtime classes (GD++ classes
+// without @tool) don't run their code in the editor.
+func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
+	var classes, runtime, includes []string
 	for _, class := range pkg.Config.Classes {
 		classes = append(classes, class.Name)
 		if rest, ok := strings.CutPrefix(class.Include, "pkg://"); ok {
@@ -288,17 +275,10 @@ func registeredClasses(pkg Package, gdpp []gdppClass) (classes, runtime, include
 			runtime = append(runtime, class.Name)
 		}
 	}
-	return classes, runtime, uniqueSorted(includes, strings.Compare)
-}
-
-// generateRegisterTypes writes the build cache's __register_types__.cpp,
-// which registers the package's classes (see registeredClasses).
-func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
-	classes, runtime, includes := registeredClasses(pkg, gdpp)
 	if writeTemplate(pkg.BuildCache.Cd("__register_types__.cpp"), registerTypesTemplate, map[string]any{
 		"Classes":        classes,
 		"RuntimeClasses": runtime,
-		"Includes":       includes,
+		"Includes":       uniqueSorted(includes, strings.Compare),
 	}) {
 		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}

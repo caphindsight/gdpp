@@ -105,8 +105,3 @@ name = "MultiplayerPeer"
 include = "<godot_cpp/classes/multiplayer_peer.hpp>"
 kind = "RefCounted"
 
-[[dep]]
-name = "OS"
-include = "\"core/core_bind.h\""
-kind = "Object"
-cpp = "::core_bind::OS"

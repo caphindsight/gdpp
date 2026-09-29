@@ -86,7 +86,7 @@ typedef struct { int x; } CStruct;
 `
 	var got []string
 	bases := map[string]string{}
-	for _, d := range scanCppDecls(src, "godot") {
+	for _, d := range scanCppDecls(src) {
 		got = append(got, d.name)
 		if d.base != "" {
 			bases[d.name] = d.base
@@ -115,13 +115,13 @@ func TestScanGodotNames(t *testing.T) {
 	})
 	got := scanGodotNames([]Path{ParsePath("/cpp/include"), ParsePath("/gen/include"), ParsePath("/missing")})
 	want := []godotName{
-		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other, ""},
-		{"Node", "<godot_cpp/classes/node.hpp>", trans.Object, ""},
-		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object, ""},
-		{"RefCounted", "<godot_cpp/classes/ref_counted.h>", trans.RefCounted, ""},
-		{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted, ""},
-		{"TypedArray", "<godot_cpp/variant/array.hpp>", trans.Other, ""},
-		{"Wrapped", "<godot_cpp/classes/wrapped.hpp>", trans.Other, ""},
+		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other},
+		{"Node", "<godot_cpp/classes/node.hpp>", trans.Object},
+		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object},
+		{"RefCounted", "<godot_cpp/classes/ref_counted.h>", trans.RefCounted},
+		{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted},
+		{"TypedArray", "<godot_cpp/variant/array.hpp>", trans.Other},
+		{"Wrapped", "<godot_cpp/classes/wrapped.hpp>", trans.Other},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("names = %v\nwant %v", got, want)

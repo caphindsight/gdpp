@@ -275,24 +275,6 @@ void MyNode::foo() {
 #line 276 "input.cpp"
 }
 
-#ifdef GDPP_ENGINE
-
-bool MyNode::_gdpp_has_virtual(const StringName &p_name) const {
-	return p_name == SNAME("_ready") || Node3D::_gdpp_has_virtual(p_name);
-}
-
-bool MyNode::_gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const {
-	MyNode *self = const_cast<MyNode *>(this);
-	if (p_name == SNAME("_ready")) {
-		(void)&Node3D::_gdvirtual__ready_get_method_info; // Fails to compile if Node3D has no virtual _ready.
-		call_with_ptr_args(self, &MyNode::_ready, p_args);
-		return true;
-	}
-	return Node3D::_gdpp_call_virtual(p_name, p_args, r_ret);
-}
-
-#endif
-
 int64_t MyNode::get_simple_var() const {
 	return simple_var;
 }
@@ -331,7 +313,7 @@ int64_t MyNode::get_my_property() const {
 
     return my_property;
 
-#line 335 "input.cpp"
+#line 317 "input.cpp"
 }
 
 void MyNode::set_my_property(int64_t val) {
@@ -341,7 +323,7 @@ void MyNode::set_my_property(int64_t val) {
     if (val < 0) val = 0;
     my_property = val;
 
-#line 345 "input.cpp"
+#line 327 "input.cpp"
 }
 
 int64_t MyNode::get_my_range_var() const {
@@ -390,14 +372,14 @@ gdpp::Emitted MyNode::something_else_happened() {
     gd::print("Hello, world!");
   }
 
-#line 394 "input.cpp"
+#line 376 "input.cpp"
 
 #line 87 "input.gd++"
 
   #define FOO 42
 
 
-#line 401 "input.cpp"
+#line 383 "input.cpp"
 
 #undef This
 

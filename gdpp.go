@@ -78,23 +78,22 @@ func gdppClasses(files []gdppFile) []gdppClass {
 // scanner that fills it. Bump it when either changes, to rescan.
 const godotNamesVersion = 2
 
-// godotNamesCache is a names cache: the names that godot-cpp, or the engine,
-// declares.
+// godotNamesCache is a names cache: the names that godot-cpp declares.
 type godotNamesCache struct {
 	Version int         `toml:"version"`
 	Names   []godotName `toml:"name"`
 }
 
 // loadNamesCache returns the names in the names cache file, if it's there and
-// has the version.
-func loadNamesCache(file Path, version int) ([]godotName, bool) {
+// has godotNamesVersion.
+func loadNamesCache(file Path) ([]godotName, bool) {
 	var cache godotNamesCache
 	if !file.IsFile() {
 		return nil, false
 	}
 	// Not decodeToml: older versions may have other keys.
 	_, err := toml.Decode(file.ReadString(), &cache)
-	return cache.Names, err == nil && cache.Version == version
+	return cache.Names, err == nil && cache.Version == godotNamesVersion
 }
 
 // loadGodotNames returns the names that the package's godot-cpp declares:
@@ -102,7 +101,7 @@ func loadNamesCache(file Path, version int) ([]godotName, bool) {
 // generate the bindings, then scanning godot-cpp's headers.
 func loadGodotNames(pkg Package, generateBindings func()) []godotName {
 	file := pkg.BuildCache.Cd("godot_names.toml")
-	if names, ok := loadNamesCache(file, godotNamesVersion); ok {
+	if names, ok := loadNamesCache(file); ok {
 		return names
 	}
 	generateBindings()
@@ -153,11 +152,12 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 	return kinds
 }
 
-// transpilePackage transpiles the package's GD++ files into dir: a header and
-// a source per file, the runtime header, and with docs, each class's XML
-// documentation. Files that nothing generates any more are deleted. Returns
+// transpilePackage transpiles the package's GD++ files into the build cache's
+// gdpp directory: a header and a source per file, the runtime header, and with
+// docs, each class's XML documentation. Files that nothing generates any more are deleted. Returns
 // the classes the files declare.
-func transpilePackage(pkg Package, dir Path, files []gdppFile, names []godotName, docs bool) []gdppClass {
+func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs bool) []gdppClass {
+	dir := pkg.BuildCache.Cd(gdppDirName)
 	s := Silence()
 	t := LogTask("Transpiling GD++ code for %s...", styledPackageName(pkg.Root))
 	owner := map[string]gdppFile{}
@@ -176,7 +176,7 @@ func transpilePackage(pkg Package, dir Path, files []gdppFile, names []godotName
 	var godotDeps []trans.Dependency
 	for _, n := range names {
 		godot[n.Name] = n
-		godotDeps = append(godotDeps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind, Cpp: n.Cpp})
+		godotDeps = append(godotDeps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind})
 	}
 	kinds := gdppKinds(files, godot)
 

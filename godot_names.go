@@ -1,5 +1,4 @@
-// godot_names.go: finds the names that godot-cpp's or the engine's headers
-// declare, so GD++ code can use them and get the right includes.
+// godot_names.go: finds the names that godot-cpp's headers declare, so GD++ code can use them and get the right includes.
 
 package main
 
@@ -15,9 +14,8 @@ import (
 // godotName is a name declared directly in namespace godot, e.g. "Node3D".
 type godotName struct {
 	Name    string     `toml:"name"`
-	Include string     `toml:"include"`       // E.g. "<godot_cpp/classes/node3d.hpp>".
-	Kind    trans.Kind `toml:"kind"`          // Object, RefCounted or Other.
-	Cpp     string     `toml:"cpp,omitempty"` // How C++ names it, if not Name, e.g. "::core_bind::OS".
+	Include string     `toml:"include"` // E.g. "<godot_cpp/classes/node3d.hpp>".
+	Kind    trans.Kind `toml:"kind"`    // Object, RefCounted or Other.
 }
 
 // cppToken is a token of C++ code, without comments, literals and
@@ -131,21 +129,16 @@ type cppDecl struct {
 	name, base string // base: a class's first base class, if any.
 }
 
-// scanCppDecls returns the names declared directly in namespace ns ("" for
-// the global namespace) in the header src: class, struct, union and enum
+// scanCppDecls returns the names declared directly in namespace godot in the
+// header src: class, struct, union and enum
 // definitions (not forward declarations or specializations), aliases, nested
 // namespaces, functions and variables. Macro invocations and anything in
 // nested scopes are skipped.
-func scanCppDecls(src, ns string) []cppDecl {
+func scanCppDecls(src string) []cppDecl {
 	tokens := tokenizeCpp(src)
 	var decls []cppDecl
 	var scopes []string // "namespace:NAME" for namespaces (NAME may be a::b), "" for other braces.
-	inGodot := func() bool {
-		if ns == "" {
-			return len(scopes) == 0
-		}
-		return len(scopes) == 1 && scopes[0] == "namespace:"+ns
-	}
+	inGodot := func() bool { return len(scopes) == 1 && scopes[0] == "namespace:godot" }
 	i := 0
 	at := func(j int) cppToken {
 		if j < len(tokens) {
@@ -349,50 +342,6 @@ func scanStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(in
 	return nil, next
 }
 
-// gdclass is a class registered with GDCLASS(Name, Base).
-type gdclass struct {
-	name, base string // name is qualified with its namespaces, e.g. "core_bind::OS"
-}
-
-// scanGdclasses returns the classes that the header src registers with GDCLASS.
-func scanGdclasses(src string) []gdclass {
-	tokens := tokenizeCpp(src)
-	var classes []gdclass
-	var scopes []string // namespace names, "" for other braces
-	for i := 0; i < len(tokens); i++ {
-		switch t := tokens[i]; {
-		case t == "namespace":
-			j := i + 1
-			var name []string
-			for ; j < len(tokens) && (tokens[j].isIdent() || tokens[j] == "::"); j++ {
-				if tokens[j] != "::" {
-					name = append(name, string(tokens[j]))
-				}
-			}
-			if j < len(tokens) && tokens[j] == "{" {
-				scopes = append(scopes, strings.Join(name, "::"))
-				i = j
-			}
-		case t == "{":
-			scopes = append(scopes, "")
-		case t == "}":
-			if len(scopes) > 0 {
-				scopes = scopes[:len(scopes)-1]
-			}
-		case t == "GDCLASS" && i+2 < len(tokens) && tokens[i+1] == "(" && tokens[i+2].isIdent():
-			qualified := slices.DeleteFunc(slices.Clone(scopes), func(s string) bool { return s == "" })
-			base := ""
-			for j := i + 3; j < len(tokens) && tokens[j] != ")"; j++ {
-				if tokens[j].isIdent() {
-					base = string(tokens[j]) // The last identifier, e.g. "Object" in core_bind::Object.
-				}
-			}
-			classes = append(classes, gdclass{strings.Join(append(qualified, string(tokens[i+2])), "::"), base})
-		}
-	}
-	return classes
-}
-
 // endStatement returns the index after the ";" that ends the statement at
 // tokens[i], skipping brackets, or of the "{" of a body.
 func endStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(int, cppToken, cppToken) int) (*cppDecl, int) {
@@ -425,7 +374,7 @@ func scanGodotNames(roots []Path) []godotName {
 			if strings.HasSuffix(rel, ".inc.hpp") {
 				return // A fragment, included from inside other headers.
 			}
-			for _, d := range scanCppDecls(src, "godot") {
+			for _, d := range scanCppDecls(src) {
 				if _, ok := bases[d.name]; !ok {
 					bases[d.name] = d.base
 					names = append(names, godotName{Name: d.name, Include: "<" + rel + ">"})
@@ -437,17 +386,15 @@ func scanGodotNames(roots []Path) []godotName {
 }
 
 // walkHeaders calls visit with each .h and .hpp header under root, and its
-// path relative to root, skipping directories named in skip.
-func walkHeaders(root Path, visit func(rel, src string), skip ...string) {
+// path relative to root.
+func walkHeaders(root Path, visit func(rel, src string)) {
 	var walk func(dir Path, rel string)
 	walk = func(dir Path, rel string) {
 		for _, child := range dir.Ls() {
 			childRel := path.Join(rel, child.Name())
 			switch {
 			case child.IsDir():
-				if !slices.Contains(skip, child.Name()) {
-					walk(child, childRel)
-				}
+				walk(child, childRel)
 			case path.Ext(childRel) == ".hpp" || path.Ext(childRel) == ".h":
 				visit(childRel, child.ReadString())
 			}

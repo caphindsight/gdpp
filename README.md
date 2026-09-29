@@ -85,7 +85,7 @@ GD++ needs three kinds of dependencies. It downloads them for you from the [GD++
 
 - **Godot C++ bindings**: the godot-cpp library.
 - **Godot API specs**: descriptions of all Godot classes, for one Godot version.
-- **Godot engines**: the Godot source code, for engine builds (experimental, see below).
+- **Godot engines**: the Godot source code. GD++ can fetch and store them, but doesn't build with them.
 
 ```sh
 gd++ fetch --index            # List what's available.
@@ -115,19 +115,13 @@ Build caches live in `.gd++pkg/` in each package. `gd++ clean` deletes them.
 
 ### Exporting your game
 
-Godot's export dialog doesn't know how to build C++. GD++ fixes this with **twin presets**. For each export preset you made in Godot, GD++ adds a twin that builds your code first, and leaves the C++ and GD++ source files out of the export.
+Build every package for each platform you ship, in release mode, then export from Godot's Export dialog as usual:
 
 ```sh
-gd++ export --gdext  # Ship your packages as GDExtension libraries.
+gd++ build --proj --ship --for l.x64 --for w.x64
 ```
 
-Add `--godot path/to/godot` to also run the exports, headless. `gd++ export --undo` removes the twins.
-
-### Engine builds (experimental)
-
-`gd++ export --engine NAME` compiles all packages right into the Godot engine, as a module, and exports with the export templates it builds. **This is experimental and currently broken. Don't rely on it.** Only GDExtension builds are well supported for now.
-
-The plan is to make engine builds work, and to build standalone engine executables with your code inside.
+Add C++ and GD++ source files, `gd++pkg.toml` and `gd++proj.toml` to the preset's exclude filter to keep them out of the export.
 
 ### Other commands
 

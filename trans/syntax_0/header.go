@@ -41,7 +41,6 @@ func (u *unit) header() string {
 	}
 	w.ln("")
 	w.ln("namespace godot {")
-	u.aliases(w, names, nil)
 	// The classes and externs of this file are forward-declared too, since they may use each other.
 	if len(forwardNames)+len(u.externs)+len(u.classes) > 0 {
 		w.ln("")
@@ -174,10 +173,6 @@ func (c *classModel) needsCtor() bool {
 		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" })
 }
 
-func (c *classModel) hasOverrides() bool {
-	return slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.override })
-}
-
 // rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc_id(peer) f(...)` call, without a class name.
 // ps is the parameter list of f.
 func rpcDecl(f *funcModel, ps string) string {
@@ -254,7 +249,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		case f.static:
 			prefix = "static "
 		case f.override:
-			suffix = " GDPP_OVERRIDE"
+			suffix = " override"
 		}
 		if f.isConst {
 			suffix = " const" + suffix
@@ -287,12 +282,6 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("\tstatic void _bind_methods();")
 	if c.needsReady() {
 		w.ln("\tvoid _notification(int p_what);")
-	}
-	if c.hasOverrides() {
-		w.ln("#ifdef GDPP_ENGINE")
-		w.ln("\tbool _gdpp_has_virtual(const StringName &p_name) const override;")
-		w.ln("\tbool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const override;")
-		w.ln("#endif")
 	}
 	var helpers []string
 	for _, f := range c.funcs {

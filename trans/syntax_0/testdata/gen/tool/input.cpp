@@ -28,24 +28,6 @@ void Gizmo::_process(double delta) {
 #line 29 "input.cpp"
 }
 
-#ifdef GDPP_ENGINE
-
-bool Gizmo::_gdpp_has_virtual(const StringName &p_name) const {
-	return p_name == SNAME("_process") || Node3D::_gdpp_has_virtual(p_name);
-}
-
-bool Gizmo::_gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const {
-	Gizmo *self = const_cast<Gizmo *>(this);
-	if (p_name == SNAME("_process")) {
-		(void)&Node3D::_gdvirtual__process_get_method_info; // Fails to compile if Node3D has no virtual _process.
-		call_with_ptr_args(self, &Gizmo::_process, p_args);
-		return true;
-	}
-	return Node3D::_gdpp_call_virtual(p_name, p_args, r_ret);
-}
-
-#endif
-
 #undef This
 
 #define This Helper
@@ -65,7 +47,7 @@ int64_t Helper::count() {
 
     return 0;
 
-#line 69 "input.cpp"
+#line 51 "input.cpp"
 }
 
 void Helper::reset() {
@@ -76,7 +58,7 @@ void Helper::reset() {
 #endif
 #line 17 "input.gd++"
 
-#line 80 "input.cpp"
+#line 62 "input.cpp"
 }
 
 #undef This
