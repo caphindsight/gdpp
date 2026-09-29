@@ -11,8 +11,8 @@ import (
 // registering its classes, and a generated SConstruct. After building, the
 // package root gets a generated <id>.gdextension file and its .uid file.
 // Debug builds are godot-cpp dev builds with debug symbols and hot reload;
-// release builds use link-time optimization. With --clean, the build caches
-// are cleaned first.
+// release builds use link-time optimization. With --clean, packages are
+// cleaned first like `gd++ clean --bin` does.
 type CmdBuild struct {
 	Path     string   `arg:"positional" help:"build the package containing this path [default: the current directory]"`
 	For      []string `arg:"--for" placeholder:"PLATFORM.ARCH" help:"build for each of these targets, e.g. windows.x86_64 or w.x64; platforms: windows|win|w, linux|lin|l, macos|mac|m; archs: x86_32|x32, x86_64|x64, arm64|a64 [default: this machine]"`
@@ -21,7 +21,7 @@ type CmdBuild struct {
 	Arch     string   `arg:"--arch" placeholder:"x86_32|x86_64|arm64" help:"the target CPU architecture [default: this one]"`
 	BuildOptions
 	Proj  bool `arg:"--proj" help:"build all packages in the project, one after another"`
-	Clean bool `arg:"--clean" help:"clean the build caches first, so the build starts from scratch"`
+	Clean bool `arg:"--clean" help:"clean the build caches and libraries first, so the build starts from scratch"`
 }
 
 func (c *CmdBuild) Run() {
@@ -44,7 +44,7 @@ func (c *CmdBuild) Run() {
 	}
 	for _, pkg := range pkgs {
 		if c.Clean {
-			cleanPackage(pkg.Root, false)
+			cleanPackage(pkg.Root, true)
 		}
 		buildExtension(p, pkg, c.BuildOptions, targets)
 	}
