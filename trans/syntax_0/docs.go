@@ -296,7 +296,11 @@ func (x *xmlWriter) methods(c *classModel, element string, docs []methodDoc) {
 			x.ln(3, fmt.Sprintf("<return%s />", typeAttrs(c, m.ret)))
 		}
 		for i, t := range m.params {
-			x.ln(3, fmt.Sprintf("<param index=\"%d\" name=\"%s\"%s />", i, xmlEscape(m.list[i].Name, true), typeAttrs(c, t)))
+			attrs := typeAttrs(c, t)
+			if d := m.list[i].Default; d != nil && d.Block == nil {
+				attrs += fmt.Sprintf(" default=\"%s\"", xmlEscape(d.Expr, true))
+			}
+			x.ln(3, fmt.Sprintf("<param index=\"%d\" name=\"%s\"%s />", i, xmlEscape(m.list[i].Name, true), attrs))
 		}
 		x.ln(3, "<description>")
 		x.ln(4, xmlEscape(strings.TrimFunc(m.doc.description, isDocSpace), false))

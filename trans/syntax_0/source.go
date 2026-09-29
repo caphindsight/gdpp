@@ -81,9 +81,10 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	}
 	for _, f := range c.funcs {
 		u.funcDef(w, c, f)
+		defaultDefs(w, c, f)
 		if f.rpc != nil {
 			w.ln("")
-			w.ln("Error %s::%s {", c.name, rpcDecl(f))
+			w.ln("Error %s::%s {", c.name, rpcDecl(f, params(nil, f.params, f.f.Params)))
 			w.ln("\treturn %s;", rpcCall(f))
 			w.ln("}")
 		}
@@ -201,6 +202,24 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("}")
 }
 
+// defaultDefs defines the static methods that return the default values of f's parameters.
+func defaultDefs(w *writer, c *classModel, f *funcModel) {
+	for i, p := range f.f.Params {
+		d := p.Default
+		if d == nil {
+			continue
+		}
+		w.ln("")
+		w.ln("%s {", qualified(c, f.params[i].cpp, defaultName(f, p), "", false))
+		if d.Block != nil {
+			w.block(d.Block, "", "")
+		} else {
+			w.user(d.Pos, "\treturn ", d.Expr, ";")
+		}
+		w.ln("}")
+	}
+}
+
 // overrideDefs defines the functions through which the engine calls the class's overrides, in engine builds: its
 // patched GDVIRTUAL macros only call scripts and GDExtension classes otherwise.
 func overrideDefs(w *writer, c *classModel) {
@@ -314,11 +333,22 @@ func info(c *classModel, t *gtype, name, usage, hint, hintString string) string 
 // bindings writes the body of _bind_methods.
 func (u *unit) bindings(w *writer, c *classModel) {
 	for _, f := range c.funcs {
+		// The method, followed by the default values of its parameters.
 		ref := fmt.Sprintf("&%s::%s", c.name, f.f.Name)
 		if f.usesEnums() {
 			ref = fmt.Sprintf("&%s::_gdpp_%s", c.name, f.f.Name)
 		}
 		names := paramNames(f.f.Params)
+		for i, p := range f.f.Params {
+			if p.Default == nil {
+				continue
+			}
+			value := defaultName(f, p) + "()"
+			if f.params[i].enum != nil {
+				value = "static_cast<int64_t>(" + value + ")"
+			}
+			ref += ", DEFVAL(" + value + ")"
+		}
 		switch {
 		case f.override:
 		case f.virtual:
@@ -452,6 +482,12 @@ func (u *unit) sourceNames() []string {
 		code(c.dtor)
 		for _, f := range c.funcs {
 			code(f.f.Body)
+			for _, p := range f.f.Params {
+				if d := p.Default; d != nil {
+					code(d.Block)
+					names = append(names, identifiers(d.Expr)...)
+				}
+			}
 			if f.rpc != nil {
 				names = append(names, "MultiplayerAPI", "MultiplayerPeer")
 			}

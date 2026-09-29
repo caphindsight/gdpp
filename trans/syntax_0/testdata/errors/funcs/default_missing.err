@@ -1,0 +1,4 @@
+errors/funcs/default_missing.gd++:1:17: Expected a value after "=", but found ",".
+ 1 | func f(a: int = , b: int) {}
+   |                 ^
+Hint: Write a C++ expression, or a { ... } block that returns the value.

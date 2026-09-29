@@ -44,6 +44,13 @@
 			<description>
 			</description>
 		</method>
+		<method name="greet_users">
+			<return type="void" />
+			<param index="0" name="count" type="int" default="1" />
+			<param index="1" name="greeting" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="hurt_everyone">
 			<return type="void" />
 			<param index="0" name="peer" type="int" />

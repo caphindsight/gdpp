@@ -167,6 +167,21 @@ func greet_user(name: String) -> void {
 
 // An argument or return value without a type is a Variant.
 
+// Arguments can have default values. Like initial values of variables (see Part IX), a default value is a
+// C++ expression, or a block of C++ code that returns the value:
+
+func greet_users(count: int = 1, greeting: String = {
+  return String("Hello");
+}) -> void {
+  for (int64_t i = 0; i < count; i++) {
+    gd::print(greeting, "!");
+  }
+}
+
+// Arguments with default values must come last.
+// Godot computes each default value once, when it registers the class.
+// So a default value can't use the object (`this`) or the other arguments.
+
 // GD++ makes functions public in C++ and registers them with Godot in the generated _bind_methods.
 // All types in a signature are Godot types. In C++ code, they become their canonical C++ types (see Part IV).
 

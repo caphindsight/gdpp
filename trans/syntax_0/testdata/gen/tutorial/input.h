@@ -81,7 +81,7 @@ private:
 #line 82 "input.h"
 
 private:
-#line 201 "input.gd++"
+#line 216 "input.gd++"
 
   int64_t my_value_;
 
@@ -95,7 +95,7 @@ private:
 	int64_t my_range_var{};
 	int64_t some_var{};
 	gdpp::ExtPtr<Terrain> my_extern{};
-#line 301 "input.gd++"
+#line 316 "input.gd++"
 
 
     int64_t my_property = 0;
@@ -107,6 +107,7 @@ public:
 	MyNode();
 	~MyNode();
 	void greet_user(const String &name);
+	void greet_users(int64_t count = _gdpp_default_greet_users_count(), const String &greeting = _gdpp_default_greet_users_greeting());
 	GDVIRTUAL0R(int64_t, _foo)
 	int64_t _foo();
 	GDVIRTUAL0R(int64_t, _bar)
@@ -146,6 +147,10 @@ protected:
 	bool _gdpp_has_virtual(const StringName &p_name) const override;
 	bool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const override;
 #endif
+
+private:
+	static int64_t _gdpp_default_greet_users_count();
+	static String _gdpp_default_greet_users_greeting();
 };
 #undef This
 

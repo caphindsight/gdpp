@@ -224,8 +224,8 @@ func (in *Init) Parse(lex *lexer.PeekingLexer) error {
 		nextRaw(lex)
 	}
 	first := peekRaw(lex)
-	if first.EOF() || first.Type == tokNewline || closers[first.Value] != "" && first.Type == tokPunct {
-		return errorAt(first, fmt.Sprintf("Expected an initial value after \"=\", but found %s.", describe(first)),
+	if first.EOF() || first.Type == tokNewline || isPunct(first, ",") || closers[first.Value] != "" && first.Type == tokPunct {
+		return errorAt(first, fmt.Sprintf("Expected a value after \"=\", but found %s.", describe(first)),
 			"Write a C++ expression, or a { ... } block that returns the value.")
 	}
 	in.Pos = first.Pos
@@ -236,7 +236,7 @@ func (in *Init) Parse(lex *lexer.PeekingLexer) error {
 	var code codeBuilder
 	for depth := 0; ; {
 		t := peekRaw(lex)
-		if t.EOF() || depth == 0 && (t.Type == tokNewline || t.Type == tokPunct && closers[t.Value] != "") {
+		if t.EOF() || depth == 0 && (t.Type == tokNewline || isPunct(t, ",") || t.Type == tokPunct && closers[t.Value] != "") {
 			break
 		}
 		nextRaw(lex)

@@ -1,4 +1,4 @@
-errors/vars/init_missing_eol.gd++:1:13: Expected an initial value after "=", but found the end of the line.
+errors/vars/init_missing_eol.gd++:1:13: Expected a value after "=", but found the end of the line.
  1 | var x: int =
    |             ^
 Hint: Write a C++ expression, or a { ... } block that returns the value.

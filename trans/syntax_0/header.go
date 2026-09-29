@@ -93,6 +93,24 @@ func params(c *classModel, types []*gtype, list []*Param) string {
 	return strings.Join(ps, ", ")
 }
 
+// declParams returns the parameter list with which the class declares f, default values included.
+func declParams(f *funcModel) string {
+	var ps []string
+	for i, t := range f.params {
+		p := withSpace(t.param()) + f.f.Params[i].Name
+		if f.f.Params[i].Default != nil {
+			p += " = " + defaultName(f, f.f.Params[i]) + "()"
+		}
+		ps = append(ps, p)
+	}
+	return strings.Join(ps, ", ")
+}
+
+// defaultName is the name of the static method that returns the default value of parameter p of f.
+func defaultName(f *funcModel, p *Param) string {
+	return "_gdpp_default_" + f.f.Name + "_" + p.Name
+}
+
 // withSpace appends a space to a C++ type, unless it ends with * or &.
 func withSpace(t string) string {
 	if strings.HasSuffix(t, "*") || strings.HasSuffix(t, "&") {
@@ -114,12 +132,12 @@ func (c *classModel) hasOverrides() bool {
 }
 
 // rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc_id(peer) f(...)` call, without a class name.
-func rpcDecl(f *funcModel) string {
-	ps := "int64_t p_peer"
-	if f.f.Params != nil {
-		ps += ", " + params(nil, f.params, f.f.Params)
+// ps is the parameter list of f.
+func rpcDecl(f *funcModel, ps string) string {
+	if ps != "" {
+		ps = ", " + ps
 	}
-	return fmt.Sprintf("_gdpp_rpc_%s(%s)", f.f.Name, ps)
+	return fmt.Sprintf("_gdpp_rpc_%s(int64_t p_peer%s)", f.f.Name, ps)
 }
 
 // rpcCall returns the call to Godot's rpc_id that the RPC helper of f makes.
@@ -190,9 +208,9 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		if f.isConst {
 			suffix = " const" + suffix
 		}
-		public = append(public, fmt.Sprintf("%s%s%s(%s)%s;", prefix, withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params), suffix))
+		public = append(public, fmt.Sprintf("%s%s%s(%s)%s;", prefix, withSpace(f.ret.cpp), f.f.Name, declParams(f), suffix))
 		if f.rpc != nil {
-			public = append(public, "Error "+rpcDecl(f)+";")
+			public = append(public, "Error "+rpcDecl(f, declParams(f))+";")
 		}
 	}
 	for _, v := range c.vars {
@@ -225,24 +243,29 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		w.ln("\tbool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const override;")
 		w.ln("#endif")
 	}
-	var trampolines []string
+	var helpers []string
 	for _, f := range c.funcs {
 		if !f.virtual && !f.override && f.usesEnums() {
-			trampolines = append(trampolines, trampolineDecl(c, f))
+			helpers = append(helpers, trampolineDecl(c, f))
+		}
+		for i, p := range f.f.Params {
+			if p.Default != nil {
+				helpers = append(helpers, fmt.Sprintf("static %s%s();", withSpace(f.params[i].cpp), defaultName(f, p)))
+			}
 		}
 	}
 	for _, v := range c.vars {
 		if v.trampolined() && v.getter != "" {
-			trampolines = append(trampolines, fmt.Sprintf("%s _gdpp_%s() const;", tagName(c, v.t.enum), v.getter))
+			helpers = append(helpers, fmt.Sprintf("%s _gdpp_%s() const;", tagName(c, v.t.enum), v.getter))
 		}
 		if v.trampolined() && v.setter != "" {
-			trampolines = append(trampolines, fmt.Sprintf("void _gdpp_%s(%s p_value);", v.setter, tagName(c, v.t.enum)))
+			helpers = append(helpers, fmt.Sprintf("void _gdpp_%s(%s p_value);", v.setter, tagName(c, v.t.enum)))
 		}
 	}
-	if len(trampolines) > 0 {
+	if len(helpers) > 0 {
 		w.ln("")
 		w.ln("private:")
-		for _, t := range trampolines {
+		for _, t := range helpers {
 			w.ln("\t%s", t)
 		}
 	}
@@ -302,7 +325,7 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	for _, f := range e.funcs {
 		w.ln("\t%s%s(%s) const;", withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params))
 		if f.rpc != nil {
-			w.ln("\tError %s const;", rpcDecl(f))
+			w.ln("\tError %s const;", rpcDecl(f, params(nil, f.params, f.f.Params)))
 		}
 	}
 	for _, v := range e.vars {
@@ -348,7 +371,7 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		w.ln("}")
 		if f.rpc != nil {
 			w.ln("")
-			w.ln("inline Error %s::%s const {", e.name, rpcDecl(f))
+			w.ln("inline Error %s::%s const {", e.name, rpcDecl(f, params(nil, f.params, f.f.Params)))
 			w.ln("\tstatic_assert(std::is_base_of_v<Node, Base>, \"@rpc can only be used in externs that extend Node.\");")
 			w.ln("\treturn _gdpp_base->%s;", rpcCall(f))
 			w.ln("}")

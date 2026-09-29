@@ -1,0 +1,3 @@
+extern E {
+  func f(a: int = 1) -> void
+}

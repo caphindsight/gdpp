@@ -73,10 +73,12 @@ type Func struct {
 }
 
 // Param is a function, signal or setter parameter. Without a Type it is a Variant.
+// Only function parameters may have a Default.
 type Param struct {
-	Pos  lexer.Position
-	Name string `parser:"@Ident"`
-	Type *Type  `parser:"( ':' @@ )?"`
+	Pos     lexer.Position
+	Name    string `parser:"@Ident"`
+	Type    *Type  `parser:"( ':' @@ )?"`
+	Default *Init  `parser:"( '=' @@ )?"`
 }
 
 // Type is a Godot type name, possibly with type arguments, e.g. Array[int].
@@ -173,7 +175,8 @@ type Block struct {
 	Text    string
 }
 
-// Init is the initial value of a variable: a one-line C++ expression (Expr) or a C++ block that returns the value.
+// Init is the initial value of a variable or the default value of a parameter: a one-line C++ expression (Expr),
+// which ends at a newline or at a "," outside brackets, or a C++ block that returns the value.
 // Pos is the position of the expression's first token.
 type Init struct {
 	Pos   lexer.Position

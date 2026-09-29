@@ -399,12 +399,19 @@ func (u *unit) buildFunc(f *Func, ext bool) (*funcModel, error) {
 			return nil, err
 		}
 	}
-	for _, p := range f.Params {
+	for i, p := range f.Params {
 		t, err := u.resolve(p.Type, false)
 		if err != nil {
 			return nil, err
 		}
 		m.params = append(m.params, t)
+		switch {
+		case ext && p.Default != nil:
+			return nil, u.errorAt(p.Default.Pos, 1, "Extern functions can't have default values.", "Externs only declare what another package defines.")
+		case p.Default == nil && i > 0 && f.Params[i-1].Default != nil:
+			return nil, u.errorAt(p.Pos, len(p.Name), fmt.Sprintf("Parameter %s needs a default value, since a parameter before it has one.", p.Name),
+				"Parameters with default values must come last.")
+		}
 	}
 	if m.ret, err = u.resolve(f.Return, true); err != nil {
 		return nil, err
@@ -479,6 +486,9 @@ func (u *unit) buildSignal(s *Signal) (*signalModel, error) {
 		if err != nil {
 			return nil, err
 		}
+		if p.Default != nil {
+			return nil, u.errorAt(p.Default.Pos, 1, "Signal parameters can't have default values.", "")
+		}
 		m.params = append(m.params, t)
 	}
 	return m, nil
@@ -521,6 +531,9 @@ func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
 			m.get, m.getter = acc.Get, "get_"+v.Name
 		default:
 			m.set, m.setter = acc.Set, "set_"+v.Name
+			if d := acc.Set.Param.Default; d != nil {
+				return nil, u.errorAt(d.Pos, 1, "The setter's parameter can't have a default value.", "")
+			}
 			if t := acc.Set.Param.Type; t != nil && (v.Type == nil || typeString(t) != typeString(v.Type)) {
 				return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("The setter's parameter must have the property's type, %s.", typeString(v.Type)),
 					"Leave the type out: \"set(value) { ... }\".")

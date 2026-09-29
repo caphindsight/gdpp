@@ -1,0 +1,4 @@
+input.gd++:3:20: Parameter b needs a default value, since a parameter before it has one.
+ 3 | func f(a: int = 1, b: int) -> void {}
+   |                    ^
+Hint: Parameters with default values must come last.
