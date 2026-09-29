@@ -364,7 +364,8 @@ func typeNames(t *Type) []string {
 }
 
 // headerNames returns the names used in the header: bases, API types, imports and decl code. complete lists
-// those that need a complete type: bases, and names in decl code, which may use any member.
+// those that need a complete type: bases, the types of virtual functions (GDVIRTUAL needs them), and names in decl
+// code, which may use any member.
 func (u *unit) headerNames() (names, complete []string) {
 	add := func(ts ...*Type) {
 		for _, t := range ts {
@@ -404,6 +405,14 @@ func (u *unit) headerNames() (names, complete []string) {
 		complete = append(complete, c.base)
 		add(c.imports...)
 		addFuncs(c.funcs, c.vars, c.signals)
+		for _, f := range c.funcs {
+			if f.virtual {
+				complete = append(complete, typeNames(f.f.Return)...)
+				for _, p := range f.f.Params {
+					complete = append(complete, typeNames(p.Type)...)
+				}
+			}
+		}
 		for _, code := range c.codes {
 			if code.Decl {
 				complete = append(complete, identifiers(code.Body.Text)...)
