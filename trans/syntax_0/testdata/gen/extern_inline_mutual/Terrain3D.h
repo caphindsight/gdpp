@@ -3,10 +3,11 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "Terrain3DData.h"
 #include <godot_cpp/classes/node.hpp>
 
 namespace godot {
+
+class Terrain3DData;
 
 class Terrain3D {
 public:
@@ -22,6 +23,12 @@ public:
 private:
 	Base *_gdpp_base;
 };
+
+} // namespace godot
+
+#include "Terrain3DData.h"
+
+namespace godot {
 
 inline gdpp::ExtPtr<Terrain3DData> Terrain3D::get_data() const {
 	return gdpp::from_variant<gdpp::ExtPtr<Terrain3DData>>(_gdpp_base->get(GDPP_STRING_NAME("data")));

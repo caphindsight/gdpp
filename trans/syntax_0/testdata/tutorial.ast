@@ -3,25 +3,22 @@ File: @36:1
     Name: MyNode
     Extends: @37:9 Node3D
     Members:
-      - @64:1
-        Code: @64:1
+      - @65:1
+        Code: @65:1
           Decl: true
-          Body: @64:6
-            TextPos: 64:7
+          Body: @65:6
+            TextPos: 65:7
             Text: |
-
-
 
 
                 void private_function();
 
-      - @71:1
-        Code: @71:1
+      - @70:1
+        Code: @70:1
           Impl: true
-          Body: @71:6
-            TextPos: 71:7
+          Body: @70:6
+            TextPos: 70:7
             Text: |
-
 
 
                 void This::private_function() {
@@ -34,380 +31,391 @@ File: @36:1
                   gd::print("Hello, world!");
                 }
 
-      - @87:1
-        Code: @87:1
+      - @85:1
+        Code: @85:1
           Decl: true
           Impl: true
-          Body: @87:11
-            TextPos: 87:12
+          Body: @85:11
+            TextPos: 85:12
             Text: |
 
                 #define FOO 42
 
 
-      - @95:1
-        Code: @95:1
+      - @93:1
+        Code: @93:9
+          Annotations:
+            - @93:1 global
           Decl: true
-          Body: @95:6
-            TextPos: 95:7
+          Body: @93:14
+            TextPos: 93:15
+            Text: |
+
+                #include <vector>
+
+      - @100:1
+        Code: @100:1
+          Decl: true
+          Body: @100:6
+            TextPos: 100:7
             Text: |
 
                public:
                 void public_function();
 
-      - @119:1
-        Enum: @119:1
+      - @124:1
+        Enum: @124:1
           Name: THE_ANSWER
-          Value: @119:19 42
-      - @126:1
-        Enum: @126:1
+          Value: @124:19 42
+      - @131:1
+        Enum: @131:1
           Name: Suit
           Entries:
-            - @127:3 DIAMONDS
-            - @128:3 CLUBS
-            - @129:3 SPADES
-            - @130:3 HEARTS
-      - @133:1
-        Enum: @133:1
+            - @132:3 DIAMONDS
+            - @133:3 CLUBS
+            - @134:3 SPADES
+            - @135:3 HEARTS
+      - @138:1
+        Enum: @138:1
           Name: Rank
           Entries:
-            - @134:3
+            - @139:3
               Name: JACK
-              Value: @134:10 0
-            - @135:3 QUEEN
-            - @136:3 KING
-      - @149:1
-        Import: @149:8 Suit
-      - @150:1
-        NoImport: @150:10 Rank
-      - @163:1
-        Func: @163:1
+              Value: @139:10 0
+            - @140:3 QUEEN
+            - @141:3 KING
+      - @154:1
+        Import: @154:8 Suit
+      - @155:1
+        NoImport: @155:10 Rank
+      - @168:1
+        Func: @168:1
           Name: greet_user
           Params:
-            - @163:17
+            - @168:17
               Name: name
-              Type: @163:23 String
-          Return: @163:34 void
-          Body: @163:39
-            TextPos: 163:40
+              Type: @168:23 String
+          Return: @168:34 void
+          Body: @168:39
+            TextPos: 168:40
             Text: |
 
 
                 gd::print("Hello ", name, "!");
 
-      - @173:1
-        Func: @173:1
+      - @178:1
+        Func: @178:1
           Name: greet_users
           Params:
-            - @173:18
+            - @178:18
               Name: count
-              Type: @173:25 int
-              Default: @173:31 1
-            - @173:34
+              Type: @178:25 int
+              Default: @178:31 1
+            - @178:34
               Name: greeting
-              Type: @173:44 String
-              Default: @173:53
-                Block: @173:53
-                  TextPos: 173:54
+              Type: @178:44 String
+              Default: @178:53
+                Block: @178:53
+                  TextPos: 178:54
                   Text: |
 
                       return String("Hello");
 
-          Return: @175:7 void
-          Body: @175:12
-            TextPos: 175:13
+          Return: @180:7 void
+          Body: @180:12
+            TextPos: 180:13
             Text: |
 
                 for (int64_t i = 0; i < count; i++) {
                   gd::print(greeting, "!");
                 }
 
-      - @190:1
-        Func: @191:1
-          Annotations:
-            - @190:1 virtual
-          Name: _foo
-          Return: @191:16 int
-          Body: @191:20
-            TextPos: 191:21
-            Text: |
-
-                return 0;
-
       - @195:1
         Func: @196:1
           Annotations:
             - @195:1 virtual
-          Name: _bar
+          Name: _foo
           Return: @196:16 int
-      - @198:1
-        Func: @198:1
+          Body: @196:20
+            TextPos: 196:21
+            Text: |
+
+                return 0;
+
+      - @200:1
+        Func: @201:1
+          Annotations:
+            - @200:1 virtual
+          Name: _bar
+          Return: @201:16 int
+      - @203:1
+        Func: @203:1
           Name: foo_plus_bar
-          Return: @198:24 int
-          Body: @198:28
-            TextPos: 198:29
+          Return: @203:24 int
+          Body: @203:28
+            TextPos: 203:29
             Text: |
 
                 return _foo() + _bar();
 
-      - @207:1
-        Func: @208:1
+      - @212:1
+        Func: @213:1
           Annotations:
-            - @207:1 override
+            - @212:1 override
           Name: _ready
-          Return: @208:18 void
-          Body: @208:23
-            TextPos: 208:24
+          Return: @213:18 void
+          Body: @213:23
+            TextPos: 213:24
             Text: |
 
 
 
                 gd::print("My node is ready.");
 
-      - @216:1
-        Code: @216:1
+      - @221:1
+        Code: @221:1
           Decl: true
-          Body: @216:6
-            TextPos: 216:7
+          Body: @221:6
+            TextPos: 221:7
             Text: |
 
                 int64_t my_value_;
 
-      - @220:1
-        Func: @221:1
+      - @225:1
+        Func: @226:1
           Annotations:
-            - @220:1 const
+            - @225:1 const
           Name: get_my_value
-          Return: @221:24 int
-          Body: @221:28
-            TextPos: 221:29
+          Return: @226:24 int
+          Body: @226:28
+            TextPos: 226:29
             Text: |
 
                 return my_value;
 
-      - @227:1
-        Func: @228:1
+      - @232:1
+        Func: @233:1
           Annotations:
-            - @227:1 static
+            - @232:1 static
           Name: my_static_func
-          Return: @228:26 void
-          Body: @228:31
-            TextPos: 228:32
+          Return: @233:26 void
+          Body: @233:31
+            TextPos: 233:32
             Text: |
 
                 gd::print("Hello!");
 
-      - @234:1
-        Func: @235:1
+      - @239:1
+        Func: @240:1
           Annotations:
-            - @234:1
+            - @239:1
               Name: rpc
               Args:
-                - @234:6 "any_peer"
-                - @234:18 "call_local"
-                - @234:32 "reliable"
+                - @239:6 "any_peer"
+                - @239:18 "call_local"
+                - @239:32 "reliable"
           Name: take_damage
           Params:
-            - @235:18
+            - @240:18
               Name: amount
-              Type: @235:26 int
-          Return: @235:34 void
-          Body: @235:39
-            TextPos: 235:40
+              Type: @240:26 int
+          Return: @240:34 void
+          Body: @240:39
+            TextPos: 240:40
             Text: |
 
                 gd::print("Took ", amount, " damage.");
 
-      - @243:1
-        Func: @243:1
+      - @248:1
+        Func: @248:1
           Name: hurt_everyone
           Params:
-            - @243:20
+            - @248:20
               Name: peer
-              Type: @243:26 int
-          Return: @243:34 void
-          Body: @243:39
-            TextPos: 243:40
+              Type: @248:26 int
+          Return: @248:34 void
+          Body: @248:39
+            TextPos: 248:40
             Text: |
 
                 rpc take_damage(10);
                 rpc_id(peer) take_damage(10);
                 take_damage(10);
 
-      - @259:1
-        Ctor: @259:6
-          TextPos: 259:7
+      - @264:1
+        Ctor: @264:6
+          TextPos: 264:7
           Text: |
 
               gd::print("This message shows up every time a MyNode is created.");
 
-      - @263:1
-        Dtor: @263:6
-          TextPos: 263:7
+      - @268:1
+        Dtor: @268:6
+          TextPos: 268:7
           Text: |
 
               gd::print("This message shows up every time a MyNode is deleted.");
 
-      - @271:1
-        Signal: @271:1
+      - @276:1
+        Signal: @276:1
           Name: something_happened
           Params:
-            - @271:27
+            - @276:27
               Name: a
-              Type: @271:30 int
-      - @272:1
-        Signal: @272:1 something_else_happened
-      - @276:1
-        Func: @276:1
+              Type: @276:30 int
+      - @277:1
+        Signal: @277:1 something_else_happened
+      - @281:1
+        Func: @281:1
           Name: emit_both_signals
-          Return: @276:29 void
-          Body: @276:34
-            TextPos: 276:35
+          Return: @281:29 void
+          Body: @281:34
+            TextPos: 281:35
             Text: |
 
                 emit something_happened(42);
                 emit something_else_happened();
 
-      - @290:1
-        Var: @290:1
-          Name: simple_var
-          Type: @290:17 int
-      - @291:1
-        Var: @291:1
-          Name: another_simple_var
-          Type: @291:25 int
-          Init: @291:31 5
       - @295:1
+        Var: @295:1
+          Name: simple_var
+          Type: @295:17 int
+      - @296:1
         Var: @296:1
+          Name: another_simple_var
+          Type: @296:25 int
+          Init: @296:31 5
+      - @300:1
+        Var: @301:1
           Annotations:
-            - @295:1 onready
+            - @300:1 onready
           Name: child_node_1
-          Type: @296:19 Node3D
-          Init: @296:28 get_node<Node3D>("MyNode1")
-      - @298:1
-        Var: @299:1
+          Type: @301:19 Node3D
+          Init: @301:28 get_node<Node3D>("MyNode1")
+      - @303:1
+        Var: @304:1
           Annotations:
-            - @298:1 onready
+            - @303:1 onready
           Name: child_node_2
-          Type: @299:19 Node3D
-          Init: @299:28
-            Block: @299:28
-              TextPos: 299:29
+          Type: @304:19 Node3D
+          Init: @304:28
+            Block: @304:28
+              TextPos: 304:29
               Text: |
 
                   Node3D* res = memnew(Node3D);
                   add_child(res);
                   return res;
 
-      - @315:1
-        Var: @315:1
+      - @320:1
+        Var: @320:1
           Name: my_property
-          Type: @315:18 int
-          Property: @315:22
+          Type: @320:18 int
+          Property: @320:22
             Accessors:
-              - @316:3
-                Decl: @316:8
-                  TextPos: 316:9
+              - @321:3
+                Decl: @321:8
+                  TextPos: 321:9
                   Text: |
 
 
                         int64_t my_property = 0;
 
-              - @320:3
-                Get: @320:7
-                  TextPos: 320:8
+              - @325:3
+                Get: @325:7
+                  TextPos: 325:8
                   Text: |
 
 
                         return my_property;
 
-              - @324:3
-                Set: @324:3
-                  Param: @324:7 val
-                  Body: @324:12
-                    TextPos: 324:13
+              - @329:3
+                Set: @329:3
+                  Param: @329:7 val
+                  Body: @329:12
+                    TextPos: 329:13
                     Text: |
 
 
                           if (val < 0) val = 0;
                           my_property = val;
 
-      - @343:1
-        Import: @343:8 MeshInstance3D
-      - @347:1
-        NoImport: @347:10 MeshInstance2D
-      - @358:1
-        Var: @359:1
+      - @348:1
+        Import: @348:8 MeshInstance3D
+      - @352:1
+        NoImport: @352:10 MeshInstance2D
+      - @363:1
+        Var: @364:1
           Annotations:
-            - @358:1
+            - @363:1
               Name: export_range
               Args:
-                - @358:15 0
-                - @358:18 100
-                - @358:23 1
+                - @363:15 0
+                - @363:18 100
+                - @363:23 1
           Name: my_range_var
-          Type: @359:19 int
-      - @364:1
-        Var: @365:1
-          Doc: @364:1 This is a variable.
+          Type: @364:19 int
+      - @369:1
+        Var: @370:1
+          Doc: @369:1 This is a variable.
           Name: some_var
-          Type: @365:15 int
-      - @367:1
-        Func: @372:1
-          Doc: @367:1
+          Type: @370:15 int
+      - @372:1
+        Func: @377:1
+          Doc: @372:1
             Text: |
               This function has a
               long
               description.
           Name: foo
-          Return: @372:15 void
-          Body: @372:20
-            TextPos: 372:21
-      - @394:1
-        Var: @394:9
+          Return: @377:15 void
+          Body: @377:20
+            TextPos: 377:21
+      - @399:1
+        Var: @399:9
           Annotations:
-            - @394:1 export
+            - @399:1 export
           Name: my_extern
-          Type: @394:24 Terrain
+          Type: @399:24 Terrain
   InlineClasses:
     - @41:1
       Name: MyNode1
       Extends: @42:11 Node
     - @46:1 MyRefCounted1
   InlineExterns:
-    - @380:1
+    - @385:1
       Name: Terrain
-      Extends: @381:11 Node
+      Extends: @386:11 Node
       Members:
-        - @383:3
-          Func: @383:10
+        - @388:3
+          Func: @388:10
             Annotations:
-              - @383:3 const
+              - @388:3 const
             Name: foo
-            Return: @383:24 void
-        - @384:3
-          Func: @384:13
+            Return: @388:24 void
+        - @389:3
+          Func: @389:13
             Annotations:
-              - @384:3 deferred
+              - @389:3 deferred
             Name: bar
-            Return: @384:27 void
-        - @385:3
-          Func: @385:8
+            Return: @389:27 void
+        - @390:3
+          Func: @390:8
             Annotations:
-              - @385:3 rpc
+              - @390:3 rpc
             Name: qux
-            Return: @385:22 void
-        - @386:3
-          Var: @386:3
+            Return: @390:22 void
+        - @391:3
+          Var: @391:3
             Name: baz
-            Type: @386:12 int
-        - @387:3
-          Signal: @387:3
+            Type: @391:12 int
+        - @392:3
+          Signal: @392:3
             Name: done
             Params:
-              - @387:15
+              - @392:15
                 Name: a
-                Type: @387:18 bool
-              - @387:24
+                Type: @392:18 bool
+              - @392:24
                 Name: b
-                Type: @387:27 int
+                Type: @392:27 int

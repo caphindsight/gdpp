@@ -17,13 +17,13 @@ func (u *unit) header(name string) string {
 	w.ln("#pragma once")
 	w.ln("")
 	w.ln("#include <%s>", RuntimeHeaderName)
-	// Other GD++ headers may include this one in turn, and #pragma once cuts such a cycle short. So their classes
-	// and enums are forward-declared, and included at the end, unless they must be complete.
+	// Other GD++ headers may include this one in turn, and #pragma once cuts such a cycle short. So their classes,
+	// externs and enums are forward-declared, and included at the end, unless they must be complete.
 	names, complete := u.headerNames()
 	forward := map[string]bool{}
 	var forwardNames []string
 	for _, name := range names {
-		if s := u.symbols[name]; s != nil && s.gdpp && slices.Contains([]meta.Kind{meta.Object, meta.RefCounted, meta.Enum}, s.kind) &&
+		if s := u.symbols[name]; s != nil && s.gdpp && s.kind != meta.Other &&
 			!slices.Contains(complete, name) && !forward[name] {
 			forward[name] = true
 			forwardNames = append(forwardNames, name)

@@ -133,7 +133,7 @@ Add C++ and GD++ source files, `gd++pkg.toml` and `gd++proj.toml` to the preset'
 - `gd++ ls`: show an overview of the project, its dependencies and packages.
 - `gd++ init --vcs git`: set up `.gitignore` files for GD++.
 - `gd++ fix`: tidy up the project, e.g. reformat config files and delete leftover temporary files.
-- `gd++ trans file.gd++ -H/-S`: print the C++ that GD++ makes from a file. Great for learning the language.
+- `gd++ trans file.gd++`: print the C++ that GD++ makes from a file. Great for learning the language.
 
 Run `gd++ --help` or `gd++ <command> --help` for all options.
 
@@ -336,21 +336,28 @@ func jump() -> void {}
 
 ### Plain C++ when you need it
 
-You can put any C++ anywhere, with `decl` and `impl` blocks:
+You can put any C++ into a class, with `decl` and `impl` blocks:
 
 ```
 decl {
-  // Goes into the class, in the header file.
+  // Goes into the class, in its header file.
   void helper();
 }
 
 impl {
-  // Goes into the source file.
+  // Goes into the class's source file.
   void This::helper() {
     gd::print("Helping.");
   }
 }
+
+@global decl {
+  // Goes before the class, outside the godot namespace.
+  #include <vector>
+}
 ```
+
+Each class gets its own generated header and source file, e.g. `Player.h` and `Player.cpp`.
 
 Use them rarely: they bring the boilerplate back.
 

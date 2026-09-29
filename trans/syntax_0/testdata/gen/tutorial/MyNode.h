@@ -7,6 +7,12 @@
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 
+#line 93 "input.gd++"
+
+  #include <vector>
+
+#line 15 "MyNode.h"
+
 namespace godot {
 
 enum class Suit : int64_t;
@@ -19,37 +25,35 @@ class MyNode : public Node3D {
 	GDCLASS(MyNode, Node3D)
 
 private:
-#line 64 "input.gd++"
-
-
+#line 65 "input.gd++"
 
 
   void private_function();
 
-#line 30 "MyNode.h"
+#line 34 "MyNode.h"
 
 private:
-#line 87 "input.gd++"
+#line 85 "input.gd++"
 
   #define FOO 42
 
 
-#line 38 "MyNode.h"
+#line 42 "MyNode.h"
 
 private:
-#line 95 "input.gd++"
+#line 100 "input.gd++"
 
  public:
   void public_function();
 
-#line 46 "MyNode.h"
+#line 50 "MyNode.h"
 
 private:
-#line 216 "input.gd++"
+#line 221 "input.gd++"
 
   int64_t my_value_;
 
-#line 53 "MyNode.h"
+#line 57 "MyNode.h"
 
 public:
 	int64_t simple_var{};
@@ -61,12 +65,12 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 316 "input.gd++"
+#line 321 "input.gd++"
 
 
     int64_t my_property = 0;
 
-#line 70 "MyNode.h"
+#line 74 "MyNode.h"
 
 public:
 	static constexpr int64_t THE_ANSWER = 42;

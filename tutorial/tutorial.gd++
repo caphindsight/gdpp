@@ -48,7 +48,7 @@ class MyRefCounted1 {
 }
 
 // File-level and inline classes work the same. Pick whichever you like.
-// The generated file puts all classes on the same level.
+// Each class gets its own generated header and source file, named after it, e.g. MyNode.h and MyNode.cpp.
 // GD++ has no nested classes.
 
 // A file without a file-level class has a limited class declaration scope.
@@ -60,17 +60,15 @@ class MyRefCounted1 {
 // GD++ lets you embed any C++ code anywhere in the file.
 // This is very powerful, but use it rarely: it brings back boilerplate.
 // There are two keywords, decl and impl. You can combine them as decl impl.
+// Code blocks belong to a class, like everything else.
 
 decl {
-  // decl puts this C++ code inside the class definition, in the header file.
-  // To put code outside the class and outside the godot:: namespace, use decl before class_name.
-  // (Only decl, impl and decl impl may appear before class_name.)
+  // decl puts this C++ code inside the class definition, in the class's header file.
   void private_function();
 }
 
 impl {
-  // impl puts this C++ code in the source file, inside the godot:: namespace.
-  // To put code outside the godot:: namespace, use impl before class_name.
+  // impl puts this C++ code in the class's source file, inside the godot:: namespace.
   void This::private_function() {
     // `This` is the name of the current class, like Self in Rust.
     // GD++ emits a #define for it (and an #undef at the end of the file).
@@ -87,6 +85,13 @@ impl {
 decl impl {
   #define FOO 42
   // Don't forget to #undef at the end of the file!
+}
+
+// @global puts the code outside the class and outside the godot:: namespace, e.g. for includes.
+// It goes before the class in the header (decl), or before the definitions in the source file (impl).
+
+@global decl {
+  #include <vector>
 }
 
 // decl code goes in the private section of the class.
