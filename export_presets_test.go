@@ -4,6 +4,7 @@ package main
 
 import (
 	"os"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -56,11 +57,11 @@ func TestExportPresetsRoundTrip(t *testing.T) {
 	if got := e.presets[0].options.get("ssh_remote_deploy/run_script"); !strings.Contains(got, "[not.a.section]\nunzip -o -q \"{temp_dir}") {
 		t.Errorf("run_script = %q", got)
 	}
-	if got := e.presets[0].target(); got != "linux.x86_64" {
-		t.Errorf("target() = %q, want linux.x86_64", got)
+	if got := e.presets[0].targets(); !slices.Equal(got, []string{"linux.x86_64"}) {
+		t.Errorf("targets() = %q, want linux.x86_64", got)
 	}
-	if got := e.presets[1].target(); got != "" {
-		t.Errorf("Android target() = %q, want none", got)
+	if got := e.presets[1].targets(); got != nil {
+		t.Errorf("Android targets() = %q, want none", got)
 	}
 	if got := e.render(true); got != testPresets {
 		t.Errorf("render() = %q, want the file unchanged", got)
@@ -240,5 +241,24 @@ func TestExportInvalidArgs(t *testing.T) {
 				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 			}
 		})
+	}
+}
+
+func TestExportPresetTargets(t *testing.T) {
+	preset := func(platform, arch string) exportPreset {
+		return exportPreset{&cfgSection{lines: []string{"platform=" + quoteGodot(platform)}}, &cfgSection{lines: []string{"binary_format/architecture=" + quoteGodot(arch)}}}
+	}
+	for _, c := range []struct {
+		platform, arch string
+		want           []string
+	}{
+		{"macOS", "universal", []string{"macos.x86_64", "macos.arm64"}},
+		{"macOS", "arm64", []string{"macos.arm64"}},
+		{"Windows Desktop", "x86_32", []string{"windows.x86_32"}},
+		{"Windows Desktop", "universal", nil},
+	} {
+		if got := preset(c.platform, c.arch).targets(); !slices.Equal(got, c.want) {
+			t.Errorf("%s %s: targets() = %q, want %q", c.platform, c.arch, got, c.want)
+		}
 	}
 }

@@ -18,7 +18,7 @@ import (
 type CmdExport struct {
 	Gdext  bool     `arg:"--gdext" help:"build GDExtension libraries and set up GDExtension twins [default: without --engine]"`
 	Engine string   `arg:"--engine" placeholder:"NAME" help:"build export templates with this Godot engine and set up engine twins"`
-	Preset []string `arg:"--preset" placeholder:"NAME" help:"only set up twins of these presets [default: all Windows and Linux presets]"`
+	Preset []string `arg:"--preset" placeholder:"NAME" help:"only set up twins of these presets [default: all presets GD++ can export for: Windows, Linux, and without --engine macOS]"`
 	BuildOptions
 	NoClean bool   `arg:"--noclean" help:"don't clean the build caches first, for faster builds; for development only, avoid in ship builds, since a stale cache may pollute them"`
 	Godot   string `arg:"--godot" placeholder:"PATH" help:"also export the twins with this Godot editor, headless"`
@@ -104,18 +104,25 @@ func (c *CmdExport) choose(e exportPresets) ([]exportPreset, []string) {
 		if len(c.Preset) > 0 && !slices.Contains(c.Preset, preset.name()) {
 			continue
 		}
-		target := preset.target()
-		if target == "" || strings.HasPrefix(target, "macos.") {
+		presetTargets := preset.targets()
+		if len(presetTargets) == 0 {
 			LogWarn("Skipping the export preset %q, since GD++ can't export for its platform yet.", preset.name())
+			continue
+		}
+		// macOS export templates are app bundles, which engine builds don't make.
+		if c.Engine != "" && strings.HasPrefix(presetTargets[0], "macos.") {
+			LogWarn("Skipping the export preset %q, since GD++ can't build macOS export templates yet.", preset.name())
 			continue
 		}
 		Assert(c.Godot == "" || preset.main.get("export_path") != "", "Set the export path of the preset %q in Godot's Export dialog.", preset.name())
 		chosen = append(chosen, preset)
-		if !slices.Contains(targets, target) {
-			targets = append(targets, target)
+		for _, target := range presetTargets {
+			if !slices.Contains(targets, target) {
+				targets = append(targets, target)
+			}
 		}
 	}
-	Assert(len(chosen) > 0, "Found no Windows or Linux export presets to set up twins of.")
+	Assert(len(chosen) > 0, "Found no export presets GD++ can export for to set up twins of.")
 	return chosen, targets
 }
 

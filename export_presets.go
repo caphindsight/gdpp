@@ -126,18 +126,22 @@ func (e exportPreset) twinSuffix() string {
 	return ""
 }
 
-// target returns the preset's build target, e.g. "linux.x86_64", or "" if
-// GD++ can't build for it.
-func (e exportPreset) target() string {
+// targets returns the preset's build targets, e.g. linux.x86_64, or none if
+// GD++ can't build for it. Universal macOS presets need both of macOS's
+// architectures, whose libraries Godot combines when exporting.
+func (e exportPreset) targets() []string {
 	platform := presetPlatforms[e.main.get("platform")]
-	arch := ""
-	if e.options != nil {
-		arch = fullName(buildArchs, e.options.get("binary_format/architecture"))
+	if platform == "" || e.options == nil {
+		return nil
 	}
-	if platform == "" || arch == "" {
-		return ""
+	arch := e.options.get("binary_format/architecture")
+	if platform == "macos" && arch == "universal" {
+		return []string{"macos.x86_64", "macos.arm64"}
 	}
-	return platform + "." + arch
+	if arch = fullName(buildArchs, arch); arch == "" {
+		return nil
+	}
+	return []string{platform + "." + arch}
 }
 
 // exportPresets is a parsed export_presets.cfg.
@@ -226,7 +230,7 @@ func twin(original exportPreset, suffix string, binDir Path) exportPreset {
 	excludes := sourceExcludes
 	if suffix == engineTwinSuffix {
 		excludes = slices.Concat(sourceExcludes, extensionExcludes)
-		platform, arch, _ := strings.Cut(original.target(), ".")
+		platform, arch, _ := strings.Cut(original.targets()[0], ".")
 		// Absolute paths: Godot copies templates without resolving res:// paths.
 		t.options.set("custom_template/debug", quoteGodot(binDir.Cd(engineBinary(platform, arch, false)).GetOsPath()))
 		t.options.set("custom_template/release", quoteGodot(binDir.Cd(engineBinary(platform, arch, true)).GetOsPath()))
