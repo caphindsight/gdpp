@@ -6,6 +6,7 @@ package main
 import (
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -85,6 +86,27 @@ func TestEngineBinary(t *testing.T) {
 		if got := engineBinary(tc.platform, tc.arch, tc.ship); got != tc.want {
 			t.Errorf("engineBinary(%q, %q, %v) = %q, want %q", tc.platform, tc.arch, tc.ship, got, tc.want)
 		}
+	}
+}
+
+func TestEngineEnv(t *testing.T) {
+	m := withEngineFS(t)
+	t.Setenv("LOCALAPPDATA", `C:\Users\me\AppData\Local`)
+	t.Setenv("TMPDIR", "/tmp")
+	env := engineEnv(projectBuildCache(LoadProject(Cwd())))
+	tmp := "/games/my_game/.gd++proj/build/tmp"
+	for _, kv := range env {
+		if strings.HasPrefix(kv, "LOCALAPPDATA=") || kv == "TMPDIR=/tmp" {
+			t.Errorf("engineEnv() has %q", kv)
+		}
+	}
+	for _, key := range []string{"TMPDIR", "TEMP", "TMP"} {
+		if !slices.Contains(env, key+"="+tmp) {
+			t.Errorf("engineEnv() lacks %s=%s", key, tmp)
+		}
+	}
+	if _, ok := m.nodes[tmp]; !ok {
+		t.Errorf("engineEnv() didn't create %s", tmp)
 	}
 }
 

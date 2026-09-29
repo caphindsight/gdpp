@@ -16,12 +16,12 @@ public:
 	static constexpr const char *gdpp_name = "Config";
 
 	explicit Config(Base *p_object) :
-			_gdpp_object(p_object) {}
+			_gdpp_base(p_object) {}
 
 	Variant get_value(const String &key) const;
 
 private:
-	Base *_gdpp_object;
+	Base *_gdpp_base;
 };
 
 #define This Reader
@@ -41,7 +41,7 @@ protected:
 #undef This
 
 inline Variant Config::get_value(const String &key) const {
-	return gdpp::from_variant<Variant>(_gdpp_object->call("get_value", key));
+	return gdpp::from_variant<Variant>(_gdpp_base->call("get_value", key));
 }
 
 } // namespace godot

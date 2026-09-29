@@ -265,7 +265,7 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	w.ln("\tstatic constexpr const char *gdpp_name = %q;", e.name)
 	w.ln("")
 	w.ln("\texplicit %s(Base *p_object) :", e.name)
-	w.ln("\t\t\t_gdpp_object(p_object) {}")
+	w.ln("\t\t\t_gdpp_base(p_object) {}")
 	w.ln("")
 	for _, f := range e.funcs {
 		w.ln("\t%s%s(%s) const;", withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params))
@@ -279,7 +279,7 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	}
 	w.ln("")
 	w.ln("private:")
-	w.ln("\tBase *_gdpp_object;")
+	w.ln("\tBase *_gdpp_base;")
 	w.ln("};")
 }
 
@@ -301,10 +301,10 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, f := range e.funcs {
 		w.ln("")
 		w.ln("inline %s%s::%s(%s) const {", withSpace(f.ret.cpp), e.name, f.f.Name, params(nil, f.params, f.f.Params))
-		call := fmt.Sprintf("_gdpp_object->call(%q%s)", f.f.Name, args(f.params, f.f.Params))
+		call := fmt.Sprintf("_gdpp_base->call(%q%s)", f.f.Name, args(f.params, f.f.Params))
 		switch {
 		case f.deferred:
-			w.ln("\t_gdpp_object->call_deferred(%q%s);", f.f.Name, args(f.params, f.f.Params))
+			w.ln("\t_gdpp_base->call_deferred(%q%s);", f.f.Name, args(f.params, f.f.Params))
 		case f.ret.void:
 			w.ln("\t%s;", call)
 		default:
@@ -315,7 +315,7 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, v := range e.vars {
 		w.ln("")
 		w.ln("inline %s%s::%s() const {", withSpace(v.t.cpp), e.name, v.getter)
-		w.ln("\treturn gdpp::from_variant<%s>(_gdpp_object->get(%q));", v.t.cpp, v.v.Name)
+		w.ln("\treturn gdpp::from_variant<%s>(_gdpp_base->get(%q));", v.t.cpp, v.v.Name)
 		w.ln("}")
 		w.ln("")
 		w.ln("inline void %s::%s(%sp_value) const {", e.name, v.setter, withSpace(v.t.param()))
@@ -323,13 +323,13 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		if v.t.enum != nil {
 			value = "static_cast<int64_t>(p_value)"
 		}
-		w.ln("\t_gdpp_object->set(%q, %s);", v.v.Name, value)
+		w.ln("\t_gdpp_base->set(%q, %s);", v.v.Name, value)
 		w.ln("}")
 	}
 	for _, s := range e.signals {
 		w.ln("")
 		w.ln("inline gdpp::Emitted %s::%s(%s) const {", e.name, s.s.Name, params(nil, s.params, s.s.Params))
-		w.ln("\treturn gdpp::Emitted{ _gdpp_object->emit_signal(%q%s) };", s.s.Name, args(s.params, s.s.Params))
+		w.ln("\treturn gdpp::Emitted{ _gdpp_base->emit_signal(%q%s) };", s.s.Name, args(s.params, s.s.Params))
 		w.ln("}")
 	}
 }

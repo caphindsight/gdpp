@@ -15,11 +15,17 @@ import (
 // by line as they arrive, and returned once the subprocess exits. Done is
 // called on success, Fail on failure.
 func Exec(taskName string, dir Path, cmd string, args ...string) string {
+	return ExecEnv(taskName, dir, nil, cmd, args...)
+}
+
+// ExecEnv is Exec with the environment env, or this process's if nil.
+func ExecEnv(taskName string, dir Path, env []string, cmd string, args ...string) string {
 	t := LogTask(taskName)
 	t.LogString(fmt.Sprintf("%s$ %s", dir.ToString(), strings.Join(append([]string{cmd}, args...), " ")))
 
 	c := exec.Command(cmd, args...)
 	c.Dir = dir.GetOsPath()
+	c.Env = env
 	pr, pw := io.Pipe()
 	c.Stdout, c.Stderr = pw, pw
 

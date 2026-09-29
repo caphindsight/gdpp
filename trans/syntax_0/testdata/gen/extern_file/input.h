@@ -13,7 +13,7 @@ public:
 	static constexpr const char *gdpp_name = "Terrain3";
 
 	explicit Terrain3(Base *p_object) :
-			_gdpp_object(p_object) {}
+			_gdpp_base(p_object) {}
 
 	double height(double x) const;
 	int64_t get_size() const;
@@ -21,23 +21,23 @@ public:
 	gdpp::Emitted done() const;
 
 private:
-	Base *_gdpp_object;
+	Base *_gdpp_base;
 };
 
 inline double Terrain3::height(double x) const {
-	return gdpp::from_variant<double>(_gdpp_object->call("height", x));
+	return gdpp::from_variant<double>(_gdpp_base->call("height", x));
 }
 
 inline int64_t Terrain3::get_size() const {
-	return gdpp::from_variant<int64_t>(_gdpp_object->get("size"));
+	return gdpp::from_variant<int64_t>(_gdpp_base->get("size"));
 }
 
 inline void Terrain3::set_size(int64_t p_value) const {
-	_gdpp_object->set("size", p_value);
+	_gdpp_base->set("size", p_value);
 }
 
 inline gdpp::Emitted Terrain3::done() const {
-	return gdpp::Emitted{ _gdpp_object->emit_signal("done") };
+	return gdpp::Emitted{ _gdpp_base->emit_signal("done") };
 }
 
 } // namespace godot

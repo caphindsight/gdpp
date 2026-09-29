@@ -18,7 +18,7 @@ public:
 	static constexpr const char *gdpp_name = "Terrain2";
 
 	explicit Terrain2(Base *p_object) :
-			_gdpp_object(p_object) {}
+			_gdpp_base(p_object) {}
 
 	double height(double x, double z) const;
 	void rebuild() const;
@@ -28,7 +28,7 @@ public:
 	gdpp::Emitted done(bool ok) const;
 
 private:
-	Base *_gdpp_object;
+	Base *_gdpp_base;
 };
 
 #define This User
@@ -55,27 +55,27 @@ protected:
 #undef This
 
 inline double Terrain2::height(double x, double z) const {
-	return gdpp::from_variant<double>(_gdpp_object->call("height", x, z));
+	return gdpp::from_variant<double>(_gdpp_base->call("height", x, z));
 }
 
 inline void Terrain2::rebuild() const {
-	_gdpp_object->call_deferred("rebuild");
+	_gdpp_base->call_deferred("rebuild");
 }
 
 inline String Terrain2::name() const {
-	return gdpp::from_variant<String>(_gdpp_object->call("name"));
+	return gdpp::from_variant<String>(_gdpp_base->call("name"));
 }
 
 inline int64_t Terrain2::get_size() const {
-	return gdpp::from_variant<int64_t>(_gdpp_object->get("size"));
+	return gdpp::from_variant<int64_t>(_gdpp_base->get("size"));
 }
 
 inline void Terrain2::set_size(int64_t p_value) const {
-	_gdpp_object->set("size", p_value);
+	_gdpp_base->set("size", p_value);
 }
 
 inline gdpp::Emitted Terrain2::done(bool ok) const {
-	return gdpp::Emitted{ _gdpp_object->emit_signal("done", ok) };
+	return gdpp::Emitted{ _gdpp_base->emit_signal("done", ok) };
 }
 
 } // namespace godot

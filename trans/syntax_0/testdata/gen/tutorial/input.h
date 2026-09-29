@@ -36,7 +36,7 @@ public:
 	static constexpr const char *gdpp_name = "Terrain";
 
 	explicit Terrain(Base *p_object) :
-			_gdpp_object(p_object) {}
+			_gdpp_base(p_object) {}
 
 	void foo() const;
 	void bar() const;
@@ -45,7 +45,7 @@ public:
 	gdpp::Emitted done(bool a, int64_t b) const;
 
 private:
-	Base *_gdpp_object;
+	Base *_gdpp_base;
 };
 
 #define This MyNode
@@ -159,23 +159,23 @@ protected:
 #undef This
 
 inline void Terrain::foo() const {
-	_gdpp_object->call("foo");
+	_gdpp_base->call("foo");
 }
 
 inline void Terrain::bar() const {
-	_gdpp_object->call_deferred("bar");
+	_gdpp_base->call_deferred("bar");
 }
 
 inline int64_t Terrain::get_baz() const {
-	return gdpp::from_variant<int64_t>(_gdpp_object->get("baz"));
+	return gdpp::from_variant<int64_t>(_gdpp_base->get("baz"));
 }
 
 inline void Terrain::set_baz(int64_t p_value) const {
-	_gdpp_object->set("baz", p_value);
+	_gdpp_base->set("baz", p_value);
 }
 
 inline gdpp::Emitted Terrain::done(bool a, int64_t b) const {
-	return gdpp::Emitted{ _gdpp_object->emit_signal("done", a, b) };
+	return gdpp::Emitted{ _gdpp_base->emit_signal("done", a, b) };
 }
 
 } // namespace godot

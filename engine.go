@@ -7,6 +7,8 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"slices"
@@ -39,7 +41,7 @@ var (
 
 // engineBuildVersion is the version of the project build cache's layout and
 // of the engine names scanner. Bump it when either changes, to start over.
-const engineBuildVersion = 1
+const engineBuildVersion = 2
 
 // projectBuildCache returns res://.gd++proj/build, the project build cache.
 func projectBuildCache(p Project) Path {
@@ -127,14 +129,15 @@ func buildEngine(p Project, name string, o BuildOptions, targets []string) {
 	generateCompat(cache, names, loadEngineNames(cache))
 	generateEngineModule(p, cache, pkgs)
 	for _, target := range targets {
-		Exec("Building engine "+Styled(name, Bold)+" for "+o.describe(target, false)+"...", cache.Cd("godot"), "scons", o.engineSconsArgs(target)...)
+		ExecEnv("Building engine "+Styled(name, Bold)+" for "+o.describe(target, false)+"...", cache.Cd("godot"), engineEnv(cache), "scons", o.engineSconsArgs(target)...)
 	}
 }
 
 // prepareEngineBuild returns the project build cache, with a copy of the
 // engine called name. The cache's build.toml records the engine's name; if it
 // changed, the cache is deleted and the engine copied again. The copy is only
-// made once, since SCons builds inside it. Asserts the engine is at least as
+// made once, since SCons builds inside it, along with installing the engine's
+// dependencies. Asserts the engine is at least as
 // new as the API specs of pkgs.
 func prepareEngineBuild(p Project, name string, pkgs []enginePackage) Path {
 	cache := projectBuildCache(p)
@@ -152,6 +155,7 @@ func prepareEngineBuild(p Project, name string, pkgs []enginePackage) Path {
 		p.Caches[2].GetPath(name).Copy(cache.Cd("godot"))
 		t.Done()
 		s.End()
+		installEngineDeps(cache)
 		state.WriteString(stateText)
 	}
 
@@ -165,6 +169,57 @@ func prepareEngineBuild(p Project, name string, pkgs []enginePackage) Path {
 		LogWarn("Engine %s is Godot %s, but the project is made for Godot %s.", name, version, p.GodotVersion)
 	}
 	return cache
+}
+
+// installEngineDeps runs the engine copy's misc/scripts/install_*.py, which
+// download the libraries that some engine drivers need, e.g. Direct3D 12's.
+func installEngineDeps(cache Path) {
+	scripts := cache.Cd("godot", "misc", "scripts")
+	if !scripts.IsDir() {
+		return
+	}
+	python := ""
+	for _, script := range scripts.Ls() {
+		name := script.Name()
+		if !strings.HasPrefix(name, "install_") || path.Ext(name) != ".py" {
+			continue
+		}
+		if python == "" {
+			python = findPython()
+		}
+		ExecEnv("Installing engine dependencies with "+name+"...", cache.Cd("godot"), engineEnv(cache), python, "misc/scripts/"+name)
+	}
+}
+
+// findPython returns the name of the Python interpreter.
+func findPython() string {
+	for _, name := range []string{"python3", "python"} {
+		if _, err := exec.LookPath(name); err == nil {
+			return name
+		}
+	}
+	LogFatal("Failed to find Python, see https://www.python.org to install it.")
+	return ""
+}
+
+// engineEnv returns the environment of the engine's SCons and install
+// scripts, which keeps everything they write in the project build cache: with
+// $LOCALAPPDATA unset, the engine's dependencies go to and are looked up in
+// the engine copy's bin/build_deps, instead of $LOCALAPPDATA/Godot/build_deps.
+// Temporary files go to the cache's tmp directory, which it creates.
+func engineEnv(cache Path) []string {
+	tmp := cache.Cd("tmp")
+	if !tmp.Exists() {
+		tmp.CreateDirectory()
+	}
+	env := slices.DeleteFunc(os.Environ(), func(kv string) bool {
+		key, _, _ := strings.Cut(kv, "=")
+		return slices.ContainsFunc([]string{"LOCALAPPDATA", "TMPDIR", "TEMP", "TMP"}, func(k string) bool { return strings.EqualFold(k, key) })
+	})
+	for _, key := range []string{"TMPDIR", "TEMP", "TMP"} {
+		env = append(env, key+"="+tmp.GetOsPath())
+	}
+	return env
 }
 
 var engineVersionPattern = regexp.MustCompile(`(?m)^(major|minor)\s*=\s*(\d+)`)

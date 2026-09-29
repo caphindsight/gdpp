@@ -76,24 +76,24 @@ public:
 	ExtPtr() = default;
 	ExtPtr(std::nullptr_t) {}
 	ExtPtr(Base *p_object) :
-			object(p_object) {}
+			base_(p_object) {}
 
-	Base *get() const { return object; }
-	Base *base() { return object; }
-	const Base *base() const { return object; }
-	explicit operator bool() const { return object != nullptr; }
-	bool operator==(const ExtPtr &p_other) const { return object == p_other.object; }
-	operator godot::Variant() const { return godot::Variant(object); }
+	Base *get() const { return base_; }
+	Base *base() { return base_; }
+	const Base *base() const { return base_; }
+	explicit operator bool() const { return base_ != nullptr; }
+	bool operator==(const ExtPtr &p_other) const { return base_ == p_other.base_; }
+	operator godot::Variant() const { return godot::Variant(base_); }
 
 	struct Arrow {
 		T wrapper;
 		T *operator->() { return &wrapper; }
 	};
-	Arrow operator->() const { return Arrow{ T(object) }; }
+	Arrow operator->() const { return Arrow{ T(base_) }; }
 
 private:
-	Base *object = nullptr;
-	godot::Ref<godot::RefCounted> keep; // Keeps a refcounted object from memnew_ext alive until an ExtRef takes it.
+	Base *base_ = nullptr;
+	godot::Ref<godot::RefCounted> keep_; // Keeps a refcounted object from memnew_ext alive until an ExtRef takes it.
 
 	template <typename U>
 	friend ExtPtr<U> memnew_ext();
@@ -109,27 +109,27 @@ public:
 	ExtRef() = default;
 	ExtRef(std::nullptr_t) {}
 	ExtRef(const godot::Ref<Base> &p_object) :
-			object(p_object) {}
+			base_(p_object) {}
 	ExtRef(Base *p_object) :
-			object(p_object) {}
+			base_(p_object) {}
 	ExtRef(const ExtPtr<T> &p_object) :
-			object(p_object.get()) {}
+			base_(p_object.get()) {}
 
-	const godot::Ref<Base> &get() const { return object; }
-	godot::Ref<Base> &base() { return object; }
-	const godot::Ref<Base> &base() const { return object; }
-	explicit operator bool() const { return object.is_valid(); }
-	bool operator==(const ExtRef &p_other) const { return object == p_other.object; }
-	operator godot::Variant() const { return godot::Variant(object); }
+	const godot::Ref<Base> &get() const { return base_; }
+	godot::Ref<Base> &base() { return base_; }
+	const godot::Ref<Base> &base() const { return base_; }
+	explicit operator bool() const { return base_.is_valid(); }
+	bool operator==(const ExtRef &p_other) const { return base_ == p_other.base_; }
+	operator godot::Variant() const { return godot::Variant(base_); }
 
 	struct Arrow {
 		T wrapper;
 		T *operator->() { return &wrapper; }
 	};
-	Arrow operator->() const { return Arrow{ T(object.ptr()) }; }
+	Arrow operator->() const { return Arrow{ T(base_.ptr()) }; }
 
 private:
-	godot::Ref<Base> object;
+	godot::Ref<Base> base_;
 };
 
 // memnew_ext creates an object of the extern T, like memnew: an instance of the ClassDB class or global script class
@@ -152,7 +152,7 @@ ExtPtr<T> memnew_ext() {
 	}
 	ExtPtr<T> result = godot::Object::cast_to<typename T::Base>(object.operator godot::Object *());
 	ERR_FAIL_COND_V_MSG(!result, nullptr, godot::String("Failed to create an object of the extern ") + T::gdpp_name + ".");
-	result.keep = object;
+	result.keep_ = object;
 	return result;
 }
 
@@ -164,6 +164,10 @@ void memdelete_ext(ExtPtr<T> p_object) {
 }
 
 } // namespace gdpp
+
+// memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for ExtPtrs.
+#define memnew_ext(m_class) gdpp::memnew_ext<m_class>()
+#define memdelete_ext(m_object) gdpp::memdelete_ext(m_object)
 
 // Engine builds (see GD++'s compat headers) have Godot's types in the global namespace, where their templates must be
 // specialized, and describe types without GDExtension's types.
