@@ -7,6 +7,8 @@
 
 namespace godot {
 
+class Terrain3;
+
 class Terrain3 {
 public:
 	using Base = Node3D;

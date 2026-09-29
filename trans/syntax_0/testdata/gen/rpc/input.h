@@ -7,6 +7,8 @@
 
 namespace godot {
 
+class Player;
+
 enum class Team : int64_t {
 	RED = 0,
 	BLUE = 1,
@@ -14,8 +16,6 @@ enum class Team : int64_t {
 
 enum _gdpp_Player_Team : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Player_Team, "Player.Team")
-
-class Player;
 
 #define This Player
 class Player : public Node {

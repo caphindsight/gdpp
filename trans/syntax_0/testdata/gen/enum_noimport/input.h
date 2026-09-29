@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Deck;
+class Other;
+
 enum class Suit : int64_t {
 	A = 0,
 	B = 1,
@@ -29,9 +32,6 @@ GDPP_ENUM_TAG(_gdpp_Deck_Local, "Deck.Local")
 
 enum _gdpp_Other_Local : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Other_Local, "Other.Local")
-
-class Deck;
-class Other;
 
 #define This Deck
 class Deck : public RefCounted {

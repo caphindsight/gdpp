@@ -7,6 +7,8 @@
 
 namespace godot {
 
+class Cards;
+
 enum class Suit : int64_t {
 	DIAMONDS = 0,
 	CLUBS = 3,
@@ -15,8 +17,6 @@ enum class Suit : int64_t {
 
 enum _gdpp_Cards_Suit : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Cards_Suit, "Cards.Suit")
-
-class Cards;
 
 #define This Cards
 class Cards : public RefCounted {

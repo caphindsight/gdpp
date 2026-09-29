@@ -10,6 +10,11 @@
 
 namespace godot {
 
+class Terrain;
+class MyNode;
+class MyNode1;
+class MyRefCounted1;
+
 enum class Suit : int64_t {
 	DIAMONDS = 0,
 	CLUBS = 1,
@@ -25,10 +30,6 @@ enum class Rank : int64_t {
 
 enum _gdpp_MyNode_Suit : int64_t {};
 GDPP_ENUM_TAG(_gdpp_MyNode_Suit, "MyNode.Suit")
-
-class MyNode;
-class MyNode1;
-class MyRefCounted1;
 
 class Terrain {
 public:
@@ -62,7 +63,7 @@ private:
 
   void private_function();
 
-#line 66 "input.h"
+#line 67 "input.h"
 
 private:
 #line 87 "input.gd++"
@@ -70,7 +71,7 @@ private:
   #define FOO 42
 
 
-#line 74 "input.h"
+#line 75 "input.h"
 
 private:
 #line 95 "input.gd++"
@@ -78,14 +79,14 @@ private:
  public:
   void public_function();
 
-#line 82 "input.h"
+#line 83 "input.h"
 
 private:
 #line 216 "input.gd++"
 
   int64_t my_value_;
 
-#line 89 "input.h"
+#line 90 "input.h"
 
 public:
 	int64_t simple_var{};
@@ -102,7 +103,7 @@ private:
 
     int64_t my_property = 0;
 
-#line 106 "input.h"
+#line 107 "input.h"
 
 public:
 	static constexpr int64_t THE_ANSWER = 42;

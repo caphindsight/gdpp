@@ -7,6 +7,8 @@
 
 namespace godot {
 
+class Spawner;
+
 enum class Kind : int64_t {
 	SMALL = 0,
 	BIG = 1,
@@ -14,8 +16,6 @@ enum class Kind : int64_t {
 
 enum _gdpp_Spawner_Kind : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Spawner_Kind, "Spawner.Kind")
-
-class Spawner;
 
 #define This Spawner
 class Spawner : public Node {

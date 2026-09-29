@@ -7,6 +7,8 @@
 
 namespace godot {
 
+class Names;
+
 enum class HTTPCode : int64_t {
 	OK = 0,
 };
@@ -27,8 +29,6 @@ GDPP_ENUM_TAG(_gdpp_Names_MyEnum, "Names.MyEnum")
 
 enum _gdpp_Names_X : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Names_X, "Names.X")
-
-class Names;
 
 #define This Names
 class Names : public RefCounted {

@@ -7,6 +7,10 @@
 
 namespace godot {
 
+class Game;
+class Referee;
+class Bystander;
+
 enum class Mode : int64_t {
 	EASY = 0,
 	NORMAL = 1,
@@ -18,10 +22,6 @@ GDPP_ENUM_TAG(_gdpp_Game_Mode, "Game.Mode")
 
 enum _gdpp_Referee_Mode : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Referee_Mode, "Referee.Mode")
-
-class Game;
-class Referee;
-class Bystander;
 
 #define This Game
 class Game : public RefCounted {

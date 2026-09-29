@@ -8,16 +8,15 @@
 namespace godot {
 
 enum class Level : int64_t;
+class Menu;
+class Hud;
+class Plain;
 
 enum _gdpp_Menu_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Menu_Level, "Menu.Level")
 
 enum _gdpp_Hud_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Hud_Level, "Hud.Level")
-
-class Menu;
-class Hud;
-class Plain;
 
 #define This Menu
 class Menu : public RefCounted {

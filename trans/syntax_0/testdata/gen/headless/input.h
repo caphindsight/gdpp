@@ -13,6 +13,8 @@
 
 namespace godot {
 
+class A;
+
 enum class Shared : int64_t {
 	ONE = 0,
 	TWO = 1,
@@ -22,8 +24,6 @@ constexpr int64_t LIMIT = 100;
 
 enum _gdpp_A_Shared : int64_t {};
 GDPP_ENUM_TAG(_gdpp_A_Shared, "A.Shared")
-
-class A;
 
 #define This A
 class A : public RefCounted {

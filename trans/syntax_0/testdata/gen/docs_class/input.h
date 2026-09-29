@@ -7,6 +7,8 @@
 
 namespace godot {
 
+class Player;
+
 enum class State : int64_t {
 	IDLE = 0,
 	RUNNING = 1,
@@ -14,8 +16,6 @@ enum class State : int64_t {
 
 enum _gdpp_Player_State : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Player_State, "Player.State")
-
-class Player;
 
 #define This Player
 class Player : public Node3D {

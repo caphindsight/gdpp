@@ -11,11 +11,11 @@ namespace godot {
 class Door;
 class Key;
 enum class Level : int64_t;
+class Lock;
+class Gate;
 
 enum _gdpp_Gate_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Gate_Level, "Gate.Level")
-
-class Gate;
 
 class Lock {
 public:

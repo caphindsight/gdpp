@@ -8,6 +8,7 @@
 
 namespace godot {
 
+class Terrain2;
 class Digger;
 
 class Terrain2 {

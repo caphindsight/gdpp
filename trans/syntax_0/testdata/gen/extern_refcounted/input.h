@@ -8,6 +8,7 @@
 
 namespace godot {
 
+class Config;
 class Reader;
 
 class Config {

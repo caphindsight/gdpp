@@ -42,7 +42,8 @@ func (u *unit) header() string {
 	w.ln("")
 	w.ln("namespace godot {")
 	u.aliases(w, names, nil)
-	if len(forwardNames) > 0 {
+	// The classes and externs of this file are forward-declared too, since they may use each other.
+	if len(forwardNames)+len(u.externs)+len(u.classes) > 0 {
 		w.ln("")
 		for _, name := range forwardNames {
 			if u.symbols[name].kind == meta.Enum {
@@ -50,6 +51,12 @@ func (u *unit) header() string {
 			} else {
 				w.ln("class %s;", name)
 			}
+		}
+		for _, e := range u.externs {
+			w.ln("class %s;", e.name)
+		}
+		for _, c := range u.classes {
+			w.ln("class %s;", c.name)
 		}
 	}
 	for _, s := range u.enums {
@@ -71,12 +78,6 @@ func (u *unit) header() string {
 			w.ln("")
 			w.ln("enum %s : int64_t {};", tagName(c, e))
 			w.ln("GDPP_ENUM_TAG(%s, %q)", tagName(c, e), c.name+"."+e.name)
-		}
-	}
-	if len(u.classes) > 0 {
-		w.ln("")
-		for _, c := range u.classes {
-			w.ln("class %s;", c.name)
 		}
 	}
 	for _, e := range u.externs {

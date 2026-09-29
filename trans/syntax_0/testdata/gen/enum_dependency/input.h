@@ -8,11 +8,10 @@
 namespace godot {
 
 enum class Level : int64_t;
+class Quest;
 
 enum _gdpp_Quest_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Quest_Level, "Quest.Level")
-
-class Quest;
 
 #define This Quest
 class Quest : public RefCounted {

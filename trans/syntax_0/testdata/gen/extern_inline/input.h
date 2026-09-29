@@ -10,6 +10,7 @@
 
 namespace godot {
 
+class Terrain2;
 class User;
 
 class Terrain2 {
