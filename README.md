@@ -4,18 +4,20 @@ Write Godot games in C++, without the boilerplate.
 
 ```
 class_name HelloWorld
-extends Label
+extends Node
 
 @override
 func _ready() -> void {
-  set_text("Hello, world!");
+  Label* label = memnew(Label);
+  label->set_text("Hello, world!");
+  add_child(label);
 }
 ```
 
-Save this as `hello/hello_world.gd++` in your Godot project and run:
+Save this as `hello_world.gd++` anywhere in your Godot project and run:
 
 ```sh
-gd++ init hello --bind 10.0.0-stable --spec 4.7.2-stable
+gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
 gd++ fetch --missing
 gd++ build hello
 ```
@@ -24,8 +26,8 @@ Open the project in Godot. `HelloWorld` is now a node type, like any built-in no
 
 GD++ is two things in one tool:
 
-1. **A build system** for Godot C++ code. It downloads the Godot C++ bindings and builds GDExtension libraries.
-2. **The GD++ language.** It looks like GDScript, but it compiles to regular C++. You get the speed of C++, and you don't write the Godot glue code by hand.
+1. **A miniature build system** for Godot C++ code. It manages the versioned dependencies and builds GDExtension libraries.
+2. **The GD++ language.** Definitions look like GDScript, but implementation is regular C++. You get the speed of C++, and you don't write the Godot glue code by hand.
 
 GD++ is one CLI program, `gd++`. It follows the Godot way: everything you need ships in one place.
 
@@ -34,17 +36,16 @@ GD++ is one CLI program, `gd++`. It follows the Godot way: everything you need s
 GD++ is written in Go. To build it, run:
 
 ```sh
-make install  # Builds gd++ and copies it to /usr/local/bin.
+make && sudo make install  # Builds gd++ and copies it to /usr/local/bin.
 ```
 
 Then install the tools GD++ needs to compile C++ (Git, SCons, a C++ compiler, and so on):
 
 ```sh
+# Caution: this is experimental, it hasn't been tested on all platforms.
 gd++ install         # Uses your system's package manager.
 gd++ install --echo  # Or just print the commands, to run them yourself.
 ```
-
-This works on Debian/Ubuntu, Fedora, Arch, openSUSE, macOS (with Homebrew) and Windows (with winget).
 
 ## The build system
 
@@ -69,12 +70,15 @@ syntax = 0              # The GD++ language version.
 std = "c++20"           # The C++ standard.
 ```
 
+For small projects with a single package, it can be initialized at the project root directory `.` aka `res://`.
+
 Every `.gd++` file in the package (also `.gdpp` or `.gg`) is part of the package. You don't need to list them anywhere.
 
-You can also mix in plain C++ classes. Tell GD++ about them, so it registers them with Godot:
+You can also mix in plain C++ classes, though you'll be missing on many nice features.
+Tell GD++ about them, so it registers them with Godot:
 
 ```sh
-gd++ init my_package --class Foo --include pkg://foo.h --icon pkg://foo.svg
+gd++ init my_package --class Foo --include pkg://foo.h [--icon pkg://foo.svg]
 ```
 
 `pkg://` paths are relative to the package root. `res://` paths are relative to the project root, as in Godot.
@@ -85,7 +89,7 @@ GD++ needs three kinds of dependencies. It downloads them for you from the [GD++
 
 - **Godot C++ bindings**: the godot-cpp library.
 - **Godot API specs**: descriptions of all Godot classes, for one Godot version.
-- **Godot engines**: the Godot source code. GD++ can fetch and store them, but doesn't build with them.
+- **Godot engines**: the Godot source code. This is currently unused, so don't bother with them.
 
 ```sh
 gd++ fetch --index            # List what's available.
@@ -98,6 +102,7 @@ Dependencies live in the project, in one of two caches:
 - `_gd++proj/`: the checked in cache. Commit it, so your team gets the same versions.
 
 Use `gd++ checkin` to move dependencies between the caches, `gd++ vendor` to copy them in or out (for example from a `.tar.gz`), and `gd++ rm` to delete them.
+So if you're using a custom build of the engine, for example, you can pack its `extension_api.json` into an archive and then `gd++ vendor` it into a GD++ project.
 
 ### Building
 
@@ -105,8 +110,8 @@ Use `gd++ checkin` to move dependencies between the caches, `gd++ vendor` to cop
 gd++ build                        # Build the package in the current directory.
 gd++ build --proj                 # Build every package in the project.
 gd++ build -w                     # Build for Windows.
-gd++ build --for l.x64 --for w.x64  # Build for Linux and Windows at once.
-gd++ build --ship                 # Release build, with link-time optimization.
+gd++ build --for l.x64 w.x64      # Build for Linux and Windows at once.
+gd++ build --ship                 # Release build: optimized, no debug symbols or embedded documentation.
 ```
 
 The build writes the libraries and a `.gdextension` file into the package root, so Godot loads them right away. Debug builds support hot reload: rebuild while the editor is open, and Godot picks up the changes.
@@ -128,7 +133,7 @@ Add C++ and GD++ source files, `gd++pkg.toml` and `gd++proj.toml` to the preset'
 - `gd++ ls`: show an overview of the project, its dependencies and packages.
 - `gd++ init --vcs git`: set up `.gitignore` files for GD++.
 - `gd++ fix`: tidy up the project, e.g. reformat config files and delete leftover temporary files.
-- `gd++ trans file.gd++ -H -S`: print the C++ that GD++ makes from a file. Great for learning the language.
+- `gd++ trans file.gd++ -H/-S`: print the C++ that GD++ makes from a file. Great for learning the language.
 
 Run `gd++ --help` or `gd++ <command> --help` for all options.
 
@@ -138,7 +143,7 @@ GD++ is a small language that compiles to regular C++. Its one goal: make C++ fo
 
 To make a Godot class in plain C++, you write a header, a source file, a `_bind_methods` function that registers every method, property and signal, getters and setters, `#include` lines, and code to register the class. In GD++ you write only the parts that matter. GD++ writes the rest.
 
-The syntax looks like GDScript, but it is **not** GDScript:
+The syntax looks like GDScript, but it is **not** GDScript.
 
 - Blocks use braces, not indentation.
 - Function bodies are plain C++.
@@ -195,7 +200,8 @@ func greet(name: String, count: int = 1) -> void {
 
 The signature is GD++. The body is C++. GD++ registers the function with Godot, so GDScript can call it.
 
-`gd` is short for `UtilityFunctions`, Godot's global functions like `print`. `gd_assert(condition, "message")` is GDScript's `assert`: in debug builds, a false condition prints an error. `gd::assert` doesn't exist, since C's `assert` is a macro. `This` is the name of the current class, like `Self` in Rust.
+`gd` is short for `UtilityFunctions`, Godot's global functions like `print`.
+`This` is the name of the current class, like `Self` in Rust.
 
 Attributes change how a function works:
 
@@ -213,6 +219,11 @@ func take_damage(amount: int) -> void {
 
 func hurt_everyone() -> void {
   rpc take_damage(10);  // Like take_damage.rpc(10) in GDScript.
+}
+
+
+func hurt_server() -> void {
+  rpc_id(1) take_damage(10);  // Like take_damage.rpc_id(1, 10) in GDScript.
 }
 ```
 
@@ -265,11 +276,11 @@ signal died
 signal health_changed(new_health: int)
 
 func hit() -> void {
-  emit health_changed(health);
+  emit health_changed(health);  // Like health_changed.emit(health) in GDScript.
 }
 ```
 
-`emit` makes sending a signal look different from calling a function.
+`emit` is a bit of magical syntax, it makes sending a signal visually different from calling a function.
 
 ### Constructors and destructors
 
@@ -343,13 +354,16 @@ impl {
 
 Use them rarely: they bring the boilerplate back.
 
+You can also have regular `.h` and `.cpp` files in your package.
+They participate in the build, and you can include them from `decl` and `impl` blocks.
+
 ### Externs
 
 One package can't use another package's classes at compile time. But it can at runtime, with an **extern**: a list of declarations of a class that lives somewhere else.
 
 ```
 extern Terrain {
-  extends Node
+  extends Node3D
   func height_at(x: float, z: float) -> float
   signal changed
 }
@@ -357,4 +371,5 @@ extern Terrain {
 @export var terrain: Terrain
 ```
 
-Now you can use `terrain` like any other object. Under the hood, GD++ calls its methods by name. This works with other GD++ packages, and even with GDExtensions not made with GD++. Calls by name are slow, so use externs only when you need them.
+Now you can use `terrain` like any other object, e.g. `add_child(terrain.base())`.
+Under the hood, GD++ calls its methods by name hash. This works with other GD++ packages, and even with GDExtensions not made with GD++. Extern method calls are slow, so use externs only when you need them.
