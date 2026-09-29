@@ -13,9 +13,11 @@ import (
 // members of that name, looking through aliases and base classes too. Names
 // come from the bindings of a package. godot-cpp's own helpers, e.g.
 // TypedArray, are documented nowhere else, while Godot's help describes the
-// engine's classes.
+// engine's classes. Without a name, or with --index, it lists the types
+// instead, with what declares them and their bases.
 type CmdDoc struct {
-	Args []string `arg:"positional" placeholder:"[PKG] NAME" help:"the name to show, e.g. TypedArray or Array.push_back, after a path in the package whose bindings to use [default package: the current directory's]"`
+	Args  []string `arg:"positional" placeholder:"[PKG] [NAME]" help:"the name to show, e.g. TypedArray or Array.push_back, after a path in the package whose bindings to use [default package: the current directory's]"`
+	Index bool     `arg:"-i,--index" help:"list the types that godot-cpp declares, with their kinds and bases [default: without a name]"`
 }
 
 // docType is a name that godot-cpp declares, with its declarations, and
@@ -32,17 +34,22 @@ func (t docType) isAlias() bool {
 }
 
 func (c *CmdDoc) Run() {
-	Assert(len(c.Args) == 1 || len(c.Args) == 2, "Invalid arguments: expected a name, optionally after a package path.")
-	query := c.Args[len(c.Args)-1]
+	index := c.Index || len(c.Args) == 0
+	Assert(!index || len(c.Args) <= 1, "Invalid arguments: --index cannot be used with a name.")
+	Assert(len(c.Args) <= 2, "Invalid arguments: expected a name, optionally after a package path.")
 	path := Cwd()
-	if len(c.Args) == 2 {
+	if len(c.Args) == 2 || index && len(c.Args) == 1 {
 		path = ParsePath(c.Args[0])
 	}
 	root, ok := GetPackageRootMaybe(path)
-	Assert(ok, "Path %s is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG %s`.", path.ToString(), query)
+	Assert(ok, "Path %s is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`.", path.ToString())
 	pkg := LoadPackage(root)
 	names := packageGodotNames(LoadProject(root), pkg)
-	name, member, _ := strings.Cut(query, ".")
+	if index {
+		PrintResult(indexText(names))
+		return
+	}
+	name, member, _ := strings.Cut(c.Args[len(c.Args)-1], ".")
 	if !slices.ContainsFunc(names, func(n godotName) bool { return n.Name == name }) {
 		similar := similarGodotNames(names, name)
 		Assert(len(similar) == 0, "There is no name %s in godot-cpp. Similar names: %s.", name, strings.Join(similar, ", "))
@@ -86,6 +93,27 @@ func (c *CmdDoc) Run() {
 		result += "\nSee Godot's help for a description of " + described + ".\n"
 	}
 	PrintResult(result)
+}
+
+// indexText returns a line per type in names, i.e. not functions and
+// variables: what declares it and its name, then its base or what it
+// aliases, e.g. "template class TypedArray: Array".
+func indexText(names []godotName) string {
+	var text strings.Builder
+	for _, n := range names {
+		if strings.HasSuffix(n.Decl, "function") || strings.HasSuffix(n.Decl, "variable") {
+			continue
+		}
+		text.WriteString(n.Decl + " " + n.Name)
+		switch {
+		case n.Base != "" && strings.HasSuffix(n.Decl, "alias"):
+			text.WriteString(" = " + n.Base)
+		case n.Base != "":
+			text.WriteString(": " + n.Base)
+		}
+		text.WriteString("\n")
+	}
+	return text.String()
 }
 
 // docChain returns the type called name, then the type it aliases or its

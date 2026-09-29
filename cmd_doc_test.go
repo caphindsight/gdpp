@@ -30,12 +30,13 @@ func withDocFS(t *testing.T) *memFS {
 	write(pkgDir+".gd++pkg/build/godot-cpp/gen/include/godot_cpp/classes/object.hpp",
 		"namespace godot {\nclass Object {\npublic:\n\t// Frees it.\n\tvoid free();\n};\n}\n")
 	write(pkgDir+".gd++pkg/godot_names.toml", encodeToml(godotNamesCache{godotNamesVersion, []godotName{
-		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other},
-		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object},
-		{"CharString", "<godot_cpp/variant/char_string.hpp>", trans.Other},
-		{"CharStringT", "<godot_cpp/variant/char_string.hpp>", trans.Other},
-		{"TypedArray", "<godot_cpp/variant/typed_array.hpp>", trans.Other},
-		{"TypedDictionary", "<godot_cpp/variant/typed_dictionary.hpp>", trans.Other},
+		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other, "class", "Object"},
+		{"CharString", "<godot_cpp/variant/char_string.hpp>", trans.Other, "alias", "CharStringT<char>"},
+		{"CharStringT", "<godot_cpp/variant/char_string.hpp>", trans.Other, "template class", ""},
+		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object, "class", ""},
+		{"TypedArray", "<godot_cpp/variant/typed_array.hpp>", trans.Other, "template class", "Array"},
+		{"TypedDictionary", "<godot_cpp/variant/typed_dictionary.hpp>", trans.Other, "template class", "private Dictionary"},
+		{"print_line", "<godot_cpp/variant/utility_functions.hpp>", trans.Other, "function", ""},
 	}}))
 	return m
 }
@@ -78,24 +79,42 @@ func TestDocPackagePath(t *testing.T) {
 	}
 }
 
+func TestDocIndex(t *testing.T) {
+	want := "class Array: Object\n" +
+		"alias CharString = CharStringT<char>\n" +
+		"template class CharStringT\n" +
+		"class Object\n" +
+		"template class TypedArray: Array\n" +
+		"template class TypedDictionary: private Dictionary\n"
+	m := withDocFS(t)
+	if out := captureStdout(t, (&CmdDoc{}).Run); out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	m.cwd = "/games/my_game"
+	if out := captureStdout(t, (&CmdDoc{Args: []string{"src/pkg"}, Index: true}).Run); out != want {
+		t.Errorf("output with a package path = %q, want %q", out, want)
+	}
+}
+
 func TestDocFails(t *testing.T) {
 	cases := map[string]struct {
-		args []string
-		want string
+		args  []string
+		want  string
+		index bool
 	}{
-		"no name":        {nil, "[x] Invalid arguments: expected a name, optionally after a package path.\n"},
-		"too many":       {[]string{"a", "b", "c"}, "[x] Invalid arguments: expected a name, optionally after a package path.\n"},
-		"not in package": {[]string{"..", "Array"}, "[x] Path res://src is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG Array`.\n"},
-		"similar names":  {[]string{"typed"}, "[x] There is no name typed in godot-cpp. Similar names: TypedArray, TypedDictionary.\n"},
-		"unknown name":   {[]string{"Nothing"}, "[x] There is no name Nothing in godot-cpp.\n"},
-		"unknown member": {[]string{"TypedArray.nothing"}, "[x] Name TypedArray has no public member nothing.\n"},
-		"missing header": {[]string{"TypedDictionary"}, "[x] Failed to find the header <godot_cpp/variant/typed_dictionary.hpp>, run `gd++ clean` to fix this.\n"},
+		"index and name": {[]string{"src/pkg", "Array"}, "[x] Invalid arguments: --index cannot be used with a name.\n", true},
+		"too many":       {[]string{"a", "b", "c"}, "[x] Invalid arguments: expected a name, optionally after a package path.\n", false},
+		"not in package": {[]string{"..", "Array"}, "[x] Path res://src is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`.\n", false},
+		"similar names":  {[]string{"typed"}, "[x] There is no name typed in godot-cpp. Similar names: TypedArray, TypedDictionary.\n", false},
+		"unknown name":   {[]string{"Nothing"}, "[x] There is no name Nothing in godot-cpp.\n", false},
+		"unknown member": {[]string{"TypedArray.nothing"}, "[x] Name TypedArray has no public member nothing.\n", false},
+		"missing header": {[]string{"TypedDictionary"}, "[x] Failed to find the header <godot_cpp/variant/typed_dictionary.hpp>, run `gd++ clean` to fix this.\n", false},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 				withDocFS(t)
-				(&CmdDoc{Args: tc.args}).Run()
+				(&CmdDoc{Args: tc.args, Index: tc.index}).Run()
 				return
 			}
 			out, code := runFailHelper(t, t.Name())

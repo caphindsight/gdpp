@@ -188,6 +188,10 @@ void print(const String &p_text);
 void print(int p_value) {}
 using Str = const ::godot::StrT<char>;
 using Callback = void (*)(int);
+class Priv : Array {
+public:
+	void f();
+};
 
 } // namespace godot
 `
@@ -216,6 +220,7 @@ using Callback = void (*)(int);
 		"print":    {{head: "void print(const String &p_text)"}, {head: "void print(int p_value)"}},
 		"Str":      {{head: "using Str = const ::godot::StrT<char>", alias: "StrT"}},
 		"Callback": {{head: "using Callback = void (*)(int)"}},
+		"Priv":     {{head: "class Priv : Array", members: []cppMember{{"f", "", "void f()"}}}},
 		"Other":    nil,
 	}
 	for name, want := range cases {
@@ -227,9 +232,11 @@ using Callback = void (*)(int);
 
 func TestScanGodotNames(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
-		"/cpp/include/godot_cpp/classes/wrapped.hpp":   "namespace godot { class Wrapped {}; }",
-		"/cpp/include/godot_cpp/variant/array.hpp":     "namespace godot { class Array {}; template <typename T> class TypedArray : public Array {}; }",
-		"/cpp/include/godot_cpp/variant/dup.hpp":       "namespace godot { class Array {}; }",
+		"/cpp/include/godot_cpp/classes/wrapped.hpp": "namespace godot { class Wrapped {}; }",
+		"/cpp/include/godot_cpp/variant/array.hpp":   "namespace godot { class Array {}; template <typename T> class TypedArray : public Array {}; using Arr = Array; typedef void (*Handler)(const char *); using Chars = CharStringT<char>; class Hash : Array {}; struct Pair : protected Array {}; void print_line(); }",
+		"/cpp/include/godot_cpp/variant/dup.hpp":     "namespace godot { class Array {}; }",
+		"/cpp/include/godot_cpp/core/defs.hpp": "namespace godot {\n#ifdef REAL_T_IS_DOUBLE\ntypedef double real_t;\n#else\ntypedef float real_t;\n#endif\n" +
+			"#ifndef THREADS_ENABLED\nusing Lock = char;\n#elif FOO\nusing Lock = long;\n#else\nusing Lock = int;\n#endif\n}",
 		"/cpp/include/notes.txt":                       "namespace godot { class NotAHeader {}; }",
 		"/gen/include/godot_cpp/classes/object.hpp":    "namespace godot { class Object : public Wrapped {}; }",
 		"/gen/include/godot_cpp/classes/node.hpp":      "#include <godot_cpp/classes/object.hpp>\n  #  include \"godot_cpp/variant/array.hpp\"\n#include <vector>\n#include <godot_cpp/classes/object.hpp>\nnamespace godot { class Node : public Object {}; }",
@@ -238,13 +245,21 @@ func TestScanGodotNames(t *testing.T) {
 	})
 	got := scanGodotNames([]Path{ParsePath("/cpp/include"), ParsePath("/gen/include"), ParsePath("/missing")})
 	want := []godotName{
-		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other},
-		{"Node", "<godot_cpp/classes/node.hpp>", trans.Object},
-		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object},
-		{"RefCounted", "<godot_cpp/classes/ref_counted.h>", trans.RefCounted},
-		{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted},
-		{"TypedArray", "<godot_cpp/variant/array.hpp>", trans.Other},
-		{"Wrapped", "<godot_cpp/classes/wrapped.hpp>", trans.Other},
+		{"Arr", "<godot_cpp/variant/array.hpp>", trans.Other, "alias", "Array"},
+		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other, "class", ""},
+		{"Chars", "<godot_cpp/variant/array.hpp>", trans.Other, "alias", "CharStringT<char>"},
+		{"Handler", "<godot_cpp/variant/array.hpp>", trans.Other, "alias", "void (*)(const char *)"},
+		{"Hash", "<godot_cpp/variant/array.hpp>", trans.Other, "class", "private Array"},
+		{"Lock", "<godot_cpp/core/defs.hpp>", trans.Other, "alias", "long"},
+		{"Node", "<godot_cpp/classes/node.hpp>", trans.Object, "class", "Object"},
+		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object, "class", "Wrapped"},
+		{"Pair", "<godot_cpp/variant/array.hpp>", trans.Other, "struct", "protected Array"},
+		{"RefCounted", "<godot_cpp/classes/ref_counted.h>", trans.RefCounted, "class", "Object"},
+		{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted, "class", "RefCounted"},
+		{"TypedArray", "<godot_cpp/variant/array.hpp>", trans.Other, "template class", "Array"},
+		{"Wrapped", "<godot_cpp/classes/wrapped.hpp>", trans.Other, "class", ""},
+		{"print_line", "<godot_cpp/variant/array.hpp>", trans.Other, "function", ""},
+		{"real_t", "<godot_cpp/core/defs.hpp>", trans.Other, "alias", "float"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("names = %v\nwant %v", got, want)

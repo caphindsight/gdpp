@@ -4,6 +4,7 @@
 package main
 
 import (
+	"cmp"
 	"path"
 	"slices"
 	"strings"
@@ -15,8 +16,10 @@ import (
 // godotName is a name declared directly in namespace godot, e.g. "Node3D".
 type godotName struct {
 	Name    string     `toml:"name"`
-	Include string     `toml:"include"` // E.g. "<godot_cpp/classes/node3d.hpp>".
-	Kind    trans.Kind `toml:"kind"`    // Object, RefCounted or Other.
+	Include string     `toml:"include"`        // E.g. "<godot_cpp/classes/node3d.hpp>".
+	Kind    trans.Kind `toml:"kind"`           // Object, RefCounted or Other.
+	Decl    string     `toml:"decl"`           // What declares it, like cppDecl's kind, e.g. "template class".
+	Base    string     `toml:"base,omitempty"` // A class's first base class, e.g. "private Allocator" if not public, or the type an alias names, e.g. "CharStringT<char>".
 }
 
 // cppToken is a token of C++ code, without comments, literals and
@@ -26,12 +29,14 @@ type cppToken string
 // tokenizeCpp splits C++ code into tokens, and returns each token's start
 // and end offsets in src. String, character and number literals become the
 // token "0". Preprocessor lines are dropped: the scanner doesn't expand macros.
-// Of each #if, only the first branch is kept, so the braces of the others
-// don't unbalance the code.
+// Of each #if, only one branch is kept, so the braces of the others don't
+// unbalance the code: for #ifdef and #ifndef, the one a default build takes
+// (see defaultBuildMacros), else the first.
 func tokenizeCpp(src string) (cppTokens, [][2]int) {
 	var tokens cppTokens
 	var spans [][2]int
-	skip := 0 // How many #ifs deep the tokens are in a branch that isn't kept.
+	skip := 0        // How many #ifs deep the tokens are in a branch that isn't kept.
+	pending := false // Whether the outermost #if that isn't kept may still take a later branch.
 	add := func(t cppToken, start, n int) {
 		if skip == 0 {
 			tokens = append(tokens, t)
@@ -50,15 +55,19 @@ func tokenizeCpp(src string) (cppTokens, [][2]int) {
 			i++
 			continue
 		case c == '#' && lineStart:
-			directive := strings.TrimLeft(src[i+1:], " \t")
-			directive = directive[:len(directive)-len(strings.TrimLeft(directive, "abcdefghijklmnopqrstuvwxyz"))]
+			directive, rest := cppWord(src[i+1:])
+			macro, _ := cppWord(rest)
 			switch {
 			case skip > 0 && strings.HasPrefix(directive, "if"):
 				skip++
 			case skip > 0 && directive == "endif":
 				skip--
+			case skip == 1 && pending && (directive == "else" || strings.HasPrefix(directive, "elif")):
+				skip, pending = 0, false
 			case skip == 0 && (directive == "else" || strings.HasPrefix(directive, "elif")):
-				skip = 1
+				skip, pending = 1, false
+			case skip == 0 && (directive == "ifdef" || directive == "ifndef") && defaultBuildMacros[macro] != (directive == "ifdef"):
+				skip, pending = 1, true
 			}
 			for i < len(src) && src[i] != '\n' {
 				if src[i] == '\\' && i+1 < len(src) && src[i+1] == '\n' {
@@ -120,6 +129,22 @@ func tokenizeCpp(src string) (cppTokens, [][2]int) {
 	return tokens, spans
 }
 
+// defaultBuildMacros are the macros that godot-cpp's SConstruct defines in a
+// default build, a debug build, but not REAL_T_IS_DOUBLE, since it builds for
+// single precision, nor platform macros.
+var defaultBuildMacros = map[string]bool{"DEBUG_ENABLED": true, "DEV_ENABLED": true, "GDEXTENSION": true, "HOT_RELOAD_ENABLED": true, "THREADS_ENABLED": true}
+
+// cppWord returns the identifier at the start of s after spaces, and the rest
+// of s.
+func cppWord(s string) (word, rest string) {
+	s = strings.TrimLeft(s, " \t")
+	j := 0
+	for j < len(s) && isIdentByte(s[j]) {
+		j++
+	}
+	return s[:j], s[j:]
+}
+
 func isIdentByte(c byte) bool {
 	return c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
 }
@@ -150,6 +175,11 @@ func (t cppToken) isMacroName() bool {
 // cppDecl is a name that a header declares in the scanned namespace.
 type cppDecl struct {
 	name, base string // base: a class's first base class, if any.
+	baseAccess string // public, protected or private.
+	alias      string // For an alias, e.g. using CharString = CharStringT<char>, the type's name: CharStringT.
+	target     string // For an alias, the type it names, as in the source: CharStringT<char>.
+	// kind is class, struct, union, enum, namespace, alias, function or variable, after "template " for templates.
+	kind string
 }
 
 // scanCppDecls returns the names declared directly in namespace godot in the
@@ -158,9 +188,15 @@ type cppDecl struct {
 // namespaces, functions and variables. Macro invocations and anything in
 // nested scopes are skipped.
 func scanCppDecls(src string) []cppDecl {
-	tokens, _ := tokenizeCpp(src)
+	tokens, spans := tokenizeCpp(src)
+	h := cppSource{src, tokens, spans}
 	var decls []cppDecl
-	walkCppDecls(tokens, func(d cppDecl, start, end int) { decls = append(decls, d) })
+	walkCppDecls(tokens, func(d cppDecl, start, end int) {
+		if strings.HasSuffix(d.kind, "alias") {
+			d.target = h.aliasTarget(d.name, start, end)
+		}
+		decls = append(decls, d)
+	})
 	return decls
 }
 
@@ -212,7 +248,7 @@ func walkCppDecls(tokens cppTokens, visit func(d cppDecl, start, end int)) {
 				continue
 			}
 			if inGodot() && len(name) == 1 {
-				visit(cppDecl{name: name[0]}, i, j)
+				visit(cppDecl{name: name[0], kind: "namespace"}, i, j)
 			}
 			scopes = append(scopes, "namespace:"+strings.Join(name, "::"))
 			i = j + 1
@@ -231,6 +267,9 @@ func walkCppDecls(tokens cppTokens, visit func(d cppDecl, start, end int)) {
 			var d *cppDecl
 			d, i = scanStatement(tokens, i)
 			if d != nil {
+				if tokens.templateStart(start) < start {
+					d.kind = "template " + d.kind
+				}
 				visit(*d, start, i)
 			}
 		}
@@ -274,27 +313,31 @@ func scanStatement(tokens cppTokens, i int) (*cppDecl, int) {
 		}
 		switch tokens.at(j) {
 		case "{":
-			return &cppDecl{name: string(name)}, j
+			return &cppDecl{name: string(name), kind: string(t)}, j
 		case ":":
 			if t == "enum" {
 				for tokens.at(j) != "{" && tokens.at(j) != ";" && tokens.at(j) != "" {
 					j++
 				}
 				if tokens.at(j) == "{" {
-					return &cppDecl{name: string(name)}, j
+					return &cppDecl{name: string(name), kind: string(t)}, j
 				}
 				return nil, j
 			}
-			base := ""
+			base, access := "", map[bool]string{true: "private", false: "public"}[t == "class"]
 			for j++; tokens.at(j) != "{" && tokens.at(j) != ";" && tokens.at(j) != ""; j++ {
-				if tokens.at(j) == "<" {
+				switch tk := tokens.at(j); {
+				case tk == "<":
 					j = tokens.skip(j, "<", ">") - 1
-				} else if tokens.at(j).isIdent() && base == "" && tokens.at(j+1) != "::" && tokens.at(j) != "public" && tokens.at(j) != "protected" && tokens.at(j) != "private" && tokens.at(j) != "virtual" {
-					base = string(tokens.at(j))
+				case base != "" || !tk.isIdent() || tk == "virtual":
+				case tk == "public" || tk == "protected" || tk == "private":
+					access = string(tk)
+				case tokens.at(j+1) != "::":
+					base = string(tk)
 				}
 			}
 			if tokens.at(j) == "{" {
-				return &cppDecl{name: string(name), base: base}, j
+				return &cppDecl{name: string(name), base: base, baseAccess: access, kind: string(t)}, j
 			}
 			return nil, j
 		}
@@ -303,7 +346,7 @@ func scanStatement(tokens cppTokens, i int) (*cppDecl, int) {
 	case t == "using":
 		if tokens.at(i+1).isIdent() && tokens.at(i+2) == "=" {
 			_, next := endStatement(tokens, i)
-			return &cppDecl{name: string(tokens.at(i + 1))}, next
+			return &cppDecl{name: string(tokens.at(i + 1)), alias: tokens.aliasedName(i+3, next), kind: "alias"}, next
 		}
 		return endStatement(tokens, i)
 	case t == "typedef":
@@ -321,7 +364,7 @@ func scanStatement(tokens cppTokens, i int) (*cppDecl, int) {
 			}
 		}
 		if name.isIdent() {
-			return &cppDecl{name: string(name)}, j + 1
+			return &cppDecl{name: string(name), kind: "alias"}, j + 1
 		}
 		return nil, j + 1
 	case t == "extern" && tokens.at(i+1) == "0":
@@ -372,7 +415,7 @@ func scanStatement(tokens cppTokens, i int) (*cppDecl, int) {
 		next = j + 1
 	}
 	if name.isIdent() {
-		return &cppDecl{name: string(name)}, next
+		return &cppDecl{name: string(name), kind: map[bool]string{true: "function", false: "variable"}[isFunc]}, next
 	}
 	return nil, next
 }
@@ -399,7 +442,7 @@ func endStatement(tokens cppTokens, i int) (*cppDecl, int) {
 
 // cppDoc is a declaration as gd++ doc shows it: the comments right before
 // it, its head (e.g. "template <typename T>\nclass TypedArray : public
-// Array"), its first base class if any, what it aliases if it's an alias, and
+// Array"), its first base class if public, what it aliases if it's an alias, and
 // its public members or values.
 type cppDoc struct {
 	comments, head, base string
@@ -430,9 +473,9 @@ func scanCppDocs(src, name string) []cppDoc {
 			return
 		}
 		first := tokens.templateStart(start)
-		doc := cppDoc{comments: h.comments(first), head: h.head(first, end), base: d.base}
-		if tokens[start] == "using" && tokens.at(start+2) == "=" {
-			doc.alias = tokens.aliasedName(start+3, end)
+		doc := cppDoc{comments: h.comments(first), head: h.head(first, end), alias: d.alias}
+		if d.baseAccess == "public" {
+			doc.base = d.base // Members of other bases are out of reach.
 		}
 		if tokens.at(end) == "{" {
 			close := tokens.skip(end, "{", "}") - 1
@@ -463,6 +506,24 @@ func (ts cppTokens) aliasedName(a, b int) string {
 		}
 	}
 	return name
+}
+
+// aliasTarget returns the type that the alias called name, whose tokens are
+// [a, b), names, e.g. "float" for "typedef float real_t;", or
+// "void (*)(int)" for "typedef void (*Handler)(int);".
+func (h cppSource) aliasTarget(name string, a, b int) string {
+	if h.tokens.at(b-1) == ";" {
+		b--
+	}
+	if h.tokens[a] == "using" {
+		return h.text(a+3, b)
+	}
+	for k := b - 1; k > a; k-- {
+		if h.tokens[k] == cppToken(name) {
+			return strings.TrimSpace(h.text(a+1, k) + h.text(k+1, b))
+		}
+	}
+	return ""
 }
 
 // templateStart returns the index of the "template" whose parameters end
@@ -705,7 +766,10 @@ func scanGodotNames(roots []Path) []godotName {
 			for _, d := range scanCppDecls(src) {
 				if _, ok := bases[d.name]; !ok {
 					bases[d.name] = d.base
-					names = append(names, godotName{Name: d.name, Include: "<" + rel + ">"})
+					names = append(names, godotName{Name: d.name, Include: "<" + rel + ">", Decl: d.kind, Base: cmp.Or(d.base, d.target)})
+					if d.baseAccess != "public" && d.base != "" {
+						names[len(names)-1].Base = d.baseAccess + " " + d.base
+					}
 				}
 			}
 		})

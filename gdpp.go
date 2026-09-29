@@ -76,7 +76,7 @@ func gdppClasses(files []gdppFile) []gdppClass {
 
 // godotNamesVersion is the version of the names cache's format and of the
 // scanner that fills it. Bump it when either changes, to rescan.
-const godotNamesVersion = 3
+const godotNamesVersion = 6
 
 // godotNamesCache is a names cache: the names that godot-cpp declares.
 type godotNamesCache struct {

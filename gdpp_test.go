@@ -47,12 +47,12 @@ enum Power { WEAK, STRONG = 5 }
 
 // testGodotNames stand in for what scanning godot-cpp finds.
 var testGodotNames = []godotName{
-	{"Node", "<godot_cpp/classes/node.hpp>", trans.Object},
-	{"Node3D", "<godot_cpp/classes/node3d.hpp>", trans.Object},
-	{"Object", "<godot_cpp/classes/object.hpp>", trans.Object},
-	{"RefCounted", "<godot_cpp/classes/ref_counted.hpp>", trans.RefCounted},
-	{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted},
-	{"TypedArray", "<godot_cpp/variant/typed_array.hpp>", trans.Other},
+	{"Node", "<godot_cpp/classes/node.hpp>", trans.Object, "class", "Object"},
+	{"Node3D", "<godot_cpp/classes/node3d.hpp>", trans.Object, "class", "Node"},
+	{"Object", "<godot_cpp/classes/object.hpp>", trans.Object, "class", ""},
+	{"RefCounted", "<godot_cpp/classes/ref_counted.hpp>", trans.RefCounted, "class", "Object"},
+	{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted, "class", "RefCounted"},
+	{"TypedArray", "<godot_cpp/variant/typed_array.hpp>", trans.Other, "template class", "Array"},
 }
 
 // withGdppFS is withBuildFS plus files (paths relative to the package root).
@@ -173,7 +173,7 @@ func TestLoadGodotNamesOutdated(t *testing.T) {
 	generated := false
 	var names []godotName
 	captureStderr(t, func() { names = loadGodotNames(pkg, func() { generated = true }) })
-	if want := []godotName{{"Ref", "<godot_cpp/classes/ref.hpp>", trans.Other}}; !generated || !reflect.DeepEqual(names, want) {
+	if want := []godotName{{"Ref", "<godot_cpp/classes/ref.hpp>", trans.Other, "template class", ""}}; !generated || !reflect.DeepEqual(names, want) {
 		t.Errorf("generated, names = %v, %v, want true, %v", generated, names, want)
 	}
 	if cache := m.tree()[pkgDir+".gd++pkg/godot_names.toml"]; !strings.HasPrefix(cache, fmt.Sprintf("version = %d\n", godotNamesVersion)) || !strings.Contains(cache, `name = "Ref"`) {
