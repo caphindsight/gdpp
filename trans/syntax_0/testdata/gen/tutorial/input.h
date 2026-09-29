@@ -172,32 +172,32 @@ protected:
 #undef This
 
 inline void Terrain::foo() const {
-	_gdpp_base->call("foo");
+	_gdpp_base->call(GDPP_STRING_NAME("foo"));
 }
 
 inline void Terrain::bar() const {
-	_gdpp_base->call_deferred("bar");
+	_gdpp_base->call_deferred(GDPP_STRING_NAME("bar"));
 }
 
 inline void Terrain::qux() const {
-	_gdpp_base->call("qux");
+	_gdpp_base->call(GDPP_STRING_NAME("qux"));
 }
 
 inline Error Terrain::_gdpp_rpc_qux(int64_t p_peer) const {
 	static_assert(std::is_base_of_v<Node, Base>, "@rpc can only be used in externs that extend Node.");
-	return _gdpp_base->rpc_id(p_peer, "qux");
+	return _gdpp_base->rpc_id(p_peer, GDPP_STRING_NAME("qux"));
 }
 
 inline int64_t Terrain::get_baz() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->get("baz"));
+	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("baz")));
 }
 
 inline void Terrain::set_baz(int64_t p_value) const {
-	_gdpp_base->set("baz", p_value);
+	_gdpp_base->set(GDPP_STRING_NAME("baz"), p_value);
 }
 
 inline gdpp::Emitted Terrain::done(bool a, int64_t b) const {
-	return gdpp::Emitted{ _gdpp_base->emit_signal("done", a, b) };
+	return gdpp::Emitted{ _gdpp_base->emit_signal(GDPP_STRING_NAME("done"), a, b) };
 }
 
 } // namespace godot

@@ -56,27 +56,27 @@ protected:
 #undef This
 
 inline double Terrain2::height(double x, double z) const {
-	return gdpp::from_variant<double>(_gdpp_base->call("height", x, z));
+	return gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("height"), x, z));
 }
 
 inline void Terrain2::rebuild() const {
-	_gdpp_base->call_deferred("rebuild");
+	_gdpp_base->call_deferred(GDPP_STRING_NAME("rebuild"));
 }
 
 inline String Terrain2::name() const {
-	return gdpp::from_variant<String>(_gdpp_base->call("name"));
+	return gdpp::from_variant<String>(_gdpp_base->call(GDPP_STRING_NAME("name")));
 }
 
 inline int64_t Terrain2::get_size() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->get("size"));
+	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("size")));
 }
 
 inline void Terrain2::set_size(int64_t p_value) const {
-	_gdpp_base->set("size", p_value);
+	_gdpp_base->set(GDPP_STRING_NAME("size"), p_value);
 }
 
 inline gdpp::Emitted Terrain2::done(bool ok) const {
-	return gdpp::Emitted{ _gdpp_base->emit_signal("done", ok) };
+	return gdpp::Emitted{ _gdpp_base->emit_signal(GDPP_STRING_NAME("done"), ok) };
 }
 
 } // namespace godot

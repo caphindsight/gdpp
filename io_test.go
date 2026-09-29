@@ -478,9 +478,24 @@ func TestLogTaskQuietTTY(t *testing.T) {
 	testLogTaskErasedTTY(t)
 }
 
+// TestLogTaskSilenceTTY checks that a silenced task on a terminal shows its log
+// lines while running, then erases them along with its progress message.
 func TestLogTaskSilenceTTY(t *testing.T) {
 	defer Silence().End()
-	testLogTaskErasedTTY(t)
+	withTTY(t, true)
+	withUnicode(t, true)
+	got := captureStderr(t, func() {
+		task := LogTask("Build...")
+		task.LogString("shown")
+		task.Done()
+	})
+	if !strings.Contains(got, "    shown\n") || strings.Contains(got, "•") {
+		t.Errorf("output = %q, want the log line shown and no success message", got)
+	}
+	// The message and 4 log rows were drawn, and Done erases all 5.
+	if want := "\x1b[5F\x1b[J"; !strings.HasSuffix(got, want) {
+		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
+	}
 }
 
 // testLogTaskErasedTTY checks that a successful task on a terminal, while

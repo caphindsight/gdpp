@@ -95,7 +95,7 @@ int64_t Spawner::_gdpp_default_ping_times() {
 }
 
 Error Spawner::_gdpp_rpc_ping(int64_t p_peer, int64_t times) {
-	return rpc_id(p_peer, "ping", times);
+	return rpc_id(p_peer, GDPP_STRING_NAME("ping"), times);
 }
 
 void Spawner::ping_all() {

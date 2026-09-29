@@ -27,19 +27,19 @@ private:
 };
 
 inline double Terrain3::height(double x) const {
-	return gdpp::from_variant<double>(_gdpp_base->call("height", x));
+	return gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("height"), x));
 }
 
 inline int64_t Terrain3::get_size() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->get("size"));
+	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("size")));
 }
 
 inline void Terrain3::set_size(int64_t p_value) const {
-	_gdpp_base->set("size", p_value);
+	_gdpp_base->set(GDPP_STRING_NAME("size"), p_value);
 }
 
 inline gdpp::Emitted Terrain3::done() const {
-	return gdpp::Emitted{ _gdpp_base->emit_signal("done") };
+	return gdpp::Emitted{ _gdpp_base->emit_signal(GDPP_STRING_NAME("done")) };
 }
 
 } // namespace godot

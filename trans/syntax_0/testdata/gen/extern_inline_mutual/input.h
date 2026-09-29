@@ -41,15 +41,15 @@ private:
 };
 
 inline gdpp::ExtPtr<Terrain3DData> Terrain3D::get_data() const {
-	return gdpp::from_variant<gdpp::ExtPtr<Terrain3DData>>(_gdpp_base->get("data"));
+	return gdpp::from_variant<gdpp::ExtPtr<Terrain3DData>>(_gdpp_base->get(GDPP_STRING_NAME("data")));
 }
 
 inline void Terrain3D::set_data(gdpp::ExtPtr<Terrain3DData> p_value) const {
-	_gdpp_base->set("data", p_value);
+	_gdpp_base->set(GDPP_STRING_NAME("data"), p_value);
 }
 
 inline double Terrain3DData::get_height(const Vector3 &pos) const {
-	return gdpp::from_variant<double>(_gdpp_base->call("get_height", pos));
+	return gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("get_height"), pos));
 }
 
 } // namespace godot

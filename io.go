@@ -314,8 +314,8 @@ type Task struct {
 
 // LogTask prints a formatted task message and returns the task. On a terminal,
 // the icon is animated until Done is called, with the latest log lines shown
-// under the message; -q/--quiet or Silence hides those log lines but not the
-// animated message itself, which is erased once the task succeeds.
+// under the message, unless hidden per taskLogsHidden. Under -q/--quiet or
+// Silence, the message and log lines are erased once the task succeeds.
 func LogTask(format string, params ...any) *Task {
 	t := &Task{msg: fmt.Sprintf(format, params...), stop: make(chan struct{}), exited: make(chan struct{})}
 	if !isTTY {
@@ -342,19 +342,26 @@ func LogTask(format string, params ...any) *Task {
 	return t
 }
 
-// LogString adds a line to the task log. Suppressed by -q/--quiet or Silence,
-// though the line is kept so Fail can still report it.
+// taskLogsHidden reports whether task log lines are hidden: per -q/--quiet,
+// and off a terminal also per Silence, since there they can't be erased once
+// the task is done.
+func taskLogsHidden() bool {
+	return !Args.Verbose && Args.Quiet || !isTTY && quiet()
+}
+
+// LogString adds a line to the task log. Hidden per taskLogsHidden, though the
+// line is kept so Fail can still report it.
 func (t *Task) LogString(s string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.logs = append(t.logs, s)
 	if !isTTY {
-		if !quiet() {
+		if !taskLogsHidden() {
 			fmt.Fprintln(os.Stderr, taskLogIndent+s)
 		}
 		return
 	}
-	if !quiet() {
+	if !taskLogsHidden() {
 		t.render(spinnerFrame(t.frame), t.msg, true)
 	}
 }
@@ -446,8 +453,7 @@ func (t *Task) finish(icon, status string, erase bool) {
 // render redraws msg over the previous render, leaving the cursor at the
 // start of the line below. While running, it also draws the last
 // --log-depth log lines, padded with empty rows so the block height is
-// fixed, unless suppressed by -q/--quiet or Silence. The caller must hold
-// t.mu.
+// fixed, unless hidden per taskLogsHidden. The caller must hold t.mu.
 func (t *Task) render(icon, msg string, running bool) {
 	width, _, _ := term.GetSize(int(os.Stderr.Fd()))
 	var out strings.Builder
@@ -455,7 +461,7 @@ func (t *Task) render(icon, msg string, running bool) {
 		fmt.Fprintf(&out, "\x1b[%dF\x1b[J", t.drawn) // up to the first drawn row, clear below
 	}
 	block := formatMsg(icon, msg)
-	if running && !quiet() {
+	if running && !taskLogsHidden() {
 		logs := t.logs[max(0, len(t.logs)-Args.LogDepth):]
 		for i := 0; i < Args.LogDepth; i++ {
 			block += "\n"

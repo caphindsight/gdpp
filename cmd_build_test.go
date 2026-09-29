@@ -272,14 +272,14 @@ func TestBuildDescribe(t *testing.T) {
 		want   string
 	}{
 		{BuildOptions{}, host, false, host + ", debug, unoptimized"},
-		{BuildOptions{}, host, true, host + ", debug, unoptimized, docs"},
-		{BuildOptions{Ship: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, no docs"},
-		{BuildOptions{NoDoc: true}, host, true, host + ", debug, unoptimized, \x1b[1mno docs\x1b[0m"},
-		{BuildOptions{Ship: true, Doc: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, \x1b[1mdocs\x1b[0m"},
-		{BuildOptions{Ship: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, optimized"},
-		{BuildOptions{Opt: true}, host, false, host + ", debug, \x1b[1moptimized\x1b[0m"},
-		{BuildOptions{Ship: true, NoOpt: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, \x1b[1munoptimized\x1b[0m"},
-		{BuildOptions{Small: true}, "windows.arm64", false, "\x1b[1mwindows.arm64\x1b[0m, debug, \x1b[1msize-optimized\x1b[0m"},
+		{BuildOptions{}, host, true, host + ", debug, unoptimized, with docs"},
+		{BuildOptions{Ship: true}, host, true, host + ", \x1b[35mrelease\x1b[0m, optimized, no docs"},
+		{BuildOptions{NoDoc: true}, host, true, host + ", debug, unoptimized, \x1b[35mno docs\x1b[0m"},
+		{BuildOptions{Ship: true, Doc: true}, host, true, host + ", \x1b[35mrelease\x1b[0m, optimized, \x1b[35mwith docs\x1b[0m"},
+		{BuildOptions{Ship: true}, host, false, host + ", \x1b[35mrelease\x1b[0m, optimized"},
+		{BuildOptions{Opt: true}, host, false, host + ", debug, \x1b[35moptimized\x1b[0m"},
+		{BuildOptions{Ship: true, NoOpt: true}, host, false, host + ", \x1b[35mrelease\x1b[0m, \x1b[35munoptimized\x1b[0m"},
+		{BuildOptions{Small: true}, "windows.arm64", false, "\x1b[35mwindows.arm64\x1b[0m, debug, \x1b[35msize-optimized\x1b[0m"},
 	}
 	for _, tc := range cases {
 		if got := tc.c.describe(tc.target, tc.gdpp); got != tc.want {

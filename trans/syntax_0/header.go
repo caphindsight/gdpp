@@ -184,7 +184,7 @@ func rpcDecl(f *funcModel, ps string) string {
 
 // rpcCall returns the call to Godot's rpc_id that the RPC helper of f makes.
 func rpcCall(f *funcModel) string {
-	return fmt.Sprintf("rpc_id(p_peer, %q%s)", f.f.Name, args(f.params, f.f.Params))
+	return fmt.Sprintf("rpc_id(p_peer, GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params))
 }
 
 func (c *classModel) needsReady() bool {
@@ -399,10 +399,10 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, f := range e.funcs {
 		w.ln("")
 		w.ln("inline %s%s::%s(%s) const {", withSpace(f.ret.cpp), e.name, f.f.Name, params(nil, f.params, f.f.Params))
-		call := fmt.Sprintf("_gdpp_base->call(%q%s)", f.f.Name, args(f.params, f.f.Params))
+		call := fmt.Sprintf("_gdpp_base->call(GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params))
 		switch {
 		case f.deferred:
-			w.ln("\t_gdpp_base->call_deferred(%q%s);", f.f.Name, args(f.params, f.f.Params))
+			w.ln("\t_gdpp_base->call_deferred(GDPP_STRING_NAME(%q)%s);", f.f.Name, args(f.params, f.f.Params))
 		case f.ret.void:
 			w.ln("\t%s;", call)
 		default:
@@ -420,7 +420,7 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, v := range e.vars {
 		w.ln("")
 		w.ln("inline %s%s::%s() const {", withSpace(v.t.cpp), e.name, v.getter)
-		w.ln("\treturn gdpp::from_variant<%s>(_gdpp_base->get(%q));", v.t.cpp, v.v.Name)
+		w.ln("\treturn gdpp::from_variant<%s>(_gdpp_base->get(GDPP_STRING_NAME(%q)));", v.t.cpp, v.v.Name)
 		w.ln("}")
 		w.ln("")
 		w.ln("inline void %s::%s(%sp_value) const {", e.name, v.setter, withSpace(v.t.param()))
@@ -428,13 +428,13 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		if v.t.enum != nil {
 			value = "static_cast<int64_t>(p_value)"
 		}
-		w.ln("\t_gdpp_base->set(%q, %s);", v.v.Name, value)
+		w.ln("\t_gdpp_base->set(GDPP_STRING_NAME(%q), %s);", v.v.Name, value)
 		w.ln("}")
 	}
 	for _, s := range e.signals {
 		w.ln("")
 		w.ln("inline gdpp::Emitted %s::%s(%s) const {", e.name, s.s.Name, params(nil, s.params, s.s.Params))
-		w.ln("\treturn gdpp::Emitted{ _gdpp_base->emit_signal(%q%s) };", s.s.Name, args(s.params, s.s.Params))
+		w.ln("\treturn gdpp::Emitted{ _gdpp_base->emit_signal(GDPP_STRING_NAME(%q)%s) };", s.s.Name, args(s.params, s.s.Params))
 		w.ln("}")
 	}
 }

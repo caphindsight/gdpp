@@ -227,6 +227,10 @@ inline String assert_message(const char *p_condition, const String &p_message = 
 #define memnew_ext(m_class) gdpp::memnew_ext<m_class>()
 #define memdelete_ext(m_object) gdpp::memdelete_ext(m_object)
 
+// GDPP_STRING_NAME("name") is the StringName name, created on first use and reused after, like the engine's SNAME.
+// Calls by name use it, so they don't intern the name, which locks a global mutex, on every call.
+#define GDPP_STRING_NAME(m_name) ([]() -> const godot::StringName & { static const godot::StringName name(m_name, true); return name; })()
+
 namespace godot {
 
 // Bindings see an extern as its base class. The hint names the extern, so the editor only accepts matching objects.

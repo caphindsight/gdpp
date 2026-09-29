@@ -128,28 +128,28 @@ func (o BuildOptions) optimize() string {
 }
 
 // describe returns the build details for target shown in the task name, e.g.
-// "windows.x86_64, release, optimized", with non-default values bold. gdpp
+// "windows.x86_64, release, optimized", with non-default values in magenta. gdpp
 // adds whether docs are built, which only exist for GD++ classes.
 func (o BuildOptions) describe(target string, gdpp bool) string {
 	desc := target
 	if target != hostPlatform+"."+hostArch {
-		desc = Styled(target, Bold)
+		desc = Styled(target, Magenta)
 	}
 	if o.Ship {
-		desc += ", " + Styled("release", Bold)
+		desc += ", " + Styled("release", Magenta)
 	} else {
 		desc += ", debug"
 	}
 	defaults := BuildOptions{Ship: o.Ship}
 	opt := map[string]string{"speed": "optimized", "size": "size-optimized", "none": "unoptimized"}[o.optimize()]
 	if o.optimize() != defaults.optimize() {
-		opt = Styled(opt, Bold)
+		opt = Styled(opt, Magenta)
 	}
 	desc += ", " + opt
 	if gdpp {
-		docs := map[bool]string{true: "docs", false: "no docs"}[o.docs()]
+		docs := map[bool]string{true: "with docs", false: "no docs"}[o.docs()]
 		if o.docs() != defaults.docs() {
-			docs = Styled(docs, Bold)
+			docs = Styled(docs, Magenta)
 		}
 		desc += ", " + docs
 	}

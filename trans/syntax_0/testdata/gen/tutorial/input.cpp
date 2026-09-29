@@ -232,7 +232,7 @@ void MyNode::take_damage(int64_t amount) {
 }
 
 Error MyNode::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount) {
-	return rpc_id(p_peer, "take_damage", amount);
+	return rpc_id(p_peer, GDPP_STRING_NAME("take_damage"), amount);
 }
 
 void MyNode::hurt_everyone(int64_t peer) {

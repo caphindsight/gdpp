@@ -42,7 +42,7 @@ protected:
 #undef This
 
 inline Variant Config::get_value(const String &key) const {
-	return gdpp::from_variant<Variant>(_gdpp_base->call("get_value", key));
+	return gdpp::from_variant<Variant>(_gdpp_base->call(GDPP_STRING_NAME("get_value"), key));
 }
 
 } // namespace godot

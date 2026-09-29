@@ -46,21 +46,21 @@ protected:
 #undef This
 
 inline void Terrain2::dig(const Vector3 &at) const {
-	_gdpp_base->call("dig", at);
+	_gdpp_base->call(GDPP_STRING_NAME("dig"), at);
 }
 
 inline Error Terrain2::_gdpp_rpc_dig(int64_t p_peer, const Vector3 &at) const {
 	static_assert(std::is_base_of_v<Node, Base>, "@rpc can only be used in externs that extend Node.");
-	return _gdpp_base->rpc_id(p_peer, "dig", at);
+	return _gdpp_base->rpc_id(p_peer, GDPP_STRING_NAME("dig"), at);
 }
 
 inline void Terrain2::reset() const {
-	_gdpp_base->call_deferred("reset");
+	_gdpp_base->call_deferred(GDPP_STRING_NAME("reset"));
 }
 
 inline Error Terrain2::_gdpp_rpc_reset(int64_t p_peer) const {
 	static_assert(std::is_base_of_v<Node, Base>, "@rpc can only be used in externs that extend Node.");
-	return _gdpp_base->rpc_id(p_peer, "reset");
+	return _gdpp_base->rpc_id(p_peer, GDPP_STRING_NAME("reset"));
 }
 
 } // namespace godot

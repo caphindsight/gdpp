@@ -36,7 +36,7 @@ void Player::ping() {
 }
 
 Error Player::_gdpp_rpc_ping(int64_t p_peer) {
-	return rpc_id(p_peer, "ping");
+	return rpc_id(p_peer, GDPP_STRING_NAME("ping"));
 }
 
 void Player::take_damage(int64_t amount, Team from) {
@@ -55,7 +55,7 @@ void Player::_gdpp_take_damage(int64_t amount, _gdpp_Player_Team from) {
 }
 
 Error Player::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount, Team from) {
-	return rpc_id(p_peer, "take_damage", amount, static_cast<int64_t>(from));
+	return rpc_id(p_peer, GDPP_STRING_NAME("take_damage"), amount, static_cast<int64_t>(from));
 }
 
 int64_t Player::sync_position(const Vector3 &pos) {
@@ -72,7 +72,7 @@ int64_t Player::sync_position(const Vector3 &pos) {
 }
 
 Error Player::_gdpp_rpc_sync_position(int64_t p_peer, const Vector3 &pos) {
-	return rpc_id(p_peer, "sync_position", pos);
+	return rpc_id(p_peer, GDPP_STRING_NAME("sync_position"), pos);
 }
 
 void Player::hit(int64_t peer, Player *other) {

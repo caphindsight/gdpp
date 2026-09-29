@@ -71,11 +71,11 @@ private:
 namespace godot {
 
 inline Gate *Lock::owner() const {
-	return gdpp::from_variant<Gate *>(_gdpp_base->call("owner"));
+	return gdpp::from_variant<Gate *>(_gdpp_base->call(GDPP_STRING_NAME("owner")));
 }
 
 inline Ref<Key> Lock::key() const {
-	return gdpp::from_variant<Ref<Key>>(_gdpp_base->call("key"));
+	return gdpp::from_variant<Ref<Key>>(_gdpp_base->call(GDPP_STRING_NAME("key")));
 }
 
 } // namespace godot
