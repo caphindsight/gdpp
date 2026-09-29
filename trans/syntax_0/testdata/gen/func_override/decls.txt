@@ -1,0 +1,2 @@
+{Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false}
+{Name:Walker Kind:1 Base:Player Values:[] Icon: Tool:false}

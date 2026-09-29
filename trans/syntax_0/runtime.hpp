@@ -98,6 +98,14 @@ public:
 } // namespace godot
 #endif
 
+// GDPP_OVERRIDE marks overrides of Godot's virtuals. The engine has no C++ virtuals for them: engine builds patch
+// its GDVIRTUAL macros to call the overrides through Object::_gdpp_call_virtual instead.
+#ifdef GDPP_ENGINE
+#define GDPP_OVERRIDE
+#else
+#define GDPP_OVERRIDE override
+#endif
+
 // The C++ type of Godot's float.
 typedef double float64_t;
 
@@ -147,6 +155,17 @@ inline void add_property_category(const StringName &p_class, const String &p_nam
 			&gdext_info, none._native_ptr(), none._native_ptr());
 #endif
 }
+
+// is_node_ready reports whether p_node was notified of being ready, and not asked to be again with request_ready.
+// Godot 4.0 can't tell, so it reports false there.
+template <typename T>
+auto is_node_ready_(const T *p_node, int) -> decltype(p_node->is_node_ready()) { return p_node->is_node_ready(); }
+template <typename T>
+auto is_node_ready_(const T *p_node, long) -> decltype(p_node->is_ready()) { return p_node->is_ready(); } // Engine builds.
+template <typename T>
+bool is_node_ready_(const T *, ...) { return false; }
+template <typename T>
+bool is_node_ready(const T *p_node) { return is_node_ready_(p_node, 0); }
 
 // rpc_config sets the RPC configuration of p_method on p_node, as @rpc declares it.
 template <typename T>

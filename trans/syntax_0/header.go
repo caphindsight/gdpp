@@ -101,9 +101,16 @@ func withSpace(t string) string {
 	return t + " "
 }
 
+// processing maps the Node functions that the constructor turns on the processing of, if overridden, to their setters.
+var processing = map[string]string{"_process": "set_process", "_physics_process": "set_physics_process"}
+
 func (c *classModel) needsCtor() bool {
 	return c.ctor != nil || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
-		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil })
+		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" })
+}
+
+func (c *classModel) hasOverrides() bool {
+	return slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.override })
 }
 
 // rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc_id(peer) f(...)` call, without a class name.
@@ -178,7 +185,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		case f.static:
 			prefix = "static "
 		case f.override:
-			suffix = " override"
+			suffix = " GDPP_OVERRIDE"
 		}
 		if f.isConst {
 			suffix = " const" + suffix
@@ -211,6 +218,12 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("\tstatic void _bind_methods();")
 	if c.needsReady() {
 		w.ln("\tvoid _notification(int p_what);")
+	}
+	if c.hasOverrides() {
+		w.ln("#ifdef GDPP_ENGINE")
+		w.ln("\tbool _gdpp_has_virtual(const StringName &p_name) const override;")
+		w.ln("\tbool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const override;")
+		w.ln("#endif")
 	}
 	var trampolines []string
 	for _, f := range c.funcs {

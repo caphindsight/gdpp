@@ -16,11 +16,16 @@ class Gizmo : public Node3D {
 	GDCLASS(Gizmo, Node3D)
 
 public:
+	Gizmo();
 	double size();
-	void _process(double delta) override;
+	void _process(double delta) GDPP_OVERRIDE;
 
 protected:
 	static void _bind_methods();
+#ifdef GDPP_ENGINE
+	bool _gdpp_has_virtual(const StringName &p_name) const override;
+	bool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const override;
+#endif
 };
 #undef This
 

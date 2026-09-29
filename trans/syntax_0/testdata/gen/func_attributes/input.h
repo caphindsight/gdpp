@@ -16,10 +16,14 @@ class Shape : public Node {
 public:
 	double area() const;
 	static double unit();
-	void _ready() override;
+	void _ready() GDPP_OVERRIDE;
 
 protected:
 	static void _bind_methods();
+#ifdef GDPP_ENGINE
+	bool _gdpp_has_virtual(const StringName &p_name) const override;
+	bool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const override;
+#endif
 };
 #undef This
 

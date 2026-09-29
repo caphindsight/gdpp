@@ -36,7 +36,7 @@ Stage::Stage() {
 }
 
 void Stage::_notification(int p_what) {
-	if (p_what != NOTIFICATION_READY) {
+	if (p_what != NOTIFICATION_POST_ENTER_TREE || gdpp::is_node_ready(this)) {
 		return;
 	}
 #line 8 "input.gd++"

@@ -50,6 +50,24 @@ void Shape::_ready() {
 #line 51 "input.cpp"
 }
 
+#ifdef GDPP_ENGINE
+
+bool Shape::_gdpp_has_virtual(const StringName &p_name) const {
+	return p_name == SNAME("_ready") || Node::_gdpp_has_virtual(p_name);
+}
+
+bool Shape::_gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const {
+	Shape *self = const_cast<Shape *>(this);
+	if (p_name == SNAME("_ready")) {
+		(void)&Node::_gdvirtual__ready_get_method_info; // Fails to compile if Node has no virtual _ready.
+		call_with_ptr_args(self, &Shape::_ready, p_args);
+		return true;
+	}
+	return Node::_gdpp_call_virtual(p_name, p_args, r_ret);
+}
+
+#endif
+
 #undef This
 
 } // namespace godot

@@ -53,6 +53,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			if r := f.rpc; r != nil {
 				w.ln("\tgdpp::rpc_config<This>(this, %q, %s, %s, %t, %s);", f.f.Name, r.mode, r.transfer, r.callLocal, r.channel)
 			}
+			if setter := processing[f.f.Name]; f.override && setter != "" {
+				w.ln("\t%s(true);", setter)
+			}
 		}
 		u.initializers(w, c, false)
 		if c.ctor != nil {
@@ -69,7 +72,8 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsReady() {
 		w.ln("")
 		w.ln("void %s::_notification(int p_what) {", c.name)
-		w.ln("\tif (p_what != NOTIFICATION_READY) {")
+		// Right before NOTIFICATION_READY, whose handlers call _ready. GDScript too runs @onready initializers first.
+		w.ln("\tif (p_what != NOTIFICATION_POST_ENTER_TREE || gdpp::is_node_ready(this)) {")
 		w.ln("\t\treturn;")
 		w.ln("\t}")
 		u.initializers(w, c, true)
@@ -83,6 +87,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			w.ln("\treturn %s;", rpcCall(f))
 			w.ln("}")
 		}
+	}
+	if c.hasOverrides() {
+		overrideDefs(w, c)
 	}
 	for _, v := range c.vars {
 		u.accessorDefs(w, c, v)
@@ -192,6 +199,47 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\treturn %s;", cast(c, f.ret, call, true))
 	}
 	w.ln("}")
+}
+
+// overrideDefs defines the functions through which the engine calls the class's overrides, in engine builds: its
+// patched GDVIRTUAL macros only call scripts and GDExtension classes otherwise.
+func overrideDefs(w *writer, c *classModel) {
+	var names []string
+	for _, f := range c.funcs {
+		if f.override {
+			names = append(names, fmt.Sprintf("p_name == SNAME(%q)", f.f.Name))
+		}
+	}
+	w.ln("")
+	w.ln("#ifdef GDPP_ENGINE")
+	w.ln("")
+	w.ln("bool %s::_gdpp_has_virtual(const StringName &p_name) const {", c.name)
+	w.ln("\treturn %s || %s::_gdpp_has_virtual(p_name);", strings.Join(names, " || "), c.base)
+	w.ln("}")
+	w.ln("")
+	w.ln("bool %s::_gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const {", c.name)
+	w.ln("\t%s *self = const_cast<%s *>(this);", c.name, c.name)
+	for _, f := range c.funcs {
+		if !f.override {
+			continue
+		}
+		call, ret := "call_with_ptr_args", ""
+		if !f.ret.void {
+			call, ret = call+"_ret", ", r_ret"
+		}
+		if f.isConst {
+			call += "c"
+		}
+		w.ln("\tif (p_name == SNAME(%q)) {", f.f.Name)
+		w.ln("\t\t(void)&%s::_gdvirtual_%s_get_method_info; // Fails to compile if %s has no virtual %s.", c.base, f.f.Name, c.base, f.f.Name)
+		w.ln("\t\t%s(self, &%s::%s, p_args%s);", call, c.name, f.f.Name, ret)
+		w.ln("\t\treturn true;")
+		w.ln("\t}")
+	}
+	w.ln("\treturn %s::_gdpp_call_virtual(p_name, p_args, r_ret);", c.base)
+	w.ln("}")
+	w.ln("")
+	w.ln("#endif")
 }
 
 // accessorDefs defines the getter and setter of v, and their trampolines.

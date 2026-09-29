@@ -5,6 +5,7 @@
 package main
 
 import (
+	"cmp"
 	_ "embed"
 	"fmt"
 	"os"
@@ -33,9 +34,10 @@ var (
 	engineRegisterPackageTemplate = parseRegisterTemplate(engineRegisterPackageText)
 )
 
-// engineBuildVersion is the version of the project build cache's layout and
-// of the engine names scanner. Bump it when either changes, to start over.
-const engineBuildVersion = 4
+// engineBuildVersion is the version of the project build cache's layout, of
+// the engine names scanner and of patchEngine. Bump it when any of them
+// changes, to start over.
+const engineBuildVersion = 5
 
 // projectBuildCache returns res://.gd++proj/build, the project build cache.
 func projectBuildCache(p Project) Path {
@@ -171,6 +173,7 @@ func prepareEngineBuild(p Project, name string) Path {
 		s := Silence()
 		t := LogTask("Copying engine %s...", name)
 		p.Caches[2].GetPath(name).Copy(cache.Cd("godot"))
+		patchEngine(cache.Cd("godot"))
 		t.Done()
 		s.End()
 		installEngineDeps(cache)
@@ -182,6 +185,83 @@ func prepareEngineBuild(p Project, name string) Path {
 		LogWarn("Engine %s is Godot %s, but the project is made for Godot %s.", name, version, p.GodotVersion)
 	}
 	return cache
+}
+
+// patchEngine patches the engine copy godot, so that Godot's virtuals call the
+// overrides of GD++ classes, as they call those of GDExtension classes: the
+// engine only calls them for scripts and GDExtension classes.
+func patchEngine(godot Path) {
+	for _, file := range []struct {
+		path  Path
+		patch func(string) (string, bool)
+	}{
+		{godot.Cd("core", "object", "object.h"), patchObjectHeader},
+		{godot.Cd("core", "object", "make_virtuals.py"), patchMakeVirtuals},
+	} {
+		text, ok := file.patch(file.path.ReadString())
+		Assert(ok, "Failed to patch %s, GD++ doesn't support this engine version yet.", file.path.ToString())
+		file.path.WriteString(text)
+	}
+}
+
+// patchObjectHeader adds to Object the virtuals that GD++ classes override to
+// have their overrides called. Reports whether it found where to add them.
+func patchObjectHeader(src string) (string, bool) {
+	return insertAfter(src, "_ALWAYS_INLINE_ const ObjectGDExtension *_get_extension() const { return _extension; }",
+		"\t// Added by GD++, for GD++ classes: whether they override the virtual p_name, and a ptrcall of their override.",
+		"\tvirtual bool _gdpp_has_virtual(const StringName &p_name) const { return false; }",
+		"\tvirtual bool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const { return false; }")
+}
+
+// patchMakeVirtuals makes the GDVIRTUAL macros call the overrides of GD++
+// classes after those of scripts, encoding the arguments as for GDExtension
+// classes. Reports whether it found where to add the calls.
+func patchMakeVirtuals(src string) (string, bool) {
+	// The script's own lines that encode the arguments and decode the result, which it removes when not needed.
+	var args, retDef, ret string
+	for _, line := range strings.Split(src, "\n") {
+		switch strings.TrimSpace(line) {
+		case `$CALLPTRARGS\\`:
+			args = cmp.Or(args, line)
+		case `$CALLPTRRETDEF\\`:
+			retDef = cmp.Or(retDef, line)
+		case `$CALLPTRRET\\`:
+			ret = cmp.Or(ret, line)
+		}
+	}
+	if args == "" || retDef == "" || ret == "" {
+		return "", false
+	}
+	sn := `static const StringName _gdpp_sn = StringName(#m_name, true);\\`
+	src, ok1 := insertAfter(src, `_call($CALLARGS) $CONST {`,
+		"\t\t"+sn,
+		`		if (_gdpp_has_virtual(_gdpp_sn) && !(((Object *)(this))->get_script_instance() && ((Object *)(this))->get_script_instance()->has_method(_gdpp_sn))) {\\`,
+		args,
+		retDef,
+		`			_gdpp_call_virtual(_gdpp_sn, (const void **)($CALLPTRARGPASS), $CALLPTRRETPASS);\\`,
+		ret,
+		`			return true;\\`,
+		`		}\\`)
+	src, ok2 := insertAfter(src, `_overridden() const {`,
+		"\t\t"+sn,
+		`		if (_gdpp_has_virtual(_gdpp_sn)) {\\`,
+		`			return true;\\`,
+		`		}\\`)
+	return src, ok1 && ok2
+}
+
+// insertAfter inserts lines after the only line of src that contains anchor.
+// Reports whether there was exactly one such line.
+func insertAfter(src, anchor string, lines ...string) (string, bool) {
+	if strings.Count(src, anchor) != 1 {
+		return src, false
+	}
+	i := strings.Index(src, anchor)
+	end := i + strings.Index(src[i:], "\n") + 1
+	if end == i {
+		return src, false
+	}
+	return src[:end] + strings.Join(lines, "\n") + "\n" + src[end:], true
 }
 
 // installEngineDeps runs the engine copy's misc/scripts/install_*.py, which

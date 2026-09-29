@@ -112,7 +112,7 @@ public:
 	GDVIRTUAL0R(int64_t, _bar)
 	int64_t _bar();
 	int64_t foo_plus_bar();
-	void _ready() override;
+	void _ready() GDPP_OVERRIDE;
 	int64_t get_my_value() const;
 	static void my_static_func();
 	void take_damage(int64_t amount);
@@ -142,6 +142,10 @@ public:
 protected:
 	static void _bind_methods();
 	void _notification(int p_what);
+#ifdef GDPP_ENGINE
+	bool _gdpp_has_virtual(const StringName &p_name) const override;
+	bool _gdpp_call_virtual(const StringName &p_name, const void **p_args, void *r_ret) const override;
+#endif
 };
 #undef This
 
