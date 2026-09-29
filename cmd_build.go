@@ -81,16 +81,19 @@ func (c *CmdBuild) Run() {
 	for _, pkg := range pkgs {
 		generateBuildCache(p, pkg)
 		var classes []gdppClass
-		if files := listGdppFiles(p, pkg); len(files) > 0 {
+		files := listGdppFiles(p, pkg)
+		if len(files) > 0 {
 			// The first build's arguments, so the full build finds the generated bindings up to date.
 			names := loadGodotNames(pkg, func() {
-				Exec("Generating bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(c.sconsArgs(targets[0]), "--gdpp-bindings")...)
+				s := Silence()
+				Exec("Compiling bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(c.sconsArgs(targets[0]), "--gdpp-bindings")...)
+				s.End()
 			})
 			classes = transpilePackage(pkg, files, names, c.docs())
 		}
 		generateRegisterTypes(pkg, classes)
 		for _, target := range targets {
-			Exec("Building "+styledPackageName(pkg.Root)+" for "+c.describe(target)+"...", pkg.BuildCache, "scons", c.sconsArgs(target)...)
+			Exec("Building "+styledPackageName(pkg.Root)+" for "+c.describe(target, len(files) > 0)+"...", pkg.BuildCache, "scons", c.sconsArgs(target)...)
 		}
 		generateGdextension(pkg, classes)
 	}
@@ -189,7 +192,7 @@ func (c *CmdBuild) optimize() string {
 
 // describe returns the build details for target shown in the task name, e.g.
 // "windows.x86_64, release, optimized", with non-default values bold.
-func (c *CmdBuild) describe(target string) string {
+func (c *CmdBuild) describe(target string, gdpp bool) string {
 	desc := target
 	if target != hostPlatform+"."+hostArch {
 		desc = Styled(target, Bold)
@@ -203,7 +206,16 @@ func (c *CmdBuild) describe(target string) string {
 	if c.optimize() != (&CmdBuild{Ship: c.Ship}).optimize() {
 		opt = Styled(opt, Bold)
 	}
-	return desc + ", " + opt
+	desc += ", " + opt
+	if gdpp {
+		// Docs only exist for GD++ classes.
+		docs := map[bool]string{true: "docs", false: "no docs"}[c.docs()]
+		if c.docs() != (&CmdBuild{Ship: c.Ship}).docs() {
+			docs = Styled(docs, Bold)
+		}
+		desc += ", " + docs
+	}
+	return desc
 }
 
 // generateBuildCache syncs the package's bindings and API spec into its build
@@ -264,9 +276,10 @@ func gdppSources(p Project, pkg Package) []string {
 
 // generateRegisterTypes writes the build cache's __register_types__.cpp,
 // which registers the package's classes: those in its config, and the GD++
-// classes, which must not clash with them.
+// classes, which must not clash with them. GD++ classes without @tool are
+// runtime classes, whose code doesn't run in the editor.
 func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
-	var classes, includes []string
+	var classes, runtime, includes []string
 	for _, class := range pkg.Config.Classes {
 		classes = append(classes, class.Name)
 		if rest, ok := strings.CutPrefix(class.Include, "pkg://"); ok {
@@ -280,10 +293,14 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
 		classes = append(classes, class.Name)
 		includes = append(includes, `"`+class.File.Rel+`.h"`)
+		if !class.Tool {
+			runtime = append(runtime, class.Name)
+		}
 	}
 	if writeTemplate(pkg.BuildCache.Cd("__register_types__.cpp"), registerTypesTemplate, map[string]any{
-		"Classes":  classes,
-		"Includes": uniqueSorted(includes, strings.Compare),
+		"Classes":        classes,
+		"RuntimeClasses": runtime,
+		"Includes":       uniqueSorted(includes, strings.Compare),
 	}) {
 		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}
@@ -354,11 +371,16 @@ func generateGdextension(pkg Package, gdpp []gdppClass) {
 		}
 	}
 	file := pkg.Root.Cd(pkg.Id + ".gdextension")
-	changed := writeTemplate(file, gdextensionTemplate, map[string]any{
+	var text strings.Builder
+	Check(gdextensionTemplate.Execute(&text, map[string]any{
 		"GodotVersion": fmt.Sprintf("%d.%d", spec.Header.Major, spec.Header.Minor),
 		"Libraries":    libs,
 		"Icons":        icons,
-	})
+	}), "Failed to generate %s", file.ToString())
+	changed := !file.IsFile() || file.ReadString() != text.String()
+	// Written even if unchanged: its new modification time makes the Godot
+	// editor reload the extension, when the editor window gets focus.
+	file.WriteString(text.String())
 	if writeIfChanged(pkg.Root.Cd(pkg.Id+".gdextension.uid"), godotUid(packageName(pkg.Root))+"\n") || changed {
 		LogInfo("Generating .gdextension for %s...", styledPackageName(pkg.Root))
 	}

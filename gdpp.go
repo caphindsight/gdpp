@@ -96,11 +96,15 @@ func loadGodotNames(pkg Package, generateBindings func()) []godotName {
 		}
 	}
 	generateBindings()
+	s := Silence()
+	t := LogTask("Scanning bindings for %s...", styledPackageName(pkg.Root))
 	cache = godotNamesCache{godotNamesVersion, scanGodotNames([]Path{
 		pkg.BuildCache.Cd("godot-cpp/include"),
 		pkg.BuildCache.Cd("build/godot-cpp/gen/include"),
 	})}
 	file.WriteString(encodeToml(cache))
+	t.Done()
+	s.End()
 	return cache.Names
 }
 
@@ -144,6 +148,8 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 // and with docs, each class's XML documentation. Files that nothing generates
 // any more are deleted. Returns the classes the files declare.
 func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs bool) []gdppClass {
+	s := Silence()
+	t := LogTask("Transpiling GD++ code for %s...", styledPackageName(pkg.Root))
 	owner := map[string]gdppFile{}
 	for _, f := range files {
 		if f.Err != nil {
@@ -166,11 +172,10 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 
 	dir := pkg.BuildCache.Cd(gdppDirName)
 	written := map[string]bool{}
-	changed := false
 	write := func(rel, text string) {
 		written[rel] = true
 		dir.Cd(rel).CreateParentDirectory()
-		changed = writeIfChanged(dir.Cd(rel), text) || changed
+		writeIfChanged(dir.Cd(rel), text)
 	}
 	syntax := pkg.Config.Syntax
 	check := func(text string, err error) string {
@@ -204,9 +209,8 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 	write(runtimeName, runtimeText)
 
 	removeStale(dir, "", written)
-	if changed {
-		LogInfo("Transpiling GD++ code for %s...", styledPackageName(pkg.Root))
-	}
+	t.Done()
+	s.End()
 	return gdppClasses(files)
 }
 

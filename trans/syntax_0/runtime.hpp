@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/resource.hpp>

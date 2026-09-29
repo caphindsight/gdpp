@@ -41,7 +41,7 @@ class Hitbox {
 
 enum Power { WEAK, STRONG = 5 }
 `,
-	"misc.gg": "class Tiny {}\n",
+	"misc.gg": "@tool\nclass Tiny {}\n",
 }
 
 // testGodotNames stand in for what scanning godot-cpp finds.
@@ -96,7 +96,7 @@ func TestTranspilePackage(t *testing.T) {
 	if generated {
 		t.Error("The bindings were generated, although the names cache was filled.")
 	}
-	if !strings.Contains(logs, "[-] Transpiling GD++ code for res://src/pkg...\n") {
+	if !strings.Contains(logs, "[-] Task succeeded: transpiling GD++ code for res://src/pkg\n") {
 		t.Errorf("logs = %q, want them to say it transpiled", logs)
 	}
 	var names, icons []string
@@ -135,15 +135,17 @@ func TestTranspilePackage(t *testing.T) {
 		}
 	}
 	register := m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
-	for _, want := range []string{`#include "items/weapon.gdpp.h"`, `#include "player.gd++.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Hitbox>();"} {
+	for _, want := range []string{`#include "items/weapon.gdpp.h"`, `#include "player.gd++.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Hitbox>();",
+		"gdpp_is_runtime_class = false || std::is_same_v<T, Hitbox> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
+		"if constexpr (gdpp_is_runtime_class<T>) {\n\t\tGDREGISTER_RUNTIME_CLASS(T);\n\t} else {\n\t\tGDREGISTER_CLASS(T);\n\t}"} {
 		if !strings.Contains(register, want) {
 			t.Errorf("__register_types__.cpp = %s\nwant it to contain %q", register, want)
 		}
 	}
 
-	// Unchanged code isn't rewritten; removed code and docs are deleted.
-	if _, logs, _ := transpileTestPackage(t, true); strings.Contains(logs, "Transpiling") {
-		t.Errorf("logs = %q, want nothing transpiled", logs)
+	// Unchanged classes aren't registered again; removed code and docs are deleted.
+	if _, logs, _ := transpileTestPackage(t, true); strings.Contains(logs, "Registering classes") {
+		t.Errorf("logs = %q, want no classes registered", logs)
 	}
 	delete(m.nodes, pkgDir+"misc.gg")
 	transpileTestPackage(t, false)
@@ -167,7 +169,8 @@ func TestLoadGodotNamesOutdated(t *testing.T) {
 	}
 	m.nodes[pkgDir+".gd++pkg/godot-cpp/include/godot_cpp/classes/ref.hpp"] = &memNode{data: []byte("namespace godot { template <typename T> class Ref {}; }")}
 	generated := false
-	names := loadGodotNames(pkg, func() { generated = true })
+	var names []godotName
+	captureStderr(t, func() { names = loadGodotNames(pkg, func() { generated = true }) })
 	if want := []godotName{{"Ref", "<godot_cpp/classes/ref.hpp>", trans.Other}}; !generated || !reflect.DeepEqual(names, want) {
 		t.Errorf("generated, names = %v, %v, want true, %v", generated, names, want)
 	}

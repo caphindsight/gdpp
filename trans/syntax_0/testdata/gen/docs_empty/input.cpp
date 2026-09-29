@@ -11,9 +11,14 @@ void Undocumented::_bind_methods() {
 }
 
 void Undocumented::f() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 2 "input.gd++"
 
-#line 17 "input.cpp"
+#line 22 "input.cpp"
 }
 
 #undef This

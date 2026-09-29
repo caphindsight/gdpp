@@ -1,2 +1,2 @@
-{Name:Main Kind:1 Base:Node Values:[] Icon: Tool:false}
+{Name:Gizmo Kind:1 Base:Node3D Values:[] Icon: Tool:true}
 {Name:Helper Kind:1 Base:RefCounted Values:[] Icon: Tool:false}

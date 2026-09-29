@@ -29,3 +29,4 @@ field Options.HeaderName string
 field Options.CodeName string
 const Other Kind = 6
 field Declaration.Icon string
+field Declaration.Tool bool

@@ -1,2 +1,2 @@
-{Name:Player Kind:1 Base:Node3D Values:[] Icon:}
-{Name:State Kind:3 Base: Values:[{Name:IDLE Value:0 Doc:Standing still.} {Name:RUNNING Value:1 Doc:@experimental}] Icon:}
+{Name:Player Kind:1 Base:Node3D Values:[] Icon: Tool:false}
+{Name:State Kind:3 Base: Values:[{Name:IDLE Value:0 Doc:Standing still.} {Name:RUNNING Value:1 Doc:@experimental}] Icon: Tool:false}

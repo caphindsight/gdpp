@@ -268,17 +268,22 @@ func TestBuildDescribe(t *testing.T) {
 	cases := []struct {
 		c      CmdBuild
 		target string
+		gdpp   bool
 		want   string
 	}{
-		{CmdBuild{}, host, host + ", debug, unoptimized"},
-		{CmdBuild{Ship: true}, host, host + ", \x1b[1mrelease\x1b[0m, optimized"},
-		{CmdBuild{Opt: true}, host, host + ", debug, \x1b[1moptimized\x1b[0m"},
-		{CmdBuild{Ship: true, NoOpt: true}, host, host + ", \x1b[1mrelease\x1b[0m, \x1b[1munoptimized\x1b[0m"},
-		{CmdBuild{Small: true}, "windows.arm64", "\x1b[1mwindows.arm64\x1b[0m, debug, \x1b[1msize-optimized\x1b[0m"},
+		{CmdBuild{}, host, false, host + ", debug, unoptimized"},
+		{CmdBuild{}, host, true, host + ", debug, unoptimized, docs"},
+		{CmdBuild{Ship: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, no docs"},
+		{CmdBuild{NoDoc: true}, host, true, host + ", debug, unoptimized, \x1b[1mno docs\x1b[0m"},
+		{CmdBuild{Ship: true, Doc: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, \x1b[1mdocs\x1b[0m"},
+		{CmdBuild{Ship: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, optimized"},
+		{CmdBuild{Opt: true}, host, false, host + ", debug, \x1b[1moptimized\x1b[0m"},
+		{CmdBuild{Ship: true, NoOpt: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, \x1b[1munoptimized\x1b[0m"},
+		{CmdBuild{Small: true}, "windows.arm64", false, "\x1b[1mwindows.arm64\x1b[0m, debug, \x1b[1msize-optimized\x1b[0m"},
 	}
 	for _, tc := range cases {
-		if got := tc.c.describe(tc.target); got != tc.want {
-			t.Errorf("%+v.describe(%q) = %q, want %q", tc.c, tc.target, got, tc.want)
+		if got := tc.c.describe(tc.target, tc.gdpp); got != tc.want {
+			t.Errorf("%+v.describe(%q, %v) = %q, want %q", tc.c, tc.target, tc.gdpp, got, tc.want)
 		}
 	}
 }

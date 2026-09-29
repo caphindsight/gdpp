@@ -1,1 +1,1 @@
-{Name:Counter Kind:1 Base:RefCounted Values:[] Icon:}
+{Name:Counter Kind:1 Base:RefCounted Values:[] Icon: Tool:false}

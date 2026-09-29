@@ -13,13 +13,28 @@ void Stub::_bind_methods() {
 }
 
 int64_t Stub::a() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 	return {};
 }
 
 void Stub::b() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 }
 
 Variant Stub::c() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 	return {};
 }
 

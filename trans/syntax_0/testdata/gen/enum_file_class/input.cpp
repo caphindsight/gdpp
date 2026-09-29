@@ -15,11 +15,16 @@ void Cards::_bind_methods() {
 }
 
 Suit Cards::best() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 #line 11 "input.gd++"
 
   return Suit::SPADES;
 
-#line 23 "input.cpp"
+#line 28 "input.cpp"
 }
 
 _gdpp_Cards_Suit Cards::_gdpp_best() {

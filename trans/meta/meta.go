@@ -59,6 +59,7 @@ type Declaration struct {
 	Base   string      // For classes and externs: the base class.
 	Values []EnumValue // For enums.
 	Icon   string      // For classes: the icon's res:// or pkg:// path, from @icon.
+	Tool   bool        // For classes: whether @tool makes its functions run in the editor too.
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

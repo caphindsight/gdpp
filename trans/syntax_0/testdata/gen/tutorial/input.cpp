@@ -86,15 +86,25 @@ void MyNode::_notification(int p_what) {
 }
 
 void MyNode::greet_user(const String &name) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 163 "input.gd++"
 
 
   gd::print("Hello ", name, "!");
 
-#line 95 "input.cpp"
+#line 100 "input.cpp"
 }
 
 int64_t MyNode::_foo() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 	int64_t _gdpp_ret;
 	if (GDVIRTUAL_CALL(_foo, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -103,10 +113,15 @@ int64_t MyNode::_foo() {
 
   return 0;
 
-#line 107 "input.cpp"
+#line 117 "input.cpp"
 }
 
 int64_t MyNode::_bar() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 	int64_t _gdpp_ret;
 	if (GDVIRTUAL_CALL(_bar, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -115,52 +130,82 @@ int64_t MyNode::_bar() {
 }
 
 int64_t MyNode::foo_plus_bar() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 #line 183 "input.gd++"
 
   return _foo() + _bar();
 
-#line 123 "input.cpp"
+#line 143 "input.cpp"
 }
 
 void MyNode::_ready() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 193 "input.gd++"
 
 
 
   gd::print("My node is ready.");
 
-#line 133 "input.cpp"
+#line 158 "input.cpp"
 }
 
 int64_t MyNode::get_my_value() const {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 #line 206 "input.gd++"
 
   return my_value;
 
-#line 141 "input.cpp"
+#line 171 "input.cpp"
 }
 
 void MyNode::my_static_func() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 213 "input.gd++"
 
   gd::print("Hello!");
 
-#line 149 "input.cpp"
+#line 184 "input.cpp"
 }
 
 void MyNode::emit_both_signals() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 241 "input.gd++"
 
   (void) something_happened(42);
   (void) something_else_happened();
 
-#line 158 "input.cpp"
+#line 198 "input.cpp"
 }
 
 void MyNode::foo() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 337 "input.gd++"
 
-#line 164 "input.cpp"
+#line 209 "input.cpp"
 }
 
 int64_t MyNode::get_simple_var() const {
@@ -201,7 +246,7 @@ int64_t MyNode::get_my_property() const {
 
     return my_property;
 
-#line 205 "input.cpp"
+#line 250 "input.cpp"
 }
 
 void MyNode::set_my_property(int64_t val) {
@@ -211,7 +256,7 @@ void MyNode::set_my_property(int64_t val) {
     if (val < 0) val = 0;
     my_property = val;
 
-#line 215 "input.cpp"
+#line 260 "input.cpp"
 }
 
 int64_t MyNode::get_my_range_var() const {
@@ -260,14 +305,14 @@ gdpp::Emitted MyNode::something_else_happened() {
     gd::print("Hello, world!");
   }
 
-#line 264 "input.cpp"
+#line 309 "input.cpp"
 
 #line 87 "input.gd++"
 
   #define FOO 42
 
 
-#line 271 "input.cpp"
+#line 316 "input.cpp"
 
 #undef This
 

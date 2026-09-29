@@ -52,11 +52,16 @@ void Stage::_notification(int p_what) {
 }
 
 int64_t Stage::compute(int64_t a, int64_t b) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 #line 22 "input.gd++"
 
   return a + b;
 
-#line 60 "input.cpp"
+#line 65 "input.cpp"
 }
 
 int64_t Stage::get_count() const {

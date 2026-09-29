@@ -1,1 +1,1 @@
-{Name:Scene Kind:1 Base:Node Values:[] Icon:}
+{Name:Scene Kind:1 Base:Node Values:[] Icon: Tool:false}

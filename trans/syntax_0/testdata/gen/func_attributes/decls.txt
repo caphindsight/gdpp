@@ -1,1 +1,1 @@
-{Name:Shape Kind:1 Base:Node Values:[] Icon:}
+{Name:Shape Kind:1 Base:Node Values:[] Icon: Tool:false}

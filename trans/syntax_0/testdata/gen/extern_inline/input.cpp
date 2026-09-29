@@ -20,6 +20,11 @@ void User::_bind_methods() {
 }
 
 void User::use() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 17 "input.gd++"
 
   float h = terrain->height(1.0, 2.0);
@@ -27,7 +32,7 @@ void User::use() {
   terrain->set_size(3);
   (void) terrain->done(true);
 
-#line 31 "input.cpp"
+#line 36 "input.cpp"
 }
 
 gdpp::ExtPtr<Terrain2> User::get_terrain() const {

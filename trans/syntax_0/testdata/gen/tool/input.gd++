@@ -1,0 +1,18 @@
+@tool
+class_name Gizmo
+extends Node3D
+
+func size() -> float {
+  return 1.0;
+}
+
+@override
+func _process(delta: float) -> void {}
+
+class Helper {
+  func count() -> int {
+    return 0;
+  }
+
+  func reset() -> void {}
+}

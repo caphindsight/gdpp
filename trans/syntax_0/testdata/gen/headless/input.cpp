@@ -19,9 +19,14 @@ void A::_bind_methods() {
 }
 
 void A::f(Shared s) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 13 "input.gd++"
 
-#line 25 "input.cpp"
+#line 30 "input.cpp"
 }
 
 void A::_gdpp_f(_gdpp_A_Shared s) {

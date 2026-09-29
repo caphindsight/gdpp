@@ -1,1 +1,1 @@
-{Name:Player Kind:1 Base:Node Values:[] Icon:}
+{Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false}

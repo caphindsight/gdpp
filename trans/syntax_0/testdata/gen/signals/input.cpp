@@ -14,6 +14,11 @@ void Button2::_bind_methods() {
 }
 
 void Button2::click() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
 #line 8 "input.gd++"
 
   (void) pressed();
@@ -21,7 +26,7 @@ void Button2::click() {
 
   gd::print("emit in a string");
 
-#line 25 "input.cpp"
+#line 30 "input.cpp"
 }
 
 gdpp::Emitted Button2::pressed() {

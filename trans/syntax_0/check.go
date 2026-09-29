@@ -30,6 +30,7 @@ type classModel struct {
 	cls        *Class
 	base       string
 	refCounted bool
+	tool       bool // Whether its functions run in the editor too.
 	codes      []*Code
 	ctor, dtor *Block
 	funcs      []*funcModel
@@ -170,7 +171,8 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			if err != nil {
 				return nil, err
 			}
-			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(s.class.Extends), Icon: icon})
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(s.class.Extends), Icon: icon,
+				Tool: slices.ContainsFunc(s.class.Annotations, func(a *Annotation) bool { return a.Name == "tool" })})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
@@ -327,7 +329,7 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 }
 
 var knownAnnotations = []string{"const", "deferred", "export", "export_dir", "export_enum", "export_file", "export_flags", "icon",
-	"export_multiline", "export_placeholder", "export_range", "export_storage", "onready", "override", "static", "virtual"}
+	"export_multiline", "export_placeholder", "export_range", "export_storage", "onready", "override", "static", "tool", "virtual"}
 
 // annotations checks the annotations of a declaration of the given kind, e.g. "func", and returns them by name.
 func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (map[string]*Annotation, error) {
@@ -422,7 +424,7 @@ func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
 	if ext && (v.Init != nil || v.Property != nil) {
 		return nil, u.errorAt(v.Pos, 3, "Extern variables can't have an initial value or a property body.", "Externs only declare what another package defines.")
 	}
-	if err := u.exportHint(m, a); err != nil {
+	if err := u.exportHint(m); err != nil {
 		return nil, err
 	}
 	if v.Property == nil {
@@ -464,10 +466,10 @@ func typeString(t *Type) string {
 }
 
 // exportHint sets the property usage and hint of m from its export annotations.
-func (u *unit) exportHint(m *varModel, a map[string]*Annotation) error {
+func (u *unit) exportHint(m *varModel) error {
 	var export *Annotation
-	for name, ann := range a {
-		if strings.HasPrefix(name, "export") {
+	for _, ann := range m.v.Annotations { // In source order, so the second one is reported.
+		if strings.HasPrefix(ann.Name, "export") {
 			if export != nil {
 				return u.errorAt(ann.Pos, len(ann.Name)+1, "A variable can have only one export annotation.", "")
 			}
@@ -627,9 +629,11 @@ func (u *unit) buildClasses() error {
 
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted}
-	if _, err := u.annotations(c.Annotations, "a class", "icon"); err != nil {
+	a, err := u.annotations(c.Annotations, "a class", "icon", "tool")
+	if err != nil {
 		return nil, err
 	}
+	m.tool = a["tool"] != nil
 	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}

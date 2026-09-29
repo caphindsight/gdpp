@@ -12,19 +12,29 @@ void Spawner::_bind_methods() {
 }
 
 Node3D *Spawner::spawn(Node *parent, const Ref<Texture2D> &tex) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 #line 4 "input.gd++"
 
   return nullptr;
 
-#line 20 "input.cpp"
+#line 25 "input.cpp"
 }
 
 TypedArray<int64_t> Spawner::items(const TypedArray<String> &names, const TypedArray<Node> &nodes, const TypedDictionary<String, Resource> &map) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 #line 8 "input.gd++"
 
   return {};
 
-#line 28 "input.cpp"
+#line 38 "input.cpp"
 }
 
 #undef This

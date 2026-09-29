@@ -1,1 +1,1 @@
-{Name:Difficulty Kind:3 Base: Values:[{Name:EASY Value:0 Doc:Easy.} {Name:NORMAL Value:5 Doc:} {Name:HARD Value:6 Doc:}] Icon:}
+{Name:Difficulty Kind:3 Base: Values:[{Name:EASY Value:0 Doc:Easy.} {Name:NORMAL Value:5 Doc:} {Name:HARD Value:6 Doc:}] Icon: Tool:false}

@@ -16,11 +16,16 @@ void Quest::_bind_methods() {
 }
 
 Level Quest::harder(Level l) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
 #line 5 "input.gd++"
 
   return Level::HARD;
 
-#line 24 "input.cpp"
+#line 29 "input.cpp"
 }
 
 _gdpp_Quest_Level Quest::_gdpp_harder(_gdpp_Quest_Level l) {

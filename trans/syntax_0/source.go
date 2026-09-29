@@ -137,6 +137,18 @@ func cast(c *classModel, t *gtype, expr string, toTag bool) string {
 func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
 	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
+	if !c.tool {
+		// Like GDScript, only @tool classes run their code in the editor, which only loads debug builds.
+		w.ln("#ifdef DEBUG_ENABLED")
+		w.ln("\tif (Engine::get_singleton()->is_editor_hint()) {")
+		if f.ret.void {
+			w.ln("\t\treturn;")
+		} else {
+			w.ln("\t\treturn {};")
+		}
+		w.ln("\t}")
+		w.ln("#endif")
+	}
 	if f.virtual {
 		callArgs := castList(c, f.params, f.f.Params, true)
 		if f.ret.void {
