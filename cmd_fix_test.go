@@ -33,13 +33,13 @@ func TestFix(t *testing.T) {
 		"/games/my_game/_gd++proj/engine/":    "",
 	})
 	want := "" +
-		"[>] Deleted the temporary directory res://.gd++proj/temp.\n" +
-		"[>] Deleted the empty directory res://_gd++proj/bind.\n" +
-		"[>] Deleted the empty directory res://.gd++proj/bind.\n" +
-		"[>] Deleted the empty directory res://.gd++proj/spec.\n" +
-		"[>] Deleted the empty directory res://_gd++proj/engine.\n" +
-		"[>] Deleted the empty directory res://.gd++proj.\n" +
-		"[>] Success!\n"
+		"[-] Deleted the temporary directory res://.gd++proj/temp.\n" +
+		"[-] Deleted the empty directory res://_gd++proj/bind.\n" +
+		"[-] Deleted the empty directory res://.gd++proj/bind.\n" +
+		"[-] Deleted the empty directory res://.gd++proj/spec.\n" +
+		"[-] Deleted the empty directory res://_gd++proj/engine.\n" +
+		"[-] Deleted the empty directory res://.gd++proj.\n" +
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -56,7 +56,7 @@ func TestFix(t *testing.T) {
 
 func TestFixConfig(t *testing.T) {
 	out, _, after := runFix(t, map[string]string{"/games/my_game/" + projectConfigFileName: `vcs="git"`})
-	if want := "[>] Reformatted res://gd++proj.toml.\n[>] Created res://.gitignore.\n[>] Success!\n"; out != want {
+	if want := "[-] Reformatted res://gd++proj.toml.\n[-] Created res://.gitignore.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got, want := after[projectConfigFileName], "vcs = \"git\"\n"; got != want {
@@ -70,7 +70,7 @@ func TestFixNothingToDo(t *testing.T) {
 		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\n",
 		"/games/my_game/.gitignore":               projectBlock,
 	})
-	if want := "[>] The project is already tidy.\n"; out != want {
+	if want := "[-] The project is already tidy.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if !reflect.DeepEqual(after, before) {
@@ -80,7 +80,7 @@ func TestFixNothingToDo(t *testing.T) {
 
 func TestFixPackageConfig(t *testing.T) {
 	out, _, after := runFix(t, map[string]string{"/games/my_game/src/pkg/" + packageFileName: `bind="4.3"` + "\n" + `spec="4.3"`})
-	if want := "[>] Reformatted res://src/pkg/gd++pkg.toml.\n[>] Success!\n"; out != want {
+	if want := "[-] Reformatted res://src/pkg/gd++pkg.toml.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	want := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
@@ -95,7 +95,7 @@ func TestFixGitignores(t *testing.T) {
 		"/games/my_game/.gitignore":                   "user\n\n" + projectBlock,
 		"/games/my_game/src/pkg/" + gitignoreFileName: packageBlock,
 	})
-	want := "[>] Updated res://.gitignore.\n[>] Deleted res://src/pkg/.gitignore.\n[>] Success!\n"
+	want := "[-] Updated res://.gitignore.\n[-] Deleted res://src/pkg/.gitignore.\n[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -108,7 +108,7 @@ func TestFixPackageClasses(t *testing.T) {
 	config := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
 	out, _, after := runFix(t, map[string]string{"/games/my_game/src/pkg/" + packageFileName: config +
 		"\n[[class]]\n  name = \"B\"\n\n[[class]]\n  name = \"A\"\n"})
-	if want := "[>] Reformatted res://src/pkg/gd++pkg.toml.\n[>] Success!\n"; out != want {
+	if want := "[-] Reformatted res://src/pkg/gd++pkg.toml.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	want := config + "\n[[class]]\n  name = \"A\"\n\n[[class]]\n  name = \"B\"\n"

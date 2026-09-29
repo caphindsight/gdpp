@@ -62,7 +62,7 @@ func TestLogsGoToStderr(t *testing.T) {
 }
 
 func TestLogInfo(t *testing.T) {
-	// Force non-TTY so the "[>] " prefix is a plain literal, independent of
+	// Force non-TTY so the "[-] " prefix is a plain literal, independent of
 	// Styled's ANSI-wrapping behavior (covered separately by TestStyled).
 	withTTY(t, false)
 
@@ -72,9 +72,9 @@ func TestLogInfo(t *testing.T) {
 		params []any
 		want   string
 	}{
-		{"plain message", "hello", nil, "[>] hello\n"},
-		{"formatted message", "hello, %s! count=%d", []any{"world", 3}, "[>] hello, world! count=3\n"},
-		{"multiline message re-indented", "line1\nline2", nil, "[>] line1\n    line2\n"},
+		{"plain message", "hello", nil, "[-] hello\n"},
+		{"formatted message", "hello, %s! count=%d", []any{"world", 3}, "[-] hello, world! count=3\n"},
+		{"multiline message re-indented", "line1\nline2", nil, "[-] line1\n    line2\n"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -138,8 +138,8 @@ func TestSilence(t *testing.T) {
 	if quiet() {
 		t.Error("quiet() = true after ending all Silences, want false")
 	}
-	if out := captureStderr(t, func() { LogInfo("visible") }); out != "[>] visible\n" {
-		t.Errorf("LogInfo printed %q after Silences ended, want %q", out, "[>] visible\n")
+	if out := captureStderr(t, func() { LogInfo("visible") }); out != "[-] visible\n" {
+		t.Errorf("LogInfo printed %q after Silences ended, want %q", out, "[-] visible\n")
 	}
 }
 
@@ -196,7 +196,7 @@ func TestConfirmNo(t *testing.T) {
 		t.Errorf("exit code = %d, want 1", code)
 	}
 	// Built by hand, not via Styled: this process's stdout is not a TTY.
-	want := "[\x1b[1;35m?\x1b[0m] Delete file.txt? [y/n] [\x1b[1;31m!\x1b[0m] Operation canceled by user.\n"
+	want := "[\x1b[1;35m?\x1b[0m] Delete file.txt? [y/n] [\x1b[1;31m×\x1b[0m] Operation canceled by user.\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -224,7 +224,7 @@ func TestConfirmForceNo(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[?] Delete file.txt? [y/n] n\n[!] Operation canceled by -n/--no.\n"; out != want {
+	if want := "[?] Delete file.txt? [y/n] n\n[x] Operation canceled by -n/--no.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -241,7 +241,7 @@ func TestConfirmEOF(t *testing.T) {
 		t.Errorf("exit code = %d, want 1", code)
 	}
 	// Built by hand, not via Styled: this process's stdout is not a TTY.
-	want := "[\x1b[1;35m?\x1b[0m] Delete file.txt? [y/n] [\x1b[1;31m!\x1b[0m] Operation canceled by user.\n"
+	want := "[\x1b[1;35m?\x1b[0m] Delete file.txt? [y/n] [\x1b[1;31m×\x1b[0m] Operation canceled by user.\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -258,7 +258,7 @@ func TestConfirmNonTTY(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[?] Delete file.txt? [y/n] n\n[!] Output is not a tty, use -f to confirm.\n"; out != want {
+	if want := "[?] Delete file.txt? [y/n] n\n[x] Output is not a tty, use -f to confirm.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -292,7 +292,7 @@ func TestLogFatal(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] Boom: oops.\ncleaned up"; out != want {
+	if want := "[x] Boom: oops.\ncleaned up"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -315,7 +315,7 @@ func TestAssertFail(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] Expected 1 to equal 2.\n"; out != want {
+	if want := "[x] Expected 1 to equal 2.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -338,7 +338,7 @@ func TestCheckFail(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] Failed to write file.txt: disk full.\n"; out != want {
+	if want := "[x] Failed to write file.txt: disk full.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -351,7 +351,7 @@ func TestCheckFailErrorWithPeriod(t *testing.T) {
 	}
 
 	out, _ := runFailHelper(t, "TestCheckFailErrorWithPeriod")
-	if want := "[!] Failed to write file.txt: Disk full.\n"; out != want {
+	if want := "[x] Failed to write file.txt: Disk full.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -365,9 +365,9 @@ func TestLogError(t *testing.T) {
 		params []any
 		want   string
 	}{
-		{"plain message", "hello", nil, "[!] hello\n"},
-		{"formatted message", "hello, %s! count=%d", []any{"world", 3}, "[!] hello, world! count=3\n"},
-		{"multiline message re-indented", "line1\nline2", nil, "[!] line1\n    line2\n"},
+		{"plain message", "hello", nil, "[x] hello\n"},
+		{"formatted message", "hello, %s! count=%d", []any{"world", 3}, "[x] hello, world! count=3\n"},
+		{"multiline message re-indented", "line1\nline2", nil, "[x] line1\n    line2\n"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -415,7 +415,7 @@ func TestLogTaskNonTTY(t *testing.T) {
 		task.LogString("b")
 		task.Done()
 	})
-	if want := "[$] Running task: build 1.\n    a\n    b\n[+] Task succeeded: build 1.\n"; got != want {
+	if want := "[$] Running task: build 1.\n    a\n    b\n[-] Task succeeded: build 1.\n"; got != want {
 		t.Errorf("printed %q, want %q", got, want)
 	}
 	if len(task.logs) != 2 {
@@ -443,7 +443,7 @@ func TestLogTaskTTY(t *testing.T) {
 	}
 	// Done clears the header and 4 log rows and prints just the task name,
 	// case preserved, with "..." replaced by ".".
-	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+Args.LogDepth, formatMsg(Styled("✓", Bold, Green), "Build."))
+	want := fmt.Sprintf("\x1b[%dF\x1b[J%s\n", 1+Args.LogDepth, formatMsg(infoIcon(), "Build."))
 	if !strings.HasSuffix(got, want) {
 		t.Errorf("output ends with %q, want suffix %q", got[max(0, len(got)-40):], want)
 	}
@@ -465,7 +465,7 @@ func TestLogTaskQuietNonTTY(t *testing.T) {
 		task.LogString("b")
 		task.Done()
 	})
-	if want := "[$] Running task: build 1.\n[+] Task succeeded: build 1.\n"; got != want {
+	if want := "[$] Running task: build 1.\n[-] Task succeeded: build 1.\n"; got != want {
 		t.Errorf("printed %q, want %q", got, want)
 	}
 	if len(task.logs) != 2 {
@@ -493,7 +493,7 @@ func testLogTaskErasedTTY(t *testing.T) {
 		task.LogString("hidden")
 		task.Done()
 	})
-	if strings.Contains(got, "hidden") || strings.Contains(got, "✓") {
+	if strings.Contains(got, "hidden") || strings.Contains(got, "•") {
 		t.Errorf("log line or success message leaked while quiet: %q", got)
 	}
 	// The progress message is drawn without log-line rows under it, so only 1
@@ -561,13 +561,13 @@ func runTaskFailTTY(n int) {
 // then a "Failed: ..." repeat of the header if n > Args.LogDepth. Built by
 // hand: this process's stdout is not a TTY, so Styled would not style.
 func wantTaskFailTTY(n int) string {
-	header := "[\x1b[1;31m✗\x1b[0m] Build.\n"
+	header := "[\x1b[1;31m×\x1b[0m] Build.\n"
 	want := fmt.Sprintf("\x1b[%dF\x1b[J", 1+Args.LogDepth) + header
 	for i := 0; i < n; i++ {
 		want += fmt.Sprint("    line ", i, "\n")
 	}
 	if n > Args.LogDepth {
-		want += "[\x1b[1;31m✗\x1b[0m] Failed: build.\n"
+		want += "[\x1b[1;31m×\x1b[0m] Failed: build.\n"
 	}
 	return want
 }

@@ -75,7 +75,7 @@ func TestLoadProjectConfigUnknownKey(t *testing.T) {
 		return
 	}
 	out, code := runFailHelper(t, "TestLoadProjectConfigUnknownKey")
-	if want := "[!] Unknown key build in res://gd++proj.toml.\n"; code != 1 || out != want {
+	if want := "[x] Unknown key build in res://gd++proj.toml.\n"; code != 1 || out != want {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }

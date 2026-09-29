@@ -39,7 +39,7 @@ func buildCaches(m *memFS) []string {
 func TestClean(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game/src/pkg")
 	out := captureStderr(t, (&CmdClean{}).Run)
-	if want := "[>] Cleaning res://src/pkg...\n"; out != want {
+	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got, want := buildCaches(m), []string{".gd++pkg/"}; !reflect.DeepEqual(got, want) {
@@ -53,7 +53,7 @@ func TestClean(t *testing.T) {
 func TestCleanPaths(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game")
 	out := captureStderr(t, (&CmdClean{Paths: []string{"src/pkg/main.cpp", "res://", "src/other", "src/pkg"}}).Run)
-	if want := "[>] Cleaning res://src/pkg...\n[>] Cleaning res:// [my_game]...\n"; out != want {
+	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: cleaning res:// [my_game]...\n[-] Task succeeded: cleaning res:// [my_game]\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got := buildCaches(m); len(got) > 0 {
@@ -64,7 +64,7 @@ func TestCleanPaths(t *testing.T) {
 func TestCleanProj(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game/src/other")
 	out := captureStderr(t, (&CmdClean{Proj: true}).Run)
-	if want := "[>] Cleaning res:// [my_game]...\n[>] Cleaning res://src/pkg...\n"; out != want {
+	if want := "[$] Running task: cleaning res:// [my_game]...\n[-] Task succeeded: cleaning res:// [my_game]\n[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got := buildCaches(m); len(got) > 0 {
@@ -74,14 +74,15 @@ func TestCleanProj(t *testing.T) {
 
 func TestCleanBin(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game")
-	libs := []string{"libpkg.linux.template_debug.x86_64.so", "libpkg.windows.template_release.x86_32.dll", "libpkg.macos.template_debug.arm64.dylib", "pkg.gdextension", "pkg.gdextension.uid"}
-	kept := []string{"libpkg.so", "libpkgx.linux.template_debug.x86_64.so", "libother.linux.template_debug.x86_64.so", "libpkg.linux.template_debug.x86_64.so.txt", "other.gdextension", "pkg.gdextension.txt"}
+	libs := []string{"libpkg.linux.template_debug.x86_64.so", "libpkg.windows.template_release.x86_32.dll", "libpkg.macos.template_debug.arm64.dylib", "pkg.gdextension", "pkg.gdextension.uid",
+		"libpkg.so", "libold.linux.template_debug.x86_64.so", "old.gdextension", "old.gdextension.uid"}
+	kept := []string{"lib.so", "pkg.so", "libpkg.linux.template_debug.x86_64.so.txt", "pkg.gdextension.txt", ".gdextension"}
 	for _, name := range append(libs, kept...) {
 		m.nodes["/games/my_game/src/pkg/"+name] = &memNode{}
 	}
 	m.nodes["/games/my_game/src/other/libother.linux.template_debug.x86_64.so"] = &memNode{}
 	out := captureStderr(t, (&CmdClean{Bin: true, Paths: []string{"src/pkg", "src/other"}}).Run)
-	if want := "[>] Cleaning res://src/pkg...\n[>] Cleaning res://src/other...\n"; out != want {
+	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: cleaning res://src/other...\n[-] Task succeeded: cleaning res://src/other\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	tree := m.tree()
@@ -108,7 +109,7 @@ func TestCleanProjWithPaths(t *testing.T) {
 		return
 	}
 	out, code := runFailHelper(t, "TestCleanProjWithPaths")
-	if want := "[!] Invalid arguments: paths and --proj cannot be used together.\n"; code != 1 || out != want {
+	if want := "[x] Invalid arguments: paths and --proj cannot be used together.\n"; code != 1 || out != want {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }
@@ -117,7 +118,7 @@ func TestCleanNothing(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game/src/other")
 	before := m.tree()
 	out := captureStderr(t, (&CmdClean{}).Run)
-	if want := "[>] Nothing to clean.\n"; out != want {
+	if want := "[-] Nothing to clean.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if !reflect.DeepEqual(m.tree(), before) {

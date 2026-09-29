@@ -246,13 +246,19 @@ func logMsg(icon string, suppressible bool, format string, params []any) {
 }
 
 // LogInfo prints a formatted info message. Suppressed by -q/--quiet or Silence.
-func LogInfo(format string, params ...any) { logMsg(Styled(">", Green), true, format, params) }
+func LogInfo(format string, params ...any) { logMsg(infoIcon(), true, format, params) }
 
 // LogWarn prints a formatted warning. Suppressed by -q/--quiet or Silence.
 func LogWarn(format string, params ...any) { logMsg(Styled("!", Bold, Yellow), true, format, params) }
 
 // LogError prints a formatted error.
-func LogError(format string, params ...any) { logMsg(Styled("!", Bold, Red), false, format, params) }
+func LogError(format string, params ...any) { logMsg(errorIcon(), false, format, params) }
+
+// infoIcon is the icon of info messages and succeeded tasks.
+func infoIcon() string { return Styled(unicodeOr("•", "-"), Green) }
+
+// errorIcon is the icon of errors and failed tasks.
+func errorIcon() string { return Styled(unicodeOr("×", "x"), Bold, Red) }
 
 // LogFatal prints a formatted error, then exits the program via Fail.
 func LogFatal(format string, params ...any) {
@@ -350,7 +356,7 @@ func (t *Task) LogString(s string) {
 // Silence, it erases the task message too, leaving no trace. Otherwise, it
 // prints the final task message.
 func (t *Task) Done() {
-	t.finish(Styled(unicodeOr("✓", "+"), Bold, Green), "Task succeeded: ", quiet())
+	t.finish(infoIcon(), "Task succeeded: ", quiet())
 }
 
 // Fail marks the task as failed, then exits the program via Fail. Never
@@ -358,7 +364,7 @@ func (t *Task) Done() {
 // entire task log (catching up on lines that were hidden while running) and,
 // on a terminal, repeats the failed task message below a long log.
 func (t *Task) Fail() {
-	failIcon := Styled(unicodeOr("✗", "x"), Bold, Red)
+	failIcon := errorIcon()
 	t.finish(failIcon, "Task failed: ", false)
 	if isTTY || quiet() {
 		width, _, _ := term.GetSize(int(os.Stderr.Fd()))

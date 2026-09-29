@@ -69,7 +69,7 @@ func TestSyncGitignoresGit(t *testing.T) {
 		".gitignore":         "user\n",
 		"src/pkg/.gitignore": "# GD++ package-level ignores\nstale\n\n!keep\r\n\n\n",
 	})
-	want := "[>] Updated res://.gitignore.\n[>] Updated res://src/pkg/.gitignore.\n"
+	want := "[-] Updated res://.gitignore.\n[-] Updated res://src/pkg/.gitignore.\n"
 	if !changed || out != want {
 		t.Errorf("changed = %v, output = %q, want true, %q", changed, out, want)
 	}
@@ -88,7 +88,7 @@ func TestSyncGitignoresGit(t *testing.T) {
 
 func TestSyncGitignoresCreate(t *testing.T) {
 	out, _, after := runSync(t, "git", syncPkgs, nil)
-	want := "[>] Created res://.gitignore.\n[>] Created res://src/pkg/.gitignore.\n"
+	want := "[-] Created res://.gitignore.\n[-] Created res://src/pkg/.gitignore.\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -108,7 +108,7 @@ func TestSyncGitignoresNone(t *testing.T) {
 		"src/pkg/.gitignore": "\n" + packageBlock + "\n\n",
 		"src/.gitignore":     packageBlock, // not a package: left alone
 	})
-	want := "[>] Updated res://.gitignore.\n[>] Deleted res://src/pkg/.gitignore.\n"
+	want := "[-] Updated res://.gitignore.\n[-] Deleted res://src/pkg/.gitignore.\n"
 	if !changed || out != want {
 		t.Errorf("changed = %v, output = %q, want true, %q", changed, out, want)
 	}

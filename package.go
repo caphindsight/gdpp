@@ -131,6 +131,39 @@ func styledPackageName(root Path) string {
 	return styled
 }
 
+// packageGarbage returns what cleaning the package at root deletes: its build
+// cache, and with bin all libraries and .gdextension (.uid) files in root,
+// whatever their names, since the package may have been moved or renamed.
+func packageGarbage(root Path, bin bool) []Path {
+	var paths []Path
+	if cache := root.Cd(packageBuildCacheDirName); cache.Exists() {
+		paths = append(paths, cache)
+	}
+	if bin {
+		for _, child := range root.Ls() {
+			if packageBinRegexp.MatchString(child.Name()) {
+				paths = append(paths, child)
+			}
+		}
+	}
+	return paths
+}
+
+var packageBinRegexp = regexp.MustCompile(`^(lib.+\.(dll|so|dylib)|.+\.gdextension(\.uid)?)$`)
+
+// cleanPackage deletes packageGarbage, saying so if there is any.
+func cleanPackage(root Path, bin bool) {
+	garbage := packageGarbage(root, bin)
+	if len(garbage) == 0 {
+		return
+	}
+	t := LogTask("Cleaning %s...", styledPackageName(root))
+	for _, p := range garbage {
+		p.Remove()
+	}
+	t.Done()
+}
+
 // LoadPackageAt reads the package at root, asserting root is a package
 // root rather than a directory inside one.
 func LoadPackageAt(root Path) Package {

@@ -24,7 +24,7 @@ func TestExec(t *testing.T) {
 		"    .$ sh -c echo one; echo two >&2\n" +
 		"    one\n" +
 		"    two\n" +
-		"[+] Task succeeded: running a task\n"
+		"[-] Task succeeded: running a task\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}

@@ -95,7 +95,7 @@ func TestTarFailureLeavesNoPartialFile(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] Failed to read src/a.h: permission denied.\n[/src/ /src/a.h]\n"; out != want {
+	if want := "[x] Failed to read src/a.h: permission denied.\n[/src/ /src/a.h]\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -116,7 +116,7 @@ func TestUnzipRejectsEscapingEntries(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] Entry \"../evil\" in a.zip points outside of the archive.\n"; out != want {
+	if want := "[x] Entry \"../evil\" in a.zip points outside of the archive.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }

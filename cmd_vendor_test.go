@@ -114,7 +114,7 @@ func TestVendorWrongExtensionDeclined(t *testing.T) {
 		t.Errorf("exit code = %d, want 1", code)
 	}
 	want := "[?] Path ../../out/dep.tar.gz doesn't end with .zip, use it anyway? [y/n] n\n" +
-		"[!] Operation canceled by -n/--no.\ncreated: false\n"
+		"[x] Operation canceled by -n/--no.\ncreated: false\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -144,7 +144,7 @@ func TestVendorInvalidArgs(t *testing.T) {
 			if code != 1 {
 				t.Errorf("exit code = %d, want 1", code)
 			}
-			if want := "[!] Invalid arguments: " + tc.want + ".\n"; out != want {
+			if want := "[x] Invalid arguments: " + tc.want + ".\n"; out != want {
 				t.Errorf("output = %q, want %q", out, want)
 			}
 		})

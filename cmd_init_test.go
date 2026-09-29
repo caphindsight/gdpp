@@ -27,10 +27,10 @@ func intPtr(n int) *int { return &n }
 func TestInitProject(t *testing.T) {
 	out, after := runInit(t, CmdInit{Vcs: "git"}, nil)
 	want := "" +
-		"[>] Created res://gd++proj.toml.\n" +
-		"[>] Set the VCS to git.\n" +
-		"[>] Created res://.gitignore.\n" +
-		"[>] Success!\n"
+		"[-] Created res://gd++proj.toml.\n" +
+		"[-] Set the VCS to git.\n" +
+		"[-] Created res://.gitignore.\n" +
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -51,10 +51,10 @@ func TestInitProjectVcsNone(t *testing.T) {
 	withQuiet(t, false)
 	withTTY(t, false)
 	want := "" +
-		"[>] Set the VCS to none.\n" +
-		"[>] Updated res://.gitignore.\n" +
-		"[>] Deleted res://src/pkg/.gitignore.\n" +
-		"[>] Success!\n"
+		"[-] Set the VCS to none.\n" +
+		"[-] Updated res://.gitignore.\n" +
+		"[-] Deleted res://src/pkg/.gitignore.\n" +
+		"[-] Success!\n"
 	if out := captureStderr(t, (&CmdInit{Vcs: "none"}).Run); out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -70,7 +70,7 @@ func TestInitProjectVcsNone(t *testing.T) {
 func TestInitProjectNoVcsChange(t *testing.T) {
 	// Only a change of VCS touches the .gitignore files.
 	out, after := runInit(t, CmdInit{Vcs: "none"}, nil)
-	if want := "[>] Created res://gd++proj.toml.\n[>] Success!\n"; out != want {
+	if want := "[-] Created res://gd++proj.toml.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if _, ok := after[gitignoreFileName]; ok {
@@ -92,9 +92,9 @@ func TestInitProjectNoChanges(t *testing.T) {
 func TestInitNewPackage(t *testing.T) {
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Bind: "4.3", Spec: "4.3", Std: "c++17"}, nil)
 	want := "" +
-		"[>] Created res://src/pkg/gd++pkg.toml.\n" +
+		"[-] Created res://src/pkg/gd++pkg.toml.\n" +
 		"[!] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n" +
-		"[>] Success!\n"
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -122,9 +122,9 @@ func TestInitNewPackageGit(t *testing.T) {
 func TestInitRootPackage(t *testing.T) {
 	out, after := runInit(t, CmdInit{Path: ".", Bind: "4.3", Spec: "4.3"}, nil)
 	want := "" +
-		"[>] Created res://gd++pkg.toml.\n" +
+		"[-] Created res://gd++pkg.toml.\n" +
 		"[!] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n" +
-		"[>] Success!\n"
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -147,10 +147,10 @@ func TestInitUpdatePackage(t *testing.T) {
 	pkgs := map[string]string{"src/pkg": "bind = \"4.2\"\nspec = \"4.3\"\n"}
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Bind: "4.3", Syntax: intPtr(1)}, pkgs)
 	want := "" +
-		"[>] Set the Godot C++ bindings to 4.3.\n" +
-		"[>] Set the GD++ syntax to 1.\n" +
+		"[-] Set the Godot C++ bindings to 4.3.\n" +
+		"[-] Set the GD++ syntax to 1.\n" +
 		"[!] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n" +
-		"[>] Success!\n"
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -200,7 +200,7 @@ func TestInitInvalidArgs(t *testing.T) {
 				return
 			}
 			out, code := runFailHelper(t, t.Name())
-			if want := "[!] Invalid arguments: " + tc.want + ".\n"; code != 1 || out != want {
+			if want := "[x] Invalid arguments: " + tc.want + ".\n"; code != 1 || out != want {
 				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 			}
 		})
@@ -212,9 +212,9 @@ const classPkgConfig = "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++2
 func TestInitNewClass(t *testing.T) {
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "MyNode", Include: "pkg://my_node.h", Icon: "res://my_node.svg"}, map[string]string{"src/pkg": classPkgConfig})
 	want := "" +
-		"[>] Set the include path of class MyNode to pkg://my_node.h.\n" +
-		"[>] Set the icon of class MyNode to res://my_node.svg.\n" +
-		"[>] Success!\n"
+		"[-] Set the include path of class MyNode to pkg://my_node.h.\n" +
+		"[-] Set the icon of class MyNode to res://my_node.svg.\n" +
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -230,8 +230,8 @@ func TestInitUpdateClass(t *testing.T) {
 	// Without --icon the icon stays.
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "A", Include: "res://a.hpp", Update: true}, pkgs)
 	want := "" +
-		"[>] Set the include path of class A to res://a.hpp.\n" +
-		"[>] Success!\n"
+		"[-] Set the include path of class A to res://a.hpp.\n" +
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -241,7 +241,7 @@ func TestInitUpdateClass(t *testing.T) {
 	}
 	// --noicon removes it.
 	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoIcon: true, Update: true}, pkgs)
-	if want := "[>] Set the icon of class A to none.\n[>] Success!\n"; out != want {
+	if want := "[-] Set the icon of class A to none.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	wantConfig = classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n"
@@ -255,7 +255,7 @@ func TestInitClassNoInclude(t *testing.T) {
 	pkgs := map[string]string{"src/pkg": config}
 	// A new class without a header.
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "B", NoInclude: true}, pkgs)
-	if want := "[>] Set the include path of class B to none.\n[>] Set the icon of class B to none.\n[>] Success!\n"; out != want {
+	if want := "[-] Set the include path of class B to none.\n[-] Set the icon of class B to none.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	wantConfig := classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n  icon = \"pkg://a.svg\"\n\n[[class]]\n  name = \"B\"\n"
@@ -264,7 +264,7 @@ func TestInitClassNoInclude(t *testing.T) {
 	}
 	// Removing the header of an existing class; the icon stays.
 	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", NoInclude: true, Update: true}, pkgs)
-	if want := "[>] Set the include path of class A to none.\n[>] Success!\n"; out != want {
+	if want := "[-] Set the include path of class A to none.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	wantConfig = classPkgConfig + "\n[[class]]\n  name = \"A\"\n  icon = \"pkg://a.svg\"\n"
@@ -281,7 +281,7 @@ func TestInitClassConfirms(t *testing.T) {
 	}{
 		"exists":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h"}, "[?] Class A already exists in res://src/pkg. Update it? [y/n] n\n"},
 		"extension": {CmdInit{Path: "src/pkg", Class: "B", Include: "pkg://b.cpp"}, "[?] Include path pkg://b.cpp is not a .h or .hpp file. Continue? [y/n] n\n"},
-		"missing":   {CmdInit{Path: "src/pkg", Class: "B", Include: "pkg://b.h", Update: true}, "[!] There is no class B in res://src/pkg.\n"},
+		"missing":   {CmdInit{Path: "src/pkg", Class: "B", Include: "pkg://b.h", Update: true}, "[x] There is no class B in res://src/pkg.\n"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

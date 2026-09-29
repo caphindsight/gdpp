@@ -97,7 +97,15 @@ func TestGenerateGdextension(t *testing.T) {
 	m := withBuildFS(t)
 	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{"header": {"version_major": 4, "version_minor": 5, "version_patch": 1}}`)
 	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
-	generateGdextension(LoadPackage(Cwd()))
+	withTTY(t, false)
+	withQuiet(t, false)
+	generate := func() string { return captureStderr(t, func() { generateGdextension(LoadPackage(Cwd())) }) }
+	if got, want := generate(), "[-] Generating .gdextension for res://src/pkg...\n"; got != want {
+		t.Errorf("first output = %q, want %q", got, want)
+	}
+	if got := generate(); got != "" {
+		t.Errorf("unchanged output = %q, want none", got)
+	}
 	tree := m.tree()
 	gdextension := tree["/games/my_game/src/pkg/pkg.gdextension"]
 	for _, want := range []string{
@@ -136,8 +144,8 @@ func TestGenerateBuildCacheLogs(t *testing.T) {
 	generate := func() string {
 		return captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
 	}
-	sync := "[$] Running task: syncing dependencies for res://src/pkg...\n[+] Task succeeded: syncing dependencies for res://src/pkg\n"
-	if got, want := generate(), sync+"[>] Generating type registrations for res://src/pkg...\n"; got != want {
+	sync := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: syncing dependencies for res://src/pkg...\n[-] Task succeeded: syncing dependencies for res://src/pkg\n"
+	if got, want := generate(), sync+"[-] Registering types for res://src/pkg...\n"; got != want {
 		t.Errorf("first output = %q, want %q", got, want)
 	}
 	if got := generate(); got != "" {
@@ -145,35 +153,54 @@ func TestGenerateBuildCacheLogs(t *testing.T) {
 	}
 }
 
-func TestGenerateBuildCacheDeps(t *testing.T) {
+func TestGenerateBuildCacheState(t *testing.T) {
 	m := withBuildFS(t)
 	generate := func() {
 		captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
 	}
 	generate()
-	deps := "/games/my_game/src/pkg/.gd++pkg/deps.toml"
-	if got, want := m.tree()[deps], "bind = \"4.3\"\nspec = \"4.3\"\n"; got != want {
-		t.Errorf("deps.toml = %q, want %q", got, want)
+	state := "/games/my_game/src/pkg/.gd++pkg/build.toml"
+	if got, want := m.tree()[state], "id = \"pkg\"\n\n[config]\n  bind = \"4.3\"\n  spec = \"4.3\"\n"; !strings.HasPrefix(got, want) {
+		t.Errorf("build.toml = %q, want it to start with %q", got, want)
 	}
 
-	// Same versions: the sync is skipped, even if the bindings changed.
+	if strings.Contains(m.tree()[state], "class") {
+		t.Errorf("build.toml = %q, want no classes", m.tree()[state])
+	}
+
+	// Same id and config but classes: nothing is cleaned or synced, even if the bindings changed.
 	NewPath("/games/my_game/.gd++proj/bind/4.3/SConstruct").WriteString("edited")
+	m.nodes["/games/my_game/src/pkg/gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `name = "Hidden"`, `name = "Shown"`, 1))
+	m.nodes["/games/my_game/src/pkg/libpkg.linux.template_debug.x86_64.so"] = &memNode{}
 	generate()
-	if got := m.tree()["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "bind" {
+	tree := m.tree()
+	if got := tree["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "bind" {
 		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "bind")
 	}
+	if _, ok := tree["/games/my_game/src/pkg/libpkg.linux.template_debug.x86_64.so"]; !ok {
+		t.Errorf("libpkg.linux.template_debug.x86_64.so was deleted")
+	}
 
-	// Other versions: synced again.
+	// Other config: cleaned, libraries included, and synced again.
 	m.nodes["/games/my_game/.gd++proj/spec/4.4/extension_api.json"] = &memNode{data: []byte("{4.4}")}
 	m.nodes["/games/my_game/.gd++proj/spec/4.4"] = &memNode{dir: true}
 	m.nodes["/games/my_game/src/pkg/gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `spec = "4.3"`, `spec = "4.4"`, 1))
+	m.nodes["/games/my_game/src/pkg/.gd++pkg/a.o"] = &memNode{}
 	generate()
-	tree := m.tree()
-	if got, want := tree[deps], "bind = \"4.3\"\nspec = \"4.4\"\n"; got != want {
-		t.Errorf("deps.toml = %q, want %q", got, want)
+	tree = m.tree()
+	if !strings.Contains(tree[state], "spec = \"4.4\"") {
+		t.Errorf("build.toml = %q, want it to contain spec 4.4", tree[state])
 	}
 	if got := tree["/games/my_game/src/pkg/.gd++pkg/extension_api.json"]; got != "{4.4}" {
 		t.Errorf("extension_api.json = %q, want %q", got, "{4.4}")
+	}
+	if got := tree["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "edited" {
+		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "edited")
+	}
+	for _, file := range []string{".gd++pkg/a.o", "libpkg.linux.template_debug.x86_64.so"} {
+		if _, ok := tree["/games/my_game/src/pkg/"+file]; ok {
+			t.Errorf("%s was not deleted", file)
+		}
 	}
 }
 
@@ -187,7 +214,7 @@ func TestBuildMissingDep(t *testing.T) {
 		return
 	}
 	out, code := runFailHelper(t, "TestBuildMissingDep")
-	if want := "[!] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n"; code != 1 || out != want {
+	if want := "[x] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n"; code != 1 || out != want {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }
@@ -215,8 +242,10 @@ func TestBuildSconsArgs(t *testing.T) {
 		c    CmdBuild
 		want []string
 	}{
-		{CmdBuild{}, []string{"platform=linux", "arch=x86_64", "target=template_debug"}},
+		{CmdBuild{}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "optimize=none"}},
+		{CmdBuild{Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "optimize=speed"}},
 		{CmdBuild{Opt: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "optimize=speed"}},
+		{CmdBuild{NoOpt: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "optimize=none"}},
 		{CmdBuild{Small: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "optimize=size"}},
 	}
 	for _, tc := range cases {
@@ -234,9 +263,11 @@ func TestBuildDescribe(t *testing.T) {
 		target string
 		want   string
 	}{
-		{CmdBuild{}, host, host + ", debug build"},
-		{CmdBuild{Ship: true, Opt: true}, host, host + ", \x1b[1;35mrelease build\x1b[0m, \x1b[1;34moptimized\x1b[0m"},
-		{CmdBuild{Small: true}, "windows.arm64", "\x1b[1;36mwindows.arm64\x1b[0m, debug build, \x1b[1;33moptimized for binary size\x1b[0m"},
+		{CmdBuild{}, host, host + ", debug, unoptimized"},
+		{CmdBuild{Ship: true}, host, host + ", \x1b[1mrelease\x1b[0m, optimized"},
+		{CmdBuild{Opt: true}, host, host + ", debug, \x1b[1moptimized\x1b[0m"},
+		{CmdBuild{Ship: true, NoOpt: true}, host, host + ", \x1b[1mrelease\x1b[0m, \x1b[1munoptimized\x1b[0m"},
+		{CmdBuild{Small: true}, "windows.arm64", "\x1b[1mwindows.arm64\x1b[0m, debug, \x1b[1msize-optimized\x1b[0m"},
 	}
 	for _, tc := range cases {
 		if got := tc.c.describe(tc.target); got != tc.want {
@@ -254,7 +285,8 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"for":      {CmdBuild{For: []string{"w.x64"}, Arch: "x86_64"}, "--for cannot be used together with -w, --platform or --arch"},
 		"target":   {CmdBuild{For: []string{"w.x64", "web.x64"}}, `"web.x64" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64`},
 		"noarch":   {CmdBuild{For: []string{"linux"}}, `"linux" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64`},
-		"opt":      {CmdBuild{Opt: true, Small: true}, "--opt and --small cannot be used together"},
+		"opt":      {CmdBuild{Opt: true, Small: true}, "--opt, --small and --noopt cannot be used together"},
+		"noopt":    {CmdBuild{Small: true, NoOpt: true}, "--opt, --small and --noopt cannot be used together"},
 		"platform": {CmdBuild{Platform: "web"}, "--platform must be one of windows, linux, macos"},
 		"arch":     {CmdBuild{Arch: "mips"}, "--arch must be one of x86_32, x86_64, arm64"},
 		"proj":     {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
@@ -267,7 +299,7 @@ func TestBuildInvalidArgs(t *testing.T) {
 				return
 			}
 			out, code := runFailHelper(t, t.Name())
-			if want := "[!] Invalid arguments: " + tc.want + ".\n"; code != 1 || out != want {
+			if want := "[x] Invalid arguments: " + tc.want + ".\n"; code != 1 || out != want {
 				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 			}
 		})

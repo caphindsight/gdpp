@@ -42,7 +42,7 @@ func TestNewPathRejectsRelative(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if want := "[!] Path \"rel/path\" is not absolute.\n"; out != want {
+	if want := "[x] Path \"rel/path\" is not absolute.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
@@ -539,7 +539,7 @@ func TestFileOpsFail(t *testing.T) {
 			if code != 1 {
 				t.Errorf("exit code = %d, want 1", code)
 			}
-			if want := "[!] " + c.want + "\n"; out != want {
+			if want := "[x] " + c.want + "\n"; out != want {
 				t.Errorf("output = %q, want %q", out, want)
 			}
 		})

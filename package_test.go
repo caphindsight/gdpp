@@ -67,12 +67,12 @@ func TestLoadPackageFails(t *testing.T) {
 	tests := []struct {
 		name, config, want string
 	}{
-		{"MissingBind", `spec = "b"`, "[!] Missing key bind in res://pkg/gd++pkg.toml.\n"},
-		{"MissingSpec", `bind = "a"`, "[!] Missing key spec in res://pkg/gd++pkg.toml.\n"},
-		{"UnknownKey", "bind = \"a\"\nspec = \"b\"\njobs = 4\n", "[!] Unknown key jobs in res://pkg/gd++pkg.toml.\n"},
-		{"ClassName", classes(`name = "a-b"`), "[!] Invalid class name \"a-b\" in res://pkg/gd++pkg.toml.\n"},
-		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[!] Duplicate class A in res://pkg/gd++pkg.toml.\n"},
-		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[!] Path a.svg of class A in res://pkg/gd++pkg.toml must start with pkg:// or res://.\n"},
+		{"MissingBind", `spec = "b"`, "[x] Missing key bind in res://pkg/gd++pkg.toml.\n"},
+		{"MissingSpec", `bind = "a"`, "[x] Missing key spec in res://pkg/gd++pkg.toml.\n"},
+		{"UnknownKey", "bind = \"a\"\nspec = \"b\"\njobs = 4\n", "[x] Unknown key jobs in res://pkg/gd++pkg.toml.\n"},
+		{"ClassName", classes(`name = "a-b"`), "[x] Invalid class name \"a-b\" in res://pkg/gd++pkg.toml.\n"},
+		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[x] Duplicate class A in res://pkg/gd++pkg.toml.\n"},
+		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[x] Path a.svg of class A in res://pkg/gd++pkg.toml must start with pkg:// or res://.\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -100,7 +100,7 @@ func TestLoadPackageOutsideProject(t *testing.T) {
 		return
 	}
 	out, code := runFailHelper(t, "TestLoadPackageOutsideProject")
-	if want := "[!] Path pkg is not contained in a Godot project.\n"; code != 1 || out != want {
+	if want := "[x] Path pkg is not contained in a Godot project.\n"; code != 1 || out != want {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }

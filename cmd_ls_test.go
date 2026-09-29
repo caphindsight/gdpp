@@ -191,7 +191,7 @@ func TestLsCmdInvalidArgs(t *testing.T) {
 				return
 			}
 			out, code := runFailHelper(t, t.Name())
-			if want := "[!] Invalid arguments: -l/--pkgs and -a/--all cannot be used with a path.\n"; code != 1 || out != want {
+			if want := "[x] Invalid arguments: -l/--pkgs and -a/--all cannot be used with a path.\n"; code != 1 || out != want {
 				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 			}
 		})

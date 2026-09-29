@@ -52,7 +52,7 @@ func TestParseDepIndexUnknown(t *testing.T) {
 		return
 	}
 	out, code := runFailHelper(t, "TestParseDepIndexUnknown")
-	if want := "[!] The Godot API spec 4.4 is not in the repository.\n"; code != 1 || out != want {
+	if want := "[x] The Godot API spec 4.4 is not in the repository.\n"; code != 1 || out != want {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }
@@ -87,7 +87,7 @@ func TestFetchInvalidArgs(t *testing.T) {
 			if code != 1 {
 				t.Errorf("exit code = %d, want 1", code)
 			}
-			if want := "[!] Invalid arguments: " + tc.want + ".\n"; out != want {
+			if want := "[x] Invalid arguments: " + tc.want + ".\n"; out != want {
 				t.Errorf("output = %q, want %q", out, want)
 			}
 		})

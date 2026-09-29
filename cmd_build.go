@@ -38,8 +38,9 @@ type CmdBuild struct {
 	Platform string   `arg:"--platform" placeholder:"windows|linux|macos" help:"the target platform [default: this one]"`
 	Windows  bool     `arg:"-w" help:"shorthand for --platform=windows"`
 	Arch     string   `arg:"--arch" placeholder:"x86_32|x86_64|arm64" help:"the target CPU architecture [default: this one]"`
-	Opt      bool     `arg:"--opt" help:"optimize for speed"`
+	Opt      bool     `arg:"--opt" help:"optimize for speed [default: with --ship]"`
 	Small    bool     `arg:"--small" help:"optimize for binary size"`
+	NoOpt    bool     `arg:"--noopt" help:"don't optimize [default: without --ship]"`
 	Ship     bool     `arg:"--ship" help:"build a release library instead of a debug one"`
 	Proj     bool     `arg:"--proj" help:"build all packages in the project, one after another"`
 }
@@ -86,7 +87,7 @@ func (c *CmdBuild) Run() {
 func (c *CmdBuild) targets() []string {
 	Assert(!c.Windows || c.Platform == "", "Invalid arguments: -w and --platform cannot be used together.")
 	Assert(len(c.For) == 0 || !c.Windows && c.Platform == "" && c.Arch == "", "Invalid arguments: --for cannot be used together with -w, --platform or --arch.")
-	Assert(!c.Opt || !c.Small, "Invalid arguments: --opt and --small cannot be used together.")
+	Assert(countTrue(c.Opt, c.Small, c.NoOpt) <= 1, "Invalid arguments: --opt, --small and --noopt cannot be used together.")
 	Assert(!c.Proj || c.Path == "", "Invalid arguments: a path and --proj cannot be used together.")
 	if len(c.For) == 0 {
 		if c.Windows {
@@ -141,38 +142,48 @@ func (c *CmdBuild) sconsArgs(target string) []string {
 	if c.Ship {
 		args[2] = "target=template_release"
 	}
-	if c.Opt {
-		args = append(args, "optimize=speed")
-	} else if c.Small {
-		args = append(args, "optimize=size")
+	return append(args, "optimize="+c.optimize())
+}
+
+// optimize returns the godot-cpp optimize option: the chosen one, or by
+// default speed for release builds and none for debug builds.
+func (c *CmdBuild) optimize() string {
+	switch {
+	case c.Small:
+		return "size"
+	case c.NoOpt:
+		return "none"
+	case c.Opt || c.Ship:
+		return "speed"
 	}
-	return args
+	return "none"
 }
 
 // describe returns the build details for target shown in the task name, e.g.
-// "windows.x86_64, release build, optimized", styling non-default values.
+// "windows.x86_64, release, optimized", with non-default values bold.
 func (c *CmdBuild) describe(target string) string {
 	desc := target
 	if target != hostPlatform+"."+hostArch {
-		desc = Styled(target, Bold, Cyan)
+		desc = Styled(target, Bold)
 	}
 	if c.Ship {
-		desc += ", " + Styled("release build", Bold, Magenta)
+		desc += ", " + Styled("release", Bold)
 	} else {
-		desc += ", debug build"
+		desc += ", debug"
 	}
-	if c.Opt {
-		desc += ", " + Styled("optimized", Bold, Blue)
-	} else if c.Small {
-		desc += ", " + Styled("optimized for binary size", Bold, Yellow)
+	opt := map[string]string{"speed": "optimized", "size": "size-optimized", "none": "unoptimized"}[c.optimize()]
+	if c.optimize() != (&CmdBuild{Ship: c.Ship}).optimize() {
+		opt = Styled(opt, Bold)
 	}
-	return desc
+	return desc + ", " + opt
 }
 
 // generateBuildCache syncs the package's bindings and API spec into its build
-// cache, and writes the generated files there. The cache's deps.toml records
-// the synced versions; if they're the ones the package uses, the sync is
-// skipped.
+// cache, and writes the generated files there. The cache's build.toml records
+// the package's id and config, except classes, which only affect the generated
+// files; if they changed, e.g. because the package was
+// moved or its dependencies changed, the package is cleaned like `gd++ clean
+// --bin` does and synced again.
 func generateBuildCache(p Project, pkg Package) {
 	dep := func(cache ProjectDepCache, name string) Path {
 		Assert(cache.Has(name), "Missing %s %s, run `gd++ fetch --missing` to fix this.", cache.Desc, name)
@@ -181,22 +192,24 @@ func generateBuildCache(p Project, pkg Package) {
 	bind, spec := dep(p.Caches[0], pkg.Config.Bindings), dep(p.Caches[1], pkg.Config.ApiSpec)
 	name := styledPackageName(pkg.Root)
 	cache := pkg.BuildCache
-	if !cache.Exists() {
+	state := cache.Cd("build.toml")
+	config := pkg.Config
+	config.Classes = nil
+	stateText := encodeToml(struct {
+		Id     string        `toml:"id"`
+		Config PackageConfig `toml:"config"`
+	}{pkg.Id, config})
+	if !state.IsFile() || state.ReadString() != stateText {
+		// Cleaned first, so an interrupted sync isn't taken for a finished one.
+		cleanPackage(pkg.Root, true)
 		cache.CreateDirectory()
-	}
-	deps := cache.Cd("deps.toml")
-	versions := encodeToml(struct {
-		Bindings string `toml:"bind"`
-		ApiSpec  string `toml:"spec"`
-	}{pkg.Config.Bindings, pkg.Config.ApiSpec})
-	if !deps.IsFile() || deps.ReadString() != versions {
-		// Deleted first, so an interrupted sync isn't taken for a finished one.
-		deps.RemoveIfExists()
+		s := Silence()
 		t := LogTask("Syncing dependencies for %s...", name)
 		bind.Sync(cache.Cd("godot-cpp"))
 		spec.Cd("extension_api.json").Sync(cache.Cd("extension_api.json"))
-		deps.WriteString(versions)
 		t.Done()
+		s.End()
+		state.WriteString(stateText)
 	}
 
 	var classes, includes []string
@@ -212,7 +225,7 @@ func generateBuildCache(p Project, pkg Package) {
 		"Classes":  classes,
 		"Includes": uniqueSorted(includes, strings.Compare),
 	}) {
-		LogInfo("Generating type registrations for %s...", name)
+		LogInfo("Registering types for %s...", name)
 	}
 
 	projectRoot, err := filepath.Rel(cache.GetOsPath(), p.Root.GetOsPath())
@@ -286,12 +299,14 @@ func generateGdextension(pkg Package) {
 		}
 	}
 	file := pkg.Root.Cd(pkg.Id + ".gdextension")
-	writeTemplate(file, gdextensionTemplate, map[string]any{
+	changed := writeTemplate(file, gdextensionTemplate, map[string]any{
 		"GodotVersion": fmt.Sprintf("%d.%d", spec.Header.Major, spec.Header.Minor),
 		"Libraries":    libs,
 		"Icons":        icons,
 	})
-	writeIfChanged(pkg.Root.Cd(pkg.Id+".gdextension.uid"), godotUid(packageName(pkg.Root))+"\n")
+	if writeIfChanged(pkg.Root.Cd(pkg.Id+".gdextension.uid"), godotUid(packageName(pkg.Root))+"\n") || changed {
+		LogInfo("Generating .gdextension for %s...", styledPackageName(pkg.Root))
+	}
 }
 
 // godotUid returns a Godot resource UID derived from the hash of s, in

@@ -136,7 +136,7 @@ func TestRmFails(t *testing.T) {
 				return
 			}
 			out, code := runFailHelper(t, t.Name())
-			if want := "[!] " + tc.want + "\n"; code != 1 || out != want {
+			if want := "[x] " + tc.want + "\n"; code != 1 || out != want {
 				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 			}
 		})
@@ -194,16 +194,16 @@ func TestRmLogs(t *testing.T) {
 	out := captureStderr(t, (&CmdRm{BindAll: true}).Run)
 	out += captureStderr(t, (&CmdRm{Pkg: []string{"a"}}).Run)
 	out += captureStderr(t, (&CmdRm{Pkg: []string{"d"}, Dir: true}).Run)
-	want := "[>] Deleted res://_gd++proj/bind/4.3.\n" +
-		"[>] Deleted the empty directory res://_gd++proj/bind.\n" +
-		"[>] Deleted the empty directory res://_gd++proj.\n" +
-		"[>] Success!\n" +
-		"[>] Deleted res://a/gd++pkg.toml.\n" +
-		"[>] Deleted res://a/.gd++pkg.\n" +
-		"[>] Deleted res://a/.gitignore.\n" +
-		"[>] Success!\n" +
-		"[>] Deleted res://d.\n" +
-		"[>] Success!\n"
+	want := "[-] Deleted res://_gd++proj/bind/4.3.\n" +
+		"[-] Deleted the empty directory res://_gd++proj/bind.\n" +
+		"[-] Deleted the empty directory res://_gd++proj.\n" +
+		"[-] Success!\n" +
+		"[-] Deleted res://a/gd++pkg.toml.\n" +
+		"[-] Deleted res://a/.gd++pkg.\n" +
+		"[-] Deleted res://a/.gitignore.\n" +
+		"[-] Success!\n" +
+		"[-] Deleted res://d.\n" +
+		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -223,9 +223,9 @@ func TestRmClasses(t *testing.T) {
 	want := "" +
 		"[?] Remove the class A from res://a? [y/n] " +
 		"[?] Remove the class C from res://a? [y/n] " +
-		"[>] Removed the class A.\n" +
-		"[>] Removed the class C.\n" +
-		"[>] Success!\n"
+		"[•] Removed the class A.\n" +
+		"[•] Removed the class C.\n" +
+		"[•] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -254,9 +254,9 @@ func TestRmClassAll(t *testing.T) {
 	out := stripStyles(captureStderr(t, (&CmdRm{Path: "a", ClassAll: true}).Run))
 	want := "" +
 		"[?] Remove all classes A, B from res://a? [y/n] " +
-		"[>] Removed the class A.\n" +
-		"[>] Removed the class B.\n" +
-		"[>] Success!\n"
+		"[•] Removed the class A.\n" +
+		"[•] Removed the class B.\n" +
+		"[•] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
