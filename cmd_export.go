@@ -14,25 +14,23 @@ import (
 // made anew each time, from their original. The user's presets are never
 // changed. The build caches of packages are cleaned first. With --engine, the
 // project build cache is kept, unless it's for another engine or an older
-// engineBuildVersion, or --clean is given. --noclean cleans nothing, except
-// for switching engines. With --godot, it runs the twins' exports too. With
+// engineBuildVersion, or --clean is given. With --godot, it runs the twins' exports too. With
 // --undo, it removes all twins instead.
 type CmdExport struct {
 	Gdext  bool     `arg:"--gdext" help:"build GDExtension libraries and set up GDExtension twins [default: without --engine]"`
 	Engine string   `arg:"--engine" placeholder:"NAME" help:"build export templates with this Godot engine and set up engine twins"`
 	Preset []string `arg:"--preset" placeholder:"NAME" help:"only set up twins of these presets [default: all presets GD++ can export for: Windows, Linux, and without --engine macOS]"`
 	BuildOptions
-	Clean   bool   `arg:"--clean" help:"always clean the build caches first, including the project build cache with the engine copy"`
-	NoClean bool   `arg:"--noclean" help:"DANGEROUS, never use it: don't clean the build caches, even when they're stale; for GD++ development only"`
-	Godot   string `arg:"--godot" placeholder:"PATH" help:"also export the twins with this Godot editor, headless"`
-	Undo    bool   `arg:"--undo" help:"remove all twin presets"`
+	Clean bool   `arg:"--clean" help:"always clean the build caches first, including the project build cache with the engine copy"`
+	Godot string `arg:"--godot" placeholder:"PATH" help:"also export the twins with this Godot editor, headless"`
+	Undo  bool   `arg:"--undo" help:"remove all twin presets"`
 }
 
 func (c *CmdExport) Run() {
 	p := LoadProject(Cwd())
 	file := p.Root.Cd(exportPresetsFileName)
 	if c.Undo {
-		Assert(!c.Gdext && c.Engine == "" && len(c.Preset) == 0 && c.BuildOptions == (BuildOptions{}) && !c.Clean && !c.NoClean && c.Godot == "",
+		Assert(!c.Gdext && c.Engine == "" && len(c.Preset) == 0 && c.BuildOptions == (BuildOptions{}) && !c.Clean && c.Godot == "",
 			"Invalid arguments: --undo cannot be used with other options.")
 		undoTwins(file)
 		return
@@ -42,10 +40,8 @@ func (c *CmdExport) Run() {
 	presets := parseExportPresets(file)
 	chosen, targets := c.choose(presets)
 	assertScons()
-	if !c.NoClean {
-		for _, pkg := range p.ListPackages() {
-			cleanPackage(pkg.Root, false)
-		}
+	for _, pkg := range p.ListPackages() {
+		cleanPackage(pkg.Root, false)
 	}
 	if c.Clean && c.Engine != "" {
 		cleanProjectBuildCache(p)
@@ -58,7 +54,7 @@ func (c *CmdExport) Run() {
 	if c.Engine != "" {
 		o := c.BuildOptions
 		o.engine = true
-		buildEngine(p, c.Engine, o, targets, c.NoClean)
+		buildEngine(p, c.Engine, o, targets)
 	}
 	var names []string
 	for _, preset := range chosen {
@@ -77,7 +73,6 @@ func (c *CmdExport) Run() {
 // kinds to set up.
 func (c *CmdExport) validate() []string {
 	c.BuildOptions.validate()
-	Assert(!c.Clean || !c.NoClean, "Invalid arguments: --clean cannot be used with --noclean.")
 	if c.Engine == "" {
 		c.Gdext = true
 	}

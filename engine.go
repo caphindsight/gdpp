@@ -105,9 +105,8 @@ type enginePackage struct {
 // buildEngine builds export templates for targets from the engine called
 // name, with every package of the project compiled in. The GD++ code is
 // transpiled just like for GDExtension builds, and compiles against
-// generated compat headers standing in for godot-cpp's. With noClean, a cache
-// of an older engineBuildVersion is kept.
-func buildEngine(p Project, name string, o BuildOptions, targets []string, noClean bool) {
+// generated compat headers standing in for godot-cpp's.
+func buildEngine(p Project, name string, o BuildOptions, targets []string) {
 	engine := p.Caches[2]
 	Assert(engine.Has(name), "Missing %s %s, run `gd++ fetch --engine=%s` to fix this.", engine.Desc, name, name)
 	var pkgs []enginePackage
@@ -126,7 +125,7 @@ func buildEngine(p Project, name string, o BuildOptions, targets []string, noCle
 		}
 		pkgs = append(pkgs, enginePackage{pkg, classes, runtime, includes})
 	}
-	cache := prepareEngineBuild(p, name, pkgs, noClean)
+	cache := prepareEngineBuild(p, name, pkgs)
 	generateCompat(cache, names, loadEngineNames(cache))
 	generateEngineModule(p, cache, pkgs)
 	for _, target := range targets {
@@ -143,21 +142,15 @@ type engineBuildState struct {
 // prepareEngineBuild returns the project build cache, with a copy of the
 // engine called name. The cache's build.toml records the engine's name and
 // engineBuildVersion; if either changed, the cache is deleted and the engine
-// copied again, unless noClean is set and only the version changed. The copy
+// copied again. The copy
 // is only made once, since SCons builds inside it, along with installing the
 // engine's dependencies. Asserts the engine is at least as new as the API
 // specs of pkgs.
-func prepareEngineBuild(p Project, name string, pkgs []enginePackage, noClean bool) Path {
+func prepareEngineBuild(p Project, name string, pkgs []enginePackage) Path {
 	cache := projectBuildCache(p)
 	state := cache.Cd("build.toml")
 	stateText := encodeToml(engineBuildState{name, engineBuildVersion})
-	var old engineBuildState
-	if noClean && state.IsFile() {
-		decodeToml(state, &old)
-	}
-	if old.Engine == name {
-		state.WriteString(stateText)
-	} else if !state.IsFile() || state.ReadString() != stateText {
+	if !state.IsFile() || state.ReadString() != stateText {
 		// Cleaned first, so an interrupted copy isn't taken for a finished one.
 		cleanProjectBuildCache(p)
 		cache.CreateDirectory()

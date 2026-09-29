@@ -135,7 +135,7 @@ func TestPrepareEngineBuild(t *testing.T) {
 	withQuiet(t, false)
 	p := LoadProject(Cwd())
 	var cache Path
-	out := captureStderr(t, func() { cache = prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
+	out := captureStderr(t, func() { cache = prepareEngineBuild(p, "4.3", testEnginePackages()) })
 	if want := "[-] Task succeeded: copying engine 4.3\n"; !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -145,27 +145,22 @@ func TestPrepareEngineBuild(t *testing.T) {
 
 	// Built files stay: the engine is only copied once.
 	cache.Cd("godot", "bin").CreateDirectory()
-	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
+	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages()) })
 	if !cache.Cd("godot", "bin").IsDir() {
 		t.Errorf("building again deleted the engine's bin directory")
 	}
 
-	// A new engineBuildVersion starts over, unless noClean is set.
+	// A new engineBuildVersion starts over.
 	state := cache.Cd("build.toml")
 	state.WriteString(encodeToml(engineBuildState{"4.3", engineBuildVersion - 1}))
-	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), true) })
-	if !cache.Cd("godot", "bin").IsDir() || state.ReadString() != encodeToml(engineBuildState{"4.3", engineBuildVersion}) {
-		t.Errorf("noClean didn't keep the cache of an older version")
-	}
-	state.WriteString(encodeToml(engineBuildState{"4.3", engineBuildVersion - 1}))
-	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
+	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages()) })
 	if cache.Cd("godot", "bin").Exists() {
 		t.Errorf("a new version didn't start over")
 	}
 	cache.Cd("godot", "bin").CreateDirectory()
 
-	// Another engine starts over, even with noClean, and warns that it's for another Godot version.
-	out = captureStderr(t, func() { prepareEngineBuild(p, "4.4", testEnginePackages(), true) })
+	// Another engine starts over, and warns that it's for another Godot version.
+	out = captureStderr(t, func() { prepareEngineBuild(p, "4.4", testEnginePackages()) })
 	if want := "[!] Engine 4.4 is Godot 4.4, but the project is made for Godot 4.3.\n"; !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -187,7 +182,7 @@ func TestPrepareEngineBuildOldEngine(t *testing.T) {
 		isTTY = false
 		m := withEngineFS(t)
 		m.nodes["/games/my_game/.gd++proj/engine/4.3/version.py"].data = []byte("major = 4\nminor = 2\n")
-		prepareEngineBuild(LoadProject(Cwd()), "4.3", testEnginePackages(), false)
+		prepareEngineBuild(LoadProject(Cwd()), "4.3", testEnginePackages())
 		return
 	}
 	out, code := runFailHelper(t, "TestPrepareEngineBuildOldEngine")
@@ -200,7 +195,7 @@ func TestBuildEngineMissing(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
 		withEngineFS(t)
-		buildEngine(LoadProject(Cwd()), "9.9", BuildOptions{engine: true}, []string{"linux.x86_64"}, false)
+		buildEngine(LoadProject(Cwd()), "9.9", BuildOptions{engine: true}, []string{"linux.x86_64"})
 		return
 	}
 	out, code := runFailHelper(t, "TestBuildEngineMissing")
@@ -212,7 +207,7 @@ func TestBuildEngineMissing(t *testing.T) {
 func TestLoadEngineNames(t *testing.T) {
 	m := withEngineFS(t)
 	p := LoadProject(Cwd())
-	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
+	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages()) })
 	cache := projectBuildCache(p)
 	names := loadEngineNames(cache)
 	want := engineNames{
@@ -245,7 +240,7 @@ func TestGenerateCompat(t *testing.T) {
 	p := LoadProject(Cwd())
 	var names engineNames
 	captureStderr(t, func() {
-		prepareEngineBuild(p, "4.3", testEnginePackages(), false)
+		prepareEngineBuild(p, "4.3", testEnginePackages())
 		names = loadEngineNames(projectBuildCache(p))
 	})
 	names.Classes = append(names.Classes, engineName{Name: "ClassDB", Cpp: "::core_bind::special::ClassDB", Header: "core/core_bind.h"})
