@@ -41,7 +41,7 @@ var (
 
 // engineBuildVersion is the version of the project build cache's layout and
 // of the engine names scanner. Bump it when either changes, to start over.
-const engineBuildVersion = 2
+const engineBuildVersion = 3
 
 // projectBuildCache returns res://.gd++proj/build, the project build cache.
 func projectBuildCache(p Project) Path {
@@ -105,8 +105,9 @@ type enginePackage struct {
 // buildEngine builds export templates for targets from the engine called
 // name, with every package of the project compiled in. The GD++ code is
 // transpiled just like for GDExtension builds, and compiles against
-// generated compat headers standing in for godot-cpp's.
-func buildEngine(p Project, name string, o BuildOptions, targets []string) {
+// generated compat headers standing in for godot-cpp's. With noClean, a cache
+// of an older engineBuildVersion is kept.
+func buildEngine(p Project, name string, o BuildOptions, targets []string, noClean bool) {
 	engine := p.Caches[2]
 	Assert(engine.Has(name), "Missing %s %s, run `gd++ fetch --engine=%s` to fix this.", engine.Desc, name, name)
 	var pkgs []enginePackage
@@ -125,7 +126,7 @@ func buildEngine(p Project, name string, o BuildOptions, targets []string) {
 		}
 		pkgs = append(pkgs, enginePackage{pkg, classes, runtime, includes})
 	}
-	cache := prepareEngineBuild(p, name, pkgs)
+	cache := prepareEngineBuild(p, name, pkgs, noClean)
 	generateCompat(cache, names, loadEngineNames(cache))
 	generateEngineModule(p, cache, pkgs)
 	for _, target := range targets {
@@ -133,20 +134,30 @@ func buildEngine(p Project, name string, o BuildOptions, targets []string) {
 	}
 }
 
+// engineBuildState is the project build cache's build.toml.
+type engineBuildState struct {
+	Engine  string `toml:"engine"`
+	Version int    `toml:"version"`
+}
+
 // prepareEngineBuild returns the project build cache, with a copy of the
-// engine called name. The cache's build.toml records the engine's name; if it
-// changed, the cache is deleted and the engine copied again. The copy is only
-// made once, since SCons builds inside it, along with installing the engine's
-// dependencies. Asserts the engine is at least as
-// new as the API specs of pkgs.
-func prepareEngineBuild(p Project, name string, pkgs []enginePackage) Path {
+// engine called name. The cache's build.toml records the engine's name and
+// engineBuildVersion; if either changed, the cache is deleted and the engine
+// copied again, unless noClean is set and only the version changed. The copy
+// is only made once, since SCons builds inside it, along with installing the
+// engine's dependencies. Asserts the engine is at least as new as the API
+// specs of pkgs.
+func prepareEngineBuild(p Project, name string, pkgs []enginePackage, noClean bool) Path {
 	cache := projectBuildCache(p)
 	state := cache.Cd("build.toml")
-	stateText := encodeToml(struct {
-		Engine  string `toml:"engine"`
-		Version int    `toml:"version"`
-	}{name, engineBuildVersion})
-	if !state.IsFile() || state.ReadString() != stateText {
+	stateText := encodeToml(engineBuildState{name, engineBuildVersion})
+	var old engineBuildState
+	if noClean && state.IsFile() {
+		decodeToml(state, &old)
+	}
+	if old.Engine == name {
+		state.WriteString(stateText)
+	} else if !state.IsFile() || state.ReadString() != stateText {
 		// Cleaned first, so an interrupted copy isn't taken for a finished one.
 		cleanProjectBuildCache(p)
 		cache.CreateDirectory()
@@ -279,7 +290,7 @@ func loadEngineNames(cache Path) engineNames {
 					walk(child, childRel)
 				}
 			case path.Ext(childRel) == ".h":
-				src := child.ReadString()
+				src := stripDebugOnly(child.ReadString())
 				for _, d := range scanCppDecls(src, "") {
 					if !seen[d.name] {
 						seen[d.name] = true
@@ -305,6 +316,43 @@ func loadEngineNames(cache Path) engineNames {
 	t.Done()
 	s.End()
 	return names
+}
+
+var (
+	debugOnlyPattern = regexp.MustCompile(`^#\s*(ifdef\s+|if\s+defined\s*\(?\s*)(DEBUG_ENABLED|DEBUG_METHODS_ENABLED|TOOLS_ENABLED)\s*\)?\s*(//.*)?$`)
+	directivePattern = regexp.MustCompile(`^#\s*(if|ifdef|ifndef|else|elif|endif)\b`)
+)
+
+// stripDebugOnly returns the header src without the code that only debug
+// or editor builds compile, e.g. #ifdef DEBUG_ENABLED blocks, whose names
+// release export templates lack.
+func stripDebugOnly(src string) string {
+	var out []string
+	depth := 0 // the nesting depth inside a stripped block, 0 when not in one
+	for _, line := range strings.Split(src, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if depth == 0 {
+			if debugOnlyPattern.MatchString(trimmed) {
+				depth = 1
+			}
+			out = append(out, line)
+			continue
+		}
+		switch m := directivePattern.FindStringSubmatch(trimmed); {
+		case m == nil:
+			continue
+		case strings.HasPrefix(m[1], "if"):
+			depth++
+		case m[1] == "endif":
+			depth--
+		case depth == 1: // #else or #elif
+			depth = 0
+		}
+		if depth == 0 {
+			out = append(out, line)
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 // engineCompat is templates/engine/compat.toml.

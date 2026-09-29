@@ -3,6 +3,8 @@
 #include "input.h"
 
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/multiplayer_api.hpp>
+#include <godot_cpp/classes/multiplayer_peer.hpp>
 
 namespace godot {
 
@@ -15,6 +17,8 @@ void MyNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("foo_plus_bar"), &MyNode::foo_plus_bar);
 	ClassDB::bind_method(D_METHOD("get_my_value"), &MyNode::get_my_value);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("my_static_func"), &MyNode::my_static_func);
+	ClassDB::bind_method(D_METHOD("take_damage", "amount"), &MyNode::take_damage);
+	ClassDB::bind_method(D_METHOD("hurt_everyone", "peer"), &MyNode::hurt_everyone);
 	ClassDB::bind_method(D_METHOD("emit_both_signals"), &MyNode::emit_both_signals);
 	ClassDB::bind_method(D_METHOD("foo"), &MyNode::foo);
 	ClassDB::bind_method(D_METHOD("get_simple_var"), &MyNode::get_simple_var);
@@ -51,38 +55,39 @@ void MyNode::_bind_methods() {
 }
 
 MyNode::MyNode() {
-#line 256 "input.gd++"
+	gdpp::rpc_config<This>(this, "take_damage", MultiplayerAPI::RPC_MODE_ANY_PEER, MultiplayerPeer::TRANSFER_MODE_RELIABLE, true, 0);
+#line 276 "input.gd++"
 	another_simple_var = 5;
-#line 57 "input.cpp"
-#line 224 "input.gd++"
+#line 62 "input.cpp"
+#line 244 "input.gd++"
 	{
   gd::print("This message shows up every time a MyNode is created.");
 }
-#line 62 "input.cpp"
+#line 67 "input.cpp"
 }
 
 MyNode::~MyNode() {
-#line 228 "input.gd++"
+#line 248 "input.gd++"
 	{
   gd::print("This message shows up every time a MyNode is deleted.");
 }
-#line 70 "input.cpp"
+#line 75 "input.cpp"
 }
 
 void MyNode::_notification(int p_what) {
 	if (p_what != NOTIFICATION_READY) {
 		return;
 	}
-#line 261 "input.gd++"
+#line 281 "input.gd++"
 	child_node_1 = get_node<Node3D>("MyNode1");
-#line 79 "input.cpp"
-#line 264 "input.gd++"
+#line 84 "input.cpp"
+#line 284 "input.gd++"
 	child_node_2 = [&]() -> Node3D * {
   Node3D* res = memnew(Node3D);
   add_child(res);
   return res;
 }();
-#line 86 "input.cpp"
+#line 91 "input.cpp"
 }
 
 void MyNode::greet_user(const String &name) {
@@ -96,7 +101,7 @@ void MyNode::greet_user(const String &name) {
 
   gd::print("Hello ", name, "!");
 
-#line 100 "input.cpp"
+#line 105 "input.cpp"
 }
 
 int64_t MyNode::_foo() {
@@ -113,7 +118,7 @@ int64_t MyNode::_foo() {
 
   return 0;
 
-#line 117 "input.cpp"
+#line 122 "input.cpp"
 }
 
 int64_t MyNode::_bar() {
@@ -139,7 +144,7 @@ int64_t MyNode::foo_plus_bar() {
 
   return _foo() + _bar();
 
-#line 143 "input.cpp"
+#line 148 "input.cpp"
 }
 
 void MyNode::_ready() {
@@ -154,7 +159,7 @@ void MyNode::_ready() {
 
   gd::print("My node is ready.");
 
-#line 158 "input.cpp"
+#line 163 "input.cpp"
 }
 
 int64_t MyNode::get_my_value() const {
@@ -167,7 +172,7 @@ int64_t MyNode::get_my_value() const {
 
   return my_value;
 
-#line 171 "input.cpp"
+#line 176 "input.cpp"
 }
 
 void MyNode::my_static_func() {
@@ -180,7 +185,39 @@ void MyNode::my_static_func() {
 
   gd::print("Hello!");
 
-#line 184 "input.cpp"
+#line 189 "input.cpp"
+}
+
+void MyNode::take_damage(int64_t amount) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
+#line 220 "input.gd++"
+
+  gd::print("Took ", amount, " damage.");
+
+#line 202 "input.cpp"
+}
+
+Error MyNode::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount) {
+	return rpc_id(p_peer, "take_damage", amount);
+}
+
+void MyNode::hurt_everyone(int64_t peer) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
+#line 228 "input.gd++"
+
+  _gdpp_rpc_take_damage(0, 10);
+  _gdpp_rpc_take_damage(peer, 10);
+  take_damage(10);
+
+#line 221 "input.cpp"
 }
 
 void MyNode::emit_both_signals() {
@@ -189,12 +226,12 @@ void MyNode::emit_both_signals() {
 		return;
 	}
 #endif
-#line 241 "input.gd++"
+#line 261 "input.gd++"
 
   (void) something_happened(42);
   (void) something_else_happened();
 
-#line 198 "input.cpp"
+#line 235 "input.cpp"
 }
 
 void MyNode::foo() {
@@ -203,9 +240,9 @@ void MyNode::foo() {
 		return;
 	}
 #endif
-#line 337 "input.gd++"
+#line 357 "input.gd++"
 
-#line 209 "input.cpp"
+#line 246 "input.cpp"
 }
 
 int64_t MyNode::get_simple_var() const {
@@ -241,22 +278,22 @@ void MyNode::set_child_node_2(Node3D *p_value) {
 }
 
 int64_t MyNode::get_my_property() const {
-#line 285 "input.gd++"
+#line 305 "input.gd++"
 
 
     return my_property;
 
-#line 250 "input.cpp"
+#line 287 "input.cpp"
 }
 
 void MyNode::set_my_property(int64_t val) {
-#line 289 "input.gd++"
+#line 309 "input.gd++"
 
 
     if (val < 0) val = 0;
     my_property = val;
 
-#line 260 "input.cpp"
+#line 297 "input.cpp"
 }
 
 int64_t MyNode::get_my_range_var() const {
@@ -305,14 +342,14 @@ gdpp::Emitted MyNode::something_else_happened() {
     gd::print("Hello, world!");
   }
 
-#line 309 "input.cpp"
+#line 346 "input.cpp"
 
 #line 87 "input.gd++"
 
   #define FOO 42
 
 
-#line 316 "input.cpp"
+#line 353 "input.cpp"
 
 #undef This
 

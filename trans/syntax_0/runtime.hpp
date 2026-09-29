@@ -56,6 +56,18 @@ godot::PropertyInfo info(const godot::StringName &p_name, uint32_t p_usage = god
 	return result;
 }
 
+// rpc_config sets the RPC configuration of p_method on p_node, as @rpc declares it.
+template <typename T>
+void rpc_config(T *p_node, const godot::StringName &p_method, int64_t p_mode, int64_t p_transfer_mode, bool p_call_local, int64_t p_channel) {
+	static_assert(std::is_base_of_v<godot::Node, T>, "@rpc can only be used in classes that extend Node.");
+	godot::Dictionary config;
+	config["rpc_mode"] = p_mode;
+	config["transfer_mode"] = p_transfer_mode;
+	config["call_local"] = p_call_local;
+	config["channel"] = p_channel;
+	p_node->rpc_config(p_method, config);
+}
+
 // from_variant converts the result of a call resolved by name.
 template <typename T>
 T from_variant(const godot::Variant &p_value) {

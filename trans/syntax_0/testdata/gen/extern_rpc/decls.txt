@@ -1,0 +1,2 @@
+{Name:Digger Kind:1 Base:Node Values:[] Icon: Tool:false}
+{Name:Terrain2 Kind:2 Base:Node3D Values:[] Icon: Tool:false}

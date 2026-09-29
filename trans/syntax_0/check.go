@@ -57,6 +57,14 @@ type funcModel struct {
 	params                                       []*gtype
 	ret                                          *gtype
 	virtual, override, isConst, static, deferred bool
+	rpc                                          *rpcModel // Nil without @rpc.
+}
+
+// rpcModel is the configuration from @rpc, as C++ values. Empty in externs, whose defining class configures it.
+type rpcModel struct {
+	mode, transfer string // E.g. "MultiplayerAPI::RPC_MODE_ANY_PEER".
+	callLocal      bool
+	channel        string
 }
 
 // usesEnums reports whether the function's signature mentions an enum, so it's bound through a trampoline.
@@ -329,7 +337,7 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 }
 
 var knownAnnotations = []string{"const", "deferred", "export", "export_dir", "export_enum", "export_file", "export_flags", "icon",
-	"export_multiline", "export_placeholder", "export_range", "export_storage", "onready", "override", "static", "tool", "virtual"}
+	"export_multiline", "export_placeholder", "export_range", "export_storage", "onready", "override", "rpc", "static", "tool", "virtual"}
 
 // annotations checks the annotations of a declaration of the given kind, e.g. "func", and returns them by name.
 func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (map[string]*Annotation, error) {
@@ -349,12 +357,13 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can't be used on %s.", a.Name, kind), "")
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
-		case len(a.Args) > 0 && !slices.Contains([]string{"export_enum", "export_file", "export_flags", "export_placeholder", "export_range", "icon"}, a.Name):
+		case len(a.Args) > 0 && !slices.Contains([]string{"export_enum", "export_file", "export_flags", "export_placeholder", "export_range", "icon", "rpc"}, a.Name):
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
 	}
-	for _, pair := range [][2]string{{"static", "virtual"}, {"static", "override"}, {"static", "const"}, {"virtual", "override"}} {
+	for _, pair := range [][2]string{{"static", "virtual"}, {"static", "override"}, {"static", "const"}, {"virtual", "override"},
+		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -363,9 +372,9 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 }
 
 func (u *unit) buildFunc(f *Func, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "override", "static", "virtual"}
+	allowed := []string{"const", "override", "rpc", "static", "virtual"}
 	if ext {
-		allowed = []string{"const", "deferred"}
+		allowed = []string{"const", "deferred", "rpc"}
 	}
 	a, err := u.annotations(f.Annotations, "a func", allowed...)
 	if err != nil {
@@ -373,6 +382,11 @@ func (u *unit) buildFunc(f *Func, ext bool) (*funcModel, error) {
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil, isConst: a["const"] != nil,
 		static: a["static"] != nil, deferred: a["deferred"] != nil}
+	if rpc := a["rpc"]; rpc != nil {
+		if m.rpc, err = u.rpcConfig(rpc, ext); err != nil {
+			return nil, err
+		}
+	}
 	for _, p := range f.Params {
 		t, err := u.resolve(p.Type, false)
 		if err != nil {
@@ -390,6 +404,57 @@ func (u *unit) buildFunc(f *Func, ext bool) (*funcModel, error) {
 		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @deferred function %s must return void.", f.Name), "Deferred calls run later, so they can't return a value.")
 	}
 	return m, nil
+}
+
+// rpcValues are the strings @rpc takes, as in GDScript: each sets one setting to a C++ value.
+var rpcValues = map[string][2]string{
+	"authority":          {"mode", "MultiplayerAPI::RPC_MODE_AUTHORITY"},
+	"any_peer":           {"mode", "MultiplayerAPI::RPC_MODE_ANY_PEER"},
+	"call_remote":        {"sync", "false"},
+	"call_local":         {"sync", "true"},
+	"unreliable":         {"transfer mode", "MultiplayerPeer::TRANSFER_MODE_UNRELIABLE"},
+	"unreliable_ordered": {"transfer mode", "MultiplayerPeer::TRANSFER_MODE_UNRELIABLE_ORDERED"},
+	"reliable":           {"transfer mode", "MultiplayerPeer::TRANSFER_MODE_RELIABLE"},
+}
+
+// rpcConfig returns the configuration from the @rpc annotation a.
+func (u *unit) rpcConfig(a *Annotation, ext bool) (*rpcModel, error) {
+	if ext && len(a.Args) > 0 {
+		return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), "In externs, @rpc takes no arguments: the class that defines the function configures it.", "")
+	}
+	set := map[string]string{"mode": "MultiplayerAPI::RPC_MODE_AUTHORITY", "sync": "false",
+		"transfer mode": "MultiplayerPeer::TRANSFER_MODE_UNRELIABLE", "channel": "0"}
+	seen := map[string]bool{}
+	for i, arg := range a.Args {
+		name, _ := strconv.Unquote(arg.Value)
+		setting, known := rpcValues[name]
+		_, notInt := strconv.ParseInt(arg.Value, 0, 64)
+		switch {
+		case notInt == nil && i < len(a.Args)-1:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "The channel must be the last argument of @rpc.", "")
+		case notInt == nil:
+			setting = [2]string{"channel", arg.Value}
+		case !known && rpcValues[arg.Value][0] != "":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "The arguments of @rpc are strings.", fmt.Sprintf("Write %q.", arg.Value))
+		case !known:
+			var names []string
+			for n := range rpcValues {
+				names = append(names, n)
+			}
+			slices.Sort(names)
+			hint := `Known values: "` + strings.Join(names, `", "`) + `", and a channel number.`
+			if s := suggest(strings.Trim(arg.Value, `"'`), names...); s != "" {
+				hint = fmt.Sprintf("Did you mean %q?", s)
+			}
+			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Unknown @rpc argument %s.", arg.Value), hint)
+		}
+		if seen[setting[0]] {
+			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @rpc sets the %s twice.", setting[0]), "")
+		}
+		seen[setting[0]] = true
+		set[setting[0]] = setting[1]
+	}
+	return &rpcModel{mode: set["mode"], transfer: set["transfer mode"], callLocal: set["sync"] == "true", channel: set["channel"]}, nil
 }
 
 func (u *unit) buildSignal(s *Signal) (*signalModel, error) {

@@ -1,0 +1,4 @@
+input.gd++:4:18: Unknown @rpc argument "relaible".
+ 4 | @rpc("any_peer", "relaible")
+   |                  ^^^^^^^^^^
+Hint: Did you mean "reliable"?

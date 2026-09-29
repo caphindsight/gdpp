@@ -73,3 +73,13 @@ kind = "RefCountedExtern"
 name = "TypedArray"
 include = "<godot_cpp/variant/typed_array.hpp>"
 kind = "Other"
+
+[[dep]]
+name = "MultiplayerAPI"
+include = "<godot_cpp/classes/multiplayer_api.hpp>"
+kind = "Object"
+
+[[dep]]
+name = "MultiplayerPeer"
+include = "<godot_cpp/classes/multiplayer_peer.hpp>"
+kind = "RefCounted"

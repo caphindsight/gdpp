@@ -135,7 +135,7 @@ func TestPrepareEngineBuild(t *testing.T) {
 	withQuiet(t, false)
 	p := LoadProject(Cwd())
 	var cache Path
-	out := captureStderr(t, func() { cache = prepareEngineBuild(p, "4.3", testEnginePackages()) })
+	out := captureStderr(t, func() { cache = prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
 	if want := "[-] Task succeeded: copying engine 4.3\n"; !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -145,13 +145,27 @@ func TestPrepareEngineBuild(t *testing.T) {
 
 	// Built files stay: the engine is only copied once.
 	cache.Cd("godot", "bin").CreateDirectory()
-	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages()) })
+	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
 	if !cache.Cd("godot", "bin").IsDir() {
 		t.Errorf("building again deleted the engine's bin directory")
 	}
 
-	// Another engine starts over, and warns that it's for another Godot version.
-	out = captureStderr(t, func() { prepareEngineBuild(p, "4.4", testEnginePackages()) })
+	// A new engineBuildVersion starts over, unless noClean is set.
+	state := cache.Cd("build.toml")
+	state.WriteString(encodeToml(engineBuildState{"4.3", engineBuildVersion - 1}))
+	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), true) })
+	if !cache.Cd("godot", "bin").IsDir() || state.ReadString() != encodeToml(engineBuildState{"4.3", engineBuildVersion}) {
+		t.Errorf("noClean didn't keep the cache of an older version")
+	}
+	state.WriteString(encodeToml(engineBuildState{"4.3", engineBuildVersion - 1}))
+	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
+	if cache.Cd("godot", "bin").Exists() {
+		t.Errorf("a new version didn't start over")
+	}
+	cache.Cd("godot", "bin").CreateDirectory()
+
+	// Another engine starts over, even with noClean, and warns that it's for another Godot version.
+	out = captureStderr(t, func() { prepareEngineBuild(p, "4.4", testEnginePackages(), true) })
 	if want := "[!] Engine 4.4 is Godot 4.4, but the project is made for Godot 4.3.\n"; !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -173,7 +187,7 @@ func TestPrepareEngineBuildOldEngine(t *testing.T) {
 		isTTY = false
 		m := withEngineFS(t)
 		m.nodes["/games/my_game/.gd++proj/engine/4.3/version.py"].data = []byte("major = 4\nminor = 2\n")
-		prepareEngineBuild(LoadProject(Cwd()), "4.3", testEnginePackages())
+		prepareEngineBuild(LoadProject(Cwd()), "4.3", testEnginePackages(), false)
 		return
 	}
 	out, code := runFailHelper(t, "TestPrepareEngineBuildOldEngine")
@@ -186,7 +200,7 @@ func TestBuildEngineMissing(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
 		withEngineFS(t)
-		buildEngine(LoadProject(Cwd()), "9.9", BuildOptions{engine: true}, []string{"linux.x86_64"})
+		buildEngine(LoadProject(Cwd()), "9.9", BuildOptions{engine: true}, []string{"linux.x86_64"}, false)
 		return
 	}
 	out, code := runFailHelper(t, "TestBuildEngineMissing")
@@ -198,7 +212,7 @@ func TestBuildEngineMissing(t *testing.T) {
 func TestLoadEngineNames(t *testing.T) {
 	m := withEngineFS(t)
 	p := LoadProject(Cwd())
-	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages()) })
+	captureStderr(t, func() { prepareEngineBuild(p, "4.3", testEnginePackages(), false) })
 	cache := projectBuildCache(p)
 	names := loadEngineNames(cache)
 	want := engineNames{
@@ -231,7 +245,7 @@ func TestGenerateCompat(t *testing.T) {
 	p := LoadProject(Cwd())
 	var names engineNames
 	captureStderr(t, func() {
-		prepareEngineBuild(p, "4.3", testEnginePackages())
+		prepareEngineBuild(p, "4.3", testEnginePackages(), false)
 		names = loadEngineNames(projectBuildCache(p))
 	})
 	names.Classes = append(names.Classes, engineName{Name: "ClassDB", Cpp: "::core_bind::special::ClassDB", Header: "core/core_bind.h"})
@@ -299,5 +313,16 @@ func TestGenerateEngineModule(t *testing.T) {
 				t.Errorf("%s = %s\nwant it to contain %q", file, module[file], want)
 			}
 		}
+	}
+}
+
+func TestStripDebugOnly(t *testing.T) {
+	src := "struct A {};\n#ifdef DEBUG_ENABLED\nstruct B {};\n#ifdef X\nstruct C {};\n#endif\n#else\nstruct D {};\n#endif // DEBUG_ENABLED\n#if defined(TOOLS_ENABLED)\nstruct E {};\n#endif\n#ifdef X\nstruct F {};\n#endif\n"
+	var got []string
+	for _, d := range scanCppDecls(stripDebugOnly(src), "") {
+		got = append(got, d.name)
+	}
+	if want := []string{"A", "D", "F"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("stripDebugOnly() leaves %q, want %q", got, want)
 	}
 }

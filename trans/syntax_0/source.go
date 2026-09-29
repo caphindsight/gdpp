@@ -48,6 +48,11 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsCtor() {
 		w.ln("")
 		w.ln("%s::%s() {", c.name, c.name)
+		for _, f := range c.funcs {
+			if r := f.rpc; r != nil {
+				w.ln("\tgdpp::rpc_config<This>(this, %q, %s, %s, %t, %s);", f.f.Name, r.mode, r.transfer, r.callLocal, r.channel)
+			}
+		}
 		u.initializers(w, c, false)
 		if c.ctor != nil {
 			w.block(c.ctor, "\t{", "}")
@@ -71,6 +76,12 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	}
 	for _, f := range c.funcs {
 		u.funcDef(w, c, f)
+		if f.rpc != nil {
+			w.ln("")
+			w.ln("Error %s::%s {", c.name, rpcDecl(f))
+			w.ln("\treturn %s;", rpcCall(f))
+			w.ln("}")
+		}
 	}
 	for _, v := range c.vars {
 		u.accessorDefs(w, c, v)
@@ -385,6 +396,9 @@ func (u *unit) sourceNames() []string {
 		code(c.dtor)
 		for _, f := range c.funcs {
 			code(f.f.Body)
+			if f.rpc != nil {
+				names = append(names, "MultiplayerAPI", "MultiplayerPeer")
+			}
 		}
 		for _, v := range c.vars {
 			code(v.get)

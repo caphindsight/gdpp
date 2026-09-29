@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Player" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="hit">
+			<return type="void" />
+			<param index="0" name="peer" type="int" />
+			<param index="1" name="other" type="Player" />
+			<description>
+			</description>
+		</method>
+		<method name="ping">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="sync_position">
+			<return type="int" />
+			<param index="0" name="pos" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="take_damage">
+			<return type="void" />
+			<param index="0" name="amount" type="int" />
+			<param index="1" name="from" type="int" enum="Player.Team" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="TEAM_RED" value="0" enum="Team">
+		</constant>
+		<constant name="TEAM_BLUE" value="1" enum="Team">
+		</constant>
+	</constants>
+</class>

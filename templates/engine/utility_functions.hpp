@@ -7,6 +7,10 @@
 
 #include "core/variant/variant_utility.h"
 
+// Since Godot 4.4, the engine has a print_verbose macro, and the function is called _print_verbose. No engine header
+// uses the macro, so it can go, for UtilityFunctions::print_verbose to work.
+#undef print_verbose
+
 namespace godot {
 
 struct UtilityFunctions : ::VariantUtilityFunctions {
@@ -21,6 +25,11 @@ private:
 		Callable::CallError error;
 		return p_function(pointers, sizeof...(Args), error);
 	}
+
+	template <typename T>
+	static auto gdpp_print_verbose(int) -> decltype(&T::_print_verbose) { return &T::_print_verbose; }
+	template <typename T>
+	static auto gdpp_print_verbose(long) -> decltype(&T::print_verbose) { return &T::print_verbose; }
 
 public:
 #define GDPP_VARARG(m_name)                                                            \
@@ -37,10 +46,14 @@ public:
 	GDPP_VARARG(printt)
 	GDPP_VARARG(prints)
 	GDPP_VARARG(printraw)
-	GDPP_VARARG(print_verbose)
 	GDPP_VARARG(push_error)
 	GDPP_VARARG(push_warning)
 #undef GDPP_VARARG
+
+	template <typename... Args>
+	static void print_verbose(const Variant &p_arg, const Args &...p_args) {
+		gdpp_call(gdpp_print_verbose<::VariantUtilityFunctions>(0), p_arg, p_args...);
+	}
 };
 
 } // namespace godot

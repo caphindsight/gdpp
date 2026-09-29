@@ -1,0 +1,4 @@
+input.gd++:4:6: The arguments of @rpc are strings.
+ 4 | @rpc(any_peer)
+   |      ^^^^^^^^
+Hint: Write "any_peer".

@@ -101,7 +101,22 @@ func withSpace(t string) string {
 }
 
 func (c *classModel) needsCtor() bool {
-	return c.ctor != nil || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready })
+	return c.ctor != nil || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
+		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil })
+}
+
+// rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc_id(peer) f(...)` call, without a class name.
+func rpcDecl(f *funcModel) string {
+	ps := "int64_t p_peer"
+	if f.f.Params != nil {
+		ps += ", " + params(nil, f.params, f.f.Params)
+	}
+	return fmt.Sprintf("_gdpp_rpc_%s(%s)", f.f.Name, ps)
+}
+
+// rpcCall returns the call to Godot's rpc_id that the RPC helper of f makes.
+func rpcCall(f *funcModel) string {
+	return fmt.Sprintf("rpc_id(p_peer, %q%s)", f.f.Name, args(f.params, f.f.Params))
 }
 
 func (c *classModel) needsReady() bool {
@@ -168,6 +183,9 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 			suffix = " const" + suffix
 		}
 		public = append(public, fmt.Sprintf("%s%s%s(%s)%s;", prefix, withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params), suffix))
+		if f.rpc != nil {
+			public = append(public, "Error "+rpcDecl(f)+";")
+		}
 	}
 	for _, v := range c.vars {
 		if v.getter != "" {
@@ -269,6 +287,9 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	w.ln("")
 	for _, f := range e.funcs {
 		w.ln("\t%s%s(%s) const;", withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params))
+		if f.rpc != nil {
+			w.ln("\tError %s const;", rpcDecl(f))
+		}
 	}
 	for _, v := range e.vars {
 		w.ln("\t%s%s() const;", withSpace(v.t.cpp), v.getter)
@@ -311,6 +332,13 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 			w.ln("\treturn gdpp::from_variant<%s>(%s);", f.ret.cpp, call)
 		}
 		w.ln("}")
+		if f.rpc != nil {
+			w.ln("")
+			w.ln("inline Error %s::%s const {", e.name, rpcDecl(f))
+			w.ln("\tstatic_assert(std::is_base_of_v<Node, Base>, \"@rpc can only be used in externs that extend Node.\");")
+			w.ln("\treturn _gdpp_base->%s;", rpcCall(f))
+			w.ln("}")
+		}
 	}
 	for _, v := range e.vars {
 		w.ln("")

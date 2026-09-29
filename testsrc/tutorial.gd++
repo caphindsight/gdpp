@@ -214,6 +214,26 @@ func my_static_func() -> void {
   gd::print("Hello!");
 }
 
+// The @rpc attribute makes a function callable over the network, as in GDScript:
+
+@rpc("any_peer", "call_local", "reliable")
+func take_damage(amount: int) -> void {
+  gd::print("Took ", amount, " damage.");
+}
+
+// Its arguments are optional, as in GDScript: the mode ("authority" or "any_peer"), the sync ("call_remote" or
+// "call_local"), the transfer mode ("unreliable", "unreliable_ordered" or "reliable"), and last the channel number.
+// The class must extend Node. Call the function remotely like this:
+
+func hurt_everyone(peer: int) -> void {
+  rpc take_damage(10);  // On every peer. Like take_damage.rpc(10) in GDScript.
+  rpc_id(peer) take_damage(10);  // On one peer. Like take_damage.rpc_id(peer, 10).
+  take_damage(10);  // Locally, as a plain call.
+}
+
+// Like `emit`, `rpc` makes remote calls look different from local ones. Both return an Error.
+// A remote call can't return a value, so any return value of an @rpc function is lost.
+
 // You can combine attributes where it makes sense, e.g. @virtual @const.
 
 // Part VII. Constructors and destructors.
@@ -347,6 +367,7 @@ extern Terrain {
   // Externs have only declarations: *NO* function bodies, property bodies, or initial values.
   @const func foo() -> void
   @deferred func bar() -> void
+  @rpc func qux() -> void
   var baz: int
   signal done(a: bool, b: int)
 }
@@ -365,6 +386,9 @@ extern Terrain {
 // E.g. calling foo() on an ExtPtr<Terrain> is the same as calling call("foo") on the underlying Node*.
 
 // The @deferred attribute (allowed only in externs) makes calls go through call_deferred instead of call.
+
+// In externs, @rpc takes no arguments: the class that defines the function configures it.
+// Call it as in classes, e.g. `rpc my_extern->qux();`.
 
 // With externs, a package can depend at runtime on other GD++ packages, or even on non-GD++ GDExtensions.
 // But externs are slow by design. Use them as little as possible.

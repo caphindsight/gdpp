@@ -143,14 +143,15 @@ func checkLines(t *testing.T, src, self, text string) {
 			}
 			continue
 		}
-		// Lines after the first come straight from the source (minus comments), so their identifiers match.
+		// Lines after the first come straight from the source (minus comments), so their identifiers match, except
+		// for the rewrites of emit and rpc.
 		for k := 1; i+1+k < len(lines) && !lineDirective.MatchString(lines[i+1+k]); k++ {
 			if n+k > len(srcLines) {
 				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])
 			}
 			want := identifiers(srcLines[n+k-1])
 			for _, id := range identifiers(lines[i+1+k]) {
-				if id != "void" && !slices.Contains(want, id) {
+				if id != "void" && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
 					t.Errorf("%s:%d: %q is not on line %d of the source: %q", self, i+2+k, id, n+k, srcLines[n+k-1])
 				}
 			}

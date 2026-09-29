@@ -44,8 +44,20 @@
 			<description>
 			</description>
 		</method>
+		<method name="hurt_everyone">
+			<return type="void" />
+			<param index="0" name="peer" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="my_static_func" qualifiers="static">
 			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="take_damage">
+			<return type="void" />
+			<param index="0" name="amount" type="int" />
 			<description>
 			</description>
 		</method>

@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+@rpc(any_peer)
+func f() -> void {}

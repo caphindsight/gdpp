@@ -40,6 +40,8 @@ public:
 
 	void foo() const;
 	void bar() const;
+	void qux() const;
+	Error _gdpp_rpc_qux(int64_t p_peer) const;
 	int64_t get_baz() const;
 	void set_baz(int64_t p_value) const;
 	gdpp::Emitted done(bool a, int64_t b) const;
@@ -60,7 +62,7 @@ private:
 
   void private_function();
 
-#line 64 "input.h"
+#line 66 "input.h"
 
 private:
 #line 87 "input.gd++"
@@ -68,7 +70,7 @@ private:
   #define FOO 42
 
 
-#line 72 "input.h"
+#line 74 "input.h"
 
 private:
 #line 95 "input.gd++"
@@ -76,14 +78,14 @@ private:
  public:
   void public_function();
 
-#line 80 "input.h"
+#line 82 "input.h"
 
 private:
 #line 201 "input.gd++"
 
   int64_t my_value_;
 
-#line 87 "input.h"
+#line 89 "input.h"
 
 private:
 	int64_t simple_var{};
@@ -93,12 +95,12 @@ private:
 	int64_t my_range_var{};
 	int64_t some_var{};
 	gdpp::ExtPtr<Terrain> my_extern{};
-#line 281 "input.gd++"
+#line 301 "input.gd++"
 
 
     int64_t my_property = 0;
 
-#line 102 "input.h"
+#line 104 "input.h"
 
 public:
 	static constexpr int64_t THE_ANSWER = 42;
@@ -113,6 +115,9 @@ public:
 	void _ready() override;
 	int64_t get_my_value() const;
 	static void my_static_func();
+	void take_damage(int64_t amount);
+	Error _gdpp_rpc_take_damage(int64_t p_peer, int64_t amount);
+	void hurt_everyone(int64_t peer);
 	void emit_both_signals();
 	void foo();
 	int64_t get_simple_var() const;
@@ -164,6 +169,15 @@ inline void Terrain::foo() const {
 
 inline void Terrain::bar() const {
 	_gdpp_base->call_deferred("bar");
+}
+
+inline void Terrain::qux() const {
+	_gdpp_base->call("qux");
+}
+
+inline Error Terrain::_gdpp_rpc_qux(int64_t p_peer) const {
+	static_assert(std::is_base_of_v<Node, Base>, "@rpc can only be used in externs that extend Node.");
+	return _gdpp_base->rpc_id(p_peer, "qux");
 }
 
 inline int64_t Terrain::get_baz() const {
