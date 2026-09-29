@@ -124,3 +124,17 @@ func TestDocFails(t *testing.T) {
 		})
 	}
 }
+
+func TestHighlightCpp(t *testing.T) {
+	withTTY(t, true)
+	got := highlightCpp("template <typename T>\nstatic const Array &get(int64_t p_x = 5, Other p_o) const", map[string]bool{"Array": true})
+	want := Styled("template", Yellow) + " <" + Styled("typename", Yellow) + " T>\n" + Styled("static", Yellow) + " " + Styled("const", Yellow) + " " +
+		Styled("Array", Green) + " &" + Styled("get", Cyan) + "(" + Styled("int64_t", Green) + " p_x = " + Styled("5", Magenta) + ", Other p_o) " + Styled("const", Yellow)
+	if got != want {
+		t.Errorf("highlightCpp = %q\nwant %q", got, want)
+	}
+	withTTY(t, false)
+	if got := highlightCpp("const Array", nil); got != "const Array" {
+		t.Errorf("highlightCpp without styles = %q, want it unchanged", got)
+	}
+}

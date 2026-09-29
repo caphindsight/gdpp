@@ -705,3 +705,35 @@ func TestLogStyle(t *testing.T) {
 		}
 	}
 }
+
+func TestPagerKey(t *testing.T) {
+	for key, want := range map[string]struct {
+		top  int
+		quit bool
+	}{
+		"\x1b[A": {9, false}, "\x1bOB": {11, false}, "\x1b[5~": {5, false}, "\x1b[6~": {15, false}, " ": {15, false},
+		"q": {10, true}, "Q": {10, true}, "\x1b": {10, true}, "\x03": {10, true}, "x": {10, false},
+	} {
+		if top, quit := pagerKey(key, 10, 5); top != want.top || quit != want.quit {
+			t.Errorf("pagerKey(%q) = %d, %v, want %d, %v", key, top, quit, want.top, want.quit)
+		}
+	}
+}
+
+func TestPagerFrame(t *testing.T) {
+	withTTY(t, false)
+	lines := []string{"a", "b", "c", "d", "e"}
+	cases := []struct {
+		top, height, wantTop int
+		want                 string
+	}{
+		{0, 3, 0, "\x1b[Ha\x1b[K\r\nb\x1b[K\r\n Lines 1-2 of 5, Up/Down to scroll, PgUp/PgDn to page, Q to quit \x1b[K"},
+		{9, 3, 3, "\x1b[Hd\x1b[K\r\ne\x1b[K\r\n Lines 4-5 of 5, Up/Down to scroll, PgUp/PgDn to page, Q to quit \x1b[K"},
+		{-4, 4, 0, "\x1b[Ha\x1b[K\r\nb\x1b[K\r\nc\x1b[K\r\n Lines 1-3 of 5, Up/Down to scroll, PgUp/PgDn to page, Q to quit \x1b[K"},
+	}
+	for _, tc := range cases {
+		if got, top := pagerFrame(lines, tc.top, tc.height); got != tc.want || top != tc.wantTop {
+			t.Errorf("pagerFrame(top %d, height %d) = %q, %d\nwant %q, %d", tc.top, tc.height, got, top, tc.want, tc.wantTop)
+		}
+	}
+}

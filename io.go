@@ -196,6 +196,83 @@ func PrintResult(s string) {
 	fmt.Fprint(os.Stdout, s)
 }
 
+// PageResult prints s like PrintResult, but in a pager if the terminal can't
+// show it all at once: up and down scroll by a line, page up and page down
+// (or space) by a page, and q, escape or Ctrl+C quit.
+func PageResult(s string) {
+	stdin, stdout := int(os.Stdin.Fd()), int(os.Stdout.Fd())
+	if !isTTY || !isTerminal(os.Stdin) {
+		PrintResult(s)
+		return
+	}
+	width, height, err := term.GetSize(stdout)
+	if err != nil || strings.Count(WrapText(s, width), "\n") < height {
+		PrintResult(s)
+		return
+	}
+	state, err := term.MakeRaw(stdin)
+	if err != nil {
+		PrintResult(s)
+		return
+	}
+	defer term.Restore(stdin, state)
+	fmt.Fprint(os.Stdout, "\x1b[?1049h\x1b[?25l") // The alternate screen, without the cursor.
+	defer fmt.Fprint(os.Stdout, "\x1b[?25h\x1b[?1049l")
+	key := make([]byte, 16)
+	for top := 0; ; {
+		width, height, _ = term.GetSize(stdout) // Again, in case the terminal was resized.
+		lines := strings.Split(strings.TrimSuffix(WrapText(s, width), "\n"), "\n")
+		var frame string
+		frame, top = pagerFrame(lines, top, height)
+		fmt.Fprint(os.Stdout, frame)
+		n, err := os.Stdin.Read(key)
+		quit := err != nil
+		if !quit {
+			top, quit = pagerKey(string(key[:n]), top, height-1)
+		}
+		if quit {
+			return
+		}
+	}
+}
+
+// pagerKey returns the pager's top line after the key press key, given the
+// page size, or whether to quit.
+func pagerKey(key string, top, page int) (int, bool) {
+	switch key {
+	case "\x1b[A", "\x1bOA":
+		return top - 1, false
+	case "\x1b[B", "\x1bOB":
+		return top + 1, false
+	case "\x1b[5~":
+		return top - page, false
+	case "\x1b[6~", " ":
+		return top + page, false
+	case "q", "Q", "\x1b", "\x03":
+		return top, true
+	}
+	return top, false
+}
+
+// pagerFrame returns the ANSI codes that draw lines from top, clamped so the
+// last page is full, on a terminal height lines high, with a status line at
+// the bottom. It also returns the clamped top.
+func pagerFrame(lines []string, top, height int) (string, int) {
+	page := max(height-1, 1)
+	top = max(min(top, len(lines)-page), 0)
+	var frame strings.Builder
+	frame.WriteString("\x1b[H")
+	for i := top; i < top+page; i++ {
+		if i < len(lines) {
+			frame.WriteString(endStyles(lines[i]))
+		}
+		frame.WriteString("\x1b[K\r\n")
+	}
+	status := fmt.Sprintf(" Lines %d-%d of %d, %s to scroll, PgUp/PgDn to page, Q to quit ", top+1, min(top+page, len(lines)), len(lines), unicodeOr("↑/↓", "Up/Down"))
+	frame.WriteString(Styled(status, Reverse) + "\x1b[K")
+	return frame.String(), top
+}
+
 // formatMsg returns msg with a "[icon] " prefix, wrapped to the terminal width
 // if stderr is a terminal, with continuation lines indented under the prefix.
 func formatMsg(icon, msg string) string {
