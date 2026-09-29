@@ -1,0 +1,32 @@
+decl {
+  #include <vector>
+}
+impl {
+  static int counter = 0;
+}
+decl impl {
+  #define LIMIT 10
+}
+
+class_name Player
+extends Node
+
+decl {
+  std::vector<int> scores_;
+}
+
+decl {
+ public:
+  void reset();
+}
+
+impl {
+  void This::reset() {
+    scores_.clear();
+    counter++;
+  }
+}
+
+decl impl {
+  #define PLAYER_TAG "player"
+}

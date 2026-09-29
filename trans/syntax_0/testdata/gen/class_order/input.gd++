@@ -1,0 +1,11 @@
+class B {
+  extends A
+}
+
+class A {
+  extends Node
+}
+
+class C {
+  extends B
+}

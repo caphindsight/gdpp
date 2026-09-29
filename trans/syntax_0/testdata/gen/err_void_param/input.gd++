@@ -1,0 +1,3 @@
+class_name A
+
+func f(x: void) -> void {}

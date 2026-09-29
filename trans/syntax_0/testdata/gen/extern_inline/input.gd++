@@ -1,0 +1,22 @@
+class_name User
+extends Node
+
+extern Terrain2 {
+  extends Node3D
+  @const func height(x: float, z: float) -> float
+  @deferred func rebuild() -> void
+  func name() -> String
+  var size: int
+  signal done(ok: bool)
+}
+
+@export var terrain: Terrain2
+var settings: Settings
+var other: Road
+
+func use() -> void {
+  float h = terrain->height(1.0, 2.0);
+  terrain->rebuild();
+  terrain->set_size(3);
+  emit terrain->done(true);
+}

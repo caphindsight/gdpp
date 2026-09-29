@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Player" inherits="Node3D" experimental="Still changing." xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A player character.
+	</brief_description>
+	<description>
+		Moves around and [b]jumps[/b]. See [method jump]. Second line of the description.
+	</description>
+	<tutorials>
+		<link title="Movement">https://example.com/movement</link>
+		<link>https://example.com/plain</link>
+	</tutorials>
+	<methods>
+		<method name="jump">
+			<return type="void" />
+			<param index="0" name="height" type="float" />
+			<description>
+				Makes the player jump.
+[codeblock]
+player.jump(2.0)
+    indented()
+[/codeblock]
+Afterwards, [code]on_floor[/code] is false.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="hp" type="int" setter="set_hp" getter="get_hp" deprecated="Use [member health] instead.">
+			Current health.[br]Never negative.
+		</member>
+		<member name="legacy" type="int" setter="set_legacy" getter="get_legacy" deprecated="">
+		</member>
+	</members>
+	<signals>
+		<signal name="died">
+			<param index="0" name="cause" type="String" />
+			<description>
+				Emitted when the player dies. Escaped: &lt;b&gt; &amp; "quotes".
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="MAX_SPEED" value="10">
+			The maximum speed.
+		</constant>
+		<constant name="STATE_IDLE" value="0" enum="State">
+			Standing still.
+		</constant>
+		<constant name="STATE_RUNNING" value="1" enum="State" experimental="">
+		</constant>
+	</constants>
+</class>

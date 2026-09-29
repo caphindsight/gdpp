@@ -1,0 +1,8 @@
+class_name Stats
+
+var hp: int
+var speed: float = 1.5
+var name: String = "Bob"
+var anything
+var target: Node3D
+var texture: Texture2D

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Deck" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="SUIT_A" value="0" enum="Suit">
+		</constant>
+		<constant name="SUIT_B" value="1" enum="Suit">
+		</constant>
+		<constant name="LOCAL_X" value="0" enum="Local">
+		</constant>
+	</constants>
+</class>

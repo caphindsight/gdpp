@@ -1,0 +1,4 @@
+input.gd++:4:1: The name "f" is already used by another member.
+ 4 | var f: int
+   | ^^^
+Hint: Members share one namespace. A var x also declares get_x and set_x, and a signal declares its emit function.

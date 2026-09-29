@@ -1,0 +1,13 @@
+class_name Cards
+
+enum Suit {
+  DIAMONDS
+  CLUBS = 3
+  SPADES
+}
+
+enum MAX_HAND = 7
+
+func best() -> Suit {
+  return Suit::SPADES;
+}

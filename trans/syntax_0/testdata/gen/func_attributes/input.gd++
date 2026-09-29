@@ -1,0 +1,17 @@
+class_name Shape
+extends Node
+
+@const
+func area() -> float {
+  return 0.0;
+}
+
+@static
+func unit() -> float {
+  return 1.0;
+}
+
+@override
+func _ready() -> void {
+  gd::print("ready");
+}

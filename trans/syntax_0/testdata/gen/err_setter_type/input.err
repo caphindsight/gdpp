@@ -1,0 +1,4 @@
+input.gd++:4:10: The setter's parameter must have the property's type, int.
+ 4 |   set(v: float) {}
+   |          ^^^^^
+Hint: Leave the type out: "set(value) { ... }".

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Settings2" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="bias" type="float" setter="set_bias" getter="get_bias">
+		</member>
+		<member name="color_name" type="String" setter="set_color_name" getter="get_color_name">
+		</member>
+		<member name="elements" type="int" setter="set_elements" getter="get_elements">
+		</member>
+		<member name="folder" type="String" setter="set_folder" getter="get_folder">
+		</member>
+		<member name="hidden" type="int" setter="set_hidden" getter="get_hidden">
+		</member>
+		<member name="hp" type="int" setter="set_hp" getter="get_hp">
+		</member>
+		<member name="image" type="String" setter="set_image" getter="get_image">
+		</member>
+		<member name="job" type="int" setter="set_job" getter="get_job">
+		</member>
+		<member name="nick" type="String" setter="set_nick" getter="get_nick">
+		</member>
+		<member name="plain" type="int" setter="set_plain" getter="get_plain">
+		</member>
+		<member name="target" type="Node3D" setter="set_target" getter="get_target">
+		</member>
+		<member name="tex" type="Texture2D" setter="set_tex" getter="get_tex">
+		</member>
+		<member name="text" type="String" setter="set_text" getter="get_text">
+		</member>
+	</members>
+</class>

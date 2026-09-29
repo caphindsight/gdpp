@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="A" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="f">
+			<return type="void" />
+			<param index="0" name="s" type="int" enum="A.Shared" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="SHARED_ONE" value="0" enum="Shared">
+		</constant>
+		<constant name="SHARED_TWO" value="1" enum="Shared">
+		</constant>
+	</constants>
+</class>

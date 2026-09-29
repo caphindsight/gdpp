@@ -1,0 +1,28 @@
+class_name Game
+
+enum Mode { EASY, NORMAL, HARD }
+
+var mode: Mode = Mode::NORMAL
+@export var start: Mode
+
+signal mode_changed(mode: Mode)
+
+func set_mode_to(m: Mode) -> Mode {
+  mode = m;
+  return m;
+}
+
+@static
+func default_mode() -> Mode {
+  return Mode::EASY;
+}
+
+@virtual
+func _pick(options: int) -> Mode
+
+class Referee {
+  func judge(m: Mode) -> void {}
+}
+
+class Bystander {
+}

@@ -1,0 +1,4 @@
+input.gd++:3:1: Unknown annotation @virutal.
+ 3 | @virutal
+   | ^^^^^^^^
+Hint: Did you mean "@virtual"?

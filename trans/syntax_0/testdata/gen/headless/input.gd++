@@ -1,0 +1,14 @@
+enum Shared { ONE, TWO }
+enum LIMIT = 100
+
+decl {
+  struct Helper {};
+}
+
+impl {
+  int helper_count = 0;
+}
+
+class A {
+  func f(s: Shared) -> void {}
+}

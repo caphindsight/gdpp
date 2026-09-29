@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Game" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_pick" qualifiers="virtual">
+			<return type="int" enum="Game.Mode" />
+			<param index="0" name="options" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="default_mode" qualifiers="static">
+			<return type="int" enum="Game.Mode" />
+			<description>
+			</description>
+		</method>
+		<method name="set_mode_to">
+			<return type="int" enum="Game.Mode" />
+			<param index="0" name="m" type="int" enum="Game.Mode" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="mode" type="int" enum="Game.Mode" setter="set_mode" getter="get_mode">
+		</member>
+		<member name="start" type="int" enum="Game.Mode" setter="set_start" getter="get_start">
+		</member>
+	</members>
+	<signals>
+		<signal name="mode_changed">
+			<param index="0" name="mode" type="int" enum="Game.Mode" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="MODE_EASY" value="0" enum="Mode">
+		</constant>
+		<constant name="MODE_NORMAL" value="1" enum="Mode">
+		</constant>
+		<constant name="MODE_HARD" value="2" enum="Mode">
+		</constant>
+	</constants>
+</class>

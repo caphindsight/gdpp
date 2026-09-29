@@ -1,0 +1,21 @@
+class_name Clamp
+
+var value: int {
+  decl {
+    int64_t value_ = 0;
+  }
+  get {
+    return value_;
+  }
+  set(v) {
+    value_ = v < 0 ? 0 : v;
+  }
+}
+
+var read_only: String {
+  get { return "fixed"; }
+}
+
+var write_only: float {
+  set(x: float) { gd::print(x); }
+}

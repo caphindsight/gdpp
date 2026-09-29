@@ -1,0 +1,11 @@
+class_name Menu
+
+import Level
+
+class Hud {
+  import Level
+}
+
+class Plain {
+  noimport Level
+}

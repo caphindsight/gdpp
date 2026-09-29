@@ -23,6 +23,9 @@ var update = flag.Bool("update", false, "Rewrite the golden files.")
 func TestGolden(t *testing.T) {
 	inputs := map[string]string{"../../testsrc/tutorial.gd++": "testdata/tutorial"}
 	err := filepath.WalkDir("testdata", func(path string, d fs.DirEntry, err error) error {
+		if path == "testdata/gen" {
+			return filepath.SkipDir // Code generation cases, see gen_test.go.
+		}
 		if strings.HasSuffix(path, ".gd++") {
 			inputs[path] = strings.TrimSuffix(path, ".gd++")
 		}

@@ -1,0 +1,8 @@
+class_name Main
+extends Node
+
+var helper: Helper
+
+class Helper {
+  var main: Main
+}

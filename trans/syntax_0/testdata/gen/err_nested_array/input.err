@@ -1,0 +1,4 @@
+input.gd++:3:14: Typed collections can't be nested.
+ 3 | var a: Array[Array[int]]
+   |              ^^^^^
+Hint: Use a plain Array or Dictionary inside.

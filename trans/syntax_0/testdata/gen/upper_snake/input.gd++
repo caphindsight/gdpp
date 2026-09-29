@@ -1,0 +1,5 @@
+class_name Names
+
+enum HTTPCode { OK }
+enum MyEnum { VALUE }
+enum X { Y }

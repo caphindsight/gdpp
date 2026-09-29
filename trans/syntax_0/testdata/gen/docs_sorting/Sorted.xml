@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Sorted" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="A">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="a">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="b2">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="b10">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="Y" type="int" setter="set_Y" getter="get_Y">
+		</member>
+		<member name="z" type="int" setter="set_z" getter="get_z">
+		</member>
+	</members>
+	<signals>
+		<signal name="S1">
+			<description>
+			</description>
+		</signal>
+		<signal name="s2">
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

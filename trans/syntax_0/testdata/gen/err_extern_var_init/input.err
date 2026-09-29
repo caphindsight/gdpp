@@ -1,0 +1,4 @@
+input.gd++:2:3: Extern variables can't have an initial value or a property body.
+ 2 |   var x: int = 5
+   |   ^^^
+Hint: Externs only declare what another package defines.

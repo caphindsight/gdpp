@@ -1,0 +1,15 @@
+class_name Math
+
+func add(a: int, b: int) -> int {
+  return a + b;
+}
+
+func log(message: String) -> void {
+  gd::print(message);
+}
+
+func identity(value) {
+  return value;
+}
+
+func nothing() {}

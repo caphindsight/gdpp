@@ -1,0 +1,4 @@
+input.gd++:3:1: Annotation @deferred can only be used in externs.
+ 3 | @deferred
+   | ^^^^^^^^^
+Hint: It makes calls on an extern go through call_deferred.

@@ -1,0 +1,6 @@
+{Name:MyNode Kind:1 Base:Node3D Values:[]}
+{Name:MyNode1 Kind:1 Base:Node Values:[]}
+{Name:MyRefCounted1 Kind:1 Base:RefCounted Values:[]}
+{Name:Suit Kind:3 Base: Values:[{Name:DIAMONDS Value:0 Doc:} {Name:CLUBS Value:1 Doc:} {Name:SPADES Value:2 Doc:} {Name:HEARTS Value:3 Doc:}]}
+{Name:Rank Kind:3 Base: Values:[{Name:JACK Value:0 Doc:} {Name:QUEEN Value:1 Doc:} {Name:KING Value:2 Doc:}]}
+{Name:Terrain Kind:2 Base:Node Values:[]}

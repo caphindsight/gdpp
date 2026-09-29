@@ -1,0 +1,11 @@
+class_name Pool
+
+var size: int = 4
+
+ctor {
+  gd::print("created");
+}
+
+dtor {
+  gd::print("deleted");
+}

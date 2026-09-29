@@ -1,0 +1,4 @@
+class_name A
+
+@virtual(1)
+func f() -> void {}

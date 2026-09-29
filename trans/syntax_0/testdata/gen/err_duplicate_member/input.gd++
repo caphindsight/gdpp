@@ -1,0 +1,4 @@
+class_name A
+
+func f() -> void {}
+var f: int

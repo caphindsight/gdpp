@@ -1,0 +1,16 @@
+class_name Settings2
+extends Node
+
+@export var plain: int
+@export_range(0, 100, 1, "or_greater") var hp: int
+@export_range(-1.5, 1.5) var bias: float
+@export_enum("Warrior", "Magician:5") var job: int
+@export_enum("Red", "Green") var color_name: String
+@export_flags("Fire", "Water", "Earth") var elements: int
+@export_file("*.png", "*.jpg") var image: String
+@export_dir var folder: String
+@export_multiline var text: String
+@export_placeholder("Name...") var nick: String
+@export_storage var hidden: int
+@export var target: Node3D
+@export var tex: Texture2D

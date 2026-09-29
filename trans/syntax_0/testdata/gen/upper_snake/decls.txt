@@ -1,0 +1,4 @@
+{Name:Names Kind:1 Base:RefCounted Values:[]}
+{Name:HTTPCode Kind:3 Base: Values:[{Name:OK Value:0 Doc:}]}
+{Name:MyEnum Kind:3 Base: Values:[{Name:VALUE Value:0 Doc:}]}
+{Name:X Kind:3 Base: Values:[{Name:Y Value:0 Doc:}]}

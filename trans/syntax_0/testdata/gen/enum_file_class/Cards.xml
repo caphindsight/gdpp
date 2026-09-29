@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Cards" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="best">
+			<return type="int" enum="Cards.Suit" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="MAX_HAND" value="7">
+		</constant>
+		<constant name="SUIT_DIAMONDS" value="0" enum="Suit">
+		</constant>
+		<constant name="SUIT_CLUBS" value="3" enum="Suit">
+		</constant>
+		<constant name="SUIT_SPADES" value="4" enum="Suit">
+		</constant>
+	</constants>
+</class>

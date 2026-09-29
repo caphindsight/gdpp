@@ -1,0 +1,7 @@
+class_name Quest
+
+var level: Level
+
+func harder(l: Level) -> Level {
+  return Level::HARD;
+}

@@ -1,0 +1,2 @@
+{Name:Player Kind:1 Base:Node3D Values:[]}
+{Name:State Kind:3 Base: Values:[{Name:IDLE Value:0 Doc:Standing still.} {Name:RUNNING Value:1 Doc:@experimental}]}

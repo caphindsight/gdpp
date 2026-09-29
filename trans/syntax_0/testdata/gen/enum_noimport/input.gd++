@@ -1,0 +1,10 @@
+class_name Deck
+
+enum Suit { A B }
+enum Rank { ONE TWO }
+
+noimport Rank
+
+class Other {
+  enum Local { X }
+}

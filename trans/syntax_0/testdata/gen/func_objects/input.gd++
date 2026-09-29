@@ -1,0 +1,10 @@
+class_name Spawner
+extends Node
+
+func spawn(parent: Node, tex: Texture2D) -> Node3D {
+  return nullptr;
+}
+
+func items(names: Array[String], nodes: Array[Node], map: Dictionary[String, Resource]) -> Array[int] {
+  return {};
+}

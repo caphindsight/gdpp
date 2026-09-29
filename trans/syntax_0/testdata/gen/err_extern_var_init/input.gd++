@@ -1,0 +1,3 @@
+extern E {
+  var x: int = 5
+}

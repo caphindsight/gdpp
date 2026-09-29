@@ -1,0 +1,4 @@
+input.gd++:3:8: Type Dictionary doesn't take these type arguments.
+ 3 | var d: Dictionary[int]
+   |        ^^^^^^^^^^
+Hint: Only Array[T] and Dictionary[K, V] take type arguments.

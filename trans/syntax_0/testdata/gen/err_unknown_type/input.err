@@ -1,0 +1,4 @@
+input.gd++:3:8: Unknown type "Nod3D".
+ 3 | var n: Nod3D
+   |        ^^^^^
+Hint: Did you mean "Node3D"?

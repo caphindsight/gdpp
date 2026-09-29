@@ -1,0 +1,4 @@
+input.gd++:3:8: Built-in type String can't be imported.
+ 3 | import String
+   |        ^^^^^^
+Hint: Only classes, externs and enums have includes.

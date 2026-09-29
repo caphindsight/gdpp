@@ -1,0 +1,4 @@
+class_name A
+
+@export_range(0, 1)
+var s: String

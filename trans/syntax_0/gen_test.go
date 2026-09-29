@@ -1,0 +1,191 @@
+package syntax_0
+
+import (
+	"encoding/xml"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/BurntSushi/toml"
+
+	"gd++/trans/meta"
+)
+
+// TestGenerate generates code for every case in testdata/gen/<case>/input.gd++ (plus the tutorial) and compares
+// it with the golden files next to it: input.h, input.cpp, decls.txt and <Class>.xml, or input.err.
+func TestGenerate(t *testing.T) {
+	var file struct {
+		Dep []struct {
+			Name, Include, Kind string
+			Values              []meta.EnumValue
+		}
+	}
+	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
+		t.Fatal(err)
+	}
+	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
+		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum}
+	var opts meta.Options
+	for _, d := range file.Dep {
+		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values})
+	}
+	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := map[string]string{"testdata/gen/tutorial": "../../testsrc/tutorial.gd++"}
+	for _, input := range dirs {
+		cases[filepath.Dir(input)] = input
+	}
+	for dir, input := range cases {
+		t.Run(strings.TrimPrefix(dir, "testdata/gen/"), func(t *testing.T) {
+			data, err := os.ReadFile(input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			src := string(data)
+			got := generate(t, src, opts)
+			if *update {
+				old, _ := filepath.Glob(filepath.Join(dir, "*"))
+				for _, path := range old {
+					if filepath.Base(path) != "input.gd++" {
+						os.Remove(path)
+					}
+				}
+				os.MkdirAll(dir, 0o755)
+				for name, text := range got {
+					if err := os.WriteFile(filepath.Join(dir, name), []byte(text), 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+				return
+			}
+			files, _ := filepath.Glob(filepath.Join(dir, "*"))
+			for _, path := range files {
+				if name := filepath.Base(path); name != "input.gd++" && got[name] == "" {
+					t.Errorf("Golden %s wasn't generated.", name)
+				}
+			}
+			for name, text := range got {
+				want, err := os.ReadFile(filepath.Join(dir, name))
+				if err != nil {
+					t.Errorf("Missing golden %s:\n%s", name, text)
+				} else if string(want) != text {
+					t.Errorf("%s mismatch.\n--- got:\n%s\n--- want:\n%s", name, text, want)
+				}
+			}
+		})
+	}
+}
+
+// generate returns the generated files for src by name, checking the invariants of each.
+func generate(t *testing.T, src string, opts meta.Options) map[string]string {
+	const name = "input.gd++"
+	out := map[string]string{}
+	decls, err := ListClasses(name, src)
+	if err == nil {
+		var lines []string
+		for _, d := range decls {
+			lines = append(lines, fmt.Sprintf("%+v", d))
+		}
+		out["decls.txt"] = strings.Join(lines, "\n") + "\n"
+	}
+	header, err := GenerateHeader(name, src, opts)
+	if err != nil {
+		checkError(t, name, src, err)
+		return map[string]string{"input.err": err.Error() + "\n"}
+	}
+	source, err := GenerateSource(name, src, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out["input.h"], out["input.cpp"] = header, source
+	checkLines(t, src, "input.h", header)
+	checkLines(t, src, "input.cpp", source)
+	u, err := newUnit(name, src, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range u.classes {
+		doc, err := DocumentClass(name, src, c.name, opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		checkXML(t, doc)
+		out[c.name+".xml"] = doc
+	}
+	return out
+}
+
+var lineDirective = regexp.MustCompile(`^#line (\d+) "(.*)"$`)
+
+// checkLines asserts that #line directives name the right lines: each user code fragment matches the GD++ source
+// lines it claims to come from, and each directive back to the generated file names its own next line.
+func checkLines(t *testing.T, src, self, text string) {
+	srcLines := strings.Split(src, "\n")
+	lines := strings.Split(text, "\n")
+	for i := 0; i < len(lines); i++ {
+		m := lineDirective.FindStringSubmatch(lines[i])
+		if m == nil {
+			continue
+		}
+		n, _ := strconv.Atoi(m[1])
+		if m[2] == self {
+			if n != i+2 {
+				t.Errorf("%s:%d: %s should name line %d.", self, i+1, lines[i], i+2)
+			}
+			continue
+		}
+		// Lines after the first come straight from the source (minus comments), so their identifiers match.
+		for k := 1; i+1+k < len(lines) && !lineDirective.MatchString(lines[i+1+k]); k++ {
+			if n+k > len(srcLines) {
+				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])
+			}
+			want := identifiers(srcLines[n+k-1])
+			for _, id := range identifiers(lines[i+1+k]) {
+				if id != "void" && !slices.Contains(want, id) {
+					t.Errorf("%s:%d: %q is not on line %d of the source: %q", self, i+2+k, id, n+k, srcLines[n+k-1])
+				}
+			}
+		}
+	}
+}
+
+// checkXML asserts that doc is well-formed, with <class> elements in class.xsd's order.
+func checkXML(t *testing.T, doc string) {
+	order := []string{"brief_description", "description", "tutorials", "constructors", "methods", "members", "signals", "constants"}
+	dec := xml.NewDecoder(strings.NewReader(doc))
+	depth, last := 0, -1
+	for {
+		tok, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			t.Fatalf("Malformed XML: %v\n%s", err, doc)
+		}
+		switch e := tok.(type) {
+		case xml.StartElement:
+			depth++
+			switch {
+			case depth == 1 && e.Name.Local != "class":
+				t.Errorf("The root element is <%s>, not <class>.", e.Name.Local)
+			case depth == 2:
+				i := slices.Index(order, e.Name.Local)
+				if i <= last {
+					t.Errorf("<%s> is out of class.xsd's order.", e.Name.Local)
+				}
+				last = i
+			}
+		case xml.EndElement:
+			depth--
+		}
+	}
+}

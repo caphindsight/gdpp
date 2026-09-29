@@ -1,0 +1,7 @@
+class_name A
+
+enum Mode { X }
+
+noimport Mode
+
+var mode: Mode
