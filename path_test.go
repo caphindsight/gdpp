@@ -21,6 +21,9 @@ func TestNewPath(t *testing.T) {
 		{"cleans dot segments", "/a/./b", "/a/b"},
 		{"cleans dotdot segments", "/a/b/../c", "/a/c"},
 		{"trailing slash removed", "/a/b/", "/a/b"},
+		{"windows drive", "E:/hello_gdpp", "E:/hello_gdpp"},
+		{"windows drive root", "C:/", "C:/"},
+		{"windows drive dotdot", "C:/a/..", "C:/"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -82,6 +85,9 @@ func TestBaseDir(t *testing.T) {
 		{"/a/b/c", "/a/b"},
 		{"/a", "/"},
 		{"/", "/"},
+		{"C:/a/b", "C:/a"},
+		{"C:/a", "C:/"},
+		{"C:/", "C:/"},
 	}
 	for _, c := range cases {
 		p := Path{absolutePath: c.input}
@@ -122,6 +128,8 @@ func TestCd(t *testing.T) {
 		{"/a", nil, "/a"},
 		{"/a", []string{"b", "..", "c"}, "/a/c"},
 		{"/a/b", []string{"../c"}, "/a/c"},
+		{"C:/", []string{"a"}, "C:/a"},
+		{"C:/a", []string{".."}, "C:/"},
 	}
 	for _, c := range cases {
 		p := Path{absolutePath: c.base}

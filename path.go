@@ -70,11 +70,24 @@ type Path struct {
 	absolutePath string
 }
 
+// Windows absolute path prefix, e.g. "C:/".
+var drivePathPattern = regexp.MustCompile(`^[A-Za-z]:/`)
+
 // NewPath returns a Path for p, an absolute path in OS or forward-slash form.
 func NewPath(p string) Path {
 	p = filepath.ToSlash(p)
-	Assert(path.IsAbs(p), "Path %q is not absolute.", p)
-	return Path{absolutePath: path.Clean(p)}
+	Assert(path.IsAbs(p) || drivePathPattern.MatchString(p), "Path %q is not absolute.", p)
+	return Path{absolutePath: cleanPath(p)}
+}
+
+// cleanPath is path.Clean, but keeps the slash of a drive root ("C:/", not
+// "C:", which on Windows means the drive's current directory).
+func cleanPath(p string) string {
+	p = path.Clean(p)
+	if driveRootPattern.MatchString(p) {
+		return p[:2] + "/"
+	}
+	return p
 }
 
 // GetOsPath returns the path in the current OS's native format.
@@ -132,7 +145,7 @@ func (p Path) IsGlobalRoot() bool {
 
 // BaseDir returns the parent directory of the path.
 func (p Path) BaseDir() Path {
-	return Path{absolutePath: path.Dir(p.absolutePath)}
+	return Path{absolutePath: cleanPath(path.Dir(p.absolutePath))}
 }
 
 // Cd returns the path joined with the given segments.
@@ -141,7 +154,7 @@ func (p Path) Cd(segments ...string) Path {
 	for i, s := range joined {
 		joined[i] = filepath.ToSlash(s)
 	}
-	return Path{absolutePath: path.Join(joined...)}
+	return Path{absolutePath: cleanPath(path.Join(joined...))}
 }
 
 // stat returns the info of the path, or nil if it doesn't exist.
