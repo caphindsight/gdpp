@@ -8,7 +8,7 @@ extends Node
 
 @override
 func _ready() -> void {
-  Label* label = memnew(Label);
+  Label *label = memnew(Label);
   label->set_text("Hello, world!");
   add_child(label);
 }
