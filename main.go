@@ -12,6 +12,7 @@ var Args struct {
 	Init     *CmdInit    `arg:"subcommand:init" help:"set up the project, or create or update a package"`
 	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
 	Rm       *CmdRm      `arg:"subcommand:rm" help:"remove dependencies from the project cache, or packages from the project"`
+	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the result, to try out GD++"`
 	Vendor   *CmdVendor  `arg:"subcommand:vendor" help:"copy a dependency into or out of the project's cache"`
 	Quiet    bool        `arg:"-q,--quiet" help:"print fewer logs"`
 	Verbose  bool        `arg:"-v,--verbose" help:"print more logs"`
@@ -60,6 +61,8 @@ func main() {
 		Args.Ls.Run()
 	case Args.Rm != nil:
 		Args.Rm.Run()
+	case Args.Trans != nil:
+		Args.Trans.Run()
 	case Args.Vendor != nil:
 		Args.Vendor.Run()
 	default:
