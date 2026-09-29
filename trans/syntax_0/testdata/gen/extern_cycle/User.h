@@ -3,11 +3,11 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "A.h"
 #include <godot_cpp/classes/node.hpp>
 
 namespace godot {
 
+class A;
 class B;
 
 #define This User
@@ -29,4 +29,5 @@ protected:
 
 } // namespace godot
 
+#include "A.h"
 #include "B.h"

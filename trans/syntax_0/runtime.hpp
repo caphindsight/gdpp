@@ -93,75 +93,69 @@ T from_variant(const Variant &p_value) {
 }
 
 // ExtPtr<T> points to an object of the extern T, whose base class isn't refcounted. Its members are called by
-// name: ptr->foo() is ptr.get()->call("foo").
+// name: ptr->foo() is ptr.base()->call("foo"). Only its members need T to be complete, so a field of type ExtPtr<T>
+// only needs T to be declared.
 template <typename T>
 class ExtPtr {
 public:
-	using Base = typename T::Base;
-
 	ExtPtr() = default;
 	ExtPtr(std::nullptr_t) {}
-	ExtPtr(Base *p_object) :
-			base_(p_object) {}
+	template <typename U = T>
+	ExtPtr(typename U::Base *p_object) :
+			object_(p_object) {}
 
-	Base *get() const { return base_; }
-	Base *base() { return base_; }
-	const Base *base() const { return base_; }
-	explicit operator bool() const { return base_ != nullptr; }
-	bool operator==(const ExtPtr &p_other) const { return base_ == p_other.base_; }
-	operator Variant() const { return Variant(base_); }
+	auto base() const { return static_cast<typename T::Base *>(object_); }
+	explicit operator bool() const { return object_ != nullptr; }
+	bool operator==(const ExtPtr &p_other) const { return object_ == p_other.object_; }
+	operator Variant() const { return Variant(object_); }
 
 	struct Arrow {
 		T wrapper;
 		T *operator->() { return &wrapper; }
 	};
-	Arrow operator->() const { return Arrow{ T(base_) }; }
+	Arrow operator->() const { return Arrow{ T(base()) }; }
 
 private:
-	Base *base_ = nullptr;
-	Ref<RefCounted> keep_; // Keeps a refcounted object from memnew_ext alive until an ExtRef takes it.
-
-	template <typename U>
-	friend ExtPtr<U> memnew_ext();
+	Object *object_ = nullptr;
 };
 
 // ExtRef<T> references an object of the extern T, whose base class is refcounted. Its members are called by
-// name: ref->foo() is ref.get()->call("foo").
+// name: ref->foo() is ref.base()->call("foo"). Like ExtPtr<T>, only its members need T to be complete.
 template <typename T>
 class ExtRef {
 public:
-	using Base = typename T::Base;
-
 	ExtRef() = default;
 	ExtRef(std::nullptr_t) {}
-	ExtRef(const Ref<Base> &p_object) :
-			base_(p_object) {}
-	ExtRef(Base *p_object) :
-			base_(p_object) {}
-	ExtRef(const ExtPtr<T> &p_object) :
-			base_(p_object.get()) {}
+	template <typename U = T>
+	ExtRef(const Ref<typename U::Base> &p_object) :
+			object_(p_object.ptr()) {}
+	template <typename U = T>
+	ExtRef(typename U::Base *p_object) :
+			object_(p_object) {}
 
-	const Ref<Base> &get() const { return base_; }
-	Ref<Base> &base() { return base_; }
-	const Ref<Base> &base() const { return base_; }
-	explicit operator bool() const { return base_.is_valid(); }
-	bool operator==(const ExtRef &p_other) const { return base_ == p_other.base_; }
-	operator Variant() const { return Variant(base_); }
+	auto base() const { return Ref<typename T::Base>(static_cast<typename T::Base *>(object_.ptr())); }
+	explicit operator bool() const { return object_.is_valid(); }
+	bool operator==(const ExtRef &p_other) const { return object_ == p_other.object_; }
+	operator Variant() const { return Variant(object_); }
 
 	struct Arrow {
 		T wrapper;
 		T *operator->() { return &wrapper; }
 	};
-	Arrow operator->() const { return Arrow{ T(base_.ptr()) }; }
+	Arrow operator->() const { return Arrow{ T(static_cast<typename T::Base *>(object_.ptr())) }; }
 
 private:
-	Ref<Base> base_;
+	Ref<RefCounted> object_;
 };
+
+// Ext<T> is how code holds an object of the extern T: an ExtRef<T> if its base class is refcounted, else an ExtPtr<T>.
+template <typename T>
+using Ext = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, ExtRef<T>, ExtPtr<T>>;
 
 // memnew_ext creates an object of the extern T, like memnew: an instance of the ClassDB class or global script class
 // that T names.
 template <typename T>
-ExtPtr<T> memnew_ext() {
+Ext<T> memnew_ext() {
 	StringName name = T::gdpp_name;
 	Variant object;
 	if (ClassDB::class_exists(name)) {
@@ -176,18 +170,19 @@ ExtPtr<T> memnew_ext() {
 			}
 		}
 	}
-	ExtPtr<T> result = Object::cast_to<typename T::Base>(object.operator Object *());
+	// A refcounted object is freed with the last reference to it, so the ExtRef must take it before object goes.
+	Ext<T> result = Object::cast_to<typename T::Base>(object.operator Object *());
 	ERR_FAIL_COND_V_MSG(!result, nullptr, String("Failed to create an object of the extern ") + T::gdpp_name + ".");
-	result.keep_ = object;
 	return result;
 }
 
 // memdelete_ext frees an object of the extern T, like memdelete. Refcounted objects are freed by their ExtRefs instead.
 template <typename T>
 void memdelete_ext(ExtPtr<T> p_object) {
-	static_assert(!std::is_base_of_v<RefCounted, typename T::Base>, "Refcounted externs are freed by their ExtRefs.");
-	memdelete(p_object.get());
+	memdelete(p_object.base());
 }
+template <typename T>
+void memdelete_ext(ExtRef<T> p_object) = delete;
 
 // assert_message is the error printed by a failed gd_assert.
 inline String assert_message(const char *p_condition, const String &p_message = "") {
@@ -214,7 +209,7 @@ inline String assert_message(const char *p_condition, const String &p_message = 
 #define gd_assert(m_condition, ...) ((void)0)
 #endif
 
-// memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for ExtPtrs.
+// memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for externs.
 #define memnew_ext(m_class) gdpp::memnew_ext<m_class>()
 #define memdelete_ext(m_object) gdpp::memdelete_ext(m_object)
 
@@ -253,7 +248,7 @@ struct PtrToArg<gdpp::ExtPtr<T>> {
 	}
 	typedef Object *EncodeT;
 	_FORCE_INLINE_ static void encode(gdpp::ExtPtr<T> p_val, void *p_ptr) {
-		PtrToArg<typename T::Base *>::encode(p_val.get(), p_ptr);
+		PtrToArg<typename T::Base *>::encode(p_val.base(), p_ptr);
 	}
 };
 
@@ -264,7 +259,7 @@ struct PtrToArg<gdpp::ExtRef<T>> {
 	}
 	typedef Ref<typename T::Base> EncodeT;
 	_FORCE_INLINE_ static void encode(gdpp::ExtRef<T> p_val, void *p_ptr) {
-		PtrToArg<Ref<typename T::Base>>::encode(p_val.get(), p_ptr);
+		PtrToArg<Ref<typename T::Base>>::encode(p_val.base(), p_ptr);
 	}
 };
 

@@ -3,12 +3,13 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "Road.h"
-#include "Settings.h"
-#include "Terrain2.h"
 #include <godot_cpp/classes/node.hpp>
 
 namespace godot {
+
+class Road;
+class Settings;
+class Terrain2;
 
 #define This User
 class User : public Node {
@@ -34,3 +35,7 @@ protected:
 #undef This
 
 } // namespace godot
+
+#include "Road.h"
+#include "Settings.h"
+#include "Terrain2.h"

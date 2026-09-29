@@ -3,7 +3,6 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "Terrain.h"
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 
@@ -11,11 +10,12 @@
 
   #include <vector>
 
-#line 15 "MyNode.h"
+#line 14 "MyNode.h"
 
 namespace godot {
 
 enum class Suit : int64_t;
+class Terrain;
 
 enum _gdpp_MyNode_Suit : int64_t {};
 GDPP_ENUM_TAG(_gdpp_MyNode_Suit, "MyNode.Suit")
@@ -122,3 +122,4 @@ private:
 } // namespace godot
 
 #include "Suit.h"
+#include "Terrain.h"

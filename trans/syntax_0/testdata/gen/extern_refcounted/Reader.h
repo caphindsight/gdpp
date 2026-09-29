@@ -3,10 +3,11 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "Config.h"
 #include <godot_cpp/classes/ref_counted.hpp>
 
 namespace godot {
+
+class Config;
 
 #define This Reader
 class Reader : public RefCounted {
@@ -25,3 +26,5 @@ protected:
 #undef This
 
 } // namespace godot
+
+#include "Config.h"

@@ -3,7 +3,6 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "Lock.h"
 #include "Wall.h"
 
 namespace godot {
@@ -11,6 +10,7 @@ namespace godot {
 class Door;
 class Key;
 enum class Level : int64_t;
+class Lock;
 
 enum _gdpp_Gate_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Gate_Level, "Gate.Level")
@@ -50,3 +50,4 @@ private:
 #include "Door.h"
 #include "Key.h"
 #include "Level.h"
+#include "Lock.h"

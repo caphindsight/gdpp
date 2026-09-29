@@ -11,7 +11,7 @@ extern B {
   signal found(a: A)
 }
 
-// A field needs its extern complete.
+// Fields of extern types only need the extern declared too.
 class User {
   extends Node
   var a: A

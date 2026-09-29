@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-
-	"gd++/trans/meta"
 )
 
 // source returns the C++ source <name>.cpp of the unit's one class, named name: method definitions and bindings.
@@ -396,14 +394,6 @@ func (u *unit) headerNames() (names, complete []string) {
 	for _, c := range u.classes {
 		complete = append(complete, c.base)
 		add(c.imports...)
-		for _, v := range c.vars {
-			// A field's ExtPtr<T> or ExtRef<T> needs T::Base right away.
-			for _, name := range typeNames(v.v.Type) {
-				if s := u.symbols[name]; v.v.Property == nil && s != nil && (s.kind == meta.Extern || s.kind == meta.RefCountedExtern) {
-					complete = append(complete, name)
-				}
-			}
-		}
 		addFuncs(c.funcs, c.vars, c.signals)
 		for _, f := range c.funcs {
 			if f.virtual {

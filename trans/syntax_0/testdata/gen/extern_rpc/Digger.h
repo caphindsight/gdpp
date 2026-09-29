@@ -3,10 +3,11 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "Terrain2.h"
 #include <godot_cpp/classes/node.hpp>
 
 namespace godot {
+
+class Terrain2;
 
 #define This Digger
 class Digger : public Node {
@@ -26,3 +27,5 @@ protected:
 #undef This
 
 } // namespace godot
+
+#include "Terrain2.h"
