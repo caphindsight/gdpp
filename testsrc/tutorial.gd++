@@ -1,0 +1,359 @@
+/*
+  Welcome to the GD++ language!
+  GD++ is a Domain Specific Language (DSL) that targets regular C++.
+  It is designed with one purpose in mind: enabling easy, boilerplate-free C++ development for the Godot engine.
+  This file is a demonstration of the basic syntax and capabilities of GD++.
+  For example, this text is part of a multi-line comment. Multi-line comments start with /* and end with a matching */.
+  Emphasis on the *matching* part. So this line is still part of the comment. This is more similar to Rust than C++.
+*/
+
+// And this is a normal single-line comment.
+// We will be using a lot of these in this tutorial.
+
+// Part I. Lexical scopes.
+
+// GD++ features 4 distinct lexical scopes (not counting auxiliary scopes like comments, quotations, etc.):
+// 1. The class declaration scope.
+//    The syntax here resembles GDScript very closely (though it is *not* GDScript, just like GDScript itself relembles Python but is not Python).
+// 2. The property declaration scope.
+//    This is a very niche scope that only exists to group together property getters, setters and declarations.
+// 3. The enum declaration scope.
+//    Simply a list of enumeration names, with optional integer values.
+//    They don't have to be comma-separated, simply separating with a space or newline is already enough, though comma separated also works.
+// 4. The C++ implementation scope.
+//    In this scope, arbitrary C++ code is allowed.
+//    There are a few minor modifications, most notably comments are still parsed by GD++ (and stripped out of the generated C++).
+//    This means multiline comments work like they do in GD++.
+
+// Part II. Classes.
+
+// There may or may not be a single class-level definition that goes at the very top of the file like so:
+
+class_name MyNode
+extends Node3D  // If not specified, inherits from RefCounted.
+// Here we are in the class declaration scope.
+
+// Additionally, the GD++ file can contain inline classes defined like so:
+class MyNode1 {
+  extends Node
+  // Here we are in the class declaration scope.
+}
+
+class MyRefCounted1 {
+  // By default, inherits from RefCounted, like in GDScript.
+}
+
+// There is no difference between file-level and inline classes, it's purely preference.
+// The GD++ compiler puts all these classes on the same level in the generated file.
+// There are no nested classes in GD++.
+
+// If there is no file-level class, GD++ enters a limited class declaration scope.
+// Only inline classes (and other inline entities like enums and externs, see below) are allowed.
+// However, since we've declared the file-level class, we're in full class declaration scope here.
+
+// Part III. Embedding C++.
+
+// GD++ is designed to emit C++, and so it makes it possible to embed arbitrary C++ code anywhere in the file.
+// This feature is extremely powerful, but should be used sparingly, since it also invites verbose boilerplate.
+// We use two keywords: decl and impl. They can also be combined into a decl impl.
+
+decl {
+  // This block of C++ code will be embedded into the class definition in the header file.
+  // To embed a block outside of the class definition (and the godot::namespace),
+  // use decl before class_name (decl, impl and decl impl are the only allowed constructs that can go before class_name).
+  void private_function();
+}
+
+impl {
+  // This block of C++ code will be embedded into the source file, inside the godot:: namespace.
+  // To embed outside of the godot:: namespace, use impl before class_name.
+  void This::private_function() {
+    // Note the use of `This`: GD++ will emit a special #define (and an #undef at the end) that resolves it to the name of the current class.
+    // This is similar to how Self works in Rust.
+    if (Engine::is_editor_hint()) return;
+
+    // gd is another shorthand, this is a classdef that points to UtilityFunctions,
+    // so the "global scope" functions in Godot terminology.
+    gd::print("Hello, world!");
+  }
+}
+
+// You can combine decl and impl to embed a single block into both header and source, like so:
+
+decl impl {
+  #define FOO 42
+  // Don't forget to #undef at the end of the file!
+}
+
+// Note: if you want to embed into a public / protected section of the class, simply define another section inside of the decl block, i.e.
+
+decl {
+ public:
+  void public_function();  // Visible from all C++ classes, but not exposed to Godot.
+}
+
+// Part IV. Godot types.
+
+// In GD++, you will work with Godot's type system.
+// To each Godot type there's a corresponding canonical C++ type:
+// bool -> bool
+// int -> int64_t
+// float -> float64_t (GD++-provided typedef for double).
+// Non-object Godot types, e.g. Vector3 -> C++ structs with identical names, provided by the Godot C++ Bindings.
+// Non-refcounted types, e.g. Node -> pointers, e.g. Node*
+// Refcounted types, e.g. Resource -> references, e.g. Ref<Resource>
+// GD++ enums, e.g. MyEnum -> generated enum class C++ enums, so MyEnum::VALUE_1 are available etc, see more about enums below.
+// Non-refcounted externs -> ExtPtr<MyExtern>, see more about externs below.
+// Refcounted externs -> ExtRef<MyExtern>, see more about externs below.
+
+// Part V. Constants and enums.
+
+// GDExtensions only allows integer constants to be exposed to Godot, so we only support them.
+// The definition syntax is
+
+enum THE_ANSWER = 42
+
+// Note that there is no const keyword in GD++.
+
+// Enums in GD++ are slightly different from C++ / Godot / GDScript.
+// Enums are global-scoped types in GD++, so e.g.
+
+enum Suit {
+  DIAMONDS
+  CLUBS
+  SPADES
+  HEARTS
+}
+
+enum Rank {
+  JACK = 0
+  QUEEN
+  KING
+}
+
+// Is an inline enum definition that is visible anywhere from the GD++ package.
+// When GD++ registers enums with Godot, they must belong to a class, because Godot enums belong to a class.
+// GD++ will generate an identical enum definition for all classes that make use of it in the GD++ APIs, that is,
+// in any variables, function arguments, function return values or signal arguments.
+// Additionally, if the file-level class defines an inline enum, that gets exported too.
+
+// The exported values are called SUIT_DIAMONDS, SUIT_CLUBS, etc. (PascalCase is converted in to UPPER_SNAKE_CASE automatically).
+
+// You can force a class to export an enum or to not export an enum via
+import Suit  // This is redundant, since Suit is already defined in this class, it's as a demonstration only.
+noimport Rank  // Rank will not be exported as an enum of this class (but may be exported as an enum of other classes that use / import it).
+
+// Finally, similarly to class_name, there's enum_name that makes the whole file a enum and enters the enum scope. It's almost never used, but kept around for consistency.
+// E.g. the whole file could be just
+// > enum_name Foo
+// > FOO1
+// > FOO2
+// Such a file would export no classes to Godot, but other GD++ files can use the enum.
+
+// Part VI. Functions.
+
+// Functions are defined with GDScript-inspired syntax:
+
+func greet_user(name: String) -> void {
+  // C++ implementation.
+  gd::print("Hello ", name, "!");
+}
+
+// Arguments and return types implicitly assume Variant if nothing is provided.
+
+// GD++ automatically exposes them as public functions in C++, and registers them as Godot functions in the generated _bind_methods.
+// All types provided are Godot types. They become canonically mapped C++ classes in C++ code.
+
+// We can define script-virtual functions with the @virtual attribute:
+
+@virtual
+func _foo() -> int {
+  return 0;
+}
+
+@virtual
+func _bar() -> int  // This is also OK, GD++ will generate a default implementation that returns the default value of the type, which is 0.
+
+func foo_plus_bar() -> int {
+  return _foo() + _bar();
+}
+
+// Later, we can overwrite them in GDScript, e.g.
+// func _foo() -> int:
+//   return 42
+
+// To override already provided engine virtual functions, use @override instead:
+@override
+func _ready() -> void {
+  // Caveat: the function signature must match *exactly*, e.g. omitting -> void will result in a compilation error, since _ready does not return Variant.
+  gd::print("My node is ready.");
+}
+
+// Functions can be marked as const with the @const attribute:
+
+decl {
+  int64_t my_value_;
+}
+
+@const
+func get_my_value() -> int {
+  return my_value;
+}
+
+// Finally, to have a static function, mark it with the @static attribute:
+
+@static
+func my_static_func() -> void {
+  gd::print("Hello!");
+}
+
+// Attributes can be combined when it makes sense, e.g. @virtual @const is allowed.
+
+// Part VII. Constructors and destructors.
+
+// In GD++, each class can have at most one constructor and at most one destructor.
+// They must not accept any arguments. Syntax:
+
+ctor {
+  gd::print("This message will show up every time something creates MyNode.");
+}
+
+dtor {
+  gd::print("This message will show up every time a MyNode is deleted.");
+}
+
+// Part VIII. Signals.
+
+// Define signals with GDScript-inspired syntax:
+
+signal something_happened(a: int)
+signal something_else_happened
+
+// Now you can emit them from C++ code, e.g.
+
+func emit_both_signals() -> void {
+  emit something_happened(42);
+  emit something_else_happened();
+}
+
+// Generated signal functions emit signals and return a [[nodiscard]] struct.
+// `emit` is simply a convenient way to tell the compiler to use the value without using it.
+// This is an intentional design choice: we want emitting signals to be visually different from calling functions in code.
+
+// Part IX. Variables.
+
+// There are two ways to define variables: a simple variable and a property.
+// Under the hood, they are exactly the same thing, it's just that the syntax is different.
+
+var simple_var: int  // Default-initializes to 0.
+var another_simple_var: int = 5  // Default-initializes to 5.
+
+// Variables can be default-assigned a C++ expression, or a block of C++ code that runs on initialization, e.g.
+
+@onready
+var child_node_1: Node3D = get_node<Node3D>("MyNode1")
+
+@onready
+var child_node_2: Node3D = {
+  Node3D* res = memnew(Node3D);
+  add_child(res);
+  return res;
+}
+
+// The @onready here isn't required - it only makes the initialization run in _ready as opposed to in the constructor.
+
+// Simple variables are visible from C++ under the canonically mapped types with the same name, e.g. simple_var is a field of MyNode of type int64_t.
+// They are exposed to Godot via generated getters and setters.
+
+// Properties are variables with explicitly defined getters and setters. Either a getter or a setter may be omitted, making the variable get-only or set-only.
+
+// This property can never be set to a non-negative number from Godot.
+var my_property: int {
+  decl {
+    // Goes in the private section of the class.
+    int64_t my_property = 0;
+  }
+  get {
+    // Generated public method is: int64_t get_my_property() const.
+    return my_property;
+  }
+  set(val) {
+    // Generated public method is: void set_my_property(int64_t my_property);
+    if (val < 0) val = 0;
+    my_property = val;
+  }
+}
+
+// Part X. Includes.
+
+// GD++ simplifies writing #include by not requiring the programmer to write any of them.
+// During compilation, it will scan the available C++ files and build a table of includes for both Godot/GDExtension-provided and user-defined classes.
+// It will auto-include all types that have been explicitly spelled out anywhere in the code, this includes public API types, or just types spelled out in C++ code.
+
+// In other words, to include a class, simply use it.
+
+// There are rare exceptions where this might not work, e.g. when introspecting the contents of an object without naming its type in code.
+// To force-include, use
+
+import MeshInstance3D  // This will force-#include the appropriate header.
+
+// To disable including a class (almost always leads to compilation errors, but the user is still empowered to do so):
+
+noimport MeshInstance2D
+
+// Finally, there's always the top-level decl { #include <...> }. Try to avoid that at all costs though.
+
+// Part XI. Annotations.
+
+// Annotations are structured data attached to the AST.
+// By convention they go before the declaration they are attached to.
+// The syntax is @annotation(param1, ...), or just @annotation also works if there are no params.
+// E.g.
+
+@export_range(0, 100, 1)
+var my_range_var: int
+
+// There's a special kind of attribute with a different syntax, which is the documentation comment.
+// Similarly to normal comments, there are single-line and multi-line documentation comments:
+
+/// This is a variable.
+var some_var: int
+
+/**
+  This function has a
+  long
+  description.
+*/
+func foo() -> void {}
+
+// Part XII. Externs.
+
+// GD++ packages can not depend on other packages at compile time, but sometimes a runtime dependency is needed.
+// GD++ makes it easy for programmers to declare runtime dependencies with externs.
+// Here we will do so with inline externs, but there's also a file-level extern_name similar to class_name and enum_name.
+
+extern Terrain {
+  extends Node
+  // Note the absence of definitions - externs can *NOT* have function bodies, property bodies, or variable default values.
+  @const func foo() -> void
+  @deferred func bar() -> void
+  var baz: int
+  signal done(a: bool, b: int)
+}
+
+// In C++ and in the public Godot API, externs are just objects of their base class.
+// So ExtPtr<Terrain> will actually just contain a Node* under the hood.
+
+// We can expose externs e.g. like so:
+@export var my_extern: Terrain
+
+// In Godot, my_extern will be of type Node. However, GD++ will generate the property bindings that mention the "Terrain" type.
+// So e.g. in the Godot editor, the inspector will only allow assigning nodes of type "Terrain" to it.
+
+// GD++ generates wrappers for the externs, making it possible to use them as regular types, however, whenever a method is called on an extern,
+// Godot uses string-based resolution, i.e. calling foo() on an ExtPtr<Terrain> is equivalent to calling call("foo") on the underlying Node*.
+
+// The @deferred attribute (which can only be used in an extern) makes the calls go through call_deferred instead of a plain call.
+
+// With externs, packages can have runtime dependencies on other packages and even on other non-GD++ GDExtensions.
+// However, externs are by design slow. Minimize their usage as much as possible.
