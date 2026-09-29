@@ -112,12 +112,13 @@ func (u *unit) resolveElement(t *Type) (*gtype, error) {
 	if len(t.Args) > 0 {
 		return nil, u.errorAt(t.Pos, len(t.Name), "Typed collections can't be nested.", "Use a plain Array or Dictionary inside.")
 	}
-	if s := u.symbols[t.Name]; s != nil && s.kind != meta.Object && s.kind != meta.RefCounted {
+	_, builtin := builtins[t.Name]
+	if s := u.symbols[t.Name]; !builtin && s != nil && s.kind != meta.Object && s.kind != meta.RefCounted {
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Type %s can't be used in a typed collection.", t.Name),
 			"Typed collections can hold built-in types and classes, but not enums or externs.")
 	}
 	g, err := u.resolve(t, false)
-	if err != nil || builtins[t.Name] != "" || u.symbols[t.Name] == nil {
+	if err != nil || builtin || u.symbols[t.Name] == nil {
 		return g, err
 	}
 	return &gtype{cpp: t.Name, doc: t.Name}, nil // TypedArray<Node>, not TypedArray<Node *>.
