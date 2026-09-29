@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="B" inherits="A" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="suit" type="int" enum="B.Suit" setter="set_suit" getter="get_suit">
+		</member>
+	</members>
+	<constants>
+		<constant name="SUIT_HEARTS" value="0" enum="Suit">
+		</constant>
+		<constant name="SUIT_SPADES" value="1" enum="Suit">
+		</constant>
+	</constants>
+</class>

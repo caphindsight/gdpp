@@ -1,4 +1,4 @@
-errors/annotations/on_decl.gd++:2:1: Expected a declaration that can take an annotation, but found keyword "decl".
+errors/annotations/on_decl.gd++:2:1: This decl is outside of any class.
  2 | decl { int x; }
    | ^^^^
-Hint: Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values.
+Hint: Move this into a class. To put its code outside the class and the godot namespace, add @global: "@global decl { ... }".

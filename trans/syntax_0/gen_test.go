@@ -19,7 +19,7 @@ import (
 )
 
 // TestGenerate generates code for every case in testdata/gen/<case>/input.gd++ (plus the tutorial) and compares
-// it with the golden files next to it: input.h, input.cpp, decls.txt and <Class>.xml, or input.err.
+// it with the golden files next to it: the generated <Name>.h and <Name>.cpp, decls.txt and <Class>.xml, or input.err.
 func TestGenerate(t *testing.T) {
 	var file struct {
 		Dep []struct {
@@ -98,18 +98,15 @@ func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 		}
 		out["decls.txt"] = strings.Join(lines, "\n") + "\n"
 	}
-	header, err := GenerateHeader(name, src, opts)
+	files, err := Generate(name, src, opts)
 	if err != nil {
 		checkError(t, name, src, err)
 		return map[string]string{"input.err": err.Error() + "\n"}
 	}
-	source, err := GenerateSource(name, src, opts)
-	if err != nil {
-		t.Fatal(err)
+	for _, f := range files {
+		out[f.Name] = f.Text
+		checkLines(t, src, f.Name, f.Text)
 	}
-	out["input.h"], out["input.cpp"] = header, source
-	checkLines(t, src, "input.h", header)
-	checkLines(t, src, "input.cpp", source)
 	u, err := newUnit(name, src, opts)
 	if err != nil {
 		t.Fatal(err)

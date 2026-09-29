@@ -225,7 +225,6 @@ func generateBuildCache(p Project, pkg Package) {
 		"Color":       isTTY,
 		"ProjectRoot": relPath(cache, p.Root),
 		"Sources":     cppSources(p, pkg),
-		"GdppSources": gdppSources(p, pkg),
 	})
 }
 
@@ -240,16 +239,6 @@ func relPath(from, to Path) string {
 // to its root.
 func cppSources(p Project, pkg Package) []string {
 	return packageFiles(p, pkg, ".c", ".cc", ".cpp", ".cxx", ".c++")
-}
-
-// gdppSources returns the paths of the C++ sources generated from the
-// package's GD++ files, relative to the build cache's gdpp directory.
-func gdppSources(p Project, pkg Package) []string {
-	var sources []string
-	for _, rel := range packageFiles(p, pkg, gdppExtensions...) {
-		sources = append(sources, rel+".cpp")
-	}
-	return sources
 }
 
 // generateRegisterTypes writes the build cache's __register_types__.cpp,
@@ -270,7 +259,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		Assert(!slices.Contains(classes, class.Name), "Class %s is declared in %s and in %s.",
 			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
 		classes = append(classes, class.Name)
-		includes = append(includes, `"`+class.File.Rel+`.h"`)
+		includes = append(includes, `"`+class.Name+`.h"`)
 		if !class.Tool {
 			runtime = append(runtime, class.Name)
 		}

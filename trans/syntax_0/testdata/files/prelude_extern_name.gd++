@@ -1,2 +1,0 @@
-decl { struct Helper; }
-extern_name Foo

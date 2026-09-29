@@ -1,14 +1,13 @@
 enum Shared { ONE, TWO }
-enum LIMIT = 100
-
-decl {
-  struct Helper {};
-}
-
-impl {
-  int helper_count = 0;
-}
 
 class A {
+  @global decl {
+    struct Helper {};
+  }
+
+  @global impl {
+    int helper_count = 0;
+  }
+
   func f(s: Shared) -> void {}
 }

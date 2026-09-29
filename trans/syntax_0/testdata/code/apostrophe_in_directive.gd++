@@ -1,3 +1,5 @@
+class_name C
+
 decl {
   #error don't
 }

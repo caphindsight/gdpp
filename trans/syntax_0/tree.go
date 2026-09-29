@@ -11,7 +11,7 @@ import (
 
 type parsedFile struct {
 	Pos    lexer.Position
-	Code   []*Code     `parser:"@@*"`
+	Code   []*Code     `parser:"@@*"` // Only parsed to report it: code must be in a class.
 	Class  *classHead  `parser:"( @@"`
 	Extern *externHead `parser:"| @@"`
 	Enum   *enumHead   `parser:"| @@ )?"`
@@ -51,9 +51,12 @@ type topItem struct {
 }
 
 // toFile converts the parse tree into a File. After class_name or extern_name, members go into that class;
-// in a file without either, only decl, impl and enums are allowed outside inline classes.
+// in a file without either, only enums are allowed outside inline classes.
 func (pf *parsedFile) toFile() (*File, *Error) {
-	f := &File{Pos: pf.Pos, Code: pf.Code}
+	if len(pf.Code) > 0 {
+		return nil, outsideClass(&Member{Pos: pf.Code[0].Pos, Code: pf.Code[0]})
+	}
+	f := &File{Pos: pf.Pos}
 	var members *[]*Member
 	switch {
 	case pf.Class != nil:
@@ -77,17 +80,23 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 			f.InlineExterns = append(f.InlineExterns, item.Extern)
 		case members != nil:
 			*members = append(*members, m)
-		case m.Code != nil:
-			f.Code = append(f.Code, m.Code)
-		case m.Enum != nil:
+		case m.Enum != nil && m.Enum.Value == nil:
 			f.InlineEnums = append(f.InlineEnums, m.Enum)
 		default:
-			keyword, pos := m.keyword()
-			return nil, &Error{Pos: pos, Len: len(keyword), Msg: fmt.Sprintf("This %s is outside of any class.", keyword),
-				Hint: "Add \"class_name Name\" at the top of the file to make the whole file a class, or move this into an inline class: \"class Name { ... }\"."}
+			return nil, outsideClass(m)
 		}
 	}
 	return f, nil
+}
+
+// outsideClass returns the error for member m outside of any class.
+func outsideClass(m *Member) *Error {
+	keyword, pos := m.keyword()
+	hint := "Add \"class_name Name\" at the top of the file to make the whole file a class, or move this into an inline class: \"class Name { ... }\"."
+	if m.Code != nil {
+		hint = "Move this into a class. To put its code outside the class and the godot namespace, add @global: \"@global " + keyword + " { ... }\"."
+	}
+	return &Error{Pos: pos, Len: len(keyword), Msg: fmt.Sprintf("This %s is outside of any class.", keyword), Hint: hint}
 }
 
 // keyword returns the keyword that starts m, and its position.
@@ -110,5 +119,8 @@ func (m *Member) keyword() (string, lexer.Position) {
 	case m.NoImport != nil:
 		return "noimport", m.Pos
 	}
-	return "decl", m.Pos
+	if !m.Code.Decl {
+		return "impl", m.Code.Pos
+	}
+	return "decl", m.Code.Pos
 }

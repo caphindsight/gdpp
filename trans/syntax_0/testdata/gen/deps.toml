@@ -52,7 +52,7 @@ kind = "RefCounted"
 
 [[dep]]
 name = "Level"
-include = '"level.h"'
+include = '"Level.h"'
 kind = "Enum"
 gdpp = true
 values = [
@@ -62,31 +62,31 @@ values = [
 
 [[dep]]
 name = "Road"
-include = '"road.h"'
+include = '"Road.h"'
 kind = "Extern"
 gdpp = true
 
 [[dep]]
 name = "Settings"
-include = '"settings.h"'
+include = '"Settings.h"'
 kind = "RefCountedExtern"
 gdpp = true
 
 [[dep]]
 name = "Door"
-include = '"door.h"'
+include = '"Door.h"'
 kind = "Object"
 gdpp = true
 
 [[dep]]
 name = "Key"
-include = '"key.h"'
+include = '"Key.h"'
 kind = "RefCounted"
 gdpp = true
 
 [[dep]]
 name = "Wall"
-include = '"wall.h"'
+include = '"Wall.h"'
 kind = "Object"
 gdpp = true
 

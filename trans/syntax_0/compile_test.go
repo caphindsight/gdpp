@@ -9,13 +9,13 @@ import (
 
 // stubs stand in for the headers generated from the other GD++ files that testdata/gen/deps.toml names.
 var stubs = map[string]string{
-	"door.h":  "class Door : public Node {\n\tGDCLASS(Door, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
-	"key.h":   "class Key : public RefCounted {\n\tGDCLASS(Key, RefCounted)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
-	"wall.h":  "class Wall : public Node {\n\tGDCLASS(Wall, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
-	"level.h": "enum class Level : int64_t {\n\tEASY = 0,\n\tHARD = 5,\n};\n",
-	"road.h": "class Road {\npublic:\n\tusing Base = Node;\n\tstatic constexpr const char *gdpp_name = \"Road\";\n" +
+	"Door.h":  "class Door : public Node {\n\tGDCLASS(Door, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Key.h":   "class Key : public RefCounted {\n\tGDCLASS(Key, RefCounted)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Wall.h":  "class Wall : public Node {\n\tGDCLASS(Wall, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Level.h": "enum class Level : int64_t {\n\tEASY = 0,\n\tHARD = 5,\n};\n",
+	"Road.h": "class Road {\npublic:\n\tusing Base = Node;\n\tstatic constexpr const char *gdpp_name = \"Road\";\n" +
 		"\texplicit Road(Base *p_object) {}\n};\n",
-	"settings.h": "class Settings {\npublic:\n\tusing Base = Resource;\n\tstatic constexpr const char *gdpp_name = \"Settings\";\n" +
+	"Settings.h": "class Settings {\npublic:\n\tusing Base = Resource;\n\tstatic constexpr const char *gdpp_name = \"Settings\";\n" +
 		"\texplicit Settings(Base *p_object) {}\n};\n",
 }
 
@@ -37,17 +37,18 @@ func TestCompile(t *testing.T) {
 		text = "#pragma once\n\n#include <gd++/syntax_0.hpp>\n\nnamespace godot {\n\n" + text + "\n} // namespace godot\n"
 		os.WriteFile(filepath.Join(include, name), []byte(text), 0o644)
 	}
-	sources, _ := filepath.Glob("testdata/gen/*/input.cpp")
-	for _, source := range sources {
-		dir := filepath.Dir(source)
+	// Headers too, since those of externs and enums have no source that includes them.
+	files, _ := filepath.Glob("testdata/gen/*/*.[ch]*")
+	for _, file := range files {
+		dir := filepath.Dir(file)
 		if filepath.Base(dir) == "tutorial" {
 			continue // The tutorial's C++ is illustrative, e.g. it uses my_value, which it never declares.
 		}
-		t.Run(filepath.Base(dir), func(t *testing.T) {
-			args := []string{"-std=c++20", "-fsyntax-only", "-I", dir, "-I", include,
-				"-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"), "-I", filepath.Join(root, "gdextension"), source}
+		t.Run(filepath.Base(dir)+"/"+filepath.Base(file), func(t *testing.T) {
+			args := []string{"-std=c++20", "-fsyntax-only", "-Wno-pragma-once-outside-header", "-I", dir, "-I", include,
+				"-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"), "-I", filepath.Join(root, "gdextension"), "-x", "c++", file}
 			if out, err := exec.Command(cxx, args...).CombinedOutput(); err != nil {
-				t.Errorf("%s failed to compile:\n%s", source, out)
+				t.Errorf("%s failed to compile:\n%s", file, out)
 			}
 		})
 	}

@@ -10,7 +10,6 @@ import "github.com/alecthomas/participle/v2/lexer"
 // Inline classes and externs are always listed in File, even when they appear after class_name.
 type File struct {
 	Pos           lexer.Position
-	Code          []*Code   // decl and impl blocks outside any class: before class_name, or in a file without one.
 	FileClass     *Class    // Declared with class_name.
 	InlineClasses []*Class  // Declared with class Name { ... }.
 	FileExtern    *Extern   // Declared with extern_name.
@@ -33,12 +32,13 @@ type Member struct {
 	NoImport *Type   `parser:"| 'noimport' @@ )"`
 }
 
-// Code is an embedded C++ block: decl, impl or decl impl.
+// Code is an embedded C++ block: decl, impl or decl impl. It takes annotations, but no doc comment.
 type Code struct {
-	Pos  lexer.Position
-	Decl bool   `parser:"( @'decl'"`
-	Impl bool   `parser:"  @'impl'? | @'impl' )"`
-	Body *Block `parser:"@@"`
+	Pos         lexer.Position
+	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
+	Decl        bool          `parser:"( @'decl'"`
+	Impl        bool          `parser:"  @'impl'? | @'impl' )"`
+	Body        *Block        `parser:"@@"`
 }
 
 // Class is a class, declared with class_name (the rest of the file) or inline with class Name { ... }.

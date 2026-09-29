@@ -153,9 +153,9 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 }
 
 // transpilePackage transpiles the package's GD++ files into the build cache's
-// gdpp directory: a header and a source per file, the runtime header, and with
-// docs, each class's XML documentation. Files that nothing generates any more are deleted. Returns
-// the classes the files declare.
+// gdpp directory: a header per class, extern and enum, a source per class, the
+// runtime header, and with docs, each class's XML documentation. Files that
+// nothing generates any more are deleted. Returns the classes the files declare.
 func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs bool) []gdppClass {
 	dir := pkg.BuildCache.Cd(gdppDirName)
 	s := Silence()
@@ -198,15 +198,20 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 		for _, g := range files {
 			for _, d := range g.Decls {
 				if g.Rel != f.Rel {
-					deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + g.Rel + `.h"`, Kind: kinds[d.Name], Values: d.Values, Gdpp: true})
+					deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Gdpp: true})
 				}
 			}
 		}
 		// #line names the GD++ file relative to the build cache, where SCons runs, like it names C++ sources.
-		opts := trans.Options{Dependencies: deps, SourceName: "../" + f.Rel, HeaderName: f.Rel + ".h", CodeName: f.Rel + ".cpp"}
+		opts := trans.Options{Dependencies: deps, SourceName: "../" + f.Rel}
 		name := f.File.ToString()
-		write(f.Rel+".h", check(trans.GenerateHeader(name, f.Src, opts, syntax)))
-		write(f.Rel+".cpp", check(trans.GenerateSource(name, f.Src, opts, syntax)))
+		generated, err := trans.Generate(name, f.Src, opts, syntax)
+		if err != nil {
+			FailWithText(err)
+		}
+		for _, gen := range generated {
+			write(gen.Name, gen.Text)
+		}
 		for _, d := range f.Decls {
 			if docs && d.Kind == trans.ClassDecl {
 				write("doc_classes/"+d.Name+".xml", check(trans.DocumentClass(name, f.Src, d.Name, opts, syntax)))

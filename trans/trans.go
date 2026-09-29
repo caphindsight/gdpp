@@ -13,6 +13,7 @@ type (
 	DeclKind    = meta.DeclKind
 	Dependency  = meta.Dependency
 	EnumValue   = meta.EnumValue
+	File        = meta.File
 	Kind        = meta.Kind
 	Options     = meta.Options
 )
@@ -31,16 +32,15 @@ const (
 
 // fork is what every syntax fork provides.
 type fork struct {
-	listClasses    func(filename, src string) ([]meta.Declaration, error)
-	documentClass  func(filename, src, class string, opts meta.Options) (string, error)
-	generateHeader func(filename, src string, opts meta.Options) (string, error)
-	generateSource func(filename, src string, opts meta.Options) (string, error)
-	runtimeName    string
-	runtimeText    string
+	listClasses   func(filename, src string) ([]meta.Declaration, error)
+	documentClass func(filename, src, class string, opts meta.Options) (string, error)
+	generate      func(filename, src string, opts meta.Options) ([]meta.File, error)
+	runtimeName   string
+	runtimeText   string
 }
 
 var forks = map[int]fork{
-	0: {syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.GenerateHeader, syntax_0.GenerateSource,
+	0: {syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.Generate,
 		syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
 }
 
@@ -74,22 +74,13 @@ func DocumentClass(name, src, class string, opts Options, syntax int) (string, e
 	return f.documentClass(name, src, class, opts)
 }
 
-// GenerateHeader returns the C++ header for the GD++ file.
-func GenerateHeader(name, src string, opts Options, syntax int) (string, error) {
+// Generate returns the C++ files for the GD++ file, in the order of its declarations.
+func Generate(name, src string, opts Options, syntax int) ([]File, error) {
 	f, err := get(syntax)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return f.generateHeader(name, src, opts)
-}
-
-// GenerateSource returns the C++ source file for the GD++ file.
-func GenerateSource(name, src string, opts Options, syntax int) (string, error) {
-	f, err := get(syntax)
-	if err != nil {
-		return "", err
-	}
-	return f.generateSource(name, src, opts)
+	return f.generate(name, src, opts)
 }
 
 // RuntimeHeader returns the name (as generated headers include it) and contents of the header that every

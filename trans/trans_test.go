@@ -13,13 +13,10 @@ func TestDispatch(t *testing.T) {
 	if err != nil || len(decls) != 1 || decls[0].Name != "Player" || decls[0].Base != "Node" {
 		t.Errorf("ListClasses: %+v, %v", decls, err)
 	}
-	header, err := GenerateHeader(name, src, opts, 0)
-	if err != nil || !strings.Contains(header, "class Player : public Node {") {
-		t.Errorf("GenerateHeader: %v\n%s", err, header)
-	}
-	source, err := GenerateSource(name, src, opts, 0)
-	if err != nil || !strings.Contains(source, `#include "player.h"`) {
-		t.Errorf("GenerateSource: %v\n%s", err, source)
+	files, err := Generate(name, src, opts, 0)
+	if err != nil || len(files) != 2 || files[0].Name != "Player.h" || !strings.Contains(files[0].Text, "class Player : public Node {") ||
+		files[1].Name != "Player.cpp" || !strings.Contains(files[1].Text, `#include "Player.h"`) {
+		t.Errorf("Generate: %v\n%+v", err, files)
 	}
 	doc, err := DocumentClass(name, src, "Player", opts, 0)
 	if err != nil || !strings.Contains(doc, "A player.") {
@@ -35,7 +32,7 @@ func TestDispatch(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	if _, err := GenerateHeader("bad.gd++", "fun foo() {}\n", Options{}, 0); err == nil || !strings.Contains(err.Error(), `Did you mean "func"?`) {
+	if _, err := Generate("bad.gd++", "fun foo() {}\n", Options{}, 0); err == nil || !strings.Contains(err.Error(), `Did you mean "func"?`) {
 		t.Errorf("Expected a syntax error, but got %v.", err)
 	}
 	if _, err := ListClasses("bad.gd++", "", 7); err == nil || err.Error() != "Unsupported GD++ syntax 7." {

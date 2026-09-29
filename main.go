@@ -13,7 +13,7 @@ var Args struct {
 	Install  *CmdInstall `arg:"subcommand:install" help:"install the tools GD++ needs to build, e.g. SCons and a C++ compiler"`
 	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
 	Rm       *CmdRm      `arg:"subcommand:rm" help:"remove dependencies from the project cache, or packages from the project"`
-	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the result, to try out GD++"`
+	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the C++ it generates, to try out GD++"`
 	Vendor   *CmdVendor  `arg:"subcommand:vendor" help:"copy a dependency into or out of the project's cache"`
 	Quiet    bool        `arg:"-q,--quiet" help:"print fewer logs"`
 	Verbose  bool        `arg:"-v,--verbose" help:"print more logs"`

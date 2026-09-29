@@ -3,6 +3,8 @@ package syntax_0
 import (
 	_ "embed"
 	"fmt"
+	"maps"
+	"slices"
 
 	"gd++/trans/meta"
 )
@@ -24,22 +26,35 @@ func ListClasses(filename, src string) ([]meta.Declaration, error) {
 	return u.declarations()
 }
 
-// GenerateHeader returns the C++ header for the GD++ source src.
-func GenerateHeader(filename, src string, opts meta.Options) (string, error) {
+// Generate returns the C++ files for the GD++ source src, in the order of its declarations.
+func Generate(filename, src string, opts meta.Options) ([]meta.File, error) {
 	u, err := newUnit(filename, src, opts)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return u.header(), nil
+	var files []meta.File
+	for _, s := range u.sortedSymbols() {
+		d := u.only(s)
+		files = append(files, meta.File{Name: s.name + ".h", Text: d.header(s.name)})
+		if s.class != nil {
+			files = append(files, meta.File{Name: s.name + ".cpp", Text: d.source(s.name)})
+		}
+	}
+	return files, nil
 }
 
-// GenerateSource returns the C++ source file for the GD++ source src.
-func GenerateSource(filename, src string, opts meta.Options) (string, error) {
-	u, err := newUnit(filename, src, opts)
-	if err != nil {
-		return "", err
-	}
-	return u.source(), nil
+// only returns a copy of the unit that generates just the declaration s, as if the file's other declarations
+// were dependencies.
+func (u *unit) only(s *symbol) *unit {
+	d := *u
+	self := *s
+	self.include, self.gdpp = "", false // Not included by its own files.
+	d.symbols = maps.Clone(u.symbols)
+	d.symbols[s.name] = &self
+	d.enums = slices.DeleteFunc(slices.Clone(u.enums), func(e *symbol) bool { return e != s })
+	d.classes = slices.DeleteFunc(slices.Clone(u.classes), func(c *classModel) bool { return c.name != s.name })
+	d.externs = slices.DeleteFunc(slices.Clone(u.externs), func(e *externModel) bool { return e.name != s.name })
+	return &d
 }
 
 // DocumentClass returns the Godot XML documentation of the class named class in the GD++ source src.

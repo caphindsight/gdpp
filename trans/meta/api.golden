@@ -4,11 +4,13 @@ const RefCounted Kind = 2
 const Extern Kind = 3
 const RefCountedExtern Kind = 4
 const Enum Kind = 5
+const Other Kind = 6
 type Dependency struct
 field Dependency.Name string
 field Dependency.Include string
 field Dependency.Kind Kind
 field Dependency.Values []EnumValue
+field Dependency.Gdpp bool
 type EnumValue struct
 field EnumValue.Name string
 field EnumValue.Value int64
@@ -22,12 +24,11 @@ field Declaration.Name string
 field Declaration.Kind DeclKind
 field Declaration.Base string
 field Declaration.Values []EnumValue
+field Declaration.Icon string
+field Declaration.Tool bool
 type Options struct
 field Options.Dependencies []Dependency
 field Options.SourceName string
-field Options.HeaderName string
-field Options.CodeName string
-const Other Kind = 6
-field Declaration.Icon string
-field Declaration.Tool bool
-field Dependency.Gdpp bool
+type File struct
+field File.Name string
+field File.Text string

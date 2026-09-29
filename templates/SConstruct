@@ -39,9 +39,10 @@ else:
 {{- range .Sources}}
     sources.append(env.SharedObject(objects + "package/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], package_root + "/" + {{printf "%q" .}}))
 {{- end}}
-{{- range .GdppSources}}
-    sources.append(env.SharedObject(objects + "gdpp/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], "gdpp/" + {{printf "%q" .}}))
-{{- end}}
+
+    # The C++ that GD++ generates, a source per class.
+    for source in Glob("gdpp/*.cpp"):
+        sources.append(env.SharedObject(objects + "gdpp/" + source.name + env["SHOBJSUFFIX"], source))
 
     # Class documentation, which GD++ generates from doc comments, unless it's turned off.
     docs = Glob("gdpp/doc_classes/*.xml")

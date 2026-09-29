@@ -359,11 +359,12 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 	switch {
 	case (isDoc(p) || endsAnnotation(sig, j-1)) && isName && slices.Contains([]string{"decl", "impl", "ctor", "dtor", "import", "noimport"}, u.Value):
 		what := "an annotation"
-		if isDoc(p) {
+		if isDoc(p) || u.Value == "decl" || u.Value == "impl" { // These take annotations, so a doc comment is before them.
 			what = "a doc comment"
 		}
 		return fmt.Sprintf("Expected a declaration that can take %s, but found %s.", what, found),
-			"Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values."
+			"Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values. " +
+				"Only @global belongs to decl and impl blocks."
 
 	case isDoc(u):
 		return "This doc comment is not followed by a declaration.",

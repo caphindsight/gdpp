@@ -1,0 +1,38 @@
+File: @1:1
+  FileClass: @1:1
+    Name: C
+    Members:
+      - @3:1
+        Code: @4:1
+          Annotations:
+            - @3:1 global
+          Decl: true
+          Body: @4:6
+            TextPos: 4:7
+            Text: |
+
+                #include <vector>
+
+      - @8:1
+        Code: @8:9
+          Annotations:
+            - @8:1 global
+          Impl: true
+          Body: @8:14
+            TextPos: 8:15
+            Text: |
+
+                static int counter;
+
+      - @12:1
+        Code: @12:9
+          Annotations:
+            - @12:1 global
+          Decl: true
+          Impl: true
+          Body: @12:19
+            TextPos: 12:20
+            Text: |
+
+                #define FOO 1
+

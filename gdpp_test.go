@@ -115,17 +115,18 @@ func TestTranspilePackage(t *testing.T) {
 	for file := range gen {
 		files = append(files, file)
 	}
-	wantFiles := []string{"doc_classes/", "doc_classes/Hitbox.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml",
-		"gd++/", "gd++/syntax_0.hpp", "items/", "items/weapon.gdpp.cpp", "items/weapon.gdpp.h", "misc.gg.cpp", "misc.gg.h", "player.gd++.cpp", "player.gd++.h"}
+	wantFiles := []string{"Hitbox.cpp", "Hitbox.h", "Player.cpp", "Player.h", "Power.h", "Tiny.cpp", "Tiny.h", "Weapon.cpp", "Weapon.h",
+		"doc_classes/", "doc_classes/Hitbox.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml", "gd++/", "gd++/syntax_0.hpp"}
 	slices.Sort(files)
 	if !reflect.DeepEqual(files, wantFiles) {
 		t.Errorf("generated files = %q, want %q", files, wantFiles)
 	}
 	for file, wants := range map[string][]string{
-		"player.gd++.h": {`#include "items/weapon.gdpp.h"`, "#include <godot_cpp/classes/node3d.hpp>",
+		"Player.h": {`#include "Weapon.h"`, `#include "Power.h"`, "#include <godot_cpp/classes/node3d.hpp>",
 			"Ref<Weapon> weapon{};", "void hit(Power power);", `GDPP_ENUM_TAG(_gdpp_Player_Power, "Player.Power")`},
-		"player.gd++.cpp":        {`#include "player.gd++.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "../player.gd++"`},
-		"items/weapon.gdpp.h":    {`#include "player.gd++.h"`, "Player *owner{};", "enum class Power : int64_t {"},
+		"Player.cpp":             {`#include "Player.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "../player.gd++"`},
+		"Weapon.h":               {`#include "Player.h"`, "Player *owner{};"},
+		"Power.h":                {"enum class Power : int64_t {"},
 		"doc_classes/Player.xml": {"A player."},
 	} {
 		for _, want := range wants {
@@ -135,7 +136,7 @@ func TestTranspilePackage(t *testing.T) {
 		}
 	}
 	register := m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
-	for _, want := range []string{`#include "items/weapon.gdpp.h"`, `#include "player.gd++.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Hitbox>();",
+	for _, want := range []string{`#include "Hitbox.h"`, `#include "Player.h"`, `#include "Weapon.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Hitbox>();",
 		"gdpp_is_runtime_class = false || std::is_same_v<T, Hitbox> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
 		"if constexpr (gdpp_is_runtime_class<T>) {\n\t\tGDREGISTER_RUNTIME_CLASS(T);\n\t} else {\n\t\tGDREGISTER_CLASS(T);\n\t}"} {
 		if !strings.Contains(register, want) {
@@ -150,13 +151,13 @@ func TestTranspilePackage(t *testing.T) {
 	delete(m.nodes, pkgDir+"misc.gg")
 	transpileTestPackage(t, false)
 	gen = subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
-	for _, file := range []string{"misc.gg.h", "misc.gg.cpp", "doc_classes/", "doc_classes/Player.xml"} {
+	for _, file := range []string{"Tiny.h", "Tiny.cpp", "doc_classes/", "doc_classes/Player.xml"} {
 		if _, ok := gen[file]; ok {
 			t.Errorf("%s wasn't deleted.", file)
 		}
 	}
-	if _, ok := gen["player.gd++.h"]; !ok {
-		t.Error("player.gd++.h was deleted.")
+	if _, ok := gen["Player.h"]; !ok {
+		t.Error("Player.h was deleted.")
 	}
 }
 

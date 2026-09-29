@@ -2,7 +2,6 @@ package syntax_0
 
 import (
 	"fmt"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -19,10 +18,8 @@ type unit struct {
 	opts    meta.Options
 	symbols map[string]*symbol // Types that code can name, except built-ins.
 	enums   []*symbol          // Enum types declared in the file.
-	consts  []*Enum            // Integer constants outside classes.
 	classes []*classModel      // Bases first.
 	externs []*externModel
-	topCode []*Code // decl and impl blocks outside classes.
 }
 
 type classModel struct {
@@ -30,8 +27,9 @@ type classModel struct {
 	cls        *Class
 	base       string
 	refCounted bool
-	tool       bool // Whether its functions run in the editor too.
-	codes      []*Code
+	tool       bool    // Whether its functions run in the editor too.
+	codes      []*Code // decl and impl blocks inside the class.
+	globals    []*Code // @global decl and impl blocks, outside the class and namespace godot.
 	ctor, dtor *Block
 	funcs      []*funcModel
 	vars       []*varModel
@@ -111,7 +109,7 @@ func parseUnit(filename, src string) (*unit, error) {
 		if u.symbols[name] != nil {
 			return u.errorAt(pos, 0, fmt.Sprintf("The name %q is declared twice in this file.", name), "Class, extern and enum names must be unique in the package.")
 		}
-		s.name = name
+		s.name, s.include, s.gdpp = name, `"`+name+`.h"`, true
 		u.symbols[name] = s
 		return nil
 	}
@@ -146,11 +144,7 @@ func parseUnit(filename, src string) (*unit, error) {
 	}
 	for _, e := range enums {
 		if e.Value != nil {
-			if !slices.Contains(file.InlineEnums, e) {
-				continue // A class constant.
-			}
-			u.consts = append(u.consts, e)
-			continue
+			continue // A class constant.
 		}
 		s := &symbol{kind: meta.Enum, enum: e}
 		if err := declare(e.Pos, e.Name, s); err != nil {
@@ -222,7 +216,7 @@ func (u *unit) classIcon(c *Class) (string, error) {
 func (u *unit) sortedSymbols() []*symbol {
 	var syms []*symbol
 	for _, s := range u.symbols {
-		if s.class != nil || s.extern != nil || s.enum != nil {
+		if s.local() {
 			syms = append(syms, s)
 		}
 	}
@@ -253,23 +247,13 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 	if err != nil {
 		return nil, err
 	}
-	base := filepath.Base(filename)
-	for _, ext := range []string{".gd++", ".gdpp", ".gg"} {
-		base = strings.TrimSuffix(base, ext)
-	}
 	if opts.SourceName == "" {
 		opts.SourceName = filename
-	}
-	if opts.HeaderName == "" {
-		opts.HeaderName = base + ".h"
-	}
-	if opts.CodeName == "" {
-		opts.CodeName = base + ".cpp"
 	}
 	u.opts = opts
 	for _, d := range opts.Dependencies {
 		if s := u.symbols[d.Name]; s != nil {
-			if s.include != "" {
+			if !s.local() {
 				continue // A duplicate dependency.
 			}
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
@@ -278,13 +262,12 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 		u.symbols[d.Name] = &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, gdpp: d.Gdpp}
 	}
 	for _, s := range u.sortedSymbols() {
-		if s.include == "" && s.kind == 0 {
+		if s.kind == 0 {
 			if _, err := u.kindOf(s, nil); err != nil {
 				return nil, err
 			}
 		}
 	}
-	u.topCode = u.file.Code
 	if err := u.buildExterns(); err != nil {
 		return nil, err
 	}
@@ -344,7 +327,7 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 }
 
 var knownAnnotations = []string{"const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "icon", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "global", "icon", "onready",
 	"override", "rpc", "static", "tool", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -781,7 +764,14 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		var err error
 		switch {
 		case member.Code != nil:
-			m.codes = append(m.codes, member.Code)
+			keyword, _ := member.keyword()
+			var a map[string]*Annotation
+			a, err = u.annotations(member.Code.Annotations, "a "+keyword+" block", "global")
+			if a["global"] != nil {
+				m.globals = append(m.globals, member.Code)
+			} else {
+				m.codes = append(m.codes, member.Code)
+			}
 		case member.Ctor != nil && m.ctor != nil, member.Dtor != nil && m.dtor != nil:
 			keyword, pos := member.keyword()
 			return nil, u.errorAt(pos, len(keyword), fmt.Sprintf("Class %s has two %ss.", c.Name, keyword), "")

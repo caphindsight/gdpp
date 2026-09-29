@@ -1,3 +1,0 @@
-decl { #include <map> }
-class A {}
-impl { int a; }

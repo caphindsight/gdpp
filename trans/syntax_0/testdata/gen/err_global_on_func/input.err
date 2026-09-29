@@ -1,0 +1,3 @@
+input.gd++:4:1: Annotation @global can't be used on a func.
+ 4 | @global
+   | ^^^^^^^

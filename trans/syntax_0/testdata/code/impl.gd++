@@ -1,3 +1,5 @@
+class_name C
+
 impl {
   void This::helper() {
     gd::print("hi");

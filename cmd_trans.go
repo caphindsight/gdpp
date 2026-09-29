@@ -11,28 +11,23 @@ import (
 	"gd++/trans"
 )
 
-// CmdTrans transpiles a GD++ file and prints the result: by default what the
-// file declares, or its C++ header or source, or a class's XML documentation.
-// Dependencies come from flags, so it needs no project or package, except
-// that --spec takes Godot's classes from the project's cache. It's for trying
-// out GD++, not for builds.
+// CmdTrans transpiles a GD++ file and prints the C++ files it generates, each
+// after a line naming it. Dependencies come from flags, so it needs no project
+// or package, except that --spec takes Godot's classes from the project's
+// cache. It's for trying out GD++, not for builds.
 type CmdTrans struct {
 	File             string   `arg:"positional" help:"the GD++ file to transpile"`
-	Header           bool     `arg:"-H,--header" help:"print the C++ header"`
-	Source           bool     `arg:"-S,--source" help:"print the C++ source"`
-	Doc              string   `arg:"-D,--doc" placeholder:"CLASS" help:"print the XML documentation of this class"`
 	Runtime          bool     `arg:"--runtime" help:"print the runtime header that all generated C++ includes, without a file"`
 	Syntax           int      `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: 0]"`
 	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes from this Godot API spec in the project's cache"`
 	Object           []string `arg:"--object,separate" placeholder:"NAME[=INCLUDE]" help:"a class that isn't refcounted; the include defaults to godot-cpp's header"`
 	RefCounted       []string `arg:"--refcounted,separate" placeholder:"NAME[=INCLUDE]" help:"a refcounted class; the include defaults to godot-cpp's header"`
-	Extern           []string `arg:"--extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base isn't refcounted [default include: \"snake_name.h\"]"`
-	RefCountedExtern []string `arg:"--refcounted-extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base is refcounted [default include: \"snake_name.h\"]"`
-	Enum             []string `arg:"--enum,separate" placeholder:"NAME[=INCLUDE][:VALUES]" help:"an enum of another GD++ file, with its values, e.g. Suit:HEARTS,SPADES=5 [default include: \"snake_name.h\"]"`
+	Extern           []string `arg:"--extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base isn't refcounted [default include: \"NAME.h\"]"`
+	RefCountedExtern []string `arg:"--refcounted-extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base is refcounted [default include: \"NAME.h\"]"`
+	Enum             []string `arg:"--enum,separate" placeholder:"NAME[=INCLUDE][:VALUES]" help:"an enum of another GD++ file, with its values, e.g. Suit:HEARTS,SPADES=5 [default include: \"NAME.h\"]"`
 }
 
 func (c *CmdTrans) Run() {
-	Assert(countTrue(c.Header, c.Source, c.Doc != "", c.Runtime) <= 1, "Invalid arguments: -H/--header, -S/--source, -D/--doc and --runtime cannot be used together.")
 	if c.Runtime {
 		Assert(c.File == "", "Invalid arguments: --runtime cannot be used with a file.")
 		_, text, err := trans.RuntimeHeader(c.Syntax)
@@ -43,29 +38,21 @@ func (c *CmdTrans) Run() {
 	Assert(c.File != "", "Invalid arguments: missing the GD++ file.")
 	file := ParsePath(c.File)
 	Assert(file.IsFile(), "There is no file at %s.", file.ToString())
-	src := file.ReadString()
-	opts := trans.Options{Dependencies: c.dependencies()}
-	var text string
-	var err error
-	switch {
-	case c.Header:
-		text, err = trans.GenerateHeader(c.File, src, opts, c.Syntax)
-	case c.Source:
-		text, err = trans.GenerateSource(c.File, src, opts, c.Syntax)
-	case c.Doc != "":
-		text, err = trans.DocumentClass(c.File, src, c.Doc, opts, c.Syntax)
-	default:
-		var decls []trans.Declaration
-		decls, err = trans.ListClasses(c.File, src, c.Syntax)
-		text = transDeclarations(decls)
-		if err == nil && len(decls) == 0 {
-			LogInfo("The file declares no classes, externs or enums.")
-		}
-	}
+	files, err := trans.Generate(c.File, file.ReadString(), trans.Options{Dependencies: c.dependencies()}, c.Syntax)
 	if err != nil {
 		FailWithText(err)
 	}
-	PrintResult(text)
+	if len(files) == 0 {
+		LogInfo("The file declares no classes, externs or enums.")
+	}
+	var text strings.Builder
+	for i, f := range files {
+		if i > 0 {
+			text.WriteString("\n")
+		}
+		text.WriteString(Styled("// ==== "+f.Name+" ====", Gray) + "\n\n" + f.Text)
+	}
+	PrintResult(text.String())
 }
 
 // dependencies returns the dependencies from the flags, then from --spec.
@@ -130,7 +117,7 @@ func parseTransDep(s string, kind trans.Kind) (trans.Dependency, error) {
 	case !hasInclude && (kind == trans.Object || kind == trans.RefCounted):
 		dep.Include = godotCppInclude(name)
 	case !hasInclude:
-		dep.Include = `"` + snakeCase(name) + `.h"`
+		dep.Include = `"` + name + `.h"`
 	case !strings.HasPrefix(include, "<") && !strings.HasPrefix(include, `"`):
 		dep.Include = `"` + include + `"`
 	}
@@ -172,24 +159,4 @@ func snakeCase(name string) string {
 // godotCppInclude returns the include of godot-cpp's header of a Godot class.
 func godotCppInclude(name string) string {
 	return "<godot_cpp/classes/" + snakeCase(name) + ".hpp>"
-}
-
-// transDeclarations renders what a GD++ file declares, one declaration per
-// line, e.g. "class  Player  extends Node3D".
-func transDeclarations(decls []trans.Declaration) string {
-	var rows [][]string
-	for _, d := range decls {
-		switch d.Kind {
-		case trans.ClassDecl, trans.ExternDecl:
-			kind := map[trans.DeclKind]string{trans.ClassDecl: "class", trans.ExternDecl: "extern"}[d.Kind]
-			rows = append(rows, []string{Styled(kind, Gray), Styled(d.Name, Bold, Cyan), Styled("extends", Gray) + " " + d.Base})
-		default:
-			var values []string
-			for _, v := range d.Values {
-				values = append(values, fmt.Sprintf("%s = %d", v.Name, v.Value))
-			}
-			rows = append(rows, []string{Styled("enum", Gray), Styled(d.Name, Bold, Cyan), strings.Join(values, ", ")})
-		}
-	}
-	return AlignColumns(rows, "")
 }

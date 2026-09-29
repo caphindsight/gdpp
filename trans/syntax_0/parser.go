@@ -105,7 +105,7 @@ func liftDoc(node any, sig []lexer.Token) *Error {
 func moveToKeyword(node any, sig []lexer.Token) {
 	v := reflect.ValueOf(node).Elem()
 	doc, annotations := v.FieldByName("Doc"), v.FieldByName("Annotations")
-	if !annotations.IsValid() || doc.IsNil() && annotations.Len() == 0 {
+	if !annotations.IsValid() || (!doc.IsValid() || doc.IsNil()) && annotations.Len() == 0 {
 		return
 	}
 	pos := v.FieldByName("Pos").Addr().Interface().(*lexer.Position)

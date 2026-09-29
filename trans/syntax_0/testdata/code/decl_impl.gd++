@@ -1,3 +1,5 @@
+class_name C
+
 decl impl {
   #define FOO 42
 }

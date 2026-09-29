@@ -24,12 +24,17 @@ var builtins = map[string]string{
 type symbol struct {
 	name    string
 	kind    meta.Kind
-	include string // Empty for declarations in the file.
-	gdpp    bool   // For dependencies declared in other GD++ files.
+	include string // What follows #include. Declarations in the file are in "<Name>.h".
+	gdpp    bool   // Whether a GD++ file declares it: this one or another.
 	values  []meta.EnumValue
 	class   *Class  // Set for classes in the file.
 	extern  *Extern // Set for externs in the file.
 	enum    *Enum   // Set for enums in the file.
+}
+
+// local reports whether the file declares s.
+func (s *symbol) local() bool {
+	return s.class != nil || s.extern != nil || s.enum != nil
 }
 
 // gtype is a resolved GD++ type.

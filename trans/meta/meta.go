@@ -30,7 +30,7 @@ const (
 // Stable: additive changes only.
 type Dependency struct {
 	Name    string      // E.g. "Node3D".
-	Include string      // What follows #include, e.g. `<godot_cpp/classes/node3d.hpp>` or `"terrain.h"`.
+	Include string      // What follows #include, e.g. `<godot_cpp/classes/node3d.hpp>`, or `"Terrain.h"` for GD++ declarations.
 	Kind    Kind        //
 	Values  []EnumValue // For Kind Enum: its values, so classes using the enum can expose a copy.
 	Gdpp    bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
@@ -67,6 +67,11 @@ type Declaration struct {
 type Options struct {
 	Dependencies []Dependency //
 	SourceName   string       // How #line names the GD++ file. Default: its path.
-	HeaderName   string       // How the source includes the header, and how #line names it. Default: <name>.h.
-	CodeName     string       // How #line names the generated source. Default: <name>.cpp.
+}
+
+// File is a generated C++ file. Each declaration of a GD++ file gets a header, named "<Name>.h", and each class
+// also a source, named "<Name>.cpp". Stable: additive changes only.
+type File struct {
+	Name string //
+	Text string //
 }

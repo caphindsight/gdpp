@@ -1,15 +1,17 @@
-decl {
-  #include <vector>
-}
-impl {
-  static int counter = 0;
-}
-decl impl {
-  #define LIMIT 10
-}
-
 class_name Player
 extends Node
+
+@global decl {
+  #include <vector>
+}
+
+@global impl {
+  static int counter = 0;
+}
+
+@global decl impl {
+  #define LIMIT 10
+}
 
 decl {
   std::vector<int> scores_;

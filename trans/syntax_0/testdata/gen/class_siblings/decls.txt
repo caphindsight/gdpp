@@ -1,0 +1,5 @@
+{Name:A Kind:1 Base:Node Values:[] Icon: Tool:false}
+{Name:B Kind:1 Base:A Values:[] Icon: Tool:false}
+{Name:C Kind:1 Base:RefCounted Values:[] Icon: Tool:false}
+{Name:Suit Kind:3 Base: Values:[{Name:HEARTS Value:0 Doc:} {Name:SPADES Value:1 Doc:}] Icon: Tool:false}
+{Name:Far Kind:2 Base:Node Values:[] Icon: Tool:false}
