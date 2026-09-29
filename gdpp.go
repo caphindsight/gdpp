@@ -76,7 +76,7 @@ func gdppClasses(files []gdppFile) []gdppClass {
 
 // godotNamesVersion is the version of the names cache's format and of the
 // scanner that fills it. Bump it when either changes, to rescan.
-const godotNamesVersion = 2
+const godotNamesVersion = 3
 
 // godotNamesCache is a names cache: the names that godot-cpp declares.
 type godotNamesCache struct {
@@ -107,14 +107,57 @@ func loadGodotNames(pkg Package, generateBindings func()) []godotName {
 	generateBindings()
 	s := Silence()
 	t := LogTask("Scanning bindings for %s...", styledPackageName(pkg.Root))
-	names := scanGodotNames([]Path{
-		pkg.BuildCache.Cd("godot-cpp/include"),
-		pkg.BuildCache.Cd("build/godot-cpp/gen/include"),
-	})
+	names := scanGodotNames(bindingRoots(pkg))
 	file.WriteString(encodeToml(godotNamesCache{godotNamesVersion, names}))
 	t.Done()
 	s.End()
 	return names
+}
+
+// bindingRoots returns the directories of godot-cpp's headers in the
+// package's build cache: the hand-written ones, then the generated ones.
+func bindingRoots(pkg Package) []Path {
+	return []Path{pkg.BuildCache.Cd("godot-cpp/include"), pkg.BuildCache.Cd("build/godot-cpp/gen/include")}
+}
+
+// bindingNames returns the names that the package's godot-cpp declares, like
+// loadGodotNames, generating the bindings with SCons arguments bindArgs.
+func bindingNames(pkg Package, bindArgs []string) []godotName {
+	return loadGodotNames(pkg, func() {
+		assertScons()
+		s := Silence()
+		Exec("Compiling bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(bindArgs, "--gdpp-bindings")...)
+		s.End()
+	})
+}
+
+// packageGodotNames returns the names that the package's godot-cpp declares,
+// after syncing its build cache. Bindings are generated like a default build
+// for this machine does, if needed.
+func packageGodotNames(p Project, pkg Package) []godotName {
+	generateBuildCache(p, pkg)
+	return bindingNames(pkg, BuildOptions{}.sconsArgs(hostPlatform+"."+hostArch))
+}
+
+// packageDeps returns the dependencies of the package's GD++ file whose path
+// relative to the package root is self: names, e.g. godot-cpp's, then what the
+// package's other GD++ files declare.
+func packageDeps(files []gdppFile, names []godotName, self string) []trans.Dependency {
+	godot := map[string]godotName{}
+	var deps []trans.Dependency
+	for _, n := range names {
+		godot[n.Name] = n
+		deps = append(deps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind})
+	}
+	kinds := gdppKinds(files, godot)
+	for _, f := range files {
+		for _, d := range f.Decls {
+			if f.Rel != self {
+				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Gdpp: true})
+			}
+		}
+	}
+	return deps
 }
 
 // gdppKinds returns the kinds of the declarations in files, following the
@@ -172,14 +215,6 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 			owner[d.Name] = f
 		}
 	}
-	godot := map[string]godotName{}
-	var godotDeps []trans.Dependency
-	for _, n := range names {
-		godot[n.Name] = n
-		godotDeps = append(godotDeps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind})
-	}
-	kinds := gdppKinds(files, godot)
-
 	written := map[string]bool{}
 	write := func(rel, text string) {
 		written[rel] = true
@@ -194,16 +229,8 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 		return text
 	}
 	for _, f := range files {
-		deps := slices.Clone(godotDeps)
-		for _, g := range files {
-			for _, d := range g.Decls {
-				if g.Rel != f.Rel {
-					deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Gdpp: true})
-				}
-			}
-		}
 		// #line names the GD++ file relative to the build cache, where SCons runs, like it names C++ sources.
-		opts := trans.Options{Dependencies: deps, SourceName: "../" + f.Rel}
+		opts := trans.Options{Dependencies: packageDeps(files, names, f.Rel), SourceName: "../" + f.Rel}
 		name := f.File.ToString()
 		generated, err := trans.Generate(name, f.Src, opts, syntax)
 		if err != nil {

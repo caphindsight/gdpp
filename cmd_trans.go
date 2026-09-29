@@ -12,14 +12,18 @@ import (
 )
 
 // CmdTrans transpiles a GD++ file and prints the C++ files it generates, each
-// after a line naming it. Dependencies come from flags, so it needs no project
-// or package, except that --spec takes Godot's classes from the project's
-// cache. It's for trying out GD++, not for builds.
+// after a line naming it. It's for trying out GD++, not for builds. In a
+// package, the file's dependencies are the package's other GD++ files and
+// Godot's classes from the package's spec and bindings, like in a build.
+// Outside of one, they come from flags only. Either way, flags add
+// dependencies, and --spec takes Godot's classes from a spec in the project's
+// cache instead.
 type CmdTrans struct {
 	File             string   `arg:"positional" help:"the GD++ file to transpile"`
 	Runtime          bool     `arg:"--runtime" help:"print the runtime header that all generated C++ includes, without a file"`
-	Syntax           int      `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: 0]"`
-	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes from this Godot API spec in the project's cache"`
+	Syntax           *int     `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: the package's, or else 0]"`
+	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes from this Godot API spec in the project's cache, instead of the package's"`
+	NoSpec           bool     `arg:"--nospec" help:"don't take Godot's classes from the package's spec"`
 	Object           []string `arg:"--object,separate" placeholder:"NAME[=INCLUDE]" help:"a class that isn't refcounted; the include defaults to godot-cpp's header"`
 	RefCounted       []string `arg:"--refcounted,separate" placeholder:"NAME[=INCLUDE]" help:"a refcounted class; the include defaults to godot-cpp's header"`
 	Extern           []string `arg:"--extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base isn't refcounted [default include: \"NAME.h\"]"`
@@ -28,25 +32,48 @@ type CmdTrans struct {
 }
 
 func (c *CmdTrans) Run() {
+	syntax := 0
+	if c.Syntax != nil {
+		syntax = *c.Syntax
+	}
 	if c.Runtime {
 		Assert(c.File == "", "Invalid arguments: --runtime cannot be used with a file.")
-		_, text, err := trans.RuntimeHeader(c.Syntax)
+		_, text, err := trans.RuntimeHeader(syntax)
 		Check(err, "Failed to print the runtime header")
 		PrintResult(text)
 		return
 	}
 	Assert(c.File != "", "Invalid arguments: missing the GD++ file.")
+	Assert(c.Spec == "" || !c.NoSpec, "Invalid arguments: --spec and --nospec cannot be used together.")
 	file := ParsePath(c.File)
 	Assert(file.IsFile(), "There is no file at %s.", file.ToString())
-	files, err := trans.Generate(c.File, file.ReadString(), trans.Options{Dependencies: c.dependencies()}, c.Syntax)
+	var files []gdppFile
+	var names []godotName
+	self := ""
+	if root, ok := GetPackageRootMaybe(file); ok {
+		p, pkg := LoadProject(root), LoadPackage(root)
+		files, self = listGdppFiles(p, pkg), relPath(root, file)
+		if c.Syntax == nil {
+			syntax = pkg.Config.Syntax
+		}
+		if c.Spec == "" && !c.NoSpec {
+			names = packageGodotNames(p, pkg)
+		}
+	}
+	if c.Spec != "" {
+		names = specNames(c.Spec)
+	}
+	// Flags come first, so they win over other dependencies of the same name.
+	deps := append(c.flagDependencies(), packageDeps(files, names, self)...)
+	generated, err := trans.Generate(c.File, file.ReadString(), trans.Options{Dependencies: deps}, syntax)
 	if err != nil {
 		FailWithText(err)
 	}
-	if len(files) == 0 {
+	if len(generated) == 0 {
 		LogInfo("The file declares no classes, externs or enums.")
 	}
 	var text strings.Builder
-	for i, f := range files {
+	for i, f := range generated {
 		if i > 0 {
 			text.WriteString("\n")
 		}
@@ -55,9 +82,8 @@ func (c *CmdTrans) Run() {
 	PrintResult(text.String())
 }
 
-// dependencies returns the dependencies from the flags, then from --spec.
-// Flags come first, so they win over the spec's classes of the same name.
-func (c *CmdTrans) dependencies() []trans.Dependency {
+// flagDependencies returns the dependencies from the flags.
+func (c *CmdTrans) flagDependencies() []trans.Dependency {
 	var deps []trans.Dependency
 	for _, flag := range []struct {
 		name   string
@@ -76,12 +102,15 @@ func (c *CmdTrans) dependencies() []trans.Dependency {
 			deps = append(deps, dep)
 		}
 	}
-	if c.Spec == "" {
-		return deps
-	}
+	return deps
+}
+
+// specNames returns Godot's classes in the API spec named name in the
+// project's cache.
+func specNames(name string) []godotName {
 	cache := LoadProject(Cwd()).Caches[slices.IndexFunc(depKinds, func(k DepKind) bool { return k.Name == "spec" })]
-	Assert(cache.Has(c.Spec), "Missing %s %s, run `gd++ fetch --spec %s` to fetch it.", cache.Desc, c.Spec, c.Spec)
-	spec := cache.GetPath(c.Spec).Cd("extension_api.json")
+	Assert(cache.Has(name), "Missing %s %s, run `gd++ fetch --spec %s` to fetch it.", cache.Desc, name, name)
+	spec := cache.GetPath(name).Cd("extension_api.json")
 	var api struct {
 		Classes []struct {
 			Name         string `json:"name"`
@@ -90,14 +119,15 @@ func (c *CmdTrans) dependencies() []trans.Dependency {
 	}
 	Check(json.Unmarshal([]byte(spec.ReadString()), &api), "Failed to parse %s", spec.ToString())
 	Assert(len(api.Classes) > 0, "Failed to find Godot's classes in %s.", spec.ToString())
+	var names []godotName
 	for _, class := range api.Classes {
 		kind := trans.Object
 		if class.IsRefcounted {
 			kind = trans.RefCounted
 		}
-		deps = append(deps, trans.Dependency{Name: class.Name, Include: godotCppInclude(class.Name), Kind: kind})
+		names = append(names, godotName{Name: class.Name, Include: godotCppInclude(class.Name), Kind: kind})
 	}
-	return deps
+	return names
 }
 
 // parseTransDep parses a dependency flag's value: NAME[=INCLUDE], plus

@@ -7,13 +7,14 @@ var Args struct {
 	Build    *CmdBuild   `arg:"subcommand:build" help:"compile a package into a GDExtension library"`
 	CheckIn  *CmdCheckIn `arg:"subcommand:checkin" help:"check in dependencies from the ephemeral cache, or undo it"`
 	Clean    *CmdClean   `arg:"subcommand:clean" help:"delete the build caches of packages"`
+	Doc      *CmdDoc     `arg:"subcommand:doc" help:"show the declaration and members of a godot-cpp class or function"`
 	Fetch    *CmdFetch   `arg:"subcommand:fetch" help:"download dependencies from a repository, or list them"`
 	Fix      *CmdFix     `arg:"subcommand:fix" help:"tidy up the project, e.g. delete leftover temporary files"`
 	Init     *CmdInit    `arg:"subcommand:init" help:"set up the project, or create or update a package"`
 	Install  *CmdInstall `arg:"subcommand:install" help:"install the tools GD++ needs to build, e.g. SCons and a C++ compiler"`
 	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
 	Rm       *CmdRm      `arg:"subcommand:rm" help:"remove dependencies from the project cache, or packages from the project"`
-	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the C++ it generates, to try out GD++"`
+	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the C++ it generates, to try out GD++; in a package, with its dependencies"`
 	Vendor   *CmdVendor  `arg:"subcommand:vendor" help:"copy a dependency into or out of the project's cache"`
 	Quiet    bool        `arg:"-q,--quiet" help:"print fewer logs"`
 	Verbose  bool        `arg:"-v,--verbose" help:"print more logs"`
@@ -52,6 +53,8 @@ func main() {
 		Args.CheckIn.Run()
 	case Args.Clean != nil:
 		Args.Clean.Run()
+	case Args.Doc != nil:
+		Args.Doc.Run()
 	case Args.Fetch != nil:
 		Args.Fetch.Run()
 	case Args.Fix != nil:

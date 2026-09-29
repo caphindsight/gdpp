@@ -165,12 +165,7 @@ func preparePackage(p Project, pkg Package, bindArgs []string, docs bool) ([]gdp
 	if len(files) == 0 {
 		return nil, nil
 	}
-	names := loadGodotNames(pkg, func() {
-		s := Silence()
-		Exec("Compiling bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(bindArgs, "--gdpp-bindings")...)
-		s.End()
-	})
-	return files, transpilePackage(pkg, files, names, docs)
+	return files, transpilePackage(pkg, files, bindingNames(pkg, bindArgs), docs)
 }
 
 // buildExtension compiles the package into GDExtension libraries for

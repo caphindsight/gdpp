@@ -69,6 +69,17 @@ constexpr int LIMIT_VALUE = 3;
 int table[4] = { 1, 2, 3, 4 };
 void Node3D::method() {}
 bool operator==(const Point &a, const Point &b);
+#if GODOT_VERSION_MINOR >= 4
+void branch(int a) {
+#elif FOO
+#if BAR
+void nested() {
+#endif
+void branch(float a) {
+#else
+void branch() {
+#endif
+}
 
 } // namespace godot
 
@@ -93,12 +104,124 @@ typedef struct { int x; } CStruct;
 		}
 	}
 	want := []string{"Point", "Node3D", "RefCounted", "Ref", "Bits", "Error", "Side", "Callback", "Int64", "Handler",
-		"Math", "internal", "print_line", "print_verbose", "counter", "LIMIT_VALUE", "table"}
+		"Math", "internal", "print_line", "print_verbose", "counter", "LIMIT_VALUE", "table", "branch"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("names = %q, want %q", got, want)
 	}
 	if want := map[string]string{"Node3D": "Node", "RefCounted": "Object"}; !reflect.DeepEqual(bases, want) {
 		t.Errorf("bases = %v, want %v", bases, want)
+	}
+}
+
+func TestScanCppDocs(t *testing.T) {
+	src := `/* License. */
+#pragma once
+#define MAKE_TYPED(m_type) template <> class Typed<m_type> {};
+
+namespace godot {
+
+class Object;
+
+// Unrelated.
+
+// An array of T.
+// Really.
+template <typename T>
+class GDE_EXPORT Typed : public Array {
+	GDCLASS(Typed, Array)
+	CLASSDB_FORWARD_METHODS;
+	int hidden;
+	friend class Other;
+	friend bool operator==(const Typed &a, const Typed &b) { return true; }
+
+public:
+	enum Mode : int64_t { A = 1, B };
+	struct Inner { int x; };
+	class Later;
+	static const int LIMIT = 4;
+	int count{3};
+	using Base = Array;
+
+	// Assigns an array.
+	_FORCE_INLINE_ void operator=(const Array &p_array) {
+		set(p_array);
+	}
+	_FORCE_INLINE_ Typed(const Variant &p_variant) :
+			Typed(Array(p_variant)), extra{1} {
+	}
+	Typed() = default;
+	T *operator->() const { return nullptr; }
+	operator Variant() const;
+	Variant operator()(int a) const;
+	template <typename U>
+	static _FORCE_INLINE_ U get(const Variant &p_default = Variant::NIL, T p_items[] = {});
+#if GODOT_VERSION_MINOR >= 4
+	void grow(int64_t p_size) {
+#else
+	void grow() {
+#endif
+	}
+
+protected:
+	void _bind();
+};
+MAKE_TYPED(int64_t)
+
+struct Point {
+	int x = 0;
+private:
+	int y;
+};
+
+enum Side {
+	// The left.
+	LEFT = 1 << 0,
+	RIGHT = MAKE(2, 3),
+};
+
+namespace Math {
+double sin(double p_x);
+float sin(float p_x);
+}
+
+void print(const String &p_text);
+void print(int p_value) {}
+using Str = const ::godot::StrT<char>;
+using Callback = void (*)(int);
+
+} // namespace godot
+`
+	cases := map[string][]cppDoc{
+		"Typed": {{
+			comments: "// An array of T.\n// Really.\n", head: "template <typename T>\nclass Typed : public Array", base: "Array",
+			members: []cppMember{
+				{"Mode", "", "enum Mode : int64_t { A = 1, B }"},
+				{"Inner", "", "struct Inner { ... }"},
+				{"LIMIT", "", "static const int LIMIT = 4"},
+				{"count", "", "int count{3}"},
+				{"Base", "", "using Base = Array"},
+				{"operator=", "// Assigns an array.\n", "void operator=(const Array &p_array)"},
+				{"Typed", "", "Typed(const Variant &p_variant)"},
+				{"Typed", "", "Typed() = default"},
+				{"operator->", "", "T *operator->() const"},
+				{"operator Variant", "", "operator Variant() const"},
+				{"operator()", "", "Variant operator()(int a) const"},
+				{"get", "", "template <typename U>\nstatic U get(const Variant &p_default = Variant::NIL, T p_items[] = {})"},
+				{"grow", "", "void grow(int64_t p_size)"},
+			},
+		}},
+		"Point":    {{head: "struct Point", members: []cppMember{{"x", "", "int x = 0"}}}},
+		"Side":     {{head: "enum Side", members: []cppMember{{"LEFT", "// The left.\n", "LEFT = 1 << 0"}, {"RIGHT", "", "RIGHT = MAKE(2, 3)"}}}},
+		"Math":     {{head: "namespace Math", members: []cppMember{{"sin", "", "double sin(double p_x)"}, {"sin", "", "float sin(float p_x)"}}}},
+		"print":    {{head: "void print(const String &p_text)"}, {head: "void print(int p_value)"}},
+		"Str":      {{head: "using Str = const ::godot::StrT<char>", alias: "StrT"}},
+		"Callback": {{head: "using Callback = void (*)(int)"}},
+		"Other":    nil,
+	}
+	for name, want := range cases {
+		if got := scanCppDocs(src, name); !reflect.DeepEqual(got, want) {
+			t.Errorf("scanCppDocs(%s) = %q\nwant %q", name, got, want)
+		}
 	}
 }
 

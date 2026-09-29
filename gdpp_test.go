@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"reflect"
@@ -175,7 +176,7 @@ func TestLoadGodotNamesOutdated(t *testing.T) {
 	if want := []godotName{{"Ref", "<godot_cpp/classes/ref.hpp>", trans.Other}}; !generated || !reflect.DeepEqual(names, want) {
 		t.Errorf("generated, names = %v, %v, want true, %v", generated, names, want)
 	}
-	if cache := m.tree()[pkgDir+".gd++pkg/godot_names.toml"]; !strings.HasPrefix(cache, "version = 2\n") || !strings.Contains(cache, `name = "Ref"`) {
+	if cache := m.tree()[pkgDir+".gd++pkg/godot_names.toml"]; !strings.HasPrefix(cache, fmt.Sprintf("version = %d\n", godotNamesVersion)) || !strings.Contains(cache, `name = "Ref"`) {
 		t.Errorf("godot_names.toml = %q, want the new names", cache)
 	}
 }

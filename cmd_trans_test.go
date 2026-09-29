@@ -1,5 +1,6 @@
 // cmd_trans_test.go: tests for cmd_trans.go. Runs on the real disk, since
-// the transpiler reads files itself.
+// the transpiler reads files itself, except in a package, which runs on memFS
+// like gdpp_test.go.
 
 package main
 
@@ -80,6 +81,70 @@ func TestTransSpec(t *testing.T) {
 	}
 }
 
+// withTransPackage is withGdppFS(gdppTestFiles), with the package's build
+// cache synced and its names cache filled, and the API spec 4.4 cached, where
+// Resource isn't refcounted.
+func withTransPackage(t *testing.T) {
+	m := withGdppFS(t, gdppTestFiles)
+	withTTY(t, false)
+	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
+	m.nodes[pkgDir+".gd++pkg/godot_names.toml"] = &memNode{data: []byte(encodeToml(godotNamesCache{godotNamesVersion, testGodotNames}))}
+	m.MkdirAll("/games/my_game/.gd++proj/spec/4.4", 0o755)
+	m.nodes["/games/my_game/.gd++proj/spec/4.4/extension_api.json"] = &memNode{data: []byte(`{"classes": [{"name": "Node3D"}, {"name": "Resource"}]}`)}
+}
+
+func TestTransPackage(t *testing.T) {
+	cases := map[string]struct {
+		c           CmdTrans
+		wants, bans []string
+	}{
+		"package": {CmdTrans{File: "player.gd++"},
+			[]string{`#include "Weapon.h"`, `#include "Power.h"`, "#include <godot_cpp/classes/node3d.hpp>", "Ref<Weapon> weapon{};"}, nil},
+		"spec": {CmdTrans{File: "player.gd++", Spec: "4.4"}, []string{`#include "Weapon.h"`, "Weapon *weapon{};"}, []string{"Ref<Weapon>"}},
+		"no spec": {CmdTrans{File: "items/weapon.gdpp", NoSpec: true, Object: []string{"Resource=<my/resource.hpp>"}},
+			[]string{`#include "Player.h"`, "#include <my/resource.hpp>", "class Weapon : public Resource {"}, nil},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			withTransPackage(t)
+			out := captureStdout(t, tc.c.Run)
+			for _, want := range tc.wants {
+				if !strings.Contains(out, want) {
+					t.Errorf("output lacks %q:\n%s", want, out)
+				}
+			}
+			for _, ban := range tc.bans {
+				if strings.Contains(out, ban) {
+					t.Errorf("output has %q:\n%s", ban, out)
+				}
+			}
+		})
+	}
+}
+
+func TestTransPackageFails(t *testing.T) {
+	cases := map[string]struct {
+		c    CmdTrans
+		want string
+	}{
+		"spec and no spec": {CmdTrans{File: "player.gd++", Spec: "4.4", NoSpec: true}, "[x] Invalid arguments: --spec and --nospec cannot be used together.\n"},
+		"no spec":          {CmdTrans{File: "items/weapon.gdpp", NoSpec: true}, "[x] items/weapon.gdpp:2:11: Unknown base class \"Resource\".\n"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+				withTransPackage(t)
+				tc.c.Run()
+				return
+			}
+			out, code := runFailHelper(t, t.Name())
+			if code != 1 || !strings.HasPrefix(out, tc.want) {
+				t.Errorf("exit code = %d, output = %q, want 1, %q...", code, out, tc.want)
+			}
+		})
+	}
+}
+
 func TestTransRuntime(t *testing.T) {
 	_, want, _ := trans.RuntimeHeader(0)
 	if out := captureStdout(t, (&CmdTrans{Runtime: true}).Run); out != want {
@@ -141,7 +206,7 @@ func TestTransFails(t *testing.T) {
 		"no file":                   {CmdTrans{}, "[x] Invalid arguments: missing the GD++ file.\n"},
 		"missing file":              {CmdTrans{File: "missing.gd++"}, "[x] There is no file at missing.gd++.\n"},
 		"bad dependency":            {CmdTrans{File: "player.gd++", Enum: []string{"Suit:A=x"}}, "[x] Invalid arguments: --enum Suit:A=x: \"x\" is not an integer.\n"},
-		"unknown syntax":            {CmdTrans{File: "player.gd++", Syntax: 9}, "[x] Unsupported GD++ syntax 9.\n"},
+		"unknown syntax":            {CmdTrans{File: "player.gd++", Syntax: intPtr(9)}, "[x] Unsupported GD++ syntax 9.\n"},
 		"spec outside of a project": {CmdTrans{File: "player.gd++", Spec: "4.3"}, "[x] Path . is not contained in a Godot project.\n"},
 		"missing spec": {CmdTrans{File: "src/a.gd++", Spec: "4.4"},
 			"[x] Missing Godot API spec 4.4, run `gd++ fetch --spec 4.4` to fetch it.\n"},
