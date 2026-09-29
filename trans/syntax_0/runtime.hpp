@@ -121,14 +121,29 @@ private:
 
 } // namespace gdpp
 
-namespace godot {
+// Engine builds (see GD++'s compat headers) have Godot's types in the global namespace, where their templates must be
+// specialized, and describe types without GDExtension's types.
+#ifdef GDPP_ENGINE
+#define GDPP_BINDINGS_BEGIN
+#define GDPP_BINDINGS_END
+#define GDPP_TYPE_INFO(m_type) \
+	static constexpr Variant::Type VARIANT_TYPE = Variant::m_type; \
+	static constexpr GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_NONE;
+#else
+#define GDPP_BINDINGS_BEGIN namespace godot {
+#define GDPP_BINDINGS_END }
+#define GDPP_TYPE_INFO(m_type) \
+	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_##m_type; \
+	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+#endif
+
+GDPP_BINDINGS_BEGIN
 
 // Bindings see an extern as its base class. The hint names the extern, so the editor only accepts matching objects.
 
 template <typename T>
 struct GetTypeInfo<gdpp::ExtPtr<T>> {
-	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
-	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+	GDPP_TYPE_INFO(OBJECT)
 	static inline PropertyInfo get_class_info() {
 		PropertyHint hint = std::is_base_of_v<Node, typename T::Base> ? PROPERTY_HINT_NODE_TYPE : PROPERTY_HINT_NONE;
 		return PropertyInfo(Variant::OBJECT, "", hint, T::gdpp_name, PROPERTY_USAGE_DEFAULT, T::Base::get_class_static());
@@ -137,8 +152,7 @@ struct GetTypeInfo<gdpp::ExtPtr<T>> {
 
 template <typename T>
 struct GetTypeInfo<gdpp::ExtRef<T>> {
-	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
-	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+	GDPP_TYPE_INFO(OBJECT)
 	static inline PropertyInfo get_class_info() {
 		PropertyHint hint = std::is_base_of_v<Resource, typename T::Base> ? PROPERTY_HINT_RESOURCE_TYPE : PROPERTY_HINT_NONE;
 		return PropertyInfo(Variant::OBJECT, "", hint, T::gdpp_name, PROPERTY_USAGE_DEFAULT, T::Base::get_class_static());
@@ -181,17 +195,25 @@ struct VariantCaster<gdpp::ExtRef<T>> {
 	}
 };
 
-} // namespace godot
+GDPP_BINDINGS_END
 
 // GDPP_ENUM_TAG makes m_tag, a class's stand-in for one of the package's enums, bind as the enum m_name
-// (e.g. "MyNode.Suit"), since each class exposes its own copy of the enums it uses. Use it in namespace godot.
+// (e.g. "MyNode.Suit"), since each class exposes its own copy of the enums it uses. Use it in namespace godot; in
+// engine builds, it leaves that namespace for the specializations.
+#ifdef GDPP_ENGINE
 #define GDPP_ENUM_TAG(m_tag, m_name) \
+	} \
+	GDPP_ENUM_TAG_SPECIALIZATIONS(godot::m_tag, m_name) \
+	namespace godot {
+#else
+#define GDPP_ENUM_TAG(m_tag, m_name) GDPP_ENUM_TAG_SPECIALIZATIONS(m_tag, m_name)
+#endif
+#define GDPP_ENUM_TAG_SPECIALIZATIONS(m_tag, m_name) \
 	template <> \
 	struct GetTypeInfo<m_tag> { \
-		static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_INT; \
-		static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE; \
+		GDPP_TYPE_INFO(INT) \
 		static inline PropertyInfo get_class_info() { \
-			return make_property_info(Variant::Type::INT, "", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM, m_name); \
+			return PropertyInfo(Variant::INT, "", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM, m_name); \
 		} \
 	}; \
 	template <> \

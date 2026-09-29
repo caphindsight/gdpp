@@ -19,6 +19,12 @@ const (
 	// Temporary directories live here, inside the ephemeral directory.
 	tempDirName = "temp"
 
+	// The project build cache, for engine builds, inside the ephemeral directory.
+	projectBuildCacheDirName = "build"
+
+	// The Godot editor's export presets, at the project root.
+	exportPresetsFileName = "export_presets.cfg"
+
 	// A package's build cache, at the package root.
 	packageBuildCacheDirName = ".gd++pkg"
 

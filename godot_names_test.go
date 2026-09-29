@@ -86,7 +86,7 @@ typedef struct { int x; } CStruct;
 `
 	var got []string
 	bases := map[string]string{}
-	for _, d := range scanCppDecls(src) {
+	for _, d := range scanCppDecls(src, "godot") {
 		got = append(got, d.name)
 		if d.base != "" {
 			bases[d.name] = d.base

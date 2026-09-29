@@ -4,10 +4,10 @@ import "slices"
 
 // CmdClean deletes the build caches of packages, so their next build starts
 // from scratch, and with --bin also all libraries and .gdextension files in
-// their roots.
+// their roots. With --proj, it also deletes the project build cache.
 type CmdClean struct {
 	Paths []string `arg:"positional" placeholder:"PATH" help:"clean the packages containing these paths [default: the current directory]"`
-	Proj  bool     `arg:"--proj" help:"clean all packages in the project"`
+	Proj  bool     `arg:"--proj" help:"clean all packages in the project, and the project build cache of engine builds"`
 	Bin   bool     `arg:"--bin" help:"also delete all libraries and .gdextension files in the package roots"`
 }
 
@@ -15,8 +15,9 @@ func (c *CmdClean) Run() {
 	Assert(!c.Proj || len(c.Paths) == 0, "Invalid arguments: paths and --proj cannot be used together.")
 	// Check every path before deleting anything.
 	var roots []Path
+	var p Project
 	if c.Proj {
-		p := LoadProject(Cwd())
+		p = LoadProject(Cwd())
 		for _, pkg := range p.ListPackages() {
 			roots = append(roots, pkg.Root)
 		}
@@ -34,11 +35,15 @@ func (c *CmdClean) Run() {
 			dirty = append(dirty, root)
 		}
 	}
-	if len(dirty) == 0 {
+	proj := c.Proj && projectBuildCache(p).Exists()
+	if len(dirty) == 0 && !proj {
 		LogInfo("Nothing to clean.")
 		return
 	}
 	for _, root := range dirty {
 		cleanPackage(root, c.Bin)
+	}
+	if proj {
+		cleanProjectBuildCache(p)
 	}
 }

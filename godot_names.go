@@ -125,20 +125,28 @@ func (t cppToken) isMacroName() bool {
 	return t.isIdent() && strings.ToUpper(string(t)) == string(t) && strings.ContainsAny(string(t), "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 }
 
-// cppDecl is a name that a header declares in namespace godot.
+// cppDecl is a name that a header declares in the scanned namespace.
 type cppDecl struct {
-	name, base string // base: a class's first base class, if any.
+	name, base string   // base: a class's first base class, if any.
+	namespace  bool     // whether it's a nested namespace
+	values     []string // an unscoped enum's values, which live in the enclosing namespace
 }
 
-// scanCppDecls returns the names declared directly in namespace godot in the
-// header src: class, struct, union and enum definitions (not forward
-// declarations or specializations), aliases, nested namespaces, functions and
-// variables. Macro invocations and anything in nested scopes are skipped.
-func scanCppDecls(src string) []cppDecl {
+// scanCppDecls returns the names declared directly in namespace ns ("" for
+// the global namespace) in the header src: class, struct, union and enum
+// definitions (not forward declarations or specializations), aliases, nested
+// namespaces, functions and variables. Macro invocations and anything in
+// nested scopes are skipped.
+func scanCppDecls(src, ns string) []cppDecl {
 	tokens := tokenizeCpp(src)
 	var decls []cppDecl
 	var scopes []string // "namespace:NAME" for namespaces (NAME may be a::b), "" for other braces.
-	inGodot := func() bool { return len(scopes) == 1 && scopes[0] == "namespace:godot" }
+	inGodot := func() bool {
+		if ns == "" {
+			return len(scopes) == 0
+		}
+		return len(scopes) == 1 && scopes[0] == "namespace:"+ns
+	}
 	i := 0
 	at := func(j int) cppToken {
 		if j < len(tokens) {
@@ -177,7 +185,7 @@ func scanCppDecls(src string) []cppDecl {
 				continue
 			}
 			if inGodot() && len(name) == 1 {
-				decls = append(decls, cppDecl{name: name[0]})
+				decls = append(decls, cppDecl{name: name[0], namespace: true})
 			}
 			scopes = append(scopes, "namespace:"+strings.Join(name, "::"))
 			i = j + 1
@@ -202,7 +210,7 @@ func scanCppDecls(src string) []cppDecl {
 	return decls
 }
 
-// scanStatement reads the statement at tokens[i], in namespace godot. It
+// scanStatement reads the statement at tokens[i], in the scanned namespace. It
 // returns the name it declares, if any, and the index of the next token to
 // scan. A body ("{") is left for the caller, which tracks scopes.
 func scanStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(int, cppToken, cppToken) int) (*cppDecl, int) {
@@ -239,6 +247,9 @@ func scanStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(in
 		}
 		switch at(j) {
 		case "{":
+			if t == "enum" && at(i+1) != "class" && at(i+1) != "struct" {
+				return &cppDecl{name: string(name), values: enumValues(tokens, j, at, skip)}, j
+			}
 			return &cppDecl{name: string(name)}, j
 		case ":":
 			if t == "enum" {
@@ -342,6 +353,59 @@ func scanStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(in
 	return nil, next
 }
 
+// enumValues returns the names of the values of the enum whose body starts at
+// tokens[i].
+func enumValues(tokens []cppToken, i int, at func(int) cppToken, skip func(int, cppToken, cppToken) int) []string {
+	var values []string
+	end := skip(i, "{", "}") - 1
+	for j := i + 1; j < end; j++ {
+		if at(j).isIdent() && (at(j-1) == "{" || at(j-1) == ",") {
+			values = append(values, string(at(j)))
+		}
+		for _, b := range [][2]cppToken{{"(", ")"}, {"[", "]"}, {"{", "}"}} {
+			if at(j) == b[0] {
+				j = skip(j, b[0], b[1]) - 1
+			}
+		}
+	}
+	return values
+}
+
+// scanGdclasses returns the classes that the header src registers with
+// GDCLASS(Name, Base), each qualified with its namespaces, e.g.
+// "core_bind::OS".
+func scanGdclasses(src string) []string {
+	tokens := tokenizeCpp(src)
+	var classes []string
+	var scopes []string // namespace names, "" for other braces
+	for i := 0; i < len(tokens); i++ {
+		switch t := tokens[i]; {
+		case t == "namespace":
+			j := i + 1
+			var name []string
+			for ; j < len(tokens) && (tokens[j].isIdent() || tokens[j] == "::"); j++ {
+				if tokens[j] != "::" {
+					name = append(name, string(tokens[j]))
+				}
+			}
+			if j < len(tokens) && tokens[j] == "{" {
+				scopes = append(scopes, strings.Join(name, "::"))
+				i = j
+			}
+		case t == "{":
+			scopes = append(scopes, "")
+		case t == "}":
+			if len(scopes) > 0 {
+				scopes = scopes[:len(scopes)-1]
+			}
+		case t == "GDCLASS" && i+2 < len(tokens) && tokens[i+1] == "(" && tokens[i+2].isIdent():
+			qualified := slices.DeleteFunc(slices.Clone(scopes), func(s string) bool { return s == "" })
+			classes = append(classes, strings.Join(append(qualified, string(tokens[i+2])), "::"))
+		}
+	}
+	return classes
+}
+
 // endStatement returns the index after the ";" that ends the statement at
 // tokens[i], skipping brackets, or of the "{" of a body.
 func endStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(int, cppToken, cppToken) int) (*cppDecl, int) {
@@ -380,7 +444,7 @@ func scanGodotNames(roots []Path) []godotName {
 					walk(child, childRel)
 				case (path.Ext(childRel) == ".hpp" || path.Ext(childRel) == ".h") && !strings.HasSuffix(childRel, ".inc.hpp"):
 					// .inc.hpp files are fragments, included from inside other headers.
-					for _, d := range scanCppDecls(child.ReadString()) {
+					for _, d := range scanCppDecls(child.ReadString(), "godot") {
 						if !index[d.name] {
 							index[d.name] = true
 							bases[d.name] = d.base

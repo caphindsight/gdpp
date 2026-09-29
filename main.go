@@ -4,9 +4,10 @@ import "github.com/alexflint/go-arg"
 
 // Args holds the parsed CLI arguments, available to any function that needs them.
 var Args struct {
-	Build    *CmdBuild   `arg:"subcommand:build" help:"compile a package into a GDExtension library"`
+	Build    *CmdBuild   `arg:"subcommand:build" help:"compile a package into a GDExtension library, or the project into the engine"`
 	CheckIn  *CmdCheckIn `arg:"subcommand:checkin" help:"check in dependencies from the ephemeral cache, or undo it"`
 	Clean    *CmdClean   `arg:"subcommand:clean" help:"delete the build caches of packages"`
+	Export   *CmdExport  `arg:"subcommand:export" help:"set up export presets that leave out C++ and GD++ files, building what they export"`
 	Fetch    *CmdFetch   `arg:"subcommand:fetch" help:"download dependencies from a repository, or list them"`
 	Fix      *CmdFix     `arg:"subcommand:fix" help:"tidy up the project, e.g. delete leftover temporary files"`
 	Init     *CmdInit    `arg:"subcommand:init" help:"set up the project, or create or update a package"`
@@ -51,6 +52,8 @@ func main() {
 		Args.CheckIn.Run()
 	case Args.Clean != nil:
 		Args.Clean.Run()
+	case Args.Export != nil:
+		Args.Export.Run()
 	case Args.Fetch != nil:
 		Args.Fetch.Run()
 	case Args.Fix != nil:

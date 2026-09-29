@@ -26,6 +26,8 @@ else:
     env.Append(CXXFLAGS=[("/std:" if env.get("is_msvc", False) else "-std=") + {{printf "%q" .CppStandard}}])
     # gdpp holds the C++ that GD++ generates from .gd++ files.
     env.Append(CPPPATH=[package_root, project_root, "gdpp"])
+    # Lets C++ code tell GDExtension builds from engine builds, which define GDPP_ENGINE.
+    env.Append(CPPDEFINES=["GDPP_EXTENSION"])
 {{- if .Color}}
     # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
     # the build signature, so it doesn't trigger rebuilds.

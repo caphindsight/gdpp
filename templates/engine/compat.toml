@@ -1,0 +1,25 @@
+# How engine builds map godot-cpp headers to engine headers, where scanning
+# both for the names they declare isn't enough.
+
+# Engine headers to include for godot-cpp headers, e.g. ones that only define
+# macros. An empty list makes an empty header.
+[headers]
+"gdextension_interface.h" = []
+"godot_cpp/godot.hpp" = []
+"godot_cpp/core/binder_common.hpp" = ["core/variant/binder_common.h"]
+"godot_cpp/core/class_db.hpp" = ["core/object/class_db.h"]
+"godot_cpp/core/defs.hpp" = ["core/typedefs.h"]
+"godot_cpp/core/error_macros.hpp" = ["core/error/error_macros.h"]
+"godot_cpp/core/gdvirtual.gen.inc" = ["core/object/object.h"]
+"godot_cpp/core/math.hpp" = ["core/math/math_funcs.h"]
+"godot_cpp/core/memory.hpp" = ["core/os/memory.h"]
+"godot_cpp/core/method_ptrcall.hpp" = ["core/variant/method_ptrcall.h"]
+"godot_cpp/core/object.hpp" = ["core/object/object.h"]
+"godot_cpp/core/type_info.hpp" = ["core/variant/type_info.h"]
+"godot_cpp/variant/typed_array.hpp" = ["core/variant/typed_array.h"]
+"godot_cpp/variant/typed_dictionary.hpp" = ["core/variant/typed_dictionary.h"]
+"godot_cpp/variant/variant.hpp" = ["core/variant/variant.h"]
+
+# godot-cpp classes named differently from the engine class they wrap.
+[renames]
+ClassDBSingleton = "ClassDB"

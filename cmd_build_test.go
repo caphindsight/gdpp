@@ -245,15 +245,15 @@ func TestBuildTargets(t *testing.T) {
 
 func TestBuildSconsArgs(t *testing.T) {
 	cases := []struct {
-		c    CmdBuild
+		c    BuildOptions
 		want []string
 	}{
-		{CmdBuild{}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none"}},
-		{CmdBuild{Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=speed"}},
-		{CmdBuild{Opt: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=speed"}},
-		{CmdBuild{NoOpt: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=none"}},
-		{CmdBuild{Small: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=size"}},
-		{CmdBuild{Jobs: 8}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "-j8"}},
+		{BuildOptions{}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none"}},
+		{BuildOptions{Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=speed"}},
+		{BuildOptions{Opt: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=speed"}},
+		{BuildOptions{NoOpt: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=none"}},
+		{BuildOptions{Small: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=size"}},
+		{BuildOptions{Jobs: 8}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "-j8"}},
 	}
 	for _, tc := range cases {
 		if got := tc.c.sconsArgs("linux.x86_64"); !reflect.DeepEqual(got, tc.want) {
@@ -266,20 +266,20 @@ func TestBuildDescribe(t *testing.T) {
 	withTTY(t, true)
 	host := hostPlatform + "." + hostArch
 	cases := []struct {
-		c      CmdBuild
+		c      BuildOptions
 		target string
 		gdpp   bool
 		want   string
 	}{
-		{CmdBuild{}, host, false, host + ", debug, unoptimized"},
-		{CmdBuild{}, host, true, host + ", debug, unoptimized, docs"},
-		{CmdBuild{Ship: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, no docs"},
-		{CmdBuild{NoDoc: true}, host, true, host + ", debug, unoptimized, \x1b[1mno docs\x1b[0m"},
-		{CmdBuild{Ship: true, Doc: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, \x1b[1mdocs\x1b[0m"},
-		{CmdBuild{Ship: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, optimized"},
-		{CmdBuild{Opt: true}, host, false, host + ", debug, \x1b[1moptimized\x1b[0m"},
-		{CmdBuild{Ship: true, NoOpt: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, \x1b[1munoptimized\x1b[0m"},
-		{CmdBuild{Small: true}, "windows.arm64", false, "\x1b[1mwindows.arm64\x1b[0m, debug, \x1b[1msize-optimized\x1b[0m"},
+		{BuildOptions{}, host, false, host + ", debug, unoptimized"},
+		{BuildOptions{}, host, true, host + ", debug, unoptimized, docs"},
+		{BuildOptions{Ship: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, no docs"},
+		{BuildOptions{NoDoc: true}, host, true, host + ", debug, unoptimized, \x1b[1mno docs\x1b[0m"},
+		{BuildOptions{Ship: true, Doc: true}, host, true, host + ", \x1b[1mrelease\x1b[0m, optimized, \x1b[1mdocs\x1b[0m"},
+		{BuildOptions{Ship: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, optimized"},
+		{BuildOptions{Opt: true}, host, false, host + ", debug, \x1b[1moptimized\x1b[0m"},
+		{BuildOptions{Ship: true, NoOpt: true}, host, false, host + ", \x1b[1mrelease\x1b[0m, \x1b[1munoptimized\x1b[0m"},
+		{BuildOptions{Small: true}, "windows.arm64", false, "\x1b[1mwindows.arm64\x1b[0m, debug, \x1b[1msize-optimized\x1b[0m"},
 	}
 	for _, tc := range cases {
 		if got := tc.c.describe(tc.target, tc.gdpp); got != tc.want {
@@ -290,13 +290,13 @@ func TestBuildDescribe(t *testing.T) {
 
 func TestBuildDocs(t *testing.T) {
 	for _, tc := range []struct {
-		c    CmdBuild
+		c    BuildOptions
 		want bool
 	}{
-		{CmdBuild{}, true},
-		{CmdBuild{Ship: true}, false},
-		{CmdBuild{Ship: true, Doc: true}, true},
-		{CmdBuild{NoDoc: true}, false},
+		{BuildOptions{}, true},
+		{BuildOptions{Ship: true}, false},
+		{BuildOptions{Ship: true, Doc: true}, true},
+		{BuildOptions{NoDoc: true}, false},
 	} {
 		if got := tc.c.docs(); got != tc.want {
 			t.Errorf("%+v.docs() = %v, want %v", tc.c, got, tc.want)
@@ -331,13 +331,16 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"for":      {CmdBuild{For: []string{"w.x64"}, Arch: "x86_64"}, "--for cannot be used together with -w, --platform or --arch"},
 		"target":   {CmdBuild{For: []string{"w.x64", "web.x64"}}, `"web.x64" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64`},
 		"noarch":   {CmdBuild{For: []string{"linux"}}, `"linux" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64`},
-		"opt":      {CmdBuild{Opt: true, Small: true}, "--opt, --small and --noopt cannot be used together"},
-		"noopt":    {CmdBuild{Small: true, NoOpt: true}, "--opt, --small and --noopt cannot be used together"},
+		"opt":      {CmdBuild{BuildOptions: BuildOptions{Opt: true, Small: true}}, "--opt, --small and --noopt cannot be used together"},
+		"noopt":    {CmdBuild{BuildOptions: BuildOptions{Small: true, NoOpt: true}}, "--opt, --small and --noopt cannot be used together"},
 		"platform": {CmdBuild{Platform: "web"}, "--platform must be one of windows, linux, macos"},
 		"arch":     {CmdBuild{Arch: "mips"}, "--arch must be one of x86_32, x86_64, arm64"},
 		"proj":     {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
-		"jobs":     {CmdBuild{Jobs: -1}, "--jobs cannot be negative"},
-		"doc":      {CmdBuild{Doc: true, NoDoc: true}, "--doc and --nodoc cannot be used together"},
+		"jobs":     {CmdBuild{BuildOptions: BuildOptions{Jobs: -1}}, "--jobs cannot be negative"},
+		"doc":      {CmdBuild{BuildOptions: BuildOptions{Doc: true, NoDoc: true}}, "--doc and --nodoc cannot be used together"},
+		"engdoc":   {CmdBuild{Engine: "4.5", Proj: true, BuildOptions: BuildOptions{NoDoc: true}}, "--doc and --nodoc cannot be used with --engine"},
+		"engname":  {CmdBuild{Engine: "..", Proj: true}, `".." is not a valid dependency name`},
+		"engproj":  {CmdBuild{Engine: "4.5"}, "--engine requires --proj, since engine builds always build the whole project"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
