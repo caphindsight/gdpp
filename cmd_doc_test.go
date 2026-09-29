@@ -128,8 +128,9 @@ func TestDocFails(t *testing.T) {
 func TestHighlightCpp(t *testing.T) {
 	withTTY(t, true)
 	got := highlightCpp("template <typename T>\nstatic const Array &get(int64_t p_x = 5, Other p_o) const", map[string]bool{"Array": true})
-	want := Styled("template", Yellow) + " <" + Styled("typename", Yellow) + " T>\n" + Styled("static", Yellow) + " " + Styled("const", Yellow) + " " +
-		Styled("Array", Green) + " &" + Styled("get", Cyan) + "(" + Styled("int64_t", Green) + " p_x = " + Styled("5", Magenta) + ", Other p_o) " + Styled("const", Yellow)
+	want := Styled("template", CodeKeyword) + " <" + Styled("typename", CodeKeyword) + " T>\n" + Styled("static", CodeKeyword) + " " + Styled("const", CodeKeyword) + " " +
+		Styled("Array", CodeType) + " &" + Styled("get", CodeFunction) + "(" + Styled("int64_t", CodeType) + " p_x = " + Styled("5", CodeLiteral) + ", Other p_o) " +
+		Styled("const", CodeKeyword)
 	if got != want {
 		t.Errorf("highlightCpp = %q\nwant %q", got, want)
 	}

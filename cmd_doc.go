@@ -62,7 +62,7 @@ func (c *CmdDoc) Run() {
 			for _, d := range t.docs {
 				for _, m := range d.members {
 					if m.name == member {
-						text += Styled(m.comments, Gray) + highlightCpp(m.text, types) + "\n"
+						text += Styled(m.comments, CodeComment) + highlightCpp(m.text, types) + "\n"
 					}
 				}
 			}
@@ -112,7 +112,7 @@ func indexText(names []godotName) string {
 		case n.Base != "":
 			line += ": " + n.Base
 		}
-		text.WriteString(Styled(n.Decl, Yellow) + " " + highlightCpp(line, types) + "\n")
+		text.WriteString(Styled(n.Decl, CodeKeyword) + " " + highlightCpp(line, types) + "\n")
 	}
 	return text.String()
 }
@@ -162,13 +162,13 @@ func highlightCpp(text string, types map[string]bool) string {
 		src := text[spans[i][0]:spans[i][1]]
 		switch {
 		case t == "0":
-			src = Styled(src, Magenta)
+			src = Styled(src, CodeLiteral)
 		case cppKeywords[string(t)]:
-			src = Styled(src, Yellow)
+			src = Styled(src, CodeKeyword)
 		case cppBuiltinTypes[string(t)] || types[string(t)]:
-			src = Styled(src, Green)
+			src = Styled(src, CodeType)
 		case t.isIdent() && tokens.at(i+1) == "(":
-			src = Styled(src, Cyan)
+			src = Styled(src, CodeFunction)
 		}
 		out.WriteString(src)
 		end = spans[i][1]
@@ -231,14 +231,14 @@ func godotHeader(pkg Package, n godotName) (Path, bool) {
 func docText(t docType, types map[string]bool) string {
 	text := ""
 	for _, d := range t.docs {
-		text += Styled(d.comments, Gray) + highlightCpp(d.head, types) + "\n"
+		text += Styled(d.comments, CodeComment) + highlightCpp(d.head, types) + "\n"
 	}
 	return text + docInclude(t)
 }
 
 // docInclude returns the include line of t.
 func docInclude(t docType) string {
-	return Styled("    #include "+t.Include, Gray) + "\n"
+	return "    " + Styled("#include", CodePreProc) + " " + t.Include + "\n"
 }
 
 // memberText returns the members of docs, indented, after a blank line.
@@ -250,7 +250,7 @@ func memberText(docs []cppDoc, types map[string]bool) string {
 			if text.Len() == 0 || m.comments != "" {
 				text.WriteString("\n")
 			}
-			text.WriteString(indent(Styled(m.comments, Gray) + highlightCpp(m.text, types)))
+			text.WriteString(indent(Styled(m.comments, CodeComment) + highlightCpp(m.text, types)))
 		}
 	}
 	return text.String()

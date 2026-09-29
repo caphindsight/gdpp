@@ -34,6 +34,17 @@ const (
 	BrightBlue Style = "94"
 )
 
+// The styles of syntax highlighting, shared by all languages, after Vim's
+// default colors.
+const (
+	CodeKeyword  = Yellow
+	CodeType     = Green
+	CodeFunction = Cyan
+	CodeLiteral  = Magenta
+	CodeComment  = Gray
+	CodePreProc  = BrightBlue // Preprocessor directives and annotations
+)
+
 // Logs, tasks and prompts go to stderr, keeping stdout for command results,
 // such as a list meant for scripts.
 

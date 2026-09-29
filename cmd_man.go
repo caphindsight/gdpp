@@ -226,7 +226,7 @@ func highlightGdpp(code string, gdscript bool) string {
 		n, style := 1, []Style(nil)
 		switch {
 		case strings.HasPrefix(rest, "//") || gdscript && c == '#':
-			n, style = lineEnd(rest), []Style{Gray}
+			n, style = lineEnd(rest), []Style{CodeComment}
 		case strings.HasPrefix(rest, "/*"):
 			for depth := 0; n < len(rest); n++ { // Block comments nest, like in GD++.
 				if strings.HasPrefix(rest[n-1:], "/*") {
@@ -237,9 +237,9 @@ func highlightGdpp(code string, gdscript bool) string {
 					}
 				}
 			}
-			n, style = min(n, len(rest)), []Style{Gray}
+			n, style = min(n, len(rest)), []Style{CodeComment}
 		case c == '#':
-			n, style = 1+identLen(strings.TrimLeft(rest[1:], " "))+len(rest[1:])-len(strings.TrimLeft(rest[1:], " ")), []Style{Magenta}
+			n, style = 1+identLen(strings.TrimLeft(rest[1:], " "))+len(rest[1:])-len(strings.TrimLeft(rest[1:], " ")), []Style{CodePreProc}
 		case c == '"' || c == '\'':
 			for n < lineEnd(rest) && rest[n] != c {
 				if rest[n] == '\\' {
@@ -247,24 +247,24 @@ func highlightGdpp(code string, gdscript bool) string {
 				}
 				n++
 			}
-			n, style = min(n+1, lineEnd(rest)), []Style{Green}
+			n, style = min(n+1, lineEnd(rest)), []Style{CodeLiteral}
 		case c == '@' && identLen(rest[1:]) > 0:
-			n, style = 1+identLen(rest[1:]), []Style{Yellow}
+			n, style = 1+identLen(rest[1:]), []Style{CodePreProc}
 		case c >= '0' && c <= '9':
 			for n < len(rest) && (isIdentByte(rest[n]) || rest[n] == '.' || rest[n] == '\'') {
 				n++
 			}
-			style = []Style{Green}
+			style = []Style{CodeLiteral}
 		case identLen(rest) > 0:
 			n = identLen(rest)
 			word := rest[:n]
 			switch {
 			case manKeywords[word]:
-				style = []Style{Magenta}
+				style = []Style{CodeKeyword}
 			case manTypes[word] || word[0] >= 'A' && word[0] <= 'Z' && strings.ToUpper(word) != word:
-				style = []Style{Cyan}
+				style = []Style{CodeType}
 			case strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "("):
-				style = []Style{BrightBlue}
+				style = []Style{CodeFunction}
 			}
 		}
 		out.WriteString(styledLines(rest[:n], style...))
@@ -308,13 +308,13 @@ func highlightShell(line string) string {
 			out.WriteString(rest[:n])
 		case word[0] == '#':
 			n = len(rest)
-			out.WriteString(Styled(rest, Gray))
+			out.WriteString(Styled(rest, CodeComment))
 		case word[0] == '"':
 			n = strings.IndexByte(rest[1:], '"') + 2
 			if n == 1 {
 				n = len(rest)
 			}
-			out.WriteString(Styled(rest[:n], Green))
+			out.WriteString(Styled(rest[:n], CodeLiteral))
 		case strings.HasPrefix(bare, "-"):
 			option := strings.TrimRight(bare, "])|,")
 			out.WriteString(word[:len(word)-len(bare)] + Styled(option, Cyan) + bare[len(option):])
@@ -365,10 +365,10 @@ func highlightToml(line string) string {
 	case ok:
 		value, comment, _ := strings.Cut(value, "#")
 		if comment != "" {
-			comment = Styled("#"+comment, Gray)
+			comment = Styled("#"+comment, CodeComment)
 		}
 		trimmed := strings.TrimRight(value, " ")
-		return Styled(key, Cyan) + " = " + Styled(trimmed, Green) + value[len(trimmed):] + comment
+		return Styled(key, Cyan) + " = " + Styled(trimmed, CodeLiteral) + value[len(trimmed):] + comment
 	}
 	return line
 }

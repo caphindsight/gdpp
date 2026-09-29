@@ -91,16 +91,16 @@ func TestHighlightCode(t *testing.T) {
 	withTTY(t, true)
 	cases := []struct{ lang, code, want string }{
 		{"gd++", "@export var x: Node3D = f(\"a\", 1) // c\n/* a /* b */ c */",
-			Styled("@export", Yellow) + " " + Styled("var", Magenta) + " x: " + Styled("Node3D", Cyan) + " = " + Styled("f", BrightBlue) + "(" +
-				Styled("\"a\"", Green) + ", " + Styled("1", Green) + ") " + Styled("// c", Gray) + "\n" + Styled("/* a /* b */ c */", Gray)},
-		{"cpp", "#include <vector>\nint64_t x;", Styled("#include", Magenta) + " <vector>\n" + Styled("int64_t", Cyan) + " x;"},
-		{"gdscript", "# c\nreturn", Styled("# c", Gray) + "\n" + Styled("return", Magenta)},
-		{"sh", "gd++ build --ship . # c", Styled("gd++", Bold) + " " + Styled("build", Bold) + " " + Styled("--ship", Cyan) + " . " + Styled("# c", Gray)},
+			Styled("@export", CodePreProc) + " " + Styled("var", CodeKeyword) + " x: " + Styled("Node3D", CodeType) + " = " + Styled("f", CodeFunction) + "(" +
+				Styled("\"a\"", CodeLiteral) + ", " + Styled("1", CodeLiteral) + ") " + Styled("// c", CodeComment) + "\n" + Styled("/* a /* b */ c */", CodeComment)},
+		{"cpp", "#include <vector>\nint64_t x;", Styled("#include", CodePreProc) + " <vector>\n" + Styled("int64_t", CodeType) + " x;"},
+		{"gdscript", "# c\nreturn", Styled("# c", CodeComment) + "\n" + Styled("return", CodeKeyword)},
+		{"sh", "gd++ build --ship . # c", Styled("gd++", Bold) + " " + Styled("build", Bold) + " " + Styled("--ship", Cyan) + " . " + Styled("# c", CodeComment)},
 		{"sh", "gd++ x [-j N] [--a | --b]\n  x | y", Styled("gd++", Bold) + " " + Styled("x", Bold) + " [" + Styled("-j", Cyan) + " N] [" + Styled("--a", Cyan) +
 			" | " + Styled("--b", Cyan) + "]\n  x | " + Styled("y", Bold)},
 		{"out", "[×] Oops.\n 3 | x\n   | ^\nHint: Fix.", Styled("[×]", Bold, Red) + " Oops.\n " + Styled("3 |", Gray) + " x\n   " + Styled("|", Gray) + " " +
 			Styled("^", Red) + "\n" + Styled("Hint:", Bold) + " Fix."},
-		{"toml", "[[class]]\nname = \"A\"", Styled("[[class]]", Bold) + "\n" + Styled("name", Cyan) + " = " + Styled("\"A\"", Green)},
+		{"toml", "[[class]]\nname = \"A\"", Styled("[[class]]", Bold) + "\n" + Styled("name", Cyan) + " = " + Styled("\"A\"", CodeLiteral)},
 		{"", "var x", "var x"},
 	}
 	for _, tc := range cases {
