@@ -1,0 +1,5 @@
+class_name Test
+@export
+/// Exported.
+@export_group("A")
+var x: int

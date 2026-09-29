@@ -1,4 +1,4 @@
-errors/docs/after_annotation.gd++:2:1: Expected a declaration after the annotation, but found a doc comment.
- 2 | /// Doc.
-   | ^^^^^^^^
-Hint: Put doc comments before annotations, e.g. "/// Doc." on one line and "@export var x: int" on the next.
+errors/docs/after_annotation.gd++:3:3: This doc comment is not followed by a declaration.
+ 3 |   /// Dangling.
+   |   ^^^^^^^^^^^^^
+Hint: Doc comments document the declaration right after them. Use "//" for a regular comment.

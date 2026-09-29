@@ -151,10 +151,12 @@ type Int struct {
 }
 
 // Annotation is @Name or @Name(Args...). Attributes such as @virtual are annotations too.
+// A doc comment among annotations is parsed as one with only Doc set, which Parse moves to the declaration's Doc.
 type Annotation struct {
 	Pos  lexer.Position
-	Name string `parser:"'@' @Ident"`
-	Args []*Arg `parser:"( '(' ( @@ ( ',' @@ )* ','? )? ')' )?"`
+	Doc  *Doc   `parser:"( @@"`
+	Name string `parser:"| '@' @Ident"`
+	Args []*Arg `parser:"  ( '(' ( @@ ( ',' @@ )* ','? )? ')' )? )"`
 }
 
 // Arg is an annotation argument, kept as source text (strings keep their quotes).

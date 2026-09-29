@@ -3,6 +3,7 @@ package syntax_0
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -35,6 +36,9 @@ func Parse(filename, src string) (*File, error) {
 	forEachNode(tree, func(node any) {
 		if n, ok := node.(*Int); ok && e == nil {
 			e = n.convert()
+		}
+		if e == nil {
+			e = liftDoc(node, sig)
 		}
 		moveToKeyword(node, sig)
 	})
@@ -74,11 +78,34 @@ func forEachNode(node any, fn func(any)) {
 	walk(reflect.ValueOf(node))
 }
 
+// liftDoc moves a doc comment written among a declaration's annotations to its Doc, as if it came before them.
+func liftDoc(node any, sig []lexer.Token) *Error {
+	v := reflect.ValueOf(node).Elem()
+	annotations, doc := v.FieldByName("Annotations"), v.FieldByName("Doc")
+	if !annotations.IsValid() {
+		return nil
+	}
+	var kept []*Annotation
+	for _, a := range annotations.Interface().([]*Annotation) {
+		switch {
+		case a.Doc == nil:
+			kept = append(kept, a)
+		case !doc.IsNil():
+			i := slices.IndexFunc(sig, func(t lexer.Token) bool { return t.Pos.Offset == a.Doc.Pos.Offset })
+			return errorAt(sig[i], "A declaration can have only one doc comment.", "Merge the doc comments into one.")
+		default:
+			doc.Set(reflect.ValueOf(a.Doc))
+		}
+	}
+	annotations.Set(reflect.ValueOf(kept))
+	return nil
+}
+
 // moveToKeyword sets the Pos of a declaration with a Doc or Annotations to its keyword, skipping over them.
 func moveToKeyword(node any, sig []lexer.Token) {
 	v := reflect.ValueOf(node).Elem()
 	doc, annotations := v.FieldByName("Doc"), v.FieldByName("Annotations")
-	if !doc.IsValid() || doc.IsNil() && annotations.Len() == 0 {
+	if !annotations.IsValid() || doc.IsNil() && annotations.Len() == 0 {
 		return
 	}
 	pos := v.FieldByName("Pos").Addr().Interface().(*lexer.Position)

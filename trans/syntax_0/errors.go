@@ -366,10 +366,6 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 			"Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values."
 
 	case isDoc(u):
-		if endsAnnotation(sig, j-1) {
-			return "Expected a declaration after the annotation, but found a doc comment.",
-				"Put doc comments before annotations, e.g. \"/// Doc.\" on one line and \"@export var x: int\" on the next."
-		}
 		return "This doc comment is not followed by a declaration.",
 			"Doc comments document the declaration right after them. Use \"//\" for a regular comment."
 

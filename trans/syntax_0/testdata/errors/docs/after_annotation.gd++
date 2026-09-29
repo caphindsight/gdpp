@@ -1,3 +1,4 @@
-@export
-/// Doc.
-var x: int
+class Foo {
+  @export
+  /// Dangling.
+}

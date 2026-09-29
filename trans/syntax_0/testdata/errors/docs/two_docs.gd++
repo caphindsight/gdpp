@@ -1,0 +1,5 @@
+class_name Test
+/// First.
+@export
+/// Second.
+var x: int

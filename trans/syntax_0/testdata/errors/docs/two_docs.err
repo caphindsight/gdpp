@@ -1,0 +1,4 @@
+errors/docs/two_docs.gd++:4:1: A declaration can have only one doc comment.
+ 4 | /// Second.
+   | ^^^^^^^^^^^
+Hint: Merge the doc comments into one.
