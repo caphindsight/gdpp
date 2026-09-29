@@ -145,7 +145,6 @@ public:
 
 protected:
 	static void _bind_methods();
-	void _notification(int p_what);
 
 private:
 	static int64_t _gdpp_default_greet_users_count();

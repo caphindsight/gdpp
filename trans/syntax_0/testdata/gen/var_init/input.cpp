@@ -35,22 +35,6 @@ Stage::Stage() {
 #line 36 "input.cpp"
 }
 
-void Stage::_notification(int p_what) {
-	if (p_what != NOTIFICATION_POST_ENTER_TREE || gdpp::is_node_ready(this)) {
-		return;
-	}
-#line 8 "input.gd++"
-	camera = get_node<Camera3D>("Camera");
-#line 45 "input.cpp"
-#line 11 "input.gd++"
-	mesh = [&]() -> MeshInstance3D * {
-  MeshInstance3D* mesh = memnew(MeshInstance3D);
-  add_child(mesh);
-  return mesh;
-}();
-#line 52 "input.cpp"
-}
-
 int64_t Stage::compute(int64_t a, int64_t b) {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
@@ -61,7 +45,25 @@ int64_t Stage::compute(int64_t a, int64_t b) {
 
   return a + b;
 
-#line 65 "input.cpp"
+#line 49 "input.cpp"
+}
+
+void Stage::_ready() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
+#line 8 "input.gd++"
+	camera = get_node<Camera3D>("Camera");
+#line 60 "input.cpp"
+#line 11 "input.gd++"
+	mesh = [&]() -> MeshInstance3D * {
+  MeshInstance3D* mesh = memnew(MeshInstance3D);
+  add_child(mesh);
+  return mesh;
+}();
+#line 67 "input.cpp"
 }
 
 int64_t Stage::get_count() const {

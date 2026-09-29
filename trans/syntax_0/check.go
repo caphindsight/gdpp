@@ -831,6 +831,11 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			return nil, err
 		}
 	}
+	// @onready initializers run at the start of _ready, so declare it if the class doesn't.
+	if slices.ContainsFunc(m.vars, func(v *varModel) bool { return v.v.Init != nil && v.onready }) &&
+		!slices.ContainsFunc(m.funcs, func(f *funcModel) bool { return f.override && f.f.Name == "_ready" }) {
+		m.funcs = append(m.funcs, &funcModel{f: &Func{Name: "_ready"}, ret: &gtype{cpp: "void", doc: "void", void: true}, override: true})
+	}
 	// The enums the class exposes: those in its API, those it imports, and those declared in it (or, for the
 	// file-level class, in its file).
 	var api []*gtype

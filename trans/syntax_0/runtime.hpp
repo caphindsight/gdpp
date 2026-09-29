@@ -70,15 +70,6 @@ inline void add_property_category(const StringName &p_class, const String &p_nam
 			&gdext_info, none._native_ptr(), none._native_ptr());
 }
 
-// is_node_ready reports whether p_node was notified of being ready, and not asked to be again with request_ready.
-// Godot 4.0 can't tell, so it reports false there.
-template <typename T>
-auto is_node_ready_(const T *p_node, int) -> decltype(p_node->is_node_ready()) { return p_node->is_node_ready(); }
-template <typename T>
-bool is_node_ready_(const T *, ...) { return false; }
-template <typename T>
-bool is_node_ready(const T *p_node) { return is_node_ready_(p_node, 0); }
-
 // rpc_config sets the RPC configuration of p_method on p_node, as @rpc declares it.
 template <typename T>
 void rpc_config(T *p_node, const StringName &p_method, int64_t p_mode, int64_t p_transfer_mode, bool p_call_local, int64_t p_channel) {

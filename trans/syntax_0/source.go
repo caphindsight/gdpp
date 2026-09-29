@@ -69,16 +69,6 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.block(c.dtor, "\t{", "}")
 		w.ln("}")
 	}
-	if c.needsReady() {
-		w.ln("")
-		w.ln("void %s::_notification(int p_what) {", c.name)
-		// Right before NOTIFICATION_READY, whose handlers call _ready. GDScript too runs @onready initializers first.
-		w.ln("\tif (p_what != NOTIFICATION_POST_ENTER_TREE || gdpp::is_node_ready(this)) {")
-		w.ln("\t\treturn;")
-		w.ln("\t}")
-		u.initializers(w, c, true)
-		w.ln("}")
-	}
 	for _, f := range c.funcs {
 		u.funcDef(w, c, f)
 		defaultDefs(w, c, f)
@@ -177,6 +167,9 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 			w.ln("\t\treturn %s;", cast(c, f.ret, "_gdpp_ret", false))
 		}
 		w.ln("\t}")
+	}
+	if f.override && f.f.Name == "_ready" {
+		u.initializers(w, c, true)
 	}
 	switch {
 	case f.f.Body != nil:

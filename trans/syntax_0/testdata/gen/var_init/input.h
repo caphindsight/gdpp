@@ -24,6 +24,7 @@ public:
 public:
 	Stage();
 	int64_t compute(int64_t a, int64_t b);
+	void _ready() override;
 	int64_t get_count() const;
 	void set_count(int64_t p_value);
 	Camera3D *get_camera() const;
@@ -35,7 +36,6 @@ public:
 
 protected:
 	static void _bind_methods();
-	void _notification(int p_what);
 };
 #undef This
 

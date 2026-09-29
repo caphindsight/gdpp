@@ -187,10 +187,6 @@ func rpcCall(f *funcModel) string {
 	return fmt.Sprintf("rpc_id(p_peer, GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params))
 }
 
-func (c *classModel) needsReady() bool {
-	return slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && v.onready })
-}
-
 // trampolined reports whether the getter and setter of v are bound through trampolines.
 func (v *varModel) trampolined() bool {
 	return v.t.enum != nil
@@ -280,9 +276,6 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("")
 	w.ln("protected:")
 	w.ln("\tstatic void _bind_methods();")
-	if c.needsReady() {
-		w.ln("\tvoid _notification(int p_what);")
-	}
 	var helpers []string
 	for _, f := range c.funcs {
 		if !f.virtual && !f.override && f.usesEnums() {
