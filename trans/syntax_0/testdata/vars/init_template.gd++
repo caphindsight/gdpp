@@ -1,0 +1,2 @@
+class_name Test
+var n: Node3D = get_node<Node3D>("Child")

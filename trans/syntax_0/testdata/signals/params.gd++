@@ -1,0 +1,2 @@
+class_name Test
+signal hit(damage: int, source, crit: bool)

@@ -1,0 +1,23 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Foo
+    Members:
+      - @4:1
+        Var: @4:1
+          Name: x
+          Type: @4:8 int
+      - @6:1
+        Enum: @6:1
+          Name: E
+          Entries:
+            - @6:10 X
+      - @7:1
+        Code: @7:1
+          Impl: true
+          Body: @7:6
+            TextPos: 7:7
+            Text: " int y;"
+  InlineClasses:
+    - @3:1 A
+  InlineExterns:
+    - @5:1 B

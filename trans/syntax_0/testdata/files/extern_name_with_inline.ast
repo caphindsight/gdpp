@@ -1,0 +1,14 @@
+File: @1:1
+  Code:
+    - @1:1
+      Decl: true
+      Body: @1:6
+        TextPos: 1:7
+        Text: " int a;"
+  InlineClasses:
+    - @3:1 A
+  FileExtern: @2:1
+    Name: Foo
+    Members:
+      - @4:1
+        Func: @4:1 f

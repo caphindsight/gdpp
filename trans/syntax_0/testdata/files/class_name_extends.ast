@@ -1,0 +1,4 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Foo
+    Extends: @1:24 Node3D

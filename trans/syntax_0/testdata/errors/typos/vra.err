@@ -1,0 +1,4 @@
+errors/typos/vra.gd++:1:1: Expected a declaration, but found name "vra".
+ 1 | vra x: int
+   | ^^^
+Hint: Did you mean "var"?

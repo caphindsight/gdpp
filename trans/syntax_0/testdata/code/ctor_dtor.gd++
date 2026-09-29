@@ -1,0 +1,7 @@
+class_name Test
+ctor {
+  init();
+}
+dtor {
+  cleanup();
+}

@@ -1,0 +1,10 @@
+class_name Test
+/// Doc.
+
+@a
+
+@b(
+  1
+)
+
+var x: int

@@ -1,0 +1,3 @@
+decl {
+  #error don't
+}

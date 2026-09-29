@@ -1,0 +1,4 @@
+errors/funcs/static_keyword.gd++:1:1: Expected a declaration, but found name "static".
+ 1 | static func f() -> void {}
+   | ^^^^^^
+Hint: Use the @static annotation: "@static func foo() -> void { ... }".

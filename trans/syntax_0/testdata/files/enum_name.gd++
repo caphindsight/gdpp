@@ -1,0 +1,5 @@
+enum_name Foo
+FOO1
+FOO2 = 5
+FOO3,
+FOO4

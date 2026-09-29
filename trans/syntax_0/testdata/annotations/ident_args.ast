@@ -1,0 +1,14 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Var: @3:1
+          Annotations:
+            - @2:1
+              Name: export_flags
+              Args:
+                - @2:15 ALPHA
+                - @2:22 true
+          Name: x
+          Type: @3:8 int

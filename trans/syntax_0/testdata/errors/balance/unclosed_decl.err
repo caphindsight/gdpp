@@ -1,0 +1,4 @@
+errors/balance/unclosed_decl.gd++:1:6: This "{" (the decl block) is never closed.
+ 1 | decl {
+   |      ^
+Hint: Add a matching "}".

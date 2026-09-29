@@ -1,0 +1,4 @@
+errors/balance/mismatched.gd++:2:11: Expected ")" to close the "(" on line 2, but found "}".
+ 2 |   foo(1, 2};
+   |           ^
+Hint: Check for a missing ")" or an extra "}".

@@ -1,0 +1,4 @@
+errors/misc/crlf.gd++:2:1: Expected a declaration, but found name "fun".
+ 2 | fun foo() {}
+   | ^^^
+Hint: Did you mean "func"?

@@ -1,0 +1,3 @@
+errors/annotations/missing_name.gd++:1:2: Expected an annotation name after "@", but found "(".
+ 1 | @(1)
+   |  ^

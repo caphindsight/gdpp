@@ -1,0 +1,6 @@
+enum Rank {
+  JACK = 11
+  QUEEN
+  KING = -13
+  ACE = 0x1
+}

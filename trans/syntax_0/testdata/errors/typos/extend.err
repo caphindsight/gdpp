@@ -1,0 +1,4 @@
+errors/typos/extend.gd++:2:1: Expected a declaration, but found name "extend".
+ 2 | extend Node
+   | ^^^^^^
+Hint: Did you mean "extends"?

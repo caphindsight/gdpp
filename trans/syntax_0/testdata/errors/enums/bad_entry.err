@@ -1,0 +1,3 @@
+errors/enums/bad_entry.gd++:3:3: Expected an enum value name or "}", but found a string.
+ 3 |   "B"
+   |   ^^^

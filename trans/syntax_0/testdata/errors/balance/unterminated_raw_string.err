@@ -1,0 +1,4 @@
+errors/balance/unterminated_raw_string.gd++:2:12: This raw string is never closed.
+ 2 |   auto s = R"x(abc)";
+   |            ^^^^
+Hint: A raw string R"delim( ... )delim" ends with ")", the same delimiter, and a quote.

@@ -1,0 +1,6 @@
+class_name Test
+var v: Vector3 = Vector3(
+  1,
+  2,
+  3)
+var w: int

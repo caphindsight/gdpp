@@ -1,0 +1,3 @@
+class_name Test
+@onready
+var x: int

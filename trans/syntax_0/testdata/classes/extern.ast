@@ -1,0 +1,39 @@
+File: @1:1
+  InlineExterns:
+    - @1:1
+      Name: Terrain
+      Extends: @2:11 Node
+      Members:
+        - @3:3
+          Func: @3:10
+            Annotations:
+              - @3:3 const
+            Name: height
+            Params:
+              - @3:22
+                Name: x
+                Type: @3:25 float
+              - @3:32
+                Name: z
+                Type: @3:35 float
+            Return: @3:45 float
+        - @4:3
+          Func: @4:13
+            Annotations:
+              - @4:3 deferred
+            Name: rebuild
+            Return: @4:31 void
+        - @5:3
+          Var: @5:3
+            Name: size
+            Type: @5:13 int
+        - @6:3
+          Signal: @6:3
+            Name: done
+            Params:
+              - @6:15
+                Name: a
+                Type: @6:18 bool
+              - @6:24
+                Name: b
+                Type: @6:27 int

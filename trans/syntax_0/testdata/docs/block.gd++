@@ -1,0 +1,7 @@
+class_name Test
+/**
+    Indented block.
+      More indented.
+    Back.
+*/
+var x: int

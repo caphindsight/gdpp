@@ -1,0 +1,14 @@
+File: @1:1
+  Code:
+    - @1:1
+      Decl: true
+      Body: @1:6
+        TextPos: 1:7
+        Text: " #include <map>"
+    - @3:1
+      Impl: true
+      Body: @3:6
+        TextPos: 3:7
+        Text: " int a;"
+  InlineClasses:
+    - @2:1 A

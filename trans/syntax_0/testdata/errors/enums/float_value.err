@@ -1,0 +1,4 @@
+errors/enums/float_value.gd++:1:10: Enum values must be integers, but found 1.5.
+ 1 | enum X = 1.5
+   |          ^^^
+Hint: Write a whole number, such as 42, -1 or 0x10.

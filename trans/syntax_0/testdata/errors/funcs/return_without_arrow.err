@@ -1,0 +1,4 @@
+errors/funcs/return_without_arrow.gd++:1:10: Expected "->" or "{" after the parameter list, but found name "int".
+ 1 | func f() int {
+   |          ^^^
+Hint: Return types are written after an arrow: "-> int".

@@ -1,0 +1,10 @@
+File: @1:1
+  InlineEnums:
+    - @4:1
+      Doc: @1:1
+        Text: |
+          First line
+          second line.
+      Name: E
+      Entries:
+        - @4:10 A

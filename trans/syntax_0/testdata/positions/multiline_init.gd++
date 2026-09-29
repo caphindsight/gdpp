@@ -1,0 +1,4 @@
+class_name Test
+var x: int = foo(
+  1,
+  2)

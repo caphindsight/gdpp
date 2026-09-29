@@ -1,0 +1,3 @@
+errors/funcs/missing_return_type.gd++:1:13: Expected a type after "->", but found "{".
+ 1 | func f() -> {}
+   |             ^

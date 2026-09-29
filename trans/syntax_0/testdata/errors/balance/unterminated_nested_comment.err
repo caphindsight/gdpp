@@ -1,0 +1,4 @@
+errors/balance/unterminated_nested_comment.gd++:1:1: This comment is never closed.
+ 1 | /* outer /* inner */ still open
+   | ^^
+Hint: Block comments nest in GD++, so every "/*" inside a comment needs its own "*/".

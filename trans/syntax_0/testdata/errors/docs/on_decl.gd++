@@ -1,0 +1,2 @@
+/// Doc.
+impl { int x; }

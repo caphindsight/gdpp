@@ -1,0 +1,4 @@
+errors/balance/unclosed_property.gd++:1:12: This "{" (the body of property "x") is never closed.
+ 1 | var x: int {
+   |            ^
+Hint: Add a matching "}".

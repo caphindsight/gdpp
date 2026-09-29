@@ -1,0 +1,4 @@
+errors/annotations/on_decl.gd++:2:1: Expected a declaration that can take an annotation, but found keyword "decl".
+ 2 | decl { int x; }
+   | ^^^^
+Hint: Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values.

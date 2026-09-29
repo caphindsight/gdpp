@@ -1,0 +1,4 @@
+errors/enums/no_body.gd++:2:1: Expected "=" or "{" after the enum name, but found keyword "var".
+ 2 | var x: int
+   | ^^^
+Hint: Write "enum NAME = 42" for a constant, or "enum Name { A B C }" for an enum type.

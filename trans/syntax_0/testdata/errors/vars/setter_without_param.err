@@ -1,0 +1,4 @@
+errors/vars/setter_without_param.gd++:2:7: Expected "(" after "set", but found "{".
+ 2 |   set { x = value; }
+   |       ^
+Hint: Name the setter's parameter: "set(value) { ... }".

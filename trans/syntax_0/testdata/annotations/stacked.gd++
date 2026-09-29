@@ -1,0 +1,5 @@
+class_name Test
+@a
+@b(1)
+@c
+func f() -> void {}

@@ -1,0 +1,3 @@
+decl impl {
+  #define FOO 42
+}

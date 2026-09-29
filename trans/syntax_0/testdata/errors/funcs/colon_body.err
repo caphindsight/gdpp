@@ -1,0 +1,4 @@
+errors/funcs/colon_body.gd++:1:21: Expected "{" to start the function body, but found ":".
+ 1 | func greet() -> void:
+   |                     ^
+Hint: GD++ uses braces for function bodies, not a colon as in GDScript: "func foo() -> void { ... }".

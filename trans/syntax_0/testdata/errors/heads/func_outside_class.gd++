@@ -1,0 +1,3 @@
+/// Doc.
+@virtual
+func f() -> void {}

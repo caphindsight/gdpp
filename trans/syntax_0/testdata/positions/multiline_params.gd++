@@ -1,0 +1,8 @@
+class_name Test
+func f(
+  a: int,
+
+  b:
+    String
+) ->
+  void {}

@@ -1,0 +1,5 @@
+File: @1:1
+  InlineClasses:
+    - @1:1
+      Name: Foo
+      Extends: @2:11 Node

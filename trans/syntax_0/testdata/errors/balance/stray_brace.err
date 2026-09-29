@@ -1,0 +1,4 @@
+errors/balance/stray_brace.gd++:2:1: This "}" has no matching "{".
+ 2 | }
+   | ^
+Hint: Remove it, or add the missing "{" before it.

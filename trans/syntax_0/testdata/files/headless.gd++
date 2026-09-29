@@ -1,0 +1,7 @@
+class A {}
+
+enum E { X Y }
+
+extern B {}
+
+enum ANSWER = 42

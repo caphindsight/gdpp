@@ -1,0 +1,343 @@
+File: @36:1
+  FileClass: @36:1
+    Name: MyNode
+    Extends: @37:9 Node3D
+    Members:
+      - @64:1
+        Code: @64:1
+          Decl: true
+          Body: @64:6
+            TextPos: 64:7
+            Text: |
+
+
+
+
+                void private_function();
+
+      - @71:1
+        Code: @71:1
+          Impl: true
+          Body: @71:6
+            TextPos: 71:7
+            Text: |
+
+
+
+                void This::private_function() {
+
+
+                  if (Engine::is_editor_hint()) return;
+
+
+
+                  gd::print("Hello, world!");
+                }
+
+      - @87:1
+        Code: @87:1
+          Decl: true
+          Impl: true
+          Body: @87:11
+            TextPos: 87:12
+            Text: |
+
+                #define FOO 42
+
+
+      - @95:1
+        Code: @95:1
+          Decl: true
+          Body: @95:6
+            TextPos: 95:7
+            Text: |
+
+               public:
+                void public_function();
+
+      - @119:1
+        Enum: @119:1
+          Name: THE_ANSWER
+          Value: @119:19 42
+      - @126:1
+        Enum: @126:1
+          Name: Suit
+          Entries:
+            - @127:3 DIAMONDS
+            - @128:3 CLUBS
+            - @129:3 SPADES
+            - @130:3 HEARTS
+      - @133:1
+        Enum: @133:1
+          Name: Rank
+          Entries:
+            - @134:3
+              Name: JACK
+              Value: @134:10 0
+            - @135:3 QUEEN
+            - @136:3 KING
+      - @149:1
+        Import: @149:8 Suit
+      - @150:1
+        NoImport: @150:10 Rank
+      - @163:1
+        Func: @163:1
+          Name: greet_user
+          Params:
+            - @163:17
+              Name: name
+              Type: @163:23 String
+          Return: @163:34 void
+          Body: @163:39
+            TextPos: 163:40
+            Text: |
+
+
+                gd::print("Hello ", name, "!");
+
+      - @175:1
+        Func: @176:1
+          Annotations:
+            - @175:1 virtual
+          Name: _foo
+          Return: @176:16 int
+          Body: @176:20
+            TextPos: 176:21
+            Text: |
+
+                return 0;
+
+      - @180:1
+        Func: @181:1
+          Annotations:
+            - @180:1 virtual
+          Name: _bar
+          Return: @181:16 int
+      - @183:1
+        Func: @183:1
+          Name: foo_plus_bar
+          Return: @183:24 int
+          Body: @183:28
+            TextPos: 183:29
+            Text: |
+
+                return _foo() + _bar();
+
+      - @192:1
+        Func: @193:1
+          Annotations:
+            - @192:1 override
+          Name: _ready
+          Return: @193:18 void
+          Body: @193:23
+            TextPos: 193:24
+            Text: |
+
+
+
+                gd::print("My node is ready.");
+
+      - @201:1
+        Code: @201:1
+          Decl: true
+          Body: @201:6
+            TextPos: 201:7
+            Text: |
+
+                int64_t my_value_;
+
+      - @205:1
+        Func: @206:1
+          Annotations:
+            - @205:1 const
+          Name: get_my_value
+          Return: @206:24 int
+          Body: @206:28
+            TextPos: 206:29
+            Text: |
+
+                return my_value;
+
+      - @212:1
+        Func: @213:1
+          Annotations:
+            - @212:1 static
+          Name: my_static_func
+          Return: @213:26 void
+          Body: @213:31
+            TextPos: 213:32
+            Text: |
+
+                gd::print("Hello!");
+
+      - @224:1
+        Ctor: @224:6
+          TextPos: 224:7
+          Text: |
+
+              gd::print("This message shows up every time a MyNode is created.");
+
+      - @228:1
+        Dtor: @228:6
+          TextPos: 228:7
+          Text: |
+
+              gd::print("This message shows up every time a MyNode is deleted.");
+
+      - @236:1
+        Signal: @236:1
+          Name: something_happened
+          Params:
+            - @236:27
+              Name: a
+              Type: @236:30 int
+      - @237:1
+        Signal: @237:1 something_else_happened
+      - @241:1
+        Func: @241:1
+          Name: emit_both_signals
+          Return: @241:29 void
+          Body: @241:34
+            TextPos: 241:35
+            Text: |
+
+                emit something_happened(42);
+                emit something_else_happened();
+
+      - @255:1
+        Var: @255:1
+          Name: simple_var
+          Type: @255:17 int
+      - @256:1
+        Var: @256:1
+          Name: another_simple_var
+          Type: @256:25 int
+          Init: @256:31 5
+      - @260:1
+        Var: @261:1
+          Annotations:
+            - @260:1 onready
+          Name: child_node_1
+          Type: @261:19 Node3D
+          Init: @261:28 get_node<Node3D>("MyNode1")
+      - @263:1
+        Var: @264:1
+          Annotations:
+            - @263:1 onready
+          Name: child_node_2
+          Type: @264:19 Node3D
+          Init: @264:28
+            Block: @264:28
+              TextPos: 264:29
+              Text: |
+
+                  Node3D* res = memnew(Node3D);
+                  add_child(res);
+                  return res;
+
+      - @280:1
+        Var: @280:1
+          Name: my_property
+          Type: @280:18 int
+          Property: @280:22
+            Accessors:
+              - @281:3
+                Decl: @281:8
+                  TextPos: 281:9
+                  Text: |
+
+
+                        int64_t my_property = 0;
+
+              - @285:3
+                Get: @285:7
+                  TextPos: 285:8
+                  Text: |
+
+
+                        return my_property;
+
+              - @289:3
+                Set: @289:3
+                  Param: @289:7 val
+                  Body: @289:12
+                    TextPos: 289:13
+                    Text: |
+
+
+                          if (val < 0) val = 0;
+                          my_property = val;
+
+      - @308:1
+        Import: @308:8 MeshInstance3D
+      - @312:1
+        NoImport: @312:10 MeshInstance2D
+      - @323:1
+        Var: @324:1
+          Annotations:
+            - @323:1
+              Name: export_range
+              Args:
+                - @323:15 0
+                - @323:18 100
+                - @323:23 1
+          Name: my_range_var
+          Type: @324:19 int
+      - @329:1
+        Var: @330:1
+          Doc: @329:1 This is a variable.
+          Name: some_var
+          Type: @330:15 int
+      - @332:1
+        Func: @337:1
+          Doc: @332:1
+            Text: |
+              This function has a
+              long
+              description.
+          Name: foo
+          Return: @337:15 void
+          Body: @337:20
+            TextPos: 337:21
+      - @358:1
+        Var: @358:9
+          Annotations:
+            - @358:1 export
+          Name: my_extern
+          Type: @358:24 Terrain
+  InlineClasses:
+    - @41:1
+      Name: MyNode1
+      Extends: @42:11 Node
+    - @46:1 MyRefCounted1
+  InlineExterns:
+    - @345:1
+      Name: Terrain
+      Extends: @346:11 Node
+      Members:
+        - @348:3
+          Func: @348:10
+            Annotations:
+              - @348:3 const
+            Name: foo
+            Return: @348:24 void
+        - @349:3
+          Func: @349:13
+            Annotations:
+              - @349:3 deferred
+            Name: bar
+            Return: @349:27 void
+        - @350:3
+          Var: @350:3
+            Name: baz
+            Type: @350:12 int
+        - @351:3
+          Signal: @351:3
+            Name: done
+            Params:
+              - @351:15
+                Name: a
+                Type: @351:18 bool
+              - @351:24
+                Name: b
+                Type: @351:27 int

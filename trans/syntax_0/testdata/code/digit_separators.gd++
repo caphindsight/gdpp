@@ -1,0 +1,7 @@
+class_name Test
+func f() -> void {
+  n = 1'000'000;
+  c = '}';
+  h = 0xFF'FF;
+  d = 1.5e-3;
+}

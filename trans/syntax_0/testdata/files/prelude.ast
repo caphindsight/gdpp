@@ -1,0 +1,28 @@
+File: @1:1
+  Code:
+    - @1:1
+      Decl: true
+      Body: @1:6
+        TextPos: 1:7
+        Text: |
+
+            #include <vector>
+
+    - @4:1
+      Impl: true
+      Body: @4:6
+        TextPos: 4:7
+        Text: |
+
+            static int counter;
+
+    - @7:1
+      Decl: true
+      Impl: true
+      Body: @7:11
+        TextPos: 7:12
+        Text: |
+
+            #define FOO 1
+
+  FileClass: @11:1 Foo

@@ -1,0 +1,5 @@
+impl {
+  void This::helper() {
+    gd::print("hi");
+  }
+}

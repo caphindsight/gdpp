@@ -1,0 +1,3 @@
+errors/annotations/bad_arg.gd++:1:18: Expected an annotation argument (a number, a string or a name), but found "+".
+ 1 | @export_range(0, +)
+   |                  ^

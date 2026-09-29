@@ -1,0 +1,8 @@
+class_name Test
+func f() -> void {
+  a = R"(})";
+  b = R"x()")x";
+  c = u8R"(
+{
+)";
+}

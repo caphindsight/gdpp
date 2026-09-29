@@ -1,0 +1,4 @@
+errors/typos/fucn.gd++:1:1: Expected a declaration, but found name "fucn".
+ 1 | fucn foo() {}
+   | ^^^^
+Hint: Did you mean "func"?

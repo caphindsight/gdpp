@@ -1,0 +1,13 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Signal: @2:1 a
+      - @3:1
+        Signal: @3:1 b
+      - @4:1
+        Signal: @4:1
+          Name: c
+          Params:
+            - @4:10 x

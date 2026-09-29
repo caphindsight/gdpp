@@ -1,0 +1,3 @@
+errors/vars/bad_type.gd++:1:8: Expected a type after ":", but found number 5.
+ 1 | var x: 5
+   |        ^

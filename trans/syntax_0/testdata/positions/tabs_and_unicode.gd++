@@ -1,0 +1,5 @@
+class_name Test
+/* héllo wörld */ var x: int
+	func f() -> void {
+		y("日本");
+	}

@@ -1,0 +1,4 @@
+errors/heads/extends_misplaced.gd++:3:1: Expected a declaration, but found keyword "extends".
+ 3 | extends Node
+   | ^^^^^^^
+Hint: "extends" goes right after "class_name Name", or right after the "{" of an inline class.

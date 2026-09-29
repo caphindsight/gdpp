@@ -1,0 +1,9 @@
+File: @1:1
+  FileEnum: @2:1
+    Doc: @1:1 The enum.
+    Name: Foo
+    Entries:
+      - @4:1
+        Doc: @3:1 First.
+        Name: FOO1
+      - @5:1 FOO2

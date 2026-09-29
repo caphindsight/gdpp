@@ -1,0 +1,9 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Var: @3:1
+          Doc: @2:1 Outer /* inner */ text.
+          Name: x
+          Type: @3:8 int

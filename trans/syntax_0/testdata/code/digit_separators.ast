@@ -1,0 +1,17 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Func: @2:1
+          Name: f
+          Return: @2:13 void
+          Body: @2:18
+            TextPos: 2:19
+            Text: |
+
+                n = 1'000'000;
+                c = '}';
+                h = 0xFF'FF;
+                d = 1.5e-3;
+

@@ -1,0 +1,6 @@
+/* A block comment. */
+class /* inline */ Foo {
+  /*
+    Multi-line.
+  */
+}

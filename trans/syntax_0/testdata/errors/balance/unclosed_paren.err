@@ -1,0 +1,4 @@
+errors/balance/unclosed_paren.gd++:1:7: This "(" is never closed.
+ 1 | func f(a: int -> void {}
+   |       ^
+Hint: Add a matching ")".

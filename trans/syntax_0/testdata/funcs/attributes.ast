@@ -1,0 +1,27 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Func: @3:1
+          Annotations:
+            - @2:1 virtual
+            - @2:10 const
+          Name: a
+          Return: @3:13 int
+      - @4:1
+        Func: @4:9
+          Annotations:
+            - @4:1 static
+          Name: b
+          Return: @4:21 void
+          Body: @4:26
+            TextPos: 4:27
+      - @5:1
+        Func: @6:1
+          Annotations:
+            - @5:1 override
+          Name: _ready
+          Return: @6:18 void
+          Body: @6:23
+            TextPos: 6:24

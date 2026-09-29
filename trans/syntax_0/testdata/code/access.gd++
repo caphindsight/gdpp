@@ -1,0 +1,6 @@
+decl {
+ public:
+  void pub();
+ protected:
+  void prot();
+}

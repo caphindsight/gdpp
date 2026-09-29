@@ -1,0 +1,19 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Foo
+    Members:
+      - @3:1
+        Func: @3:1
+          Name: f
+          Return: @3:13 void
+          Body: @3:18
+            TextPos: 3:19
+            Text: |
+
+                x();
+
+      - @6:1
+        Var: @6:1
+          Name: y
+          Type: @6:8 int
+          Init: @6:14 3

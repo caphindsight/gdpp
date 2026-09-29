@@ -1,0 +1,4 @@
+errors/docs/eof.gd++:2:1: This doc comment is not followed by a declaration.
+ 2 | /// Dangling.
+   | ^^^^^^^^^^^^^
+Hint: Doc comments document the declaration right after them. Use "//" for a regular comment.

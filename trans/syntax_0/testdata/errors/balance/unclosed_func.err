@@ -1,0 +1,4 @@
+errors/balance/unclosed_func.gd++:2:20: This "{" (the body of func "f") is probably never closed.
+ 2 |   func f() -> void {
+   |                    ^
+Hint: The "}" on line 7 closes it, but that "}" is indented differently, so it probably belongs to an outer block. Add the missing "}".

@@ -1,0 +1,14 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Var: @2:1
+          Name: x
+          Type: @2:8 int
+          Property: @2:12
+            Accessors:
+              - @3:3
+                Get: @3:7
+                  TextPos: 3:8
+                  Text: " return 42;"

@@ -1,0 +1,17 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Func: @2:1
+          Name: f
+          Params:
+            - @3:3
+              Name: a
+              Type: @3:6 int
+            - @5:3
+              Name: b
+              Type: @6:5 String
+          Return: @8:3 void
+          Body: @8:8
+            TextPos: 8:9

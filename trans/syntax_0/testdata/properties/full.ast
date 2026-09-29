@@ -1,0 +1,27 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Var: @2:1
+          Name: x
+          Type: @2:8 int
+          Property: @2:12
+            Accessors:
+              - @3:3
+                Decl: @3:8
+                  TextPos: 3:9
+                  Text: " int64_t x_ = 0;"
+              - @4:3
+                Get: @4:7
+                  TextPos: 4:8
+                  Text: " return x_;"
+              - @5:3
+                Set: @5:3
+                  Param: @5:7 val
+                  Body: @5:12
+                    TextPos: 5:13
+                    Text: |
+
+                          x_ = val;
+

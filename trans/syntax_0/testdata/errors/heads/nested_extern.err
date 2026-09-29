@@ -1,0 +1,4 @@
+errors/heads/nested_extern.gd++:2:3: Classes and externs can't be nested, but found keyword "extern" inside the body of extern "A".
+ 2 |   extern B {}
+   |   ^^^^^^
+Hint: Move it out to the top level of the file. Inline classes and externs are listed next to each other.

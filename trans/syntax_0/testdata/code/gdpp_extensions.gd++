@@ -1,0 +1,6 @@
+class_name Test
+func f() -> void {
+  emit done(42);
+  This* self = this;
+  gd::print("x");
+}

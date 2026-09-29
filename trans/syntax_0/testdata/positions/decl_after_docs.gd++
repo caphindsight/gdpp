@@ -1,0 +1,8 @@
+class_name Test
+/**
+  Long
+  doc.
+*/
+@export
+@onready
+var x: int

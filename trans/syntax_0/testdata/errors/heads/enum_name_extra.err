@@ -1,0 +1,4 @@
+errors/heads/enum_name_extra.gd++:3:9: Expected an enum value name, but found "{".
+ 3 | class B {}
+   |         ^
+Hint: Everything after "enum_name Name" is a value of that enum, e.g. "A", "B = 2" or "C,".

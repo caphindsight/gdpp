@@ -1,0 +1,4 @@
+errors/balance/unclosed_class.gd++:1:11: This "{" (the body of class "Foo") is never closed.
+ 1 | class Foo {
+   |           ^
+Hint: Add a matching "}".

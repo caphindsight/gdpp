@@ -1,0 +1,4 @@
+errors/enums/entry_missing_value.gd++:3:3: Expected an integer value after "=", but found name "B".
+ 3 |   B
+   |   ^
+Hint: Enum values are integers, such as 42, -1 or 0x10.

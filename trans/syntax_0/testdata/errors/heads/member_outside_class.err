@@ -1,0 +1,4 @@
+errors/heads/member_outside_class.gd++:2:1: This var is outside of any class.
+ 2 | var x: int
+   | ^^^
+Hint: Add "class_name Name" at the top of the file to make the whole file a class, or move this into an inline class: "class Name { ... }".

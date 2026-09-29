@@ -1,0 +1,4 @@
+errors/misc/bad_char.gd++:1:12: Expected a declaration, but found "$".
+ 1 | var x: int $
+   |            ^
+Hint: A declaration starts with one of: func, var, signal, enum, class, extern, decl, impl, ctor, dtor, import, noimport.

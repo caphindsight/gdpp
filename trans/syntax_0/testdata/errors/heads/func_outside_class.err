@@ -1,0 +1,4 @@
+errors/heads/func_outside_class.gd++:3:1: This func is outside of any class.
+ 3 | func f() -> void {}
+   | ^^^^
+Hint: Add "class_name Name" at the top of the file to make the whole file a class, or move this into an inline class: "class Name { ... }".

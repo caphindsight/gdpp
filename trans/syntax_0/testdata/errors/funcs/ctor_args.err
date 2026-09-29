@@ -1,0 +1,4 @@
+errors/funcs/ctor_args.gd++:1:5: Expected "{" to start the ctor block, but found "(".
+ 1 | ctor(a) {}
+   |     ^
+Hint: Constructors and destructors take no arguments: "ctor { ... }".

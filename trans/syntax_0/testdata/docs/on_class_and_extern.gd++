@@ -1,0 +1,8 @@
+/// A class.
+class A {}
+
+/** An extern. */
+extern B {
+  /// A method.
+  func m() -> void
+}

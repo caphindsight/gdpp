@@ -1,0 +1,8 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Signal: @2:18
+          Doc: @2:1 One line.
+          Name: done
