@@ -198,7 +198,7 @@ func transpilePackage(pkg Package, dir Path, files []gdppFile, names []godotName
 		for _, g := range files {
 			for _, d := range g.Decls {
 				if g.Rel != f.Rel {
-					deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + g.Rel + `.h"`, Kind: kinds[d.Name], Values: d.Values})
+					deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + g.Rel + `.h"`, Kind: kinds[d.Name], Values: d.Values, Gdpp: true})
 				}
 			}
 		}

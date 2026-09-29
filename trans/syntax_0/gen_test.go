@@ -25,6 +25,7 @@ func TestGenerate(t *testing.T) {
 		Dep []struct {
 			Name, Include, Kind, Cpp string
 			Values                   []meta.EnumValue
+			Gdpp                     bool
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
@@ -34,7 +35,7 @@ func TestGenerate(t *testing.T) {
 		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other}
 	var opts meta.Options
 	for _, d := range file.Dep {
-		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Cpp: d.Cpp})
+		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Cpp: d.Cpp, Gdpp: d.Gdpp})
 	}
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")
 	if err != nil {

@@ -13,7 +13,8 @@ func (u *unit) source() string {
 	w.ln("")
 	w.ln("#include %q", u.opts.HeaderName)
 	header := map[string]bool{}
-	for _, name := range u.headerNames() {
+	names, _ := u.headerNames()
+	for _, name := range names {
 		header[name] = true
 	}
 	if incs := u.includes(u.sourceNames(), header); len(incs) > 0 {
@@ -414,15 +415,15 @@ func typeNames(t *Type) []string {
 	return names
 }
 
-// headerNames returns the names used in the header: bases, API types, imports and decl code.
-func (u *unit) headerNames() []string {
-	var names []string
+// headerNames returns the names used in the header: bases, API types, imports and decl code. complete lists
+// those that need a complete type: bases, and names in decl code, which may use any member.
+func (u *unit) headerNames() (names, complete []string) {
 	add := func(ts ...*Type) {
 		for _, t := range ts {
 			names = append(names, typeNames(t)...)
 		}
 	}
-	code := func(b *Block) { names = append(names, identifiers(b.Text)...) }
+	code := func(b *Block) { complete = append(complete, identifiers(b.Text)...) }
 	addFuncs := func(funcs []*funcModel, vars []*varModel, signals []*signalModel) {
 		for _, f := range funcs {
 			add(f.f.Return)
@@ -448,20 +449,20 @@ func (u *unit) headerNames() []string {
 		}
 	}
 	for _, e := range u.externs {
-		names = append(names, e.base)
+		complete = append(complete, e.base)
 		addFuncs(e.funcs, e.vars, e.signals)
 	}
 	for _, c := range u.classes {
-		names = append(names, c.base)
+		complete = append(complete, c.base)
 		add(c.imports...)
 		addFuncs(c.funcs, c.vars, c.signals)
 		for _, code := range c.codes {
 			if code.Decl {
-				names = append(names, identifiers(code.Body.Text)...)
+				complete = append(complete, identifiers(code.Body.Text)...)
 			}
 		}
 	}
-	return names
+	return append(names, complete...), complete
 }
 
 // sourceNames returns the names used in the source: function bodies, initial values and impl code.

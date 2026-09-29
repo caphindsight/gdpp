@@ -3,10 +3,11 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include "level.h"
 #include <godot_cpp/classes/ref_counted.hpp>
 
 namespace godot {
+
+enum class Level : int64_t;
 
 enum _gdpp_Quest_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Quest_Level, "Quest.Level")
@@ -36,3 +37,5 @@ private:
 #undef This
 
 } // namespace godot
+
+#include "level.h"

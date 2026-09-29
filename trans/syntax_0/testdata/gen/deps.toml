@@ -54,6 +54,7 @@ kind = "RefCounted"
 name = "Level"
 include = '"level.h"'
 kind = "Enum"
+gdpp = true
 values = [
 	{ name = "EASY", value = 0, doc = "For beginners." },
 	{ name = "HARD", value = 5, doc = "@deprecated: Use [constant LEVEL_EASY]." },
@@ -63,11 +64,31 @@ values = [
 name = "Road"
 include = '"road.h"'
 kind = "Extern"
+gdpp = true
 
 [[dep]]
 name = "Settings"
 include = '"settings.h"'
 kind = "RefCountedExtern"
+gdpp = true
+
+[[dep]]
+name = "Door"
+include = '"door.h"'
+kind = "Object"
+gdpp = true
+
+[[dep]]
+name = "Key"
+include = '"key.h"'
+kind = "RefCounted"
+gdpp = true
+
+[[dep]]
+name = "Wall"
+include = '"wall.h"'
+kind = "Object"
+gdpp = true
 
 [[dep]]
 name = "TypedArray"

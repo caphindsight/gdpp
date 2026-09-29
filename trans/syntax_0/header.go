@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"gd++/trans/meta"
 )
 
 // header returns the C++ header of the file: enum types, extern wrappers and class definitions.
@@ -14,7 +16,21 @@ func (u *unit) header() string {
 	w.ln("#pragma once")
 	w.ln("")
 	w.ln("#include <%s>", RuntimeHeaderName)
-	for _, inc := range u.includes(u.headerNames(), nil) {
+	// Other GD++ files may include this one in turn, and #pragma once cuts such a cycle short. So their classes
+	// and enums are forward-declared, and included at the end, unless they must be complete.
+	names, complete := u.headerNames()
+	forward := map[string]bool{}
+	var forwardNames []string
+	for _, name := range names {
+		if s := u.symbols[name]; s != nil && s.gdpp && slices.Contains([]meta.Kind{meta.Object, meta.RefCounted, meta.Enum}, s.kind) &&
+			!slices.Contains(complete, name) && !forward[name] {
+			forward[name] = true
+			forwardNames = append(forwardNames, name)
+		}
+	}
+	slices.Sort(forwardNames)
+	top := u.includes(names, forward)
+	for _, inc := range top {
 		w.ln("#include %s", inc)
 	}
 	for _, c := range u.topCode {
@@ -25,7 +41,17 @@ func (u *unit) header() string {
 	}
 	w.ln("")
 	w.ln("namespace godot {")
-	u.aliases(w, u.headerNames(), nil)
+	u.aliases(w, names, nil)
+	if len(forwardNames) > 0 {
+		w.ln("")
+		for _, name := range forwardNames {
+			if u.symbols[name].kind == meta.Enum {
+				w.ln("enum class %s : int64_t;", name)
+			} else {
+				w.ln("class %s;", name)
+			}
+		}
+	}
 	for _, s := range u.enums {
 		w.ln("")
 		w.ln("enum class %s : int64_t {", s.name)
@@ -58,6 +84,26 @@ func (u *unit) header() string {
 	}
 	for _, c := range u.classes {
 		u.classDecl(w, c)
+	}
+	// The members of externs come after the includes at the end, since they may use the classes those declare.
+	var end []string
+	for _, inc := range u.includes(forwardNames, nil) {
+		if !slices.Contains(top, inc) {
+			end = append(end, inc)
+		}
+	}
+	if len(end) > 0 {
+		w.ln("")
+		w.ln("} // namespace godot")
+		w.ln("")
+		for _, inc := range end {
+			w.ln("#include %s", inc)
+		}
+		if len(u.externs) == 0 {
+			return w.String()
+		}
+		w.ln("")
+		w.ln("namespace godot {")
 	}
 	for _, e := range u.externs {
 		u.externDefs(w, e)
