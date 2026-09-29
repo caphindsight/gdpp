@@ -282,12 +282,15 @@ func TestInitClassConfirms(t *testing.T) {
 		"exists":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h"}, "[?] Class A already exists in res://src/pkg. Update it? [y/n] n\n"},
 		"extension": {CmdInit{Path: "src/pkg", Class: "B", Include: "pkg://b.cpp"}, "[?] Include path pkg://b.cpp is not a .h or .hpp file. Continue? [y/n] n\n"},
 		"missing":   {CmdInit{Path: "src/pkg", Class: "B", Include: "pkg://b.h", Update: true}, "[x] There is no class B in res://src/pkg.\n"},
+		"gdpp":      {CmdInit{Path: "src/pkg", Class: "Player", Include: "pkg://p.h"}, "[x] Class Player is declared in res://src/pkg/player.gd++, so it can only be changed there.\n"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 				isTTY = false
-				withMemFS(t, "/games/my_game", withPackages(map[string]string{"src/pkg": config}))
+				tree := withPackages(map[string]string{"src/pkg": config})
+				tree["/games/my_game/src/pkg/player.gd++"] = "class_name Player\n"
+				withMemFS(t, "/games/my_game", tree)
 				tc.c.Run()
 				return
 			}

@@ -1,5 +1,5 @@
-{Name:Deck Kind:1 Base:RefCounted Values:[]}
-{Name:Suit Kind:3 Base: Values:[{Name:A Value:0 Doc:} {Name:B Value:1 Doc:}]}
-{Name:Rank Kind:3 Base: Values:[{Name:ONE Value:0 Doc:} {Name:TWO Value:1 Doc:}]}
-{Name:Other Kind:1 Base:RefCounted Values:[]}
-{Name:Local Kind:3 Base: Values:[{Name:X Value:0 Doc:}]}
+{Name:Deck Kind:1 Base:RefCounted Values:[] Icon:}
+{Name:Suit Kind:3 Base: Values:[{Name:A Value:0 Doc:} {Name:B Value:1 Doc:}] Icon:}
+{Name:Rank Kind:3 Base: Values:[{Name:ONE Value:0 Doc:} {Name:TWO Value:1 Doc:}] Icon:}
+{Name:Other Kind:1 Base:RefCounted Values:[] Icon:}
+{Name:Local Kind:3 Base: Values:[{Name:X Value:0 Doc:}] Icon:}

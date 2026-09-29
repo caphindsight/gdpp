@@ -46,6 +46,8 @@ type CmdBuild struct {
 	Ship     bool     `arg:"--ship" help:"build a release library instead of a debug one"`
 	Jobs     int      `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
 	Proj     bool     `arg:"--proj" help:"build all packages in the project, one after another"`
+	Doc      bool     `arg:"--doc" help:"compile the documentation of GD++ classes into the library [default: without --ship]"`
+	NoDoc    bool     `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
 }
 
 // Build platforms and CPU architectures, each a full name followed by its
@@ -78,10 +80,19 @@ func (c *CmdBuild) Run() {
 	}
 	for _, pkg := range pkgs {
 		generateBuildCache(p, pkg)
+		var classes []gdppClass
+		if files := listGdppFiles(p, pkg); len(files) > 0 {
+			// The first build's arguments, so the full build finds the generated bindings up to date.
+			names := loadGodotNames(pkg, func() {
+				Exec("Generating bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(c.sconsArgs(targets[0]), "--gdpp-bindings")...)
+			})
+			classes = transpilePackage(pkg, files, names, c.docs())
+		}
+		generateRegisterTypes(pkg, classes)
 		for _, target := range targets {
 			Exec("Building "+styledPackageName(pkg.Root)+" for "+c.describe(target)+"...", pkg.BuildCache, "scons", c.sconsArgs(target)...)
 		}
-		generateGdextension(pkg)
+		generateGdextension(pkg, classes)
 	}
 }
 
@@ -92,6 +103,7 @@ func (c *CmdBuild) targets() []string {
 	Assert(len(c.For) == 0 || !c.Windows && c.Platform == "" && c.Arch == "", "Invalid arguments: --for cannot be used together with -w, --platform or --arch.")
 	Assert(countTrue(c.Opt, c.Small, c.NoOpt) <= 1, "Invalid arguments: --opt, --small and --noopt cannot be used together.")
 	Assert(!c.Proj || c.Path == "", "Invalid arguments: a path and --proj cannot be used together.")
+	Assert(!c.Doc || !c.NoDoc, "Invalid arguments: --doc and --nodoc cannot be used together.")
 	Assert(c.Jobs >= 0, "Invalid arguments: --jobs cannot be negative.")
 	if len(c.For) == 0 {
 		if c.Windows {
@@ -153,6 +165,12 @@ func (c *CmdBuild) sconsArgs(target string) []string {
 		args = append(args, fmt.Sprintf("-j%d", c.Jobs))
 	}
 	return args
+}
+
+// docs reports whether to compile the documentation of GD++ classes: by
+// default only into debug builds, since only the editor shows it.
+func (c *CmdBuild) docs() bool {
+	return c.Doc || !c.NoDoc && !c.Ship
 }
 
 // optimize returns the godot-cpp optimize option: the chosen one, or by
@@ -222,6 +240,32 @@ func generateBuildCache(p Project, pkg Package) {
 		state.WriteString(stateText)
 	}
 
+	projectRoot, err := filepath.Rel(cache.GetOsPath(), p.Root.GetOsPath())
+	Check(err, "Failed to compute a relative path")
+	writeTemplate(cache.Cd("SConstruct"), sconstructTemplate, map[string]any{
+		"Id":          pkg.Id,
+		"CppStandard": pkg.Config.CppStandard,
+		"Color":       isTTY,
+		"ProjectRoot": filepath.ToSlash(projectRoot),
+		"Sources":     packageFiles(p, pkg, ".c", ".cc", ".cpp", ".cxx", ".c++"),
+		"GdppSources": gdppSources(p, pkg),
+	})
+}
+
+// gdppSources returns the paths of the C++ sources generated from the
+// package's GD++ files, relative to the build cache's gdpp directory.
+func gdppSources(p Project, pkg Package) []string {
+	var sources []string
+	for _, rel := range packageFiles(p, pkg, gdppExtensions...) {
+		sources = append(sources, rel+".cpp")
+	}
+	return sources
+}
+
+// generateRegisterTypes writes the build cache's __register_types__.cpp,
+// which registers the package's classes: those in its config, and the GD++
+// classes, which must not clash with them.
+func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 	var classes, includes []string
 	for _, class := range pkg.Config.Classes {
 		classes = append(classes, class.Name)
@@ -231,29 +275,25 @@ func generateBuildCache(p Project, pkg Package) {
 			includes = append(includes, "<"+rest+">")
 		}
 	}
-	if writeTemplate(cache.Cd("__register_types__.cpp"), registerTypesTemplate, map[string]any{
+	for _, class := range gdpp {
+		Assert(!slices.Contains(classes, class.Name), "Class %s is declared in %s and in %s.",
+			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
+		classes = append(classes, class.Name)
+		includes = append(includes, `"`+class.File.Rel+`.h"`)
+	}
+	if writeTemplate(pkg.BuildCache.Cd("__register_types__.cpp"), registerTypesTemplate, map[string]any{
 		"Classes":  classes,
 		"Includes": uniqueSorted(includes, strings.Compare),
 	}) {
-		LogInfo("Registering classes for %s...", name)
+		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}
-
-	projectRoot, err := filepath.Rel(cache.GetOsPath(), p.Root.GetOsPath())
-	Check(err, "Failed to compute a relative path")
-	writeTemplate(cache.Cd("SConstruct"), sconstructTemplate, map[string]any{
-		"Id":          pkg.Id,
-		"CppStandard": pkg.Config.CppStandard,
-		"Color":       isTTY,
-		"ProjectRoot": filepath.ToSlash(projectRoot),
-		"Sources":     packageSources(p, pkg),
-	})
 }
 
-// packageSources returns the paths of the package's C and C++ source files,
-// relative to its root. Like ListPackages, it skips hidden directories,
-// res://_gd++proj and nested Godot projects, and also nested packages, whose
-// sources are their own.
-func packageSources(p Project, pkg Package) []string {
+// packageFiles returns the paths of the package's files with the given
+// extensions, relative to its root. Like ListPackages, it skips hidden
+// directories, res://_gd++proj and nested Godot projects, and also nested
+// packages, whose files are their own.
+func packageFiles(p Project, pkg Package, exts ...string) []string {
 	var sources []string
 	var walk func(dir Path, rel string)
 	walk = func(dir Path, rel string) {
@@ -264,7 +304,7 @@ func packageSources(p Project, pkg Package) []string {
 				if !child.IsPackageRoot() && !child.IsProjectRoot() && child != p.Root.Cd(checkedInDepsDirName) {
 					walk(child, childRel)
 				}
-			case slices.Contains([]string{".c", ".cc", ".cpp", ".cxx", ".c++"}, path.Ext(childRel)):
+			case slices.Contains(exts, path.Ext(childRel)):
 				sources = append(sources, childRel)
 			}
 		}
@@ -277,7 +317,7 @@ func packageSources(p Project, pkg Package) []string {
 // Godot to its libraries for all targets and to its class icons, and the
 // .uid file next to it, with a UID derived from the package name, so Godot
 // doesn't generate one. The minimum Godot version is the API spec's.
-func generateGdextension(pkg Package) {
+func generateGdextension(pkg Package, gdpp []gdppClass) {
 	var spec struct {
 		Header struct {
 			Major int `json:"version_major"`
@@ -304,6 +344,11 @@ func generateGdextension(pkg Package) {
 	}
 	icons := map[string]string{}
 	for _, class := range pkg.Config.Classes {
+		if class.Icon != "" {
+			icons[class.Name] = pkg.ClassPath(class.Icon).ToString()
+		}
+	}
+	for _, class := range gdpp {
 		if class.Icon != "" {
 			icons[class.Name] = pkg.ClassPath(class.Icon).ToString()
 		}

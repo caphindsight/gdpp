@@ -1,2 +1,2 @@
-{Name:Config Kind:2 Base:Resource Values:[]}
-{Name:Reader Kind:1 Base:RefCounted Values:[]}
+{Name:Config Kind:2 Base:Resource Values:[] Icon:}
+{Name:Reader Kind:1 Base:RefCounted Values:[] Icon:}

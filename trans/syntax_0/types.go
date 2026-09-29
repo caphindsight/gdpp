@@ -99,8 +99,11 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		return &gtype{cpp: "gdpp::ExtPtr<" + s.name + ">", doc: s.name}, nil
 	case meta.RefCountedExtern:
 		return &gtype{cpp: "gdpp::ExtRef<" + s.name + ">", doc: s.name}, nil
+	case meta.Enum:
+		return &gtype{cpp: s.name, doc: "int", enum: s}, nil
 	}
-	return &gtype{cpp: s.name, doc: "int", enum: s}, nil
+	return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("%s is not a Godot type.", t.Name),
+		"Types are Godot's built-in types and classes, and the package's classes, externs and enums.")
 }
 
 // resolveElement resolves a type argument of Array or Dictionary.

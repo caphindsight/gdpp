@@ -1,0 +1,7 @@
+@icon("res://icons/main.svg")
+class_name Main
+
+@icon("pkg://helper.svg")
+class Helper {}
+
+class Plain {}

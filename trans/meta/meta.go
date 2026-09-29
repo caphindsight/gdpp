@@ -23,6 +23,7 @@ const (
 	Extern           Kind = 3 // A GD++ extern whose base isn't refcounted, used as ExtPtr<T>.
 	RefCountedExtern Kind = 4 // A GD++ extern whose base is refcounted, used as ExtRef<T>.
 	Enum             Kind = 5 // A GD++ enum.
+	Other            Kind = 6 // A name in namespace godot that isn't a class, e.g. TypedArray: code may use it, but not as a GD++ type.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -57,6 +58,7 @@ type Declaration struct {
 	Kind   DeclKind    //
 	Base   string      // For classes and externs: the base class.
 	Values []EnumValue // For enums.
+	Icon   string      // For classes: the icon's res:// or pkg:// path, from @icon.
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

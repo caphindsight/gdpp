@@ -154,9 +154,30 @@ func TestLsCmdOnePackage(t *testing.T) {
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := "\n" + lsFooOut +
 		"\n" +
-		"  Classes              Include           Icon\n" +
-		"  Tree                 res://foo/tree.h  res://foo/icons/tree.svg\n" +
-		"  Bush                 none              none\n"
+		"  Classes              Kind           File              Icon\n" +
+		"  Tree                 C++            res://foo/tree.h  res://foo/icons/tree.svg\n" +
+		"  Bush                 C++            none              none\n"
+	if !strings.HasSuffix(out, want) {
+		t.Errorf("output = %q, want it to end with %q", out, want)
+	}
+}
+
+func TestLsCmdGdppClasses(t *testing.T) {
+	withLsProject(t)
+	foo := NewPath("/games/my_game/foo")
+	foo.Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n\n" +
+		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\n\n[[class]]\nname = \"Player\"\n")
+	foo.Cd("player.gd++").WriteString("@icon(\"pkg://icons/tree.svg\")\nclass_name Player\nextends Node\n")
+	foo.Cd("icons", "helper.gg").WriteString("class Helper {}\nenum Mood { HAPPY }\n")
+	foo.Cd("broken.gdpp").WriteString("fun f() {}\n")
+	out := captureStdout(t, (&CmdLs{}).Run)
+	want := "" +
+		"  Classes                   Kind           File                                                 Icon\n" +
+		"  Tree                      C++            res://foo/tree.h                                     none\n" +
+		"  x Player: declared twice  C++            none                                                 none\n" +
+		"  Helper                    GD++           res://foo/icons/helper.gg                            none\n" +
+		"  x Player: declared twice  GD++           res://foo/player.gd++                                res://foo/icons/tree.svg\n" +
+		"  ?                         GD++           x res://foo/broken.gdpp: has errors, see gd++ build  none\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -205,23 +226,23 @@ func TestLsPackages(t *testing.T) {
 		Package:  Package{Root: root, Config: PackageConfig{Bindings: "b", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++23"}},
 		Expanded: true,
 		Classes: []lsClass{
-			{"Tree", root.Cd("tree.h"), root.Cd("icons", "tree.svg")},
-			{"Bush", root.Cd("bush.h"), root.Cd("icons", "bush.svg")},
-			{"GrassPatch", Path{}, Path{}},
+			{Name: "Tree", File: root.Cd("tree.h"), Icon: root.Cd("icons", "tree.svg")},
+			{Name: "Bush", File: root.Cd("bush.h"), Icon: root.Cd("icons", "bush.svg")},
+			{Name: "GrassPatch"},
 		},
 	}}
 	pkgWant := "" +
 		"\n" +
 		"Package: res://foo\n" +
-		"  Godot C++ bindings:  b                   x missing\n" +
+		"  Godot C++ bindings:  b           x missing\n" +
 		"  Godot API spec:      4.3-stable\n" +
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++23\n" +
 		"\n" +
-		"  Classes              Include             Icon\n" +
-		"  Tree                 res://foo/tree.h    res://foo/icons/tree.svg\n" +
-		"  Bush                 x res://foo/bush.h  x res://foo/icons/bush.svg\n" +
-		"  GrassPatch           none                none\n" +
+		"  Classes              Kind        File                Icon\n" +
+		"  Tree                 C++         res://foo/tree.h    res://foo/icons/tree.svg\n" +
+		"  Bush                 C++         x res://foo/bush.h  x res://foo/icons/bush.svg\n" +
+		"  GrassPatch           C++         none                none\n" +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
 	for _, c := range []struct {

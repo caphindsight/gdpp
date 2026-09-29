@@ -161,19 +161,44 @@ func parseUnit(filename, src string) (*unit, error) {
 }
 
 // declarations lists what the file declares, for other files.
-func (u *unit) declarations() []meta.Declaration {
+func (u *unit) declarations() ([]meta.Declaration, error) {
 	var decls []meta.Declaration
 	for _, s := range u.sortedSymbols() {
 		switch {
 		case s.class != nil:
-			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(s.class.Extends)})
+			icon, err := u.classIcon(s.class)
+			if err != nil {
+				return nil, err
+			}
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(s.class.Extends), Icon: icon})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.EnumDecl, Values: s.values})
 		}
 	}
-	return decls
+	return decls, nil
+}
+
+// classIcon returns the path from the @icon annotation of class c, or "" if it has none.
+func (u *unit) classIcon(c *Class) (string, error) {
+	for _, a := range c.Annotations {
+		if a.Name != "icon" {
+			continue
+		}
+		if len(a.Args) != 1 || !strings.HasPrefix(a.Args[0].Value, "\"") {
+			return "", u.errorAt(a.Pos, len(a.Name)+1, "Annotation @icon needs one argument: the icon's path, as a string.",
+				"E.g. \"@icon(\\\"res://icons/player.svg\\\")\".")
+		}
+		arg := a.Args[0]
+		path, err := strconv.Unquote(arg.Value)
+		if err != nil || !strings.HasPrefix(path, "res://") && !strings.HasPrefix(path, "pkg://") {
+			return "", u.errorAt(arg.Pos, len(arg.Value), "The icon's path must start with res:// or pkg://.",
+				"res:// paths are relative to the project, pkg:// paths to the package.")
+		}
+		return path, nil
+	}
+	return "", nil
 }
 
 // sortedSymbols returns the file's declarations in source order.
@@ -211,7 +236,10 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 	if err != nil {
 		return nil, err
 	}
-	base := strings.TrimSuffix(filepath.Base(filename), ".gd++")
+	base := filepath.Base(filename)
+	for _, ext := range []string{".gd++", ".gdpp", ".gg"} {
+		base = strings.TrimSuffix(base, ext)
+	}
 	if opts.SourceName == "" {
 		opts.SourceName = filename
 	}
@@ -227,8 +255,8 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			if s.include != "" {
 				continue // A duplicate dependency.
 			}
-			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is declared here and also in another file of the package.", d.Name),
-				"Class, extern and enum names must be unique in the package.")
+			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
+				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
 		}
 		u.symbols[d.Name] = &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values}
 	}
@@ -281,6 +309,8 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	case b.kind == meta.Extern || b.kind == meta.RefCountedExtern || b.extern != nil:
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is an extern.", s.name, name),
 			"Extend the extern's base class instead.")
+	case b.kind != meta.Object && b.kind != meta.RefCounted && b.class == nil:
+		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is not a class.", s.name, name), "")
 	}
 	kind, err := u.kindOf(b, append(seen, s))
 	if err != nil {
@@ -296,7 +326,7 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	return kind, nil
 }
 
-var knownAnnotations = []string{"const", "deferred", "export", "export_dir", "export_enum", "export_file", "export_flags",
+var knownAnnotations = []string{"const", "deferred", "export", "export_dir", "export_enum", "export_file", "export_flags", "icon",
 	"export_multiline", "export_placeholder", "export_range", "export_storage", "onready", "override", "static", "virtual"}
 
 // annotations checks the annotations of a declaration of the given kind, e.g. "func", and returns them by name.
@@ -317,7 +347,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can't be used on %s.", a.Name, kind), "")
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
-		case len(a.Args) > 0 && !slices.Contains([]string{"export_enum", "export_file", "export_flags", "export_placeholder", "export_range"}, a.Name):
+		case len(a.Args) > 0 && !slices.Contains([]string{"export_enum", "export_file", "export_flags", "export_placeholder", "export_range", "icon"}, a.Name):
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
@@ -597,7 +627,10 @@ func (u *unit) buildClasses() error {
 
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted}
-	if _, err := u.annotations(c.Annotations, "a class"); err != nil {
+	if _, err := u.annotations(c.Annotations, "a class", "icon"); err != nil {
+		return nil, err
+	}
+	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}
 	names := map[string]bool{}

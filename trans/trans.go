@@ -3,7 +3,6 @@ package trans
 
 import (
 	"fmt"
-	"os"
 
 	"gd++/trans/meta"
 	"gd++/trans/syntax_0"
@@ -24,6 +23,7 @@ const (
 	Extern           = meta.Extern
 	RefCountedExtern = meta.RefCountedExtern
 	Enum             = meta.Enum
+	Other            = meta.Other
 	ClassDecl        = meta.ClassDecl
 	ExternDecl       = meta.ExternDecl
 	EnumDecl         = meta.EnumDecl
@@ -44,61 +44,60 @@ var forks = map[int]fork{
 		syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
 }
 
-// load returns the fork for syntax and the contents of the file at path.
-func load(path string, syntax int) (fork, string, error) {
+// get returns the fork for syntax.
+func get(syntax int) (fork, error) {
 	f, ok := forks[syntax]
 	if !ok {
-		return f, "", fmt.Errorf("Unsupported GD++ syntax %d.", syntax)
+		return f, fmt.Errorf("Unsupported GD++ syntax %d.", syntax)
 	}
-	src, err := os.ReadFile(path)
-	if err != nil {
-		return f, "", fmt.Errorf("Failed to read %s: %w", path, err)
-	}
-	return f, string(src), nil
+	return f, nil
 }
 
-// ListClasses returns the classes, externs and enum types declared in the GD++ file at path.
-func ListClasses(path string, syntax int) ([]Declaration, error) {
-	f, src, err := load(path, syntax)
+// Each function takes a GD++ file's name and contents. The name appears in errors, and in #line directives unless
+// Options.SourceName is set.
+
+// ListClasses returns the classes, externs and enum types that the GD++ file declares.
+func ListClasses(name, src string, syntax int) ([]Declaration, error) {
+	f, err := get(syntax)
 	if err != nil {
 		return nil, err
 	}
-	return f.listClasses(path, src)
+	return f.listClasses(name, src)
 }
 
-// DocumentClass returns the Godot XML documentation of the class named class in the GD++ file at path.
-func DocumentClass(path, class string, opts Options, syntax int) (string, error) {
-	f, src, err := load(path, syntax)
+// DocumentClass returns the Godot XML documentation of the class named class in the GD++ file.
+func DocumentClass(name, src, class string, opts Options, syntax int) (string, error) {
+	f, err := get(syntax)
 	if err != nil {
 		return "", err
 	}
-	return f.documentClass(path, src, class, opts)
+	return f.documentClass(name, src, class, opts)
 }
 
-// GenerateHeader returns the C++ header for the GD++ file at path.
-func GenerateHeader(path string, opts Options, syntax int) (string, error) {
-	f, src, err := load(path, syntax)
+// GenerateHeader returns the C++ header for the GD++ file.
+func GenerateHeader(name, src string, opts Options, syntax int) (string, error) {
+	f, err := get(syntax)
 	if err != nil {
 		return "", err
 	}
-	return f.generateHeader(path, src, opts)
+	return f.generateHeader(name, src, opts)
 }
 
-// GenerateSource returns the C++ source file for the GD++ file at path.
-func GenerateSource(path string, opts Options, syntax int) (string, error) {
-	f, src, err := load(path, syntax)
+// GenerateSource returns the C++ source file for the GD++ file.
+func GenerateSource(name, src string, opts Options, syntax int) (string, error) {
+	f, err := get(syntax)
 	if err != nil {
 		return "", err
 	}
-	return f.generateSource(path, src, opts)
+	return f.generateSource(name, src, opts)
 }
 
 // RuntimeHeader returns the name (as generated headers include it) and contents of the header that every
 // file generated with the given syntax needs. It doesn't depend on any GD++ file.
 func RuntimeHeader(syntax int) (name, text string, err error) {
-	f, ok := forks[syntax]
-	if !ok {
-		return "", "", fmt.Errorf("Unsupported GD++ syntax %d.", syntax)
+	f, err := get(syntax)
+	if err != nil {
+		return "", "", err
 	}
 	return f.runtimeName, f.runtimeText, nil
 }

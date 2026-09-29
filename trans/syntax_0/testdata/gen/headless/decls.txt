@@ -1,2 +1,2 @@
-{Name:Shared Kind:3 Base: Values:[{Name:ONE Value:0 Doc:} {Name:TWO Value:1 Doc:}]}
-{Name:A Kind:1 Base:RefCounted Values:[]}
+{Name:Shared Kind:3 Base: Values:[{Name:ONE Value:0 Doc:} {Name:TWO Value:1 Doc:}] Icon:}
+{Name:A Kind:1 Base:RefCounted Values:[] Icon:}

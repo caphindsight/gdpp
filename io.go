@@ -260,6 +260,14 @@ func infoIcon() string { return Styled(unicodeOr("•", "-"), Green) }
 // errorIcon is the icon of errors and failed tasks.
 func errorIcon() string { return Styled(unicodeOr("×", "x"), Bold, Red) }
 
+// FailWithText prints err as an error without wrapping it, then exits the
+// program via Fail. Errors in GD++ code span several lines, with a caret under
+// the problem, which wrapping would misalign.
+func FailWithText(err error) {
+	fmt.Fprintln(os.Stderr, "["+errorIcon()+"] "+strings.ReplaceAll(err.Error(), "\n", "\n    "))
+	Fail()
+}
+
 // LogFatal prints a formatted error, then exits the program via Fail.
 func LogFatal(format string, params ...any) {
 	LogError(format, params...)

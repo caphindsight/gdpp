@@ -1,0 +1,5 @@
+class_name UsesOther
+
+func f() -> void {
+  TypedArray<int64_t> a;
+}

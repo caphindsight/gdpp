@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -42,29 +41,29 @@ func (c *CmdTrans) Run() {
 		return
 	}
 	Assert(c.File != "", "Invalid arguments: missing the GD++ file.")
-	Assert(ParsePath(c.File).IsFile(), "There is no file at %s.", ParsePath(c.File).ToString())
+	file := ParsePath(c.File)
+	Assert(file.IsFile(), "There is no file at %s.", file.ToString())
+	src := file.ReadString()
 	opts := trans.Options{Dependencies: c.dependencies()}
 	var text string
 	var err error
 	switch {
 	case c.Header:
-		text, err = trans.GenerateHeader(c.File, opts, c.Syntax)
+		text, err = trans.GenerateHeader(c.File, src, opts, c.Syntax)
 	case c.Source:
-		text, err = trans.GenerateSource(c.File, opts, c.Syntax)
+		text, err = trans.GenerateSource(c.File, src, opts, c.Syntax)
 	case c.Doc != "":
-		text, err = trans.DocumentClass(c.File, c.Doc, opts, c.Syntax)
+		text, err = trans.DocumentClass(c.File, src, c.Doc, opts, c.Syntax)
 	default:
 		var decls []trans.Declaration
-		decls, err = trans.ListClasses(c.File, c.Syntax)
+		decls, err = trans.ListClasses(c.File, src, c.Syntax)
 		text = transDeclarations(decls)
 		if err == nil && len(decls) == 0 {
 			LogInfo("The file declares no classes, externs or enums.")
 		}
 	}
 	if err != nil {
-		// Printed as is: errors in GD++ code span lines, with a caret under the problem.
-		fmt.Fprintln(os.Stderr, "["+errorIcon()+"] "+strings.ReplaceAll(err.Error(), "\n", "\n    "))
-		Fail()
+		FailWithText(err)
 	}
 	PrintResult(text)
 }

@@ -24,11 +24,15 @@ type lsPackage struct {
 	Classes  []lsClass
 }
 
-// lsClass is a class of a package. A zero Include or Icon means the class
-// has none.
+// lsClass is a class of a package. A zero File or Icon means the class has
+// none. GD++ classes live in GD++ files rather than in the package's config,
+// so commands can't change them. A GD++ class with an empty Name stands for a
+// GD++ file with errors.
 type lsClass struct {
-	Name          string
-	Include, Icon Path
+	Name       string
+	File, Icon Path // The header of a C++ class, or the GD++ file of a GD++ class.
+	Gdpp       bool
+	Clash      bool // Another class has the same name.
 }
 
 func (c *CmdLs) Run() {
@@ -43,13 +47,41 @@ func (c *CmdLs) Run() {
 	list := p.ListPackages()
 	var pkgs []lsPackage
 	for _, pkg := range list {
+		expanded := all || len(list) == 1 || pkg.Root == root
 		var classes []lsClass
-		for _, class := range pkg.Config.Classes {
-			classes = append(classes, lsClass{class.Name, pkg.ClassPath(class.Include), pkg.ClassPath(class.Icon)})
+		if expanded {
+			classes = lsClasses(p, pkg)
 		}
-		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: all || len(list) == 1 || pkg.Root == root, Classes: classes})
+		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: expanded, Classes: classes})
 	}
 	PrintResult(lsProject(p, pkgs, c.Deps || c.All))
+}
+
+// lsClasses returns the classes of the package: those in its config, in
+// order, then those in its GD++ files, by name, and a row per GD++ file with
+// errors.
+func lsClasses(p Project, pkg Package) []lsClass {
+	var classes []lsClass
+	for _, class := range pkg.Config.Classes {
+		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon)})
+	}
+	files := listGdppFiles(p, pkg)
+	for _, class := range gdppClasses(files) {
+		classes = append(classes, lsClass{Name: class.Name, File: class.File.File, Icon: pkg.ClassPath(class.Icon), Gdpp: true})
+	}
+	for _, f := range files {
+		if f.Err != nil {
+			classes = append(classes, lsClass{File: f.File, Gdpp: true})
+		}
+	}
+	count := map[string]int{}
+	for _, class := range classes {
+		count[class.Name]++
+	}
+	for i := range classes {
+		classes[i].Clash = classes[i].Name != "" && count[classes[i].Name] > 1
+	}
+	return classes
 }
 
 // isUnused reports whether packages choose deps of cache's kind, but none
@@ -179,10 +211,20 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard})
 	if len(pkg.Classes) > 0 {
 		// In the same table, so both align.
-		rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Include", Bold), Styled("Icon", Bold)})
+		rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Kind", Bold), Styled("File", Bold), Styled("Icon", Bold)})
 	}
 	for _, class := range pkg.Classes {
-		rows = append(rows, []string{class.Name, lsClassPath(class.Include), lsClassPath(class.Icon)})
+		name, kind, file := class.Name, "C++", lsClassPath(class.File)
+		if class.Gdpp {
+			kind = "GD++"
+		}
+		switch {
+		case class.Name == "":
+			name, file = "?", lsMissing(class.File.ToString()+": has errors, see gd++ build")
+		case class.Clash:
+			name = lsMissing(class.Name + ": declared twice")
+		}
+		rows = append(rows, []string{name, kind, file, lsClassPath(class.Icon)})
 	}
 	return rows, missing
 }

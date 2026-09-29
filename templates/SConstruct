@@ -5,6 +5,10 @@ import sys
 # Keeps godot-cpp/ free of __pycache__, so it stays a plain copy of the bindings.
 sys.dont_write_bytecode = True
 
+# With --gdpp-bindings, only godot-cpp's bindings are generated (not compiled), for GD++ to scan their headers.
+# An option, not a variable, so godot-cpp doesn't warn about an unknown variable.
+AddOption("--gdpp-bindings", dest="gdpp_bindings", action="store_true", help="only generate godot-cpp's bindings")
+
 package_root = ".."
 project_root = {{printf "%q" .ProjectRoot}}
 
@@ -13,26 +17,40 @@ env = Environment(tools=["default"], PLATFORM="")
 env["custom_api_file"] = File("#extension_api.json").abspath
 env = SConscript("godot-cpp/SConstruct", exports="env", variant_dir="build/godot-cpp", duplicate=False)
 
-env = env.Clone()
-env["CXXFLAGS"] = [f for f in env["CXXFLAGS"] if not str(f).startswith(("-std=", "/std:"))]
-env.Append(CXXFLAGS=[("/std:" if env.get("is_msvc", False) else "-std=") + {{printf "%q" .CppStandard}}])
-env.Append(CPPPATH=[package_root, project_root])
+if GetOption("gdpp_bindings"):
+    Default(None)
+    Default(Dir("build/godot-cpp/gen"))
+else:
+    env = env.Clone()
+    env["CXXFLAGS"] = [f for f in env["CXXFLAGS"] if not str(f).startswith(("-std=", "/std:"))]
+    env.Append(CXXFLAGS=[("/std:" if env.get("is_msvc", False) else "-std=") + {{printf "%q" .CppStandard}}])
+    # gdpp holds the C++ that GD++ generates from .gd++ files.
+    env.Append(CPPPATH=[package_root, project_root, "gdpp"])
 {{- if .Color}}
-# GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
-# the build signature, so it doesn't trigger rebuilds.
-if not env.get("is_msvc", False):
-    env.Append(CCFLAGS=["$(", "-fdiagnostics-color=always", "$)"])
+    # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
+    # the build signature, so it doesn't trigger rebuilds.
+    if not env.get("is_msvc", False):
+        env.Append(CCFLAGS=["$(", "-fdiagnostics-color=always", "$)"])
 {{- end}}
 
-objects = "build/" + env["suffix"][1:] + "/"
-# Object names keep the source's extension, so foo.c and foo.cpp don't clash.
-sources = [env.SharedObject(objects + "__register_types__.cpp" + env["SHOBJSUFFIX"], "__register_types__.cpp")]
+    objects = "build/" + env["suffix"][1:] + "/"
+    # Object names keep the source's extension, so foo.c and foo.cpp don't clash.
+    sources = [env.SharedObject(objects + "__register_types__.cpp" + env["SHOBJSUFFIX"], "__register_types__.cpp")]
 {{- range .Sources}}
-sources.append(env.SharedObject(objects + "package/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], package_root + "/" + {{printf "%q" .}}))
+    sources.append(env.SharedObject(objects + "package/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], package_root + "/" + {{printf "%q" .}}))
+{{- end}}
+{{- range .GdppSources}}
+    sources.append(env.SharedObject(objects + "gdpp/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], "gdpp/" + {{printf "%q" .}}))
 {{- end}}
 
-# Named e.g. libfoo.linux.debug.x86_64.so, shorter than godot-cpp's suffix.
-name = ".".join(["lib" + {{printf "%q" .Id}}, env["platform"], env["target"].replace("template_", ""), env["arch"]])
-library = env.SharedLibrary(package_root + "/" + name + env["SHLIBSUFFIX"], sources)
-env.NoCache(library)
-Default(library)
+    # Class documentation, which GD++ generates from doc comments, unless it's turned off.
+    docs = Glob("gdpp/doc_classes/*.xml")
+    if docs:
+        doc_data = env.GodotCPPDocData("build/doc_data.gen.cpp", source=docs)
+        sources.append(env.SharedObject(objects + "doc_data.gen.cpp" + env["SHOBJSUFFIX"], doc_data))
+
+    # Named e.g. libfoo.linux.debug.x86_64.so, shorter than godot-cpp's suffix.
+    name = ".".join(["lib" + {{printf "%q" .Id}}, env["platform"], env["target"].replace("template_", ""), env["arch"]])
+    library = env.SharedLibrary(package_root + "/" + name + env["SHLIBSUFFIX"], sources)
+    env.NoCache(library)
+    Default(library)

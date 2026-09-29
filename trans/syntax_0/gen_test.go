@@ -31,7 +31,7 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
-		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum}
+		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other}
 	var opts meta.Options
 	for _, d := range file.Dep {
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values})

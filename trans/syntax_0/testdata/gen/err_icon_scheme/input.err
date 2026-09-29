@@ -1,0 +1,4 @@
+input.gd++:1:7: The icon's path must start with res:// or pkg://.
+ 1 | @icon("icons/a.svg")
+   |       ^^^^^^^^^^^^^
+Hint: res:// paths are relative to the project, pkg:// paths to the package.

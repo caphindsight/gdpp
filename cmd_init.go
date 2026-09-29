@@ -134,6 +134,7 @@ func (c *CmdInit) initClass(root Path) {
 	for _, p := range []string{c.Include, c.Icon} {
 		Assert(p == "" || isClassPath(p), "Invalid arguments: %s must start with pkg:// or res://.", p)
 	}
+	assertNotGdppClass(root, c.Class)
 	config := LoadPackageAt(root).Config
 	i := slices.IndexFunc(config.Classes, func(k PackageClass) bool { return k.Name == c.Class })
 	Assert(i >= 0 || !c.Update, "There is no class %s in %s.", c.Class, root.ToString())

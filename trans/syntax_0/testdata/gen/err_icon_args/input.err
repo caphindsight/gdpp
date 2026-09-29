@@ -1,0 +1,4 @@
+input.gd++:1:1: Annotation @icon needs one argument: the icon's path, as a string.
+ 1 | @icon
+   | ^^^^^
+Hint: E.g. "@icon(\"res://icons/player.svg\")".

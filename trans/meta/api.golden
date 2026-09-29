@@ -27,3 +27,5 @@ field Options.Dependencies []Dependency
 field Options.SourceName string
 field Options.HeaderName string
 field Options.CodeName string
+const Other Kind = 6
+field Declaration.Icon string

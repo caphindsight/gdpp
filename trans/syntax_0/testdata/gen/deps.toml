@@ -68,3 +68,8 @@ kind = "Extern"
 name = "Settings"
 include = '"settings.h"'
 kind = "RefCountedExtern"
+
+[[dep]]
+name = "TypedArray"
+include = "<godot_cpp/variant/typed_array.hpp>"
+kind = "Other"

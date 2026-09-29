@@ -21,7 +21,7 @@ func ListClasses(filename, src string) ([]meta.Declaration, error) {
 	if err != nil {
 		return nil, err
 	}
-	return u.declarations(), nil
+	return u.declarations()
 }
 
 // GenerateHeader returns the C++ header for the GD++ source src.

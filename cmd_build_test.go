@@ -57,7 +57,10 @@ func withBuildFS(t *testing.T) *memFS {
 func TestGenerateBuildCache(t *testing.T) {
 	m := withBuildFS(t)
 	p := LoadProject(Cwd())
-	captureStderr(t, func() { generateBuildCache(p, LoadPackage(Cwd())) })
+	captureStderr(t, func() {
+		generateBuildCache(p, LoadPackage(Cwd()))
+		generateRegisterTypes(LoadPackage(Cwd()), nil)
+	})
 	after := subtree(m.tree(), "/games/my_game/src/pkg/.gd++pkg/")
 
 	for file, want := range map[string]string{"godot-cpp/SConstruct": "bind", "godot-cpp/src/godot.cpp": "godot", "extension_api.json": "{}"} {
@@ -83,8 +86,8 @@ func TestGenerateBuildCache(t *testing.T) {
 		`project_root = "../../.."`,
 		`"-std=") + "c++20"`,
 		`objects + "package/" + "enemy/enemy.cc" + env["SHOBJSUFFIX"], package_root + "/" + "enemy/enemy.cc"))` + "\n" +
-			`sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n" +
-			`sources.append(env.SharedObject(objects + "package/" + "util.c++" + env["SHOBJSUFFIX"], package_root + "/" + "util.c++"))` + "\n\n",
+			`    sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n" +
+			`    sources.append(env.SharedObject(objects + "package/" + "util.c++" + env["SHOBJSUFFIX"], package_root + "/" + "util.c++"))` + "\n\n",
 		`name = ".".join(["lib" + "pkg", env["platform"], env["target"].replace("template_", ""), env["arch"]])`,
 	} {
 		if !strings.Contains(sconstruct, want) {
@@ -99,7 +102,7 @@ func TestGenerateGdextension(t *testing.T) {
 	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
 	withTTY(t, false)
 	withQuiet(t, false)
-	generate := func() string { return captureStderr(t, func() { generateGdextension(LoadPackage(Cwd())) }) }
+	generate := func() string { return captureStderr(t, func() { generateGdextension(LoadPackage(Cwd()), nil) }) }
 	if got, want := generate(), "[-] Generating .gdextension for res://src/pkg...\n"; got != want {
 		t.Errorf("first output = %q, want %q", got, want)
 	}
@@ -142,7 +145,10 @@ func TestGenerateBuildCacheLogs(t *testing.T) {
 	withTTY(t, false)
 	withQuiet(t, false)
 	generate := func() string {
-		return captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
+		return captureStderr(t, func() {
+			generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd()))
+			generateRegisterTypes(LoadPackage(Cwd()), nil)
+		})
 	}
 	sync := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: syncing dependencies for res://src/pkg...\n[-] Task succeeded: syncing dependencies for res://src/pkg\n"
 	if got, want := generate(), sync+"[-] Registering classes for res://src/pkg...\n"; got != want {
@@ -277,6 +283,40 @@ func TestBuildDescribe(t *testing.T) {
 	}
 }
 
+func TestBuildDocs(t *testing.T) {
+	for _, tc := range []struct {
+		c    CmdBuild
+		want bool
+	}{
+		{CmdBuild{}, true},
+		{CmdBuild{Ship: true}, false},
+		{CmdBuild{Ship: true, Doc: true}, true},
+		{CmdBuild{NoDoc: true}, false},
+	} {
+		if got := tc.c.docs(); got != tc.want {
+			t.Errorf("%+v.docs() = %v, want %v", tc.c, got, tc.want)
+		}
+	}
+}
+
+func TestGenerateBuildCacheGdpp(t *testing.T) {
+	m := withGdppFS(t, map[string]string{"player.gd++": "class_name Player\n", "items/sword.gg": "class Sword {}\n"})
+	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
+	sconstruct := m.tree()[pkgDir+".gd++pkg/SConstruct"]
+	for _, want := range []string{
+		`AddOption("--gdpp-bindings"`,
+		"if GetOption(\"gdpp_bindings\"):\n    Default(None)\n    Default(Dir(\"build/godot-cpp/gen\"))\nelse:",
+		`env.Append(CPPPATH=[package_root, project_root, "gdpp"])`,
+		`    sources.append(env.SharedObject(objects + "gdpp/" + "items/sword.gg.cpp" + env["SHOBJSUFFIX"], "gdpp/" + "items/sword.gg.cpp"))` + "\n" +
+			`    sources.append(env.SharedObject(objects + "gdpp/" + "player.gd++.cpp" + env["SHOBJSUFFIX"], "gdpp/" + "player.gd++.cpp"))`,
+		`docs = Glob("gdpp/doc_classes/*.xml")`,
+	} {
+		if !strings.Contains(sconstruct, want) {
+			t.Errorf("SConstruct = %s\nwant it to contain %q", sconstruct, want)
+		}
+	}
+}
+
 func TestBuildInvalidArgs(t *testing.T) {
 	cases := map[string]struct {
 		c    CmdBuild
@@ -292,6 +332,7 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"arch":     {CmdBuild{Arch: "mips"}, "--arch must be one of x86_32, x86_64, arm64"},
 		"proj":     {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
 		"jobs":     {CmdBuild{Jobs: -1}, "--jobs cannot be negative"},
+		"doc":      {CmdBuild{Doc: true, NoDoc: true}, "--doc and --nodoc cannot be used together"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

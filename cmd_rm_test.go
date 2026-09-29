@@ -242,6 +242,19 @@ func TestRmClasses(t *testing.T) {
 	}
 }
 
+func TestRmGdppClass(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		withRmFS(t, map[string]string{"a/" + packageFileName: testRmPackage, "a/src/player.gdpp": "class_name Player\n"})
+		(&CmdRm{Path: "a", Class: []string{"Player"}}).Run()
+		return
+	}
+	out, code := runFailHelper(t, t.Name())
+	if want := "[x] Class Player is declared in res://a/src/player.gdpp, so it can only be changed there.\n"; code != 1 || out != want {
+		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
+	}
+}
+
 func TestRmClassAll(t *testing.T) {
 	m := withRmFS(t, map[string]string{
 		"a/" + packageFileName: testRmPackage + "\n[[class]]\nname = \"A\"\n\n[[class]]\nname = \"B\"\n",

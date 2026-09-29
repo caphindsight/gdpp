@@ -1,1 +1,1 @@
-{Name:Player Kind:1 Base:Node3D Values:[]}
+{Name:Player Kind:1 Base:Node3D Values:[] Icon:}

@@ -219,6 +219,7 @@ func (c *CmdRm) removeClasses(root Path) {
 	config := LoadPackageAt(root).Config
 	names := uniqueSorted(c.Class, strings.Compare) // so each is confirmed once
 	for _, name := range names {
+		assertNotGdppClass(root, name)
 		Assert(slices.ContainsFunc(config.Classes, func(k PackageClass) bool { return k.Name == name }), "There is no class %s in %s.", name, root.ToString())
 	}
 	for _, name := range names {

@@ -1,2 +1,2 @@
-{Name:Main Kind:1 Base:Node Values:[]}
-{Name:Helper Kind:1 Base:RefCounted Values:[]}
+{Name:Main Kind:1 Base:Node Values:[] Icon:}
+{Name:Helper Kind:1 Base:RefCounted Values:[] Icon:}
