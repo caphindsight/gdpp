@@ -76,9 +76,9 @@ type Func struct {
 // Only function parameters may have a Default.
 type Param struct {
 	Pos     lexer.Position
-	Name    string `parser:"@Ident"`
-	Type    *Type  `parser:"( ':' @@ )?"`
-	Default *Init  `parser:"( '=' @@ )?"`
+	Name    string   `parser:"@Ident"`
+	Type    *Type    `parser:"( ':' @@ )?"`
+	Default *Default `parser:"( '=' @@ )?"`
 }
 
 // Type is a Godot type name, possibly with type arguments, e.g. Array[int].
@@ -175,14 +175,16 @@ type Block struct {
 	Text    string
 }
 
-// Init is the initial value of a variable or the default value of a parameter: a one-line C++ expression (Expr),
-// which ends at a newline or at a "," outside brackets, or a C++ block that returns the value.
+// Init is the initial value of a variable: a one-line C++ expression (Expr) or a C++ block that returns the value.
 // Pos is the position of the expression's first token.
 type Init struct {
 	Pos   lexer.Position
 	Expr  string
 	Block *Block
 }
+
+// Default is the default value of a parameter: like Init, but its expression also ends at a "," outside brackets.
+type Default Init
 
 // Doc is a documentation comment (/// lines or /** */), with the comment markers removed.
 type Doc struct {

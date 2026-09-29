@@ -220,6 +220,15 @@ func (b *Block) Parse(lex *lexer.PeekingLexer) error {
 }
 
 func (in *Init) Parse(lex *lexer.PeekingLexer) error {
+	return in.parse(lex, false)
+}
+
+func (d *Default) Parse(lex *lexer.PeekingLexer) error {
+	return (*Init)(d).parse(lex, true)
+}
+
+// parse parses a value after "=". With endAtComma set, a "," outside brackets ends the expression.
+func (in *Init) parse(lex *lexer.PeekingLexer, endAtComma bool) error {
 	for t := peekRaw(lex); t.Type == tokWhitespace || isComment(t) || isDoc(t); t = peekRaw(lex) {
 		nextRaw(lex)
 	}
@@ -236,7 +245,7 @@ func (in *Init) Parse(lex *lexer.PeekingLexer) error {
 	var code codeBuilder
 	for depth := 0; ; {
 		t := peekRaw(lex)
-		if t.EOF() || depth == 0 && (t.Type == tokNewline || isPunct(t, ",") || t.Type == tokPunct && closers[t.Value] != "") {
+		if t.EOF() || depth == 0 && (t.Type == tokNewline || endAtComma && isPunct(t, ",") || t.Type == tokPunct && closers[t.Value] != "") {
 			break
 		}
 		nextRaw(lex)
