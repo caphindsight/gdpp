@@ -1,5 +1,5 @@
-// godot_names.go: finds the names declared in namespace godot in godot-cpp's
-// headers, so GD++ code can use them and get the right includes.
+// godot_names.go: finds the names that godot-cpp's or the engine's headers
+// declare, so GD++ code can use them and get the right includes.
 
 package main
 
@@ -15,8 +15,9 @@ import (
 // godotName is a name declared directly in namespace godot, e.g. "Node3D".
 type godotName struct {
 	Name    string     `toml:"name"`
-	Include string     `toml:"include"` // E.g. "<godot_cpp/classes/node3d.hpp>".
-	Kind    trans.Kind `toml:"kind"`    // Object, RefCounted or Other.
+	Include string     `toml:"include"`       // E.g. "<godot_cpp/classes/node3d.hpp>".
+	Kind    trans.Kind `toml:"kind"`          // Object, RefCounted or Other.
+	Cpp     string     `toml:"cpp,omitempty"` // How C++ names it, if not Name, e.g. "::core_bind::OS".
 }
 
 // cppToken is a token of C++ code, without comments, literals and
@@ -127,9 +128,7 @@ func (t cppToken) isMacroName() bool {
 
 // cppDecl is a name that a header declares in the scanned namespace.
 type cppDecl struct {
-	name, base string   // base: a class's first base class, if any.
-	namespace  bool     // whether it's a nested namespace
-	values     []string // an unscoped enum's values, which live in the enclosing namespace
+	name, base string // base: a class's first base class, if any.
 }
 
 // scanCppDecls returns the names declared directly in namespace ns ("" for
@@ -185,7 +184,7 @@ func scanCppDecls(src, ns string) []cppDecl {
 				continue
 			}
 			if inGodot() && len(name) == 1 {
-				decls = append(decls, cppDecl{name: name[0], namespace: true})
+				decls = append(decls, cppDecl{name: name[0]})
 			}
 			scopes = append(scopes, "namespace:"+strings.Join(name, "::"))
 			i = j + 1
@@ -247,9 +246,6 @@ func scanStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(in
 		}
 		switch at(j) {
 		case "{":
-			if t == "enum" && at(i+1) != "class" && at(i+1) != "struct" {
-				return &cppDecl{name: string(name), values: enumValues(tokens, j, at, skip)}, j
-			}
 			return &cppDecl{name: string(name)}, j
 		case ":":
 			if t == "enum" {
@@ -353,30 +349,15 @@ func scanStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(in
 	return nil, next
 }
 
-// enumValues returns the names of the values of the enum whose body starts at
-// tokens[i].
-func enumValues(tokens []cppToken, i int, at func(int) cppToken, skip func(int, cppToken, cppToken) int) []string {
-	var values []string
-	end := skip(i, "{", "}") - 1
-	for j := i + 1; j < end; j++ {
-		if at(j).isIdent() && (at(j-1) == "{" || at(j-1) == ",") {
-			values = append(values, string(at(j)))
-		}
-		for _, b := range [][2]cppToken{{"(", ")"}, {"[", "]"}, {"{", "}"}} {
-			if at(j) == b[0] {
-				j = skip(j, b[0], b[1]) - 1
-			}
-		}
-	}
-	return values
+// gdclass is a class registered with GDCLASS(Name, Base).
+type gdclass struct {
+	name, base string // name is qualified with its namespaces, e.g. "core_bind::OS"
 }
 
-// scanGdclasses returns the classes that the header src registers with
-// GDCLASS(Name, Base), each qualified with its namespaces, e.g.
-// "core_bind::OS".
-func scanGdclasses(src string) []string {
+// scanGdclasses returns the classes that the header src registers with GDCLASS.
+func scanGdclasses(src string) []gdclass {
 	tokens := tokenizeCpp(src)
-	var classes []string
+	var classes []gdclass
 	var scopes []string // namespace names, "" for other braces
 	for i := 0; i < len(tokens); i++ {
 		switch t := tokens[i]; {
@@ -400,7 +381,13 @@ func scanGdclasses(src string) []string {
 			}
 		case t == "GDCLASS" && i+2 < len(tokens) && tokens[i+1] == "(" && tokens[i+2].isIdent():
 			qualified := slices.DeleteFunc(slices.Clone(scopes), func(s string) bool { return s == "" })
-			classes = append(classes, strings.Join(append(qualified, string(tokens[i+2])), "::"))
+			base := ""
+			for j := i + 3; j < len(tokens) && tokens[j] != ")"; j++ {
+				if tokens[j].isIdent() {
+					base = string(tokens[j]) // The last identifier, e.g. "Object" in core_bind::Object.
+				}
+			}
+			classes = append(classes, gdclass{strings.Join(append(qualified, string(tokens[i+2])), "::"), base})
 		}
 	}
 	return classes
@@ -433,32 +420,49 @@ func endStatement(tokens []cppToken, i int, at func(int) cppToken, skip func(int
 func scanGodotNames(roots []Path) []godotName {
 	var names []godotName
 	bases := map[string]string{}
-	index := map[string]bool{}
 	for _, root := range roots {
-		var walk func(dir Path, rel string)
-		walk = func(dir Path, rel string) {
-			for _, child := range dir.Ls() {
-				childRel := path.Join(rel, child.Name())
-				switch {
-				case child.IsDir():
-					walk(child, childRel)
-				case (path.Ext(childRel) == ".hpp" || path.Ext(childRel) == ".h") && !strings.HasSuffix(childRel, ".inc.hpp"):
-					// .inc.hpp files are fragments, included from inside other headers.
-					for _, d := range scanCppDecls(child.ReadString(), "godot") {
-						if !index[d.name] {
-							index[d.name] = true
-							bases[d.name] = d.base
-							names = append(names, godotName{Name: d.name, Include: "<" + childRel + ">", Kind: trans.Other})
-						}
-					}
+		walkHeaders(root, func(rel, src string) {
+			if strings.HasSuffix(rel, ".inc.hpp") {
+				return // A fragment, included from inside other headers.
+			}
+			for _, d := range scanCppDecls(src, "godot") {
+				if _, ok := bases[d.name]; !ok {
+					bases[d.name] = d.base
+					names = append(names, godotName{Name: d.name, Include: "<" + rel + ">"})
 				}
 			}
-		}
-		if root.IsDir() {
-			walk(root, "")
+		})
+	}
+	return withKinds(names, bases)
+}
+
+// walkHeaders calls visit with each .h and .hpp header under root, and its
+// path relative to root, skipping directories named in skip.
+func walkHeaders(root Path, visit func(rel, src string), skip ...string) {
+	var walk func(dir Path, rel string)
+	walk = func(dir Path, rel string) {
+		for _, child := range dir.Ls() {
+			childRel := path.Join(rel, child.Name())
+			switch {
+			case child.IsDir():
+				if !slices.Contains(skip, child.Name()) {
+					walk(child, childRel)
+				}
+			case path.Ext(childRel) == ".hpp" || path.Ext(childRel) == ".h":
+				visit(childRel, child.ReadString())
+			}
 		}
 	}
+	if root.IsDir() {
+		walk(root, "")
+	}
+}
+
+// withKinds returns names, sorted, with the kinds that their chains of base
+// classes (bases, by name) give: Object or RefCounted, or else Other.
+func withKinds(names []godotName, bases map[string]string) []godotName {
 	for i, n := range names {
+		names[i].Kind = trans.Other
 		for name, seen := n.Name, 0; name != "" && seen < 100; name, seen = bases[name], seen+1 {
 			if name == "RefCounted" {
 				names[i].Kind = trans.RefCounted

@@ -6,7 +6,25 @@
 #include <cstdint>
 #include <type_traits>
 
+// Engine builds compile against the engine's headers, which have Godot's names in the global namespace.
+#ifdef GDPP_ENGINE
+#include "core/config/engine.h"
+#include "core/config/project_settings.h"
+#include "core/io/resource.h"
+#include "core/io/resource_loader.h"
+#include "core/object/class_db.h"
+#include "core/object/ref_counted.h"
+#include "core/variant/binder_common.h"
+#include "core/variant/method_ptrcall.h"
+#include "core/variant/type_info.h"
+#include "core/variant/typed_array.h"
+#include "core/variant/typed_dictionary.h"
+#include "core/variant/variant.h"
+#include "core/variant/variant_utility.h"
+#include "scene/main/node.h"
+#else
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/ref.hpp>
@@ -22,6 +40,63 @@
 #include <godot_cpp/variant/typed_dictionary.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/variant.hpp>
+#endif
+
+#ifdef GDPP_ENGINE
+// godot-cpp's UtilityFunctions: the engine's VariantUtilityFunctions, with its functions that take any number of
+// arguments turned into variadic templates, like godot-cpp has them.
+
+// Since Godot 4.4, the engine has a print_verbose macro, and the function is called _print_verbose. No engine header
+// uses the macro, so it can go, for UtilityFunctions::print_verbose to work.
+#undef print_verbose
+
+namespace godot {
+
+struct UtilityFunctions : ::VariantUtilityFunctions {
+private:
+	template <typename R, typename... Args>
+	static R gdpp_call(R (*p_function)(const Variant **, int, Callable::CallError &), const Args &...p_args) {
+		const Variant values[] = { Variant(p_args)... };
+		const Variant *pointers[sizeof...(Args)];
+		for (size_t i = 0; i < sizeof...(Args); i++) {
+			pointers[i] = &values[i];
+		}
+		Callable::CallError error;
+		return p_function(pointers, sizeof...(Args), error);
+	}
+
+	template <typename T>
+	static auto gdpp_print_verbose(int) -> decltype(&T::_print_verbose) { return &T::_print_verbose; }
+	template <typename T>
+	static auto gdpp_print_verbose(long) -> decltype(&T::print_verbose) { return &T::print_verbose; }
+
+public:
+#define GDPP_VARARG(m_name)                                                            \
+	template <typename... Args>                                                        \
+	static auto m_name(const Variant &p_arg, const Args &...p_args) {                   \
+		return gdpp_call(&::VariantUtilityFunctions::m_name, p_arg, p_args...);         \
+	}
+	GDPP_VARARG(max)
+	GDPP_VARARG(min)
+	GDPP_VARARG(str)
+	GDPP_VARARG(print)
+	GDPP_VARARG(print_rich)
+	GDPP_VARARG(printerr)
+	GDPP_VARARG(printt)
+	GDPP_VARARG(prints)
+	GDPP_VARARG(printraw)
+	GDPP_VARARG(push_error)
+	GDPP_VARARG(push_warning)
+#undef GDPP_VARARG
+
+	template <typename... Args>
+	static void print_verbose(const Variant &p_arg, const Args &...p_args) {
+		gdpp_call(gdpp_print_verbose<::VariantUtilityFunctions>(0), p_arg, p_args...);
+	}
+};
+
+} // namespace godot
+#endif
 
 // The C++ type of Godot's float.
 typedef double float64_t;
@@ -31,36 +106,53 @@ using gd = godot::UtilityFunctions;
 
 namespace gdpp {
 
+using namespace godot;
+
 // Emitted is the result of a signal's emit function. It's [[nodiscard]], so emitting a signal must be spelled
 // `emit my_signal(42);`, which reads differently from a function call.
 struct [[nodiscard]] Emitted {
-	godot::Error error;
+	Error error;
 };
 
 // info returns the PropertyInfo of a value of type T named p_name, as bindings expose it.
 template <typename T>
-godot::PropertyInfo info(const godot::StringName &p_name, uint32_t p_usage = godot::PROPERTY_USAGE_DEFAULT,
-		godot::PropertyHint p_hint = godot::PROPERTY_HINT_NONE, const godot::String &p_hint_string = "") {
-	godot::PropertyInfo result = godot::GetTypeInfo<T>::get_class_info();
+PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DEFAULT,
+		PropertyHint p_hint = PROPERTY_HINT_NONE, const String &p_hint_string = "") {
+	PropertyInfo result = GetTypeInfo<T>::get_class_info();
 	result.name = p_name;
-	result.usage = p_usage | (result.usage & (godot::PROPERTY_USAGE_NIL_IS_VARIANT | godot::PROPERTY_USAGE_CLASS_IS_ENUM));
+	result.usage = p_usage | (result.usage & (PROPERTY_USAGE_NIL_IS_VARIANT | PROPERTY_USAGE_CLASS_IS_ENUM));
 	if constexpr (std::is_pointer_v<T>) {
-		if constexpr (std::is_base_of_v<godot::Node, std::remove_pointer_t<T>>) {
-			result.hint = godot::PROPERTY_HINT_NODE_TYPE;
+		if constexpr (std::is_base_of_v<Node, std::remove_pointer_t<T>>) {
+			result.hint = PROPERTY_HINT_NODE_TYPE;
 		}
 	}
-	if (p_hint != godot::PROPERTY_HINT_NONE) {
+	if (p_hint != PROPERTY_HINT_NONE) {
 		result.hint = p_hint;
 		result.hint_string = p_hint_string;
 	}
 	return result;
 }
 
+// add_property_category starts a category named p_name in the inspector, like GDScript's @export_category. Godot has
+// no function for it, so it's a property without setter and getter, which godot-cpp's ClassDB doesn't allow.
+inline void add_property_category(const StringName &p_class, const String &p_name) {
+	PropertyInfo info(Variant::NIL, p_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY);
+	StringName none;
+#ifdef GDPP_ENGINE
+	ClassDB::add_property(p_class, info, none, none);
+#else
+	GDExtensionPropertyInfo gdext_info = { GDEXTENSION_VARIANT_TYPE_NIL, info.name._native_ptr(), info.class_name._native_ptr(),
+		info.hint, info.hint_string._native_ptr(), info.usage };
+	gdextension_interface::classdb_register_extension_class_property(gdextension_interface::library, p_class._native_ptr(),
+			&gdext_info, none._native_ptr(), none._native_ptr());
+#endif
+}
+
 // rpc_config sets the RPC configuration of p_method on p_node, as @rpc declares it.
 template <typename T>
-void rpc_config(T *p_node, const godot::StringName &p_method, int64_t p_mode, int64_t p_transfer_mode, bool p_call_local, int64_t p_channel) {
-	static_assert(std::is_base_of_v<godot::Node, T>, "@rpc can only be used in classes that extend Node.");
-	godot::Dictionary config;
+void rpc_config(T *p_node, const StringName &p_method, int64_t p_mode, int64_t p_transfer_mode, bool p_call_local, int64_t p_channel) {
+	static_assert(std::is_base_of_v<Node, T>, "@rpc can only be used in classes that extend Node.");
+	Dictionary config;
 	config["rpc_mode"] = p_mode;
 	config["transfer_mode"] = p_transfer_mode;
 	config["call_local"] = p_call_local;
@@ -70,11 +162,11 @@ void rpc_config(T *p_node, const godot::StringName &p_method, int64_t p_mode, in
 
 // from_variant converts the result of a call resolved by name.
 template <typename T>
-T from_variant(const godot::Variant &p_value) {
+T from_variant(const Variant &p_value) {
 	if constexpr (std::is_enum_v<T>) {
 		return static_cast<T>(p_value.operator int64_t());
 	} else {
-		return godot::VariantCaster<T>::cast(p_value);
+		return VariantCaster<T>::cast(p_value);
 	}
 }
 
@@ -95,7 +187,7 @@ public:
 	const Base *base() const { return base_; }
 	explicit operator bool() const { return base_ != nullptr; }
 	bool operator==(const ExtPtr &p_other) const { return base_ == p_other.base_; }
-	operator godot::Variant() const { return godot::Variant(base_); }
+	operator Variant() const { return Variant(base_); }
 
 	struct Arrow {
 		T wrapper;
@@ -105,7 +197,7 @@ public:
 
 private:
 	Base *base_ = nullptr;
-	godot::Ref<godot::RefCounted> keep_; // Keeps a refcounted object from memnew_ext alive until an ExtRef takes it.
+	Ref<RefCounted> keep_; // Keeps a refcounted object from memnew_ext alive until an ExtRef takes it.
 
 	template <typename U>
 	friend ExtPtr<U> memnew_ext();
@@ -120,19 +212,19 @@ public:
 
 	ExtRef() = default;
 	ExtRef(std::nullptr_t) {}
-	ExtRef(const godot::Ref<Base> &p_object) :
+	ExtRef(const Ref<Base> &p_object) :
 			base_(p_object) {}
 	ExtRef(Base *p_object) :
 			base_(p_object) {}
 	ExtRef(const ExtPtr<T> &p_object) :
 			base_(p_object.get()) {}
 
-	const godot::Ref<Base> &get() const { return base_; }
-	godot::Ref<Base> &base() { return base_; }
-	const godot::Ref<Base> &base() const { return base_; }
+	const Ref<Base> &get() const { return base_; }
+	Ref<Base> &base() { return base_; }
+	const Ref<Base> &base() const { return base_; }
 	explicit operator bool() const { return base_.is_valid(); }
 	bool operator==(const ExtRef &p_other) const { return base_ == p_other.base_; }
-	operator godot::Variant() const { return godot::Variant(base_); }
+	operator Variant() const { return Variant(base_); }
 
 	struct Arrow {
 		T wrapper;
@@ -141,29 +233,33 @@ public:
 	Arrow operator->() const { return Arrow{ T(base_.ptr()) }; }
 
 private:
-	godot::Ref<Base> base_;
+	Ref<Base> base_;
 };
 
 // memnew_ext creates an object of the extern T, like memnew: an instance of the ClassDB class or global script class
 // that T names.
 template <typename T>
 ExtPtr<T> memnew_ext() {
-	godot::StringName name = T::gdpp_name;
-	godot::Variant object;
-	if (godot::ClassDB::class_exists(name)) {
-		object = godot::ClassDB::instantiate(name);
+	StringName name = T::gdpp_name;
+	Variant object;
+	if (ClassDB::class_exists(name)) {
+		object = ClassDB::instantiate(name);
 	} else {
-		godot::TypedArray<godot::Dictionary> classes = godot::ProjectSettings::get_singleton()->get_global_class_list();
+		TypedArray<Dictionary> classes = ProjectSettings::get_singleton()->get_global_class_list();
 		for (int64_t i = 0; i < classes.size(); i++) {
-			godot::Dictionary c = classes[i];
-			if (godot::StringName(c["class"]) == name) {
-				object = godot::ResourceLoader::get_singleton()->load(c["path"])->call("new");
+			Dictionary c = classes[i];
+			if (StringName(c["class"]) == name) {
+#ifdef GDPP_ENGINE
+				object = ResourceLoader::load(c["path"])->call("new");
+#else
+				object = ResourceLoader::get_singleton()->load(c["path"])->call("new");
+#endif
 				break;
 			}
 		}
 	}
-	ExtPtr<T> result = godot::Object::cast_to<typename T::Base>(object.operator godot::Object *());
-	ERR_FAIL_COND_V_MSG(!result, nullptr, godot::String("Failed to create an object of the extern ") + T::gdpp_name + ".");
+	ExtPtr<T> result = Object::cast_to<typename T::Base>(object.operator Object *());
+	ERR_FAIL_COND_V_MSG(!result, nullptr, String("Failed to create an object of the extern ") + T::gdpp_name + ".");
 	result.keep_ = object;
 	return result;
 }
@@ -171,7 +267,7 @@ ExtPtr<T> memnew_ext() {
 // memdelete_ext frees an object of the extern T, like memdelete. Refcounted objects are freed by their ExtRefs instead.
 template <typename T>
 void memdelete_ext(ExtPtr<T> p_object) {
-	static_assert(!std::is_base_of_v<godot::RefCounted, typename T::Base>, "Refcounted externs are freed by their ExtRefs.");
+	static_assert(!std::is_base_of_v<RefCounted, typename T::Base>, "Refcounted externs are freed by their ExtRefs.");
 	memdelete(p_object.get());
 }
 
@@ -181,7 +277,7 @@ void memdelete_ext(ExtPtr<T> p_object) {
 #define memnew_ext(m_class) gdpp::memnew_ext<m_class>()
 #define memdelete_ext(m_object) gdpp::memdelete_ext(m_object)
 
-// Engine builds (see GD++'s compat headers) have Godot's types in the global namespace, where their templates must be
+// Engine builds have Godot's types in the global namespace, where their templates must be
 // specialized, and describe types without GDExtension's types.
 #ifdef GDPP_ENGINE
 #define GDPP_BINDINGS_BEGIN

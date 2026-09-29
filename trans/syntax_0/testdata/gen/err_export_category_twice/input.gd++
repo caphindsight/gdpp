@@ -1,0 +1,6 @@
+class_name A
+
+@export_category("Stats")
+@export var hp: int
+@export_category("Stats")
+@export var mana: int

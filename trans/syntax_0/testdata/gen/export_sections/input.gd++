@@ -1,0 +1,12 @@
+class_name Sections
+extends Node
+
+@export var plain: int
+@export_category("Hero")
+@export_group("Stats", "stat_")
+@export var stat_hp: int
+@export var stat_mana: int
+@export_subgroup("Extra")
+@export var stat_luck: int
+@export_group("")
+@export var title: String

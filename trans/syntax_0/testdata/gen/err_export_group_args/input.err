@@ -1,0 +1,4 @@
+input.gd++:3:1: Annotation @export_group needs a name and an optional prefix, as strings.
+ 3 | @export_group("Stats", 1)
+   | ^^^^^^^^^^^^^
+Hint: E.g. "@export_group(\"Stats\") var hp: int".

@@ -33,6 +33,7 @@ type Dependency struct {
 	Include string      // What follows #include, e.g. `<godot_cpp/classes/node3d.hpp>` or `"terrain.h"`.
 	Kind    Kind        //
 	Values  []EnumValue // For Kind Enum: its values, so classes using the enum can expose a copy.
+	Cpp     string      // How C++ names it, if not Name, e.g. "::core_bind::OS". Generated code then aliases it.
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.

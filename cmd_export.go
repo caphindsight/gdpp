@@ -9,17 +9,18 @@ import (
 // CmdExport sets up twins of the Godot editor's export presets, which export
 // the project without its C++ and GD++ files: for each chosen preset, a
 // GDExtension twin, which exports the GDExtension libraries it builds for the
-// preset first, and with --engine an engine twin, which exports with export
+// preset first, or with --engine an engine twin, which exports with export
 // templates it builds with all packages compiled into the engine. Twins are
 // made anew each time, from their original. The user's presets are never
-// changed. The build caches of packages are cleaned first. With --engine, the
-// project build cache is kept, unless it's for another engine or an older
-// engineBuildVersion, or --clean is given. With --godot, it runs the twins' exports too. With
-// --undo, it removes all twins instead.
+// changed. With --gdext or --clean, the build caches of packages are cleaned
+// first. With --engine, the project build cache, which holds the engine copy
+// and the transpiled GD++ code, is kept, unless it's for another engine or an
+// older engineBuildVersion, or --clean is given. With --godot, it runs the
+// twins' exports too. With --undo, it removes all twins instead.
 type CmdExport struct {
-	Gdext  bool     `arg:"--gdext" help:"build GDExtension libraries and set up GDExtension twins [default: without --engine]"`
+	Gdext  bool     `arg:"--gdext" help:"build GDExtension libraries and set up GDExtension twins (exactly one of --gdext and --engine is required)"`
 	Engine string   `arg:"--engine" placeholder:"NAME" help:"build export templates with this Godot engine and set up engine twins"`
-	Preset []string `arg:"--preset" placeholder:"NAME" help:"only set up twins of these presets [default: all presets GD++ can export for: Windows, Linux, and without --engine macOS]"`
+	Preset []string `arg:"--preset" placeholder:"NAME" help:"only set up twins of these presets [default: all presets GD++ can export for: Windows, Linux, and with --gdext macOS]"`
 	BuildOptions
 	Clean bool   `arg:"--clean" help:"always clean the build caches first, including the project build cache with the engine copy"`
 	Godot string `arg:"--godot" placeholder:"PATH" help:"also export the twins with this Godot editor, headless"`
@@ -35,13 +36,15 @@ func (c *CmdExport) Run() {
 		undoTwins(file)
 		return
 	}
-	suffixes := c.validate()
+	suffix := c.validate()
 	Assert(file.IsFile(), "Failed to find %s, create an export preset in Godot's Export dialog first.", file.ToString())
 	presets := parseExportPresets(file)
 	chosen, targets := c.choose(presets)
 	assertScons()
-	for _, pkg := range p.ListPackages() {
-		cleanPackage(pkg.Root, false)
+	if c.Gdext || c.Clean {
+		for _, pkg := range p.ListPackages() {
+			cleanPackage(pkg.Root, false)
+		}
 	}
 	if c.Clean && c.Engine != "" {
 		cleanProjectBuildCache(p)
@@ -60,34 +63,26 @@ func (c *CmdExport) Run() {
 	for _, preset := range chosen {
 		names = append(names, preset.name())
 	}
-	if writeIfChanged(file, presets.syncTwins(names, suffixes, engineBinDir(p)).render(true)) {
+	if writeIfChanged(file, presets.syncTwins(names, []string{suffix}, engineBinDir(p)).render(true)) {
 		LogWarn("Reload the project if the Godot editor has it open, or the editor may overwrite %s.", file.ToString())
 	}
 	if c.Godot != "" {
-		c.export(p, chosen, suffixes[0])
+		c.export(p, chosen, suffix)
 	}
 	LogInfo("Success!")
 }
 
 // validate asserts the arguments make sense together, and returns the twin
-// kinds to set up.
-func (c *CmdExport) validate() []string {
+// kind to set up.
+func (c *CmdExport) validate() string {
 	c.BuildOptions.validate()
-	if c.Engine == "" {
-		c.Gdext = true
-	}
-	var suffixes []string
+	Assert(c.Gdext != (c.Engine != ""), "Invalid arguments: exactly one of --gdext or --engine is required.")
 	if c.Gdext {
-		suffixes = append(suffixes, extensionTwinSuffix)
+		return extensionTwinSuffix
 	}
-	if c.Engine != "" {
-		assertDepName(c.Engine)
-		Assert(c.Gdext || !c.Doc && !c.NoDoc, "Invalid arguments: --doc and --nodoc require --gdext when used with --engine.")
-		suffixes = append(suffixes, engineTwinSuffix)
-	}
-	// Both twins of a preset export to its export path.
-	Assert(c.Godot == "" || len(suffixes) == 1, "Invalid arguments: --godot cannot be used with both --gdext and --engine.")
-	return suffixes
+	assertDepName(c.Engine)
+	Assert(!c.Doc && !c.NoDoc, "Invalid arguments: --doc and --nodoc cannot be used with --engine.")
+	return engineTwinSuffix
 }
 
 // choose returns the presets to set up twins of, and their build targets.

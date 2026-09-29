@@ -25,6 +25,7 @@ func (u *unit) header() string {
 	}
 	w.ln("")
 	w.ln("namespace godot {")
+	u.aliases(w, u.headerNames(), nil)
 	for _, s := range u.enums {
 		w.ln("")
 		w.ln("enum class %s : int64_t {", s.name)

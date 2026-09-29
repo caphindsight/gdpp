@@ -1,0 +1,6 @@
+class_name Clock
+extends Node
+
+func os() -> OS {
+  return OS::get_singleton();
+}

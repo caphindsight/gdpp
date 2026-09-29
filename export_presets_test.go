@@ -203,14 +203,11 @@ func TestExportChoose(t *testing.T) {
 	if want := "[!] Skipping the export preset \"Android\", since GD++ can't export for its platform yet.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
-	if got := (&CmdExport{Engine: "4.5"}).validate(); len(got) != 1 || got[0] != engineTwinSuffix {
+	if got := (&CmdExport{Engine: "4.5"}).validate(); got != engineTwinSuffix {
 		t.Errorf("validate() with --engine = %q", got)
 	}
-	if got := (&CmdExport{Engine: "4.5", Gdext: true}).validate(); len(got) != 2 {
-		t.Errorf("validate() with --gdext --engine = %q", got)
-	}
-	if got := (&CmdExport{}).validate(); len(got) != 1 || got[0] != extensionTwinSuffix {
-		t.Errorf("validate() by default = %q", got)
+	if got := (&CmdExport{Gdext: true}).validate(); got != extensionTwinSuffix {
+		t.Errorf("validate() with --gdext = %q", got)
 	}
 }
 
@@ -220,10 +217,11 @@ func TestExportInvalidArgs(t *testing.T) {
 		want string
 	}{
 		"undo":   {CmdExport{Undo: true, Engine: "4.5"}, "Invalid arguments: --undo cannot be used with other options."},
-		"doc":    {CmdExport{Engine: "4.5", BuildOptions: BuildOptions{Doc: true}}, "Invalid arguments: --doc and --nodoc require --gdext when used with --engine."},
-		"godot":  {CmdExport{Engine: "4.5", Gdext: true, Godot: "godot"}, "Invalid arguments: --godot cannot be used with both --gdext and --engine."},
-		"preset": {CmdExport{Preset: []string{"Mac"}}, `There is no export preset named "Mac".`},
-		"path":   {CmdExport{Godot: "godot"}, `Set the export path of the preset "Linux" in Godot's Export dialog.`},
+		"none":   {CmdExport{}, "Invalid arguments: exactly one of --gdext or --engine is required."},
+		"both":   {CmdExport{Engine: "4.5", Gdext: true}, "Invalid arguments: exactly one of --gdext or --engine is required."},
+		"doc":    {CmdExport{Engine: "4.5", BuildOptions: BuildOptions{Doc: true}}, "Invalid arguments: --doc and --nodoc cannot be used with --engine."},
+		"preset": {CmdExport{Gdext: true, Preset: []string{"Mac"}}, `There is no export preset named "Mac".`},
+		"path":   {CmdExport{Gdext: true, Godot: "godot"}, `Set the export path of the preset "Linux" in Godot's Export dialog.`},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

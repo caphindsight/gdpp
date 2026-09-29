@@ -1,0 +1,4 @@
+class_name A
+
+@export_group("Stats", 1)
+@export var hp: int

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Sections" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="plain" type="int" setter="set_plain" getter="get_plain">
+		</member>
+		<member name="stat_hp" type="int" setter="set_stat_hp" getter="get_stat_hp">
+		</member>
+		<member name="stat_luck" type="int" setter="set_stat_luck" getter="get_stat_luck">
+		</member>
+		<member name="stat_mana" type="int" setter="set_stat_mana" getter="get_stat_mana">
+		</member>
+		<member name="title" type="String" setter="set_title" getter="get_title">
+		</member>
+	</members>
+</class>

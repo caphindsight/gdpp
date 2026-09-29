@@ -109,19 +109,19 @@ func TestScanGodotNames(t *testing.T) {
 		"/cpp/include/godot_cpp/variant/dup.hpp":       "namespace godot { class Array {}; }",
 		"/cpp/include/notes.txt":                       "namespace godot { class NotAHeader {}; }",
 		"/gen/include/godot_cpp/classes/object.hpp":    "namespace godot { class Object : public Wrapped {}; }",
-		"/gen/include/godot_cpp/classes/node.hpp":      "namespace godot { class Node : public Object {}; }",
+		"/gen/include/godot_cpp/classes/node.hpp":      "#include <godot_cpp/classes/object.hpp>\n  #  include \"godot_cpp/variant/array.hpp\"\n#include <vector>\n#include <godot_cpp/classes/object.hpp>\nnamespace godot { class Node : public Object {}; }",
 		"/gen/include/godot_cpp/classes/ref_counted.h": "namespace godot { class RefCounted : public Object {}; }",
 		"/gen/include/godot_cpp/classes/resource.hpp":  "namespace godot { class Resource : public RefCounted {}; }",
 	})
 	got := scanGodotNames([]Path{ParsePath("/cpp/include"), ParsePath("/gen/include"), ParsePath("/missing")})
 	want := []godotName{
-		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other},
-		{"Node", "<godot_cpp/classes/node.hpp>", trans.Object},
-		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object},
-		{"RefCounted", "<godot_cpp/classes/ref_counted.h>", trans.RefCounted},
-		{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted},
-		{"TypedArray", "<godot_cpp/variant/array.hpp>", trans.Other},
-		{"Wrapped", "<godot_cpp/classes/wrapped.hpp>", trans.Other},
+		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other, ""},
+		{"Node", "<godot_cpp/classes/node.hpp>", trans.Object, ""},
+		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object, ""},
+		{"RefCounted", "<godot_cpp/classes/ref_counted.h>", trans.RefCounted, ""},
+		{"Resource", "<godot_cpp/classes/resource.hpp>", trans.RefCounted, ""},
+		{"TypedArray", "<godot_cpp/variant/array.hpp>", trans.Other, ""},
+		{"Wrapped", "<godot_cpp/classes/wrapped.hpp>", trans.Other, ""},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("names = %v\nwant %v", got, want)

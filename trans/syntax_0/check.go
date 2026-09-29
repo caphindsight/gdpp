@@ -82,6 +82,13 @@ type varModel struct {
 	get              *Block
 	set              *Setter
 	decls            []*Block
+	sections         []section // In source order.
+}
+
+// section is an inspector section a var starts, from a section annotation.
+type section struct {
+	ann          *Annotation
+	name, prefix string
 }
 
 type signalModel struct {
@@ -268,7 +275,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
 				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
 		}
-		u.symbols[d.Name] = &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values}
+		u.symbols[d.Name] = &symbol{name: d.Name, kind: d.Kind, include: d.Include, cpp: d.Cpp, values: d.Values}
 	}
 	for _, s := range u.sortedSymbols() {
 		if s.include == "" && s.kind == 0 {
@@ -336,8 +343,12 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	return kind, nil
 }
 
-var knownAnnotations = []string{"const", "deferred", "export", "export_dir", "export_enum", "export_file", "export_flags", "icon",
-	"export_multiline", "export_placeholder", "export_range", "export_storage", "onready", "override", "rpc", "static", "tool", "virtual"}
+var knownAnnotations = []string{"const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "icon", "onready",
+	"override", "rpc", "static", "tool", "virtual"}
+
+// sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
+var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
 
 // annotations checks the annotations of a declaration of the given kind, e.g. "func", and returns them by name.
 func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (map[string]*Annotation, error) {
@@ -357,7 +368,8 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can't be used on %s.", a.Name, kind), "")
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
-		case len(a.Args) > 0 && !slices.Contains([]string{"export_enum", "export_file", "export_flags", "export_placeholder", "export_range", "icon", "rpc"}, a.Name):
+		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
+			"export_placeholder", "export_range", "export_subgroup", "icon", "rpc"}, a.Name):
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
@@ -473,8 +485,8 @@ func (u *unit) buildSignal(s *Signal) (*signalModel, error) {
 }
 
 func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
-	allowed := []string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage"}
+	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
+		"export_multiline", "export_placeholder", "export_range", "export_storage"}, sectionAnnotations...)
 	if ext {
 		allowed = nil
 	}
@@ -490,6 +502,9 @@ func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
 		return nil, u.errorAt(v.Pos, 3, "Extern variables can't have an initial value or a property body.", "Externs only declare what another package defines.")
 	}
 	if err := u.exportHint(m); err != nil {
+		return nil, err
+	}
+	if err := u.sections(m); err != nil {
 		return nil, err
 	}
 	if v.Property == nil {
@@ -534,7 +549,7 @@ func typeString(t *Type) string {
 func (u *unit) exportHint(m *varModel) error {
 	var export *Annotation
 	for _, ann := range m.v.Annotations { // In source order, so the second one is reported.
-		if strings.HasPrefix(ann.Name, "export") {
+		if strings.HasPrefix(ann.Name, "export") && !slices.Contains(sectionAnnotations, ann.Name) {
 			if export != nil {
 				return u.errorAt(ann.Pos, len(ann.Name)+1, "A variable can have only one export annotation.", "")
 			}
@@ -547,13 +562,9 @@ func (u *unit) exportHint(m *varModel) error {
 	m.usage = "PROPERTY_USAGE_DEFAULT"
 	var args []string
 	for _, arg := range export.Args {
-		s := arg.Value
-		if strings.HasPrefix(s, "\"") || strings.HasPrefix(s, "'") {
-			unquoted, err := strconv.Unquote("\"" + s[1:len(s)-1] + "\"")
-			if err != nil {
-				return u.errorAt(arg.Pos, len(s), "This string has an invalid escape sequence.", "")
-			}
-			s = unquoted
+		s, err := u.argValue(arg)
+		if err != nil {
+			return err
 		}
 		args = append(args, s)
 	}
@@ -590,6 +601,52 @@ func (u *unit) exportHint(m *varModel) error {
 		m.hintString = strings.Join(args, ",")
 	}
 	return nil
+}
+
+// sections sets the inspector sections m starts, from its section annotations.
+func (u *unit) sections(m *varModel) error {
+	for _, ann := range m.v.Annotations { // In source order, which is the order of the sections.
+		if !slices.Contains(sectionAnnotations, ann.Name) {
+			continue
+		}
+		var args []string
+		for _, arg := range ann.Args {
+			if !isString(arg.Value) {
+				args = nil
+				break
+			}
+			value, err := u.argValue(arg)
+			if err != nil {
+				return err
+			}
+			args = append(args, value)
+		}
+		switch {
+		case ann.Name == "export_category" && (len(args) != 1 || args[0] == ""):
+			return u.errorAt(ann.Pos, len(ann.Name)+1, "Annotation @export_category needs a name, as a string.",
+				"E.g. \"@export_category(\\\"Stats\\\") var hp: int\".")
+		case len(args) == 0 || len(args) > 2:
+			return u.errorAt(ann.Pos, len(ann.Name)+1, fmt.Sprintf("Annotation @%s needs a name and an optional prefix, as strings.", ann.Name),
+				fmt.Sprintf("E.g. \"@%s(\\\"Stats\\\") var hp: int\".", ann.Name))
+		}
+		m.sections = append(m.sections, section{ann, args[0], strings.Join(args[1:], "")})
+	}
+	return nil
+}
+
+// isString reports whether an annotation argument is a string literal.
+func isString(arg string) bool { return strings.HasPrefix(arg, "\"") || strings.HasPrefix(arg, "'") }
+
+// argValue returns an annotation argument's value: strings unquoted, other arguments as written.
+func (u *unit) argValue(arg *Arg) (string, error) {
+	if !isString(arg.Value) {
+		return arg.Value, nil
+	}
+	s, err := strconv.Unquote("\"" + arg.Value[1:len(arg.Value)-1] + "\"")
+	if err != nil {
+		return "", u.errorAt(arg.Pos, len(arg.Value), "This string has an invalid escape sequence.", "")
+	}
+	return s, nil
 }
 
 // capitalize turns an enum value name into Godot's editor spelling, e.g. "SOME_VALUE" into "Some Value".
@@ -727,6 +784,16 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			if v, err = u.buildVar(member.Var, false); err == nil {
 				m.vars = append(m.vars, v)
 				err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
+				for _, s := range v.sections {
+					if err != nil || s.ann.Name != "export_category" {
+						continue
+					}
+					if names[s.name] {
+						err = u.errorAt(s.ann.Pos, len(s.ann.Name)+1, fmt.Sprintf("The category name %q is already used by another category or member.", s.name),
+							"Godot adds a category as a property named after it.")
+					}
+					names[s.name] = true
+				}
 			}
 		case member.Signal != nil:
 			var sig *signalModel

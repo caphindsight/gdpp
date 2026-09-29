@@ -171,32 +171,27 @@ func (o BuildOptions) describe(target string, gdpp bool) string {
 }
 
 // preparePackage syncs the package's build cache and transpiles its GD++
-// files. It returns them, the classes they declare, and the names godot-cpp
-// declares, which it loads if there are GD++ files or allNames is set.
-// Bindings are generated with SCons arguments bindArgs, if needed.
-func preparePackage(p Project, pkg Package, bindArgs []string, docs, allNames bool) ([]gdppFile, []gdppClass, []godotName) {
+// files. It returns them and the classes they declare. Bindings are generated
+// with SCons arguments bindArgs, if needed.
+func preparePackage(p Project, pkg Package, bindArgs []string, docs bool) ([]gdppFile, []gdppClass) {
 	generateBuildCache(p, pkg)
 	files := listGdppFiles(p, pkg)
-	if len(files) == 0 && !allNames {
-		return nil, nil, nil
+	if len(files) == 0 {
+		return nil, nil
 	}
 	names := loadGodotNames(pkg, func() {
 		s := Silence()
 		Exec("Compiling bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(bindArgs, "--gdpp-bindings")...)
 		s.End()
 	})
-	var classes []gdppClass
-	if len(files) > 0 {
-		classes = transpilePackage(pkg, files, names, docs)
-	}
-	return files, classes, names
+	return files, transpilePackage(pkg, pkg.BuildCache.Cd(gdppDirName), files, names, docs)
 }
 
 // buildExtension compiles the package into GDExtension libraries for
 // targets, and generates its .gdextension file.
 func buildExtension(p Project, pkg Package, o BuildOptions, targets []string) {
 	// The first build's arguments, so the full build finds the generated bindings up to date.
-	files, classes, _ := preparePackage(p, pkg, o.sconsArgs(targets[0]), o.docs(), false)
+	files, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o.docs())
 	generateRegisterTypes(pkg, classes)
 	for _, target := range targets {
 		Exec("Building "+styledPackageName(pkg.Root)+" for "+o.describe(target, len(files) > 0)+"...", pkg.BuildCache, "scons", o.sconsArgs(target)...)

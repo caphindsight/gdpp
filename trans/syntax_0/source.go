@@ -30,6 +30,7 @@ func (u *unit) source() string {
 	}
 	w.ln("")
 	w.ln("namespace godot {")
+	u.aliases(w, u.sourceNames(), header)
 	for _, c := range u.classes {
 		u.classDefs(w, c)
 	}
@@ -285,6 +286,13 @@ func (u *unit) bindings(w *writer, c *classModel) {
 		}
 	}
 	for _, v := range c.vars {
+		for _, s := range v.sections {
+			if s.ann.Name == "export_category" {
+				w.ln("\tgdpp::add_property_category(get_class_static(), %q);", s.name)
+			} else {
+				w.ln("\tClassDB::add_property_%s(get_class_static(), %q, %q);", strings.TrimPrefix(s.ann.Name, "export_"), s.name, s.prefix)
+			}
+		}
 		prefix := "&" + c.name + "::"
 		if v.trampolined() {
 			prefix += "_gdpp_"
@@ -436,4 +444,21 @@ func (u *unit) includes(names []string, exclude map[string]bool) []string {
 	}
 	slices.Sort(incs)
 	return incs
+}
+
+// aliases writes the aliases of the dependencies named in names whose C++ name differs, except those in exclude.
+func (u *unit) aliases(w *writer, names []string, exclude map[string]bool) {
+	var lines []string
+	for _, name := range names {
+		if s := u.symbols[name]; s != nil && s.cpp != "" && !exclude[name] {
+			lines = append(lines, fmt.Sprintf("using %s = %s;", name, s.cpp))
+		}
+	}
+	slices.Sort(lines)
+	if lines = slices.Compact(lines); len(lines) > 0 {
+		w.ln("")
+		for _, l := range lines {
+			w.ln("%s", l)
+		}
+	}
 }

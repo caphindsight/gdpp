@@ -25,6 +25,7 @@ type symbol struct {
 	name    string
 	kind    meta.Kind
 	include string // Empty for declarations in the file.
+	cpp     string // For dependencies named differently in C++, e.g. "::core_bind::OS".
 	values  []meta.EnumValue
 	class   *Class  // Set for classes in the file.
 	extern  *Extern // Set for externs in the file.

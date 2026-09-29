@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+
 	"gd++/trans"
 )
 
@@ -74,13 +76,25 @@ func gdppClasses(files []gdppFile) []gdppClass {
 
 // godotNamesVersion is the version of the names cache's format and of the
 // scanner that fills it. Bump it when either changes, to rescan.
-const godotNamesVersion = 1
+const godotNamesVersion = 2
 
-// godotNamesCache is the names cache: the names godot-cpp declares, which
-// only change with the bindings or the spec, and so with the build cache.
+// godotNamesCache is a names cache: the names that godot-cpp, or the engine,
+// declares.
 type godotNamesCache struct {
 	Version int         `toml:"version"`
 	Names   []godotName `toml:"name"`
+}
+
+// loadNamesCache returns the names in the names cache file, if it's there and
+// has the version.
+func loadNamesCache(file Path, version int) ([]godotName, bool) {
+	var cache godotNamesCache
+	if !file.IsFile() {
+		return nil, false
+	}
+	// Not decodeToml: older versions may have other keys.
+	_, err := toml.Decode(file.ReadString(), &cache)
+	return cache.Names, err == nil && cache.Version == version
 }
 
 // loadGodotNames returns the names that the package's godot-cpp declares:
@@ -88,24 +102,20 @@ type godotNamesCache struct {
 // generate the bindings, then scanning godot-cpp's headers.
 func loadGodotNames(pkg Package, generateBindings func()) []godotName {
 	file := pkg.BuildCache.Cd("godot_names.toml")
-	var cache godotNamesCache
-	if file.IsFile() {
-		decodeToml(file, &cache)
-		if cache.Version == godotNamesVersion {
-			return cache.Names
-		}
+	if names, ok := loadNamesCache(file, godotNamesVersion); ok {
+		return names
 	}
 	generateBindings()
 	s := Silence()
 	t := LogTask("Scanning bindings for %s...", styledPackageName(pkg.Root))
-	cache = godotNamesCache{godotNamesVersion, scanGodotNames([]Path{
+	names := scanGodotNames([]Path{
 		pkg.BuildCache.Cd("godot-cpp/include"),
 		pkg.BuildCache.Cd("build/godot-cpp/gen/include"),
-	})}
-	file.WriteString(encodeToml(cache))
+	})
+	file.WriteString(encodeToml(godotNamesCache{godotNamesVersion, names}))
 	t.Done()
 	s.End()
-	return cache.Names
+	return names
 }
 
 // gdppKinds returns the kinds of the declarations in files, following the
@@ -143,11 +153,11 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 	return kinds
 }
 
-// transpilePackage transpiles the package's GD++ files into the build
-// cache's gdpp directory: a header and a source per file, the runtime header,
-// and with docs, each class's XML documentation. Files that nothing generates
-// any more are deleted. Returns the classes the files declare.
-func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs bool) []gdppClass {
+// transpilePackage transpiles the package's GD++ files into dir: a header and
+// a source per file, the runtime header, and with docs, each class's XML
+// documentation. Files that nothing generates any more are deleted. Returns
+// the classes the files declare.
+func transpilePackage(pkg Package, dir Path, files []gdppFile, names []godotName, docs bool) []gdppClass {
 	s := Silence()
 	t := LogTask("Transpiling GD++ code for %s...", styledPackageName(pkg.Root))
 	owner := map[string]gdppFile{}
@@ -166,11 +176,10 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 	var godotDeps []trans.Dependency
 	for _, n := range names {
 		godot[n.Name] = n
-		godotDeps = append(godotDeps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind})
+		godotDeps = append(godotDeps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind, Cpp: n.Cpp})
 	}
 	kinds := gdppKinds(files, godot)
 
-	dir := pkg.BuildCache.Cd(gdppDirName)
 	written := map[string]bool{}
 	write := func(rel, text string) {
 		written[rel] = true
