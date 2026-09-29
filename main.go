@@ -11,6 +11,7 @@ var Args struct {
 	Fetch    *CmdFetch   `arg:"subcommand:fetch" help:"download dependencies from a repository, or list them"`
 	Fix      *CmdFix     `arg:"subcommand:fix" help:"tidy up the project, e.g. delete leftover temporary files"`
 	Init     *CmdInit    `arg:"subcommand:init" help:"set up the project, or create or update a package"`
+	Install  *CmdInstall `arg:"subcommand:install" help:"install the tools GD++ needs to build, e.g. SCons and a C++ compiler"`
 	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
 	Rm       *CmdRm      `arg:"subcommand:rm" help:"remove dependencies from the project cache, or packages from the project"`
 	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the result, to try out GD++"`
@@ -60,6 +61,8 @@ func main() {
 		Args.Fix.Run()
 	case Args.Init != nil:
 		Args.Init.Run()
+	case Args.Install != nil:
+		Args.Install.Run()
 	case Args.Ls != nil:
 		Args.Ls.Run()
 	case Args.Rm != nil:
