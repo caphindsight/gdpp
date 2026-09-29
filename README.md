@@ -19,7 +19,7 @@ Save this as `hello_world.gd++` anywhere in your Godot project and run:
 ```sh
 gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
 gd++ fetch --missing
-gd++ build hello
+gd++ build
 ```
 
 Open the project in Godot. `HelloWorld` is now a node type, like any built-in node. Add it to a scene and run it.
