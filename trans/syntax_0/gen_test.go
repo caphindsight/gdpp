@@ -40,7 +40,7 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cases := map[string]string{"testdata/gen/tutorial": "../../testsrc/tutorial.gd++"}
+	cases := map[string]string{"testdata/gen/tutorial": "../../tutorial/tutorial.gd++"}
 	for _, input := range dirs {
 		cases[filepath.Dir(input)] = input
 	}
