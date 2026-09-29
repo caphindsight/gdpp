@@ -12,9 +12,6 @@ import (
 // package root gets a generated <id>.gdextension file and its .uid file.
 // Debug builds are godot-cpp dev builds with debug symbols and hot reload;
 // release builds use link-time optimization.
-//
-// With --proj --engine, it instead compiles all packages of the project into
-// the engine, as a module, building Godot export templates (see buildEngine).
 type CmdBuild struct {
 	Path     string   `arg:"positional" help:"build the package containing this path [default: the current directory]"`
 	For      []string `arg:"--for" placeholder:"PLATFORM.ARCH" help:"build for each of these targets, e.g. windows.x86_64 or w.x64; platforms: windows|win|w, linux|lin|l, macos|mac|m; archs: x86_32|x32, x86_64|x64, arm64|a64 [default: this machine]"`
@@ -22,8 +19,7 @@ type CmdBuild struct {
 	Windows  bool     `arg:"-w" help:"shorthand for --platform=windows"`
 	Arch     string   `arg:"--arch" placeholder:"x86_32|x86_64|arm64" help:"the target CPU architecture [default: this one]"`
 	BuildOptions
-	Proj   bool   `arg:"--proj" help:"build all packages in the project, one after another"`
-	Engine string `arg:"--engine" placeholder:"NAME" help:"with --proj, build the project into Godot export templates with this Godot engine, instead of GDExtension libraries"`
+	Proj bool `arg:"--proj" help:"build all packages in the project, one after another"`
 }
 
 func (c *CmdBuild) Run() {
@@ -34,11 +30,6 @@ func (c *CmdBuild) Run() {
 		path = ParsePath(c.Path)
 	}
 	p := LoadProject(path)
-	if c.Engine != "" {
-		buildEngine(p, c.Engine, c.BuildOptions, targets)
-		LogInfo("The engine binaries are in %s.", engineBinDir(p).ToString())
-		return
-	}
 	pkgs := []Package{}
 	if c.Proj {
 		pkgs = p.ListPackages()
@@ -61,12 +52,6 @@ func (c *CmdBuild) targets() []string {
 	Assert(!c.Windows || c.Platform == "", "Invalid arguments: -w and --platform cannot be used together.")
 	Assert(len(c.For) == 0 || !c.Windows && c.Platform == "" && c.Arch == "", "Invalid arguments: --for cannot be used together with -w, --platform or --arch.")
 	Assert(!c.Proj || c.Path == "", "Invalid arguments: a path and --proj cannot be used together.")
-	if c.Engine != "" {
-		Assert(c.Proj, "Invalid arguments: --engine requires --proj, since engine builds always build the whole project.")
-		assertDepName(c.Engine)
-		Assert(!c.Doc && !c.NoDoc, "Invalid arguments: --doc and --nodoc cannot be used with --engine.")
-		c.engine = true
-	}
 	if len(c.For) == 0 {
 		if c.Windows {
 			c.Platform = "windows"

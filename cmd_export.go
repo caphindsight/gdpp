@@ -12,22 +12,24 @@ import (
 // preset first, and with --engine an engine twin, which exports with export
 // templates it builds with all packages compiled into the engine. Twins are
 // made anew each time, from their original. The user's presets are never
-// changed. With --godot, it runs the twins' exports too. With --undo, it
-// removes all twins instead.
+// changed. The build caches of packages, and with --engine the project build
+// cache, are cleaned first, unless --noclean is given. With --godot, it runs
+// the twins' exports too. With --undo, it removes all twins instead.
 type CmdExport struct {
 	Gdext  bool     `arg:"--gdext" help:"build GDExtension libraries and set up GDExtension twins [default: without --engine]"`
 	Engine string   `arg:"--engine" placeholder:"NAME" help:"build export templates with this Godot engine and set up engine twins"`
 	Preset []string `arg:"--preset" placeholder:"NAME" help:"only set up twins of these presets [default: all Windows and Linux presets]"`
 	BuildOptions
-	Godot string `arg:"--godot" placeholder:"PATH" help:"also export the twins with this Godot editor, headless"`
-	Undo  bool   `arg:"--undo" help:"remove all twin presets"`
+	NoClean bool   `arg:"--noclean" help:"don't clean the build caches first, for faster builds; for development only, avoid in ship builds, since a stale cache may pollute them"`
+	Godot   string `arg:"--godot" placeholder:"PATH" help:"also export the twins with this Godot editor, headless"`
+	Undo    bool   `arg:"--undo" help:"remove all twin presets"`
 }
 
 func (c *CmdExport) Run() {
 	p := LoadProject(Cwd())
 	file := p.Root.Cd(exportPresetsFileName)
 	if c.Undo {
-		Assert(!c.Gdext && c.Engine == "" && len(c.Preset) == 0 && c.BuildOptions == (BuildOptions{}) && c.Godot == "",
+		Assert(!c.Gdext && c.Engine == "" && len(c.Preset) == 0 && c.BuildOptions == (BuildOptions{}) && !c.NoClean && c.Godot == "",
 			"Invalid arguments: --undo cannot be used with other options.")
 		undoTwins(file)
 		return
@@ -37,6 +39,14 @@ func (c *CmdExport) Run() {
 	presets := parseExportPresets(file)
 	chosen, targets := c.choose(presets)
 	assertScons()
+	if !c.NoClean {
+		for _, pkg := range p.ListPackages() {
+			cleanPackage(pkg.Root, false)
+		}
+		if c.Engine != "" {
+			cleanProjectBuildCache(p)
+		}
+	}
 	if c.Gdext {
 		for _, pkg := range p.ListPackages() {
 			buildExtension(p, pkg, c.BuildOptions, targets)

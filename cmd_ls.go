@@ -30,7 +30,7 @@ type lsPackage struct {
 // GD++ file with errors.
 type lsClass struct {
 	Name       string
-	File, Icon Path // The header of a C++ class, or the GD++ file of a GD++ class.
+	File, Icon Path   // The header of a C++ class, or the GD++ file of a GD++ class.
 	FileText   string // For GD++ classes, the file's pkg:// path; if empty, File's.
 	IconText   string // The icon's path as written, e.g. pkg://icon.svg; if empty, Icon's.
 	Gdpp       bool

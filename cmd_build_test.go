@@ -338,9 +338,6 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"proj":     {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
 		"jobs":     {CmdBuild{BuildOptions: BuildOptions{Jobs: -1}}, "--jobs cannot be negative"},
 		"doc":      {CmdBuild{BuildOptions: BuildOptions{Doc: true, NoDoc: true}}, "--doc and --nodoc cannot be used together"},
-		"engdoc":   {CmdBuild{Engine: "4.5", Proj: true, BuildOptions: BuildOptions{NoDoc: true}}, "--doc and --nodoc cannot be used with --engine"},
-		"engname":  {CmdBuild{Engine: "..", Proj: true}, `".." is not a valid dependency name`},
-		"engproj":  {CmdBuild{Engine: "4.5"}, "--engine requires --proj, since engine builds always build the whole project"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
