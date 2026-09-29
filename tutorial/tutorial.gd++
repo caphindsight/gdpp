@@ -309,7 +309,7 @@ var child_node_2: Node3D = {
 // GD++ exposes it to Godot through a generated getter and setter.
 
 // A property is a variable with a custom getter and setter.
-// Without a getter it is set-only. Without a setter it is get-only.
+// The getter is required, since Godot doesn't support set-only properties. Without a setter it is get-only.
 
 // Godot can never set this property to a negative number.
 var my_property: int {

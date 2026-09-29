@@ -187,6 +187,8 @@ func TestRmLogs(t *testing.T) {
 		"a/" + packageFileName:   testRmPackage,
 		"a/.gitignore":           block,
 		"a/.gd++pkg/b.o":         "",
+		"a/a.gdextension":        "",
+		"a/liba.so":              "",
 		"d/" + packageFileName:   testRmPackage,
 	})
 	withQuiet(t, false)
@@ -200,6 +202,8 @@ func TestRmLogs(t *testing.T) {
 		"[-] Success!\n" +
 		"[-] Deleted res://a/gd++pkg.toml.\n" +
 		"[-] Deleted res://a/.gd++pkg.\n" +
+		"[-] Deleted res://a/a.gdextension.\n" +
+		"[-] Deleted res://a/liba.so.\n" +
 		"[-] Deleted res://a/.gitignore.\n" +
 		"[-] Success!\n" +
 		"[-] Deleted res://d.\n" +

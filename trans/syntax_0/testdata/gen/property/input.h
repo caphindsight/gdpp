@@ -24,7 +24,8 @@ public:
 	int64_t get_value() const;
 	void set_value(int64_t v);
 	String get_read_only() const;
-	void set_write_only(double x);
+	double get_logged() const;
+	void set_logged(double x);
 
 protected:
 	static void _bind_methods();

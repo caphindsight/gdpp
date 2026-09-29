@@ -12,8 +12,9 @@ void Clamp::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("value", PROPERTY_USAGE_NONE), "set_value", "get_value");
 	ClassDB::bind_method(D_METHOD("get_read_only"), &Clamp::get_read_only);
 	ClassDB::add_property(get_class_static(), gdpp::info<String>("read_only", PROPERTY_USAGE_NONE), "", "get_read_only");
-	ClassDB::bind_method(D_METHOD("set_write_only", "value"), &Clamp::set_write_only);
-	ClassDB::add_property(get_class_static(), gdpp::info<double>("write_only", PROPERTY_USAGE_NONE), "set_write_only", "");
+	ClassDB::bind_method(D_METHOD("get_logged"), &Clamp::get_logged);
+	ClassDB::bind_method(D_METHOD("set_logged", "value"), &Clamp::set_logged);
+	ClassDB::add_property(get_class_static(), gdpp::info<double>("logged", PROPERTY_USAGE_NONE), "set_logged", "get_logged");
 }
 
 int64_t Clamp::get_value() const {
@@ -21,7 +22,7 @@ int64_t Clamp::get_value() const {
 
     return value_;
 
-#line 25 "input.cpp"
+#line 26 "input.cpp"
 }
 
 void Clamp::set_value(int64_t v) {
@@ -29,19 +30,25 @@ void Clamp::set_value(int64_t v) {
 
     value_ = v < 0 ? 0 : v;
 
-#line 33 "input.cpp"
+#line 34 "input.cpp"
 }
 
 String Clamp::get_read_only() const {
 #line 16 "input.gd++"
  return "fixed";
-#line 39 "input.cpp"
+#line 40 "input.cpp"
 }
 
-void Clamp::set_write_only(double x) {
+double Clamp::get_logged() const {
 #line 20 "input.gd++"
+ return 0;
+#line 46 "input.cpp"
+}
+
+void Clamp::set_logged(double x) {
+#line 21 "input.gd++"
  gd::print(x);
-#line 45 "input.cpp"
+#line 52 "input.cpp"
 }
 
 #undef This

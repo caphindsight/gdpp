@@ -540,6 +540,9 @@ func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
 			}
 		}
 	}
+	if m.get == nil {
+		return nil, u.errorAt(v.Pos, 3, fmt.Sprintf("Property %s has no get block.", v.Name), "Godot doesn't support set-only properties.")
+	}
 	return m, nil
 }
 

@@ -244,15 +244,15 @@ func (c *CmdRm) removeClasses(root Path) {
 }
 
 // removePackage deletes the package's directory with --dir; otherwise just
-// its config file, its build cache and its .gitignore block.
+// its config file, what `clean --bin` deletes and its .gitignore block.
 func (c *CmdRm) removePackage(root Path) {
 	if c.Dir {
 		rmPath(root)
 		return
 	}
 	rmPath(root.Cd(packageFileName))
-	if cache := root.Cd(packageBuildCacheDirName); cache.Exists() {
-		rmPath(cache)
+	for _, p := range packageGarbage(root, true) {
+		rmPath(p)
 	}
 	EditGitignore(root, func(text string) string { return packageGitignore.set(text, false) })
 }

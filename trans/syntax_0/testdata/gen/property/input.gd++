@@ -16,6 +16,7 @@ var read_only: String {
   get { return "fixed"; }
 }
 
-var write_only: float {
+var logged: float {
+  get { return 0; }
   set(x: float) { gd::print(x); }
 }
