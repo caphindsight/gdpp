@@ -8,8 +8,11 @@
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/ref.hpp>
+#include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/resource.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/core/binder_common.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/gdvirtual.gen.inc>
@@ -76,6 +79,8 @@ public:
 			object(p_object) {}
 
 	Base *get() const { return object; }
+	Base *base() { return object; }
+	const Base *base() const { return object; }
 	explicit operator bool() const { return object != nullptr; }
 	bool operator==(const ExtPtr &p_other) const { return object == p_other.object; }
 	operator godot::Variant() const { return godot::Variant(object); }
@@ -88,6 +93,10 @@ public:
 
 private:
 	Base *object = nullptr;
+	godot::Ref<godot::RefCounted> keep; // Keeps a refcounted object from memnew_ext alive until an ExtRef takes it.
+
+	template <typename U>
+	friend ExtPtr<U> memnew_ext();
 };
 
 // ExtRef<T> references an object of the extern T, whose base class is refcounted. Its members are called by
@@ -103,8 +112,12 @@ public:
 			object(p_object) {}
 	ExtRef(Base *p_object) :
 			object(p_object) {}
+	ExtRef(const ExtPtr<T> &p_object) :
+			object(p_object.get()) {}
 
 	const godot::Ref<Base> &get() const { return object; }
+	godot::Ref<Base> &base() { return object; }
+	const godot::Ref<Base> &base() const { return object; }
 	explicit operator bool() const { return object.is_valid(); }
 	bool operator==(const ExtRef &p_other) const { return object == p_other.object; }
 	operator godot::Variant() const { return godot::Variant(object); }
@@ -118,6 +131,37 @@ public:
 private:
 	godot::Ref<Base> object;
 };
+
+// memnew_ext creates an object of the extern T, like memnew: an instance of the ClassDB class or global script class
+// that T names.
+template <typename T>
+ExtPtr<T> memnew_ext() {
+	godot::StringName name = T::gdpp_name;
+	godot::Variant object;
+	if (godot::ClassDB::class_exists(name)) {
+		object = godot::ClassDB::instantiate(name);
+	} else {
+		godot::TypedArray<godot::Dictionary> classes = godot::ProjectSettings::get_singleton()->get_global_class_list();
+		for (int64_t i = 0; i < classes.size(); i++) {
+			godot::Dictionary c = classes[i];
+			if (godot::StringName(c["class"]) == name) {
+				object = godot::ResourceLoader::get_singleton()->load(c["path"])->call("new");
+				break;
+			}
+		}
+	}
+	ExtPtr<T> result = godot::Object::cast_to<typename T::Base>(object.operator godot::Object *());
+	ERR_FAIL_COND_V_MSG(!result, nullptr, godot::String("Failed to create an object of the extern ") + T::gdpp_name + ".");
+	result.keep = object;
+	return result;
+}
+
+// memdelete_ext frees an object of the extern T, like memdelete. Refcounted objects are freed by their ExtRefs instead.
+template <typename T>
+void memdelete_ext(ExtPtr<T> p_object) {
+	static_assert(!std::is_base_of_v<godot::RefCounted, typename T::Base>, "Refcounted externs are freed by their ExtRefs.");
+	memdelete(p_object.get());
+}
 
 } // namespace gdpp
 
