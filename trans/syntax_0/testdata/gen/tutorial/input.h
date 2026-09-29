@@ -87,7 +87,7 @@ private:
 
 #line 89 "input.h"
 
-private:
+public:
 	int64_t simple_var{};
 	int64_t another_simple_var{};
 	Node3D *child_node_1{};
@@ -95,12 +95,14 @@ private:
 	int64_t my_range_var{};
 	int64_t some_var{};
 	gdpp::ExtPtr<Terrain> my_extern{};
+
+private:
 #line 316 "input.gd++"
 
 
     int64_t my_property = 0;
 
-#line 104 "input.h"
+#line 106 "input.h"
 
 public:
 	static constexpr int64_t THE_ANSWER = 42;

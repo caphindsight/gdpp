@@ -13,7 +13,7 @@ class Pool;
 class Pool : public RefCounted {
 	GDCLASS(Pool, RefCounted)
 
-private:
+public:
 	int64_t size{};
 
 public:

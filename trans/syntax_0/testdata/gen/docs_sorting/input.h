@@ -13,7 +13,7 @@ class Sorted;
 class Sorted : public RefCounted {
 	GDCLASS(Sorted, RefCounted)
 
-private:
+public:
 	int64_t z{};
 	int64_t Y{};
 

@@ -15,7 +15,7 @@ class Settings2;
 class Settings2 : public Node {
 	GDCLASS(Settings2, Node)
 
-private:
+public:
 	int64_t plain{};
 	int64_t hp{};
 	double bias{};

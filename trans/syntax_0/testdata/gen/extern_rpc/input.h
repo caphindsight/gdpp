@@ -31,7 +31,7 @@ private:
 class Digger : public Node {
 	GDCLASS(Digger, Node)
 
-private:
+public:
 	gdpp::ExtPtr<Terrain2> terrain{};
 
 public:

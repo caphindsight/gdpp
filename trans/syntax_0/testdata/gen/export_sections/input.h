@@ -13,7 +13,7 @@ class Sections;
 class Sections : public Node {
 	GDCLASS(Sections, Node)
 
-private:
+public:
 	int64_t plain{};
 	int64_t stat_hp{};
 	int64_t stat_mana{};

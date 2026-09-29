@@ -15,7 +15,7 @@ class Stage;
 class Stage : public Node {
 	GDCLASS(Stage, Node)
 
-private:
+public:
 	int64_t count{};
 	Camera3D *camera{};
 	MeshInstance3D *mesh{};

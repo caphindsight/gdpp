@@ -201,7 +201,7 @@ func greet(name: String, count: int = 1) -> void {
 
 The signature is GD++. The body is C++. GD++ registers the function with Godot, so GDScript can call it.
 
-`gd` is short for `UtilityFunctions`, Godot's global functions like `print`. `This` is the name of the current class, like `Self` in Rust.
+`gd` is short for `UtilityFunctions`, Godot's global functions like `print`. `gd_assert(condition, "message")` is GDScript's `assert`: in debug builds, a false condition prints an error. `gd::assert` doesn't exist, since C's `assert` is a macro. `This` is the name of the current class, like `Self` in Rust.
 
 Attributes change how a function works:
 

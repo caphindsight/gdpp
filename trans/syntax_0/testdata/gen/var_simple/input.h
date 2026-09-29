@@ -15,7 +15,7 @@ class Stats;
 class Stats : public RefCounted {
 	GDCLASS(Stats, RefCounted)
 
-private:
+public:
 	int64_t hp{};
 	double speed{};
 	String name{};

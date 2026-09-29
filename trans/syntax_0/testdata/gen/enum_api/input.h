@@ -27,7 +27,7 @@ class Bystander;
 class Game : public RefCounted {
 	GDCLASS(Game, RefCounted)
 
-private:
+public:
 	Mode mode{};
 	Mode start{};
 

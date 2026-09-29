@@ -15,7 +15,7 @@ class Helper;
 class Main : public Node {
 	GDCLASS(Main, Node)
 
-private:
+public:
 	Ref<Helper> helper{};
 
 public:
@@ -31,7 +31,7 @@ protected:
 class Helper : public RefCounted {
 	GDCLASS(Helper, RefCounted)
 
-private:
+public:
 	Main *main{};
 
 public:

@@ -290,7 +290,30 @@ void memdelete_ext(ExtPtr<T> p_object) {
 	memdelete(p_object.get());
 }
 
+// assert_message is the error printed by a failed gd_assert.
+inline String assert_message(const char *p_condition, const String &p_message = "") {
+	String result = String("Assertion failed: ") + p_condition;
+	if (!p_message.is_empty()) {
+		result += " - " + p_message;
+	}
+	return result + ".";
+}
+
 } // namespace gdpp
+
+// gd_assert(condition) and gd_assert(condition, "message") mirror GDScript's assert: a failed condition prints an error.
+// Like in GDScript, release builds skip the check and don't evaluate the condition. C's assert is a macro, so gd::assert
+// can't be a function.
+#ifdef DEBUG_ENABLED
+#define gd_assert(m_condition, ...) \
+	do { \
+		if (!(m_condition)) { \
+			ERR_PRINT(gdpp::assert_message(#m_condition, ##__VA_ARGS__)); \
+		} \
+	} while (0)
+#else
+#define gd_assert(m_condition, ...) ((void)0)
+#endif
 
 // memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for ExtPtrs.
 #define memnew_ext(m_class) gdpp::memnew_ext<m_class>()

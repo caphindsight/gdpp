@@ -35,7 +35,7 @@ private:
 class User : public Node {
 	GDCLASS(User, Node)
 
-private:
+public:
 	gdpp::ExtPtr<Terrain2> terrain{};
 	gdpp::ExtRef<Settings> settings{};
 	gdpp::ExtPtr<Road> other{};

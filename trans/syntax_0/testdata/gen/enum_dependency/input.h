@@ -17,7 +17,7 @@ class Quest;
 class Quest : public RefCounted {
 	GDCLASS(Quest, RefCounted)
 
-private:
+public:
 	Level level{};
 
 public:

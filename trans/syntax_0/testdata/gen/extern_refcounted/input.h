@@ -28,7 +28,7 @@ private:
 class Reader : public RefCounted {
 	GDCLASS(Reader, RefCounted)
 
-private:
+public:
 	gdpp::ExtRef<Config> config{};
 
 public:

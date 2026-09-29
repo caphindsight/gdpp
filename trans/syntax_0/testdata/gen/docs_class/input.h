@@ -21,7 +21,7 @@ class Player;
 class Player : public Node3D {
 	GDCLASS(Player, Node3D)
 
-private:
+public:
 	int64_t hp{};
 	int64_t legacy{};
 

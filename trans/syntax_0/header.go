@@ -174,12 +174,16 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		}
 		decls = append(decls, v.decls...)
 	}
-	if len(fields)+len(decls) > 0 {
+	if len(fields) > 0 {
 		w.ln("")
-		w.ln("private:")
+		w.ln("public:")
 		for _, v := range fields {
 			w.ln("\t%s%s{};", withSpace(v.t.cpp), v.v.Name)
 		}
+	}
+	if len(decls) > 0 {
+		w.ln("")
+		w.ln("private:")
 		for _, d := range decls {
 			w.block(d, "", "")
 		}
