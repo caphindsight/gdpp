@@ -7,6 +7,8 @@ GD++ lets you write Godot games in C++, without the boilerplate. It is one comma
 - A small build system for Godot C++ code. It downloads the Godot C++ bindings (godot-cpp) and the Godot API specs your code needs, keeps them in your project, and compiles your code into GDExtension libraries that Godot loads.
 - The GD++ language. It is a small language that compiles to regular C++. Its declarations look like GDScript, but function bodies are plain C++. GD++ writes the glue code that Godot needs: headers, _bind_methods, getters and setters, #include lines and class registration.
 
+Since GD++ compiles to C++, your own logic, like math and loops, runs 15 to 50 times faster than in GDScript, in release. Work with Godot's types, like Array and Dictionary, and calls to the engine gain much less. See `gd++ man performance`.
+
 A GD++ class, saved as hello_world.gd++ anywhere in a Godot project:
 
 ```gd++
