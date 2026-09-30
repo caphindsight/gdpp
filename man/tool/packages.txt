@@ -46,7 +46,7 @@ std (optional, default "c++20")
   The C++ standard to compile with, e.g. "c++17", "c++20" or "c++23". It becomes -std=... for GCC and Clang, and /std:... for MSVC. It must be at least what godot-cpp needs, i.e. c++17.
 
 prefix (optional, default: the package's id in PascalCase)
-  The prefix of the names of the classes that GD++ adds to the package, e.g. "Foo". A package with GD++ classes registers FooAsync, the class of its tasks, which Async types name. The default turns the id into PascalCase: my_game gives MyGame, and an id that starts with a digit, e.g. 3d_tools, gets "Pkg" in front: Pkg3dTools. Set it when the default clashes with a class name, or reads badly. See `gd++ man async`.
+  The prefix of the names of the classes that GD++ adds to the package, e.g. "Foo". A package whose GD++ classes use Async, e.g. with an @onthread function, registers FooAsync, the class of its tasks, which Async types name. The default turns the id into PascalCase: my_game gives MyGame, and an id that starts with a digit, e.g. 3d_tools, gets "Pkg" in front: Pkg3dTools. Set it when the default clashes with a class name, or reads badly. See `gd++ man async`.
 
 quit_timeout (optional, default 1)
   How many seconds the package's tasks may still run after the game started quitting, before the game exits anyway, e.g. 2.5. 0 exits as soon as the game quits, if tasks still run. It can't be negative. See "When the game quits" in `gd++ man async`.

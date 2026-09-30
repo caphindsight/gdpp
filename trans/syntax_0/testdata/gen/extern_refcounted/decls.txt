@@ -1,2 +1,2 @@
-{Name:Config Kind:2 Base:Resource Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:Reader Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Config Kind:2 Base:Resource Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Reader Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}

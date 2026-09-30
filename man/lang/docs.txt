@@ -88,7 +88,7 @@ A line @deprecated, or @deprecated: MESSAGE, marks the declaration as deprecated
 
 In debug builds, the build generates the documentation of each GD++ class in Godot's XML format, the format of Godot's own class reference, into the build cache (gdpp/doc_classes/NAME.xml), and compiles it into the library. The editor loads it with the library. The XML lists the class's brief description, description and tutorials, its methods, members and signals, sorted by name, and its constants, with their types, qualifiers (virtual, const, static) and default values.
 
-The classes that GD++ adds to a package with GD++ classes, e.g. its class of tasks, FooAsync, get documentation too, which GD++ writes, so the editor's help explains them like Godot's own classes. See `gd++ man async`.
+The classes that GD++ adds to a package, e.g. its class of tasks, FooAsync, get documentation too, which GD++ writes, so the editor's help explains them like Godot's own classes. See `gd++ man async`.
 
 Release builds leave the documentation out, since exported games have no editor to show it. Use --doc and --nodoc to choose yourself. See `gd++ man build`.
 

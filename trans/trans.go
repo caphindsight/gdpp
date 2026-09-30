@@ -76,8 +76,8 @@ func DocumentClass(name, src, class string, opts Options, syntax int) (string, e
 	return f.documentClass(name, src, class, opts)
 }
 
-// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package with
-// GD++ classes, e.g. its class of tasks: a file "<Class>.xml" per class.
+// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package, e.g.
+// its class of tasks, for a package whose GD++ classes use Async: a file "<Class>.xml" per class.
 func DocumentBuiltinClasses(opts Options, syntax int) ([]File, error) {
 	f, err := get(syntax)
 	if err != nil {

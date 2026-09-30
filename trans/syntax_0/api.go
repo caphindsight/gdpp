@@ -58,8 +58,8 @@ func (u *unit) only(s *symbol) *unit {
 	return &d
 }
 
-// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package with
-// GD++ classes, e.g. its class of tasks, named opts.AsyncClass: a file "<Class>.xml" per class.
+// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package, e.g.
+// its class of tasks, named opts.AsyncClass, for a package whose GD++ classes use Async: a file "<Class>.xml" per class.
 func DocumentBuiltinClasses(opts meta.Options) []meta.File {
 	name := cmp.Or(opts.AsyncClass, "GdppAsync")
 	return []meta.File{{Name: name + ".xml", Text: documentAsyncClass(name)}}

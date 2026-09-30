@@ -42,7 +42,7 @@ class Hitbox {
 
 enum Power { WEAK, STRONG = 5 }
 `,
-	"misc.gg": "@tool\nclass Tiny {}\n",
+	"misc.gg": "@tool\nclass Tiny {\n  @onthread\n  func work() -> void {}\n}\n",
 }
 
 // testGodotNames stand in for what scanning godot-cpp finds.
@@ -129,7 +129,7 @@ func TestTranspilePackage(t *testing.T) {
 		"Weapon.h":                 {`#include "Player.h"`, "Player *owner{};"},
 		"Power.h":                  {"enum class Power : int64_t {"},
 		"doc_classes/Player.xml":   {"A player."},
-		"doc_classes/PkgAsync.xml": {`<class name="PkgAsync" inherits="RefCounted"`, `<method name="is_done" qualifiers="const">`},
+		"doc_classes/PkgAsync.xml": {`<class name="PkgAsync" inherits="RefCounted"`, `<member name="done" type="bool" setter="" getter="is_done">`},
 	} {
 		for _, want := range wants {
 			if !strings.Contains(gen[file], want) {
@@ -161,6 +161,13 @@ func TestTranspilePackage(t *testing.T) {
 	}
 	if _, ok := gen["Player.h"]; !ok {
 		t.Error("Player.h was deleted.")
+	}
+	// Without Async, the package has no class of tasks.
+	register = m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
+	for _, unwanted := range []string{"GDPP_ASYNC_CLASS", "finish_tasks", "gd++/syntax_0.hpp"} {
+		if strings.Contains(register, unwanted) {
+			t.Errorf("__register_types__.cpp = %s\nwant it not to contain %q", register, unwanted)
+		}
 	}
 }
 
@@ -261,6 +268,8 @@ func TestTranspilePackageFails(t *testing.T) {
 			"[x] The name Twin is declared in both res://src/pkg/a.gd++ and res://src/pkg/b.gd++.\n"},
 		"config clash": {map[string]string{"enemy.gd++": "class Enemy {}\n"},
 			"[x] Class Enemy is declared in res://src/pkg/enemy.gd++ and in res://src/pkg/gd++pkg.toml.\n"},
+		"class of tasks clash": {map[string]string{"a.gd++": "class PkgAsync {\n  @onthread\n  func f() -> void {}\n}\n"},
+			"[x] Class PkgAsync is declared in res://src/pkg/a.gd++, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res://src/pkg --prefix NAME`.\n"},
 		"syntax error": {map[string]string{"bad.gd++": "fun f() {}\n"},
 			"[x] res://src/pkg/bad.gd++:1:1: Expected a declaration, but found name \"fun\".\n     1 | fun f() {}\n       | ^^^\n    Hint: Did you mean \"func\"?\n"},
 	}

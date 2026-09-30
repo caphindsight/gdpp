@@ -70,6 +70,7 @@ type Declaration struct {
 	Tool     bool        // For classes: whether @tool makes its functions run in the editor too.
 	Bitfield bool        // For enums: whether @bitfield makes it a bitfield.
 	GameOnly bool        // For classes: whether @game_only keeps its code from running in the editor.
+	Async    bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

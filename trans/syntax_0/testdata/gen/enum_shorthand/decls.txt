@@ -1,2 +1,2 @@
-{Name:Lamp Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:ShadowCastingSetting Kind:3 Base:GeometryInstance3D.ShadowCastingSetting Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Lamp Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:ShadowCastingSetting Kind:3 Base:GeometryInstance3D.ShadowCastingSetting Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}

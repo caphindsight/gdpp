@@ -336,6 +336,10 @@ public:
 	// is_done reports whether the job has finished, and its result hasn't been claimed.
 	bool is_done() const { return done.load(std::memory_order_acquire) && !claimed.load(std::memory_order_relaxed); }
 
+	// is_valid reports whether the result hasn't been claimed: the job is running or done. It matches testing a
+	// gdpp::Async as a bool.
+	bool is_valid() const { return !claimed.load(std::memory_order_relaxed); }
+
 	// claim returns the result of the finished job, and lets go of it: the task isn't done any more, like an empty
 	// Async. The job must be done, and not claimed yet: debug builds check it, release builds don't.
 	Variant claim() {
@@ -386,6 +390,7 @@ public:
 protected:
 	static void _bind_methods() {
 		ClassDB::bind_method(D_METHOD("is_done"), &GDPP_ASYNC_CLASS::is_done);
+		ClassDB::bind_method(D_METHOD("is_valid"), &GDPP_ASYNC_CLASS::is_valid);
 		ClassDB::bind_method(D_METHOD("wait"), &GDPP_ASYNC_CLASS::wait);
 		ClassDB::bind_method(D_METHOD("get_result"), &GDPP_ASYNC_CLASS::get_result);
 		ClassDB::bind_method(D_METHOD("claim"), &GDPP_ASYNC_CLASS::claim);
@@ -395,6 +400,8 @@ protected:
 				"", "is_done");
 		ClassDB::add_property(get_class_static(), PropertyInfo(Variant::NIL, "result", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NIL_IS_VARIANT),
 				"", "get_result");
+		ClassDB::add_property(get_class_static(), PropertyInfo(Variant::BOOL, "valid", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY),
+				"", "is_valid");
 	}
 
 private:

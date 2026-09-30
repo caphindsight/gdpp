@@ -415,6 +415,15 @@ func (u *unit) document(c *classModel) string {
 // documentAsyncClass returns the Godot XML documentation of the class of tasks named name.
 func documentAsyncClass(name string) string {
 	x := &xmlWriter{}
+	// text writes each line of s, keeping empty lines, which code blocks may have.
+	text := func(tabs int, s string) {
+		for _, line := range strings.Split(s, "\n") {
+			if line == "" {
+				x.sb.WriteString("\n")
+			}
+			x.ln(tabs, line)
+		}
+	}
 	x.ln(0, `<?xml version="1.0" encoding="UTF-8" ?>`)
 	x.ln(0, fmt.Sprintf(`<class name="%s" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">`,
 		xmlEscape(name, true)))
@@ -422,29 +431,60 @@ func documentAsyncClass(name string) string {
 	x.ln(2, "A task: a job that runs on the [WorkerThreadPool], e.g. a call of an [code]@onthread[/code] function, and its result.")
 	x.ln(1, "</brief_description>")
 	x.ln(1, "<description>")
-	for _, p := range []string{
-		"A call of an [code]@onthread[/code] function of a GD++ class returns an object of this class: a task, whose job, the function's body, runs on the [WorkerThreadPool], while the caller goes on. Check [method is_done], or the [member done] property, once in a while, e.g. in [method Node._process], and take the result with [method claim] once it's done, like [code]claim[/code] in GD++ code. [method get_result], or the [member result] property, reads the result without taking it, [method wait] blocks until the job is done instead, and [method cancel] asks the job to stop early.",
-		"When the last reference to a task is gone, it waits for its job to finish, if it still runs. So keep the task until [method is_done] is [code]true[/code].",
-		"All its methods are thread-safe. Each package with GD++ classes has its own class of tasks, named after its prefix, e.g. [code]FooAsync[/code]. In GD++ code, the type [code]Async[lb]T[rb][/code] names it.",
-	} {
-		x.ln(2, p)
-	}
+	text(2, `GD++ provides this class: its runtime defines it, and the package registers it. Run [code]gd++ man async[/code] to read how to use it, and [code]gd++ trans --runtime[/code] to see how it's implemented.
+A call of an [code]@onthread[/code] function of a GD++ class returns an object of this class: a task. Its job, the function's body, runs on the [WorkerThreadPool], while the caller goes on. Once the job is done, the caller takes its result.
+A task is in one of three states. It goes through them in this order, and never goes back:
+[b]1. Running:[/b] the job runs.
+- [member valid] is [code]true[/code], and [member done] is [code]false[/code].
+- [method wait] blocks until the job is done, then returns its result.
+- [method claim] and [member result] are mistakes: there's no result yet.
+- [method cancel] asks the job to stop.
+[b]2. Done:[/b] the job has finished, and the task holds its result.
+- [member valid] and [member done] are [code]true[/code].
+- [member result] and [method wait] return the result, as often as you like.
+- [method claim] returns the result, and moves the task to Claimed.
+- [method cancel] does nothing.
+[b]3. Claimed:[/b] [method claim] took the result, and the task holds nothing any more.
+- [member valid] and [member done] are [code]false[/code].
+- [method claim], [member result] and [method wait] are mistakes: the result is gone.
+- [method cancel] does nothing.
+In debug builds, a mistake prints an error, and returns [code]null[/code]. Release builds don't check, so a mistake is undefined there. A task made with [code]new()[/code] runs no job: it starts Done, with a [code]null[/code] result.
+Check [member done] once a frame, e.g. in [method Node._process], and claim the result once it's [code]true[/code]. Here, a character follows a path that a worker thread finds, and starts the next search when it has one:
+[codeblock]
+var search = null
+
+func _process(_delta):
+	if search == null:
+		search = $Pathfinder.find_path(position, target)
+	elif search.done:
+		follow(search.claim())
+		search = null
+[/codeblock]
+[member valid] tells a Running task from a Claimed one, since neither is [member done]. Here, a level loads in the background, a spinner shows while it does, and a button cancels it, after which the job may return [code]null[/code]:
+[codeblock]
+@onready var loading = $Levels.load_level("forest")
+
+func _process(_delta):
+	$Spinner.visible = loading.valid and not loading.done
+	if loading.done:
+		var level = loading.claim()
+		if level:
+			add_child(level)
+
+func _on_cancel_pressed():
+	loading.cancel()
+[/codeblock]
+When the last reference to a task is gone, it waits for its job to finish, if it still runs: so keep the task until [member done] is [code]true[/code]. All its members are thread-safe. Each package whose GD++ classes use Async has its own class of tasks, named after its prefix, e.g. [code]FooAsync[/code]. In GD++ code, the type [code]Async[T][/code] names it.`)
 	x.ln(1, "</description>")
 	x.ln(1, "<tutorials>")
 	x.ln(1, "</tutorials>")
 	x.ln(1, "<methods>")
-	for _, m := range []struct{ name, qualifiers, ret, doc string }{
-		{"cancel", "", "void", "Asks the job to stop: in it, [code]is_cancelled[/code] is [code]true[/code] from now on, so it can return early. The job decides what it returns then. It does nothing if the job is done."},
-		{"claim", "", "Variant", "Returns the job's result, and lets go of it: [method is_done] is [code]false[/code] from now on, and the task holds no result any more. Each result can be claimed once. The job must be done: see [method is_done]. In debug builds, claiming earlier, or twice, prints an error and returns [code]null[/code]; in release builds, it's undefined."},
-		{"get_result", "const", "Variant", "Returns the job's result, and keeps it, unlike [method claim]. The job must be done, and its result not claimed: see [method is_done]. In debug builds, calling it earlier, or after [method claim], prints an error and returns [code]null[/code]; in release builds, it's undefined."},
-		{"is_done", "const", "bool", "Returns [code]true[/code] once the job has finished, so [method claim] and [method get_result] return its result, and [method wait] returns right away. It's [code]false[/code] again once the result is claimed. An object that runs no job, e.g. from [code]new()[/code], is done, and its result is [code]null[/code]."},
-		{"wait", "", "Variant", "Waits for the job to finish, and returns its result, and keeps it, like [method get_result]. It blocks the calling thread until then: on the main thread, the game stops, so prefer checking [method is_done]. After [method claim], there's no result any more: in debug builds, it prints an error and returns [code]null[/code]."},
+	for _, m := range []struct{ name, ret, doc string }{
+		{"cancel", "void", "Asks the job to stop, while the task is Running: in the job, [code]is_cancelled[/code] is [code]true[/code] from now on, so it can return early. What it returns then is its result, as usual, and the task gets Done. Does nothing when the task is Done or Claimed."},
+		{"claim", "Variant", "Returns the result, and lets go of it: the task moves from Done to Claimed, so each result is claimed once. Call it when [member done] is [code]true[/code]. While the task is Running, or once it's Claimed, it's a mistake: in debug builds, it prints an error and returns [code]null[/code]; in release builds, it's undefined."},
+		{"wait", "Variant", "Returns the result, and keeps it, like [member result], but while the task is Running, it first blocks until the job is done. On the main thread, the game freezes while it waits, so prefer checking [member done] once a frame. Once the task is Claimed, it's a mistake: it returns [code]null[/code], and prints an error in debug builds."},
 	} {
-		attrs := ""
-		if m.qualifiers != "" {
-			attrs = fmt.Sprintf(" qualifiers=\"%s\"", m.qualifiers)
-		}
-		x.ln(2, fmt.Sprintf("<method name=\"%s\"%s>", m.name, attrs))
+		x.ln(2, fmt.Sprintf("<method name=\"%s\">", m.name))
 		x.ln(3, fmt.Sprintf("<return type=\"%s\" />", m.ret))
 		x.ln(3, "<description>")
 		x.ln(4, m.doc)
@@ -453,12 +493,15 @@ func documentAsyncClass(name string) string {
 	}
 	x.ln(1, "</methods>")
 	x.ln(1, "<members>")
-	x.ln(2, `<member name="done" type="bool" setter="" getter="is_done">`)
-	x.ln(3, "Whether the job has finished, and its result hasn't been claimed, read-only: the same as [method is_done].")
-	x.ln(2, "</member>")
-	x.ln(2, `<member name="result" type="Variant" setter="" getter="get_result">`)
-	x.ln(3, "The job's result, read-only: the same as [method get_result], with its checks. The job must be done, and its result not claimed: see [method is_done].")
-	x.ln(2, "</member>")
+	for _, m := range []struct{ name, typ, getter, doc string }{
+		{"done", "bool", "is_done", "[code]true[/code] when the task is Done: the job has finished, and its result can be claimed. [code]false[/code] while the task is Running, and once it's Claimed. Read-only."},
+		{"result", "Variant", "get_result", "The job's result, when the task is Done. Reading it keeps the result, unlike [method claim], so it can be read as often as you like. While the task is Running, or once it's Claimed, it's a mistake: in debug builds, it prints an error and returns [code]null[/code]; in release builds, it's undefined. Read-only. The inspector doesn't show it, since it would read it before the job is done."},
+		{"valid", "bool", "is_valid", "[code]true[/code] while the task is Running or Done, and [code]false[/code] once it's Claimed: whether the task has a result, or will have one. Testing an [code]Async[/code] in GD++ code, e.g. [code]if (task)[/code], gives the same. With [member done], it tells the three states apart: the task is Running when it's [member valid] but not [member done]. Read-only."},
+	} {
+		x.ln(2, fmt.Sprintf(`<member name="%s" type="%s" setter="" getter="%s">`, m.name, m.typ, m.getter))
+		x.ln(3, m.doc)
+		x.ln(2, "</member>")
+	}
 	x.ln(1, "</members>")
 	x.ln(0, "</class>")
 	return x.sb.String()

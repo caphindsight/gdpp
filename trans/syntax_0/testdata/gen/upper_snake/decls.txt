@@ -1,4 +1,4 @@
-{Name:Names Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:HTTPCode Kind:3 Base: Values:[{Name:OK Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:MyEnum Kind:3 Base: Values:[{Name:VALUE Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:X Kind:3 Base: Values:[{Name:Y Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Names Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:HTTPCode Kind:3 Base: Values:[{Name:OK Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:MyEnum Kind:3 Base: Values:[{Name:VALUE Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:X Kind:3 Base: Values:[{Name:Y Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false}

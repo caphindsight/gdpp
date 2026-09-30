@@ -18,11 +18,13 @@ import (
 
 // TestMain sets Args defaults that arg.MustParse would normally fill in, since
 // tests never call it. It also sets fsys to nil, so a test that touches the
-// filesystem without withMemFS panics instead of using the real disk.
+// filesystem without withMemFS panics instead of using the real disk, and
+// isTTY to false, so `go test` in a terminal never waits in the pager.
 func TestMain(m *testing.M) {
 	Args.LogDepth = 4
 	Args.TabWidth = 2
 	fsys = nil
+	isTTY = false
 	os.Exit(m.Run())
 }
 

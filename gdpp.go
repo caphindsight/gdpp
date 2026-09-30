@@ -291,9 +291,8 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 			}
 		}
 	}
-	if o.docs() && slices.ContainsFunc(files, func(f gdppFile) bool {
-		return slices.ContainsFunc(f.Decls, func(d trans.Declaration) bool { return d.Kind == trans.ClassDecl })
-	}) {
+	classes := gdppClasses(files)
+	if o.docs() && slices.ContainsFunc(classes, func(c gdppClass) bool { return c.Async }) {
 		docs, err := trans.DocumentBuiltinClasses(trans.Options{AsyncClass: pkg.AsyncClass()}, syntax)
 		Check(err, "Failed to document the classes that GD++ adds")
 		for _, d := range docs {
@@ -307,7 +306,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	removeStale(dir, "", written)
 	t.Done()
 	s.End()
-	return gdppClasses(files)
+	return classes
 }
 
 // removeStale deletes the files under dir (rel is dir's path relative to the

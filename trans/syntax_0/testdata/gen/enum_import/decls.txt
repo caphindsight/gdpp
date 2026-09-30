@@ -1,3 +1,3 @@
-{Name:Menu Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:Hud Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:Plain Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Menu Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Hud Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Plain Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}

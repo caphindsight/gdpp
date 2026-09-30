@@ -1,3 +1,3 @@
-{Name:B Kind:1 Base:A Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:A Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
-{Name:C Kind:1 Base:B Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:B Kind:1 Base:A Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:A Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:C Kind:1 Base:B Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}

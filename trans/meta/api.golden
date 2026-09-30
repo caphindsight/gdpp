@@ -44,3 +44,4 @@ field Options.ProfilePeriod int
 field Options.ProfileFPS int
 field Declaration.GameOnly bool
 field Options.AsyncClass string
+field Declaration.Async bool

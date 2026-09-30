@@ -214,7 +214,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			}
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
-				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only")})
+				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Async: usesAsync(c)})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
@@ -222,6 +222,26 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 		}
 	}
 	return decls, nil
+}
+
+// usesAsync reports whether class c uses Async: has an @onthread function, or an Async type in a signature.
+func usesAsync(c *Class) bool {
+	isAsync := func(t *Type) bool { return t != nil && t.Name == "Async" }
+	hasAsync := func(params []*Param) bool {
+		return slices.ContainsFunc(params, func(p *Param) bool { return isAsync(p.Type) })
+	}
+	return slices.ContainsFunc(c.Members, func(m *Member) bool {
+		switch {
+		case m.Func != nil:
+			return isAsync(m.Func.Return) || hasAsync(m.Func.Params) ||
+				slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "onthread" })
+		case m.Signal != nil:
+			return hasAsync(m.Signal.Params)
+		case m.Var != nil:
+			return isAsync(m.Var.Type)
+		}
+		return false
+	})
 }
 
 // hasAnnotation reports whether class c has the annotation named name.

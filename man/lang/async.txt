@@ -36,12 +36,12 @@ func follow(path: PackedVector2Array) -> void { ... }
 
 _ready starts the first search. Each frame, _process checks whether pending holds a search that's done. Then claim takes the path out of pending, and _process starts the next search, which runs while the game goes on. No frame waits for a search.
 
-Scripts call the function the same way, and get an object with is_done, claim, get_result, wait and cancel methods:
+Scripts call the function the same way, and get a task object, whose done property and claim method work like is_done and claim:
 
 ```gdscript
 var task = $Pathfinder.find_path(position, goal)
 # ... later, e.g. in _process:
-if task and task.is_done():
+if task.done:
     follow(task.claim())
 ```
 
@@ -81,8 +81,6 @@ func track(task: Async[int]) -> void { ... }
 
 In C++, Async[T] is a gdpp::Async<T>, e.g. gdpp::Async<int64_t> for Async[int]. Godot sees it as an object of the package's class of tasks, e.g. FooAsync for a package whose prefix is Foo. See "The class of tasks" below.
 
-An Async is empty if it holds no task: a new variable, a gdpp::Async<T> that C++ code creates without a task, or one whose result was claimed. Destroying an empty Async does nothing.
-
 A few uses are errors:
 
 ```
@@ -92,69 +90,118 @@ var task: Async[Async[int]]            An Async can't have an Async result.
 var task: Async[int, String]           Type Async takes one type argument, the type of its result.
 ```
 
-# Claiming the result
+# The three states
 
-In C++, an Async is tested like a pointer, is_done tells whether its task has finished, and claim takes the result:
+An Async is in one of three states. It goes through them in this order, and never goes back:
+
+1. Running: the body runs on a worker thread.
+2. Done: the body has returned, and the task holds its result.
+3. Claimed: the result was taken. A new Async, which never had a task, is Claimed too.
+
+In GD++ code, you test an Async with `if (TASK)`, `is_done TASK`, and take its result with `claim TASK`. Scripts get a task object, with the valid, done and result properties, and the claim, wait and cancel methods. Here is what each of them does in each state.
+
+Running:
+
+- `if (TASK)` is true, and so is valid in scripts.
+- `is_done TASK` is false, and so is done in scripts.
+- `claim TASK` is a mistake: there's no result yet. So are claim() and result in scripts.
+- `TASK.wait()` blocks until the body returns, then claims the result. In scripts, wait() blocks too, then returns the result, but keeps it.
+- `cancel TASK` asks the body to stop, and so does cancel() in scripts. See "Stopping tasks" below.
+
+Done:
+
+- `if (TASK)` is true, and so is valid in scripts.
+- `is_done TASK` is true, and so is done in scripts.
+- `claim TASK` returns the result, and makes the Async Claimed. In scripts, claim() returns it too, and makes the task object Claimed.
+- `TASK.wait()` returns the result right away, and claims it. In scripts, wait() and result return the result, and keep it, as often as you like.
+- `cancel TASK` and cancel() do nothing.
+
+Claimed:
+
+- `if (TASK)` is false, and so is valid in scripts.
+- `is_done TASK` is false, and so is done in scripts.
+- `claim TASK` and `TASK.wait()` are mistakes: the result is gone. So are claim(), wait() and result in scripts.
+- `cancel TASK` and cancel() do nothing.
+
+So `if (TASK)` and valid tell whether the task has a result, or will have one, and is_done and done whether it has one right now. The task is Running when it's valid, but not done.
+
+In debug builds, a mistake prints an error, and returns the type's default value in GD++ code, e.g. 0 or an empty array, and null in scripts. The Async stays as it is. Release builds don't check, so a mistake is undefined there: test the Async first.
+
+The result has the function's type in GD++ code, e.g. PackedVector2Array for an Async[PackedVector2Array]. In scripts, it's a Variant, and an enum result is an int. Tasks have no signal for when they finish: test is_done, e.g. once a frame.
+
+# In GD++ code
+
+`if (TASK)` tests the Async like a pointer. It works in if, while, !, && and ||; to keep it in a variable, write `bool valid = bool(TASK);`.
+
+is_done, claim and cancel are GD++'s own words, like emit and rpc: `is_done TASK`, `claim TASK` and `cancel TASK` become calls of the Async's methods, `TASK.is_done()`, `TASK.claim()` and `TASK.cancel()`, and make the places that poll, take and stop a task stand out. The method calls work too. TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending` or `this->tasks[i]`, and the word applies to all of it, like C++'s own prefix operators: `claim find(a).size()` claims the result of `find(a).size()`. See `gd++ man rewrites`.
+
+Godot requires waiting once for each task of the WorkerThreadPool, and claim does it for you; since the task is done, that doesn't block. `TASK.wait()` waits for real: on the main thread, the game stops until the task is done, so prefer testing is_done each frame.
+
+A loop that keeps one search running, and follows each path it finds, as in the first example:
 
 ```gd++
-if (is_done pending) {
-  PackedVector2Array path = claim pending;
+@override
+func _process(delta: float) -> void {
+  if (!pending) {
+    pending = find_path(get_position(), target);
+  } else if (is_done pending) {
+    follow(claim pending);
+  }
 }
 ```
 
-An Async goes through three states:
-
-```
-                       as a bool   is_done     claim
-running                true        false       an error
-done                   true        true        the result, and the Async becomes empty
-empty (claimed, new)   false       false       an error
-```
-
-An Async is true while it holds a task, running or done, and false when it's empty. So it's true from the call that starts the task until its result is claimed. The test works in if, while, !, && and ||; to keep it in a variable, write `bool valid = bool(pending);`.
-
-`is_done TASK` is true when TASK holds a task that has finished, so claim can take the result right away. It's false while the task runs, and false again once the result is claimed, since TASK is empty then, like a new Async. So is_done alone tells whether there's a result to claim. Neither test ever waits.
-
-`claim TASK` returns the result of TASK's task, and empties TASK: each result is claimed once. For a void task, claim returns nothing, but still empties the Async. Godot requires waiting once for each task of the WorkerThreadPool, and claim does it for you; since the task is done, that doesn't block.
-
-Claiming from an Async that isn't done is a mistake: while the task runs, or after its result was claimed, or before any task. In debug builds, claim then prints an error, returns the type's default value, e.g. 0 or an empty array, and leaves the Async as it is. Release builds don't check, so it's undefined: test the Async first.
-
-is_done and claim are GD++'s own words, like emit and rpc: `is_done TASK` and `claim TASK` become calls of the Async's methods, `TASK.is_done()` and `TASK.claim()`, and make the places that poll a task and take its result stand out. The method calls work too. TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending` or `this->tasks[i]`, and the word applies to all of it, like C++'s own prefix operators: `claim find(a).size()` claims the result of `find(a).size()`. See `gd++ man rewrites`.
-
-To block until the task finishes instead, call `TASK.wait()`: it waits, then claims the result like claim. The task may still be running, but the Async must be true: in debug builds, waiting on an empty Async prints an error and returns the default value. On the main thread, the game stops until the task is done, so prefer testing the Async each frame.
-
-The result has the function's type in C++, e.g. PackedVector2Array for an Async[PackedVector2Array]. Tasks have no signal for when they finish: test is_done, e.g. once a frame.
+Once claimed, pending is false, so the next frame starts another search.
 
 # In scripts
 
-Scripts see an Async as an object of the class of tasks, with five methods:
+Scripts see an Async as an object of the class of tasks, e.g. FooAsync:
 
-is_done()
-  Whether the task has finished, and its result hasn't been claimed. Once it has finished, claim and get_result return its result, and wait returns right away.
+```
+FooAsync, extends RefCounted
+  valid: bool                          read-only, true while Running or Done, like `if (TASK)`
+  done: bool                           read-only, true while Done, like `is_done TASK`
+  result: Variant                      read-only, the result while Done, which it keeps
+  claim() -> Variant                   take the result, while Done, like `claim TASK`
+  wait() -> Variant                    wait until Done, then return the result, which it keeps
+  cancel() -> void                     ask the body to stop, while Running
+```
 
-claim()
-  The result of the task, which must have finished, like claim in GD++ code: it takes the result, so is_done is false from then on, and the task holds no result any more. Each result can be claimed once. In debug builds, claiming earlier, or twice, prints an error and returns null. Release builds don't check, so it's undefined.
+The getters of the properties, is_valid(), is_done() and get_result(), can be called too. When you inspect a task while the game runs, e.g. from the debugger's Stack Variables or its remote scene tree, the inspector shows valid and done, but not result, since it would read result again and again, also before the task is done.
 
-get_result()
-  The result of the task, which must have finished, without taking it. In debug builds, calling it earlier, or after claim, prints an error and returns null. Release builds don't check, so it's undefined: check is_done first, or call wait.
+A character that follows a path that a worker thread finds, and starts the next search when it has one:
 
-wait()
-  Wait for the task to finish, and return its result, without taking it, like get_result. On the main thread, the game stops until then, so prefer checking is_done.
+```gdscript
+var search = null
 
-The class also has two read-only properties: done, which is is_done, e.g. `if task.done:`, and result, which reads the result like get_result, with the same checks, e.g. `task.result`. When you inspect a task while the game runs, e.g. from the debugger's Stack Variables or its remote scene tree, the inspector shows done, but not result, since it would read result again and again, also before the task is done.
+func _process(_delta):
+    if search == null:
+        search = $Pathfinder.find_path(position, target)
+    elif search.done:
+        follow(search.claim())
+        search = null
+```
 
-cancel()
-  Ask the task to stop. See "Stopping tasks" below.
+A level that loads in the background, with a spinner while it does, and a button that cancels it, after which the body may return null:
 
-They return Variants, and an enum result is an int. A script can claim a result once, or read it with get_result as often as it likes, and lets go of a task by dropping its reference, e.g. with `task = null`. An object of the class of tasks that no task runs in, e.g. FooAsync.new(), is done, and its result is null.
+```gdscript
+@onready var loading = $Levels.load_level("forest")
 
-A script's claim takes the result from the task object itself, while each C++ Async claims for itself: copies of an Async each claim once, from the same task. So a task that both C++ code and a script hold is best claimed on one side only.
+func _process(_delta):
+    $Spinner.visible = loading.valid and not loading.done
+    if loading.done:
+        var level = loading.claim()
+        if level:
+            add_child(level)
 
-The checks above, of claim and wait in C++, and of claim and get_result in scripts, are only in debug builds. Release builds skip them, so the mistakes they catch are undefined there.
+func _on_cancel_pressed():
+    loading.cancel()
+```
+
+valid tells a Running task from a Claimed one, since neither is done: here, the spinner hides once the level is claimed. A script lets go of a task by dropping its reference, e.g. with `search = null`. An object of the class of tasks that no task runs in, e.g. FooAsync.new(), is Done, and its result is null.
 
 # The task's lifetime
 
-Copies of an Async share its task, and each copy claims the result once: claim empties only the Async it's used on, and the other copies stay true. An Async is thread-safe to test and claim from any thread, though like any variable, one Async shouldn't be changed by two threads at once.
+Copies of an Async share its task, and each copy claims the result once: claim makes only the Async it's used on Claimed, and the other copies stay Done. A script's claim(), though, takes the result from the task object itself, so the GD++ copies can't claim it any more: a task that both GD++ code and a script hold is best claimed on one side only. An Async is thread-safe to test and claim from any thread, though like any variable, one Async shouldn't be changed by two threads at once.
 
 When the last reference to a task is gone, from C++ or from a script, it waits for the task to finish, unless that already happened. So dropping an Async whose task still runs blocks until the task is done, and dropping a claimed or finished one doesn't. Keep the Async until is_done is true, like pending in the first example. Its result doesn't have to be claimed: a task whose result nobody wants, e.g. a void one, can simply be dropped once it's done.
 
@@ -201,7 +248,7 @@ In a @game_only class, calls in the editor start no task, and return an empty As
 
 # The class of tasks
 
-Godot sees every Async as an object of one class of the package: its prefix followed by Async. The prefix is set in gd++pkg.toml, and defaults to the package's id in PascalCase, e.g. MyGame for the package my_game, so its class of tasks is MyGameAsync:
+Godot sees every Async as an object of one class of the package, the class of tasks, named after its prefix followed by Async. GD++ provides it: you don't write it, and a package gets one when its GD++ classes use Async, with an @onthread function, or an Async type in a variable, a signal, or a function's parameters or return type. Other packages don't register it. The prefix is set in gd++pkg.toml, and defaults to the package's id in PascalCase, e.g. MyGame for the package my_game, so its class of tasks is MyGameAsync:
 
 ```toml
 prefix = "Foo"                         # FooAsync
@@ -209,7 +256,13 @@ prefix = "Foo"                         # FooAsync
 
 Set it with `gd++ init PATH --update --prefix NAME`. See `gd++ man packages`.
 
-Each package with GD++ classes registers its own class of tasks, so packages built separately never clash. The GD++ runtime defines it, and the package's generated registration code registers it. Its name must differ from the package's other classes: the build fails otherwise, and asks for another prefix. Changing the prefix renames the class, so scripts that name it, e.g. in a type hint, must change too. The editor's help shows Async types as this class, e.g. FooAsync, and documents the class itself, with its five methods and its done and result properties, in builds with documentation. See `gd++ man docs`.
+Each package that uses Async registers its own class of tasks, so packages built separately never clash. The GD++ runtime defines it, and the package's generated registration code registers it. When it's registered, its name must differ from the package's other classes: the build fails otherwise, and asks for another prefix. Changing the prefix renames the class, so scripts that name it, e.g. in a type hint, must change too.
+
+"In scripts" above lists its members. The class is RefCounted, so a task lives while a GD++ Async or a script holds it, and its members are thread-safe. A script can't start a task of its own with it: FooAsync.new() makes an object that runs no task.
+
+The editor's help shows Async types as this class, e.g. FooAsync, and documents the class itself in builds with documentation, see `gd++ man docs`. Like Godot's own classes, it lists valid, done and result as properties, and not their getters.
+
+To see how the class is implemented, run `gd++ trans --runtime`: the runtime header defines it, as GDPP_ASYNC_CLASS, together with gdpp::Async<T>. "How it works" below gives an overview.
 
 `gd++ trans` on a file outside any package names the class GdppAsync.
 
@@ -239,7 +292,7 @@ The object of the class of tasks stores the body's result as a Variant, and the 
 
 For quitting, the runtime watches the root window, from the package's first task on: the window leaves the scene tree when the game starts quitting, before any node is freed. From then on, is_cancelled is true, and waiting for a task ends the game when the grace period is over. When the package's library is unloaded, it also waits for the package's running tasks, within the same grace period, since their code must not be unloaded while they run.
 
-Run `gd++ trans FILE` to see the code, and see `gd++ man generated` and `gd++ man runtime`.
+Run `gd++ trans FILE` to see the code, and `gd++ trans --runtime` to see the class of tasks and gdpp::Async<T>. See also `gd++ man generated` and `gd++ man runtime`.
 
 # See also
 

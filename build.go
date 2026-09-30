@@ -286,7 +286,8 @@ func cppSources(p Project, pkg Package) []string {
 
 // generateRegisterTypes writes the build cache's __register_types__.cpp,
 // which registers the package's classes: those in its config, and the GD++
-// classes, which must not clash with them. Runtime classes (C++ classes
+// classes, which must not clash with them, and the class of tasks, if a GD++
+// class uses Async. Runtime classes (C++ classes
 // without tool, GD++ classes without @tool) don't run their code in the editor.
 func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 	var classes, runtime, includes []string
@@ -301,9 +302,9 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 			includes = append(includes, "<"+rest+">")
 		}
 	}
-	// GD++ adds the class of tasks, which Async types name, to packages with GD++ classes.
+	// GD++ adds the class of tasks, which Async types name, to packages whose GD++ classes use Async.
 	asyncClass, runtimeName := "", ""
-	if len(gdpp) > 0 {
+	if slices.ContainsFunc(gdpp, func(c gdppClass) bool { return c.Async }) {
 		var err error
 		runtimeName, _, err = trans.RuntimeHeader(pkg.Config.Syntax)
 		Check(err, "Failed to find the GD++ runtime header")

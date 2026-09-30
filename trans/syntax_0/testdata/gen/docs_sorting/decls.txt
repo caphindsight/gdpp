@@ -1,1 +1,1 @@
-{Name:Sorted Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Sorted Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
