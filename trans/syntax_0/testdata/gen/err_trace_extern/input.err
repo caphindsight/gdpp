@@ -1,3 +1,0 @@
-input.gd++:6:3: Annotation @trace can't be used on a func.
- 6 |   @trace func f() -> void
-   |   ^^^^^^

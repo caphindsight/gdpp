@@ -16,6 +16,9 @@ func (u *unit) header(name string) string {
 	w.ln("")
 	w.ln("#pragma once")
 	w.ln("")
+	if slices.ContainsFunc(u.externs, (*externModel).debugging) {
+		w.ln("#define GDPP_DEBUGGING")
+	}
 	w.ln("#include <%s>", RuntimeHeaderName)
 	// Other GD++ headers may include this one in turn, and #pragma once cuts such a cycle short. So their classes,
 	// externs and enums are forward-declared, and included at the end, unless they must be complete.
@@ -416,17 +419,33 @@ func deferredCall(f *funcModel, target, name string) string {
 	return fmt.Sprintf("%s->call_deferred(GDPP_STRING_NAME(%q)%s)", target, name, args(f.params, f.f.Params))
 }
 
+// debugging reports whether the extern's header uses the runtime's code for @trace and @profile.
+func (e *externModel) debugging() bool {
+	return slices.ContainsFunc(e.funcs, func(f *funcModel) bool { return f.trace || f.profile }) ||
+		slices.ContainsFunc(e.vars, func(v *varModel) bool { return v.profile }) ||
+		slices.ContainsFunc(e.signals, func(s *signalModel) bool { return s.trace })
+}
+
 // externDefs defines the members of an extern's wrapper class, which call the object's members by name.
+// Their @profile and @trace hooks say "extern", since they only see the calls through this extern.
 func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, f := range e.funcs {
 		w.ln("")
 		w.ln("inline %s%s::%s(%s) const {", withSpace(f.ret.cpp), e.name, f.f.Name, params(nil, f.params, f.f.Params))
+		if f.profile {
+			u.profile(w, "extern "+e.name+"."+f.f.Name)
+		}
+		if f.trace {
+			w.ln("\tgdpp::Trace _gdpp_trace(gdpp::via_extern, _gdpp_base, %q%s);", f.f.Name, namedArgs(f.f.Params))
+		}
 		call := fmt.Sprintf("_gdpp_base->call(GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params))
 		switch {
 		case f.deferral != "":
 			w.ln("\t%s;", deferredCall(f, "_gdpp_base", f.f.Name))
 		case f.ret.void:
 			w.ln("\t%s;", call)
+		case f.trace:
+			w.ln("\treturn _gdpp_trace.ret(gdpp::from_variant<%s>(%s));", f.ret.cpp, call)
 		default:
 			w.ln("\treturn gdpp::from_variant<%s>(%s);", f.ret.cpp, call)
 		}
@@ -442,10 +461,16 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, v := range e.vars {
 		w.ln("")
 		w.ln("inline %s%s::%s() const {", withSpace(v.t.cpp), e.name, v.getter)
+		if v.profile {
+			u.profile(w, "extern "+e.name+"."+v.getter)
+		}
 		w.ln("\treturn gdpp::from_variant<%s>(_gdpp_base->get(GDPP_STRING_NAME(%q)));", v.t.cpp, v.v.Name)
 		w.ln("}")
 		w.ln("")
 		w.ln("inline void %s::%s(%sp_value) const {", e.name, v.setter, withSpace(v.t.param()))
+		if v.profile {
+			u.profile(w, "extern "+e.name+"."+v.setter)
+		}
 		value := "p_value"
 		if v.t.enum != nil {
 			value = "static_cast<int64_t>(p_value)"
@@ -456,6 +481,9 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, s := range e.signals {
 		w.ln("")
 		w.ln("inline gdpp::Emitted %s::%s(%s) const {", e.name, s.s.Name, params(nil, s.params, s.s.Params))
+		if s.trace {
+			w.ln("\tgdpp::trace_emit(gdpp::via_extern, _gdpp_base, %q%s);", s.s.Name, namedArgs(s.s.Params))
+		}
 		w.ln("\treturn gdpp::Emitted{ _gdpp_base->emit_signal(GDPP_STRING_NAME(%q)%s) };", s.s.Name, args(s.params, s.s.Params))
 		w.ln("}")
 	}

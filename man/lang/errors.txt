@@ -137,8 +137,8 @@ Extern variables can't have an initial value or a property body.
 Externs can't contain a ctor.
 The @deferred function f must return void.
 Annotation @thread_safe can only be used in classes that extend Node, which E doesn't.
-Annotation @trace can't be used on a func.
-  In externs: trace the class that defines the function instead.
+Annotation @trace can't be used on an extern var.
+  Extern variables only take @profile. Trace the variable in the class that defines it instead.
 ```
 
 Package-wide, from `gd++ build`:

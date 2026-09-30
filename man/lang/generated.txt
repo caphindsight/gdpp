@@ -214,6 +214,19 @@ protected:
 
 Its methods are defined inline, after the classes they may use, and call _gdpp_base->call, call_deferred, get, set or emit_signal with the member's name. See `gd++ man externs`.
 
+If a @trace or @profile annotation of the extern is on, the header starts with `#define GDPP_DEBUGGING`, and the methods start with the same lines as a class's functions, with gdpp::via_extern and "extern" names:
+
+```cpp
+inline double Terrain::height_at(double x, double z) const {
+  static gdpp::ProfileStats _gdpp_stats("extern Terrain.height_at");
+  gdpp::Profile _gdpp_profile(_gdpp_stats);
+  gdpp::Trace _gdpp_trace(gdpp::via_extern, _gdpp_base, "height_at", "x", x, "z", z);
+  return _gdpp_trace.ret(gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("height_at"), x, z)));
+}
+```
+
+See `gd++ man debugging`.
+
 The wrapper of an extern that extends another extern derives from that one's wrapper, e.g. `class Car : public Vehicle`, and shares its Base and _gdpp_base.
 
 # Enum headers

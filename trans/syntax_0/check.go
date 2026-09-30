@@ -48,6 +48,8 @@ type externModel struct {
 	ext        *Extern
 	base       string
 	refCounted bool
+	trace      bool // Whether its @trace is on: it traces all its funcs and signals.
+	profile    bool // Whether its @profile is on: it profiles all its funcs, except deferred ones, and vars.
 	funcs      []*funcModel
 	vars       []*varModel
 	signals    []*signalModel
@@ -724,7 +726,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	allowed := []string{"const", "deferred", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
 	if ext {
-		allowed = []string{"const", "deferred", "rpc", "thread_safe"}
+		allowed = []string{"const", "deferred", "profile", "rpc", "thread_safe", "trace"}
 	}
 	a, err := u.annotations(f.Annotations, "a func", allowed...)
 	if err != nil {
@@ -742,6 +744,10 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		if a[name] != nil {
 			m.deferral = name
 		}
+	}
+	if p := a["profile"]; ext && p != nil && m.deferral != "" {
+		return nil, u.errorAt(p.Pos, len(p.Name)+1, fmt.Sprintf("Annotation @profile can't be used on @%s functions of externs.", m.deferral),
+			"A call through the extern only queues the function, so there's nothing to time. Profile the class that defines it instead.")
 	}
 	if rpc := a["rpc"]; rpc != nil {
 		if m.rpc, err = u.rpcConfig(rpc, ext); err != nil {
@@ -862,12 +868,8 @@ func (u *unit) rpcConfig(a *Annotation, ext bool) (*rpcModel, error) {
 }
 
 // buildSignal checks s, a signal of the class or extern named owner.
-func (u *unit) buildSignal(s *Signal, owner string, ext bool) (*signalModel, error) {
-	allowed := []string{"trace"}
-	if ext {
-		allowed = nil
-	}
-	a, err := u.annotations(s.Annotations, "a signal", allowed...)
+func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
+	a, err := u.annotations(s.Annotations, "a signal", "trace")
 	if err != nil {
 		return nil, err
 	}
@@ -892,10 +894,11 @@ func (u *unit) buildSignal(s *Signal, owner string, ext bool) (*signalModel, err
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
 		"export_multiline", "export_placeholder", "export_range", "export_storage", "profile", "trace"}, sectionAnnotations...)
+	kind := "a var"
 	if ext {
-		allowed = nil
+		allowed, kind = []string{"profile"}, "an extern var"
 	}
-	a, err := u.annotations(v.Annotations, "a var", allowed...)
+	a, err := u.annotations(v.Annotations, kind, allowed...)
 	if err != nil {
 		return nil, err
 	}
@@ -1101,7 +1104,14 @@ func (u *unit) buildExterns() error {
 	for _, e := range externs {
 		s := u.symbols[e.Name]
 		m := &externModel{name: e.Name, ext: e, base: baseName(e.Extends), refCounted: s.kind == meta.RefCountedExtern}
-		if _, err := u.annotations(e.Annotations, "an extern"); err != nil {
+		a, err := u.annotations(e.Annotations, "an extern", "profile", "trace")
+		if err != nil {
+			return err
+		}
+		if m.trace, err = u.debugOn(a["trace"], e.Name); err != nil {
+			return err
+		}
+		if m.profile, err = u.debugOn(a["profile"], e.Name); err != nil {
 			return err
 		}
 		names := map[string]bool{}
@@ -1111,18 +1121,22 @@ func (u *unit) buildExterns() error {
 			case member.Func != nil:
 				var f *funcModel
 				if f, err = u.buildFunc(member.Func, e.Name, true); err == nil {
+					f.trace = f.trace || m.trace
+					f.profile = f.profile || m.profile && f.deferral == ""
 					m.funcs = append(m.funcs, f)
 					err = u.unique(names, f.f.Pos, "func", f.f.Name)
 				}
 			case member.Var != nil:
 				var v *varModel
 				if v, err = u.buildVar(member.Var, e.Name, true); err == nil {
+					v.profile = v.profile || m.profile
 					m.vars = append(m.vars, v)
 					err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
 				}
 			case member.Signal != nil:
 				var sig *signalModel
-				if sig, err = u.buildSignal(member.Signal, e.Name, true); err == nil {
+				if sig, err = u.buildSignal(member.Signal, e.Name); err == nil {
+					sig.trace = sig.trace || m.trace
 					m.signals = append(m.signals, sig)
 					err = u.unique(names, sig.s.Pos, "signal", sig.s.Name)
 				}
@@ -1263,7 +1277,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			}
 		case member.Signal != nil:
 			var sig *signalModel
-			if sig, err = u.buildSignal(member.Signal, c.Name, false); err == nil {
+			if sig, err = u.buildSignal(member.Signal, c.Name); err == nil {
 				sig.trace = sig.trace || m.trace
 				m.signals = append(m.signals, sig)
 				err = u.unique(names, sig.s.Pos, "signal", sig.s.Name)

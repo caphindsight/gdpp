@@ -1,0 +1,2 @@
+trace = ["all"]
+profile = ["net"]

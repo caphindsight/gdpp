@@ -3,5 +3,5 @@ extends Node
 
 extern B {
   extends Node
-  @trace signal s
+  @trace var v: int
 }

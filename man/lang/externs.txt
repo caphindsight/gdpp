@@ -56,13 +56,15 @@ The chain of bases must end with a Godot class or a GD++ class of the package, e
 Externs can only declare:
 
 func
-  Functions, without a body and without default values. They can have @const, @deferred, @thread_safe, and @rpc without arguments. The return type must match what the class returns.
+  Functions, without a body and without default values. They can have @const, @deferred, @thread_safe, @rpc without arguments, @trace and @profile. The return type must match what the class returns.
 
 var
-  Variables, without an initial value or a property body, and without annotations. They're read with get_NAME() and written with set_NAME(value).
+  Variables, without an initial value or a property body. They're read with get_NAME() and written with set_NAME(value). They can have @profile.
 
 signal
-  Signals, to send them on the object, with emit.
+  Signals, to send them on the object, with emit. They can have @trace.
+
+The extern itself can have @trace and @profile, for all its members. See "Externs" in `gd++ man debugging`.
 
 Everything else, e.g. ctor, dtor, enums, decl and impl blocks, is an error: "Externs can't contain ...". You only need to declare the members that your code uses.
 

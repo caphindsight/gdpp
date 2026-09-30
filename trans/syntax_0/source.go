@@ -168,7 +168,7 @@ func namedArgs(list []*Param) string {
 func (u *unit) debugHooks(w *writer, c *classModel, f *funcModel) {
 	name := strings.TrimPrefix(f.f.Name, "_gdpp_body_")
 	if f.profile {
-		u.profile(w, c, name)
+		u.profile(w, c.name+"."+name)
 	}
 	if f.trace {
 		self := "this"
@@ -182,8 +182,8 @@ func (u *unit) debugHooks(w *writer, c *classModel, f *funcModel) {
 	}
 }
 
-// profile writes the Profile of c's function named name.
-func (u *unit) profile(w *writer, c *classModel, name string) {
+// profile writes the Profile of the function that the tables and monitors call label, e.g. "Player.take_damage".
+func (u *unit) profile(w *writer, label string) {
 	print := ""
 	if u.opts.ProfilePeriod > 0 {
 		print = fmt.Sprintf(", %d", u.opts.ProfilePeriod)
@@ -191,7 +191,7 @@ func (u *unit) profile(w *writer, c *classModel, name string) {
 	if u.opts.ProfilePeriod > 0 && u.opts.ProfileFPS > 0 {
 		print += fmt.Sprintf(", %d", u.opts.ProfileFPS)
 	}
-	w.ln("\tstatic gdpp::ProfileStats _gdpp_stats(%q%s);", c.name+"."+name, print)
+	w.ln("\tstatic gdpp::ProfileStats _gdpp_stats(%q%s);", label, print)
 	w.ln("\tgdpp::Profile _gdpp_profile(_gdpp_stats);")
 }
 
@@ -320,7 +320,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 		w.ln("%s {", qualified(c, v.t.cpp, v.getter, "", true))
 		guard(w, c, v.t.cpp)
 		if v.profile {
-			u.profile(w, c, v.getter)
+			u.profile(w, c.name+"."+v.getter)
 		}
 		if v.get != nil {
 			w.block(v.get, "", "")
@@ -334,7 +334,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 		w.ln("%s {", qualified(c, "void", v.setter, withSpace(v.t.param())+v.setterParam(), false))
 		guard(w, c, "void")
 		if v.profile {
-			u.profile(w, c, v.setter)
+			u.profile(w, c.name+"."+v.setter)
 		}
 		watch(w, c, v.setter)
 		if v.set != nil {

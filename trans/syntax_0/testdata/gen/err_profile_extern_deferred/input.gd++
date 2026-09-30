@@ -3,5 +3,5 @@ extends Node
 
 extern B {
   extends Node
-  @trace func f() -> void
+  @profile @deferred func f() -> void
 }

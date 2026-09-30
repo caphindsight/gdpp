@@ -85,6 +85,12 @@ These can't be combined: @static with @virtual, @override, @const, @rpc, @deferr
 @rpc
   The function can be called over the network, with rpc and rpc_id. No arguments in externs. Only in externs that extend Node.
 
+@trace(GROUPS...)
+  Print each call through the extern, like @trace on a class's function, marked "extern". See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time each call through the extern, for the editor's monitors and the profile table, as "extern CLASS.NAME". Not on @deferred and @thread_safe functions. See "@trace and @profile" below.
+
 See `gd++ man externs`.
 
 # Variables of classes
@@ -136,14 +142,14 @@ A variable can have at most one export annotation, and any section annotations. 
 @profile(GROUPS...)
   Time its getter and setter. See "@trace and @profile" below.
 
-Variables of externs take no annotations.
+Variables of externs can have @profile, which times the calls of their getter and setter through the extern.
 
 # Signals
 
 @trace(GROUPS...)
   Print each emission with emit, with its arguments. See "@trace and @profile" below.
 
-Signals of externs take no annotations.
+Signals of externs can have @trace too, which prints each emission through the extern, marked "extern".
 
 # Enums
 
@@ -179,11 +185,11 @@ gd++ build                             # neither: the annotations generate nothi
 
 Their arguments are names of groups, in double quotes: @trace("combat") is in the group combat. Every annotation is also in the group named after its class, e.g. Player, without an argument. `gd++ build --trace GROUP...` turns on the @trace annotations in those groups, `--profile GROUP...` the @profile ones, and `all` all of them. A member is on if its own annotation is on, or its class's.
 
-They combine with every other annotation, and with each other. Externs and their members can't have them. See `gd++ man debugging` for what they print, how to read it, and how to use them well.
+They combine with every other annotation, and with each other. Externs can have them too, see "Externs" in `gd++ man debugging`. See `gd++ man debugging` for what they print, how to read it, and how to use them well.
 
 # No annotations
 
-Enum values, integer constants, externs, ctor, dtor, import and noimport take no annotations.
+Enum values, integer constants, ctor, dtor, import and noimport take no annotations. Externs themselves only take @trace and @profile, which work like a class's on its functions, variables and signals.
 
 # Errors
 

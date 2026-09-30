@@ -231,6 +231,51 @@ func _physics_process(delta: float) -> void { ... }
 
 The timings show in the editor's monitors, and with --profile-print, in a table printed every few seconds.
 
+# Externs
+
+@trace and @profile work on externs too, to watch the calls from your package into other packages, GDExtensions and scripts:
+
+```gd++
+@profile("net")
+extern Lobby {
+  extends Node
+
+  @trace
+  func join(name: String) -> bool
+
+  var players: int
+
+  @trace
+  signal chat(text: String)
+}
+```
+
+- @trace on a function prints each call through the extern, and @profile times it, including the time of the call by name, which is often most of it. See "Speed" in `gd++ man externs`.
+- @profile on a variable times its getter and setter, e.g. extern Lobby.get_players. Variables can't have @trace: the extern can't see their changes.
+- @trace on a signal prints each emit through the extern.
+- On the extern, they work like on all of its functions, variables and signals, except that @profile leaves out @deferred and @thread_safe functions, and @trace leaves out variables. Objects of externs have no creation and destruction lines.
+- @profile can't be used on @deferred and @thread_safe functions: a call through the extern only queues them, so there's nothing to time.
+
+The group named after the extern is its name, e.g. `--trace Lobby`, like a class's. If the class is a GD++ class of another package, the same flag turns on its own annotations in that package's build too.
+
+The hooks are in the extern's wrapper, so they only see the calls that go through this extern, not those from elsewhere, e.g. from the class's own package, from GDScript, or from signals. So they look different from the class's own traces and timings, to keep the two apart:
+
+```out
+[f1204] ▷ extern Lobby "Lobby".join(name: "Me")
+[f1204]   ▶ Lobby "Lobby".join(name: "Me")
+[f1204]   ◀ Lobby "Lobby".join → true  31.0 µs
+[f1204] ◁ extern Lobby "Lobby".join → true  36.4 µs
+[f1210]   ⚡ extern Lobby "Lobby" emits chat(text: "hi")
+```
+
+- Calls through an extern use ▷ and ◁, and say "extern" before the object.
+- Emissions through an extern say "extern" too.
+- Their profile rows and monitors are named "extern Lobby.join", next to "Lobby.join" of the class, if it's profiled too.
+
+Here, the class Lobby is traced in its own package too, so its lines show inside the extern's: the difference in time is the cost of the call by name.
+
+If two packages profile the same member of the same extern, the editor's monitors only show the first package's: they share the name.
+
 # Profile monitors
 
 While the game runs from the editor, open the Debugger panel, then its Monitors tab. Each profiled function has a graph there, in the GD++ category, e.g. "Player.take_damage (ms)": the milliseconds per frame that the function took, averaged since the graph's last point. A function shows up in the list once it has run for the first time.
@@ -375,7 +420,7 @@ Does my code run on threads? The Thread column says where each profiled function
 
 # Limits
 
-- @trace and @profile work on classes, and on their functions, variables and signals. Externs and their members can't have them, and neither can C++ code in decl and impl blocks.
+- @trace and @profile work on classes and externs, and on their functions, variables and signals, except @trace on extern variables. C++ code in decl and impl blocks can't have them.
 - @trace on a function traces that function, not the functions that override it in subclasses: to trace an override, put @trace on the override.
 - A @game_only class returns right away in the editor, before any tracing or profiling, and other classes without @tool don't run in the editor at all. So only @tool classes trace and profile in the editor, e.g. while you edit a scene.
 - Both work in debug and release builds, but the monitors only show while the editor's debugger is connected to the game.
@@ -402,8 +447,9 @@ bool Player::take_damage(int64_t amount) {
 - gdpp::Trace prints the start and end lines. A traced function that returns a value runs its body as a lambda, so the trace gets the result of every return.
 - gdpp::Watch checks the class's traced variables.
 - A traced signal's emit function calls gdpp::trace_emit, and the constructor and destructor of a traced class call gdpp::trace_lifetime.
+- The wrappers of externs use the same, with gdpp::via_extern for their traces, and names that start with "extern" for their profiles.
 
-A source file that uses any of these defines GDPP_DEBUGGING before its includes, which makes the runtime header include what they need. See `gd++ man runtime` and `gd++ man generated`.
+A source file or an extern's header that uses any of these defines GDPP_DEBUGGING before its includes, which makes the runtime header include what they need. See `gd++ man runtime` and `gd++ man generated`.
 
 # See also
 
