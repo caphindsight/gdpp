@@ -25,12 +25,16 @@ func runFix(t *testing.T, extra map[string]string) (out string, before, after ma
 
 func TestFix(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
-		"/games/my_game/.gd++proj/temp/abc/x": "x",
-		"/games/my_game/.gd++proj/bind/":      "",
-		"/games/my_game/.gd++proj/spec/":      "",
-		"/games/my_game/_gd++proj/bind/":      "",
-		"/games/my_game/_gd++proj/spec/.keep": "",
-		"/games/my_game/_gd++proj/engine/":    "",
+		"/games/my_game/.gd++proj/.gdignore":        "",
+		"/games/my_game/.gd++proj/temp/abc/x":       "x",
+		"/games/my_game/.gd++proj/bind/":            "",
+		"/games/my_game/.gd++proj/spec/":            "",
+		"/games/my_game/_gd++proj/bind/":            "",
+		"/games/my_game/_gd++proj/spec/.keep":       "",
+		"/games/my_game/_gd++proj/engine/":          "",
+		"/games/my_game/src/pkg/":                   "",
+		"/games/my_game/src/pkg/" + packageFileName: "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n",
+		"/games/my_game/src/pkg/.gd++pkg/":          "",
 	})
 	want := "" +
 		"[-] Deleted the temporary directory res://.gd++proj/temp.\n" +
@@ -39,6 +43,8 @@ func TestFix(t *testing.T) {
 		"[-] Deleted the empty directory res://.gd++proj/spec.\n" +
 		"[-] Deleted the empty directory res://_gd++proj/engine.\n" +
 		"[-] Deleted the empty directory res://.gd++proj.\n" +
+		"[-] Created res://_gd++proj/.gdignore.\n" +
+		"[-] Created res://src/pkg/.gd++pkg/.gdignore.\n" +
 		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
@@ -49,6 +55,8 @@ func TestFix(t *testing.T) {
 			delete(wantTree, path)
 		}
 	}
+	wantTree["_gd++proj/.gdignore"] = ""
+	wantTree["src/pkg/.gd++pkg/.gdignore"] = ""
 	if !reflect.DeepEqual(after, wantTree) {
 		t.Errorf("tree = %v, want %v", after, wantTree)
 	}
@@ -66,6 +74,7 @@ func TestFixConfig(t *testing.T) {
 
 func TestFixNothingToDo(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
+		"/games/my_game/.gd++proj/.gdignore":      "",
 		"/games/my_game/.gd++proj/bind/4.3/a.h":   "a",
 		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\n",
 		"/games/my_game/.gitignore":               projectBlock,

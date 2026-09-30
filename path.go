@@ -198,6 +198,29 @@ func (p Path) IsPackageRoot() bool {
 	return p.IsDir() && p.Cd(packageFileName).IsFile()
 }
 
+// IsCacheDir reports whether the path is one of GD++'s cache directories: a
+// project's res://_gd++proj or res://.gd++proj, or a package's build cache.
+func (p Path) IsCacheDir() bool {
+	switch p.Name() {
+	case checkedInDepsDirName, ephemeralDepsDirName:
+		return p.BaseDir().IsProjectRoot()
+	case packageBuildCacheDirName:
+		return p.BaseDir().IsPackageRoot()
+	}
+	return false
+}
+
+// IgnoreInGodot writes a .gdignore file into the directory at p, if missing,
+// so Godot skips the directory. Returns whether it wrote one.
+func (p Path) IgnoreInGodot() bool {
+	file := p.Cd(gdignoreFileName)
+	if file.Exists() {
+		return false
+	}
+	file.WriteString("")
+	return true
+}
+
 // findRoot walks up from p, returning the first ancestor (including p) that
 // satisfies isRoot, or false if none is found before the filesystem root.
 func findRoot(p Path, isRoot func(Path) bool) (Path, bool) {
@@ -344,6 +367,12 @@ func (p Path) CreateDirectory() {
 	Assert(!p.Exists(), "Path %s already exists.", p.ToString())
 	err := fsys.MkdirAll(p.GetOsPath(), 0755)
 	Check(err, "Failed to create %s", p.ToString())
+	// Godot must never import GD++'s caches, however they get created.
+	for dir := p; !dir.IsGlobalRoot(); dir = dir.BaseDir() {
+		if dir.IsCacheDir() {
+			dir.IgnoreInGodot()
+		}
+	}
 }
 
 // CreateParentDirectory creates the parent directory of p and any missing

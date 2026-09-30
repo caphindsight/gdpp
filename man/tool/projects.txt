@@ -49,6 +49,8 @@ The two dependency caches are explained in `gd++ man dependencies`, packages in 
 
 gd++ creates directories only when it first needs them: a fresh project has none of them. It also deletes cache directories that become empty, e.g. when you remove the last dependency.
 
+Whenever gd++ creates res://_gd++proj, res://.gd++proj or a package's .gd++pkg, it writes an empty .gdignore file into it, so Godot never imports the files in the caches. Check in res://_gd++proj/.gdignore along with the rest of res://_gd++proj.
+
 # Temporary files
 
 Commands that download or unpack something, `gd++ fetch` and `gd++ vendor`, work in a random directory in res://.gd++proj/temp, and delete it when they finish, or fail. If gd++ is killed, e.g. with Ctrl+C, the directory may stay behind. `gd++ fix` deletes it.

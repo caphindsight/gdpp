@@ -14,6 +14,7 @@ Brings the project into its canonical state. It takes no options, and is always 
 - Updates the GD++ blocks in the .gitignore files of the project and its packages to match the project's vcs setting: writes missing blocks, updates outdated ones, and removes them if the project doesn't use git. See `gd++ man vcs`.
 - Deletes res://.gd++proj/temp, the temporary files that an interrupted command may have left behind.
 - Deletes empty dependency cache directories, e.g. res://_gd++proj/engine after the last engine was removed.
+- Writes a missing .gdignore file into res://_gd++proj, res://.gd++proj and every package's build cache, so Godot skips them. gd++ writes it whenever it creates these directories, so this is only a last resort, e.g. if you deleted it by hand.
 
 Each change is logged, e.g. "Reformatted res://gd++pkg.toml.". If nothing needed fixing, it says "The project is already tidy.".
 

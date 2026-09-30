@@ -338,6 +338,29 @@ func TestCreateFileCreateDirectory(t *testing.T) {
 	}
 }
 
+func TestCreateDirectoryIgnoresCaches(t *testing.T) {
+	m := withMemFS(t, "/", map[string]string{
+		"/proj/" + projectFileName:     "",
+		"/proj/pkg/" + packageFileName: "",
+	})
+	for _, dir := range []string{"/proj/_gd++proj/spec/4.3", "/proj/.gd++proj/temp/x", "/proj/pkg/.gd++pkg/gdpp", "/proj/.gd++pkg", "/proj/pkg/_gd++proj", "/proj/pkg/.gd++pkg/.gd++pkg"} {
+		NewPath(dir).CreateDirectory()
+	}
+	for path, want := range map[string]bool{
+		"/proj/_gd++proj/.gdignore":             true,
+		"/proj/.gd++proj/.gdignore":             true,
+		"/proj/pkg/.gd++pkg/.gdignore":          true,
+		"/proj/.gd++pkg/.gdignore":              false, // not in a package
+		"/proj/pkg/_gd++proj/.gdignore":         false, // not in a project
+		"/proj/pkg/.gd++pkg/.gd++pkg/.gdignore": false,
+		"/proj/_gd++proj/spec/.gdignore":        false,
+	} {
+		if _, got := m.tree()[path]; got != want {
+			t.Errorf("%s exists = %v, want %v", path, got, want)
+		}
+	}
+}
+
 // dirTree returns a small directory tree rooted at root, in withMemFS format.
 // It has a dot-file, a nested dir, and an empty dir.
 func dirTree(root string) map[string]string {

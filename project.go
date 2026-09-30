@@ -72,7 +72,8 @@ func (p *Project) tempDir() Path {
 }
 
 // RemoveEmptyCacheDirs deletes the empty dep cache directories, and their
-// parents if that leaves them empty. Returns whether any was deleted.
+// parents if that leaves them empty but for their .gdignore. Returns whether
+// any was deleted.
 func (p *Project) RemoveEmptyCacheDirs() bool {
 	// Caches first, since deleting them may leave their parents empty.
 	var dirs []Path
@@ -82,7 +83,7 @@ func (p *Project) RemoveEmptyCacheDirs() bool {
 	dirs = append(dirs, p.Root.Cd(checkedInDepsDirName), p.Root.Cd(ephemeralDepsDirName))
 	removed := false
 	for _, dir := range dirs {
-		if dir.IsEmptyDir() {
+		if dir.IsEmptyDir() || (dir.Cd(gdignoreFileName).IsFile() && len(dir.readDir()) == 1) {
 			dir.Remove()
 			LogInfo("Deleted the empty directory %s.", dir.ToString())
 			removed = true

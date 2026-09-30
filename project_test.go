@@ -108,8 +108,8 @@ func TestProjectCleanup(t *testing.T) {
 	p.CreateTempDir()
 	p.Cleanup()
 
-	// .gd++proj itself is left behind, now empty.
-	want := mergeTrees(before, map[string]string{"/games/my_game/.gd++proj/": ""})
+	// .gd++proj itself is left behind, now empty but for its .gdignore.
+	want := mergeTrees(before, map[string]string{"/games/my_game/.gd++proj/": "", "/games/my_game/.gd++proj/.gdignore": ""})
 	if got := m.tree(); !reflect.DeepEqual(got, want) {
 		t.Errorf("tree after Cleanup() = %v, want %v", got, want)
 	}

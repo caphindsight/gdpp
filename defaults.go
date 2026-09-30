@@ -9,6 +9,7 @@ const (
 	projectConfigFileName = "gd++proj.toml"
 	packageFileName       = "gd++pkg.toml"
 	gitignoreFileName     = ".gitignore"
+	gdignoreFileName      = ".gdignore" // makes Godot skip its directory
 
 	// Dep caches: each lives in a subdirectory named after its kind (see
 	// depKinds) of both the checked in and the ephemeral directory, at the
