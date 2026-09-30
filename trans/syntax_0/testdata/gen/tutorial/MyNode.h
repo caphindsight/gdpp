@@ -66,7 +66,7 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 383 "input.gd++"
+#line 390 "input.gd++"
 
 
     int64_t my_property = 0;
@@ -96,6 +96,7 @@ public:
 	int64_t _gdpp_body_count_primes(int64_t limit);
 	void start_primes();
 	void poll_primes();
+	void stop_primes();
 	int64_t deal_damage(int64_t amount);
 	void emit_both_signals();
 	void foo();

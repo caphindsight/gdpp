@@ -89,6 +89,11 @@
 			<description>
 			</description>
 		</method>
+		<method name="stop_primes">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
 		<method name="take_damage">
 			<return type="void" />
 			<param index="0" name="amount" type="int" />

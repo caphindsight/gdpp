@@ -18,7 +18,7 @@ cancel TASK                    TASK.cancel()                      ask an Async's
 
 # Why
 
-They are rare on purpose, and mostly trivial: most just call a method. What they add is the look. A signal, a remote call, a task, or one task stopping another looks different from a plain function call, and cancelled reads like a flag, so these places stand out when you read the code. The method calls work too, e.g. `task.is_done()`, where you prefer them.
+They are rare on purpose, and mostly trivial: most just call a method. What they add is the look. A signal, a remote call, polling or stopping a task looks different from a plain function call, and cancelled reads like a flag, so these places stand out when you read the code. The method calls work too, e.g. `task.is_done()`, where you prefer them.
 
 # Where they apply
 

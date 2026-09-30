@@ -302,6 +302,13 @@ func poll_primes() -> void {
   }
 }
 
+// `cancel primes` asks the task to stop early: cancelled becomes true in its body. It's always safe, even for a task
+// that's done, or an empty Async.
+
+func stop_primes() -> void {
+  cancel primes;
+}
+
 // You can combine attributes where it makes sense, e.g. @virtual @const.
 
 // For debugging, the @trace attribute prints every call of a function: its arguments when it starts, and its result
