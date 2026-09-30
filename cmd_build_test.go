@@ -23,6 +23,7 @@ spec = "4.3"
   name = "Actor"
   include = "res://common/actor.h"
   icon = "res://common/actor.svg"
+  tool = true
 
 [[class]]
   name = "Helper"
@@ -75,6 +76,7 @@ func TestGenerateBuildCache(t *testing.T) {
 	for _, want := range []string{
 		"\n#include \"enemy/enemy.h\"\n#include <common/actor.h>\n\nusing",
 		"= false || std::is_same_v<T, Enemy> || std::is_same_v<T, Actor> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden>;",
+		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden>;",
 		"\tgdpp_register_class<Enemy>();\n\tgdpp_register_class<Actor>();\n\tgdpp_register_class<Helper>();\n\tgdpp_register_class<Hidden>();\n}",
 	} {
 		if !strings.Contains(register, want) {

@@ -178,13 +178,15 @@ func TestInitInvalidArgs(t *testing.T) {
 	}{
 		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std and --class require a package path"},
 		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std and --class require a package path"},
-		"project_icon":    {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon and --noicon require --class"},
-		"package_icon":    {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon and --noicon require --class"},
+		"project_icon":    {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
+		"package_icon":    {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
 		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax and --std cannot be used with --class"},
 		"class_name":      {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
 		"class_include":   {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
 		"class_noinclude": {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},
 		"class_noicon":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Icon: "pkg://a.svg", NoIcon: true}, "--icon and --noicon cannot be used together"},
+		"project_tool":    {CmdInit{Tool: true}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
+		"class_notool":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Tool: true, NoTool: true}, "--tool and --notool cannot be used together"},
 		"class_path":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Icon: "a.svg"}, "a.svg must start with pkg:// or res://"},
 		"project_vcs":     {CmdInit{Vcs: "svn"}, "--vcs must be none or git"},
 		"package_vcs":     {CmdInit{Path: "src/pkg", Vcs: "git"}, "--vcs cannot be used with a package path"},
@@ -214,6 +216,7 @@ func TestInitNewClass(t *testing.T) {
 	want := "" +
 		"[-] Set the include path of class MyNode to pkg://my_node.h.\n" +
 		"[-] Set the icon of class MyNode to res://my_node.svg.\n" +
+		"[-] Set class MyNode to a runtime class.\n" +
 		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
@@ -250,12 +253,42 @@ func TestInitUpdateClass(t *testing.T) {
 	}
 }
 
+func TestInitClassTool(t *testing.T) {
+	config := classPkgConfig + "\n[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\n"
+	pkgs := map[string]string{"src/pkg": config}
+	// --tool makes it a tool class.
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "A", Tool: true, Update: true}, pkgs)
+	if want := "[-] Set class A to a tool class.\n[-] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	toolConfig := classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n  tool = true\n"
+	if got := after["src/pkg/"+packageFileName]; got != toolConfig {
+		t.Errorf("config = %q, want %q", got, toolConfig)
+	}
+	// Without --tool or --notool it stays a tool class.
+	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", Icon: "pkg://a.svg", Update: true}, map[string]string{"src/pkg": toolConfig})
+	if want := "[-] Set the icon of class A to pkg://a.svg.\n[-] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], classPkgConfig+"\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n  icon = \"pkg://a.svg\"\n  tool = true\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+	// --notool makes it a runtime class again.
+	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", NoTool: true, Update: true}, map[string]string{"src/pkg": toolConfig})
+	if want := "[-] Set class A to a runtime class.\n[-] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], classPkgConfig+"\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
 func TestInitClassNoInclude(t *testing.T) {
 	config := classPkgConfig + "\n[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\nicon = \"pkg://a.svg\"\n"
 	pkgs := map[string]string{"src/pkg": config}
 	// A new class without a header.
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "B", NoInclude: true}, pkgs)
-	if want := "[-] Set the include path of class B to none.\n[-] Set the icon of class B to none.\n[-] Success!\n"; out != want {
+	if want := "[-] Set the include path of class B to none.\n[-] Set the icon of class B to none.\n[-] Set class B to a runtime class.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	wantConfig := classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n  icon = \"pkg://a.svg\"\n\n[[class]]\n  name = \"B\"\n"

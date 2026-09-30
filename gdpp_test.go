@@ -138,7 +138,7 @@ func TestTranspilePackage(t *testing.T) {
 	}
 	register := m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
 	for _, want := range []string{`#include "Hitbox.h"`, `#include "Player.h"`, `#include "Weapon.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Hitbox>();",
-		"gdpp_is_runtime_class = false || std::is_same_v<T, Hitbox> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
+		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden> || std::is_same_v<T, Hitbox> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
 		"if constexpr (gdpp_is_runtime_class<T>) {\n\t\tGDREGISTER_RUNTIME_CLASS(T);\n\t} else {\n\t\tGDREGISTER_CLASS(T);\n\t}"} {
 		if !strings.Contains(register, want) {
 			t.Errorf("__register_types__.cpp = %s\nwant it to contain %q", register, want)

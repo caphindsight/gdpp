@@ -6,7 +6,7 @@ gd++ init: set up the project, or create or update a package or a class
 gd++ init [--vcs none|git]
 gd++ init PATH --bind NAME --spec NAME [--syntax N] [--std STD]
 gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N] [--std STD]
-gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--update]
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--update]
 ```
 
 # Description
@@ -17,7 +17,7 @@ gd++ init does one of three things, depending on its arguments:
 - With PATH, it creates the package at PATH, or updates it: it writes PATH/gd++pkg.toml.
 - With PATH and --class, it adds a C++ class to the package at PATH, or updates it.
 
-Every change is logged, e.g. "Set the Godot API spec to 4.7.2-stable.". If the file already says what you asked for, it warns "No changes were made." and changes nothing.
+Every change is logged, e.g. "Set the Godot API spec to 4.7.2-stable." or "Set class Spinner to a tool class.". If the file already says what you asked for, it warns "No changes were made." and changes nothing.
 
 # Setting up the project
 
@@ -68,7 +68,7 @@ Changes the given settings of the existing package at PATH, and keeps the others
 # Adding or updating a C++ class
 
 ```sh
-gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--update]
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--update]
 ```
 
 Adds the plain C++ class NAME to the gd++pkg.toml of the package at PATH, so the package registers it with Godot, or updates it if it's there already. GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here. See `gd++ man cpp-classes`.
@@ -88,15 +88,21 @@ Adds the plain C++ class NAME to the gd++pkg.toml of the package at PATH, so the
 --noicon
   Remove the class's icon.
 
-When updating a class, --include and --icon change the path, --noinclude and --noicon clear it, and without either, the path stays. Without --update, init asks "Class NAME already exists in PATH. Update it?".
+--tool
+  Make the class a tool class: its code runs in the editor too, like a GD++ class with @tool. Sets tool = true in its [[class]] table.
+
+--notool
+  Make the class a runtime class: in the editor, Godot shows placeholders for its objects, which run none of its code. Removes tool = true from its [[class]] table.
+
+When updating a class, --include and --icon change the path, --noinclude and --noicon clear it, and without either, the path stays. Likewise, --tool and --notool change the class's kind, and without either, it stays. A new class is a runtime class, unless you give --tool. Without --update, init asks "Class NAME already exists in PATH. Update it?".
 
 # Rules
 
 - --vcs works only without PATH.
 - --update, --bind, --spec, --syntax, --std and --class need PATH.
-- --include, --noinclude, --icon and --noicon need --class.
+- --include, --noinclude, --icon, --noicon, --tool and --notool need --class.
 - --bind, --spec, --syntax and --std can't be used with --class.
-- --include and --noinclude, and --icon and --noicon, can't be used together.
+- --include and --noinclude, --icon and --noicon, and --tool and --notool, can't be used together.
 
 # Examples
 
@@ -127,6 +133,13 @@ Register a C++ class, then give it an icon, then remove the icon:
 gd++ init . --class Spinner --include pkg://src/spinner.h
 gd++ init . --class Spinner --update --icon pkg://icons/spinner.svg
 gd++ init . --class Spinner --update --noicon
+```
+
+Register a C++ class whose code runs in the editor too, then make it run only in the game:
+
+```sh
+gd++ init . --class Gizmo --include pkg://src/gizmo.h --tool
+gd++ init . --class Gizmo --update --notool
 ```
 
 # Errors

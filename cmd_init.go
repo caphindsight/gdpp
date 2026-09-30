@@ -24,12 +24,14 @@ type CmdInit struct {
 	NoInclude bool   `arg:"--noinclude" help:"remove the class's header, or create the class without one"`
 	Icon      string `arg:"--icon" placeholder:"PATH" help:"the class's icon, e.g. pkg://my_node.svg"`
 	NoIcon    bool   `arg:"--noicon" help:"remove the class's icon"`
+	Tool      bool   `arg:"--tool" help:"make the class run in the editor too"`
+	NoTool    bool   `arg:"--notool" help:"make the class run only in the game"`
 }
 
 func (c *CmdInit) Run() {
 	if c.Path == "" {
 		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Class == "", "Invalid arguments: --update, --bind, --spec, --syntax, --std and --class require a package path.")
-		Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon, "Invalid arguments: --include, --noinclude, --icon and --noicon require --class.")
+		Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon && !c.Tool && !c.NoTool, "Invalid arguments: --include, --noinclude, --icon, --noicon, --tool and --notool require --class.")
 		c.initProject()
 		return
 	}
@@ -39,7 +41,7 @@ func (c *CmdInit) Run() {
 		c.initClass(ParsePath(c.Path))
 		return
 	}
-	Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon, "Invalid arguments: --include, --noinclude, --icon and --noicon require --class.")
+	Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon && !c.Tool && !c.NoTool, "Invalid arguments: --include, --noinclude, --icon, --noicon, --tool and --notool require --class.")
 	for _, name := range []string{c.Bind, c.Spec} {
 		if name != "" {
 			assertDepName(name)
@@ -131,6 +133,7 @@ func (c *CmdInit) initClass(root Path) {
 	Assert(classNameRegexp.MatchString(c.Class), "Invalid arguments: %q is not a valid class name.", c.Class)
 	Assert(c.Include == "" || !c.NoInclude, "Invalid arguments: --include and --noinclude cannot be used together.")
 	Assert(c.Icon == "" || !c.NoIcon, "Invalid arguments: --icon and --noicon cannot be used together.")
+	Assert(!c.Tool || !c.NoTool, "Invalid arguments: --tool and --notool cannot be used together.")
 	for _, p := range []string{c.Include, c.Icon} {
 		Assert(p == "" || isClassPath(p), "Invalid arguments: %s must start with pkg:// or res://.", p)
 	}
@@ -162,7 +165,8 @@ func (c *CmdInit) initClass(root Path) {
 		}
 		return old
 	}
-	class := PackageClass{Name: c.Class, Include: pick(old.Include, c.Include, c.NoInclude), Icon: pick(old.Icon, c.Icon, c.NoIcon)}
+	class := PackageClass{Name: c.Class, Include: pick(old.Include, c.Include, c.NoInclude), Icon: pick(old.Icon, c.Icon, c.NoIcon),
+		Tool: c.Tool || old.Tool && !c.NoTool}
 	config.Classes[i] = class
 	config.SortClasses()
 	var changes []string
@@ -170,6 +174,9 @@ func (c *CmdInit) initClass(root Path) {
 		if isNew || f.new != f.old {
 			changes = append(changes, "the "+f.desc+" of class "+c.Class+" to "+cmp.Or(f.new, "none"))
 		}
+	}
+	if isNew || class.Tool != old.Tool {
+		changes = append(changes, "class "+c.Class+" to "+map[bool]string{true: "a tool class", false: "a runtime class"}[class.Tool])
 	}
 	if writeConfig(root.Cd(packageFileName), config.Encode(), changes) {
 		LogInfo("Success!")

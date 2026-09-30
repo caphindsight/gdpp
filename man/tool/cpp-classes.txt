@@ -1,4 +1,4 @@
-C++ classes: registering plain C++ classes, and mixing them with GD++
+C++ classes: registering plain C++ classes, tool classes, and mixing them with GD++
 
 You don't have to write every class in GD++. A package can also have plain C++ classes, written the usual godot-cpp way, with GDCLASS and _bind_methods. GD++ compiles them into the package's library, and registers them with Godot, if you tell it about them. You miss out on what GD++ writes for you, but you get full control.
 
@@ -77,13 +77,52 @@ include
 icon (optional)
   The class's icon in the editor, as a pkg:// or res:// path, usually to an SVG file. It goes into the .gdextension file.
 
-A new class needs --include, or --noinclude if another included header declares it already. See `gd++ man init` for how to update or remove the include and the icon later, and `gd++ rm PATH --class NAME` to remove the class. The file lists classes sorted by name.
+tool (optional, default false)
+  Whether the class's code runs in the editor too, like @tool on a GD++ class. See "Editor and runtime code" below. `gd++ init --tool` sets it, `gd++ init --notool` removes it.
+
+A new class needs --include, or --noinclude if another included header declares it already. See `gd++ man init` for how to update or remove the include, the icon and the tool setting later, and `gd++ rm PATH --class NAME` to remove the class. The file lists classes sorted by name.
+
+# Editor and runtime code
+
+Like GD++ classes, and like GDScript scripts, a C++ class runs its code in the editor only if you ask for it. By default, it's a runtime class: in the editor, Godot creates placeholders for its objects instead. A placeholder keeps the property values you set in the inspector, but runs none of the class's code: no constructor, no _ready, no _process, no setters. Games run from the editor, and exported games, run all code.
+
+So Spinner above doesn't spin in the editor: the scene you edit stays still, and a bug in _process can't break the editor.
+
+A tool class runs its code in the editor too, e.g. to draw gizmos, or to react when you change a property in the inspector. Make Spinner a tool class with --tool:
+
+```sh
+gd++ init . --class Spinner --update --tool
+```
+
+This adds tool = true to its [[class]] table:
+
+```toml
+[[class]]
+name = "Spinner"
+include = "pkg://src/spinner.h"
+tool = true
+```
+
+--notool makes it a runtime class again. Both take effect on the next build.
+
+In a tool class, Engine::get_singleton()->is_editor_hint() tells whether the code runs in the editor, e.g. to spin only in the game:
+
+```cpp
+void Spinner::_process(double delta) {
+  if (Engine::get_singleton()->is_editor_hint()) {
+    return;
+  }
+  rotate_y(speed * delta);
+}
+```
+
+Placeholders only stop code that Godot calls. Code that already runs in the editor, e.g. a tool class, can still create a runtime class's object with memnew, or call its static functions, and then that code runs. To make sure a class's code never runs in the editor, check is_editor_hint() in its functions, like GD++ classes with @game_only do. See `gd++ man classes`.
 
 # How registration works
 
 The build generates __register_types__.cpp in the build cache. It includes the headers of all the package's classes, C++ and GD++, and registers them when Godot loads the library, at the scene initialization level. A class is registered after its base class, if the base is a class of the same package, since Godot requires that. The code is in namespace godot, or sees it with using namespace godot, so C++ classes can be declared in namespace godot or at global scope.
 
-C++ classes are registered with GDREGISTER_CLASS, so their code runs in the editor too, like GD++ classes with @tool. For a runtime-only class, check Engine::get_singleton()->is_editor_hint() in your code, like GD++ classes with @game_only do.
+Runtime classes, i.e. C++ classes without tool = true and GD++ classes without @tool, are registered with GDREGISTER_RUNTIME_CLASS. The others are registered with GDREGISTER_CLASS. Don't register classes yourself: every class is registered once, by the generated code.
 
 The library's entry symbol is gdpp_library_init, which the .gdextension file names. Don't define your own entry point.
 
@@ -117,10 +156,11 @@ A C++ class can also extend a GD++ class of the same package, e.g. class FastPla
 
 # In gd++ ls
 
-`gd++ ls` lists a package's C++ classes, with kind "C++", their header and their icon, and marks the ones whose header or icon is missing in red.
+`gd++ ls` lists a package's C++ classes, with kind "C++", or "C++ tool" for tool classes, their header and their icon, and marks the ones whose header or icon is missing in red.
 
 ```
 Classes  Kind        File                        Icon
-Spinner  C++         res://src/spinner.h         pkg://icons/spinner.svg
+Spinner  C++ tool    res://src/spinner.h         pkg://icons/spinner.svg
+Wobbler  C++         res://src/wobbler.h         none
 Player   GD++        pkg://player.gd++           none
 ```

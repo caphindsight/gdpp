@@ -97,7 +97,7 @@ So a runtime class can't break the editor, e.g. by moving nodes around in a scen
 
 # @game_only
 
-Placeholders only stop code that Godot calls. Code that already runs in the editor, e.g. a @tool class or a C++ class, can still create a runtime class's object with memnew, or call its static functions, and then that code runs. @game_only makes sure it doesn't: the class's code only ever runs in the game.
+Placeholders only stop code that Godot calls. Code that already runs in the editor, e.g. a @tool class or a C++ tool class, can still create a runtime class's object with memnew, or call its static functions, and then that code runs. @game_only makes sure it doesn't: the class's code only ever runs in the game.
 
 ```gd++
 @game_only

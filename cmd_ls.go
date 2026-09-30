@@ -34,7 +34,7 @@ type lsClass struct {
 	FileText   string // For GD++ classes, the file's pkg:// path; if empty, File's.
 	IconText   string // The icon's path as written, e.g. pkg://icon.svg; if empty, Icon's.
 	Gdpp       bool
-	Tool       bool // A GD++ class whose code runs in the editor too.
+	Tool       bool // A class whose code runs in the editor too.
 	Clash      bool // Another class has the same name.
 }
 
@@ -66,7 +66,7 @@ func (c *CmdLs) Run() {
 func lsClasses(p Project, pkg Package) []lsClass {
 	var classes []lsClass
 	for _, class := range pkg.Config.Classes {
-		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), IconText: class.Icon})
+		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), IconText: class.Icon, Tool: class.Tool})
 	}
 	files := listGdppFiles(p, pkg)
 	for _, class := range gdppClasses(files) {
@@ -219,10 +219,12 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 	for _, class := range pkg.Classes {
 		name, kind, file := class.Name, "C++", lsClassPath(class.File, class.FileText)
 		switch {
-		case class.Tool:
+		case class.Gdpp && class.Tool:
 			kind = "GD++ @tool"
 		case class.Gdpp:
 			kind = "GD++"
+		case class.Tool:
+			kind = "C++ tool"
 		}
 		switch {
 		case class.Name == "":

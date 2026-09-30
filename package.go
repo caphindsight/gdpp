@@ -32,6 +32,7 @@ type PackageClass struct {
 	Name    string `toml:"name"`
 	Include string `toml:"include,omitempty"` // the header declaring the class
 	Icon    string `toml:"icon,omitempty"`
+	Tool    bool   `toml:"tool,omitempty"` // whether its code runs in the editor too, like @tool
 }
 
 var classNameRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)

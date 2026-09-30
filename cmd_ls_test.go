@@ -150,13 +150,13 @@ func TestLsCmdOnePackage(t *testing.T) {
 	withLsProject(t)
 	NewPath("/games/my_game/foo").Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n\n" +
 		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\nicon = \"res://foo/icons/tree.svg\"\n\n" +
-		"[[class]]\nname = \"Bush\"\n")
+		"[[class]]\nname = \"Bush\"\ntool = true\n")
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := "\n" + lsFooOut +
 		"\n" +
 		"  Classes              Kind           File              Icon\n" +
 		"  Tree                 C++            res://foo/tree.h  res://foo/icons/tree.svg\n" +
-		"  Bush                 C++            none              none\n"
+		"  Bush                 C++ tool       none              none\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}

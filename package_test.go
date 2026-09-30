@@ -42,11 +42,11 @@ func TestLoadPackage(t *testing.T) {
 func TestLoadPackageAllKeys(t *testing.T) {
 	config := "bind = \"a\"\nspec = \"b\"\nsyntax = 2\nstd = \"c++23\"\n\n" +
 		"[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\nicon = \"res://a.svg\"\n\n" +
-		"[[class]]\nname = \"B\"\ninclude = \"res://b.hpp\"\n"
+		"[[class]]\nname = \"B\"\ninclude = \"res://b.hpp\"\ntool = true\n"
 	withMemFS(t, "/", withPackages(map[string]string{"pkg": config}))
 	want := PackageConfig{Bindings: "a", ApiSpec: "b", Syntax: 2, CppStandard: "c++23", Classes: []PackageClass{
 		{Name: "A", Include: "pkg://a.h", Icon: "res://a.svg"},
-		{Name: "B", Include: "res://b.hpp"},
+		{Name: "B", Include: "res://b.hpp", Tool: true},
 	}}
 	got := LoadPackage(NewPath("/games/my_game/pkg")).Config
 	if !reflect.DeepEqual(got, want) {

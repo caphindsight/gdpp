@@ -233,7 +233,7 @@ A bitfield's enum class is followed by `GDPP_BITFIELD(Name)`, which gives it the
 
 # Registration
 
-The build also generates __register_types__.cpp, in the build cache, outside gdpp/. It includes every class's header, and registers each class when the library loads, bases first, with GDREGISTER_RUNTIME_CLASS for GD++ classes without @tool, and GDREGISTER_CLASS for the others. Its entry point is gdpp_library_init. See `gd++ man cpp-classes`.
+The build also generates __register_types__.cpp, in the build cache, outside gdpp/. It includes every class's header, and registers each class when the library loads, bases first, with GDREGISTER_RUNTIME_CLASS for runtime classes, i.e. GD++ classes without @tool and C++ classes without tool = true, and GDREGISTER_CLASS for the others. Its entry point is gdpp_library_init. See `gd++ man cpp-classes`.
 
 # Using generated classes from C++
 

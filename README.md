@@ -78,8 +78,10 @@ You can also mix in plain C++ classes, though you'll be missing on many nice fea
 Tell GD++ about them, so it registers them with Godot:
 
 ```sh
-gd++ init my_package --class Foo --include pkg://foo.h [--icon pkg://foo.svg]
+gd++ init my_package --class Foo --include pkg://foo.h [--icon pkg://foo.svg] [--tool]
 ```
+
+Like GD++ classes, C++ classes only run their code in the game by default. Add `--tool` to run it in the editor too, like `@tool`.
 
 `pkg://` paths are relative to the package root. `res://` paths are relative to the project root, as in Godot.
 

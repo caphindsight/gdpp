@@ -113,7 +113,7 @@ Like GDScript, GD++ runs the code of a class in the editor only if the class has
 - A class with @game_only is a runtime class too. In debug builds, all its functions also return right away when called in the editor, e.g. by a @tool class.
 - A class with @tool runs in the editor too, e.g. to draw gizmos or react to property changes.
 
-Games run from the editor and exported games run all code. See `gd++ man classes`.
+C++ classes work the same way, with tool = true in gd++pkg.toml in place of @tool. Games run from the editor and exported games run all code. See `gd++ man classes` and `gd++ man cpp-classes`.
 
 # Tracing and profiling builds
 

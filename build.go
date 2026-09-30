@@ -283,12 +283,15 @@ func cppSources(p Project, pkg Package) []string {
 
 // generateRegisterTypes writes the build cache's __register_types__.cpp,
 // which registers the package's classes: those in its config, and the GD++
-// classes, which must not clash with them. Runtime classes (GD++ classes
-// without @tool) don't run their code in the editor.
+// classes, which must not clash with them. Runtime classes (C++ classes
+// without tool, GD++ classes without @tool) don't run their code in the editor.
 func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 	var classes, runtime, includes []string
 	for _, class := range pkg.Config.Classes {
 		classes = append(classes, class.Name)
+		if !class.Tool {
+			runtime = append(runtime, class.Name)
+		}
 		if rest, ok := strings.CutPrefix(class.Include, "pkg://"); ok {
 			includes = append(includes, `"`+rest+`"`)
 		} else if rest, ok := strings.CutPrefix(class.Include, "res://"); ok {
