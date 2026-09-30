@@ -4,7 +4,7 @@
 
 #include <gd++/syntax_0.hpp>
 #include "Mode.h"
-#include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/classes/resource.hpp>
 
 namespace godot {
 
@@ -12,8 +12,8 @@ enum _gdpp_Game_Mode : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Game_Mode, "Game.Mode")
 
 #define This Game
-class Game : public RefCounted {
-	GDCLASS(Game, RefCounted)
+class Game : public Resource {
+	GDCLASS(Game, Resource)
 
 public:
 	Mode mode{};

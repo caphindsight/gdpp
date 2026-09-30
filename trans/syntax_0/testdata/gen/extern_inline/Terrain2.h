@@ -17,6 +17,7 @@ public:
 
 	double height(double x, double z) const;
 	void rebuild() const;
+	void refresh(int64_t x) const;
 	String name() const;
 	int64_t get_size() const;
 	void set_size(int64_t p_value) const;
@@ -32,6 +33,10 @@ inline double Terrain2::height(double x, double z) const {
 
 inline void Terrain2::rebuild() const {
 	_gdpp_base->call_deferred(GDPP_STRING_NAME("rebuild"));
+}
+
+inline void Terrain2::refresh(int64_t x) const {
+	gdpp::call_thread_safe(_gdpp_base, GDPP_STRING_NAME("refresh"), x);
 }
 
 inline String Terrain2::name() const {

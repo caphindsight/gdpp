@@ -1,0 +1,2 @@
+{Name:Spawner Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false}
+{Name:Mode Kind:3 Base: Values:[{Name:ONE Value:0 Doc: Implicit:true Expr:} {Name:MANY Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false}

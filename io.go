@@ -55,7 +55,7 @@ func isTerminal(f *os.File) bool {
 
 // isTTY is true when both stderr and stdout are terminals, meaning we can be
 // interactive and use styles. If either is redirected, e.g. to a file or a
-// pipe, output stays plain on both.
+// pipe, output stays plain on both. --tty and --notty override it.
 var isTTY = isTerminal(os.Stderr) && isTerminal(os.Stdout)
 
 // isUnicode is true when the terminal can likely display the Unicode icons.

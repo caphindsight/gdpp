@@ -118,6 +118,7 @@ Annotations:
 ```
 Annotation @tool can't be used on a func.
 Annotation @export is used twice.
+Annotation @onready can only be used in classes that extend Node, which A doesn't.
 Annotation @override takes no arguments.
 Annotations @static and @virtual can't be used together.
 A variable can have only one export annotation.
@@ -133,6 +134,7 @@ Extern functions can't have a body.
 Extern variables can't have an initial value or a property body.
 Externs can't contain a ctor.
 The @deferred function f must return void.
+Annotation @thread_safe can only be used in classes that extend Node, which E doesn't.
 ```
 
 Package-wide, from `gd++ build`:
@@ -156,7 +158,6 @@ Some compiler errors are about the generated code, but caused by the GD++ declar
 
 - "marked 'override', but does not override": an @override function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and @const. See `gd++ doc CLASS.FUNCTION`.
 - "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
-- "@rpc can only be used in classes that extend Node.": a static assertion, for @rpc in a class that isn't a node.
 - "ignoring return value ... declared with attribute 'nodiscard'": a signal was called without emit. Write `emit NAME(...)`.
 - Errors in the file NAME.h or NAME.cpp of the build cache point to generated code. Open the file, e.g. res://.gd++pkg/gdpp/Player.cpp, to see what GD++ generated, and which declaration it came from.
 

@@ -259,6 +259,17 @@ func TestRmGdppClass(t *testing.T) {
 	}
 }
 
+func TestRmClashingClass(t *testing.T) {
+	config := testRmPackage + "\n[[class]]\nname = \"Player\"\n"
+	m := withRmFS(t, map[string]string{"a/" + packageFileName: config, "a/src/player.gdpp": "class_name Player\n"})
+	withForce(t, true)
+	withQuiet(t, true)
+	(&CmdRm{Path: "a", Class: []string{"Player"}}).Run()
+	if got, want := m.tree()["/games/my_game/a/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
 func TestRmClassAll(t *testing.T) {
 	m := withRmFS(t, map[string]string{
 		"a/" + packageFileName: testRmPackage + "\n[[class]]\nname = \"A\"\n\n[[class]]\nname = \"B\"\n",

@@ -35,7 +35,7 @@ channel
 
 The arguments are strings, in quotes, except the channel. Setting something twice is an error, and so is an unknown value, with a suggestion for typos.
 
-The class must extend Node: RPCs are sent through nodes, and the build fails otherwise, with "@rpc can only be used in classes that extend Node.".
+The class must extend Node: RPCs are sent through nodes. Otherwise it's an error: "Annotation @rpc can only be used in classes that extend Node, which A doesn't.".
 
 # Calling RPC functions
 
@@ -116,6 +116,7 @@ See `gd++ man externs`.
 - @rpc can't be combined with @static, @virtual or @override.
 - The channel must be the last argument.
 - In externs, @rpc takes no arguments.
+- The class or extern must extend Node.
 
 # See also
 

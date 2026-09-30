@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+@deferred @thread_safe
+func f() -> void {}

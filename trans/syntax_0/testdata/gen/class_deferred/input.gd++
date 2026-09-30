@@ -1,0 +1,19 @@
+class_name Spawner
+extends Node
+
+enum Mode { ONE, MANY }
+
+@deferred
+func spawn(count: int, mode: Mode = Mode::ONE) -> void {
+  gd::print(count);
+}
+
+@thread_safe
+func report(text: String) -> void {
+  gd::print(text);
+}
+
+@deferred @const
+func log() -> void {
+  gd::print("log");
+}

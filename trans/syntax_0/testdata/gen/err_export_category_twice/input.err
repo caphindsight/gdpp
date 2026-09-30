@@ -1,4 +1,4 @@
-input.gd++:5:1: The category name "Stats" is already used by another category or member.
- 5 | @export_category("Stats")
+input.gd++:6:1: The category name "Stats" is already used by another category or member.
+ 6 | @export_category("Stats")
    | ^^^^^^^^^^^^^^^^
 Hint: Godot adds a category as a property named after it.

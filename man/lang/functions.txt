@@ -154,14 +154,28 @@ func lerp_angle(from: float, to: float, weight: float) -> float {
 
 @rpc makes the function callable over the network. See `gd++ man rpc`.
 
+# @deferred and @thread_safe
+
+```gd++
+@deferred
+func respawn(at: Vector3) -> void {
+  set_position(at);
+}
+```
+
+With @deferred, every call to the function goes through call_deferred: from C++, from scripts, and over the network. The body runs later, at the end of the frame. @thread_safe is the same with call_thread_safe: a call from another thread runs later on the main thread, and a call from the main thread runs right away. Only classes that extend Node can use @thread_safe.
+
+Since the body runs later, the function must return void. GD++ puts the body in a second method, _gdpp_body_NAME, which the call runs by name. See `gd++ man generated`.
+
 # Combining attributes
 
 Attributes can be combined where it makes sense, e.g. @virtual @const. These combinations are errors:
 
 ```
-@static with @virtual, @override, @const or @rpc
-@virtual with @override or @rpc
-@override with @rpc
+@static with @virtual, @override, @const, @rpc, @deferred or @thread_safe
+@virtual with @override, @rpc, @deferred or @thread_safe
+@override with @rpc, @deferred or @thread_safe
+@deferred with @thread_safe
 ```
 
 Each attribute can be used once per function. They take no arguments, except @rpc.

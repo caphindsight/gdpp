@@ -1,0 +1,7 @@
+class_name A
+extends Node
+
+extern E {
+  extends Object
+  @thread_safe func f() -> void
+}

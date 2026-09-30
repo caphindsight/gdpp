@@ -46,9 +46,15 @@ A declaration's doc comment can come before its annotations or between them, but
   Make the function static. See `gd++ man functions`.
 
 @rpc(ARGS...)
-  Make the function callable over the network. Arguments: "authority" or "any_peer", "call_remote" or "call_local", "unreliable", "unreliable_ordered" or "reliable", and a channel number, last. See `gd++ man rpc`.
+  Make the function callable over the network. Arguments: "authority" or "any_peer", "call_remote" or "call_local", "unreliable", "unreliable_ordered" or "reliable", and a channel number, last. Only in classes that extend Node. See `gd++ man rpc`.
 
-These can't be combined: @static with @virtual, @override, @const or @rpc; @virtual with @override or @rpc; @override with @rpc.
+@deferred
+  Every call, from C++ or from Godot, goes through call_deferred and runs later. The function must return void. See `gd++ man functions`.
+
+@thread_safe
+  Like @deferred, with call_thread_safe: calls from other threads run later, on the main thread. Only in classes that extend Node. See `gd++ man functions`.
+
+These can't be combined: @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe; @virtual with @override, @rpc, @deferred or @thread_safe; @override with @rpc, @deferred or @thread_safe; @deferred with @thread_safe.
 
 # Functions of externs
 
@@ -56,17 +62,20 @@ These can't be combined: @static with @virtual, @override, @const or @rpc; @virt
   The function is a const method of the class.
 
 @deferred
-  Call the function with call_deferred. The function must return void. Only in externs.
+  Call the function with call_deferred. The function must return void.
+
+@thread_safe
+  Call the function with call_thread_safe. The function must return void. Only in externs that extend Node.
 
 @rpc
-  The function can be called over the network, with rpc and rpc_id. No arguments in externs.
+  The function can be called over the network, with rpc and rpc_id. No arguments in externs. Only in externs that extend Node.
 
 See `gd++ man externs`.
 
 # Variables of classes
 
 @onready
-  Assign the initial value at the start of _ready, instead of in the constructor. See `gd++ man lifecycle`.
+  Assign the initial value at the start of _ready, instead of in the constructor. Only in classes that extend Node. See `gd++ man lifecycle`.
 
 @export
   Show the variable in the inspector, and save it.
@@ -104,7 +113,7 @@ See `gd++ man externs`.
 @export_subgroup(NAME[, PREFIX])
   Start a subgroup of the inspector at this variable.
 
-A variable can have at most one export annotation, and any section annotations. See `gd++ man exports`.
+A variable can have at most one export annotation, and any section annotations. Export and section annotations only work in classes that extend Node or Resource. See `gd++ man exports`.
 
 Variables of externs take no annotations.
 
@@ -128,6 +137,7 @@ Signals, enum values, integer constants, externs, ctor, dtor, import and noimpor
 - An annotation in the wrong place is an error, e.g. "Annotation @tool can't be used on a func.".
 - An annotation can be used once per declaration: "Annotation @export is used twice.".
 - Annotations that take no arguments reject them: "Annotation @override takes no arguments.".
+- Some annotations need a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
 - An annotation that isn't followed by a declaration is an error: "Expected a declaration after the annotation, ...".
 
 # Not in GD++

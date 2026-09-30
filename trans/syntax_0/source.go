@@ -167,6 +167,10 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		u.initializers(w, c, true)
 	}
 	switch {
+	case f.deferral != "" && f.isConst:
+		w.ln("\t%s;", deferredCall(f, fmt.Sprintf("const_cast<%s *>(this)", c.name), bodyName(f)))
+	case f.deferral != "":
+		w.ln("\t%s;", deferredCall(f, "this", bodyName(f)))
 	case f.f.Body != nil:
 		w.block(f.f.Body, "", "")
 	case !f.ret.void:

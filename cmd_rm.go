@@ -219,8 +219,11 @@ func (c *CmdRm) removeClasses(root Path) {
 	config := LoadPackageAt(root).Config
 	names := uniqueSorted(c.Class, strings.Compare) // so each is confirmed once
 	for _, name := range names {
-		assertNotGdppClass(root, name)
-		Assert(slices.ContainsFunc(config.Classes, func(k PackageClass) bool { return k.Name == name }), "There is no class %s in %s.", name, root.ToString())
+		// A class in both the config and GD++ clashes, and removing it from the config fixes that.
+		if !slices.ContainsFunc(config.Classes, func(k PackageClass) bool { return k.Name == name }) {
+			assertNotGdppClass(root, name)
+			LogFatal("There is no class %s in %s.", name, root.ToString())
+		}
 	}
 	for _, name := range names {
 		Confirm("Remove the class %s from %s?", name, root.ToString())

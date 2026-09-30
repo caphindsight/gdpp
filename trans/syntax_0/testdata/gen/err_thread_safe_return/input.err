@@ -1,0 +1,4 @@
+input.gd++:5:1: The @thread_safe function f must return void.
+ 5 | func f() -> int { return 0; }
+   | ^^^^
+Hint: Its calls run later, so they can't return a value.

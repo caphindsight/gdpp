@@ -23,7 +23,7 @@ void Game::_bind_methods() {
 }
 
 Game::Game() {
-#line 5 "input.gd++"
+#line 6 "input.gd++"
 	mode = Mode::NORMAL;
 #line 29 "Game.cpp"
 }
@@ -34,7 +34,7 @@ Mode Game::set_mode_to(Mode m) {
 		return {};
 	}
 #endif
-#line 10 "input.gd++"
+#line 11 "input.gd++"
 
   mode = m;
   return m;
@@ -52,7 +52,7 @@ Mode Game::default_mode() {
 		return {};
 	}
 #endif
-#line 16 "input.gd++"
+#line 17 "input.gd++"
 
   return Mode::EASY;
 

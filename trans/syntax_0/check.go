@@ -52,11 +52,13 @@ type externModel struct {
 }
 
 type funcModel struct {
-	f                                            *Func
-	params                                       []*gtype
-	ret                                          *gtype
-	virtual, override, isConst, static, deferred bool
-	rpc                                          *rpcModel // Nil without @rpc.
+	f                                  *Func
+	params                             []*gtype
+	ret                                *gtype
+	virtual, override, isConst, static bool
+	deferral                           string    // "deferred" or "thread_safe" with that annotation, else empty.
+	hidden                             bool      // The generated body of a class's @deferred or @thread_safe func.
+	rpc                                *rpcModel // Nil without @rpc.
 }
 
 // rpcModel is the configuration from @rpc, as C++ values. Empty in externs, whose defining class configures it.
@@ -363,7 +365,7 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 // Only the file's own enums report errors: a dependency's are reported when its own file is transpiled, so there
 // a broken base counts as empty, and a broken expression as a value without "=".
 func (u *unit) enumValues(s *symbol, seen []*symbol) ([]meta.EnumValue, error) {
-	if s.base == "" && !slices.ContainsFunc(s.values, func(v meta.EnumValue) bool { return v.Implicit || v.Expr != "" }) {
+	if s.kind != meta.Enum && s.kind != meta.GodotEnum || s.base == "" && !slices.ContainsFunc(s.values, func(v meta.EnumValue) bool { return v.Implicit || v.Expr != "" }) {
 		return s.values, nil
 	}
 	seen = append(seen, s)
@@ -648,7 +650,7 @@ var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "global", "icon", "onready",
-	"override", "rpc", "static", "tool", "virtual"}
+	"override", "rpc", "static", "thread_safe", "tool", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -664,9 +666,6 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 				hint = fmt.Sprintf("Did you mean \"@%s\"?", s)
 			}
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Unknown annotation @%s.", a.Name), hint)
-		case a.Name == "deferred" && !slices.Contains(allowed, a.Name):
-			return nil, u.errorAt(a.Pos, len(a.Name)+1, "Annotation @deferred can only be used in externs.",
-				"It makes calls on an extern go through call_deferred.")
 		case !slices.Contains(allowed, a.Name):
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can't be used on %s.", a.Name, kind), "")
 		case found[a.Name] != nil:
@@ -678,7 +677,9 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		found[a.Name] = a
 	}
 	for _, pair := range [][2]string{{"static", "virtual"}, {"static", "override"}, {"static", "const"}, {"virtual", "override"},
-		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}} {
+		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}, {"static", "deferred"}, {"virtual", "deferred"},
+		{"override", "deferred"}, {"static", "thread_safe"}, {"virtual", "thread_safe"}, {"override", "thread_safe"},
+		{"deferred", "thread_safe"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -686,17 +687,23 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 	return found, nil
 }
 
-func (u *unit) buildFunc(f *Func, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "override", "rpc", "static", "virtual"}
+// buildFunc checks f, a function of the class or extern named owner.
+func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
+	allowed := []string{"const", "deferred", "override", "rpc", "static", "thread_safe", "virtual"}
 	if ext {
-		allowed = []string{"const", "deferred", "rpc"}
+		allowed = []string{"const", "deferred", "rpc", "thread_safe"}
 	}
 	a, err := u.annotations(f.Annotations, "a func", allowed...)
 	if err != nil {
 		return nil, err
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil, isConst: a["const"] != nil,
-		static: a["static"] != nil, deferred: a["deferred"] != nil}
+		static: a["static"] != nil}
+	for _, name := range []string{"deferred", "thread_safe"} {
+		if a[name] != nil {
+			m.deferral = name
+		}
+	}
 	if rpc := a["rpc"]; rpc != nil {
 		if m.rpc, err = u.rpcConfig(rpc, ext); err != nil {
 			return nil, err
@@ -725,10 +732,43 @@ func (u *unit) buildFunc(f *Func, ext bool) (*funcModel, error) {
 	switch {
 	case ext && f.Body != nil:
 		return nil, u.errorAt(f.Body.Pos, 1, "Extern functions can't have a body.", "Externs only declare what another package defines.")
-	case m.deferred && !m.ret.void:
-		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @deferred function %s must return void.", f.Name), "Deferred calls run later, so they can't return a value.")
+	case m.deferral != "" && !m.ret.void:
+		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @%s function %s must return void.", m.deferral, f.Name), "Its calls run later, so they can't return a value.")
+	}
+	if err := u.requireBase(a["thread_safe"], owner, "call_thread_safe is a method of Node.", "Node"); err != nil {
+		return nil, err
+	}
+	if err := u.requireBase(a["rpc"], owner, "rpc and rpc_config are methods of Node.", "Node"); err != nil {
+		return nil, err
 	}
 	return m, nil
+}
+
+// requireBase returns an error at annotation a, if set, unless the class or extern named owner is one of bases or
+// extends one of them.
+func (u *unit) requireBase(a *Annotation, owner, hint string, bases ...string) error {
+	for name, seen := owner, 0; a != nil && seen < 100; seen++ {
+		s := u.symbols[name]
+		switch {
+		case slices.Contains(bases, name):
+			return nil
+		case s == nil: // Also a dependency whose base isn't known.
+			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can only be used in classes that extend %s, which %s doesn't.",
+				a.Name, strings.Join(bases, " or "), owner), hint)
+		case s.class != nil:
+			name = baseName(s.class.Extends)
+		case s.extern != nil:
+			name = baseName(s.extern.Extends)
+		default:
+			name = s.base
+		}
+	}
+	return nil
+}
+
+// bodyName is the name of the method that holds the body of a class's @deferred or @thread_safe func f.
+func bodyName(f *funcModel) string {
+	return "_gdpp_body_" + f.f.Name
 }
 
 // rpcValues are the strings @rpc takes, as in GDScript: each sets one setting to a C++ value.
@@ -800,7 +840,8 @@ func (u *unit) buildSignal(s *Signal) (*signalModel, error) {
 	return m, nil
 }
 
-func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
+// buildVar checks v, a variable of the class or extern named owner.
+func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
 		"export_multiline", "export_placeholder", "export_range", "export_storage"}, sectionAnnotations...)
 	if ext {
@@ -825,6 +866,16 @@ func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
 	}
 	if err := u.sections(m); err != nil {
 		return nil, err
+	}
+	if err := u.requireBase(a["onready"], owner, "Only nodes get _ready.", "Node"); err != nil {
+		return nil, err
+	}
+	for _, e := range v.Annotations {
+		if strings.HasPrefix(e.Name, "export") {
+			if err := u.requireBase(e, owner, "Only nodes and resources are edited in the inspector.", "Node", "Resource"); err != nil {
+				return nil, err
+			}
+		}
 	}
 	if v.Property == nil {
 		m.getter, m.setter = "get_"+v.Name, "set_"+v.Name
@@ -1005,13 +1056,13 @@ func (u *unit) buildExterns() error {
 			switch {
 			case member.Func != nil:
 				var f *funcModel
-				if f, err = u.buildFunc(member.Func, true); err == nil {
+				if f, err = u.buildFunc(member.Func, e.Name, true); err == nil {
 					m.funcs = append(m.funcs, f)
 					err = u.unique(names, f.f.Pos, "func", f.f.Name)
 				}
 			case member.Var != nil:
 				var v *varModel
-				if v, err = u.buildVar(member.Var, true); err == nil {
+				if v, err = u.buildVar(member.Var, e.Name, true); err == nil {
 					m.vars = append(m.vars, v)
 					err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
 				}
@@ -1112,13 +1163,26 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			m.dtor = member.Dtor
 		case member.Func != nil:
 			var f *funcModel
-			if f, err = u.buildFunc(member.Func, false); err == nil {
+			if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
 				m.funcs = append(m.funcs, f)
 				err = u.unique(names, f.f.Pos, "func", f.f.Name)
 			}
+			if err == nil && f.deferral != "" {
+				// The deferred call runs the body, a separate method.
+				body := *f.f
+				body.Name, body.Annotations, body.Doc = bodyName(f), nil, nil
+				body.Params = nil
+				for _, p := range f.f.Params {
+					p := *p
+					p.Default = nil
+					body.Params = append(body.Params, &p)
+				}
+				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, hidden: true})
+				err = u.unique(names, f.f.Pos, "func", body.Name)
+			}
 		case member.Var != nil:
 			var v *varModel
-			if v, err = u.buildVar(member.Var, false); err == nil {
+			if v, err = u.buildVar(member.Var, c.Name, false); err == nil {
 				m.vars = append(m.vars, v)
 				err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
 				for _, s := range v.sections {

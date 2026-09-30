@@ -56,7 +56,7 @@ The chain of bases must end with a Godot class or a GD++ class of the package, e
 Externs can only declare:
 
 func
-  Functions, without a body and without default values. They can have @const, and two attributes only externs have: @deferred, and @rpc without arguments. The return type must match what the class returns.
+  Functions, without a body and without default values. They can have @const, @deferred, @thread_safe, and @rpc without arguments. The return type must match what the class returns.
 
 var
   Variables, without an initial value or a property body, and without annotations. They're read with get_NAME() and written with set_NAME(value).
@@ -134,7 +134,9 @@ extern Terrain {
 }
 ```
 
-Calls to a @deferred function go through call_deferred instead of call: they run later, at the end of the frame. So @deferred functions must return void. @deferred only exists in externs.
+Calls to a @deferred function go through call_deferred instead of call: they run later, at the end of the frame. So @deferred functions must return void. @thread_safe is the same with call_thread_safe, and needs an extern that extends Node.
+
+Classes have @deferred and @thread_safe too, which defer every call, not only those through the extern. So if the class already defers the function, its extern doesn't need to. See `gd++ man functions`.
 
 # @rpc
 

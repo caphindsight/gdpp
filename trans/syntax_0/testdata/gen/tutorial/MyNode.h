@@ -65,7 +65,7 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 321 "input.gd++"
+#line 331 "input.gd++"
 
 
     int64_t my_property = 0;
@@ -89,6 +89,8 @@ public:
 	void take_damage(int64_t amount);
 	Error _gdpp_rpc_take_damage(int64_t p_peer, int64_t amount);
 	void hurt_everyone(int64_t peer);
+	void respawn();
+	void _gdpp_body_respawn();
 	void emit_both_signals();
 	void foo();
 	int64_t get_simple_var() const;

@@ -25,14 +25,15 @@ void User::use() {
 		return;
 	}
 #endif
-#line 17 "input.gd++"
+#line 18 "input.gd++"
 
   float h = terrain->height(1.0, 2.0);
   terrain->rebuild();
+  terrain->refresh(1);
   terrain->set_size(3);
   (void) terrain->done(true);
 
-#line 36 "User.cpp"
+#line 37 "User.cpp"
 }
 
 gdpp::ExtPtr<Terrain2> User::get_terrain() const {

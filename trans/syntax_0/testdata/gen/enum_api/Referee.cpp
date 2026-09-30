@@ -19,7 +19,7 @@ void Referee::judge(Mode m) {
 		return;
 	}
 #endif
-#line 24 "input.gd++"
+#line 25 "input.gd++"
 
 #line 25 "Referee.cpp"
 }

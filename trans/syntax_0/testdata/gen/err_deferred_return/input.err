@@ -1,4 +1,4 @@
 input.gd++:2:13: The @deferred function f must return void.
  2 |   @deferred func f() -> int
    |             ^^^^
-Hint: Deferred calls run later, so they can't return a value.
+Hint: Its calls run later, so they can't return a value.

@@ -51,6 +51,7 @@ These are used by the code that GD++ generates. Your code rarely needs them:
 - gdpp::info<T>(name, ...) returns the PropertyInfo of a value of type T, for bindings. A pointer to a Node class gets a node-type hint, so the inspector only accepts nodes of that class.
 - gdpp::add_property_category(class, name) adds an inspector category, for @export_category.
 - gdpp::rpc_config<T>(node, method, ...) configures an RPC, for @rpc. It fails to compile if T doesn't extend Node.
+- gdpp::call_thread_safe(node, method, args...) calls a method with call_thread_safe, for @thread_safe. It fails to compile if the node's class doesn't extend Node.
 - gdpp::from_variant<T>(value) converts a Variant to T, enums included, for calls on externs.
 - GDPP_ENUM_TAG(TAG, NAME) makes a class's stand-in type for an enum bind as the enum NAME, e.g. "Player.Suit". GDPP_BITFIELD_TAG does the same for a bitfield. See `gd++ man enums`.
 - GDPP_BITFIELD(ENUM) gives the enum class of a bitfield the operators |, &, ^, ~, |=, &= and ^=.

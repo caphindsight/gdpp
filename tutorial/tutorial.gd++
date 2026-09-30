@@ -254,6 +254,16 @@ func hurt_everyone(peer: int) -> void {
 // Like `emit`, `rpc` makes remote calls look different from local ones. Both return an Error.
 // A remote call can't return a value, so any return value of an @rpc function is lost.
 
+// The @deferred attribute makes every call go through call_deferred, so the body runs at the end of the frame:
+
+@deferred
+func respawn() -> void {
+  gd::print("Respawned.");
+}
+
+// @thread_safe is the same with call_thread_safe: calls from other threads run later, on the main thread.
+// Both must return void. @thread_safe needs a class that extends Node.
+
 // You can combine attributes where it makes sense, e.g. @virtual @const.
 
 // Part VII. Constructors and destructors.
@@ -405,7 +415,7 @@ extern Terrain {
 // But each method call on an extern is resolved by name, as a string.
 // E.g. calling foo() on an ExtPtr<Terrain> is the same as calling call("foo") on the underlying Node*.
 
-// The @deferred attribute (allowed only in externs) makes calls go through call_deferred instead of call.
+// The @deferred attribute makes calls go through call_deferred instead of call. @thread_safe uses call_thread_safe.
 
 // In externs, @rpc takes no arguments: the class that defines the function configures it.
 // Call it as in classes, e.g. `rpc my_extern->qux();`.

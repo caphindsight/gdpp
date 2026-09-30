@@ -1,4 +1,5 @@
 class_name A
+extends Resource
 
-@deferred
+@thread_safe
 func f() -> void {}

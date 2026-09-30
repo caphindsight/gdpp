@@ -27,7 +27,7 @@ type symbol struct {
 	include    string // What follows #include. Declarations in the file are in "<Name>.h".
 	gdpp       bool   // Whether a GD++ file declares it: this one or another.
 	values     []meta.EnumValue
-	base       string   // For enums: the enum it extends, until enumValues adds the base's values to values.
+	base       string   // For enums: the enum it extends, until enumValues adds the base's values to values. For dependency classes and externs: their base, if known.
 	bitfield   bool     // For enums: whether its values are flags.
 	godotNames []string // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
 	class      *Class   // Set for classes in the file.

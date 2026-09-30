@@ -82,6 +82,13 @@ void rpc_config(T *p_node, const StringName &p_method, int64_t p_mode, int64_t p
 	p_node->rpc_config(p_method, config);
 }
 
+// call_thread_safe calls p_method on p_node with call_thread_safe, as @thread_safe does.
+template <typename T, typename... Args>
+void call_thread_safe(T *p_node, const StringName &p_method, const Args &...p_args) {
+	static_assert(std::is_base_of_v<Node, T>, "@thread_safe can only be used in classes that extend Node.");
+	p_node->call_thread_safe(p_method, p_args...);
+}
+
 // from_variant converts the result of a call resolved by name.
 template <typename T>
 T from_variant(const Variant &p_value) {

@@ -164,7 +164,7 @@ In order:
    - _bind_methods: binds each function (with its default values), each variable's getter and setter and its property (after the inspector sections it starts), each signal, each integer constant, and each value of each exposed enum (as a bitfield flag for a bitfield),
    - the constructor, if needed: RPC configurations, set_process(true) and set_physics_process(true) for overrides, the initial values of variables, then the ctor block. See `gd++ man lifecycle`.
    - the destructor, with the dtor block,
-   - each function: the editor check if the class isn't @tool, the GDVIRTUAL_CALL of a @virtual function, the @onready initial values in _ready, then the body; then its enum wrapper, default value functions and RPC helper,
+   - each function: the editor check if the class isn't @tool, the GDVIRTUAL_CALL of a @virtual function, the @onready initial values in _ready, then the body (or for @deferred and @thread_safe, the call that runs _gdpp_body_NAME later); then its enum wrapper, default value functions and RPC helper,
    - each variable's getter and setter, and their enum wrappers,
    - each signal's emit function,
    - the impl blocks.
@@ -178,6 +178,7 @@ get_NAME, set_NAME           a variable's getter and setter
 NAME (of a signal)           a signal's emit function, returning gdpp::Emitted
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc and rpc_id call
+_gdpp_body_FUNC              the body of a @deferred or @thread_safe function, which its deferred call runs
 _gdpp_FUNC                   the wrapper that binds a function with enums in its signature
 _gdpp_get_NAME, _gdpp_set_NAME   the wrappers that bind a variable of an enum type
 _gdpp_CLASS_ENUM             a class's stand-in type for an enum

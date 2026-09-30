@@ -34,7 +34,7 @@ type Dependency struct {
 	Include  string      // What follows #include, e.g. `<godot_cpp/classes/node3d.hpp>`, or `"Terrain.h"` for GD++ declarations.
 	Kind     Kind        //
 	Values   []EnumValue // For Kind Enum and GodotEnum: its values, so classes using the enum can expose a copy.
-	Base     string      // For Kind Enum: the enum it extends, if any. Values then holds only its own values.
+	Base     string      // For Kind Enum: the enum it extends, if any. Values then holds only its own values. For classes and externs: the base class, if known.
 	Gdpp     bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
 	Bitfield bool        // For Kind Enum and GodotEnum: whether it's a bitfield, whose values are flags.
 }

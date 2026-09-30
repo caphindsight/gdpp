@@ -42,6 +42,12 @@ These options work with every command. They can go before or after the command n
 --audit
   Ask before potentially dangerous operations, which normally happen without asking: currently, before deleting any directory that isn't empty. Can't be used with -f.
 
+--tty
+  Behave as if stdout and stderr were terminals: use colors, icons, spinners and the pager, even when the output is redirected. Prompts still need stdin to be a terminal. Can't be used with --notty.
+
+--notty
+  Behave as if the output were not a terminal: plain text, without styles, spinners or a pager, and no prompts. Can't be used with --tty.
+
 -L N, --log-depth N
   Show the last N lines of a running subprocess's output under its task, e.g. of the compiler during a build. Default: 4.
 
@@ -78,7 +84,7 @@ A command that changed something ends with "Success!". Commands that change noth
 
 Long running steps, e.g. compiling, are tasks. On a terminal, a task shows a spinner with its name, and under it the last few lines of what its subprocess prints (see -L). When the task ends, these lines disappear, and the spinner becomes an info icon. If the task fails, its whole output is printed, so you can see the error, and the task's name is repeated below a long output.
 
-Colors and icons are used only when both stdout and stderr are terminals. When either is redirected to a file or a pipe, all output is plain text, without styles, spinners or a pager. Then each task prints "Running task: ...", its output lines indented, and "Task succeeded: ..." or "Task failed: ...".
+Colors and icons are used only when both stdout and stderr are terminals. When either is redirected to a file or a pipe, all output is plain text, without styles, spinners or a pager. Then each task prints "Running task: ...", its output lines indented, and "Task succeeded: ..." or "Task failed: ...". --tty and --notty override this.
 
 Paths in messages are shown relative to the project, e.g. res://src/player.gd++, or else relative to the current directory. gd++ never prints your absolute paths, so logs are safe to share.
 

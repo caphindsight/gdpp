@@ -1,4 +1,5 @@
 class_name Game
+extends Resource
 
 enum Mode { EASY, NORMAL, HARD }
 

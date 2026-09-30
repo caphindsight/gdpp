@@ -116,6 +116,7 @@ func specNames(name string) ([]godotName, []trans.Dependency) {
 	var api struct {
 		Classes []struct {
 			Name         string `json:"name"`
+			Inherits     string `json:"inherits"`
 			IsRefcounted bool   `json:"is_refcounted"`
 		} `json:"classes"`
 	}
@@ -127,7 +128,7 @@ func specNames(name string) ([]godotName, []trans.Dependency) {
 		if class.IsRefcounted {
 			kind = trans.RefCounted
 		}
-		names = append(names, godotName{Name: class.Name, Include: godotCppInclude(class.Name), Kind: kind})
+		names = append(names, godotName{Name: class.Name, Include: godotCppInclude(class.Name), Kind: kind, Base: class.Inherits})
 	}
 	return names, specEnums(spec)
 }

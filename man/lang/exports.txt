@@ -128,6 +128,7 @@ A variable can have section annotations and one export annotation. Section annot
 
 - A variable can have only one export annotation: @export, @export_range, @export_enum, @export_flags, @export_file, @export_dir, @export_multiline, @export_placeholder or @export_storage.
 - Export annotations only go on variables, and not in externs.
+- Export and section annotations only work in classes that extend Node or Resource, since only those are edited in the inspector.
 - @export, @export_dir, @export_multiline and @export_storage take no arguments.
 - Arguments are numbers and strings, written as in GDScript.
 - Each annotation checks the variable's type:

@@ -404,6 +404,14 @@ func args(types []*gtype, list []*Param) string {
 	return strings.Join(as, "")
 }
 
+// deferredCall returns the call through which the @deferred or @thread_safe func f calls the method name of target.
+func deferredCall(f *funcModel, target, name string) string {
+	if f.deferral == "thread_safe" {
+		return fmt.Sprintf("gdpp::call_thread_safe(%s, GDPP_STRING_NAME(%q)%s)", target, name, args(f.params, f.f.Params))
+	}
+	return fmt.Sprintf("%s->call_deferred(GDPP_STRING_NAME(%q)%s)", target, name, args(f.params, f.f.Params))
+}
+
 // externDefs defines the members of an extern's wrapper class, which call the object's members by name.
 func (u *unit) externDefs(w *writer, e *externModel) {
 	for _, f := range e.funcs {
@@ -411,8 +419,8 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		w.ln("inline %s%s::%s(%s) const {", withSpace(f.ret.cpp), e.name, f.f.Name, params(nil, f.params, f.f.Params))
 		call := fmt.Sprintf("_gdpp_base->call(GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params))
 		switch {
-		case f.deferred:
-			w.ln("\t_gdpp_base->call_deferred(GDPP_STRING_NAME(%q)%s);", f.f.Name, args(f.params, f.f.Params))
+		case f.deferral != "":
+			w.ln("\t%s;", deferredCall(f, "_gdpp_base", f.f.Name))
 		case f.ret.void:
 			w.ln("\t%s;", call)
 		default:

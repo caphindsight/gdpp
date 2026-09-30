@@ -188,7 +188,11 @@ func packageDeps(files []gdppFile, names []godotName, enums []trans.Dependency, 
 		deps[i].Include = godot[class].Include
 	}
 	for _, n := range names {
-		deps = append(deps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind})
+		dep := trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind}
+		if n.Kind != trans.Other {
+			dep.Base = n.Base
+		}
+		deps = append(deps, dep)
 	}
 	kinds := gdppKinds(files, godot)
 	for _, f := range files {

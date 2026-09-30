@@ -23,6 +23,8 @@ var Args struct {
 	Force    bool        `arg:"-f,--yes" help:"assume yes on confirmation prompts"`
 	ForceNo  bool        `arg:"-n,--no" help:"assume no on confirmation prompts"`
 	Audit    bool        `arg:"--audit" help:"audit potentially dangerous operations"`
+	TTY      bool        `arg:"--tty" help:"use colors, spinners and the pager, as if the output were a terminal"`
+	NoTTY    bool        `arg:"--notty" help:"print plain output, as if the output were not a terminal"`
 	LogDepth int         `arg:"-L,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
 	TabWidth int         `arg:"-T,--tab-width" default:"2" placeholder:"N" help:"show tabs as this many columns in the pager"`
 	Version  bool        `arg:"--version" help:"print the version of GD++ and exit"`
@@ -50,6 +52,12 @@ func main() {
 	}
 	if Args.Force && Args.Audit {
 		LogFatal("Invalid arguments: -f/--yes and --audit cannot be used together.")
+	}
+	if Args.TTY && Args.NoTTY {
+		LogFatal("Invalid arguments: --tty and --notty cannot be used together.")
+	}
+	if Args.TTY || Args.NoTTY {
+		isTTY = Args.TTY
 	}
 
 	switch {

@@ -9,46 +9,55 @@ kind = "Object"
 name = "Node"
 include = "<godot_cpp/classes/node.hpp>"
 kind = "Object"
+base = "Object"
 
 [[dep]]
 name = "Node3D"
 include = "<godot_cpp/classes/node3d.hpp>"
 kind = "Object"
+base = "Node"
 
 [[dep]]
 name = "Engine"
 include = "<godot_cpp/classes/engine.hpp>"
 kind = "Object"
+base = "Object"
 
 [[dep]]
 name = "Camera3D"
 include = "<godot_cpp/classes/camera3d.hpp>"
 kind = "Object"
+base = "Node3D"
 
 [[dep]]
 name = "MeshInstance2D"
 include = "<godot_cpp/classes/mesh_instance2d.hpp>"
 kind = "Object"
+base = "Node2D"
 
 [[dep]]
 name = "MeshInstance3D"
 include = "<godot_cpp/classes/mesh_instance3d.hpp>"
 kind = "Object"
+base = "GeometryInstance3D"
 
 [[dep]]
 name = "RefCounted"
 include = "<godot_cpp/classes/ref_counted.hpp>"
 kind = "RefCounted"
+base = "Object"
 
 [[dep]]
 name = "Resource"
 include = "<godot_cpp/classes/resource.hpp>"
 kind = "RefCounted"
+base = "RefCounted"
 
 [[dep]]
 name = "Texture2D"
 include = "<godot_cpp/classes/texture2d.hpp>"
 kind = "RefCounted"
+base = "Texture"
 
 [[dep]]
 name = "Level"
@@ -65,30 +74,35 @@ name = "Road"
 include = '"Road.h"'
 kind = "Extern"
 gdpp = true
+base = "Node"
 
 [[dep]]
 name = "Settings"
 include = '"Settings.h"'
 kind = "RefCountedExtern"
 gdpp = true
+base = "Resource"
 
 [[dep]]
 name = "Door"
 include = '"Door.h"'
 kind = "Object"
 gdpp = true
+base = "Node"
 
 [[dep]]
 name = "Key"
 include = '"Key.h"'
 kind = "RefCounted"
 gdpp = true
+base = "Resource"
 
 [[dep]]
 name = "Wall"
 include = '"Wall.h"'
 kind = "Object"
 gdpp = true
+base = "Node3D"
 
 [[dep]]
 name = "TypedArray"
@@ -99,11 +113,13 @@ kind = "Other"
 name = "MultiplayerAPI"
 include = "<godot_cpp/classes/multiplayer_api.hpp>"
 kind = "Object"
+base = "RefCounted"
 
 [[dep]]
 name = "MultiplayerPeer"
 include = "<godot_cpp/classes/multiplayer_peer.hpp>"
 kind = "RefCounted"
+base = "PacketPeer"
 
 
 [[dep]]
@@ -171,6 +187,7 @@ values = [
 name = "GeometryInstance3D"
 include = "<godot_cpp/classes/geometry_instance3d.hpp>"
 kind = "Object"
+base = "Node3D"
 
 [[dep]]
 name = "KeyCode"
