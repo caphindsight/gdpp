@@ -28,11 +28,12 @@ func withDocFS(t *testing.T) *memFS {
 	write(pkgDir+".gd++pkg/build/godot-cpp/gen/include/godot_cpp/variant/array.hpp",
 		"namespace godot {\nclass Array : public Object {\npublic:\n\tvoid push_back(const Variant &p_value);\n\tvoid push_back(int p_value);\n};\n}\n")
 	write(pkgDir+".gd++pkg/build/godot-cpp/gen/include/godot_cpp/classes/object.hpp",
-		"namespace godot {\nclass Object {\npublic:\n\t// Frees it.\n\tvoid free();\n};\n}\n")
+		"namespace godot {\nclass Object {\npublic:\n\t// Frees it.\n\tvoid free();\n};\nenum Error {\n\tOK,\n\tFAILED = 1\n};\n}\n")
 	write(pkgDir+".gd++pkg/godot_names.toml", encodeToml(godotNamesCache{godotNamesVersion, []godotName{
 		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other, "class", "Object"},
 		{"CharString", "<godot_cpp/variant/char_string.hpp>", trans.Other, "alias", "CharStringT<char>"},
 		{"CharStringT", "<godot_cpp/variant/char_string.hpp>", trans.Other, "template class", ""},
+		{"Error", "<godot_cpp/classes/object.hpp>", trans.Other, "enum", ""},
 		{"Object", "<godot_cpp/classes/object.hpp>", trans.Object, "class", ""},
 		{"TypedArray", "<godot_cpp/variant/typed_array.hpp>", trans.Other, "template class", "Array"},
 		{"TypedDictionary", "<godot_cpp/variant/typed_dictionary.hpp>", trans.Other, "template class", "private Dictionary"},
@@ -46,19 +47,21 @@ func TestDoc(t *testing.T) {
 		args []string
 		want string
 	}{
-		"class": {[]string{"TypedArray"}, "// An array of T.\ntemplate <typename T>\nclass TypedArray : public Array\n    #include <godot_cpp/variant/typed_array.hpp>\n\n" +
-			"    // Makes one.\n    TypedArray()\n    void assign(const Array &p_array)\n" +
-			"\nInherited from Array:\n    void push_back(const Variant &p_value)\n    void push_back(int p_value)\n" +
-			"\nInherited from Object:\n    // Frees it.\n    void free()\n"},
-		"generated class": {[]string{"Array"}, "class Array : public Object\n    #include <godot_cpp/variant/array.hpp>\n\n" +
-			"    void push_back(const Variant &p_value)\n    void push_back(int p_value)\n" +
-			"\nInherited from Object:\n    // Frees it.\n    void free()\n\nSee Godot's help for a description of Array.\n"},
-		"member of a base's base": {[]string{"TypedArray.free"}, "// Frees it.\nvoid free()\n    #include <godot_cpp/classes/object.hpp>\n"},
-		"alias": {[]string{"CharString"}, "// A string of chars.\nusing CharString = CharStringT<char>\n    #include <godot_cpp/variant/char_string.hpp>\n\n" +
-			"template <typename T>\nclass CharStringT\n    #include <godot_cpp/variant/char_string.hpp>\n\n    const T *get_data() const\n"},
-		"alias member":     {[]string{"CharString.get_data"}, "const T *get_data() const\n    #include <godot_cpp/variant/char_string.hpp>\n"},
-		"member":           {[]string{"TypedArray.assign"}, "void assign(const Array &p_array)\n    #include <godot_cpp/variant/typed_array.hpp>\n"},
-		"inherited member": {[]string{"TypedArray.push_back"}, "void push_back(const Variant &p_value)\nvoid push_back(int p_value)\n    #include <godot_cpp/variant/array.hpp>\n"},
+		"class": {[]string{"TypedArray"}, "#include <godot_cpp/variant/typed_array.hpp>\n\n// An array of T.\ntemplate <typename T>\nclass TypedArray : public Array {\n" +
+			"  // Makes one.\n  TypedArray();\n  void assign(const Array &p_array);\n" +
+			"\n  // Inherited from Array:\n  void push_back(const Variant &p_value);\n  void push_back(int p_value);\n" +
+			"\n  // Inherited from Object:\n\n  // Frees it.\n  void free();\n};\n"},
+		"generated class": {[]string{"Array"}, "#include <godot_cpp/variant/array.hpp>\n\nclass Array : public Object {\n" +
+			"  void push_back(const Variant &p_value);\n  void push_back(int p_value);\n" +
+			"\n  // Inherited from Object:\n\n  // Frees it.\n  void free();\n};\n\nSee Godot's help for a description of Array.\n"},
+		"enum":                    {[]string{"Error"}, "#include <godot_cpp/classes/object.hpp>\n\nenum Error {\n  OK,\n  FAILED = 1,\n};\n\nSee Godot's help for a description of Error.\n"},
+		"enum value":              {[]string{"Error.FAILED"}, "#include <godot_cpp/classes/object.hpp>\n\nFAILED = 1,\n"},
+		"member of a base's base": {[]string{"TypedArray.free"}, "#include <godot_cpp/classes/object.hpp>\n\n// Frees it.\nvoid free();\n"},
+		"alias": {[]string{"CharString"}, "#include <godot_cpp/variant/char_string.hpp>\n\n// A string of chars.\nusing CharString = CharStringT<char>;\n" +
+			"\ntemplate <typename T>\nclass CharStringT {\n  const T *get_data() const;\n};\n"},
+		"alias member":     {[]string{"CharString.get_data"}, "#include <godot_cpp/variant/char_string.hpp>\n\nconst T *get_data() const;\n"},
+		"member":           {[]string{"TypedArray.assign"}, "#include <godot_cpp/variant/typed_array.hpp>\n\nvoid assign(const Array &p_array);\n"},
+		"inherited member": {[]string{"TypedArray.push_back"}, "#include <godot_cpp/variant/array.hpp>\n\nvoid push_back(const Variant &p_value);\nvoid push_back(int p_value);\n"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -73,7 +76,7 @@ func TestDoc(t *testing.T) {
 func TestDocPackagePath(t *testing.T) {
 	m := withDocFS(t)
 	m.cwd = "/games/my_game"
-	want := "void assign(const Array &p_array)\n    #include <godot_cpp/variant/typed_array.hpp>\n"
+	want := "#include <godot_cpp/variant/typed_array.hpp>\n\nvoid assign(const Array &p_array);\n"
 	if out := captureStdout(t, (&CmdDoc{Args: []string{"src/pkg", "TypedArray.assign"}}).Run); out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -83,6 +86,7 @@ func TestDocIndex(t *testing.T) {
 	want := "class Array: Object\n" +
 		"alias CharString = CharStringT<char>\n" +
 		"template class CharStringT\n" +
+		"enum Error\n" +
 		"class Object\n" +
 		"template class TypedArray: Array\n" +
 		"template class TypedDictionary: private Dictionary\n"
@@ -137,5 +141,15 @@ func TestHighlightCpp(t *testing.T) {
 	withTTY(t, false)
 	if got := highlightCpp("const Array", nil); got != "const Array" {
 		t.Errorf("highlightCpp without styles = %q, want it unchanged", got)
+	}
+}
+
+func TestDocTabWidth(t *testing.T) {
+	withDocFS(t)
+	Args.TabWidth = 4
+	t.Cleanup(func() { Args.TabWidth = 2 })
+	want := "#include <godot_cpp/variant/char_string.hpp>\n\ntemplate <typename T>\nclass CharStringT {\n    const T *get_data() const;\n};\n"
+	if out := captureStdout(t, (&CmdDoc{Args: []string{"CharStringT"}}).Run); out != want {
+		t.Errorf("output = %q, want %q", out, want)
 	}
 }

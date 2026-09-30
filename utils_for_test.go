@@ -21,6 +21,7 @@ import (
 // filesystem without withMemFS panics instead of using the real disk.
 func TestMain(m *testing.M) {
 	Args.LogDepth = 4
+	Args.TabWidth = 2
 	fsys = nil
 	os.Exit(m.Run())
 }

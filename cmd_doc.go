@@ -62,31 +62,41 @@ func (c *CmdDoc) Run() {
 			for _, d := range t.docs {
 				for _, m := range d.members {
 					if m.name == member {
-						text += Styled(m.comments, CodeComment) + highlightCpp(m.text, types) + "\n"
+						text += Styled(m.comments, CodeComment) + highlightCpp(m.text, types) + d.terminator() + "\n"
 					}
 				}
 			}
 			if text != "" {
-				PageResult(text + docInclude(t))
+				PageResult(docInclude(t) + "\n" + text)
 				return
 			}
 		}
 		LogFatal("Name %s has no public member %s.", name, member)
 	}
-	// The name is shown in full, and so is the type it aliases. Base classes only show their members.
-	result, full, described := "", true, ""
-	for _, t := range chain {
-		switch members := memberText(t.docs, types); {
-		case full:
-			result += docText(t, types) + members
-			if t.generated {
-				described = t.Name
-			}
-			if full = t.isAlias(); full {
-				result += "\n"
-			}
-		case members != "":
-			result += "\nInherited from " + t.Name + ":" + members
+	// The name is shown in full, and so is the type it aliases. Base classes only show their members, inside the
+	// name's braces.
+	k := slices.IndexFunc(chain, func(t docType) bool { return !t.isAlias() })
+	if k < 0 {
+		k = len(chain) - 1
+	}
+	inherited := ""
+	for _, t := range chain[k+1:] {
+		members := ""
+		for _, d := range t.docs {
+			members += memberText(d, types)
+		}
+		if members != "" {
+			inherited += "\n" + indent(Styled("// Inherited from "+t.Name+":", CodeComment)) + members
+		}
+	}
+	result, described := "", ""
+	for i, t := range chain[:k+1] {
+		if i == 0 || t.Include != chain[i-1].Include {
+			result += docInclude(t)
+		}
+		result += "\n" + docText(t, types, inherited, i == k)
+		if t.generated {
+			described = t.Name
 		}
 	}
 	if described != "" {
@@ -226,37 +236,59 @@ func godotHeader(pkg Package, n godotName) (Path, bool) {
 	return Path{}, false
 }
 
-// docText returns the declarations of t, each with its comments, then its
-// include.
-func docText(t docType, types map[string]bool) string {
+// docText returns the declarations of t, each with its comments and public
+// members in braces. inherited goes in the braces of the last one if last is
+// set.
+func docText(t docType, types map[string]bool, inherited string, last bool) string {
 	text := ""
-	for _, d := range t.docs {
-		text += Styled(d.comments, CodeComment) + highlightCpp(d.head, types) + "\n"
+	for i, d := range t.docs {
+		body := strings.TrimPrefix(memberText(d, types), "\n")
+		if last && i == len(t.docs)-1 {
+			body += inherited
+		}
+		text += Styled(d.comments, CodeComment) + highlightCpp(d.head, types)
+		switch {
+		case body == "":
+			text += ";\n"
+		case strings.HasPrefix(d.head, "namespace"):
+			text += " {\n" + body + "}\n"
+		default:
+			text += " {\n" + body + "};\n"
+		}
 	}
-	return text + docInclude(t)
+	return text
 }
 
 // docInclude returns the include line of t.
 func docInclude(t docType) string {
-	return "    " + Styled("#include", CodePreProc) + " " + t.Include + "\n"
+	return Styled("#include", CodePreProc) + " " + t.Include + "\n"
 }
 
-// memberText returns the members of docs, indented, after a blank line.
-// Members with comments get a blank line before them too.
-func memberText(docs []cppDoc, types map[string]bool) string {
+// terminator returns what ends a member of d: "," for an enum's values, ";"
+// otherwise.
+func (d cppDoc) terminator() string {
+	if strings.HasPrefix(d.head, "enum") {
+		return ","
+	}
+	return ";"
+}
+
+// memberText returns the members of d, indented, each with a blank line
+// before it if it has comments.
+func memberText(d cppDoc, types map[string]bool) string {
 	var text strings.Builder
-	for _, d := range docs {
-		for _, m := range d.members {
-			if text.Len() == 0 || m.comments != "" {
-				text.WriteString("\n")
-			}
-			text.WriteString(indent(Styled(m.comments, CodeComment) + highlightCpp(m.text, types)))
+	for _, m := range d.members {
+		if m.comments != "" {
+			text.WriteString("\n")
 		}
+		text.WriteString(indent(Styled(m.comments, CodeComment) + highlightCpp(m.text, types) + d.terminator()))
 	}
 	return text.String()
 }
 
-// indent returns the lines of text, each indented and ending with "\n".
+// indent returns the lines of text, each indented by --tab-width spaces and
+// ending with "\n".
 func indent(text string) string {
-	return "    " + strings.ReplaceAll(strings.TrimSuffix(text, "\n"), "\n", "\n    ") + "\n"
+	tab := strings.Repeat(" ", Args.TabWidth)
+	return tab + strings.ReplaceAll(strings.TrimSuffix(text, "\n"), "\n", "\n"+tab) + "\n"
 }

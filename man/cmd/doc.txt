@@ -35,23 +35,26 @@ NAME.MEMBER
 For a class:
 
 ```cpp
+#include <godot_cpp/variant/typed_array.hpp>
+
 template <typename T>
-class TypedArray : public Array
-    #include <godot_cpp/variant/typed_array.hpp>
+class TypedArray : public Array {
+  TypedArray();
+  void assign(const Array &p_array);
+  ...
 
-    TypedArray()
-    void assign(const Array &p_array)
-    ...
+  // Inherited from Array:
+  void push_back(const Variant &p_value);
+  ...
 
-Inherited from Array:
-    void push_back(const Variant &p_value)
-    ...
-
-Inherited from Object:
-    ...
+  // Inherited from Object:
+  ...
+};
 ```
 
-The name's declarations come first, each with the comments right before it in the header, then the #include line to use it, then its public members. For an alias, the type it aliases follows in full. Then come the members of each base class, in order. For classes generated from the API spec, a last line says "See Godot's help for a description of NAME.".
+The output reads like a C++ header. First comes the #include line to use the name, then its declarations, each with the comments right before it in the header, and its public members in braces, indented by the tab width (see `-T` in `gd++ man cli`). For an alias, the type it aliases follows in full. The members of each base class come last in the braces, in order. For classes generated from the API spec, a last line says "See Godot's help for a description of NAME.".
+
+With NAME.MEMBER, the #include line of the class that declares the member comes first, then the member.
 
 The index lists one type per line:
 
