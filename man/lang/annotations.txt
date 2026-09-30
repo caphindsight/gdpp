@@ -34,6 +34,12 @@ A declaration's doc comment can come before its annotations or between them, but
 @icon(PATH)
   The class's icon in the editor: a string with a res:// or pkg:// path. See `gd++ man classes`.
 
+@trace(GROUPS...)
+  Trace all its functions (except _process and _physics_process), variables and signals, and print the creation and destruction of its objects. See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time all its functions, and the getters and setters of its properties with get and set blocks. See "@trace and @profile" below.
+
 # Functions of classes
 
 @override
@@ -56,6 +62,12 @@ A declaration's doc comment can come before its annotations or between them, but
 
 @thread_safe
   Like @deferred, with call_thread_safe: calls from other threads run later, on the main thread. Only in classes that extend Node. See `gd++ man functions`.
+
+@trace(GROUPS...)
+  Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time each call, for the editor's monitors and the profile table. See "@trace and @profile" below.
 
 These can't be combined: @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe; @virtual with @override, @rpc, @deferred or @thread_safe; @override with @rpc, @deferred or @thread_safe; @deferred with @thread_safe.
 
@@ -118,7 +130,20 @@ See `gd++ man externs`.
 
 A variable can have at most one export annotation, and any section annotations. Export and section annotations only work in classes that extend Node or Resource. See `gd++ man exports`.
 
+@trace(GROUPS...)
+  Print each change of its value, with the function of its class that made it. See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time its getter and setter. See "@trace and @profile" below.
+
 Variables of externs take no annotations.
+
+# Signals
+
+@trace(GROUPS...)
+  Print each emission with emit, with its arguments. See "@trace and @profile" below.
+
+Signals of externs take no annotations.
 
 # Enums
 
@@ -130,9 +155,35 @@ Variables of externs take no annotations.
 @global
   Put a decl or impl block outside the class and outside namespace godot. See `gd++ man code`.
 
+# @trace and @profile
+
+@trace and @profile are for debugging. They generate code only in builds that turn them on, so they can stay in your code:
+
+```gd++
+@trace("combat")
+var health: int = 100
+
+@trace("combat", "ai")
+@profile
+func take_damage(amount: int) -> bool {
+  health -= amount;
+  return health <= 0;
+}
+```
+
+```sh
+gd++ build --trace combat              # traces health and take_damage
+gd++ build --profile Player            # profiles take_damage
+gd++ build                             # neither: the annotations generate nothing
+```
+
+Their arguments are names of groups, in double quotes: @trace("combat") is in the group combat. Every annotation is also in the group named after its class, e.g. Player, without an argument. `gd++ build --trace GROUP...` turns on the @trace annotations in those groups, `--profile GROUP...` the @profile ones, and `all` all of them. A member is on if its own annotation is on, or its class's.
+
+They combine with every other annotation, and with each other. Externs and their members can't have them. See `gd++ man debugging` for what they print, how to read it, and how to use them well.
+
 # No annotations
 
-Signals, enum values, integer constants, externs, ctor, dtor, import and noimport take no annotations.
+Enum values, integer constants, externs, ctor, dtor, import and noimport take no annotations.
 
 # Errors
 
@@ -140,6 +191,7 @@ Signals, enum values, integer constants, externs, ctor, dtor, import and noimpor
 - An annotation in the wrong place is an error, e.g. "Annotation @tool can't be used on a func.".
 - An annotation can be used once per declaration: "Annotation @export is used twice.".
 - Annotations that take no arguments reject them: "Annotation @override takes no arguments.".
+- @trace and @profile take only names in double quotes: "Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").".
 - Some annotations need a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
 - An annotation that isn't followed by a declaration is an error: "Expected a declaration after the annotation, ...".
 
@@ -153,4 +205,4 @@ Some GDScript annotations have no GD++ version, since GD++ does the same another
 
 # See also
 
-`gd++ man classes`, `gd++ man functions`, `gd++ man variables`, `gd++ man exports`, `gd++ man externs`.
+`gd++ man classes`, `gd++ man functions`, `gd++ man variables`, `gd++ man exports`, `gd++ man externs`, `gd++ man debugging`.

@@ -101,6 +101,17 @@ func jump() -> void {
 }
 ```
 
+# Tracing signals
+
+For debugging, a signal can have @trace:
+
+```gd++
+@trace
+signal health_changed(health: int)
+```
+
+In builds with `--trace Player` (the class's name) or `--trace all`, each emit of the signal prints a line with its arguments, before its handlers run, e.g. `⚡ Player "Hero" emits health_changed(health: 70)`. The line comes from the signal's emit function, so emissions with emit_signal by name, and from GDScript, don't show. In other builds, @trace generates nothing. See `gd++ man debugging`.
+
 # Example
 
 ```gd++
@@ -124,4 +135,4 @@ func _pressed() -> void {
 
 # See also
 
-`gd++ man functions`, `gd++ man externs`, `gd++ man code`.
+`gd++ man functions`, `gd++ man externs`, `gd++ man code`, `gd++ man debugging`.

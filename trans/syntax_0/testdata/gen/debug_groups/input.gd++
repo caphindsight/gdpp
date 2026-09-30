@@ -1,0 +1,24 @@
+class_name Enemy
+extends Node
+
+@trace("combat")
+var health: int
+
+@trace
+func think() -> void {}
+
+@trace("combat", "ai")
+@profile("ai")
+func attack(target: Node) -> int {
+  return 1;
+}
+
+@profile
+func move() -> void {}
+
+@profile
+var speed: float
+
+var ammo: int {
+  get { return 3; }
+}

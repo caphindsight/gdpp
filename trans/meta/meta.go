@@ -73,8 +73,12 @@ type Declaration struct {
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.
 type Options struct {
-	Dependencies []Dependency //
-	SourceName   string       // How #line names the GD++ file. Default: its path.
+	Dependencies  []Dependency //
+	SourceName    string       // How #line names the GD++ file. Default: its path.
+	Trace         []string     // The groups whose @trace annotations generate code, or "all". Default: none.
+	Profile       []string     // The groups whose @profile annotations generate code, or "all". Default: none.
+	ProfilePeriod int          // With Profile, the seconds between the tables of timings printed while the game runs. Default: 0, none.
+	ProfileFPS    int          // With ProfilePeriod, the frame rate that the table's budget column assumes. Default: 0, 60 FPS.
 }
 
 // File is a generated C++ file. Each declaration of a GD++ file gets a header, named "<Name>.h", and each class

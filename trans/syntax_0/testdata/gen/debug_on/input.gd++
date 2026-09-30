@@ -1,0 +1,50 @@
+@trace
+@profile
+class_name Player
+extends Node
+
+enum Mood { CALM, ANGRY }
+
+var health: int = 100
+var items: Array
+var ammo: int {
+  decl {
+    int64_t ammo_ = 0;
+  }
+  get { return ammo_; }
+  set(value) { ammo_ = value; }
+}
+
+signal died(cause: Mood)
+
+ctor {
+  gd::print("created");
+}
+
+func take_damage(amount: int, mood: Mood = Mood::ANGRY) -> bool {
+  health -= amount;
+  return health <= 0;
+}
+
+@static
+func create() -> Player {
+  return memnew(Player);
+}
+
+@const
+func is_alive() -> bool {
+  return health > 0;
+}
+
+@virtual
+func score() -> int {
+  return health;
+}
+
+@deferred
+func respawn() -> void {
+  health = 100;
+}
+
+@override
+func _process(delta: float) -> void {}

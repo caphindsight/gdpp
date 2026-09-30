@@ -125,6 +125,8 @@ A variable can have only one export annotation.
 Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.
 The icon's path must start with res:// or pkg://.
 The channel must be the last argument of @rpc.
+Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").
+Annotation @profile can't be used on a signal.
 ```
 
 Externs:
@@ -135,6 +137,8 @@ Extern variables can't have an initial value or a property body.
 Externs can't contain a ctor.
 The @deferred function f must return void.
 Annotation @thread_safe can only be used in classes that extend Node, which E doesn't.
+Annotation @trace can't be used on a func.
+  In externs: trace the class that defines the function instead.
 ```
 
 Package-wide, from `gd++ build`:

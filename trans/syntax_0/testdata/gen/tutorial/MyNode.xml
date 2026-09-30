@@ -17,6 +17,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="deal_damage">
+			<return type="int" />
+			<param index="0" name="amount" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="emit_both_signals">
 			<return type="void" />
 			<description>

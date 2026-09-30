@@ -1,4 +1,4 @@
-The runtime header: gd, float64_t, gd_assert, externs and other helpers
+The runtime header: gd, float64_t, gd_assert, externs, tracing and other helpers
 
 Every file that GD++ generates includes one header, the GD++ runtime: gd++/syntax_0.hpp, for syntax 0. It holds the helpers that generated code needs, and a few that your C++ code can use. It doesn't depend on your code: it's the same for every package. To read it:
 
@@ -11,6 +11,8 @@ In a build, it's in the build cache, at gdpp/gd++/syntax_0.hpp.
 # What it includes
 
 The runtime header includes the godot-cpp headers that generated code always needs, so your code can use their names without GD++ finding them first: Engine, Node, Object, RefCounted, Ref, Resource, ResourceLoader, ProjectSettings, the global constants (e.g. Error and PropertyHint), ClassDB, Variant, TypedArray, TypedDictionary and UtilityFunctions, and <cstdint>, <cstddef> and <type_traits>.
+
+A source file that defines GDPP_DEBUGGING before its includes also gets the code of @trace and @profile, and the headers it needs: OS, Performance, SceneTree, Window, and standard headers like <atomic>, <chrono>, <functional>, <mutex> and <vector>. GD++ defines it in the sources of classes whose @trace or @profile annotations are on, so other sources don't compile any of it. See `gd++ man debugging`.
 
 # For your code
 
@@ -57,10 +59,22 @@ These are used by the code that GD++ generates. Your code rarely needs them:
 - GDPP_BITFIELD(ENUM) gives the enum class of a bitfield the operators |, &, ^, ~, |=, &= and ^=.
 - Specializations of godot-cpp's GetTypeInfo, PtrToArg and VariantCaster for ExtPtr and ExtRef, so bindings see externs as their base classes.
 
+With GDPP_DEBUGGING, for @trace and @profile. See `gd++ man debugging`:
+
+- gdpp::Trace prints a call of a @trace function: its start, with its arguments, when created, and its end, with its result and time, when destroyed. Its ret(value) records the result and returns it.
+- gdpp::Watch checks the @trace variables of a class during a call of one of its functions, and prints their changes.
+- gdpp::trace_emit(object, signal, args...) prints an emission of a @trace signal, and gdpp::trace_lifetime(class, object, created) the creation or destruction of an object of a @trace class.
+- gdpp::ProfileStats holds the timings of one @profile function, from all threads, and registers its monitor. gdpp::Profile times one call.
+- gdpp::print_profile() prints the table of timings, and gdpp::profile_monitor(index) returns a monitor's value.
+- gdpp::describe(object) and gdpp::repr(value) turn objects and values into the text that trace lines show.
+- gdpp::now() returns the steady clock's time in nanoseconds.
+
+Arguments and variables are passed as alternating names and values, e.g. `gdpp::Trace t("Player", this, "take_damage", "amount", amount);`. Don't use these in your own code: they only exist in sources that GD++ compiles with tracing or profiling on, so the same code fails to compile in other builds.
+
 # Stability
 
 The runtime header belongs to a syntax version: code generated with syntax 0 uses syntax_0.hpp. Future syntax versions get their own runtime header, so packages on an older syntax keep working.
 
 # See also
 
-`gd++ man code`, `gd++ man externs`, `gd++ man generated`, `gd++ man trans`.
+`gd++ man code`, `gd++ man externs`, `gd++ man generated`, `gd++ man trans`, `gd++ man debugging`.

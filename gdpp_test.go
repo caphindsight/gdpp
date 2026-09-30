@@ -84,7 +84,7 @@ func runGdppSteps(docs bool) (classes []gdppClass, generated bool) {
 		cache.WriteString(encodeToml(godotNamesCache{godotNamesVersion, testGodotNames}))
 	}
 	names := loadGodotNames(pkg, func() { generated = true })
-	classes = transpilePackage(pkg, listGdppFiles(p, pkg), names, docs)
+	classes = transpilePackage(pkg, listGdppFiles(p, pkg), names, BuildOptions{NoDoc: !docs})
 	generateRegisterTypes(pkg, classes)
 	return classes, generated
 }

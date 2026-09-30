@@ -1,4 +1,4 @@
-Classes: declaring Godot classes, bases, @tool, @game_only and @icon
+Classes: declaring Godot classes, bases, @tool, @game_only, @icon, @trace and @profile
 
 A GD++ class is a Godot class, like Node3D or Resource: once built, it shows up in the editor's "Create New Node" dialog (or the resource list), GDScript can use it, and it can be the base of scripts. This page explains how to declare classes, and what GD++ makes of them.
 
@@ -128,9 +128,20 @@ class Bullet {
 
 GD++ writes the icons into the package's .gdextension file. A missing icon file is shown in red by `gd++ ls`.
 
+# @trace and @profile
+
+```gd++
+@trace("loot")
+@profile
+class_name Chest
+extends Node3D
+```
+
+For debugging. @trace on a class traces all its functions (except _process and _physics_process, which run every frame), variables and signals, and prints each creation and destruction of its objects. @profile times all its functions, and the getters and setters of its properties. They only generate code in builds that turn on one of their groups, here `--trace loot`, `--trace Chest` or `--trace all` for @trace, and `--profile Chest` or `--profile all` for @profile. Like @tool, they're not inherited. See `gd++ man debugging`.
+
 # Annotations and doc comments
 
-A class can have @tool or @game_only, and @icon, in any order, and a doc comment, before class_name or class:
+A class can have @tool or @game_only, @icon, @trace and @profile, in any order, and a doc comment, before class_name or class:
 
 ```gd++
 /// The player's character.
@@ -242,4 +253,4 @@ class SpawnInfo {
 
 # See also
 
-`gd++ man files`, `gd++ man types`, `gd++ man generated`, `gd++ man externs`.
+`gd++ man files`, `gd++ man types`, `gd++ man generated`, `gd++ man externs`, `gd++ man debugging`.

@@ -20,6 +20,7 @@ import (
 
 // TestGenerate generates code for every case in testdata/gen/<case>/input.gd++ (plus the tutorial) and compares
 // it with the golden files next to it: the generated <Name>.h and <Name>.cpp, decls.txt and <Class>.xml, or input.err.
+// An options.toml next to input.gd++ sets the groups of @trace and @profile that are on, as `trace = ["all"]`.
 func TestGenerate(t *testing.T) {
 	var file struct {
 		Dep []struct {
@@ -52,11 +53,15 @@ func TestGenerate(t *testing.T) {
 				t.Fatal(err)
 			}
 			src := string(data)
-			got := generate(t, src, opts)
+			caseOpts := opts
+			if _, err := toml.DecodeFile(filepath.Join(dir, "options.toml"), &caseOpts); err != nil && !os.IsNotExist(err) {
+				t.Fatal(err)
+			}
+			got := generate(t, src, caseOpts)
 			if *update {
 				old, _ := filepath.Glob(filepath.Join(dir, "*"))
 				for _, path := range old {
-					if filepath.Base(path) != "input.gd++" {
+					if name := filepath.Base(path); name != "input.gd++" && name != "options.toml" {
 						os.Remove(path)
 					}
 				}
@@ -70,7 +75,7 @@ func TestGenerate(t *testing.T) {
 			}
 			files, _ := filepath.Glob(filepath.Join(dir, "*"))
 			for _, path := range files {
-				if name := filepath.Base(path); name != "input.gd++" && got[name] == "" {
+				if name := filepath.Base(path); name != "input.gd++" && name != "options.toml" && got[name] == "" {
 					t.Errorf("Golden %s wasn't generated.", name)
 				}
 			}

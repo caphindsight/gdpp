@@ -93,6 +93,10 @@ Note step 2: values from the scene overwrite the initial values, since they come
 
 In the editor, Godot doesn't create objects of classes without @tool: it creates placeholders, which hold property values but run no code. So neither their constructor nor their destructor, nor any other of their functions, runs in the editor. Classes with @tool run everything in the editor too. Other code can still create an object of a runtime class with memnew, and then its code runs: @game_only classes check for the editor in every function, to prevent that. See `gd++ man classes`.
 
+# Tracing objects' lives
+
+With @trace on a class, and a build that turns it on, the constructor prints a line when an object is created, and the destructor when it's freed, e.g. `+ Bullet#28347 created` and `- Bullet#28347 freed`. They name the object by its instance id, since a node has no name yet in its constructor. An id without a "freed" line, once the object should be gone, points to a leak. See `gd++ man debugging`.
+
 # Notifications
 
 godot-cpp calls a class's _notification(int p_what) method, if it has one, for every notification, e.g. NOTIFICATION_PREDELETE. It's not a virtual function, so declare it in a decl block, not with @override:
@@ -109,4 +113,4 @@ decl {
 
 # See also
 
-`gd++ man variables`, `gd++ man functions`, `gd++ man classes`.
+`gd++ man variables`, `gd++ man functions`, `gd++ man classes`, `gd++ man debugging`.

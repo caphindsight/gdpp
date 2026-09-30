@@ -16,6 +16,8 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+
+	"gd++/trans"
 )
 
 var (
@@ -39,6 +41,42 @@ type BuildOptions struct {
 	Jobs  int  `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
 	Doc   bool `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
 	NoDoc bool `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
+	DebugOptions
+}
+
+// DebugOptions are the options of the build and trans commands that turn on
+// @trace and @profile annotations.
+type DebugOptions struct {
+	Trace         []string `arg:"--trace" placeholder:"GROUP" help:"turn on the @trace annotations of these groups, or of all"`
+	Profile       []string `arg:"--profile" placeholder:"GROUP" help:"turn on the @profile annotations of these groups, or of all"`
+	ProfilePrint  bool     `arg:"--profile-print" help:"with --profile, also print a table of the timings every few seconds while the game runs"`
+	ProfilePeriod *int     `arg:"--profile-period" placeholder:"SECONDS" help:"with --profile-print, the seconds between tables [default: 10]"`
+	ProfileFPS    int      `arg:"--profile-fps" placeholder:"FPS" help:"with --profile-print, the frame rate that the table's budget column assumes [default: 60]"`
+}
+
+// validate asserts the group names are valid.
+func (o DebugOptions) validate() {
+	for _, g := range slices.Concat(o.Trace, o.Profile) {
+		Assert(classNameRegexp.MatchString(g), "Invalid arguments: %q is not a valid group name.", g)
+	}
+	Assert(!o.ProfilePrint || len(o.Profile) > 0, "Invalid arguments: --profile-print needs --profile.")
+	Assert(o.ProfilePeriod == nil || *o.ProfilePeriod > 0, "Invalid arguments: --profile-period must be positive.")
+	Assert(o.ProfilePeriod == nil || o.ProfilePrint, "Invalid arguments: --profile-period needs --profile-print.")
+	Assert(o.ProfileFPS >= 0, "Invalid arguments: --profile-fps cannot be negative.")
+	Assert(o.ProfileFPS == 0 || o.ProfilePrint, "Invalid arguments: --profile-fps needs --profile-print.")
+}
+
+// transOptions returns opts with the options' groups, and the table's
+// period and frame rate if it's printed.
+func (o DebugOptions) transOptions(opts trans.Options) trans.Options {
+	opts.Trace, opts.Profile = o.Trace, o.Profile
+	if o.ProfilePrint {
+		opts.ProfilePeriod, opts.ProfileFPS = 10, o.ProfileFPS
+		if o.ProfilePeriod != nil {
+			opts.ProfilePeriod = *o.ProfilePeriod
+		}
+	}
+	return opts
 }
 
 // Build platforms and CPU architectures, each a full name followed by its
@@ -55,6 +93,7 @@ func (o BuildOptions) validate() {
 	Assert(countTrue(o.Opt, o.Small, o.NoOpt) <= 1, "Invalid arguments: --opt, --small and --noopt cannot be used together.")
 	Assert(!o.Doc || !o.NoDoc, "Invalid arguments: --doc and --nodoc cannot be used together.")
 	Assert(o.Jobs >= 0, "Invalid arguments: --jobs cannot be negative.")
+	o.DebugOptions.validate()
 }
 
 // buildOption returns the full name of the value of the --flag option,
@@ -152,6 +191,12 @@ func (o BuildOptions) describe(target string, gdpp bool) string {
 			docs = Styled(docs, Magenta)
 		}
 		desc += ", " + docs
+		if len(o.Trace) > 0 {
+			desc += ", " + Styled("trace "+strings.Join(o.Trace, " "), Magenta)
+		}
+		if len(o.Profile) > 0 {
+			desc += ", " + Styled("profiling", Magenta)
+		}
 	}
 	return desc
 }
@@ -159,20 +204,20 @@ func (o BuildOptions) describe(target string, gdpp bool) string {
 // preparePackage syncs the package's build cache and transpiles its GD++
 // files. It returns them and the classes they declare. Bindings are generated
 // with SCons arguments bindArgs, if needed.
-func preparePackage(p Project, pkg Package, bindArgs []string, docs bool) ([]gdppFile, []gdppClass) {
+func preparePackage(p Project, pkg Package, bindArgs []string, o BuildOptions) ([]gdppFile, []gdppClass) {
 	generateBuildCache(p, pkg)
 	files := listGdppFiles(p, pkg)
 	if len(files) == 0 {
 		return nil, nil
 	}
-	return files, transpilePackage(pkg, files, bindingNames(pkg, bindArgs), docs)
+	return files, transpilePackage(pkg, files, bindingNames(pkg, bindArgs), o)
 }
 
 // buildExtension compiles the package into GDExtension libraries for
 // targets, and generates its .gdextension file.
 func buildExtension(p Project, pkg Package, o BuildOptions, targets []string) {
 	// The first build's arguments, so the full build finds the generated bindings up to date.
-	files, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o.docs())
+	files, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o)
 	generateRegisterTypes(pkg, classes)
 	for _, target := range targets {
 		Exec("Building "+styledPackageName(pkg.Root)+" for "+o.describe(target, len(files) > 0)+"...", pkg.BuildCache, "scons", o.sconsArgs(target)...)

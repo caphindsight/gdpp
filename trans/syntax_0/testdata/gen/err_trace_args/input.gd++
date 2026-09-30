@@ -1,0 +1,5 @@
+class_name Enemy
+extends Node
+
+@trace(combat)
+func think() -> void {}

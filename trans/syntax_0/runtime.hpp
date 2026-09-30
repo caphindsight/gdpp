@@ -341,3 +341,464 @@ struct VariantCaster<gdpp::ExtRef<T>> {
 	constexpr m_enum &operator|=(m_enum &a, m_enum b) { return a = a | b; } \
 	constexpr m_enum &operator&=(m_enum &a, m_enum b) { return a = a & b; } \
 	constexpr m_enum &operator^=(m_enum &a, m_enum b) { return a = a ^ b; }
+
+// The code that @trace and @profile generate, with gd++ build --trace or --profile. Only sources that use it define
+// GDPP_DEBUGGING, so the others don't include its headers.
+#ifdef GDPP_DEBUGGING
+
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstring>
+#include <functional>
+#include <mutex>
+#include <vector>
+
+#include <godot_cpp/classes/os.hpp>
+#include <godot_cpp/classes/performance.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/window.hpp>
+#include <godot_cpp/variant/callable_method_pointer.hpp>
+
+namespace gdpp {
+
+class Profile;
+class Watch;
+
+// now returns a steady time in nanoseconds. It costs a few tens of nanoseconds, unlike Godot's Time, which is an
+// engine call with microsecond resolution.
+inline int64_t now() {
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+// DebugThread is the state of tracing and profiling on one thread.
+struct DebugThread {
+	int depth = 0; // How deep trace lines are indented.
+	int64_t untimed = 0; // Nanoseconds spent tracing and profiling, which timings subtract.
+	Profile *profile = nullptr; // The innermost profiled call.
+	Watch *watch = nullptr; // The innermost call that watches @trace vars.
+	int main = -1; // Whether this is the main thread: 1 or 0, or -1 if not known yet.
+};
+inline thread_local DebugThread debug_thread;
+
+// escaped escapes s for print_rich, which reads [ as the start of a BBCode tag.
+inline String escaped(const String &s) {
+	return s.replace("[", "[lb]");
+}
+
+// describe returns how trace lines name p_object: its class, and a node's name or else the instance id.
+inline String describe(const Object *p_object) {
+	if (!p_object) {
+		return "null";
+	}
+	String result = p_object->get_class();
+	const Node *node = Object::cast_to<Node>(p_object);
+	if (node && !String(node->get_name()).is_empty()) {
+		return result + " \"" + escaped(node->get_name()) + "\"";
+	}
+	return result + "#" + String::num_uint64(p_object->get_instance_id());
+}
+
+// snapshot returns a value as trace lines show and compare it: enums as ints, and containers copied deeply, so
+// later changes to their items show.
+template <typename T>
+Variant snapshot(const T &p_value) {
+	if constexpr (std::is_enum_v<T>) {
+		return static_cast<int64_t>(p_value);
+	} else {
+		Variant result = p_value;
+		if (result.get_type() == Variant::ARRAY || result.get_type() == Variant::DICTIONARY) {
+			result = result.duplicate(true);
+		}
+		return result;
+	}
+}
+
+// repr returns how trace lines show a value: strings quoted, objects described, and long values shortened.
+inline String repr(const Variant &p_value) {
+	Variant::Type type = p_value.get_type();
+	if (type == Variant::OBJECT) {
+		return describe(p_value.operator Object *());
+	}
+	String s = p_value.stringify();
+	if (s.length() > 60) {
+		s = s.left(59) + String(U"…");
+	}
+	bool quoted = type == Variant::STRING || type == Variant::STRING_NAME || type == Variant::NODE_PATH;
+	return escaped(quoted ? "\"" + s + "\"" : s);
+}
+
+// duration returns p_ns nanoseconds in µs or ms.
+inline String duration(int64_t p_ns) {
+	return p_ns < 1000000 ? String::num(p_ns / 1e3, 1) + String(U" µs") : String::num(p_ns / 1e6, 2) + " ms";
+}
+
+// add_args appends the name: value pairs of p_args, alternating names and values, to r_line.
+inline void add_args(String &) {}
+template <typename T, typename... Rest>
+void add_args(String &r_line, const char *p_name, const T &p_value, const Rest &...p_rest) {
+	if (!r_line.ends_with("(")) {
+		r_line += ", ";
+	}
+	r_line += String(p_name) + ": " + repr(snapshot(p_value));
+	add_args(r_line, p_rest...);
+}
+
+// debug_print prints a trace line, indented by the call depth, after the frame and, off the main thread, the thread.
+inline void debug_print(const String &p_line) {
+	String prefix = "[color=gray][f" + String::num_uint64(Engine::get_singleton()->get_process_frames()) + "]";
+	OS *os = OS::get_singleton();
+	if (os->get_thread_caller_id() != os->get_main_thread_id()) {
+		prefix += " [thread " + String::num_uint64(os->get_thread_caller_id()) + "]";
+	}
+	UtilityFunctions::print_rich(prefix + "[/color] " + String("  ").repeat(debug_thread.depth) + p_line);
+}
+
+// Untimed adds the time until its end to the untimed time of its thread.
+struct Untimed {
+	int64_t start = now();
+	~Untimed() { debug_thread.untimed += now() - start; }
+};
+
+// Trace prints a call of a @trace function: its arguments when it starts, and its result and duration when it
+// returns. The duration leaves out the time spent tracing and profiling.
+class Trace {
+public:
+	// p_args alternate the names and values of the arguments. p_self is null in static functions.
+	template <typename... Args>
+	Trace(const char *p_class, const Object *p_self, const char *p_func, const Args &...p_args) {
+		int64_t begin = now();
+		name_ = (p_self ? describe(p_self) : String(p_class)) + "." + p_func;
+		String line = String(U"▶ ") + name_ + "(";
+		add_args(line, p_args...);
+		debug_print(line + ")");
+		debug_thread.depth++;
+		start_ = now();
+		debug_thread.untimed += start_ - begin;
+		untimed_start_ = debug_thread.untimed;
+	}
+
+	// ret records the result, which the function returns.
+	template <typename T>
+	T ret(T p_value) {
+		stop();
+		result_ = String(U" → ") + repr(snapshot(p_value));
+		return p_value;
+	}
+
+	~Trace() {
+		if (!end_) {
+			stop();
+		}
+		int64_t took = end_ - start_ - (untimed_end_ - untimed_start_);
+		debug_thread.depth--;
+		debug_print(String(U"◀ ") + name_ + result_ + "  [color=gray]" + duration(took) + "[/color]");
+		// Everything since the end is untimed, including what the vars' Watch already counted.
+		debug_thread.untimed = untimed_end_ + (now() - end_);
+	}
+
+private:
+	void stop() {
+		end_ = now();
+		untimed_end_ = debug_thread.untimed;
+	}
+
+	String name_, result_;
+	int64_t start_ = 0, end_ = 0, untimed_start_ = 0, untimed_end_ = 0;
+};
+
+// trace_lifetime prints the creation or the destruction of an object of a @trace class. It names the object by its
+// instance id, since a node has no name yet when it's created, and can't be asked for it any more when destroyed.
+inline void trace_lifetime(const char *p_class, const Object *p_self, bool p_created) {
+	Untimed untimed;
+	debug_print(String(p_created ? "+ " : "- ") + p_class + "#" + String::num_uint64(p_self->get_instance_id()) + (p_created ? " created" : " freed"));
+}
+
+// trace_emit prints the emission of a signal of a @trace class. p_args alternate the names and values of its arguments.
+template <typename... Args>
+void trace_emit(const Object *p_self, const char *p_signal, const Args &...p_args) {
+	Untimed untimed;
+	String line = String(U"⚡ ") + describe(p_self) + " emits " + p_signal + "(";
+	add_args(line, p_args...);
+	debug_print(line + ")");
+}
+
+// Watch prints the changes to the @trace vars of a class during a call of one of its functions.
+class Watch {
+public:
+	// p_vars alternate names and functions that return the var's value.
+	template <typename... Vars>
+	Watch(const Object *p_self, const char *p_func, const Vars &...p_vars) :
+			self_(p_self), func_(p_func), parent_(debug_thread.watch) {
+		Untimed untimed;
+		add(p_vars...);
+		debug_thread.watch = this;
+	}
+
+	~Watch() {
+		Untimed untimed;
+		debug_thread.watch = parent_;
+		for (Var &v : vars_) {
+			Variant value = v.get();
+			if (value == v.before) {
+				continue;
+			}
+			debug_print(describe(self_) + "." + v.name + ": " + repr(v.before) + String(U" → ") + repr(value) + "  [color=gray](in " + func_ + ")[/color]");
+			// The calls that this one is inside see the change as done, so it's printed once.
+			for (Watch *w = parent_; w; w = w->parent_) {
+				for (Var &p : w->vars_) {
+					if (w->self_ == self_ && std::strcmp(p.name, v.name) == 0) {
+						p.before = value;
+					}
+				}
+			}
+		}
+	}
+
+private:
+	struct Var {
+		const char *name;
+		std::function<Variant()> get;
+		Variant before;
+	};
+
+	void add() {}
+	template <typename F, typename... Rest>
+	void add(const char *p_name, const F &p_get, const Rest &...p_rest) {
+		vars_.push_back({ p_name, [p_get]() { return snapshot(p_get()); }, snapshot(p_get()) });
+		add(p_rest...);
+	}
+
+	const Object *self_;
+	const char *func_;
+	Watch *parent_;
+	std::vector<Var> vars_;
+};
+
+// ProfileStats are the timings of one @profile function, from all threads, in nanoseconds.
+struct ProfileStats {
+	const char *name;
+	std::atomic<int64_t> calls{ 0 }, main_calls{ 0 }, total{ 0 }, self{ 0 }, max{ 0 };
+	int64_t shown_total = 0; // What the live monitor showed last, at frame shown_frame.
+	uint64_t shown_frame = 0;
+	int64_t printed_calls = 0, printed_total = 0, printed_self = 0; // The totals when the last table was printed.
+
+	// An unnamed ProfileStats isn't registered, e.g. to calibrate.
+	ProfileStats() = default;
+	// Registers the function, which then shows in the editor's monitors, and if p_print_seconds isn't 0, in a
+	// table printed every p_print_seconds seconds, with its share of a frame at p_fps frames per second.
+	ProfileStats(const char *p_name, int64_t p_print_seconds = 0, int64_t p_fps = 60);
+};
+
+// Profiler holds the registered ProfileStats, and the cost of profiling a call.
+struct Profiler {
+	std::mutex mutex;
+	std::vector<ProfileStats *> stats;
+	int64_t inner = 0; // The time a profiled call measures that is really the profiling's.
+	int64_t outer = 0; // The time a profiled call adds to the call it's inside, beyond its own.
+	int64_t print_every = 0; // Nanoseconds between tables, or 0 if the table isn't printed.
+	int64_t printed_at = 0; // When the last table was printed, or printing started.
+	uint64_t printed_frame = 0;
+	int64_t fps = 60; // The frame rate whose frame the table's budget column is a share of.
+};
+
+inline Profiler &profiler() {
+	static Profiler p;
+	return p;
+}
+
+// Profile times a call of a @profile function. The time spent tracing and profiling, including the calibrated cost
+// of timing the profiled calls inside it, doesn't count.
+class Profile {
+public:
+	explicit Profile(ProfileStats &p_stats) :
+			stats_(p_stats), parent_(debug_thread.profile) {
+		debug_thread.profile = this;
+		untimed_ = debug_thread.untimed;
+		start_ = now();
+	}
+
+	~Profile() {
+		int64_t took = std::max<int64_t>(now() - start_ - (debug_thread.untimed - untimed_) - profiler().inner, 0);
+		debug_thread.profile = parent_;
+		stats_.calls.fetch_add(1, std::memory_order_relaxed);
+		if (debug_thread.main < 0) {
+			debug_thread.main = OS::get_singleton()->get_thread_caller_id() == OS::get_singleton()->get_main_thread_id();
+		}
+		if (debug_thread.main) {
+			stats_.main_calls.fetch_add(1, std::memory_order_relaxed);
+		}
+		stats_.self.fetch_add(std::max<int64_t>(took - children_, 0), std::memory_order_relaxed);
+		// A recursive call's time is already in the outermost call's.
+		bool outermost = true;
+		for (Profile *p = parent_; p; p = p->parent_) {
+			outermost = outermost && &p->stats_ != &stats_;
+		}
+		if (outermost) {
+			stats_.total.fetch_add(took, std::memory_order_relaxed);
+			int64_t max = stats_.max.load(std::memory_order_relaxed);
+			while (took > max && !stats_.max.compare_exchange_weak(max, took, std::memory_order_relaxed)) {
+			}
+		}
+		if (parent_) {
+			parent_->children_ += took;
+		}
+		debug_thread.untimed += profiler().outer;
+	}
+
+private:
+	ProfileStats &stats_;
+	Profile *parent_;
+	int64_t start_ = 0, untimed_ = 0, children_ = 0;
+};
+
+// calibrate measures the cost of profiling a call: the median of many empty profiled calls.
+inline void calibrate(Profiler &r_profiler) {
+	constexpr int count = 1000;
+	ProfileStats empty;
+	std::vector<int64_t> inner, outer;
+	Profile *profile = debug_thread.profile;
+	debug_thread.profile = nullptr;
+	for (int i = 0; i < count; i++) {
+		int64_t self = empty.self.load(), start = now();
+		{
+			Profile p(empty);
+		}
+		outer.push_back(now() - start);
+		inner.push_back(empty.self.load() - self);
+	}
+	debug_thread.profile = profile;
+	std::nth_element(inner.begin(), inner.begin() + count / 2, inner.end());
+	std::nth_element(outer.begin(), outer.begin() + count / 2, outer.end());
+	r_profiler.inner = inner[count / 2];
+	r_profiler.outer = outer[count / 2];
+}
+
+// profile_monitor returns the milliseconds per frame that the registered function at p_index took since the
+// monitor's last call.
+inline double profile_monitor(int64_t p_index) {
+	Profiler &p = profiler();
+	std::lock_guard<std::mutex> lock(p.mutex);
+	ProfileStats *s = p.stats[p_index];
+	uint64_t frame = Engine::get_singleton()->get_process_frames();
+	int64_t total = s->total.load(std::memory_order_relaxed);
+	double result = frame > s->shown_frame ? (total - s->shown_total) / 1e6 / (frame - s->shown_frame) : 0.0;
+	s->shown_total = total;
+	s->shown_frame = frame;
+	return result;
+}
+
+// print_profile prints the timings of the registered functions since the last table, slowest first. It leaves out
+// those that didn't run, and prints nothing if none did.
+inline void print_profile() {
+	Profiler &p = profiler();
+	std::lock_guard<std::mutex> lock(p.mutex);
+	struct Row {
+		const char *name;
+		int64_t calls, total, self, max;
+		String thread;
+	};
+	std::vector<Row> rows;
+	for (ProfileStats *s : p.stats) {
+		int64_t calls = s->calls.load(), total = s->total.load(), self = s->self.load();
+		// Where the function ran so far, not only since the last table.
+		int64_t main = s->main_calls.load();
+		String thread = main == calls ? String("main") : main == 0 ? String("subthread") : String::num_int64(main * 100 / calls) + "% main";
+		Row row{ s->name, calls - s->printed_calls, total - s->printed_total, self - s->printed_self, s->max.exchange(0), thread };
+		s->printed_calls = calls;
+		s->printed_total = total;
+		s->printed_self = self;
+		if (row.calls > 0) {
+			rows.push_back(row);
+		}
+	}
+	uint64_t frame = Engine::get_singleton()->get_process_frames();
+	double frames = std::max<uint64_t>(frame - p.printed_frame, 1);
+	double seconds = (now() - p.printed_at) / 1e9;
+	p.printed_frame = frame;
+	p.printed_at = now();
+	if (rows.empty()) {
+		return;
+	}
+	std::sort(rows.begin(), rows.end(), [](const Row &a, const Row &b) { return a.total > b.total; });
+#ifdef DEBUG_ENABLED
+	String build = "debug";
+#else
+	String build = "release";
+#endif
+#if defined(__OPTIMIZE__) || defined(_MSC_VER) && !defined(_DEBUG)
+	build += ", optimized";
+#else
+	build += ", unoptimized";
+#endif
+	int64_t width = 8;
+	for (const Row &r : rows) {
+		width = std::max<int64_t>(width, String(r.name).length());
+	}
+	std::vector<String> headers = { "Thread", "Calls", "Total ms", "Self ms", String(U"Avg µs"), String(U"Max µs"), "ms/frame",
+		"Budget (" + String::num_int64(p.fps) + " FPS)" };
+	std::vector<int64_t> widths;
+	int64_t total_width = width;
+	for (const String &header : headers) {
+		widths.push_back(std::max<int64_t>(12, header.length() + 2));
+		total_width += widths.back();
+	}
+	// One print, so no other output lands inside the table, and in [code], so its columns line up in the editor.
+	String title = String(U"━━ GD++ profile · last ") + String::num(seconds, 1) + String(U" s · ") + String::num_uint64(frames) + String(U" frames · ") + build + " ";
+	String table = "\n[code][color=cyan]" + title + String(U"━").repeat(std::max<int64_t>(total_width - title.length(), 2)) + "[/color]\n";
+	auto line = [&](const String &name, const std::vector<String> &cells, const String &budget_color) {
+		table += name.rpad(width);
+		for (size_t i = 0; i < cells.size(); i++) {
+			String cell = cells[i].lpad(widths[i]);
+			table += i + 1 == cells.size() && !budget_color.is_empty() ? "[color=" + budget_color + "]" + cell + "[/color]" : cell;
+		}
+		table += "\n";
+	};
+	line("Function", headers, "");
+	table += "[color=gray]" + String(U"─").repeat(total_width) + "[/color]\n";
+	for (const Row &r : rows) {
+		double ms_per_frame = r.total / 1e6 / frames;
+		double budget = ms_per_frame * p.fps / 10;
+		line(r.name, { r.thread, String::num_uint64(r.calls), String::num(r.total / 1e6, 2), String::num(r.self / 1e6, 2),
+					 String::num(r.total / 1e3 / r.calls, 2), String::num(r.max / 1e3, 2), String::num(ms_per_frame, 3),
+					 String::num(budget, 1) + "%" },
+				budget < 10 ? "green" : budget <= 50 ? "yellow" : "red");
+	}
+	UtilityFunctions::print_rich(table.trim_suffix("\n") + "[/code]");
+}
+
+// profile_tick prints the table when its time has come. It runs every frame.
+inline void profile_tick() {
+	if (now() - profiler().printed_at >= profiler().print_every) {
+		print_profile();
+	}
+}
+
+inline ProfileStats::ProfileStats(const char *p_name, int64_t p_print_seconds, int64_t p_fps) :
+		name(p_name) {
+	Untimed untimed;
+	Profiler &p = profiler();
+	std::lock_guard<std::mutex> lock(p.mutex);
+	if (p.stats.empty()) {
+		calibrate(p);
+	}
+	Array index;
+	index.push_back(int64_t(p.stats.size()));
+	p.stats.push_back(this);
+	String id = "GD++/" + String(p_name) + " (ms)";
+	if (!Performance::get_singleton()->has_custom_monitor(id)) {
+		Performance::get_singleton()->add_custom_monitor(id, callable_mp_static(&profile_monitor), index);
+	}
+	SceneTree *tree = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	if (p_print_seconds > 0 && !p.print_every && tree) {
+		p.print_every = p_print_seconds * 1000000000;
+		p.fps = p_fps;
+		p.printed_at = now();
+		p.printed_frame = Engine::get_singleton()->get_process_frames();
+		tree->connect("process_frame", callable_mp_static(&profile_tick));
+	}
+}
+
+} // namespace gdpp
+
+#endif // GDPP_DEBUGGING

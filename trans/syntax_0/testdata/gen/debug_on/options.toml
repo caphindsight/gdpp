@@ -1,0 +1,4 @@
+trace = ["all"]
+profile = ["all"]
+profileperiod = 10
+profilefps = 144

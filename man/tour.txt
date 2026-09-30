@@ -120,4 +120,5 @@ Then export the game from Godot's Export dialog, as usual. See `gd++ man shippin
 
 - `gd++ man lang`, then the other language pages, to learn GD++ in depth.
 - `gd++ man cli`, for the options that every command takes.
+- `gd++ man debugging`, to trace and profile your code with @trace and @profile.
 - `gd++ man`, for the list of all pages.

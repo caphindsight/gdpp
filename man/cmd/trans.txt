@@ -7,6 +7,7 @@ gd++ trans FILE [--syntax N] [--spec NAME | --nospec]
                 [--object NAME[=INCLUDE]] [--refcounted NAME[=INCLUDE]]
                 [--extern NAME[=INCLUDE]] [--refcounted-extern NAME[=INCLUDE]]
                 [--enum NAME[=INCLUDE][:VALUES]]
+                [--trace GROUP...] [--profile GROUP... [--profile-print [--profile-period SECONDS] [--profile-fps FPS]]]
 gd++ trans --runtime [--syntax N]
 ```
 
@@ -58,6 +59,21 @@ FILE
 
 Each of these flags can be repeated, one name each time. An INCLUDE is written as after #include: <a/b.hpp> or "a/b.h". Without brackets or quotes, it gets quotes. Flags win over the package's declarations of the same name.
 
+--trace GROUP...
+  Turn on the @trace annotations of these groups, or with `all`, of all groups, like `gd++ build --trace`. See `gd++ man debugging`.
+
+--profile GROUP...
+  Turn on the @profile annotations of these groups, or with `all`, of all groups, like `gd++ build --profile`. See `gd++ man debugging`.
+
+--profile-print
+  With --profile, print a table of timings every few seconds, like `gd++ build --profile-print`.
+
+--profile-period SECONDS
+  With --profile-print, the seconds between tables, like `gd++ build --profile-period`. Default: 10.
+
+--profile-fps FPS
+  With --profile-print, the frame rate that the table's budget column assumes, like `gd++ build --profile-fps`.
+
 # Examples
 
 See what a file generates in its package:
@@ -78,6 +94,12 @@ Without any project, declaring the classes by hand:
 gd++ trans test.gd++ --refcounted RefCounted --object Node --object Node3D --enum Suit:HEARTS,SPADES
 ```
 
+See the code that @trace and @profile annotations generate:
+
+```sh
+gd++ trans src/player.gd++ --trace all --profile all
+```
+
 Save the output to read it in an editor:
 
 ```sh
@@ -86,4 +108,4 @@ gd++ trans src/player.gd++ > player.txt
 
 # See also
 
-`gd++ man lang`, `gd++ man generated`, `gd++ man includes`, `gd++ man runtime`.
+`gd++ man lang`, `gd++ man generated`, `gd++ man includes`, `gd++ man runtime`, `gd++ man debugging`.

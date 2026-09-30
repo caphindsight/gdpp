@@ -135,6 +135,20 @@ See `gd++ man exports`.
 
 Variables take @onready, one export annotation, and the section annotations @export_category, @export_group and @export_subgroup. See `gd++ man exports` and `gd++ man annotations`. A doc comment before a variable becomes its description in the editor's help, see `gd++ man docs`.
 
+For debugging, variables also take @trace and @profile:
+
+```gd++
+@trace
+var health: int = 100
+
+@profile
+var path_length: float {
+  get { return compute_path_length(); }
+}
+```
+
+In builds with `--trace Player` (the class's name) or `--trace all`, @trace prints every change of health, and which function of the class made it, e.g. `Player "Hero".health: 100 → 70  (in take_damage)`. It's the quickest way to find out who changes a value. In builds with `--profile Player`, @profile times the getter and setter, here get_path_length. In other builds, they generate nothing. See `gd++ man debugging`.
+
 # Examples
 
 ```gd++
@@ -175,4 +189,4 @@ var title: String {
 
 # See also
 
-`gd++ man exports`, `gd++ man types`, `gd++ man lifecycle`, `gd++ man generated`.
+`gd++ man exports`, `gd++ man types`, `gd++ man lifecycle`, `gd++ man generated`, `gd++ man debugging`.

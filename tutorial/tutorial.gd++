@@ -266,6 +266,20 @@ func respawn() -> void {
 
 // You can combine attributes where it makes sense, e.g. @virtual @const.
 
+// For debugging, the @trace attribute prints every call of a function: its arguments when it starts, and its result
+// and time when it returns. The @profile attribute times every call, for the editor's monitors.
+// Both generate code only in builds that turn on one of their groups: the class's name, or a name in parentheses.
+// So `gd++ build --trace combat` traces this function, `gd++ build --profile MyNode` profiles it,
+// and a plain `gd++ build` does neither, at no cost:
+
+@trace("combat")
+@profile
+func deal_damage(amount: int) -> int {
+  return amount * 2;
+}
+
+// @trace also works on variables (it prints their changes), signals (their emissions) and classes (all of that).
+
 // Part VII. Constructors and destructors.
 
 // A class has at most one constructor and at most one destructor.

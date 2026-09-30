@@ -153,18 +153,20 @@ In order:
 
 In order:
 
-1. #include "NAME.h", then the headers of names that only the source uses.
+1. `#define GDPP_DEBUGGING`, if a @trace or @profile annotation of the file's classes is on, then #include "NAME.h", then the headers of names that only the source uses.
 2. @global impl blocks.
 3. In namespace godot, between `#define This NAME` and `#undef This`:
    - _bind_methods: binds each function (with its default values), each variable's getter and setter and its property (after the inspector sections it starts), each signal, each integer constant, and each value of each exposed enum (as a bitfield flag for a bitfield),
-   - the constructor, if needed: RPC configurations, set_process(true) and set_physics_process(true) for overrides, the initial values of variables, then the ctor block. See `gd++ man lifecycle`.
-   - the destructor, with the dtor block,
+   - the constructor, if needed: the creation line of a class whose @trace is on, RPC configurations, set_process(true) and set_physics_process(true) for overrides, the initial values of variables, then the ctor block. See `gd++ man lifecycle`.
+   - the destructor, with the dtor block, if the class has one or a @trace that's on,
    - each function: the GDVIRTUAL_CALL of a @virtual function, the @onready initial values in _ready, then the body (or for @deferred and @thread_safe, the call that runs _gdpp_body_NAME later); then its enum wrapper, default value functions and RPC helper,
    - each variable's getter and setter, and their enum wrappers,
    - each signal's emit function,
    - the impl blocks.
 
 In a @game_only class, each of these functions except _bind_methods starts with an editor check, in debug builds. See `gd++ man classes`.
+
+When @trace or @profile annotations are on, the functions they apply to start with their code, after the editor check: gdpp::ProfileStats and gdpp::Profile for @profile, gdpp::Trace for @trace, and gdpp::Watch in each function that checks the class's @trace variables. A traced function that returns a value runs its body in a lambda, `return _gdpp_trace.ret([&]() -> T { ... }());`, so the trace sees every result. The constructor and destructor of a traced class call gdpp::trace_lifetime, and the emit function of a traced signal gdpp::trace_emit. See `gd++ man debugging`, and `gd++ trans FILE --trace all --profile all` for your own files.
 
 # Generated names
 

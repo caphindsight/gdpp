@@ -244,7 +244,7 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 // gdpp directory: a header per class, extern and enum, a source per class, the
 // runtime header, and with docs, each class's XML documentation. Files that
 // nothing generates any more are deleted. Returns the classes the files declare.
-func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs bool) []gdppClass {
+func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildOptions) []gdppClass {
 	dir := pkg.BuildCache.Cd(gdppDirName)
 	s := Silence()
 	t := LogTask("Transpiling GD++ code for %s...", styledPackageName(pkg.Root))
@@ -276,7 +276,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 	}
 	for _, f := range files {
 		// #line names the GD++ file relative to the build cache, where SCons runs, like it names C++ sources.
-		opts := trans.Options{Dependencies: packageDeps(files, names, enums, f.Rel), SourceName: "../" + f.Rel}
+		opts := o.transOptions(trans.Options{Dependencies: packageDeps(files, names, enums, f.Rel), SourceName: "../" + f.Rel})
 		name := f.File.ToString()
 		generated, err := trans.Generate(name, f.Src, opts, syntax)
 		if err != nil {
@@ -286,7 +286,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 			write(gen.Name, gen.Text)
 		}
 		for _, d := range f.Decls {
-			if docs && d.Kind == trans.ClassDecl {
+			if o.docs() && d.Kind == trans.ClassDecl {
 				write("doc_classes/"+d.Name+".xml", check(trans.DocumentClass(name, f.Src, d.Name, opts, syntax)))
 			}
 		}

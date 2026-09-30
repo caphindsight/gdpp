@@ -29,6 +29,7 @@ type CmdTrans struct {
 	Extern           []string `arg:"--extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base isn't refcounted [default include: \"NAME.h\"]"`
 	RefCountedExtern []string `arg:"--refcounted-extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base is refcounted [default include: \"NAME.h\"]"`
 	Enum             []string `arg:"--enum,separate" placeholder:"NAME[=INCLUDE][:VALUES]" help:"an enum of another GD++ file, with its values, e.g. Suit:HEARTS,SPADES=5 [default include: \"NAME.h\"]"`
+	DebugOptions
 }
 
 func (c *CmdTrans) Run() {
@@ -45,6 +46,7 @@ func (c *CmdTrans) Run() {
 	}
 	Assert(c.File != "", "Invalid arguments: missing the GD++ file.")
 	Assert(c.Spec == "" || !c.NoSpec, "Invalid arguments: --spec and --nospec cannot be used together.")
+	c.DebugOptions.validate()
 	file := ParsePath(c.File)
 	Assert(file.IsFile(), "There is no file at %s.", file.ToString())
 	var files []gdppFile
@@ -67,7 +69,7 @@ func (c *CmdTrans) Run() {
 	}
 	// Flags come first, so they win over other dependencies of the same name.
 	deps := append(c.flagDependencies(), packageDeps(files, names, enums, self)...)
-	generated, err := trans.Generate(c.File, file.ReadString(), trans.Options{Dependencies: deps}, syntax)
+	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(trans.Options{Dependencies: deps}), syntax)
 	if err != nil {
 		FailWithText(err)
 	}

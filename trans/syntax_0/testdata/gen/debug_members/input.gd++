@@ -1,0 +1,12 @@
+class_name Gate
+extends Node
+
+@trace
+signal opened(by: Node)
+
+signal closed
+
+@profile
+var angle: float {
+  get { return 0.0; }
+}

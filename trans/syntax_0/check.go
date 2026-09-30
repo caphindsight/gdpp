@@ -29,6 +29,8 @@ type classModel struct {
 	base       string
 	refCounted bool
 	gameOnly   bool    // Whether @game_only guards all its code against running in the editor.
+	trace      bool    // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
+	profile    bool    // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
 	codes      []*Code // decl and impl blocks inside the class.
 	globals    []*Code // @global decl and impl blocks, outside the class and namespace godot.
 	ctor, dtor *Block
@@ -58,6 +60,7 @@ type funcModel struct {
 	virtual, override, isConst, static bool
 	deferral                           string    // "deferred" or "thread_safe" with that annotation, else empty.
 	hidden                             bool      // The generated body of a class's @deferred or @thread_safe func.
+	trace, profile                     bool      // Whether its @trace or @profile, or its class's, is on.
 	rpc                                *rpcModel // Nil without @rpc.
 }
 
@@ -77,6 +80,8 @@ type varModel struct {
 	v                *Var
 	t                *gtype
 	onready          bool
+	trace            bool   // Whether its @trace, or its class's, is on: the class's funcs print its changes.
+	profile          bool   // Whether its @profile, or its class's, is on: it profiles its getter and setter.
 	usage            string // A PROPERTY_USAGE_* expression.
 	hint, hintString string // A PROPERTY_HINT_* name, and the hint string (not quoted).
 	getter, setter   string // Empty if there is none.
@@ -95,6 +100,7 @@ type section struct {
 type signalModel struct {
 	s      *Signal
 	params []*gtype
+	trace  bool // Whether its @trace, or its class's, is on: emitting it prints it.
 }
 
 func (u *unit) errorAt(pos lexer.Position, n int, msg, hint string) *Error {
@@ -650,7 +656,7 @@ var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "onready",
-	"override", "rpc", "static", "thread_safe", "tool", "virtual"}
+	"override", "profile", "rpc", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -671,7 +677,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "rpc"}, a.Name):
+			"export_placeholder", "export_range", "export_subgroup", "icon", "profile", "rpc", "trace"}, a.Name):
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
@@ -687,9 +693,30 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 	return found, nil
 }
 
+// debugOn reports whether a, a @trace or @profile annotation in the class named class, is in a group that the
+// options turn on: the class's name, a group its arguments name, or all. False if a is nil.
+func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
+	if a == nil {
+		return false, nil
+	}
+	groups := []string{class, "all"}
+	for _, arg := range a.Args {
+		name, err := strconv.Unquote(arg.Value)
+		if err != nil || !identRegexp.MatchString(name) {
+			return false, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @%s takes names of groups in double quotes, e.g. @%s(\"combat\").", a.Name, a.Name), "")
+		}
+		groups = append(groups, name)
+	}
+	on := u.opts.Trace
+	if a.Name == "profile" {
+		on = u.opts.Profile
+	}
+	return slices.ContainsFunc(groups, func(g string) bool { return slices.Contains(on, g) }), nil
+}
+
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "override", "rpc", "static", "thread_safe", "virtual"}
+	allowed := []string{"const", "deferred", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "rpc", "thread_safe"}
 	}
@@ -699,6 +726,12 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil, isConst: a["const"] != nil,
 		static: a["static"] != nil}
+	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
+		return nil, err
+	}
+	if m.profile, err = u.debugOn(a["profile"], owner); err != nil {
+		return nil, err
+	}
 	for _, name := range []string{"deferred", "thread_safe"} {
 		if a[name] != nil {
 			m.deferral = name
@@ -822,11 +855,20 @@ func (u *unit) rpcConfig(a *Annotation, ext bool) (*rpcModel, error) {
 	return &rpcModel{mode: set["mode"], transfer: set["transfer mode"], callLocal: set["sync"] == "true", channel: set["channel"]}, nil
 }
 
-func (u *unit) buildSignal(s *Signal) (*signalModel, error) {
-	if _, err := u.annotations(s.Annotations, "a signal"); err != nil {
+// buildSignal checks s, a signal of the class or extern named owner.
+func (u *unit) buildSignal(s *Signal, owner string, ext bool) (*signalModel, error) {
+	allowed := []string{"trace"}
+	if ext {
+		allowed = nil
+	}
+	a, err := u.annotations(s.Annotations, "a signal", allowed...)
+	if err != nil {
 		return nil, err
 	}
 	m := &signalModel{s: s}
+	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
+		return nil, err
+	}
 	for _, p := range s.Params {
 		t, err := u.resolve(p.Type, false)
 		if err != nil {
@@ -843,7 +885,7 @@ func (u *unit) buildSignal(s *Signal) (*signalModel, error) {
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage"}, sectionAnnotations...)
+		"export_multiline", "export_placeholder", "export_range", "export_storage", "profile", "trace"}, sectionAnnotations...)
 	if ext {
 		allowed = nil
 	}
@@ -852,6 +894,12 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 		return nil, err
 	}
 	m := &varModel{v: v, onready: a["onready"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
+	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
+		return nil, err
+	}
+	if m.profile, err = u.debugOn(a["profile"], owner); err != nil {
+		return nil, err
+	}
 	if m.t, err = u.resolve(v.Type, false); err != nil {
 		return nil, err
 	}
@@ -1068,7 +1116,7 @@ func (u *unit) buildExterns() error {
 				}
 			case member.Signal != nil:
 				var sig *signalModel
-				if sig, err = u.buildSignal(member.Signal); err == nil {
+				if sig, err = u.buildSignal(member.Signal, e.Name, true); err == nil {
 					m.signals = append(m.signals, sig)
 					err = u.unique(names, sig.s.Pos, "signal", sig.s.Name)
 				}
@@ -1132,11 +1180,17 @@ func (u *unit) buildClasses() error {
 
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted}
-	a, err := u.annotations(c.Annotations, "a class", "game_only", "icon", "tool")
+	a, err := u.annotations(c.Annotations, "a class", "game_only", "icon", "profile", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
 	m.gameOnly = a["game_only"] != nil
+	if m.trace, err = u.debugOn(a["trace"], c.Name); err != nil {
+		return nil, err
+	}
+	if m.profile, err = u.debugOn(a["profile"], c.Name); err != nil {
+		return nil, err
+	}
 	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}
@@ -1177,12 +1231,17 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 					p.Default = nil
 					body.Params = append(body.Params, &p)
 				}
-				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, hidden: true})
+				// The body does the work, so it's what @trace and @profile follow.
+				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, hidden: true,
+					trace: f.trace || m.trace, profile: f.profile || m.profile})
+				f.trace, f.profile = false, false
 				err = u.unique(names, f.f.Pos, "func", body.Name)
 			}
 		case member.Var != nil:
 			var v *varModel
 			if v, err = u.buildVar(member.Var, c.Name, false); err == nil {
+				v.trace = v.trace || m.trace
+				v.profile = v.profile || m.profile && v.v.Property != nil
 				m.vars = append(m.vars, v)
 				err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
 				for _, s := range v.sections {
@@ -1198,7 +1257,8 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			}
 		case member.Signal != nil:
 			var sig *signalModel
-			if sig, err = u.buildSignal(member.Signal); err == nil {
+			if sig, err = u.buildSignal(member.Signal, c.Name, false); err == nil {
+				sig.trace = sig.trace || m.trace
 				m.signals = append(m.signals, sig)
 				err = u.unique(names, sig.s.Pos, "signal", sig.s.Name)
 			}
@@ -1222,6 +1282,13 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	if slices.ContainsFunc(m.vars, func(v *varModel) bool { return v.v.Init != nil && v.onready }) &&
 		!slices.ContainsFunc(m.funcs, func(f *funcModel) bool { return f.override && f.f.Name == "_ready" }) {
 		m.funcs = append(m.funcs, &funcModel{f: &Func{Name: "_ready"}, ret: &gtype{cpp: "void", doc: "void", void: true}, override: true})
+	}
+	// The class's @trace leaves out the functions called every frame, which would flood the output.
+	for _, f := range m.funcs {
+		if f.deferral == "" {
+			f.trace = f.trace || m.trace && !(f.override && processing[f.f.Name] != "")
+			f.profile = f.profile || m.profile
+		}
 	}
 	// The enums the class exposes: those in its API, those it imports, and those declared in it (or, for the
 	// file-level class, in its file).

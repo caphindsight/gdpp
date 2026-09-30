@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Enemy" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="attack">
+			<return type="int" />
+			<param index="0" name="target" type="Node" />
+			<description>
+			</description>
+		</method>
+		<method name="move">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="think">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="ammo" type="int" setter="" getter="get_ammo">
+		</member>
+		<member name="health" type="int" setter="set_health" getter="get_health">
+		</member>
+		<member name="speed" type="float" setter="set_speed" getter="get_speed">
+		</member>
+	</members>
+</class>

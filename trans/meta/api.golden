@@ -38,3 +38,7 @@ field EnumValue.Implicit bool
 field Dependency.Bitfield bool
 field EnumValue.Expr string
 field Declaration.Bitfield bool
+field Options.Trace []string
+field Options.Profile []string
+field Options.ProfilePeriod int
+field Options.ProfileFPS int

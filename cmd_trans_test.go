@@ -51,6 +51,41 @@ func TestTrans(t *testing.T) {
 	}
 }
 
+func TestTransDebug(t *testing.T) {
+	src := "class_name Player\nextends Node\n\n@trace(\"combat\")\nfunc jump() -> void {}\n\n@profile\nfunc run() -> void {}\n"
+	dir := writeTransFiles(t, map[string]string{"player.gd++": src})
+	file := filepath.Join(dir, "player.gd++")
+	cases := map[string]struct {
+		c         CmdTrans
+		want, not []string
+	}{
+		"off": {CmdTrans{File: file, Object: []string{"Node"}}, nil, []string{"GDPP_DEBUGGING", "gdpp::Trace", "gdpp::Profile"}},
+		"trace": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Trace: []string{"combat"}}},
+			[]string{"#define GDPP_DEBUGGING", `gdpp::Trace _gdpp_trace("Player", this, "jump");`}, []string{"gdpp::Profile"}},
+		"profile": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}}},
+			[]string{`static gdpp::ProfileStats _gdpp_stats("Player.run");`}, []string{"gdpp::Trace"}},
+		"print": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true}},
+			[]string{`_gdpp_stats("Player.run", 10);`}, nil},
+		"period": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true, ProfilePeriod: intPtr(3), ProfileFPS: 144}},
+			[]string{`_gdpp_stats("Player.run", 3, 144);`}, nil},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			out := captureStdout(t, tc.c.Run)
+			for _, want := range tc.want {
+				if !strings.Contains(out, want) {
+					t.Errorf("output lacks %q:\n%s", want, out)
+				}
+			}
+			for _, not := range tc.not {
+				if strings.Contains(out, not) {
+					t.Errorf("output has %q:\n%s", not, out)
+				}
+			}
+		})
+	}
+}
+
 // transSpecProject is a project with a cached API spec, in writeTransFiles format.
 var transSpecProject = map[string]string{
 	"project.godot":                         testProjectTree["/games/my_game/"+projectFileName],
@@ -207,6 +242,7 @@ func TestTransFails(t *testing.T) {
 		"missing file":              {CmdTrans{File: "missing.gd++"}, "[x] There is no file at missing.gd++.\n"},
 		"bad dependency":            {CmdTrans{File: "player.gd++", Enum: []string{"Suit:A=x"}}, "[x] Invalid arguments: --enum Suit:A=x: \"x\" is not an integer.\n"},
 		"unknown syntax":            {CmdTrans{File: "player.gd++", Syntax: intPtr(9)}, "[x] Unsupported GD++ syntax 9.\n"},
+		"bad group":                 {CmdTrans{File: "player.gd++", DebugOptions: DebugOptions{Trace: []string{"a b"}}}, "[x] Invalid arguments: \"a b\" is not a valid group name.\n"},
 		"spec outside of a project": {CmdTrans{File: "player.gd++", Spec: "4.3"}, "[x] Path . is not contained in a Godot project.\n"},
 		"missing spec": {CmdTrans{File: "src/a.gd++", Spec: "4.4"},
 			"[x] Missing Godot API spec 4.4, run `gd++ fetch --spec 4.4` to fetch it.\n"},

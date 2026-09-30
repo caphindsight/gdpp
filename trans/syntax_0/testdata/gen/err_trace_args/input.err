@@ -1,0 +1,3 @@
+input.gd++:4:8: Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").
+ 4 | @trace(combat)
+   |        ^^^^^^

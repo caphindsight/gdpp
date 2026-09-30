@@ -171,8 +171,12 @@ func withSpace(t string) string {
 var processing = map[string]string{"_process": "set_process", "_physics_process": "set_physics_process"}
 
 func (c *classModel) needsCtor() bool {
-	return c.ctor != nil || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
+	return c.ctor != nil || c.trace || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
 		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" })
+}
+
+func (c *classModel) needsDtor() bool {
+	return c.dtor != nil || c.trace
 }
 
 // rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc_id(peer) f(...)` call, without a class name.
@@ -235,7 +239,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.needsCtor() {
 		public = append(public, fmt.Sprintf("%s();", c.name))
 	}
-	if c.dtor != nil {
+	if c.needsDtor() {
 		public = append(public, fmt.Sprintf("~%s();", c.name))
 	}
 	for _, f := range c.funcs {
