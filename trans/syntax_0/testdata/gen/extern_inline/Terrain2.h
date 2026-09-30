@@ -22,7 +22,7 @@ public:
 	void set_size(int64_t p_value) const;
 	gdpp::Emitted done(bool ok) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

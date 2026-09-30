@@ -1,0 +1,15 @@
+class_name Garage
+extends Node
+
+var highway: Highway
+var profile: Profile
+
+extern Highway {
+  extends Road
+  func lanes() -> int
+}
+
+extern Profile {
+  extends Settings
+  signal saved
+}

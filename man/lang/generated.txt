@@ -207,12 +207,14 @@ public:
   int64_t get_seed() const;
   void set_seed(int64_t p_value) const;
   gdpp::Emitted changed() const;
-private:
+protected:
   Base *_gdpp_base;
 };
 ```
 
 Its methods are defined inline, after the classes they may use, and call _gdpp_base->call, call_deferred, get, set or emit_signal with the member's name. See `gd++ man externs`.
+
+The wrapper of an extern that extends another extern derives from that one's wrapper, e.g. `class Car : public Vehicle`, and shares its Base and _gdpp_base.
 
 # Enum headers
 

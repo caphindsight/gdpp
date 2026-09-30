@@ -20,7 +20,7 @@ public:
 	void reset() const;
 	Error _gdpp_rpc_reset(int64_t p_peer) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

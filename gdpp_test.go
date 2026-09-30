@@ -211,6 +211,26 @@ func TestTranspilePackageEnumBitfields(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageExternBases(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"a.gd++": "extern_name Big\nextends Small\n",
+		"b.gd++": "extern_name Small\nextends RefCounted\n",
+		"c.gd++": "class_name User\nextends Node\nvar big: Big\n",
+	})
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	for file, want := range map[string]string{
+		"Big.h":  "class Big : public Small {",
+		"User.h": "gdpp::ExtRef<Big> big",
+	} {
+		if !strings.Contains(gen[file], want) {
+			t.Errorf("%s = %s\nwant it to contain %q", file, gen[file], want)
+		}
+	}
+}
+
 func TestLoadGodotNamesOutdated(t *testing.T) {
 	m := withBuildFS(t)
 	pkg := LoadPackage(Cwd())

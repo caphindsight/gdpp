@@ -314,9 +314,9 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 		return s.kind, nil
 	}
 	ext := s.extern != nil
-	var extends *Type
+	what, extends := "Class", (*Type)(nil)
 	if ext {
-		extends = s.extern.Extends
+		what, extends = "Extern", s.extern.Extends
 	} else {
 		extends = s.class.Extends
 	}
@@ -328,7 +328,7 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	b := u.symbols[name]
 	switch {
 	case slices.Contains(seen, s):
-		return 0, u.errorAt(pos, len(name), fmt.Sprintf("Class %s extends itself through its bases.", s.name), "")
+		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s %s extends itself through its bases.", what, s.name), "")
 	case b == nil:
 		t := &Type{Pos: pos, Name: name}
 		if extends == nil {
@@ -337,10 +337,10 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 		return 0, u.unknownName(t, "base class")
 	case b.kind == meta.Enum:
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is an enum.", s.name, name), "")
-	case b.kind == meta.Extern || b.kind == meta.RefCountedExtern || b.extern != nil:
+	case !ext && b.isExtern():
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is an extern.", s.name, name),
 			"Extend the extern's base class instead.")
-	case b.kind != meta.Object && b.kind != meta.RefCounted && b.class == nil:
+	case b.kind != meta.Object && b.kind != meta.RefCounted && b.class == nil && !b.isExtern():
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is not a class.", s.name, name), "")
 	}
 	kind, err := u.kindOf(b, append(seen, s))
@@ -348,7 +348,7 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 		return 0, err
 	}
 	switch {
-	case ext && kind == meta.RefCounted:
+	case ext && (kind == meta.RefCounted || kind == meta.RefCountedExtern):
 		kind = meta.RefCountedExtern
 	case ext:
 		kind = meta.Extern

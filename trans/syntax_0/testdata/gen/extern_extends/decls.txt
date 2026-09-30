@@ -1,0 +1,3 @@
+{Name:Vehicle Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false}
+{Name:Car Kind:2 Base:Vehicle Values:[] Icon: Tool:false Bitfield:false}
+{Name:SportsCar Kind:2 Base:Car Values:[] Icon: Tool:false Bitfield:false}

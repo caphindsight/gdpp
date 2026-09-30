@@ -20,7 +20,7 @@ public:
 	gdpp::ExtPtr<A> a(gdpp::ExtPtr<A> x) const;
 	gdpp::Emitted found(gdpp::ExtPtr<A> a) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

@@ -103,6 +103,10 @@ public:
 	template <typename U = T>
 	ExtPtr(typename U::Base *p_object) :
 			object_(p_object) {}
+	// Converts from an extern that extends T.
+	template <typename U, std::enable_if_t<std::is_base_of_v<T, U>, int> = 0>
+	ExtPtr(const ExtPtr<U> &p_other) :
+			object_(p_other.object_) {}
 
 	auto base() const { return static_cast<typename T::Base *>(object_); }
 	explicit operator bool() const { return object_ != nullptr; }
@@ -116,6 +120,8 @@ public:
 	Arrow operator->() const { return Arrow{ T(base()) }; }
 
 private:
+	template <typename>
+	friend class ExtPtr;
 	Object *object_ = nullptr;
 };
 
@@ -132,6 +138,10 @@ public:
 	template <typename U = T>
 	ExtRef(typename U::Base *p_object) :
 			object_(p_object) {}
+	// Converts from an extern that extends T.
+	template <typename U, std::enable_if_t<std::is_base_of_v<T, U>, int> = 0>
+	ExtRef(const ExtRef<U> &p_other) :
+			object_(p_other.object_) {}
 
 	auto base() const { return Ref<typename T::Base>(static_cast<typename T::Base *>(object_.ptr())); }
 	explicit operator bool() const { return object_.is_valid(); }
@@ -145,6 +155,8 @@ public:
 	Arrow operator->() const { return Arrow{ T(static_cast<typename T::Base *>(object_.ptr())) }; }
 
 private:
+	template <typename>
+	friend class ExtRef;
 	Ref<RefCounted> object_;
 };
 

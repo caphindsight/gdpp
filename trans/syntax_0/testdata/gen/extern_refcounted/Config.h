@@ -17,7 +17,7 @@ public:
 
 	Variant get_value(const String &key) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

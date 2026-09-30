@@ -1,0 +1,14 @@
+extern Vehicle {
+  extends Node3D
+  func speed() -> float
+}
+
+extern Car {
+  extends Vehicle
+  func honk() -> void
+  var doors: int
+}
+
+extern SportsCar {
+  extends Car
+}

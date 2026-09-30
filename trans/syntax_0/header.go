@@ -346,17 +346,30 @@ func trampolineDecl(c *classModel, f *funcModel) string {
 }
 
 // externDecl declares the wrapper class of an extern. Its members are defined after the classes, which they
-// may use.
+// may use. The wrapper of an extern that extends another extern derives from that one's, and shares its Base.
 func (u *unit) externDecl(w *writer, e *externModel) {
+	derived := u.symbols[e.base].isExtern()
 	w.ln("")
-	w.ln("class %s {", e.name)
+	if derived {
+		w.ln("class %s : public %s {", e.name, e.base)
+	} else {
+		w.ln("class %s {", e.name)
+	}
 	w.ln("public:")
-	w.ln("\tusing Base = %s;", e.base)
+	if !derived {
+		w.ln("\tusing Base = %s;", e.base)
+	}
 	w.ln("\tstatic constexpr const char *gdpp_name = %q;", e.name)
 	w.ln("")
 	w.ln("\texplicit %s(Base *p_object) :", e.name)
-	w.ln("\t\t\t_gdpp_base(p_object) {}")
-	w.ln("")
+	if derived {
+		w.ln("\t\t\t%s(p_object) {}", e.base)
+	} else {
+		w.ln("\t\t\t_gdpp_base(p_object) {}")
+	}
+	if len(e.funcs)+len(e.vars)+len(e.signals) > 0 {
+		w.ln("")
+	}
 	for _, f := range e.funcs {
 		w.ln("\t%s%s(%s) const;", withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params))
 		if f.rpc != nil {
@@ -370,9 +383,11 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	for _, s := range e.signals {
 		w.ln("\tgdpp::Emitted %s(%s) const;", s.s.Name, params(nil, s.params, s.s.Params))
 	}
-	w.ln("")
-	w.ln("private:")
-	w.ln("\tBase *_gdpp_base;")
+	if !derived {
+		w.ln("")
+		w.ln("protected:")
+		w.ln("\tBase *_gdpp_base;")
+	}
 	w.ln("};")
 }
 

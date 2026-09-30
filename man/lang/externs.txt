@@ -27,13 +27,29 @@ Externs can be file-level, with extern_name, or inline, like classes. See `gd++ 
 
 # Base class
 
-extends names the extern's base class: a Godot class or a GD++ class of the package, never another extern. Without extends, it's RefCounted. The base decides:
+extends names the extern's base class: a Godot class, a GD++ class of the package, or another extern. Without extends, it's RefCounted. The base decides:
 
 - what your code can do with the object without calling by name: everything the base class can,
 - whether the extern is used through a pointer, gdpp::ExtPtr<Terrain>, if the base isn't refcounted, or through a reference, gdpp::ExtRef<Terrain>, if it is,
 - how Godot sees it: as an object of the base class.
 
 Use the class's real base class, or any class above it, e.g. Node3D or Node, as long as it's true of the object.
+
+An extern that extends another extern has that extern's members too, and converts to it, e.g. to pass a gdpp::ExtPtr<Car> where a gdpp::ExtPtr<Vehicle> is expected:
+
+```gd++
+extern Vehicle {
+  extends Node3D
+  func speed() -> float
+}
+
+extern Car {
+  extends Vehicle
+  func honk() -> void
+}
+```
+
+The chain of bases must end with a Godot class or a GD++ class of the package, e.g. Node3D here, which decides the three points above.
 
 # Members
 

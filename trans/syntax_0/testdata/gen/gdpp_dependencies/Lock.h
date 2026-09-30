@@ -21,7 +21,7 @@ public:
 	Gate *owner() const;
 	Ref<Key> key() const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

@@ -21,7 +21,7 @@ public:
 	gdpp::ExtRef<B> get_peer() const;
 	void set_peer(gdpp::ExtRef<B> p_value) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

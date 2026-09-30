@@ -19,7 +19,7 @@ public:
 
 	B *b() const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

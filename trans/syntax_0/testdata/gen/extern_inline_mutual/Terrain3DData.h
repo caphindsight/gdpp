@@ -17,7 +17,7 @@ public:
 
 	double get_height(const Vector3 &pos) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

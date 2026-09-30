@@ -129,7 +129,7 @@ Global enums, e.g. Error or Key, need a new name, since Godot's names are taken:
 
 # Externs
 
-An extern declared in any GD++ file of the package is a type. In C++, it's a gdpp::ExtPtr<T>, or a gdpp::ExtRef<T> if its base class is refcounted, which calls the members of the object by name. Godot sees it as its base class. See `gd++ man externs`.
+An extern declared in any GD++ file of the package is a type. In C++, it's a gdpp::ExtPtr<T>, or a gdpp::ExtRef<T> if its base class is refcounted, which calls the members of the object by name, and converts to the externs it extends. Godot sees it as its base class. See `gd++ man externs`.
 
 # Other names
 

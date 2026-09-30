@@ -1,0 +1,6 @@
+extern A {
+  extends B
+}
+extern B {
+  extends A
+}

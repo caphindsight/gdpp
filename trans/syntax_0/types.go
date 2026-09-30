@@ -40,6 +40,11 @@ func (s *symbol) local() bool {
 	return s.class != nil || s.extern != nil || s.enum != nil
 }
 
+// isExtern reports whether s is an extern: of the file or a dependency.
+func (s *symbol) isExtern() bool {
+	return s.extern != nil || s.kind == meta.Extern || s.kind == meta.RefCountedExtern
+}
+
 // gtype is a resolved GD++ type.
 type gtype struct {
 	cpp   string  // The C++ type, e.g. "Ref<Resource>".

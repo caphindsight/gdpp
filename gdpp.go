@@ -218,7 +218,7 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 		if g, ok := godot[name]; ok && g.Kind == trans.RefCounted {
 			return trans.RefCounted
 		}
-		if d, ok := decls[name]; ok && d.Kind == trans.ClassDecl && depth < 100 {
+		if d, ok := decls[name]; ok && d.Kind != trans.EnumDecl && depth < 100 {
 			return classKind(d.Base, depth+1)
 		}
 		return trans.Object

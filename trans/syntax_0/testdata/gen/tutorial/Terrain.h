@@ -23,7 +23,7 @@ public:
 	void set_baz(int64_t p_value) const;
 	gdpp::Emitted done(bool a, int64_t b) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 

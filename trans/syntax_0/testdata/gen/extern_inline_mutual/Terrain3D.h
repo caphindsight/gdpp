@@ -20,7 +20,7 @@ public:
 	gdpp::ExtPtr<Terrain3DData> get_data() const;
 	void set_data(gdpp::ExtPtr<Terrain3DData> p_value) const;
 
-private:
+protected:
 	Base *_gdpp_base;
 };
 
