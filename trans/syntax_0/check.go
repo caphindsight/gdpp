@@ -60,8 +60,8 @@ type funcModel struct {
 	params                             []*gtype
 	ret                                *gtype
 	virtual, override, isConst, static bool
-	deferral                           string    // "deferred" or "thread_safe" with that annotation, else empty.
-	hidden                             bool      // The generated body of a class's @deferred or @thread_safe func.
+	deferral                           string    // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
+	hidden                             string    // For the generated body of a class's func with a deferral: that deferral.
 	trace, profile                     bool      // Whether its @trace or @profile, or its class's, is on.
 	rpc                                *rpcModel // Nil without @rpc.
 }
@@ -73,9 +73,10 @@ type rpcModel struct {
 	channel        string
 }
 
-// usesEnums reports whether the function's signature mentions an enum, so it's bound through a trampoline.
-func (f *funcModel) usesEnums() bool {
-	return f.ret.enum != nil || slices.ContainsFunc(f.params, func(t *gtype) bool { return t.enum != nil })
+// trampolined reports whether the function's signature mentions an enum, so it's bound through a trampoline. The
+// body of an @onthread func isn't bound at all.
+func (f *funcModel) trampolined() bool {
+	return f.hidden != "onthread" && (f.ret.enum != nil || slices.ContainsFunc(f.params, func(t *gtype) bool { return t.enum != nil }))
 }
 
 type varModel struct {
@@ -213,7 +214,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			}
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
-				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Trace: hasAnnotation(c, "trace"), Profile: hasAnnotation(c, "profile")})
+				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only")})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
@@ -664,7 +665,7 @@ var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "onready",
-	"override", "profile", "rpc", "static", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "profile", "rpc", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -693,7 +694,8 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 	for _, pair := range [][2]string{{"static", "virtual"}, {"static", "override"}, {"static", "const"}, {"virtual", "override"},
 		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}, {"static", "deferred"}, {"virtual", "deferred"},
 		{"override", "deferred"}, {"static", "thread_safe"}, {"virtual", "thread_safe"}, {"override", "thread_safe"},
-		{"deferred", "thread_safe"}, {"tool", "game_only"}} {
+		{"deferred", "thread_safe"}, {"virtual", "onthread"}, {"override", "onthread"}, {"rpc", "onthread"},
+		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -724,11 +726,15 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
+	allowed := []string{"const", "deferred", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "profile", "rpc", "thread_safe", "trace"}
 	}
-	a, err := u.annotations(f.Annotations, "a func", allowed...)
+	kind := "a func"
+	if ext {
+		kind = "an extern func"
+	}
+	a, err := u.annotations(f.Annotations, kind, allowed...)
 	if err != nil {
 		return nil, err
 	}
@@ -740,7 +746,7 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	if m.profile, err = u.debugOn(a["profile"], owner); err != nil {
 		return nil, err
 	}
-	for _, name := range []string{"deferred", "thread_safe"} {
+	for _, name := range []string{"deferred", "thread_safe", "onthread"} {
 		if a[name] != nil {
 			m.deferral = name
 		}
@@ -777,7 +783,10 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	switch {
 	case ext && f.Body != nil:
 		return nil, u.errorAt(f.Body.Pos, 1, "Extern functions can't have a body.", "Externs only declare what another package defines.")
-	case m.deferral != "" && !m.ret.void:
+	case m.deferral == "onthread" && m.ret.async != nil:
+		return nil, u.errorAt(f.Return.Pos, len(f.Return.Name), fmt.Sprintf("The @onthread function %s already returns an Async: write -> %s.", f.Name, typeString(asyncArg(f.Return))),
+			"Its callers get an Async of the type its body returns.")
+	case (m.deferral == "deferred" || m.deferral == "thread_safe") && !m.ret.void:
 		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @%s function %s must return void.", m.deferral, f.Name), "Its calls run later, so they can't return a value.")
 	}
 	if err := u.requireBase(a["thread_safe"], owner, "call_thread_safe is a method of Node.", "Node"); err != nil {
@@ -811,7 +820,7 @@ func (u *unit) requireBase(a *Annotation, owner, hint string, bases ...string) e
 	return nil
 }
 
-// bodyName is the name of the method that holds the body of a class's @deferred or @thread_safe func f.
+// bodyName is the name of the method that holds the body of a class's @deferred, @thread_safe or @onthread func f.
 func bodyName(f *funcModel) string {
 	return "_gdpp_body_" + f.f.Name
 }
@@ -991,6 +1000,9 @@ func (u *unit) exportHint(m *varModel) error {
 	}
 	if export == nil {
 		return nil
+	}
+	if m.t.async != nil {
+		return u.errorAt(export.Pos, len(export.Name)+1, "Async variables can't be exported.", "Neither the inspector nor scene files can hold a task.")
 	}
 	m.usage = "PROPERTY_USAGE_DEFAULT"
 	var args []string
@@ -1252,9 +1264,12 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 					body.Params = append(body.Params, &p)
 				}
 				// The body does the work, so it's what @trace and @profile follow.
-				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, hidden: true,
-					trace: f.trace || m.trace, profile: f.profile || m.profile})
+				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static,
+					hidden: f.deferral, trace: f.trace || m.trace, profile: f.profile || m.profile})
 				f.trace, f.profile = false, false
+				if f.deferral == "onthread" {
+					f.ret = u.async(f.ret) // Callers get an Async of the body's result.
+				}
 				err = u.unique(names, f.f.Pos, "func", body.Name)
 			}
 		case member.Var != nil:

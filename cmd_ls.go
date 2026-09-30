@@ -31,13 +31,13 @@ type lsPackage struct {
 // so commands can't change them. A GD++ class with an empty Name stands for a
 // GD++ file with errors.
 type lsClass struct {
-	Name                           string
-	File, Icon                     Path   // The header of a C++ class, or the GD++ file of a GD++ class.
-	FileText                       string // For GD++ classes, the file's pkg:// path; if empty, File's.
-	Base                           string // For GD++ classes.
-	Gdpp                           bool
-	Tool, GameOnly, Trace, Profile bool
-	Clash                          bool // Another class has the same name.
+	Name           string
+	File, Icon     Path   // The header of a C++ class, or the GD++ file of a GD++ class.
+	FileText       string // For GD++ classes, the file's pkg:// path; if empty, File's.
+	Base           string // For GD++ classes.
+	Gdpp           bool
+	Tool, GameOnly bool
+	Clash          bool // Another class has the same name.
 }
 
 func (c *CmdLs) Run() {
@@ -79,7 +79,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 			if d.Kind == trans.ClassDecl {
 				class := file
 				class.Name, class.Base, class.Icon = d.Name, d.Base, pkg.ClassPath(d.Icon)
-				class.Tool, class.GameOnly, class.Trace, class.Profile = d.Tool, d.GameOnly, d.Trace, d.Profile
+				class.Tool, class.GameOnly = d.Tool, d.GameOnly
 				classes = append(classes, class)
 			}
 		}
@@ -219,7 +219,8 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 		}
 		rows = append(rows, []string{lsKey(cache.Desc), name, status})
 	}
-	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard})
+	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard},
+		[]string{lsKey("Class prefix"), pkg.Prefix()})
 	return rows, missing
 }
 
@@ -256,13 +257,14 @@ func lsClassTable(classes []lsClass) string {
 	return out.String() + AlignColumns(rows, "    ")
 }
 
-// lsTags renders the annotations of a class, e.g. "@tool @icon".
+// lsTags renders the annotations of a class that change what it is, e.g.
+// "@tool @icon", but not those for debugging, like @trace.
 func lsTags(class lsClass) string {
 	var tags []string
 	for _, t := range []struct {
 		on   bool
 		name string
-	}{{class.Tool, "@tool"}, {class.GameOnly, "@game_only"}, {class.Trace, "@trace"}, {class.Profile, "@profile"}} {
+	}{{class.Tool, "@tool"}, {class.GameOnly, "@game_only"}} {
 		if t.on {
 			tags = append(tags, t.name)
 		}

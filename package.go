@@ -23,6 +23,7 @@ type PackageConfig struct {
 	ApiSpec     string         `toml:"spec"` // mandatory
 	Syntax      int            `toml:"syntax"`
 	CppStandard string         `toml:"std"`
+	Prefix      string         `toml:"prefix,omitempty"` // default: the package ID in PascalCase
 	Classes     []PackageClass `toml:"class,omitempty"`
 }
 
@@ -35,7 +36,41 @@ type PackageClass struct {
 	Tool    bool   `toml:"tool,omitempty"` // whether its code runs in the editor too, like @tool
 }
 
-var classNameRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+var (
+	classNameRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+	nonAlnumRegexp  = regexp.MustCompile(`[^A-Za-z0-9]+`)
+)
+
+// Prefix returns the prefix of the names of the classes that GD++ adds to the
+// package, e.g. "Foo" for FooAsync.
+func (pkg Package) Prefix() string {
+	if pkg.Config.Prefix != "" {
+		return pkg.Config.Prefix
+	}
+	return pascalCase(pkg.Id)
+}
+
+// AsyncClass returns the name of the package's class of tasks, which Async
+// types name, e.g. FooAsync.
+func (pkg Package) AsyncClass() string {
+	return pkg.Prefix() + "Async"
+}
+
+// pascalCase converts an ID such as "my_game" or "my-game" to a class name
+// prefix, "MyGame". Other characters than letters and digits separate words,
+// and a leading digit gets the prefix "Pkg".
+func pascalCase(id string) string {
+	var b strings.Builder
+	for _, word := range nonAlnumRegexp.Split(id, -1) {
+		if word != "" {
+			b.WriteString(strings.ToUpper(word[:1]) + word[1:])
+		}
+	}
+	if s := b.String(); s != "" && (s[0] < '0' || s[0] > '9') {
+		return s
+	}
+	return "Pkg" + b.String()
+}
 
 // isClassPath reports whether s is a pkg:// or res:// path.
 func isClassPath(s string) bool {

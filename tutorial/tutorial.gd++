@@ -247,7 +247,7 @@ func take_damage(amount: int) -> void {
 
 func hurt_everyone(peer: int) -> void {
   rpc take_damage(10);  // On every peer. Like take_damage.rpc(10) in GDScript.
-  rpc_id(peer) take_damage(10);  // On one peer. Like take_damage.rpc_id(peer, 10).
+  rpc(peer) take_damage(10);  // On one peer. Like take_damage.rpc_id(peer, 10).
   take_damage(10);  // Locally, as a plain call.
 }
 
@@ -263,6 +263,40 @@ func respawn() -> void {
 
 // @thread_safe is the same with call_thread_safe: calls from other threads run later, on the main thread.
 // Both must return void. @thread_safe needs a class that extends Node.
+
+// The @onthread attribute runs the body on a worker thread instead. A call returns right away, with an Async: a task,
+// through which the caller checks whether the body is done, and gets its result. The body returns the plain type:
+
+@onthread
+func count_primes(limit: int) -> int {
+  int64_t count = 0;
+  for (int64_t n = 2; n < limit; n++) {
+    bool prime = true;
+    for (int64_t d = 2; d * d <= n && prime; d++) {
+      prime = n % d != 0;
+    }
+    count += prime;
+  }
+  return count;
+}
+
+// So count_primes returns an Async[int], which is a gdpp::Async<int64_t> in C++. Async is a type like any other:
+
+var primes: Async[int]
+
+func start_primes() -> void {
+  primes = count_primes(100000);
+}
+
+// Call this every frame, e.g. from _process. An Async is true while it holds a task, and `is_done` once the task
+// has finished. Then `claim` takes the result, and empties the Async, so it's false again: each result is claimed once.
+// `is_done primes` and `claim primes` are primes.is_done() and primes.claim(), spelled to stand out, like emit and rpc.
+
+func poll_primes() -> void {
+  if (primes && is_done primes) {
+    gd::print("Primes: ", claim primes);
+  }
+}
 
 // You can combine attributes where it makes sense, e.g. @virtual @const.
 

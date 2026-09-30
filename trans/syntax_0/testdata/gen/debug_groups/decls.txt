@@ -1,1 +1,1 @@
-{Name:Enemy Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Enemy Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

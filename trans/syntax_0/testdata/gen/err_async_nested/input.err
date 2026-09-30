@@ -1,0 +1,4 @@
+input.gd++:3:18: Typed collections can't hold Async values.
+ 3 | var tasks: Array[Async[int]]
+   |                  ^^^^^
+Hint: Use a plain Array or Dictionary.

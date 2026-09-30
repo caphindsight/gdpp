@@ -1,3 +1,3 @@
-{Name:User Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Terrain Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Lobby Kind:2 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:User Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Terrain Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Lobby Kind:2 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

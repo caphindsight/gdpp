@@ -140,22 +140,13 @@ func cppTypes(names []godotName) map[string]bool {
 }
 
 // cppKeywords are the C++ keywords that declarations use.
-var cppKeywords = map[string]bool{}
+var cppKeywords = wordSet("alignas auto class const constexpr consteval decltype default delete enum explicit extern false final " +
+	"friend inline mutable namespace noexcept nullptr operator override private protected public sizeof static struct template " +
+	"this true typedef typename union using virtual volatile")
 
 // cppBuiltinTypes are C++'s own types, and those of <cstdint> and <cstddef>.
-var cppBuiltinTypes = map[string]bool{}
-
-func init() {
-	for _, k := range strings.Fields("alignas auto class const constexpr consteval decltype default delete enum explicit extern false final " +
-		"friend inline mutable namespace noexcept nullptr operator override private protected public sizeof static struct template " +
-		"this true typedef typename union using virtual volatile") {
-		cppKeywords[k] = true
-	}
-	for _, t := range strings.Fields("bool char char16_t char32_t wchar_t double float int long short signed unsigned void " +
-		"int8_t int16_t int32_t int64_t uint8_t uint16_t uint32_t uint64_t size_t intptr_t uintptr_t") {
-		cppBuiltinTypes[t] = true
-	}
-}
+var cppBuiltinTypes = wordSet("bool char char16_t char32_t wchar_t double float int long short signed unsigned void " +
+	"int8_t int16_t int32_t int64_t uint8_t uint16_t uint32_t uint64_t size_t intptr_t uintptr_t")
 
 // highlightCpp returns the C++ code text with syntax highlighting, if styles
 // are on: keywords, types, i.e. C++'s own and those in types, the names of

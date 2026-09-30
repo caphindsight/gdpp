@@ -1,6 +1,7 @@
 package syntax_0
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -51,6 +52,7 @@ type gtype struct {
 	doc   string  // Godot's doc spelling, e.g. "Resource" or "int[]".
 	byRef bool    // Whether parameters take it as const &.
 	enum  *symbol // Set for enums.
+	async *gtype  // For Async types: the type of the result.
 	void  bool
 }
 
@@ -75,10 +77,26 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		}
 		return &gtype{cpp: "void", doc: "void", void: true}, nil
 	}
+	if t.Name == "Async" {
+		if len(t.Args) > 1 {
+			return nil, u.errorAt(t.Pos, len(t.Name), "Type Async takes one type argument, the type of its result, e.g. Async[int].", "")
+		}
+		result := variantType
+		if len(t.Args) == 1 {
+			var err error
+			if t.Args[0].Name == "Async" {
+				return nil, u.errorAt(t.Args[0].Pos, len(t.Args[0].Name), "An Async can't have an Async result.", "Use the inner type, e.g. Async[int].")
+			}
+			if result, err = u.resolve(t.Args[0], true); err != nil {
+				return nil, err
+			}
+		}
+		return u.async(result), nil
+	}
 	if (t.Name == "Array" && len(t.Args) > 1) || (t.Name == "Dictionary" && len(t.Args) != 0 && len(t.Args) != 2) ||
 		(len(t.Args) > 0 && t.Name != "Array" && t.Name != "Dictionary") {
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Type %s doesn't take these type arguments.", t.Name),
-			"Only Array[T] and Dictionary[K, V] take type arguments.")
+			"Only Array[T], Dictionary[K, V] and Async[T] take type arguments.")
 	}
 	if len(t.Args) > 0 {
 		var cpp, doc []string
@@ -123,8 +141,24 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		"Types are Godot's built-in types and classes, and the package's classes, externs and enums.")
 }
 
+// async returns the Async type whose result has type result.
+func (u *unit) async(result *gtype) *gtype {
+	return &gtype{cpp: "gdpp::Async<" + result.cpp + ">", doc: cmp.Or(u.opts.AsyncClass, "GdppAsync"), async: result}
+}
+
+// asyncArg returns the type argument of t, an Async type, or nil (a Variant) if it has none.
+func asyncArg(t *Type) *Type {
+	if len(t.Args) == 0 {
+		return nil
+	}
+	return t.Args[0]
+}
+
 // resolveElement resolves a type argument of Array or Dictionary.
 func (u *unit) resolveElement(t *Type) (*gtype, error) {
+	if t.Name == "Async" {
+		return nil, u.errorAt(t.Pos, len(t.Name), "Typed collections can't hold Async values.", "Use a plain Array or Dictionary.")
+	}
 	if len(t.Args) > 0 {
 		return nil, u.errorAt(t.Pos, len(t.Name), "Typed collections can't be nested.", "Use a plain Array or Dictionary inside.")
 	}
@@ -147,7 +181,7 @@ func (u *unit) unknownType(t *Type) error {
 
 // unknownName returns the error for t, an unknown type used as what, e.g. "base class".
 func (u *unit) unknownName(t *Type, what string) error {
-	var names []string
+	names := []string{"Async"}
 	for name := range builtins {
 		names = append(names, name)
 	}

@@ -1,2 +1,2 @@
-{Name:Player Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:State Kind:3 Base: Values:[{Name:IDLE Value:0 Doc:Standing still. Implicit:true Expr:} {Name:RUNNING Value:0 Doc:@experimental Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Player Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:State Kind:3 Base: Values:[{Name:IDLE Value:0 Doc:Standing still. Implicit:true Expr:} {Name:RUNNING Value:0 Doc:@experimental Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}

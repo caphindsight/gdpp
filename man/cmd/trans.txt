@@ -21,7 +21,7 @@ gd++ trans player.gd++
 
 In a package, the file sees what it would see in a build: Godot's classes and enums, from the package's spec and bindings, and the classes, externs and enums of the package's other GD++ files. So the output is what the build compiles, apart from the #line directives, which name the file as you passed it.
 
-Outside of a package, the file sees only what you declare with the flags below. Even RefCounted, the default base class, must be declared then, e.g. with --refcounted RefCounted, or taken from a spec in the project's cache, with --spec.
+Outside of a package, the file sees only what you declare with the flags below. Even RefCounted, the default base class, must be declared then, e.g. with --refcounted RefCounted, or taken from a spec in the project's cache, with --spec. Async types name the class GdppAsync then, since there's no package prefix. See `gd++ man async`.
 
 If the file has errors, trans shows them like a build does. If it declares nothing, it says "The file declares no classes, externs or enums.".
 

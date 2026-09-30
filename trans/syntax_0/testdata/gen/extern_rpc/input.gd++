@@ -11,6 +11,6 @@ extern Terrain2 {
 
 func use(peer: int) -> void {
   rpc terrain->dig(Vector3());
-  rpc_id(peer) terrain->reset();
+  rpc(peer) terrain->reset();
   terrain->reset();
 }

@@ -56,6 +56,7 @@ private:
 #line 57 "MyNode.h"
 
 public:
+	gdpp::Async<int64_t> primes{};
 	int64_t simple_var{};
 	int64_t another_simple_var{};
 	Node3D *child_node_1{};
@@ -65,12 +66,12 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 345 "input.gd++"
+#line 379 "input.gd++"
 
 
     int64_t my_property = 0;
 
-#line 74 "MyNode.h"
+#line 75 "MyNode.h"
 
 public:
 	static constexpr int64_t THE_ANSWER = 42;
@@ -91,9 +92,15 @@ public:
 	void hurt_everyone(int64_t peer);
 	void respawn();
 	void _gdpp_body_respawn();
+	gdpp::Async<int64_t> count_primes(int64_t limit);
+	int64_t _gdpp_body_count_primes(int64_t limit);
+	void start_primes();
+	void poll_primes();
 	int64_t deal_damage(int64_t amount);
 	void emit_both_signals();
 	void foo();
+	gdpp::Async<int64_t> get_primes() const;
+	void set_primes(gdpp::Async<int64_t> p_value);
 	int64_t get_simple_var() const;
 	void set_simple_var(int64_t p_value);
 	int64_t get_another_simple_var() const;

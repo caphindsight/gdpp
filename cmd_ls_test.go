@@ -92,7 +92,8 @@ const lsFooOut = "" +
 	"  Godot C++ bindings:  10.0.0-stable\n" +
 	"  Godot API spec:      4.3-stable\n" +
 	"  GD++ syntax:         0\n" +
-	"  C++ standard:        c++20\n"
+	"  C++ standard:        c++20\n" +
+	"  Class prefix:        Foo\n"
 
 func TestLsCmdPackages(t *testing.T) {
 	collapsed := lsDepsOut +
@@ -175,6 +176,7 @@ func TestLsCmdGdppClasses(t *testing.T) {
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := "" +
 		"  C++ standard:        c++20\n" +
+		"  Class prefix:        Foo\n" +
 		"\n" +
 		"  C++ classes in the package\n" +
 		"    Tree                    res://foo/tree.h  @icon\n" +
@@ -184,8 +186,8 @@ func TestLsCmdGdppClasses(t *testing.T) {
 		"  Classes in pkg://player.gd++\n" +
 		"    Player: declared twice  extends Node  @tool @icon\n" +
 		"  Classes in pkg://spawner.gd++\n" +
-		"    Spawner  extends Node3D    @game_only @trace\n" +
-		"    Wave     extends Resource  @profile @icon (missing)\n" +
+		"    Spawner  extends Node3D    @game_only\n" +
+		"    Wave     extends Resource  @icon (missing)\n" +
 		"  pkg://broken.gdpp: has errors, see gd++ build\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
@@ -203,8 +205,9 @@ func TestLsCmdAllPackages(t *testing.T) {
 		"  Godot API spec:      4.3-stable\n" +
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++20\n" +
+		"  Class prefix:        Icons\n" +
 		"\n" +
-		strings.Replace(lsFooOut, "foo", "zed", 1) +
+		strings.NewReplacer("foo", "zed", "Foo", "Zed").Replace(lsFooOut) +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
 	if out != want {
@@ -232,7 +235,7 @@ func TestLsPackages(t *testing.T) {
 	withLsProject(t)
 	root := NewPath("/games/my_game/foo")
 	pkgs := []lsPackage{{
-		Package:  Package{Root: root, Config: PackageConfig{Bindings: "b", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++23"}},
+		Package:  Package{Root: root, Config: PackageConfig{Bindings: "b", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++23", Prefix: "Pk"}},
 		Expanded: true,
 		Classes: []lsClass{
 			{Name: "Tree", File: root.Cd("tree.h"), Icon: root.Cd("icons", "tree.svg")},
@@ -247,6 +250,7 @@ func TestLsPackages(t *testing.T) {
 		"  Godot API spec:      4.3-stable\n" +
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++23\n" +
+		"  Class prefix:        Pk\n" +
 		"\n" +
 		"  C++ classes in the package\n" +
 		"    Tree        res://foo/tree.h            @icon\n" +

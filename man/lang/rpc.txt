@@ -1,6 +1,6 @@
-RPC: networked functions with @rpc, and calling them with rpc and rpc_id
+RPC: networked functions with @rpc, and calling them with rpc
 
-Godot's high-level multiplayer calls functions on other peers of a network game: remote procedure calls, or RPCs. GD++ declares them like GDScript, with @rpc, and calls them with a bit of syntax of its own, rpc and rpc_id.
+Godot's high-level multiplayer calls functions on other peers of a network game: remote procedure calls, or RPCs. GD++ declares them like GDScript, with @rpc, and calls them with a bit of syntax of its own, rpc.
 
 # Declaring RPC functions
 
@@ -45,7 +45,7 @@ func hit_everyone() -> void {
 }
 
 func hit_one(peer: int) -> void {
-  rpc_id(peer) take_damage(10);         // on one peer
+  rpc(peer) take_damage(10);            // on one peer
 }
 
 func hit_here() -> void {
@@ -53,14 +53,14 @@ func hit_here() -> void {
 }
 ```
 
-`rpc NAME(ARGS);` calls the function on every peer, like NAME.rpc(ARGS) in GDScript. `rpc_id(PEER) NAME(ARGS);` calls it on the peer with the id PEER, like NAME.rpc_id(PEER, ARGS). A plain call runs it locally only. PEER is any C++ expression: 1 is the server, and get_multiplayer()->get_remote_sender_id() is the peer that called the running RPC.
+`rpc NAME(ARGS);` calls the function on every peer, like NAME.rpc(ARGS) in GDScript. `rpc(PEER) NAME(ARGS);` calls it on the peer with the id PEER, like NAME.rpc_id(PEER, ARGS); `rpc(0)` is the same as `rpc`, every peer. A plain call runs it locally only. PEER is any C++ expression: 1 is the server, and get_multiplayer()->get_remote_sender_id() is the peer that called the running RPC.
 
 They also work on other objects, and on externs, through -> or ., as long as the objects are named by variables, not by function calls:
 
 ```gd++
 rpc other_player->take_damage(5);
-rpc_id(1) game->scores.report(score);
-rpc_id(1) get_game()->report(score);      // wrong: calls get_game as the RPC
+rpc(1) game->scores.report(score);
+rpc(1) get_game()->report(score);         // wrong: calls get_game as the RPC
 ```
 
 Store the object in a variable first when you need a call to get it.
@@ -71,7 +71,7 @@ Like emit, rpc makes remote calls look different from local ones. Both forms ret
 Error err = rpc take_damage(10);
 ```
 
-A remote call can't return a value, so the return value of an @rpc function is lost when called with rpc or rpc_id. Default values of parameters work, as in plain calls.
+A remote call can't return a value, so the return value of an @rpc function is lost when called with rpc. Default values of parameters work, as in plain calls.
 
 # How it works
 
@@ -84,13 +84,13 @@ In C++ code, it rewrites the calls:
 
 ```gd++
 rpc take_damage(10);                 becomes   _gdpp_rpc_take_damage(0, 10);
-rpc_id(peer) take_damage(10);        becomes   _gdpp_rpc_take_damage(peer, 10);
+rpc(peer) take_damage(10);           becomes   _gdpp_rpc_take_damage(peer, 10);
 rpc other->take_damage(10);          becomes   other->_gdpp_rpc_take_damage(0, 10);
 ```
 
 Peer 0 means every peer. The function itself is also bound like any function, so Godot can call it by name when the RPC arrives.
 
-rpc and rpc_id are only rewritten when followed by a call: `rpc NAME(` or `rpc_id(...) NAME(`, possibly with names of objects and -> or . before NAME. Other uses, e.g. Godot's own `rpc_id(1, "ping")`, are left alone. So don't use rpc as a name in your C++ code.
+rpc is only rewritten when followed by a call: `rpc NAME(` or `rpc(...) NAME(`, possibly with names of objects and -> or . before NAME. Other uses, e.g. Godot's own `rpc("ping")` and `rpc_id(1, "ping")`, are left alone. So don't use rpc as a name in your C++ code.
 
 # In externs
 
@@ -105,7 +105,7 @@ extern Lobby {
 @export var lobby: Lobby
 
 func enter() -> void {
-  rpc_id(1) lobby->join("Me");
+  rpc(1) lobby->join("Me");
 }
 ```
 

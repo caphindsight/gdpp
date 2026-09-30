@@ -1,2 +1,2 @@
-{Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Walker Kind:1 Base:Player Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Walker Kind:1 Base:Player Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

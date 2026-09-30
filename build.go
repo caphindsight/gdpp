@@ -265,6 +265,7 @@ func generateBuildCache(p Project, pkg Package) {
 		"Color":       isTTY,
 		"ProjectRoot": relPath(cache, p.Root),
 		"Sources":     cppSources(p, pkg),
+		"AsyncClass":  pkg.AsyncClass(),
 	})
 }
 
@@ -298,7 +299,16 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 			includes = append(includes, "<"+rest+">")
 		}
 	}
+	// GD++ adds the class of tasks, which Async types name, to packages with GD++ classes.
+	asyncClass := ""
+	if len(gdpp) > 0 {
+		asyncClass = pkg.AsyncClass()
+		Assert(!slices.Contains(classes, asyncClass), "Class %s is declared in %s, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init %s --prefix NAME`.",
+			asyncClass, pkg.Root.Cd(packageFileName).ToString(), pkg.Root.ToString())
+	}
 	for _, class := range gdpp {
+		Assert(class.Name != asyncClass, "Class %s is declared in %s, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init %s --prefix NAME`.",
+			class.Name, class.File.File.ToString(), pkg.Root.ToString())
 		Assert(!slices.Contains(classes, class.Name), "Class %s is declared in %s and in %s.",
 			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
 		classes = append(classes, class.Name)
@@ -311,6 +321,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		"Classes":        classes,
 		"RuntimeClasses": runtime,
 		"Includes":       uniqueSorted(includes, strings.Compare),
+		"AsyncClass":     asyncClass,
 	}) {
 		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}

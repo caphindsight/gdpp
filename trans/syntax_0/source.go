@@ -266,6 +266,13 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		u.initializers(w, c, true)
 	}
 	switch {
+	case f.deferral == "onthread":
+		self, capture := "this", "=, this"
+		if f.static {
+			self, capture = "nullptr", "="
+		}
+		w.ln("\treturn gdpp::run_task(%s, %q, [%s] { return %s(%s); });", self, c.name+"."+f.f.Name, capture,
+			bodyName(f), strings.Join(paramNames(f.f.Params), ", "))
 	case f.deferral != "" && f.isConst:
 		w.ln("\t%s;", deferredCall(f, fmt.Sprintf("const_cast<%s *>(this)", c.name), bodyName(f)))
 	case f.deferral != "":
@@ -279,7 +286,7 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t}());")
 	}
 	w.ln("}")
-	if f.virtual || f.override || !f.usesEnums() {
+	if f.virtual || f.override || !f.trampolined() {
 		return
 	}
 	w.ln("")
@@ -396,9 +403,12 @@ func info(c *classModel, t *gtype, name, usage, hint, hintString string) string 
 // bindings writes the body of _bind_methods.
 func (u *unit) bindings(w *writer, c *classModel) {
 	for _, f := range c.funcs {
+		if f.hidden == "onthread" {
+			continue // Its func calls it directly.
+		}
 		// The method, followed by the default values of its parameters.
 		ref := fmt.Sprintf("&%s::%s", c.name, f.f.Name)
-		if f.usesEnums() {
+		if f.trampolined() {
 			ref = fmt.Sprintf("&%s::_gdpp_%s", c.name, f.f.Name)
 		}
 		names := paramNames(f.f.Params)

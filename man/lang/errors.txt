@@ -111,6 +111,9 @@ Types can't contain ".", but found Node.ProcessMode.
 Type Dictionary doesn't take these type arguments.
 Typed collections can't be nested.
 Type Suit can't be used in a typed collection.
+Typed collections can't hold Async values.
+An Async can't have an Async result.
+Type Async takes one type argument, the type of its result, e.g. Async[int].
 ```
 
 Annotations:
@@ -127,6 +130,10 @@ The icon's path must start with res:// or pkg://.
 The channel must be the last argument of @rpc.
 Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").
 Annotation @profile can't be used on a signal.
+Annotations @virtual and @onthread can't be used together.
+The @onthread function f already returns an Async: write -> int.
+  Its callers get an Async of the type its body returns.
+Async variables can't be exported.
 ```
 
 Externs:
@@ -139,6 +146,7 @@ The @deferred function f must return void.
 Annotation @thread_safe can only be used in classes that extend Node, which E doesn't.
 Annotation @trace can't be used on an extern var.
   Extern variables only take @profile. Trace the variable in the class that defines it instead.
+Annotation @onthread can't be used on an extern func.
 ```
 
 Package-wide, from `gd++ build`:
@@ -146,6 +154,7 @@ Package-wide, from `gd++ build`:
 ```
 The name Player is declared in both res://a.gd++ and res://b.gd++.
 Class Spinner is declared in res://spinner.gd++ and in res://gd++pkg.toml.
+Class MyGameAsync is declared in res://gd++pkg.toml, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res:// --prefix NAME`.
 ```
 
 # C++ compiler errors
@@ -163,6 +172,7 @@ Some compiler errors are about the generated code, but caused by the GD++ declar
 - "marked 'override', but does not override": an @override function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and @const. See `gd++ doc CLASS.FUNCTION`.
 - "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
 - "ignoring return value ... declared with attribute 'nodiscard'": a signal was called without emit. Write `emit NAME(...)`.
+- "'claim' was not declared in this scope", or the same for is_done: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
 - Errors in the file NAME.h or NAME.cpp of the build cache point to generated code. Open the file, e.g. res://.gd++pkg/gdpp/Player.cpp, to see what GD++ generated, and which declaration it came from.
 
 # See also

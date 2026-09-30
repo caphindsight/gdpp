@@ -26,6 +26,8 @@ else:
     env.Append(CXXFLAGS=[("/std:" if env.get("is_msvc", False) else "-std=") + {{printf "%q" .CppStandard}}])
     # gdpp holds the C++ that GD++ generates from .gd++ files.
     env.Append(CPPPATH=[package_root, project_root, "gdpp"])
+    # The name of the package's class of tasks, which Async types name.
+    env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", {{printf "%q" .AsyncClass}})])
 {{- if .Color}}
     # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
     # the build signature, so it doesn't trigger rebuilds.

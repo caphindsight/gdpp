@@ -32,25 +32,38 @@ func highlightCode(code, lang string) string {
 	return code
 }
 
-// codeKeywords are the keywords of GD++, C++ and GDScript, and GD++'s own words
-// in C++ code.
-var codeKeywords = map[string]bool{}
+// The words that highlightGdpp marks, by kind. Add new words to these lists.
+const (
+	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport set signal var"
+	cppWords  = "if else for while do return switch case break continue default new delete auto const static constexpr namespace using " +
+		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
+	gdscriptWords = "pass and or not in"
+	// GD++'s words in C++ code that are keywords wherever they appear.
+	rewriteWords = "emit rpc"
+	// GD++'s words in C++ code that are also method names, e.g. in task.is_done(): they're keywords only where a name
+	// follows them, which is where GD++ rewrites them.
+	rewriteOperatorWords = "is_done claim"
+	cppTypeWords         = "bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t uint8_t uint16_t " +
+		"uint32_t uint64_t"
+	// Godot's names for types that aren't written in PascalCase, which is how highlightGdpp spots other types.
+	godotTypeWords = "float64_t real_t gd RID AABB"
+)
 
-// codeTypes are the names of built-in types of Godot and C++ that aren't
-// written in PascalCase, which is how highlightGdpp spots other types.
-var codeTypes = map[string]bool{}
+var (
+	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords)
+	codeOperators = wordSet(rewriteOperatorWords)
+	codeTypes     = wordSet(cppTypeWords, godotTypeWords)
+)
 
-func init() {
-	for _, k := range strings.Fields("class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport " +
-		"set signal var emit rpc rpc_id if else for while do return switch case break continue default new delete auto const static " +
-		"constexpr namespace using typedef template typename public private protected virtual override struct true false nullptr this " +
-		"sizeof operator inline explicit mutable pass and or not in") {
-		codeKeywords[k] = true
+// wordSet returns the set of the words in lists, which are separated by spaces.
+func wordSet(lists ...string) map[string]bool {
+	set := map[string]bool{}
+	for _, list := range lists {
+		for _, w := range strings.Fields(list) {
+			set[w] = true
+		}
 	}
-	for _, t := range strings.Fields("bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t " +
-		"uint8_t uint16_t uint32_t uint64_t float64_t real_t gd RID AABB") {
-		codeTypes[t] = true
-	}
+	return set
 }
 
 // highlightGdpp highlights GD++ or C++ code, or with gdscript, GDScript code,
@@ -96,7 +109,7 @@ func highlightGdpp(code string, gdscript bool) string {
 			n = identLen(rest)
 			word := rest[:n]
 			switch {
-			case codeKeywords[word]:
+			case codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0:
 				style = []Style{CodeKeyword}
 			case codeTypes[word] || word[0] >= 'A' && word[0] <= 'Z' && strings.ToUpper(word) != word:
 				style = []Style{CodeType}

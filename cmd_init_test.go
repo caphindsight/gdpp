@@ -159,6 +159,21 @@ func TestInitUpdatePackage(t *testing.T) {
 	}
 }
 
+func TestInitPackagePrefix(t *testing.T) {
+	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\n"}
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Prefix: "Foo"}, pkgs)
+	want := "" +
+		"[-] Set the class name prefix to Foo.\n" +
+		"[!] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n" +
+		"[-] Success!\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\nprefix = \"Foo\"\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
 func TestInitExistingPackage(t *testing.T) {
 	withForce(t, true)
 	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"}
@@ -176,11 +191,14 @@ func TestInitInvalidArgs(t *testing.T) {
 		c    CmdInit
 		want string
 	}{
-		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std and --class require a package path"},
-		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std and --class require a package path"},
+		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std, --prefix and --class require a package path"},
+		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std, --prefix and --class require a package path"},
+		"project_prefix":  {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix and --class require a package path"},
+		"package_prefix":  {CmdInit{Path: "src/pkg", Prefix: "my pkg"}, `"my pkg" is not a valid class name prefix`},
+		"class_prefix":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std and --prefix cannot be used with --class"},
 		"project_icon":    {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
 		"package_icon":    {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
-		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax and --std cannot be used with --class"},
+		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std and --prefix cannot be used with --class"},
 		"class_name":      {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
 		"class_include":   {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
 		"class_noinclude": {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},

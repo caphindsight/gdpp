@@ -40,11 +40,11 @@ func TestLoadPackage(t *testing.T) {
 }
 
 func TestLoadPackageAllKeys(t *testing.T) {
-	config := "bind = \"a\"\nspec = \"b\"\nsyntax = 2\nstd = \"c++23\"\n\n" +
+	config := "bind = \"a\"\nspec = \"b\"\nsyntax = 2\nstd = \"c++23\"\nprefix = \"Pk\"\n\n" +
 		"[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\nicon = \"res://a.svg\"\n\n" +
 		"[[class]]\nname = \"B\"\ninclude = \"res://b.hpp\"\ntool = true\n"
 	withMemFS(t, "/", withPackages(map[string]string{"pkg": config}))
-	want := PackageConfig{Bindings: "a", ApiSpec: "b", Syntax: 2, CppStandard: "c++23", Classes: []PackageClass{
+	want := PackageConfig{Bindings: "a", ApiSpec: "b", Syntax: 2, CppStandard: "c++23", Prefix: "Pk", Classes: []PackageClass{
 		{Name: "A", Include: "pkg://a.h", Icon: "res://a.svg"},
 		{Name: "B", Include: "res://b.hpp", Tool: true},
 	}}
@@ -61,6 +61,18 @@ func classes(bodies ...string) string {
 		s += "\n[[class]]\n" + body + "\n"
 	}
 	return s
+}
+
+func TestAsyncClass(t *testing.T) {
+	for id, want := range map[string]string{"my_game": "MyGameAsync", "my-game": "MyGameAsync", "game": "GameAsync",
+		"HUD": "HUDAsync", "3d_tools": "Pkg3dToolsAsync", "__": "PkgAsync", "a.b c": "ABCAsync"} {
+		if got := (Package{Id: id}).AsyncClass(); got != want {
+			t.Errorf("AsyncClass of %q = %q, want %q", id, got, want)
+		}
+	}
+	if got := (Package{Id: "my_game", Config: PackageConfig{Prefix: "Mg"}}).AsyncClass(); got != "MgAsync" {
+		t.Errorf("AsyncClass with prefix Mg = %q, want MgAsync", got)
+	}
 }
 
 func TestLoadPackageFails(t *testing.T) {

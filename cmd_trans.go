@@ -52,10 +52,10 @@ func (c *CmdTrans) Run() {
 	var files []gdppFile
 	var names []godotName
 	var enums []trans.Dependency
-	self := ""
+	self, asyncClass := "", ""
 	if root, ok := GetPackageRootMaybe(file); ok {
 		p, pkg := LoadProject(root), LoadPackage(root)
-		files, self = listGdppFiles(p, pkg), relPath(root, file)
+		files, self, asyncClass = listGdppFiles(p, pkg), relPath(root, file), pkg.AsyncClass()
 		if c.Syntax == nil {
 			syntax = pkg.Config.Syntax
 		}
@@ -69,7 +69,7 @@ func (c *CmdTrans) Run() {
 	}
 	// Flags come first, so they win over other dependencies of the same name.
 	deps := append(c.flagDependencies(), packageDeps(files, names, enums, self)...)
-	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(trans.Options{Dependencies: deps}), syntax)
+	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(trans.Options{Dependencies: deps, AsyncClass: asyncClass}), syntax)
 	if err != nil {
 		FailWithText(err)
 	}

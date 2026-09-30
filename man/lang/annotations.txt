@@ -63,13 +63,16 @@ A declaration's doc comment can come before its annotations or between them, but
 @thread_safe
   Like @deferred, with call_thread_safe: calls from other threads run later, on the main thread. Only in classes that extend Node. See `gd++ man functions`.
 
+@onthread
+  Every call, from C++ or from Godot, runs the body on the WorkerThreadPool, and returns an Async of the function's type, through which the caller waits for the body and gets its result. See `gd++ man async`.
+
 @trace(GROUPS...)
   Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.
 
 @profile(GROUPS...)
   Time each call, for the editor's monitors and the profile table. See "@trace and @profile" below.
 
-These can't be combined: @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe; @virtual with @override, @rpc, @deferred or @thread_safe; @override with @rpc, @deferred or @thread_safe; @deferred with @thread_safe.
+These can't be combined: @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe; @virtual with @override, @rpc, @deferred, @thread_safe or @onthread; @override with @rpc, @deferred, @thread_safe or @onthread; @rpc with @onthread; @deferred with @thread_safe or @onthread; @thread_safe with @onthread.
 
 # Functions of externs
 
@@ -83,7 +86,7 @@ These can't be combined: @static with @virtual, @override, @const, @rpc, @deferr
   Call the function with call_thread_safe. The function must return void. Only in externs that extend Node.
 
 @rpc
-  The function can be called over the network, with rpc and rpc_id. No arguments in externs. Only in externs that extend Node.
+  The function can be called over the network, with rpc. No arguments in externs. Only in externs that extend Node.
 
 @trace(GROUPS...)
   Print each call through the extern, like @trace on a class's function, marked "extern". See "@trace and @profile" below.

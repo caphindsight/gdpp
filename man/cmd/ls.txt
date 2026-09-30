@@ -44,11 +44,12 @@ Package: res://gameplay
   Godot API spec:      4.7.2-stable
   GD++ syntax:         0
   C++ standard:        c++20
+  Class prefix:        Gameplay
 
   C++ classes in the package
     Spinner  res://gameplay/spinner.h  @tool
   Classes in pkg://gizmo.gd++
-    Gizmo  extends Node3D  @tool @trace
+    Gizmo  extends Node3D  @tool
   Classes in pkg://player.gd++
     Player  extends CharacterBody3D  @game_only @icon
     Stats   extends Resource         @icon (missing)
@@ -63,8 +64,8 @@ The parts:
 
 - Project: the name from project.godot, the project's id (its directory name) in brackets, the Godot version from project.godot, and the vcs setting from gd++proj.toml.
 - Dependencies: per kind, how many are checked in, cached (in the ephemeral cache) and unused (named by no package). With --deps, one row per dependency, newest first, with its cache and whether it's unused.
-- Package: the package's path, and for the root package, its id in brackets. An expanded package shows its bindings and spec, marked "missing" if the project doesn't have them, its GD++ syntax and C++ standard, and its classes.
-- Classes: grouped by where they're declared. First the C++ classes from gd++pkg.toml, in order, each with its header. Then the classes of each GD++ file, in order, each with its base class. After each class, its tags: @tool (it runs in the editor too; without it, it's a runtime class), @game_only, @trace, @profile and @icon, from its annotations, or for a C++ class from gd++pkg.toml. A missing header or icon is marked "(missing)". A class declared twice is marked "declared twice". A GD++ file with errors gets a line of its own at the end, since its classes can't be read: run `gd++ build` or `gd++ trans` on it to see the error.
+- Package: the package's path, and for the root package, its id in brackets. An expanded package shows its bindings and spec, marked "missing" if the project doesn't have them, its GD++ syntax, C++ standard and class prefix (see `gd++ man packages`), and its classes.
+- Classes: grouped by where they're declared. First the C++ classes from gd++pkg.toml, in order, each with its header. Then the classes of each GD++ file, in order, each with its base class. After each class, its tags: @tool (it runs in the editor too; without it, it's a runtime class), @game_only and @icon, from its annotations, or for a C++ class from gd++pkg.toml. Annotations for debugging, like @trace and @profile, aren't shown. A missing header or icon is marked "(missing)". A class declared twice is marked "declared twice". A GD++ file with errors gets a line of its own at the end, since its classes can't be read: run `gd++ build` or `gd++ trans` on it to see the error.
 
 A collapsed package shows "missing dependencies" if it lacks any. If any package lacks dependencies, a hint at the end says how to fix it. Problems are shown in red.
 

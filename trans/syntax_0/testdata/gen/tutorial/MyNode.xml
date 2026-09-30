@@ -17,6 +17,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="count_primes">
+			<return type="GdppAsync" />
+			<param index="0" name="limit" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="deal_damage">
 			<return type="int" />
 			<param index="0" name="amount" type="int" />
@@ -68,7 +74,17 @@
 			<description>
 			</description>
 		</method>
+		<method name="poll_primes">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
 		<method name="respawn">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="start_primes">
 			<return type="void" />
 			<description>
 			</description>
@@ -92,6 +108,8 @@
 		<member name="my_property" type="int" setter="set_my_property" getter="get_my_property">
 		</member>
 		<member name="my_range_var" type="int" setter="set_my_range_var" getter="get_my_range_var">
+		</member>
+		<member name="primes" type="GdppAsync" setter="set_primes" getter="get_primes">
 		</member>
 		<member name="simple_var" type="int" setter="set_simple_var" getter="get_simple_var">
 		</member>

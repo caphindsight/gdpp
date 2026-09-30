@@ -1,0 +1,74 @@
+class_name Pathfinder
+extends Node
+
+enum Terrain { GRASS, WATER }
+
+signal found(path: Async[PackedVector2Array])
+
+var pending: Async[PackedVector2Array]
+var anything: Async
+
+/// Finds a path in the background.
+@onthread
+func find_path(from: Vector2, to: Vector2, steps: int = 10) -> PackedVector2Array {
+  return PackedVector2Array();
+}
+
+@onthread @trace
+func terrain_at(at: Vector2i) -> Terrain {
+  return Terrain::GRASS;
+}
+
+@onthread @static
+func warm_up() -> void {
+  gd::print("warm");
+}
+
+@onthread @const
+func count() -> int {
+  return 42;
+}
+
+@onthread
+func untyped() {
+  return 1;
+}
+
+func follow(path: Async[PackedVector2Array]) -> Async[String] {
+  return {};
+}
+
+func done(task: Async[void]) -> bool {
+  return bool(task);
+}
+
+func poll() -> int {
+  if (pending && is_done pending) {
+    PackedVector2Array path = claim pending;
+    return path.size();
+  }
+  gdpp::Async<int64_t> none;  // Empty: false, and done, with nothing to claim.
+  gdpp::Async<void> nothing;
+  if (!none && is_done none && !nothing && nothing.is_done()) {
+    return count().wait() + find_path(Vector2(), Vector2()).wait().size();
+  }
+  gdpp::Async<Variant> tasks[2] = {anything, untyped()};
+  if (tasks[1] && is_done tasks[1]) {
+    claim tasks[1];
+  }
+  if (is_done
+      this->anything) {
+    return (claim
+      this->anything).operator int64_t();
+  }
+  return 0;
+}
+
+class Baker {
+  extends RefCounted
+
+  @onthread
+  func bake(mode: Terrain) -> String {
+    return "done";
+  }
+}

@@ -39,8 +39,10 @@ func (w *writer) String() string {
 	return w.sb.String()
 }
 
-// cpp turns user C++ into plain C++: `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
-// and `rpc x->f(a)` and `rpc_id(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`.
+// cpp turns user C++ into plain C++:
+//   - `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
+//   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
+//   - `claim x` and `is_done x` become `x.claim()` and `x.is_done()`, for an Async x.
 func cpp(code string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
@@ -61,6 +63,18 @@ func cpp(code string) string {
 	for i := 0; i < len(ts); i++ {
 		if ts[i].Type == tokIdent && ts[i].Value == "emit" {
 			out[i] = "(void)"
+		}
+		if ts[i].Type == tokIdent && asyncWords[ts[i].Value] {
+			j := skipSpace(ts, i+1)
+			if end := postfixEnd(ts, j); end > j {
+				// Drop the keyword and the spaces after it, but keep a line break and the indentation after it.
+				for k := i; k < j && ts[k].Type != tokNewline; k++ {
+					out[k] = ""
+				}
+				out[end-1] += "." + ts[i].Value + "()"
+				i = j - 1 // The operand may hold more rewrites, e.g. in a call's arguments.
+				continue
+			}
 		}
 		peer, chain, name, paren, ok := rpcTarget(ts, i)
 		if !ok {
@@ -88,26 +102,67 @@ func cpp(code string) string {
 	return strings.Join(out, "")
 }
 
-// rpcTarget matches an RPC call at ts[i], `rpc x->f(` or `rpc_id(peer) x->f(`. It returns the peer's tokens (nil
-// for rpc), the index where x->f starts, the index of f and the index of its '('.
+// asyncWords are the words that call the method of the same name on an Async: `claim x` is `x.claim()`.
+var asyncWords = map[string]bool{"claim": true, "is_done": true}
+
+// postfixEnd returns the end of the expression at ts[j] that an Async word applies to: a name, followed by
+// member accesses, scopes, calls and subscripts, e.g. `tasks[i]`, `this->pending` or `find(a).task`. It returns j if
+// there's none.
+func postfixEnd(ts []lexer.Token, j int) int {
+	if j >= len(ts) || ts[j].Type != tokIdent {
+		return j
+	}
+	end := j + 1
+	for {
+		k := skipSpace(ts, end)
+		switch {
+		case k < len(ts) && (isPunct(ts[k], "(") || isPunct(ts[k], "[")):
+			close := closing(ts, k)
+			if close == len(ts) {
+				return end
+			}
+			end = close + 1
+		case k+1 < len(ts) && (isPunct(ts[k], "->") || isPunct(ts[k], ".") || isPunct(ts[k], ":") && isPunct(ts[k+1], ":")):
+			if isPunct(ts[k], ":") {
+				k++
+			}
+			m := skipSpace(ts, k+1)
+			if m == len(ts) || ts[m].Type != tokIdent {
+				return end
+			}
+			end = m + 1
+		default:
+			return end
+		}
+	}
+}
+
+// closing returns the index of the bracket that closes the one at ts[open], or len(ts) if there's none.
+func closing(ts []lexer.Token, open int) int {
+	depth := 0
+	for j := open; j < len(ts); j++ {
+		if isPunct(ts[j], "(") || isPunct(ts[j], "[") {
+			depth++
+		} else if isPunct(ts[j], ")") || isPunct(ts[j], "]") {
+			if depth--; depth == 0 {
+				return j
+			}
+		}
+	}
+	return len(ts)
+}
+
+// rpcTarget matches an RPC call at ts[i], `rpc x->f(` or `rpc(peer) x->f(`. It returns the peer's tokens (nil
+// without one), the index where x->f starts, the index of f and the index of its '('.
 func rpcTarget(ts []lexer.Token, i int) (peer []lexer.Token, chain, name, paren int, ok bool) {
 	if ts[i].Type != tokIdent {
 		return
 	}
 	j := skipSpace(ts, i+1)
 	switch {
-	case ts[i].Value == "rpc_id" && j < len(ts) && isPunct(ts[j], "("):
-		start, depth := j+1, 0
-		for ; j < len(ts); j++ {
-			if isPunct(ts[j], "(") {
-				depth++
-			} else if isPunct(ts[j], ")") {
-				if depth--; depth == 0 {
-					break
-				}
-			}
-		}
-		if j == len(ts) {
+	case ts[i].Value == "rpc" && j < len(ts) && isPunct(ts[j], "("):
+		start := j + 1
+		if j = closing(ts, j); j == len(ts) {
 			return
 		}
 		peer, j = ts[start:j], skipSpace(ts, j+1)

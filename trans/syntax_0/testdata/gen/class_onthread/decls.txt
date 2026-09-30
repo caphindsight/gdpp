@@ -1,0 +1,3 @@
+{Name:Pathfinder Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Terrain Kind:3 Base: Values:[{Name:GRASS Value:0 Doc: Implicit:true Expr:} {Name:WATER Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Baker Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

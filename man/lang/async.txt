@@ -1,0 +1,205 @@
+Async: running functions on other threads with @onthread, and Async tasks
+
+Some work is too slow for one frame: finding a path, generating a chunk of terrain, loading and parsing a file. GD++ runs such a function on another thread when you mark it @onthread. A call then returns right away, with an Async: a task that tells when the work is done, and holds its result. This page explains both.
+
+# A first example
+
+```gd++
+class_name Pathfinder
+extends Node2D
+
+var target: Vector2
+var pending: Async[PackedVector2Array]
+
+@onthread
+func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
+  PackedVector2Array path;
+  // ... a long search, on a worker thread ...
+  return path;
+}
+
+@override
+func _ready() -> void {
+  pending = find_path(get_position(), target);
+}
+
+@override
+func _process(delta: float) -> void {
+  if (pending && is_done pending) {
+    follow(claim pending);
+    pending = find_path(get_position(), target);
+  }
+}
+
+func follow(path: PackedVector2Array) -> void { ... }
+```
+
+_ready starts the first search. Each frame, _process checks whether pending holds a search, and whether it's done. Then claim takes the path out of pending, and _process starts the next search, which runs while the game goes on. No frame waits for a search.
+
+Scripts call the function the same way, and get an object with is_done, wait and get_result methods:
+
+```gdscript
+var task = $Pathfinder.find_path(position, goal)
+# ... later, e.g. in _process:
+if task and task.is_done():
+    follow(task.get_result())
+    task = null
+```
+
+# @onthread
+
+@onthread makes every call to the function, from C++ or from scripts, run its body on Godot's WorkerThreadPool, as a task named after the class and the function, e.g. "Pathfinder.find_path". The call itself only starts the task, and returns an Async of the function's type:
+
+```
+The function is declared as          Callers get
+@onthread func f() -> int            Async[int]
+@onthread func f() -> Node           Async[Node]
+@onthread func f() -> void           Async[void], a task without a result
+@onthread func f()                   Async, whose result is a Variant
+```
+
+The body is written for the plain type: it returns an int, a Node, nothing, or a Variant. GD++ adds the Async. So writing it yourself is an error:
+
+```out
+[×] res://pathfinder.gd++:4:13: The @onthread function f already returns an Async: write -> int.
+     4 | func f() -> Async[int] {}
+       |             ^^^^^
+    Hint: Its callers get an Async of the type its body returns.
+```
+
+An @onthread function can be @static or @const, have default values, and use @trace and @profile, which follow its body, on its thread. It can't be @virtual or @override, since the engine or a script would replace the function that starts the task, nor @rpc, @deferred or @thread_safe. Only classes have @onthread functions; an extern declares that a function returns an Async instead, see "Across packages" below.
+
+# Async types
+
+Async[T] is a task whose result has type T. Async[void] has no result, and a plain Async has a Variant result. It's a type like any other: variables, parameters, return values and signals can have it, and it can be passed around and stored, like any refcounted object. Copies share the task.
+
+```gd++
+var pending: Async[PackedVector2Array]
+signal started(task: Async[int])
+
+func track(task: Async[int]) -> void { ... }
+```
+
+In C++, Async[T] is a gdpp::Async<T>, e.g. gdpp::Async<int64_t> for Async[int]. Godot sees it as an object of the package's class of tasks, e.g. FooAsync for a package whose prefix is Foo. See "The class of tasks" below.
+
+An Async is empty if it holds no task: a new variable, a gdpp::Async<T> that C++ code creates without a task, or one whose result was claimed. Destroying an empty Async does nothing.
+
+A few uses are errors:
+
+```
+@export var task: Async[int]           Async variables can't be exported.
+var tasks: Array[Async[int]]           Typed collections can't hold Async values. Use a plain Array.
+var task: Async[Async[int]]            An Async can't have an Async result.
+var task: Async[int, String]           Type Async takes one type argument, the type of its result.
+```
+
+# Claiming the result
+
+In C++, an Async is tested like a pointer, is_done tells whether its task has finished, and claim takes the result:
+
+```gd++
+if (pending && is_done pending) {
+  PackedVector2Array path = claim pending;
+}
+```
+
+An Async goes through three states:
+
+```
+                       as a bool   is_done     claim
+running                true        false       an error
+done                   true        true        the result, and the Async becomes empty
+empty (claimed, new)   false       true        an error
+```
+
+An Async is true while it holds a task, running or done, and false when it's empty. So it's true from the call that starts the task until its result is claimed. The test works in if, while, !, && and ||; to keep it in a variable, write `bool valid = bool(pending);`.
+
+`is_done TASK` is true once the task has finished, so claim can take the result right away. It stays true after the result is claimed, and is true for a new Async too, so test both: a true Async that is done holds a result to claim. Neither test ever waits.
+
+`claim TASK` returns the result of TASK's task, and empties TASK: each result is claimed once. For a void task, claim returns nothing, but still empties the Async. Godot requires waiting once for each task of the WorkerThreadPool, and claim does it for you; since the task is done, that doesn't block.
+
+Claiming from an Async that isn't true and done is a mistake: while the task runs, or after its result was claimed, or before any task. In debug builds, claim then prints an error, returns the type's default value, e.g. 0 or an empty array, and leaves the Async as it is. Release builds don't check, so it's undefined: test the Async first.
+
+is_done and claim are GD++'s own words, like emit and rpc: `is_done TASK` and `claim TASK` become calls of the Async's methods, `TASK.is_done()` and `TASK.claim()`, and make the places that poll a task and take its result stand out. The method calls work too. TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending` or `this->tasks[i]`, and the word applies to all of it, like C++'s own prefix operators: `claim find(a).size()` claims the result of `find(a).size()`. See `gd++ man rewrites`.
+
+To block until the task finishes instead, call `TASK.wait()`: it waits, then claims the result like claim. The task may still be running, but the Async must be true: in debug builds, waiting on an empty Async prints an error and returns the default value. On the main thread, the game stops until the task is done, so prefer testing the Async each frame.
+
+The result has the function's type in C++, e.g. PackedVector2Array for an Async[PackedVector2Array]. Tasks have no signal for when they finish: test is_done, e.g. once a frame.
+
+# In scripts
+
+Scripts see an Async as an object of the class of tasks, with three methods:
+
+is_done()
+  Whether the task has finished. Once it has, get_result returns its result, and wait returns right away.
+
+wait()
+  Wait for the task to finish, and return its result. On the main thread, the game stops until then, so prefer checking is_done.
+
+get_result()
+  The result of the task, which must have finished. In debug builds, calling it earlier prints an error and returns null. Release builds don't check, so calling it earlier is undefined: check is_done first, or call wait.
+
+They return Variants, and an enum result is an int. A script can read a result as often as it likes; to let go of a task, it drops its reference, e.g. with `task = null`. An object of the class of tasks that no task runs in, e.g. FooAsync.new(), is done, and its result is null.
+
+The checks above, of claim and wait in C++, and of get_result in scripts, are only in debug builds. Release builds skip them, so the mistakes they catch are undefined there.
+
+# The task's lifetime
+
+Copies of an Async share its task, and each copy claims the result once: claim empties only the Async it's used on, and the other copies stay true. An Async is thread-safe to test and claim from any thread, though like any variable, one Async shouldn't be changed by two threads at once.
+
+When the last reference to a task is gone, from C++ or from a script, it waits for the task to finish, unless that already happened. So dropping an Async whose task still runs blocks until the task is done, and dropping a claimed or finished one doesn't. Keep the Async until is_done is true, like pending in the first example. Its result doesn't have to be claimed: a task whose result nobody wants, e.g. a void one, can simply be dropped once it's done.
+
+# Writing the body
+
+The body runs on a worker thread, so it has the same limits as any threaded code:
+
+- The call copies the arguments. Arrays and dictionaries still share their contents with the caller, so don't change them while the body runs.
+- The body can use the object's fields, but other threads, e.g. the main thread, may be using them too. Keep what the body needs in its arguments, or protect the fields, e.g. with a Mutex.
+- If the object is refcounted, the call keeps it alive until the body has run. Other objects, e.g. nodes, must not be freed while the body runs.
+- Most of the scene tree isn't thread-safe. To change it, the body can defer the change to the main thread, e.g. with call_deferred or a @thread_safe function. Or return what it computed, and let the main thread use the result.
+
+In a @game_only class, calls in the editor start no task, and return an empty Async, which is false. See `gd++ man classes`.
+
+# The class of tasks
+
+Godot sees every Async as an object of one class of the package: its prefix followed by Async. The prefix is set in gd++pkg.toml, and defaults to the package's id in PascalCase, e.g. MyGame for the package my_game, so its class of tasks is MyGameAsync:
+
+```toml
+prefix = "Foo"                         # FooAsync
+```
+
+Set it with `gd++ init PATH --update --prefix NAME`. See `gd++ man packages`.
+
+Each package with GD++ classes registers its own class of tasks, so packages built separately never clash. Its name must differ from the package's other classes: the build fails otherwise, and asks for another prefix. Changing the prefix renames the class, so scripts that name it, e.g. in a type hint, must change too. The editor's help shows Async types as this class, e.g. FooAsync. The class has the three methods above, and _gdpp_start, which GD++ uses to start tasks: don't call it.
+
+`gd++ trans` on a file outside any package names the class GdppAsync.
+
+# Across packages
+
+C++ code works with the tasks of any package: a gdpp::Async<T> calls the methods of its task by name. So an extern can declare that a function of another package returns an Async, e.g. an @onthread function:
+
+```gd++
+extern Planner {
+  extends Node
+  func plan(steps: int) -> Async[Array]
+}
+```
+
+Calling planner->plan(10) returns a gdpp::Async<Array> of the other package's task. See `gd++ man externs`.
+
+Godot, though, knows an Async parameter as the package's own class, e.g. FooAsync, so a script's type checks may refuse a task of another package there. To take the tasks of any package, declare the parameter as a Variant, and convert it in C++, e.g. `gdpp::from_variant<gdpp::Async<int64_t>>(task)`.
+
+# How it works
+
+For an @onthread function f, GD++ generates:
+
+- f itself, which returns a gdpp::Async of the function's type. It calls gdpp::run_task, which creates an object of the class of tasks, and starts the task on the WorkerThreadPool with WorkerThreadPool::add_task.
+- _gdpp_body_f, a method with the body, which the task calls. It isn't bound, so scripts can't call it.
+
+The object of the class of tasks stores the body's result as a Variant, and the Async converts it back to the function's type. Godot requires waiting once for each task of the WorkerThreadPool, with wait_for_task_completion: the object does so in wait, which claim calls, or else when it's freed. If a task frees the last reference to itself, e.g. by freeing the object that held it, it can't wait for itself, so the main thread waits for it instead, right after.
+
+Run `gd++ trans FILE` to see the code, and see `gd++ man generated` and `gd++ man runtime`.
+
+# See also
+
+`gd++ man functions`, `gd++ man types`, `gd++ man rewrites`, `gd++ man externs`, `gd++ man debugging`, `gd++ man packages`.

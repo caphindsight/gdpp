@@ -131,6 +131,7 @@ A variable can have section annotations and one export annotation. Section annot
 - Export and section annotations only work in classes that extend Node or Resource, since only those are edited in the inspector.
 - @export, @export_dir, @export_multiline and @export_storage take no arguments.
 - Arguments are numbers and strings, written as in GDScript.
+- Async variables can't be exported: neither the inspector nor scene files can hold a task. See `gd++ man async`.
 - Each annotation checks the variable's type:
 
 ```out

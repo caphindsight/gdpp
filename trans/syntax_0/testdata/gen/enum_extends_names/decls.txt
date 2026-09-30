@@ -1,4 +1,4 @@
-{Name:K Kind:3 Base:Clash.Kind Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Pre Kind:3 Base: Values:[{Name:PRE_A Value:0 Doc: Implicit:true Expr:} {Name:PRE_B Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Post Kind:3 Base:Pre Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Keys Kind:3 Base:KeyCode Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:K Kind:3 Base:Clash.Kind Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Pre Kind:3 Base: Values:[{Name:PRE_A Value:0 Doc: Implicit:true Expr:} {Name:PRE_B Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Post Kind:3 Base:Pre Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Keys Kind:3 Base:KeyCode Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

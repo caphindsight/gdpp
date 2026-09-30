@@ -1,1 +1,1 @@
-{Name:Math Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Math Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

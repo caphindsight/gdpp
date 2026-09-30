@@ -142,7 +142,7 @@ class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_na
 func  get  impl  import  noimport  set  signal  var
 ```
 
-In C++ code, GD++ also gives a meaning to emit, rpc, rpc_id, This and gd. See `gd++ man code`.
+In C++ code, GD++ also gives a meaning to emit, rpc, is_done and claim, see `gd++ man rewrites`, and to This and gd, see `gd++ man code`.
 
 # See also
 

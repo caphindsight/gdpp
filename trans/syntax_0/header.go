@@ -182,7 +182,7 @@ func (c *classModel) needsDtor() bool {
 	return c.dtor != nil || c.trace
 }
 
-// rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc_id(peer) f(...)` call, without a class name.
+// rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc(peer) f(...)` call, without a class name.
 // ps is the parameter list of f.
 func rpcDecl(f *funcModel, ps string) string {
 	if ps != "" {
@@ -287,7 +287,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("\tstatic void _bind_methods();")
 	var helpers []string
 	for _, f := range c.funcs {
-		if !f.virtual && !f.override && f.usesEnums() {
+		if !f.virtual && !f.override && f.trampolined() {
 			helpers = append(helpers, trampolineDecl(c, f))
 		}
 		for i, p := range f.f.Params {

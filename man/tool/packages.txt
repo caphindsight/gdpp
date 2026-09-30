@@ -23,6 +23,7 @@ bind = "10.0.0-stable"
 spec = "4.7.2-stable"
 syntax = 0
 std = "c++20"
+prefix = "Foo"
 
 [[class]]
 name = "Foo"
@@ -42,6 +43,9 @@ syntax (optional, default 0)
 
 std (optional, default "c++20")
   The C++ standard to compile with, e.g. "c++17", "c++20" or "c++23". It becomes -std=... for GCC and Clang, and /std:... for MSVC. It must be at least what godot-cpp needs, i.e. c++17.
+
+prefix (optional, default: the package's id in PascalCase)
+  The prefix of the names of the classes that GD++ adds to the package, e.g. "Foo". A package with GD++ classes registers FooAsync, the class of its tasks, which Async types name. The default turns the id into PascalCase: my_game gives MyGame, and an id that starts with a digit, e.g. 3d_tools, gets "Pkg" in front: Pkg3dTools. Set it when the default clashes with a class name, or reads badly. See `gd++ man async`.
 
 [[class]] (optional, any number)
   A plain C++ class that the package registers with Godot. Each has a name, the header that declares it, an optional icon, and tool = true if its code runs in the editor too; without it, the class is a runtime class, whose code runs only in the game. GD++ classes are not listed here: GD++ finds them in the GD++ files. See `gd++ man cpp-classes`.

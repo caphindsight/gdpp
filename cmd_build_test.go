@@ -73,6 +73,9 @@ func TestGenerateBuildCache(t *testing.T) {
 		t.Errorf("godot-cpp/stale.cpp was not deleted")
 	}
 	register := after["__register_types__.cpp"]
+	if strings.Contains(register, "Async") {
+		t.Errorf("__register_types__.cpp = %s\nwant no class of tasks, since the package has no GD++ classes", register)
+	}
 	for _, want := range []string{
 		"\n#include \"enemy/enemy.h\"\n#include <common/actor.h>\n\nusing",
 		"= false || std::is_same_v<T, Enemy> || std::is_same_v<T, Actor> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden>;",
@@ -86,6 +89,7 @@ func TestGenerateBuildCache(t *testing.T) {
 	sconstruct := after["SConstruct"]
 	for _, want := range []string{
 		`project_root = "../../.."`,
+		`env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", "PkgAsync")])`,
 		`"-std=") + "c++20"`,
 		`objects + "package/" + "enemy/enemy.cc" + env["SHOBJSUFFIX"], package_root + "/" + "enemy/enemy.cc"))` + "\n" +
 			`    sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n" +

@@ -167,6 +167,17 @@ With @deferred, every call to the function goes through call_deferred: from C++,
 
 Since the body runs later, the function must return void. GD++ puts the body in a second method, _gdpp_body_NAME, which the call runs by name. See `gd++ man generated`.
 
+# @onthread
+
+```gd++
+@onthread
+func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
+  ...
+}
+```
+
+With @onthread, every call to the function, from C++ or from scripts, runs its body on Godot's WorkerThreadPool, and returns right away, with an Async of the function's type: here, an Async[PackedVector2Array]. The caller tests whether it's done with `is_done`, and takes the result with `claim`. GD++ puts the body in a second method, _gdpp_body_NAME, which the task calls. See `gd++ man async`.
+
 # @trace and @profile
 
 ```gd++
@@ -182,7 +193,7 @@ func find_path(to: Vector3) -> PackedVector3Array {
 }
 ```
 
-For debugging: in builds with `--trace Player` (the class's name) or `--trace all`, @trace prints each call of take_damage when it starts, with its arguments, and when it returns, with its result and how long it took. In builds with `--profile ai`, @profile times each call of find_path, for the editor's monitors and a table of timings. In other builds, they generate nothing. Their arguments name groups, which the flags choose. They work on every kind of function, static, @virtual, @override and @deferred ones included, except that calls by name of a @virtual function that a script overrides, e.g. from GDScript, go straight to the script, and aren't traced or timed. Calls from C++ are. See `gd++ man debugging`.
+For debugging: in builds with `--trace Player` (the class's name) or `--trace all`, @trace prints each call of take_damage when it starts, with its arguments, and when it returns, with its result and how long it took. In builds with `--profile ai`, @profile times each call of find_path, for the editor's monitors and a table of timings. In other builds, they generate nothing. Their arguments name groups, which the flags choose. They work on every kind of function, static, @virtual, @override, @deferred and @onthread ones included, except that calls by name of a @virtual function that a script overrides, e.g. from GDScript, go straight to the script, and aren't traced or timed. Calls from C++ are. See `gd++ man debugging`.
 
 # Combining attributes
 
@@ -190,9 +201,11 @@ Attributes can be combined where it makes sense, e.g. @virtual @const. These com
 
 ```
 @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe
-@virtual with @override, @rpc, @deferred or @thread_safe
-@override with @rpc, @deferred or @thread_safe
-@deferred with @thread_safe
+@virtual with @override, @rpc, @deferred, @thread_safe or @onthread
+@override with @rpc, @deferred, @thread_safe or @onthread
+@rpc with @onthread
+@deferred with @thread_safe or @onthread
+@thread_safe with @onthread
 ```
 
 @trace and @profile combine with all of them. Each attribute can be used once per function. They take no arguments, except @rpc, @trace and @profile.
@@ -251,4 +264,4 @@ func _accepts(item: Item) -> bool {
 
 # See also
 
-`gd++ man types`, `gd++ man rpc`, `gd++ man lifecycle`, `gd++ man generated`, `gd++ man debugging`.
+`gd++ man types`, `gd++ man rpc`, `gd++ man async`, `gd++ man lifecycle`, `gd++ man generated`, `gd++ man debugging`.

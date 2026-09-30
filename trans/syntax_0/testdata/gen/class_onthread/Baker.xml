@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Baker" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bake">
+			<return type="GdppAsync" />
+			<param index="0" name="mode" type="int" enum="Baker.Terrain" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="TERRAIN_GRASS" value="0" enum="Terrain">
+		</constant>
+		<constant name="TERRAIN_WATER" value="1" enum="Terrain">
+		</constant>
+	</constants>
+</class>

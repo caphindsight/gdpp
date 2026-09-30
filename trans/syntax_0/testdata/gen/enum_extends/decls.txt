@@ -1,7 +1,7 @@
-{Name:Board Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Mode Kind:3 Base:Node.ProcessMode Values:[{Name:EDITOR Value:0 Doc:Processes in the editor only. Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Base Kind:3 Base: Values:[{Name:A Value:0 Doc: Implicit:true Expr:} {Name:B Value:10 Doc: Implicit:false Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Derived Kind:3 Base:Base Values:[{Name:C Value:0 Doc: Implicit:true Expr:} {Name:D Value:20 Doc: Implicit:false Expr:} {Name:E Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Twice Kind:3 Base:Derived Values:[{Name:F Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Hard Kind:3 Base:Difficulty Values:[{Name:EXTREME Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Result Kind:3 Base:Error Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Board Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Mode Kind:3 Base:Node.ProcessMode Values:[{Name:EDITOR Value:0 Doc:Processes in the editor only. Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Base Kind:3 Base: Values:[{Name:A Value:0 Doc: Implicit:true Expr:} {Name:B Value:10 Doc: Implicit:false Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Derived Kind:3 Base:Base Values:[{Name:C Value:0 Doc: Implicit:true Expr:} {Name:D Value:20 Doc: Implicit:false Expr:} {Name:E Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Twice Kind:3 Base:Derived Values:[{Name:F Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Hard Kind:3 Base:Difficulty Values:[{Name:EXTREME Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false}
+{Name:Result Kind:3 Base:Error Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

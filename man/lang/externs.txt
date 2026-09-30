@@ -56,7 +56,7 @@ The chain of bases must end with a Godot class or a GD++ class of the package, e
 Externs can only declare:
 
 func
-  Functions, without a body and without default values. They can have @const, @deferred, @thread_safe, @rpc without arguments, @trace and @profile. The return type must match what the class returns.
+  Functions, without a body and without default values. They can have @const, @deferred, @thread_safe, @rpc without arguments, @trace and @profile, but not @onthread. The return type must match what the class returns.
 
 var
   Variables, without an initial value or a property body. They're read with get_NAME() and written with set_NAME(value). They can have @profile.
@@ -140,6 +140,17 @@ Calls to a @deferred function go through call_deferred instead of call: they run
 
 Classes have @deferred and @thread_safe too, which defer every call, not only those through the extern. So if the class already defers the function, its extern doesn't need to. See `gd++ man functions`.
 
+# @onthread functions
+
+```gd++
+extern Planner {
+  extends Node
+  func plan(steps: int) -> Async[Array]
+}
+```
+
+An @onthread function of another package returns a task, so its extern declares the Async as the return type, without @onthread: the class already runs every call on a worker thread. A call returns a gdpp::Async<Array>, which works like the tasks of your own package. See "Across packages" in `gd++ man async`.
+
 # @rpc
 
 ```gd++
@@ -148,10 +159,10 @@ extern Lobby {
   @rpc func join(name: String) -> void
 }
 
-rpc_id(1) lobby->join("Me");
+rpc(1) lobby->join("Me");
 ```
 
-An @rpc function of an extern can be called over the network with rpc and rpc_id, like one of your own classes. It takes no arguments, since the class that defines the function configures it. The extern must extend Node. See `gd++ man rpc`.
+An @rpc function of an extern can be called over the network with rpc, like one of your own classes. It takes no arguments, since the class that defines the function configures it. The extern must extend Node. See `gd++ man rpc`.
 
 # Speed
 
@@ -209,4 +220,4 @@ func _process(delta: float) -> void {
 
 # See also
 
-`gd++ man classes`, `gd++ man types`, `gd++ man rpc`, `gd++ man runtime`.
+`gd++ man classes`, `gd++ man types`, `gd++ man rpc`, `gd++ man async`, `gd++ man runtime`.

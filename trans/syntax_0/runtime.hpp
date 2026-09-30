@@ -5,8 +5,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <type_traits>
 
+#include <godot_cpp/classes/class_db_singleton.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
@@ -20,6 +22,7 @@
 #include <godot_cpp/core/gdvirtual.gen.inc>
 #include <godot_cpp/core/method_ptrcall.hpp>
 #include <godot_cpp/core/type_info.hpp>
+#include <godot_cpp/variant/callable_custom.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
 #include <godot_cpp/variant/typed_dictionary.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -30,6 +33,10 @@ typedef double float64_t;
 
 // Godot's global scope functions, e.g. gd::print("Hello!").
 using gd = godot::UtilityFunctions;
+
+// GDPP_STRING_NAME("name") is the StringName name, created on first use and reused after, like the engine's SNAME.
+// Calls by name use it, so they don't intern the name, which locks a global mutex, on every call.
+#define GDPP_STRING_NAME(m_name) ([]() -> const godot::StringName & { static const godot::StringName name(m_name, true); return name; })()
 
 namespace gdpp {
 
@@ -213,6 +220,131 @@ inline String assert_message(const char *p_condition, const String &p_message = 
 	return result + ".";
 }
 
+// GDPP_ASYNC_CLASS is the name of the package's class of tasks, e.g. FooAsync: its prefix and Async. The package
+// registers it, and the build defines this macro.
+#ifndef GDPP_ASYNC_CLASS
+#define GDPP_ASYNC_CLASS GdppAsync
+#endif
+#define GDPP_STRINGIFY(m_name) GDPP_STRINGIFY_(m_name)
+#define GDPP_STRINGIFY_(m_name) #m_name
+inline constexpr const char *async_class = GDPP_STRINGIFY(GDPP_ASYNC_CLASS);
+
+// TaskCallable is a Callable that runs a function once, returns its result, and then frees it.
+class TaskCallable : public CallableCustom {
+public:
+	explicit TaskCallable(std::function<Variant()> p_run) :
+			run(std::move(p_run)) {}
+
+	uint32_t hash() const override { return uint32_t(uintptr_t(this)); }
+	String get_as_text() const override { return "gdpp::TaskCallable"; }
+	CompareEqualFunc get_compare_equal_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a == p_b; };
+	}
+	CompareLessFunc get_compare_less_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a < p_b; };
+	}
+	bool is_valid() const override { return true; }
+	ObjectID get_object() const override { return ObjectID(); }
+	void call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, GDExtensionCallError &r_call_error) const override {
+		r_return_value = run();
+		run = nullptr;
+		r_call_error.error = GDEXTENSION_CALL_OK;
+	}
+
+private:
+	mutable std::function<Variant()> run;
+};
+
+// Async<T> is the C++ type of Async[T]: a task, whose result has type T, e.g. the call of an @onthread function,
+// which runs on the WorkerThreadPool. It references an object of the package's class of tasks, and calls its
+// methods by name, so it works with the tasks of other packages too. Copies share the task. An Async is valid while
+// it holds a task, running or done, and becomes empty when its result is claimed. A new Async is empty too, and
+// destroying an empty one does nothing. When the last reference to a task is gone, the task object waits for the task
+// to finish, unless it already has.
+template <typename T>
+class Async {
+public:
+	Async() = default;
+	explicit Async(const Ref<RefCounted> &p_task) :
+			task(p_task) {}
+
+	// An Async is true while it holds a task, running or done, and false when it's empty: new, or claimed.
+	explicit operator bool() const { return task.is_valid(); }
+
+	// is_done reports whether the task has finished, so claim returns its result at once. It's also true for an empty
+	// Async, whose task has been claimed, or which never had one.
+	bool is_done() const { return task.is_null() || task->call(GDPP_STRING_NAME("is_done")).operator bool(); }
+
+	// claim returns the result of a done task, and empties the Async. The Async must be true, and its task done: debug
+	// builds check it, and print an error and return the default value if not. Release builds don't check it.
+	T claim() {
+#ifdef DEBUG_ENABLED
+		if (task.is_null()) {
+			ERR_PRINT("There is no task to claim: the Async is new, or its result has been claimed already.");
+			return T();
+		}
+		if (!is_done()) {
+			ERR_PRINT("The task isn't done yet. Check is_done() before claiming its result, or call wait().");
+			return T();
+		}
+#endif
+		return take();
+	}
+
+	// wait waits for the task to finish, and claims its result. The Async must be true: debug builds check it, and
+	// print an error and return the default value if not. Release builds don't check it.
+	T wait() {
+#ifdef DEBUG_ENABLED
+		if (task.is_null()) {
+			ERR_PRINT("There is no task to wait for: the Async is new, or its result has been claimed already.");
+			return T();
+		}
+#endif
+		return take();
+	}
+
+	// task is the object of the class of tasks, or null for an empty Async.
+	const Ref<RefCounted> &object() const { return task; }
+	operator Variant() const { return task; }
+
+private:
+	Ref<RefCounted> task; // Null for an empty Async, which touches nothing, not even when destroyed.
+
+	// take waits for the task, as Godot requires once per task, empties the Async, and returns the result.
+	T take() {
+		Variant value = task->call(GDPP_STRING_NAME("wait"));
+		task.unref();
+		if constexpr (!std::is_void_v<T>) {
+			return value.get_type() == Variant::NIL ? T() : from_variant<T>(value);
+		}
+	}
+};
+
+// run_task starts the call of an @onthread function on the WorkerThreadPool, as the task named p_name (e.g.
+// "Player.find_path"), and returns its Async. p_job calls the function's body. If p_self, the object the function is
+// called on, is refcounted, the task keeps it alive until the body has run.
+template <typename F>
+auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::invoke_result_t<F>> {
+	using R = std::invoke_result_t<F>;
+	Ref<RefCounted> task = ClassDBSingleton::get_singleton()->instantiate(async_class);
+#ifdef DEBUG_ENABLED
+	ERR_FAIL_COND_V_MSG(task.is_null(), {}, String("There is no class ") + async_class + ", which the package registers for its tasks.");
+#endif
+	Ref<RefCounted> self = Object::cast_to<RefCounted>(const_cast<Object *>(p_self));
+	Callable job(memnew(TaskCallable([self, p_job]() -> Variant {
+		if constexpr (std::is_void_v<R>) {
+			p_job();
+			return Variant();
+		} else if constexpr (std::is_enum_v<R>) {
+			return static_cast<int64_t>(p_job());
+		} else {
+			return Variant(p_job());
+		}
+	})));
+	task->call(GDPP_STRING_NAME("_gdpp_start"), job, p_name);
+	return Async<R>(task);
+}
+
 } // namespace gdpp
 
 // gd_assert(condition) and gd_assert(condition, "message") mirror GDScript's assert: a failed condition prints an error.
@@ -232,10 +364,6 @@ inline String assert_message(const char *p_condition, const String &p_message = 
 // memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for externs.
 #define memnew_ext(m_class) gdpp::memnew_ext<m_class>()
 #define memdelete_ext(m_object) gdpp::memdelete_ext(m_object)
-
-// GDPP_STRING_NAME("name") is the StringName name, created on first use and reused after, like the engine's SNAME.
-// Calls by name use it, so they don't intern the name, which locks a global mutex, on every call.
-#define GDPP_STRING_NAME(m_name) ([]() -> const godot::StringName & { static const godot::StringName name(m_name, true); return name; })()
 
 namespace godot {
 
@@ -294,6 +422,35 @@ template <typename T>
 struct VariantCaster<gdpp::ExtRef<T>> {
 	static _FORCE_INLINE_ gdpp::ExtRef<T> cast(const Variant &p_variant) {
 		return Ref<typename T::Base>(p_variant);
+	}
+};
+
+// Bindings see an Async as an object of the class of tasks.
+
+template <typename T>
+struct GetTypeInfo<gdpp::Async<T>> {
+	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
+	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+	static inline PropertyInfo get_class_info() {
+		return PropertyInfo(Variant::OBJECT, "", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, gdpp::async_class);
+	}
+};
+
+template <typename T>
+struct PtrToArg<gdpp::Async<T>> {
+	_FORCE_INLINE_ static gdpp::Async<T> convert(const void *p_ptr) {
+		return gdpp::Async<T>(PtrToArg<Ref<RefCounted>>::convert(p_ptr));
+	}
+	typedef Ref<RefCounted> EncodeT;
+	_FORCE_INLINE_ static void encode(gdpp::Async<T> p_val, void *p_ptr) {
+		PtrToArg<Ref<RefCounted>>::encode(p_val.object(), p_ptr);
+	}
+};
+
+template <typename T>
+struct VariantCaster<gdpp::Async<T>> {
+	static _FORCE_INLINE_ gdpp::Async<T> cast(const Variant &p_variant) {
+		return gdpp::Async<T>(Ref<RefCounted>(p_variant));
 	}
 };
 

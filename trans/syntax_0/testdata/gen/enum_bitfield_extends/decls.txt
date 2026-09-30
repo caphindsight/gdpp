@@ -1,4 +1,4 @@
-{Name:Base Kind:3 Base: Values:[{Name:A Value:0 Doc: Implicit:true Expr:} {Name:B Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:true GameOnly:false Trace:false Profile:false}
-{Name:Derived Kind:3 Base:Base Values:[{Name:C Value:0 Doc: Implicit:true Expr:} {Name:D Value:0 Doc: Implicit:false Expr:A | C}] Icon: Tool:false Bitfield:true GameOnly:false Trace:false Profile:false}
-{Name:Sizes Kind:3 Base:Control.SizeFlags Values:[{Name:HUGE Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:true GameOnly:false Trace:false Profile:false}
-{Name:MoreStyle Kind:3 Base:Style Values:[{Name:UNDERLINE Value:0 Doc: Implicit:true Expr:} {Name:MASK Value:0 Doc: Implicit:false Expr:BOTH | UNDERLINE}] Icon: Tool:false Bitfield:true GameOnly:false Trace:false Profile:false}
+{Name:Base Kind:3 Base: Values:[{Name:A Value:0 Doc: Implicit:true Expr:} {Name:B Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:true GameOnly:false}
+{Name:Derived Kind:3 Base:Base Values:[{Name:C Value:0 Doc: Implicit:true Expr:} {Name:D Value:0 Doc: Implicit:false Expr:A | C}] Icon: Tool:false Bitfield:true GameOnly:false}
+{Name:Sizes Kind:3 Base:Control.SizeFlags Values:[{Name:HUGE Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:true GameOnly:false}
+{Name:MoreStyle Kind:3 Base:Style Values:[{Name:UNDERLINE Value:0 Doc: Implicit:true Expr:} {Name:MASK Value:0 Doc: Implicit:false Expr:BOTH | UNDERLINE}] Icon: Tool:false Bitfield:true GameOnly:false}

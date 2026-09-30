@@ -1,2 +1,2 @@
-{Name:Gizmo Kind:1 Base:Node3D Values:[] Icon: Tool:true Bitfield:false GameOnly:false Trace:false Profile:false}
-{Name:Helper Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Gizmo Kind:1 Base:Node3D Values:[] Icon: Tool:true Bitfield:false GameOnly:false}
+{Name:Helper Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false}

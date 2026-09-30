@@ -18,6 +18,11 @@ func TestHighlightCode(t *testing.T) {
 		{"out", "[×] Oops.\n 3 | x\n   | ^\nHint: Fix.", Styled("[×]", Bold, Red) + " Oops.\n " + Styled("3 |", Gray) + " x\n   " + Styled("|", Gray) + " " +
 			Styled("^", Red) + "\n" + Styled("Hint:", Bold) + " Fix."},
 		{"toml", "[[class]]\nname = \"A\"", Styled("[[class]]", Bold) + "\n" + Styled("name", Cyan) + " = " + Styled("\"A\"", CodeLiteral)},
+		{"gd++", "if (is_done t) x = claim\n  t; t.is_done(); claim = 1;", Styled("if", CodeKeyword) + " (" + Styled("is_done", CodeKeyword) + " t) x = " +
+			Styled("claim", CodeKeyword) + "\n  t; t." + Styled("is_done", CodeFunction) + "(); claim = " + Styled("1", CodeLiteral) + ";"},
+		{"gd++", "emit f(); rpc(1) g(); rpc_id(1, \"g\");", Styled("emit", CodeKeyword) + " " + Styled("f", CodeFunction) + "(); " + Styled("rpc", CodeKeyword) +
+			"(" + Styled("1", CodeLiteral) + ") " + Styled("g", CodeFunction) + "(); " + Styled("rpc_id", CodeFunction) + "(" + Styled("1", CodeLiteral) + ", " +
+			Styled("\"g\"", CodeLiteral) + ");"},
 		{"", "var x", "var x"},
 	}
 	for _, tc := range cases {

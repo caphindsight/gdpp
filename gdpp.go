@@ -276,7 +276,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	}
 	for _, f := range files {
 		// #line names the GD++ file relative to the build cache, where SCons runs, like it names C++ sources.
-		opts := o.transOptions(trans.Options{Dependencies: packageDeps(files, names, enums, f.Rel), SourceName: "../" + f.Rel})
+		opts := o.transOptions(trans.Options{Dependencies: packageDeps(files, names, enums, f.Rel), SourceName: "../" + f.Rel, AsyncClass: pkg.AsyncClass()})
 		name := f.File.ToString()
 		generated, err := trans.Generate(name, f.Src, opts, syntax)
 		if err != nil {

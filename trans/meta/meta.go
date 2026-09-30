@@ -70,8 +70,6 @@ type Declaration struct {
 	Tool     bool        // For classes: whether @tool makes its functions run in the editor too.
 	Bitfield bool        // For enums: whether @bitfield makes it a bitfield.
 	GameOnly bool        // For classes: whether @game_only keeps its code from running in the editor.
-	Trace    bool        // For classes: whether it has @trace.
-	Profile  bool        // For classes: whether it has @profile.
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.
@@ -82,6 +80,7 @@ type Options struct {
 	Profile       []string     // The groups whose @profile annotations generate code, or "all". Default: none.
 	ProfilePeriod int          // With Profile, the seconds between the tables of timings printed while the game runs. Default: 0, none.
 	ProfileFPS    int          // With ProfilePeriod, the frame rate that the table's budget column assumes. Default: 0, 60 FPS.
+	AsyncClass    string       // The name of the package's class of tasks, e.g. "FooAsync", which Async types name. Default: "GdppAsync".
 }
 
 // File is a generated C++ file. Each declaration of a GD++ file gets a header, named "<Name>.h", and each class

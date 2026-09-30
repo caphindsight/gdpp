@@ -68,11 +68,14 @@ void Player::hit(int64_t peer, Player *other) {
   _gdpp_rpc_take_damage(peer, 
       5, Team::BLUE);
   _gdpp_rpc_ping(get_multiplayer()->get_unique_id());
+  _gdpp_rpc_ping(0);
   other->_gdpp_rpc_ping(0);
+  other->_gdpp_rpc_ping(peer);
   rpc_id(1, "ping");
+  rpc("ping");
   take_damage(1, Team::RED);
 
-#line 76 "Player.cpp"
+#line 79 "Player.cpp"
 }
 
 #undef This

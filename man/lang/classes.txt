@@ -105,7 +105,7 @@ class_name Spawner
 extends Node3D
 ```
 
-A @game_only class is a runtime class, and in debug builds, which the editor loads, every function that GD++ generates for it starts with a check. In the editor, it returns right away, with a default value. This covers its functions, constructor, destructor, getters, setters, signal emit functions, and the helpers that GD++ adds, e.g. for enums, default values and RPCs. Your own decl and impl code isn't checked. Release builds have no checks.
+A @game_only class is a runtime class, and in debug builds, which the editor loads, every function that GD++ generates for it starts with a check. In the editor, it returns right away, with a default value; an @onthread function returns an empty Async, and starts no task. This covers its functions, constructor, destructor, getters, setters, signal emit functions, and the helpers that GD++ adds, e.g. for enums, default values and RPCs. Your own decl and impl code isn't checked. Release builds have no checks.
 
 @game_only can't be used with @tool. Like @tool, it's not inherited.
 
