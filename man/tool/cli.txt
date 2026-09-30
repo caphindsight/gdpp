@@ -6,6 +6,7 @@ gd++ is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUM
 
 ```sh
 gd++ build     compile a package into a GDExtension library
+gd++ cat       show files in the pager, highlighting C++ and GD++ code
 gd++ checkin   check in dependencies from the ephemeral cache, or undo it
 gd++ clean     delete the build caches of packages
 gd++ doc       show the declaration and members of a godot-cpp class or function
@@ -43,6 +44,9 @@ These options work with every command. They can go before or after the command n
 
 -L N, --log-depth N
   Show the last N lines of a running subprocess's output under its task, e.g. of the compiler during a build. Default: 4.
+
+-T N, --tab-width N
+  Show tabs as N columns in the pager, e.g. in `gd++ cat` and `gd++ trans`. Must be at least 1. Default: 2.
 
 --version
   Print the version of GD++ and exit, e.g. "nightly". Can't be used with a command.

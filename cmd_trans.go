@@ -40,7 +40,7 @@ func (c *CmdTrans) Run() {
 		Assert(c.File == "", "Invalid arguments: --runtime cannot be used with a file.")
 		_, text, err := trans.RuntimeHeader(syntax)
 		Check(err, "Failed to print the runtime header")
-		PrintResult(text)
+		PageResult(highlightCode(text, "cpp"))
 		return
 	}
 	Assert(c.File != "", "Invalid arguments: missing the GD++ file.")
@@ -79,9 +79,9 @@ func (c *CmdTrans) Run() {
 		if i > 0 {
 			text.WriteString("\n")
 		}
-		text.WriteString(Styled("// ==== "+f.Name+" ====", Gray) + "\n\n" + f.Text)
+		text.WriteString(Styled("// ==== "+f.Name+" ====", Gray) + "\n\n" + highlightCode(f.Text, "cpp"))
 	}
-	PrintResult(text.String())
+	PageResult(text.String())
 }
 
 // flagDependencies returns the dependencies from the flags.

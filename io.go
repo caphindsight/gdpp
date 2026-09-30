@@ -187,6 +187,33 @@ func stripStyles(s string) string {
 	return out.String()
 }
 
+// expandTabs returns s with tabs replaced by spaces up to the next tab stop,
+// every width columns, ignoring ANSI escape codes. The pager needs it, since a
+// tab moves the cursor without overwriting what was drawn before.
+func expandTabs(s string, width int) string {
+	if !strings.Contains(s, "\t") {
+		return s
+	}
+	var out strings.Builder
+	inEsc, col := false, 0
+	for _, r := range s {
+		switch {
+		case isEscape(r, &inEsc):
+			out.WriteRune(r)
+		case r == '\t':
+			out.WriteString(strings.Repeat(" ", width-col%width))
+			col += width - col%width
+		case r == '\n':
+			out.WriteRune(r)
+			col = 0
+		default:
+			out.WriteRune(r)
+			col++
+		}
+	}
+	return out.String()
+}
+
 // isEscape reports whether r, the next rune of a string, is part of an ANSI
 // escape code. inEsc tracks whether an escape code is open, starting false.
 func isEscape(r rune, inEsc *bool) bool {
@@ -216,6 +243,7 @@ func PageResult(s string) {
 		PrintResult(s)
 		return
 	}
+	s = expandTabs(s, Args.TabWidth)
 	width, height, err := term.GetSize(stdout)
 	if err != nil || strings.Count(WrapText(s, width), "\n") < height {
 		PrintResult(s)

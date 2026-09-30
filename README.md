@@ -136,6 +136,7 @@ Add C++ and GD++ source files, `gd++pkg.toml` and `gd++proj.toml` to the preset'
 - `gd++ fix`: tidy up the project, e.g. reformat config files and delete leftover temporary files.
 - `gd++ trans file.gd++`: print the C++ that GD++ makes from a file. Great for learning the language.
   In a package, the file sees the package's other GD++ files and Godot's classes, like in a build.
+- `gd++ cat a.cpp b.h`: show files in the pager, with C++ and GD++ code highlighted.
 - `gd++ doc TypedArray`: show what godot-cpp declares under a name: the header to include, and the members of a class, including those it inherits.
   Handy for godot-cpp's own helpers, e.g. `TypedArray` and `Ref`, which Godot's help doesn't describe.
   `gd++ doc Array.push_back` shows one member, and `gd++ doc my_pkg TypedArray` uses the bindings of the package `my_pkg`.

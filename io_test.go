@@ -758,6 +758,26 @@ func TestPagerKey(t *testing.T) {
 	}
 }
 
+func TestExpandTabs(t *testing.T) {
+	cases := []struct {
+		in    string
+		width int
+		want  string
+	}{
+		{"", 2, ""},
+		{"a\tb", 8, "a       b"},
+		{"\tx\n12345678\ty", 8, "        x\n12345678        y"},
+		{"\x1b[1mab\x1b[0m\tc", 8, "\x1b[1mab\x1b[0m      c"},
+		{"\tx\n\t\ty\nabc\tz", 2, "  x\n    y\nabc z"},
+		{"a\tb", 1, "a b"},
+	}
+	for _, tc := range cases {
+		if got := expandTabs(tc.in, tc.width); got != tc.want {
+			t.Errorf("expandTabs(%q, %d) = %q, want %q", tc.in, tc.width, got, tc.want)
+		}
+	}
+}
+
 func TestPagerFrame(t *testing.T) {
 	withTTY(t, false)
 	lines := []string{"a", "b", "c", "d", "e"}

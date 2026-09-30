@@ -5,6 +5,7 @@ import "github.com/alexflint/go-arg"
 // Args holds the parsed CLI arguments, available to any function that needs them.
 var Args struct {
 	Build    *CmdBuild   `arg:"subcommand:build" help:"compile a package into a GDExtension library"`
+	Cat      *CmdCat     `arg:"subcommand:cat" help:"show files in the pager, highlighting C++ and GD++ code"`
 	CheckIn  *CmdCheckIn `arg:"subcommand:checkin" help:"check in dependencies from the ephemeral cache, or undo it"`
 	Clean    *CmdClean   `arg:"subcommand:clean" help:"delete the build caches of packages"`
 	Doc      *CmdDoc     `arg:"subcommand:doc" help:"show the declaration and members of a godot-cpp class or function"`
@@ -23,6 +24,7 @@ var Args struct {
 	ForceNo  bool        `arg:"-n,--no" help:"assume no on confirmation prompts"`
 	Audit    bool        `arg:"--audit" help:"audit potentially dangerous operations"`
 	LogDepth int         `arg:"-L,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
+	TabWidth int         `arg:"-T,--tab-width" default:"2" placeholder:"N" help:"show tabs as this many columns in the pager"`
 	Version  bool        `arg:"--version" help:"print the version of GD++ and exit"`
 }
 
@@ -43,6 +45,9 @@ func main() {
 	if Args.Force && Args.ForceNo {
 		LogFatal("Invalid arguments: -f/--yes and -n/--no cannot be used together.")
 	}
+	if Args.TabWidth < 1 {
+		LogFatal("Invalid arguments: -T/--tab-width must be at least 1.")
+	}
 	if Args.Force && Args.Audit {
 		LogFatal("Invalid arguments: -f/--yes and --audit cannot be used together.")
 	}
@@ -50,6 +55,8 @@ func main() {
 	switch {
 	case Args.Build != nil:
 		Args.Build.Run()
+	case Args.Cat != nil:
+		Args.Cat.Run()
 	case Args.CheckIn != nil:
 		Args.CheckIn.Run()
 	case Args.Clean != nil:

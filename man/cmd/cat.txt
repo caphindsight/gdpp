@@ -1,0 +1,31 @@
+gd++ cat: show files, with C++ and GD++ highlighted
+
+# Synopsis
+
+```sh
+gd++ cat FILE...
+```
+
+# Description
+
+Shows any files, in the pager when they don't fit the terminal. The files don't have to be part of the project. Several files are shown one after another, each after a gray line naming it, e.g. `// ==== src/player.gd++ ====`, like in `gd++ trans`. For the pager's keys, see `gd++ man man`.
+
+On a terminal, C++ and GD++ files are highlighted: keywords, types, functions, literals and comments get their own colors. A file is C++ if its extension is .c, .cc, .cpp, .cxx, .c++, .h, .hh, .hpp, .hxx, .h++ or .inl, and GD++ if it's .gd++, .gdpp or .gg. Other files are shown as they are. When the output is not a terminal, e.g. `gd++ cat player.gd++ | grep func`, the file is printed as plain text, without the pager.
+
+# Arguments
+
+FILE...
+  The files to show, at least one.
+
+# Examples
+
+```sh
+gd++ cat src/player.gd++                      # a GD++ file
+gd++ cat my_package/.gd++pkg/gdpp/Player.cpp  # the C++ that GD++ generated
+gd++ cat notes.txt                            # any other file, as it is
+gd++ cat src/*.gd++                           # all GD++ files in src
+```
+
+# See also
+
+`gd++ man trans`, `gd++ man doc`.

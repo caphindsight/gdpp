@@ -34,6 +34,7 @@ Looking around:
 ```sh
 gd++ ls         an overview of the project
 gd++ trans      the C++ that GD++ generates from a file
+gd++ cat        files, with C++ and GD++ highlighted
 gd++ doc        what godot-cpp declares under a name
 gd++ man        this manual
 ```
