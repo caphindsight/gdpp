@@ -89,11 +89,17 @@ A property needs exactly one get, at most one set, and any number of decl.
 ```
 Enum        = Doc? Annotation* 'enum' Ident ( '=' Int | '{' ( 'extends' EnumBase )? EnumEntry* '}' )
 EnumBase    = Ident ( '.' Ident )?
-EnumEntry   = Doc? Annotation* Ident ( '=' ( Int | EnumRef ) )? ','?
-EnumRef     = Ident ( '.' Ident )+
+EnumEntry   = Doc? Annotation* Ident ( '=' EnumExpr )? ','?
+EnumExpr    = EnumXor ( '|' EnumXor )*
+EnumXor     = EnumAnd ( '^' EnumAnd )*
+EnumAnd     = EnumSum ( '&' EnumSum )*
+EnumSum     = EnumProduct ( ( '+' | '-' ) EnumProduct )*
+EnumProduct = EnumUnary ( ( '*' | '/' | '%' ) EnumUnary )*
+EnumUnary   = ( '~' | '-' ) EnumUnary | '(' EnumExpr ')' | Int | EnumRef
+EnumRef     = Ident ( '.' Ident )*
 ```
 
-`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type. EnumBase is a GD++ enum, or an engine enum, e.g. Node.ProcessMode or Error. EnumRef is a value of another enum: Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.INHERIT, or Class.CONSTANT, e.g. Node.PROCESS_MODE_INHERIT.
+`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type. EnumBase is a GD++ enum, or an engine enum, e.g. Node.ProcessMode or Error. EnumRef is an earlier value of the enum itself, e.g. HEARTS, or a value of another enum: Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.INHERIT, or Class.CONSTANT, e.g. Node.PROCESS_MODE_INHERIT. EnumExpr gives the operators C's precedence; a value ends where no operator continues it, so `A = B | C D` holds two values.
 
 # Types
 

@@ -339,9 +339,13 @@ func (u *unit) bindings(w *writer, c *classModel) {
 		w.ln("\tClassDB::bind_integer_constant(get_class_static(), \"\", %q, %s);", k.Name, k.Name)
 	}
 	for _, e := range c.enums {
+		bitfield := ""
+		if e.bitfield {
+			bitfield = ", true"
+		}
 		for _, v := range e.values {
-			w.ln("\tClassDB::bind_integer_constant(get_class_static(), %q, %q, static_cast<int64_t>(%s::%s));",
-				e.name, upperSnake(e.name)+"_"+v.Name, e.name, v.Name)
+			w.ln("\tClassDB::bind_integer_constant(get_class_static(), %q, %q, static_cast<int64_t>(%s::%s)%s);",
+				e.name, upperSnake(e.name)+"_"+v.Name, e.name, v.Name, bitfield)
 		}
 	}
 }

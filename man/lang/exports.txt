@@ -18,6 +18,7 @@ An exported variable shows up in the editor's inspector, where you can edit it, 
 - Node types, e.g. Node3D, get a node picker that only accepts nodes of that type.
 - Resource types, e.g. Texture2D, get a resource picker that only accepts that type.
 - GD++ enums get a drop-down list of their values, with names spelled like the editor spells enums: DIAMONDS becomes "Diamonds", and NOT_SET becomes "Not Set".
+- GD++ bitfields get a checkbox for each value that is a single flag, spelled the same way. See `gd++ man enums`.
 - Externs get a picker that only accepts objects of the extern's class. See `gd++ man externs`.
 
 # Numbers

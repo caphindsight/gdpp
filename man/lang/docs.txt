@@ -94,7 +94,7 @@ The editor shows the documentation of GDExtensions from Godot 4.3 on.
 
 # Types in the documentation
 
-The documentation spells types like GDScript: int, float, String, Node3D, int[] for Array[int], Dictionary[String, int] for typed dictionaries. Variables, parameters and return values of a GD++ enum show as int, with the enum's name, e.g. Player.Suit, and the enum's values are listed under the class's constants. See `gd++ man enums`.
+The documentation spells types like GDScript: int, float, String, Node3D, int[] for Array[int], Dictionary[String, int] for typed dictionaries. Variables, parameters and return values of a GD++ enum show as int, with the enum's name, e.g. Player.Suit, and the enum's values are listed under the class's constants. Bitfields are marked as bitfields there. See `gd++ man enums`.
 
 # See also
 

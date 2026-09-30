@@ -1,0 +1,2 @@
+@bitfield enum S { A }
+enum P { extends S B }

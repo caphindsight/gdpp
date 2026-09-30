@@ -148,8 +148,9 @@ func specEnums(file Path) []trans.Dependency {
 		return nil
 	}
 	type enum struct {
-		Name   string            `json:"name"`
-		Values []trans.EnumValue `json:"values"`
+		Name       string            `json:"name"`
+		IsBitfield bool              `json:"is_bitfield"`
+		Values     []trans.EnumValue `json:"values"`
 	}
 	var api struct {
 		GlobalEnums []enum `json:"global_enums"`
@@ -161,11 +162,11 @@ func specEnums(file Path) []trans.Dependency {
 	Check(json.Unmarshal([]byte(file.ReadString()), &api), "Failed to parse %s", file.ToString())
 	var deps []trans.Dependency
 	for _, e := range api.GlobalEnums {
-		deps = append(deps, trans.Dependency{Name: e.Name, Kind: trans.GodotEnum, Values: e.Values})
+		deps = append(deps, trans.Dependency{Name: e.Name, Kind: trans.GodotEnum, Values: e.Values, Bitfield: e.IsBitfield})
 	}
 	for _, c := range api.Classes {
 		for _, e := range c.Enums {
-			deps = append(deps, trans.Dependency{Name: c.Name + "." + e.Name, Kind: trans.GodotEnum, Values: e.Values})
+			deps = append(deps, trans.Dependency{Name: c.Name + "." + e.Name, Kind: trans.GodotEnum, Values: e.Values, Bitfield: e.IsBitfield})
 		}
 	}
 	return deps
@@ -193,7 +194,7 @@ func packageDeps(files []gdppFile, names []godotName, enums []trans.Dependency, 
 	for _, f := range files {
 		for _, d := range f.Decls {
 			if f.Rel != self {
-				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true})
+				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield})
 			}
 		}
 	}

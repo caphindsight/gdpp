@@ -30,12 +30,13 @@ const (
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
 // Stable: additive changes only.
 type Dependency struct {
-	Name    string      // E.g. "Node3D".
-	Include string      // What follows #include, e.g. `<godot_cpp/classes/node3d.hpp>`, or `"Terrain.h"` for GD++ declarations.
-	Kind    Kind        //
-	Values  []EnumValue // For Kind Enum and GodotEnum: its values, so classes using the enum can expose a copy.
-	Base    string      // For Kind Enum: the enum it extends, if any. Values then holds only its own values.
-	Gdpp    bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
+	Name     string      // E.g. "Node3D".
+	Include  string      // What follows #include, e.g. `<godot_cpp/classes/node3d.hpp>`, or `"Terrain.h"` for GD++ declarations.
+	Kind     Kind        //
+	Values   []EnumValue // For Kind Enum and GodotEnum: its values, so classes using the enum can expose a copy.
+	Base     string      // For Kind Enum: the enum it extends, if any. Values then holds only its own values.
+	Gdpp     bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
+	Bitfield bool        // For Kind Enum and GodotEnum: whether it's a bitfield, whose values are flags.
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.
@@ -43,10 +44,10 @@ type EnumValue struct {
 	Name  string // As written in GD++, e.g. "DIAMONDS".
 	Value int64  //
 	Doc   string // The doc comment's text, without comment markers.
-	// Whether the value has no "= N", so it's the previous value plus one. Enums with a Base renumber these
-	// after the base's values.
+	// Whether the value has no "=", so it's the previous value plus one, or in a bitfield the next flag. The
+	// translator computes Value, after the values of the enum's Base.
 	Implicit bool
-	Ref      string // For a value written as another enum's, e.g. "Suit.HEARTS": that value. The translator resolves Value.
+	Expr     string // For a value written as an expression other than an integer, e.g. "Suit.HEARTS" or "RED | BOLD": its text. The translator computes Value.
 }
 
 // DeclKind says what a GD++ file declares. Stable: additive changes only.
@@ -61,12 +62,13 @@ const (
 // Declaration is a class, extern or enum type declared in a GD++ file, which other files may use.
 // Stable: additive changes only.
 type Declaration struct {
-	Name   string      //
-	Kind   DeclKind    //
-	Base   string      // For classes and externs: the base class. For enums: the enum it extends, if any.
-	Values []EnumValue // For enums: its own values, without those of its base.
-	Icon   string      // For classes: the icon's res:// or pkg:// path, from @icon.
-	Tool   bool        // For classes: whether @tool makes its functions run in the editor too.
+	Name     string      //
+	Kind     DeclKind    //
+	Base     string      // For classes and externs: the base class. For enums: the enum it extends, if any.
+	Values   []EnumValue // For enums: its own values, without those of its base.
+	Icon     string      // For classes: the icon's res:// or pkg:// path, from @icon.
+	Tool     bool        // For classes: whether @tool makes its functions run in the editor too.
+	Bitfield bool        // For enums: whether @bitfield makes it a bitfield.
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

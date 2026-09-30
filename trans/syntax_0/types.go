@@ -28,6 +28,7 @@ type symbol struct {
 	gdpp       bool   // Whether a GD++ file declares it: this one or another.
 	values     []meta.EnumValue
 	base       string   // For enums: the enum it extends, until enumValues adds the base's values to values.
+	bitfield   bool     // For enums: whether its values are flags.
 	godotNames []string // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
 	class      *Class   // Set for classes in the file.
 	extern     *Extern  // Set for externs in the file.

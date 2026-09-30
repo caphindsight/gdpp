@@ -1,1 +1,1 @@
-{Name:Lock Kind:1 Base:Node Values:[] Icon: Tool:false}
+{Name:Lock Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false}

@@ -5,6 +5,7 @@ File: @1:1
       - @2:1 FOO1
       - @3:1
         Name: FOO2
-        Value: @3:8 5
+        Value: @3:8
+          Int: @3:8 5
       - @4:1 FOO3
       - @5:1 FOO4

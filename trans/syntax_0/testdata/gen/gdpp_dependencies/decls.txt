@@ -1,2 +1,2 @@
-{Name:Gate Kind:1 Base:Wall Values:[] Icon: Tool:false}
-{Name:Lock Kind:2 Base:Node Values:[] Icon: Tool:false}
+{Name:Gate Kind:1 Base:Wall Values:[] Icon: Tool:false Bitfield:false}
+{Name:Lock Kind:2 Base:Node Values:[] Icon: Tool:false Bitfield:false}

@@ -73,7 +73,7 @@ In C++ code, GD++ gives a meaning to five more words: emit, rpc, rpc_id, This an
 
 # Numbers
 
-Numbers are C-like. In declarations, only integers are used: enum values (unless they name another enum's value), constants and annotation arguments. Integers can be:
+Numbers are C-like. In declarations, only integers are used: in enum values, constants and annotation arguments. Integers can be:
 
 ```gd++
 42        decimal

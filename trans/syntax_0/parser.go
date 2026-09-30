@@ -150,6 +150,128 @@ func (n *Int) convert() *Error {
 	return e
 }
 
+// enumOps are the binary operators of enum values, by precedence. Unary operators bind tighter: unaryPrec.
+var enumOps = map[string]int{"|": 1, "^": 2, "&": 3, "+": 4, "-": 4, "*": 5, "/": 5, "%": 5}
+
+const unaryPrec = 6
+
+func (x *EnumExpr) Parse(lex *lexer.PeekingLexer) error {
+	e, err := parseEnumBinary(lex, "=", 1)
+	if err == nil {
+		*x = *e
+	}
+	return err
+}
+
+// parseEnumBinary parses operands joined by operators of precedence prec or higher. after is the token before.
+func parseEnumBinary(lex *lexer.PeekingLexer, after string, prec int) (*EnumExpr, error) {
+	left, err := parseEnumOperand(lex, after)
+	for err == nil {
+		op := *lex.Peek()
+		p := enumOps[op.Value]
+		if op.Type != tokPunct || p < prec {
+			return left, nil
+		}
+		lex.Next()
+		var right *EnumExpr
+		right, err = parseEnumBinary(lex, op.Value, p+1)
+		left = &EnumExpr{Pos: left.Pos, Op: op.Value, Left: left, Right: right}
+	}
+	return nil, err
+}
+
+// parseEnumOperand parses an integer, a value, ~ or - and an operand, or an expression in parentheses.
+func parseEnumOperand(lex *lexer.PeekingLexer, after string) (*EnumExpr, error) {
+	t := *lex.Next()
+	x := &EnumExpr{Pos: t.Pos}
+	switch {
+	case isPunct(t, "~") || isPunct(t, "-") && lex.Peek().Type != tokNumber:
+		right, err := parseEnumOperand(lex, t.Value)
+		x.Op, x.Right = t.Value, right
+		return x, err
+	case isPunct(t, "("):
+		inner, err := parseEnumBinary(lex, "(", 1)
+		if close := *lex.Next(); err == nil && !isPunct(close, ")") {
+			return nil, errorAt(close, fmt.Sprintf("Expected an operator or \")\", but found %s.", describe(close)),
+				"Combine values with |, &, ^, ~, +, -, *, / and %.")
+		}
+		return inner, err
+	case t.Type == tokNumber || isPunct(t, "-"): // A negative number is one integer, so the smallest one fits.
+		x.Int = &Int{Pos: t.Pos, Raw: t.Value}
+		if t.Value == "-" {
+			x.Int.Raw += lex.Next().Value
+		}
+		return x, nil
+	case t.Type == tokIdent:
+		x.Ref = &EnumRef{Pos: t.Pos, Name: t.Value}
+		for isPunct(*lex.Peek(), ".") {
+			lex.Next()
+			name := *lex.Next()
+			if name.Type != tokIdent {
+				return nil, errorAt(name, fmt.Sprintf("Expected a name after \".\", but found %s.", describe(name)),
+					"Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.PROCESS_MODE_ALWAYS.")
+			}
+			x.Ref.Name += "." + name.Value
+		}
+		return x, nil
+	}
+	hint := ""
+	if after == "=" {
+		hint = "Enum values are integers, such as 42 or 0x10, earlier values, such as RED, values of other enums, " +
+			"such as Suit.HEARTS, or these combined with |, &, ^, ~, +, -, *, / and % and parentheses."
+	}
+	return nil, errorAt(t, fmt.Sprintf("Expected a value after %q, but found %s.", after, describe(t)), hint)
+}
+
+// parseEnumExpr parses src, the text of an enum value's expression. It returns nil if src is broken.
+func parseEnumExpr(src string) *EnumExpr {
+	l, err := gdppLexer.LexString("", src)
+	if err != nil {
+		return nil
+	}
+	var elide []lexer.TokenType
+	for _, name := range elided {
+		elide = append(elide, sym[name])
+	}
+	lex, err := lexer.Upgrade(l, elide...)
+	x := &EnumExpr{}
+	if err != nil || x.Parse(lex) != nil || !lex.Peek().EOF() {
+		return nil
+	}
+	var e *Error
+	forEachNode(x, func(node any) {
+		if n, ok := node.(*Int); ok && e == nil {
+			e = n.convert()
+		}
+	})
+	if e != nil {
+		return nil
+	}
+	return x
+}
+
+// String returns the expression as GD++ source, with only the parentheses it needs.
+func (x *EnumExpr) String() string {
+	switch {
+	case x.Int != nil:
+		return x.Int.Raw
+	case x.Ref != nil:
+		return x.Ref.Name
+	case x.Left == nil:
+		return x.Op + x.Right.operand(unaryPrec)
+	}
+	p := enumOps[x.Op]
+	return x.Left.operand(p) + " " + x.Op + " " + x.Right.operand(p+1) // Operators group left to right.
+}
+
+// operand returns x as an operand of an operator of precedence prec, in parentheses if it binds looser.
+func (x *EnumExpr) operand(prec int) string {
+	if x.Left != nil && enumOps[x.Op] < prec {
+		return "(" + x.String() + ")"
+	}
+	return x.String()
+}
+
 // peekRaw returns the next token, even if it is elided (whitespace, newline, comment).
 func peekRaw(lex *lexer.PeekingLexer) lexer.Token {
 	t, _ := lex.PeekAny(func(lexer.Token) bool { return true })

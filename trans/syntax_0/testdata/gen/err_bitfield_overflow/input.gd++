@@ -1,0 +1,2 @@
+@bitfield enum B { TOP = 0x4000000000000000 }
+@bitfield enum S { extends B X }

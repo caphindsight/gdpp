@@ -190,6 +190,27 @@ func TestTranspilePackageEnumBases(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageEnumBitfields(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"a.gd++": "@bitfield enum Sizes { extends Control.SizeFlags HUGE }\n",
+		"b.gd++": "@bitfield enum More { extends Sizes BIG }\n",
+	})
+	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Control", "enums": [
+		{"name": "SizeFlags", "is_bitfield": true, "values": [{"name": "SIZE_FILL", "value": 1}, {"name": "SIZE_SHRINK_END", "value": 8}]}]}]}`)
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	for file, want := range map[string]string{
+		"Sizes.h": "\tHUGE = 16,\n};\nGDPP_BITFIELD(Sizes)\n",
+		"More.h":  "\tBIG = 32,\n};\nGDPP_BITFIELD(More)\n",
+	} {
+		if !strings.Contains(gen[file], want) {
+			t.Errorf("%s = %s\nwant it to contain %q", file, gen[file], want)
+		}
+	}
+}
+
 func TestLoadGodotNamesOutdated(t *testing.T) {
 	m := withBuildFS(t)
 	pkg := LoadPackage(Cwd())

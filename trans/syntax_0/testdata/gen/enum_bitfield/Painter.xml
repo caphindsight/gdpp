@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Painter" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="paint">
+			<return type="int" enum="Painter.Effect" is_bitfield="true" />
+			<param index="0" name="extra" type="int" enum="Painter.Effect" is_bitfield="true" default="Effect::BOLD | Effect::BLINKING" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="effect" type="int" enum="Painter.Effect" is_bitfield="true" setter="set_effect" getter="get_effect">
+		</member>
+		<member name="mixed" type="int" enum="Painter.Effect" is_bitfield="true" setter="set_mixed" getter="get_mixed">
+		</member>
+		<member name="saved" type="int" enum="Painter.Effect" is_bitfield="true" setter="set_saved" getter="get_saved">
+		</member>
+	</members>
+	<signals>
+		<signal name="changed">
+			<param index="0" name="effect" type="int" enum="Painter.Effect" is_bitfield="true" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="EFFECT_NONE" value="0" enum="Effect" is_bitfield="true">
+		</constant>
+		<constant name="EFFECT_RED" value="1" enum="Effect" is_bitfield="true">
+			Red text.
+		</constant>
+		<constant name="EFFECT_BOLD" value="2" enum="Effect" is_bitfield="true">
+		</constant>
+		<constant name="EFFECT_BLINKING" value="4" enum="Effect" is_bitfield="true">
+		</constant>
+		<constant name="EFFECT_RED_AND_BOLD" value="3" enum="Effect" is_bitfield="true">
+		</constant>
+		<constant name="EFFECT_ALL" value="-1" enum="Effect" is_bitfield="true">
+		</constant>
+	</constants>
+</class>

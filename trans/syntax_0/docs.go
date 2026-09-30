@@ -259,6 +259,9 @@ func typeAttrs(c *classModel, t *gtype) string {
 	s := fmt.Sprintf(" type=\"%s\"", xmlEscape(t.doc, true))
 	if t.enum != nil {
 		s += fmt.Sprintf(" enum=\"%s\"", xmlEscape(c.name+"."+t.enum.name, true))
+		if t.enum.bitfield {
+			s += " is_bitfield=\"true\""
+		}
 	}
 	return s
 }
@@ -382,22 +385,25 @@ func (u *unit) document(c *classModel) string {
 
 	if len(c.consts)+len(c.enums) > 0 {
 		x.ln(1, "<constants>")
-		constant := func(name string, value int64, enum, doc string) {
+		constant := func(name string, value int64, enum *symbol, doc string) {
 			cd := parseDoc(doc, false)
 			attrs := ""
-			if enum != "" {
-				attrs = fmt.Sprintf(" enum=\"%s\"", xmlEscape(enum, true))
+			if enum != nil {
+				attrs = fmt.Sprintf(" enum=\"%s\"", xmlEscape(enum.name, true))
+				if enum.bitfield {
+					attrs += " is_bitfield=\"true\""
+				}
 			}
 			x.ln(2, fmt.Sprintf("<constant name=\"%s\" value=\"%d\"%s%s>", xmlEscape(name, true), value, attrs, docAttrs(cd)))
 			x.ln(3, xmlEscape(strings.TrimFunc(cd.description, isDocSpace), false))
 			x.ln(2, "</constant>")
 		}
 		for _, k := range c.consts {
-			constant(k.Name, k.Value.Value, "", docText(k.Doc))
+			constant(k.Name, k.Value.Value, nil, docText(k.Doc))
 		}
 		for _, e := range c.enums {
 			for _, v := range e.values {
-				constant(upperSnake(e.name)+"_"+v.Name, v.Value, e.name, v.Doc)
+				constant(upperSnake(e.name)+"_"+v.Name, v.Value, e, v.Doc)
 			}
 		}
 		x.ln(1, "</constants>")

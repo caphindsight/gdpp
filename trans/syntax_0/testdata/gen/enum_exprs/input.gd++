@@ -1,0 +1,13 @@
+enum Mixed {
+  A = 0x0F
+  B = A & 0x3 ^ 1 | 8
+  C = (A | 0x30) & ~0x1
+  D
+  E = Level.HARD | 1
+  F = -1 ^ -2
+  G = Mixed.C ^ ~~C
+  H = A + B * 2 - 10 / 3 % 2
+  I = -(A - 20) * -1
+  J = A - B - 1
+  K = -7 / 2 + -7 % 2
+}

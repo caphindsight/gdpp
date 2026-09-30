@@ -149,14 +149,25 @@ type EnumEntry struct {
 	Doc         *Doc          `parser:"@@?"`
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"@Ident"`
-	Value       *Int          `parser:"( '=' ( @@"`
-	Ref         *EnumRef      `parser:"  | @@ ) )? ','?"`
+	Value       *EnumExpr     `parser:"( '=' @@ )? ','?"`
 }
 
-// EnumRef is a value of another enum, e.g. Suit.HEARTS or GeometryInstance3D.ShadowCastingSetting.ON.
+// EnumExpr is an enum value's expression: an integer (Int), a value (Ref), Op Right with Op "~" or "-", or
+// Left Op Right with Op "|", "^", "&", "+", "-", "*", "/" or "%". Parentheses only group, so they leave no trace.
+// Parse builds it, with C's precedence.
+type EnumExpr struct {
+	Pos         lexer.Position
+	Int         *Int
+	Ref         *EnumRef
+	Op          string
+	Left, Right *EnumExpr
+}
+
+// EnumRef is a value of the enum itself, e.g. HEARTS, or of another enum, e.g. Suit.HEARTS or
+// GeometryInstance3D.ShadowCastingSetting.ON.
 type EnumRef struct {
 	Pos  lexer.Position
-	Name string `parser:"@Ident ( @'.' @Ident )+"`
+	Name string
 }
 
 // Int is an integer literal. Raw is the source text; Parse converts it into Value.

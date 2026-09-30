@@ -1,0 +1,4 @@
+input.gd++:1:14: Enum E has no value B.
+ 1 | enum E { A = B | 1 B }
+   |              ^
+Hint: A value can only be one of the values before it.

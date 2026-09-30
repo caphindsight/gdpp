@@ -93,6 +93,10 @@ Unknown enum "Levl".                              Hint: Did you mean "Level"?
 Enum Level has no value EASIER.
 GeometryInstance3D has no enum value SHADOW_CASTING_SETTING_OF.
 Enum A depends on itself, through its base or its values.
+Bitfield Layer's values without "=" must be next to each other.
+Bitfield Layer can't extend Suit, which is not a bitfield.
+Expected a value after "|", but found "}".
+Division by zero.
 The value 99999999999999999999 does not fit in a 64-bit integer.
 ```
 

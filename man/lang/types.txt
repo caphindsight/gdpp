@@ -113,7 +113,7 @@ var trump: Suit                // Suit trump;
 func play(suit: Suit) -> void { ... }
 ```
 
-In C++, it's an enum class with int64_t values, e.g. Suit::HEARTS. Godot sees it as an int, marked as an enum of the class. See `gd++ man enums`.
+In C++, it's an enum class with int64_t values, e.g. Suit::HEARTS. Godot sees it as an int, marked as an enum of the class, or a bitfield for a @bitfield enum. See `gd++ man enums`.
 
 Godot's own enums, e.g. Error, Key or Node.ProcessMode, aren't GD++ types themselves. Redeclare them as GD++ enums, which copy all their values, and cast in C++ to pass them to the engine:
 

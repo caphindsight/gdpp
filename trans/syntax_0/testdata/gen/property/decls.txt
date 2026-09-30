@@ -1,1 +1,1 @@
-{Name:Clamp Kind:1 Base:RefCounted Values:[] Icon: Tool:false}
+{Name:Clamp Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false}

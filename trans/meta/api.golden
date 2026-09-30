@@ -35,4 +35,6 @@ field File.Text string
 const GodotEnum Kind = 7
 field Dependency.Base string
 field EnumValue.Implicit bool
-field EnumValue.Ref string
+field Dependency.Bitfield bool
+field EnumValue.Expr string
+field Declaration.Bitfield bool

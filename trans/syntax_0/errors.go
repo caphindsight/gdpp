@@ -337,10 +337,6 @@ func diagnose(sig []lexer.Token, j int) (int, string, string) {
 		return d, "This doc comment is not followed by a declaration.",
 			"Doc comments document the declaration right after them. Use \"//\" for a regular comment."
 	}
-	if isPunct(at(sig, j-2), "=") && at(sig, j-1).Type == tokIdent && !isPunct(sig[j], ".") && inEnumValues(sig, j) {
-		return j - 1, fmt.Sprintf("Expected an integer or another enum's value after \"=\", but found %s.", describe(sig[j-1])),
-			"Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS."
-	}
 	msg, hint := diagnoseAt(sig, j)
 	if p, p2 := at(sig, j-1), at(sig, j-2); names[p2.Value] != "" && (p2.Type == tokIdent || isPunct(p2, "@")) &&
 		p.Type == tokIdent && slices.Contains(append(declKeywords, "class_name", "enum_name", "extern_name"), p.Value) {
@@ -382,10 +378,6 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 		name := p.Value + "." + at(sig, j+1).Value
 		return fmt.Sprintf("Types can't contain \".\", but found %s.", name),
 			fmt.Sprintf("For an engine enum, declare a GD++ enum that extends it, and use that: \"enum %s { extends %s }\".", at(sig, j+1).Value, name)
-
-	case isPunct(p, ".") && !isName && inEnumValues(sig, j):
-		return fmt.Sprintf("Expected a name after \".\", but found %s.", found),
-			"Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.PROCESS_MODE_ALWAYS."
 
 	case slices.ContainsFunc(sig[:j], func(t lexer.Token) bool { return t.Type == tokIdent && t.Value == "enum_name" }):
 		return fmt.Sprintf("Expected an enum value name, but found %s.", found),
@@ -441,10 +433,6 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 	case kw == "enum" && k == j-2 && !isPunct(u, "=") && !isPunct(u, "{"):
 		return fmt.Sprintf("Expected \"=\" or \"{\" after the enum name, but found %s.", found),
 			"Write \"enum NAME = 42\" for a constant, or \"enum Name { A B C }\" for an enum type."
-
-	case isPunct(p, "=") && inEnumValues(sig, j) && u.Type != tokNumber && !isPunct(u, "-"):
-		return fmt.Sprintf("Expected an integer or another enum's value after \"=\", but found %s.", found),
-			"Enum values are integers, such as 42, -1 or 0x10, or values of other enums, such as Suit.HEARTS."
 
 	case isPunct(p, "=") && kw == "enum" && u.Type != tokNumber && !isPunct(u, "-"):
 		return fmt.Sprintf("Expected an integer value after \"=\", but found %s.", found),

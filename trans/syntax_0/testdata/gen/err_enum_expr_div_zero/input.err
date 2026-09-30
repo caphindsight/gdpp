@@ -1,0 +1,3 @@
+input.gd++:1:26: Division by zero.
+ 1 | enum E { A = 0 B = 10 % (A * 2) }
+   |                          ^

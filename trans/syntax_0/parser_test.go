@@ -122,3 +122,31 @@ func checkError(t *testing.T, name, src string, err error) {
 		}
 	}
 }
+
+// TestEnumExprString checks that an enum value's expression prints with only the parentheses it needs, and that
+// dependencies parse the text back into the same expression.
+func TestEnumExprString(t *testing.T) {
+	for src, want := range map[string]string{
+		"1 | 2 ^ 3 & ~4":         "1 | 2 ^ 3 & ~4",
+		"(1 | 2) & 3":            "(1 | 2) & 3",
+		"A - (B - C)":            "A - (B - C)",
+		"(A - B) - C":            "A - B - C",
+		"-(A + 1) * -2 % Suit.B": "-(A + 1) * -2 % Suit.B",
+		"~~(A)":                  "~~A",
+		"- -1":                   "--1",
+		"A / (2 * 3) + 4 << 0":   "",
+	} {
+		x := parseEnumExpr(src)
+		if got := ""; x != nil {
+			got = x.String()
+			if back := parseEnumExpr(got); back == nil || back.String() != got {
+				t.Errorf("%q doesn't parse back into itself.", got)
+			}
+			if got != want {
+				t.Errorf("%q printed as %q, want %q.", src, got, want)
+			}
+		} else if want != "" {
+			t.Errorf("%q didn't parse.", src)
+		}
+	}
+}

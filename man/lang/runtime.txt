@@ -52,7 +52,8 @@ These are used by the code that GD++ generates. Your code rarely needs them:
 - gdpp::add_property_category(class, name) adds an inspector category, for @export_category.
 - gdpp::rpc_config<T>(node, method, ...) configures an RPC, for @rpc. It fails to compile if T doesn't extend Node.
 - gdpp::from_variant<T>(value) converts a Variant to T, enums included, for calls on externs.
-- GDPP_ENUM_TAG(TAG, NAME) makes a class's stand-in type for an enum bind as the enum NAME, e.g. "Player.Suit". See `gd++ man enums`.
+- GDPP_ENUM_TAG(TAG, NAME) makes a class's stand-in type for an enum bind as the enum NAME, e.g. "Player.Suit". GDPP_BITFIELD_TAG does the same for a bitfield. See `gd++ man enums`.
+- GDPP_BITFIELD(ENUM) gives the enum class of a bitfield the operators |, &, ^, ~, |=, &= and ^=.
 - Specializations of godot-cpp's GetTypeInfo, PtrToArg and VariantCaster for ExtPtr and ExtRef, so bindings see externs as their base classes.
 
 # Stability

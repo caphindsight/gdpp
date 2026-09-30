@@ -147,35 +147,44 @@ func parseUnit(filename, src string) (*unit, error) {
 		if e.Value != nil {
 			continue // A class constant.
 		}
-		s := &symbol{kind: meta.Enum, enum: e}
+		a, err := u.annotations(e.Annotations, "an enum", "bitfield")
+		if err != nil {
+			return nil, err
+		}
+		s := &symbol{kind: meta.Enum, enum: e, bitfield: a["bitfield"] != nil}
 		if e.Extends != nil {
 			s.base = e.Extends.Name
 		}
 		if err := declare(e.Pos, e.Name, s); err != nil {
 			return nil, err
 		}
-		next := int64(0)
+		flags, afterFlags := false, false // Whether a value without "=" came yet, and a value with "=" after it.
 		for _, entry := range e.Entries {
 			if entry.Name == "extends" {
 				return nil, u.errorAt(entry.Pos, len(entry.Name), "Expected an enum value name, but found keyword \"extends\".",
 					"\"extends\" comes before the values and names the base enum: \"enum Name { extends Base A B }\".")
 			}
-			if entry.Value != nil {
-				next = entry.Value.Value
-			}
 			if slices.ContainsFunc(s.values, func(v meta.EnumValue) bool { return v.Name == entry.Name }) {
 				return nil, u.errorAt(entry.Pos, len(entry.Name), fmt.Sprintf("Enum %s has two values named %s.", e.Name, entry.Name), "")
 			}
+			if s.bitfield && entry.Value == nil && afterFlags {
+				return nil, u.errorAt(entry.Pos, len(entry.Name), fmt.Sprintf("Bitfield %s's values without \"=\" must be next to each other.", e.Name),
+					"Set this value with \"=\", or move it next to the others.")
+			}
+			flags, afterFlags = flags || entry.Value == nil, flags && entry.Value != nil
 			doc := ""
 			if entry.Doc != nil {
 				doc = entry.Doc.Text
 			}
-			v := meta.EnumValue{Name: entry.Name, Value: next, Doc: doc, Implicit: entry.Value == nil && entry.Ref == nil}
-			if entry.Ref != nil {
-				v.Value, v.Ref = 0, entry.Ref.Name
+			v := meta.EnumValue{Name: entry.Name, Doc: doc, Implicit: entry.Value == nil}
+			switch {
+			case entry.Value == nil:
+			case entry.Value.Int != nil:
+				v.Value = entry.Value.Int.Value
+			default:
+				v.Expr = entry.Value.String()
 			}
 			s.values = append(s.values, v)
-			next++
 		}
 		u.enums = append(u.enums, s)
 	}
@@ -197,7 +206,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
-			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.EnumDecl, Base: s.base, Values: s.values})
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.EnumDecl, Base: s.base, Values: s.values, Bitfield: s.bitfield})
 		}
 	}
 	return decls, nil
@@ -271,7 +280,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
 				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
 		}
-		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp}
+		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}
@@ -348,12 +357,13 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	return kind, nil
 }
 
-// enumValues returns the values of enum s, those of its base first, with references to other enums' values
-// resolved, and stores them in s. Values without "= N" count on from the previous one, e.g. the base's last one.
+// enumValues returns the values of enum s, those of its base first, with expressions computed, and stores them
+// in s. Values without "=" count on from the previous one, e.g. the base's last one. In a bitfield, they are the
+// flags instead: powers of two, from the smallest one above the base's values.
 // Only the file's own enums report errors: a dependency's are reported when its own file is transpiled, so there
-// a broken base counts as empty, and a broken reference as a value without "= N".
+// a broken base counts as empty, and a broken expression as a value without "=".
 func (u *unit) enumValues(s *symbol, seen []*symbol) ([]meta.EnumValue, error) {
-	if s.base == "" && !slices.ContainsFunc(s.values, func(v meta.EnumValue) bool { return v.Ref != "" }) {
+	if s.base == "" && !slices.ContainsFunc(s.values, func(v meta.EnumValue) bool { return v.Implicit || v.Expr != "" }) {
 		return s.values, nil
 	}
 	seen = append(seen, s)
@@ -390,29 +400,49 @@ func (u *unit) enumValues(s *symbol, seen []*symbol) ([]meta.EnumValue, error) {
 		if err != nil && s.local() {
 			return nil, err
 		}
+		if b := u.symbols[s.base]; err == nil && s.local() && b.bitfield != s.bitfield {
+			if s.bitfield {
+				return nil, u.errorAt(pos, len(s.base), fmt.Sprintf("Bitfield %s can't extend %s, which is not a bitfield.", s.name, s.base), "")
+			}
+			return nil, u.errorAt(pos, len(s.base), fmt.Sprintf("%s can't extend %s, which is a bitfield.", s.name, s.base),
+				fmt.Sprintf("Add @bitfield to %s.", s.name))
+		}
 		values = slices.Clone(base)
 	}
 	inherited := len(values)
-	next := int64(0)
-	if len(values) > 0 {
-		next = values[len(values)-1].Value + 1
+	next, flag := int64(0), int64(1)
+	for _, w := range values {
+		next = w.Value + 1
+		for flag > 0 && w.Value >= flag {
+			flag <<= 1
+		}
 	}
 	for i, v := range s.values {
 		var entry *EnumEntry
+		var x *EnumExpr
 		if s.local() {
-			entry = s.enum.Entries[i]
+			entry, x = s.enum.Entries[i], s.enum.Entries[i].Value
+		} else if v.Expr != "" {
+			x = parseEnumExpr(v.Expr)
 		}
-		switch {
-		case v.Ref != "":
-			value, err := u.enumRef(s, v.Ref, entry, values, enum)
+		implicit := v.Implicit || v.Expr != "" && x == nil
+		if v.Expr != "" && x != nil {
+			value, err := u.enumExpr(s, x, values, enum)
 			if err != nil && s.local() {
 				return nil, err
-			} else if err == nil {
-				next = value
 			}
-		case !v.Implicit:
-			next = v.Value
+			v.Value, implicit = value, err != nil
 		}
+		switch {
+		case implicit && s.bitfield && flag <= 0 && s.local():
+			return nil, u.errorAt(entry.Pos, len(entry.Name), fmt.Sprintf("Bitfield %s has no bits left for %s.", s.name, v.Name),
+				"The largest flag is 2^62. Set this value with \"=\", or split the bitfield in two.")
+		case implicit && s.bitfield:
+			v.Value, flag = flag, flag<<1
+		case implicit:
+			v.Value = next
+		}
+		next = v.Value + 1
 		if k := slices.IndexFunc(values, func(w meta.EnumValue) bool { return w.Name == v.Name }); k >= 0 {
 			if !s.local() {
 				continue
@@ -423,25 +453,69 @@ func (u *unit) enumValues(s *symbol, seen []*symbol) ([]meta.EnumValue, error) {
 			}
 			return nil, u.errorAt(entry.Pos, len(entry.Name), fmt.Sprintf("Enum %s has two values named %s.", s.name, v.Name), hint)
 		}
-		values = append(values, meta.EnumValue{Name: v.Name, Value: next, Doc: v.Doc})
-		next++
+		values = append(values, meta.EnumValue{Name: v.Name, Value: v.Value, Doc: v.Doc})
 	}
 	s.values, s.base = values, ""
 	return values, nil
 }
 
-// enumRef returns the number of ref, which enum s names in entry (nil in dependencies): a value of an enum in GD++,
+// enumExpr returns the number of x, an expression in a value of enum s. s's own values are those in values, the
+// ones before it; enum returns the values of other enums.
+func (u *unit) enumExpr(s *symbol, x *EnumExpr, values []meta.EnumValue,
+	enum func(string, lexer.Position) ([]meta.EnumValue, error)) (int64, error) {
+	switch {
+	case x.Int != nil:
+		return x.Int.Value, nil
+	case x.Ref != nil:
+		return u.enumRef(s, x.Ref, values, enum)
+	}
+	var left int64
+	var err error
+	if x.Left != nil {
+		if left, err = u.enumExpr(s, x.Left, values, enum); err != nil {
+			return 0, err
+		}
+	}
+	right, err := u.enumExpr(s, x.Right, values, enum)
+	switch {
+	case err != nil:
+		return 0, err
+	case right == 0 && (x.Op == "/" || x.Op == "%"):
+		return 0, u.errorAt(x.Right.Pos, 1, "Division by zero.", "")
+	}
+	switch x.Op { // Like int64 in GDScript, results wrap around. For a unary "-", left is 0.
+	case "~":
+		return ^right, nil
+	case "|":
+		return left | right, nil
+	case "^":
+		return left ^ right, nil
+	case "&":
+		return left & right, nil
+	case "+":
+		return left + right, nil
+	case "-":
+		return left - right, nil
+	case "*":
+		return left * right, nil
+	case "/":
+		return left / right, nil
+	}
+	return left % right, nil
+}
+
+// enumRef returns the number of ref, in a value of enum s: a value of s, e.g. HEARTS, a value of an enum in GD++,
 // e.g. Suit.HEARTS or GeometryInstance3D.ShadowCastingSetting.ON, or an engine enum's value as a constant of its
 // class, like in GDScript, e.g. GeometryInstance3D.SHADOW_CASTING_SETTING_ON. s's own values are those in values,
-// the ones before entry; enum returns the values of other enums.
-func (u *unit) enumRef(s *symbol, ref string, entry *EnumEntry, values []meta.EnumValue,
+// the ones before it; enum returns the values of other enums.
+func (u *unit) enumRef(s *symbol, ref *EnumRef, values []meta.EnumValue,
 	enum func(string, lexer.Position) ([]meta.EnumValue, error)) (int64, error) {
-	i := strings.LastIndex(ref, ".")
-	enumName, name := ref[:i], ref[i+1:]
-	var pos lexer.Position
-	if entry != nil {
-		pos = entry.Ref.Pos
+	i := strings.LastIndex(ref.Name, ".")
+	enumName, name := s.name, ref.Name[i+1:]
+	if i >= 0 {
+		enumName = ref.Name[:i]
 	}
+	pos := ref.Pos
 	namePos := pos
 	namePos.Offset, namePos.Column = pos.Offset+i+1, pos.Column+i+1
 	if b := u.symbols[enumName]; b != nil && (b.kind == meta.Object || b.kind == meta.RefCounted) {
@@ -530,31 +604,49 @@ func (u *unit) noValue(pos lexer.Position, enumName string, values []meta.EnumVa
 }
 
 // enumShorthand turns init, the initial or default value of a value of type t, into C++ if it's a value of t's
-// enum, e.g. ON or GeometryInstance3D.ShadowCastingSetting.ON. Other values are C++ already.
+// enum, e.g. ON or Suit.ON, or for a bitfield, values combined with |, &, ^, ~ and parentheses, e.g. RED | BOLD.
+// Other values are C++ already.
 func (u *unit) enumShorthand(t *gtype, init *Init) error {
 	s := t.enum
 	if s == nil || init == nil || init.Block != nil {
 		return nil
 	}
-	name, qualified := strings.CutPrefix(init.Expr, s.name+".")
-	if !identRegexp.MatchString(name) {
+	l, err := gdppLexer.LexString("", init.Expr)
+	if err != nil {
 		return nil
 	}
-	if v, ok := enumValue(s.values, name); ok {
-		init.Expr = strings.ReplaceAll(s.name, ".", "::") + "::" + v.Name
+	tokens, err := lexer.ConsumeAll(l)
+	if err != nil {
 		return nil
 	}
-	if !qualified {
-		return nil // C++, e.g. a constant.
+	var cpp strings.Builder
+	for i := 0; i < len(tokens); i++ {
+		name := tokens[i]
+		qualified := name.Value == s.name && isPunct(at(tokens, i+1), ".") && at(tokens, i+2).Type == tokIdent
+		if qualified {
+			name, i = tokens[i+2], i+2
+		}
+		v, ok := enumValue(s.values, name.Value)
+		switch {
+		case name.EOF() || name.Type == tokWhitespace || name.Type == tokNewline || s.bitfield && name.Type == tokPunct && strings.Contains("|&^~()", name.Value):
+			cpp.WriteString(name.Value)
+		case name.Type == tokIdent && ok:
+			cpp.WriteString(s.name + "::" + v.Name)
+		case qualified:
+			pos := init.Pos
+			pos.Offset, pos.Column = pos.Offset+name.Pos.Offset, pos.Column+name.Pos.Offset
+			return u.noValue(pos, s.name, s.values, name.Value, "")
+		default:
+			return nil // C++, e.g. a constant.
+		}
 	}
-	pos := init.Pos
-	pos.Offset, pos.Column = pos.Offset+len(s.name)+1, pos.Column+len(s.name)+1
-	return u.noValue(pos, s.name, s.values, name, "")
+	init.Expr = cpp.String()
+	return nil
 }
 
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
-var knownAnnotations = []string{"const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
+var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "global", "icon", "onready",
 	"override", "rpc", "static", "tool", "virtual"}
 
@@ -804,12 +896,17 @@ func (u *unit) exportHint(m *varModel) error {
 	isNumber := m.t.cpp == "int64_t" || m.t.cpp == "double"
 	switch export.Name {
 	case "export":
-		if m.t.enum != nil {
+		if e := m.t.enum; e != nil {
 			var names []string
-			for _, v := range m.t.enum.values {
-				names = append(names, fmt.Sprintf("%s:%d", capitalize(v.Name), v.Value))
+			for _, v := range e.values {
+				if !e.bitfield || v.Value > 0 && v.Value&(v.Value-1) == 0 { // Bitfields list their single-bit flags.
+					names = append(names, fmt.Sprintf("%s:%d", capitalize(v.Name), v.Value))
+				}
 			}
 			m.hint, m.hintString = "PROPERTY_HINT_ENUM", strings.Join(names, ",")
+			if e.bitfield {
+				m.hint = "PROPERTY_HINT_FLAGS"
+			}
 		}
 	case "export_storage":
 		m.usage = "PROPERTY_USAGE_STORAGE"
@@ -1047,7 +1144,6 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				err = u.unique(names, member.Enum.Pos, "enum", member.Enum.Name)
 			}
 		case member.Enum != nil:
-			_, err = u.annotations(member.Enum.Annotations, "an enum")
 			declared = append(declared, u.symbols[member.Enum.Name])
 		case member.Import != nil:
 			m.imports = append(m.imports, member.Import)

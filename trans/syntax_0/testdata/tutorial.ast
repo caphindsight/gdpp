@@ -81,7 +81,8 @@ File: @36:1
           Entries:
             - @139:3
               Name: JACK
-              Value: @139:10 0
+              Value: @139:10
+                Int: @139:10 0
             - @140:3 QUEEN
             - @141:3 KING
       - @154:1

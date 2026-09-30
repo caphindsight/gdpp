@@ -1,0 +1,6 @@
+enum E {
+  A = 1 | 2 ^ 3 & ~4
+  B = (A | Suit.HEARTS) & -1 C
+  D = ~~(A)
+  F = A + -2 * 3 - -B / 4 % 5 G
+}

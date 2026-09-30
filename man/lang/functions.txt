@@ -65,7 +65,7 @@ func shout(text: String = {
 }) -> void { ... }
 ```
 
-For a parameter of a GD++ enum type, the default value can also be one of the enum's values, e.g. `suit: Suit = HEARTS`. See `gd++ man enums`.
+For a parameter of a GD++ enum type, the default value can also be one of the enum's values, e.g. `suit: Suit = HEARTS`, or for a bitfield, several combined, e.g. `mask: Layer = WORLD | PLAYER`. See `gd++ man enums`.
 
 Parameters with default values must come last:
 

@@ -54,12 +54,19 @@ func (u *unit) header(name string) string {
 			w.ln("\t%s = %d,", v.Name, v.Value)
 		}
 		w.ln("};")
+		if s.bitfield {
+			w.ln("GDPP_BITFIELD(%s)", s.name)
+		}
 	}
 	for _, c := range u.classes {
 		for _, e := range c.enums {
 			w.ln("")
+			macro := "GDPP_ENUM_TAG"
+			if e.bitfield {
+				macro = "GDPP_BITFIELD_TAG"
+			}
 			w.ln("enum %s : int64_t {};", tagName(c, e))
-			w.ln("GDPP_ENUM_TAG(%s, %q)", tagName(c, e), c.name+"."+e.name)
+			w.ln("%s(%s, %q)", macro, tagName(c, e), c.name+"."+e.name)
 		}
 	}
 	for _, e := range u.externs {

@@ -143,7 +143,7 @@ In order:
 1. The #include lines: the runtime header, then the headers of the names the header uses, sorted. See `gd++ man includes`.
 2. @global decl blocks.
 3. In namespace godot: forward declarations of the package's GD++ classes, externs and enums that the header uses, e.g. `class Enemy;` or `enum class Suit : int64_t;`.
-4. The enum stand-ins of the class, one per enum it exposes: `enum _gdpp_Counter_Suit : int64_t {};` and GDPP_ENUM_TAG. See `gd++ man enums`.
+4. The enum stand-ins of the class, one per enum it exposes: `enum _gdpp_Counter_Suit : int64_t {};` and GDPP_ENUM_TAG, or GDPP_BITFIELD_TAG for a bitfield. See `gd++ man enums`.
 5. The class, between `#define This NAME` and `#undef This`:
    - GDCLASS(NAME, BASE),
    - each decl block, after `private:`,
@@ -161,7 +161,7 @@ In order:
 1. #include "NAME.h", then the headers of names that only the source uses.
 2. @global impl blocks.
 3. In namespace godot, between `#define This NAME` and `#undef This`:
-   - _bind_methods: binds each function (with its default values), each variable's getter and setter and its property (after the inspector sections it starts), each signal, each integer constant, and each value of each exposed enum,
+   - _bind_methods: binds each function (with its default values), each variable's getter and setter and its property (after the inspector sections it starts), each signal, each integer constant, and each value of each exposed enum (as a bitfield flag for a bitfield),
    - the constructor, if needed: RPC configurations, set_process(true) and set_physics_process(true) for overrides, the initial values of variables, then the ctor block. See `gd++ man lifecycle`.
    - the destructor, with the dtor block,
    - each function: the editor check if the class isn't @tool, the GDVIRTUAL_CALL of a @virtual function, the @onready initial values in _ready, then the body; then its enum wrapper, default value functions and RPC helper,
@@ -226,6 +226,8 @@ enum class Suit : int64_t {
   HEARTS = 3,
 };
 ```
+
+A bitfield's enum class is followed by `GDPP_BITFIELD(Name)`, which gives it the bitwise operators.
 
 # Registration
 

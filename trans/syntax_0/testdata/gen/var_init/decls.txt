@@ -1,1 +1,1 @@
-{Name:Stage Kind:1 Base:Node Values:[] Icon: Tool:false}
+{Name:Stage Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false}

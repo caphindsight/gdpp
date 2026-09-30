@@ -1,0 +1,4 @@
+input.gd++:2:18: P can't extend S, which is a bitfield.
+ 2 | enum P { extends S B }
+   |                  ^
+Hint: Add @bitfield to P.

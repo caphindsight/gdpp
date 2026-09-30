@@ -144,7 +144,7 @@ include = '"Speed.h"'
 kind = "Enum"
 gdpp = true
 values = [
-	{ name = "FAST", ref = "Level.HARD" },
+	{ name = "FAST", expr = "Level.HARD" },
 	{ name = "FASTER", implicit = true },
 ]
 
@@ -178,4 +178,31 @@ kind = "GodotEnum"
 values = [
 	{ name = "KEY_CODE_A", value = 65 },
 	{ name = "KEY_CODE_3", value = 51 },
+]
+
+[[dep]]
+name = "Control.SizeFlags"
+include = "<godot_cpp/classes/control.hpp>"
+kind = "GodotEnum"
+bitfield = true
+values = [
+	{ name = "SIZE_SHRINK_BEGIN", value = 0 },
+	{ name = "SIZE_FILL", value = 1 },
+	{ name = "SIZE_EXPAND", value = 2 },
+	{ name = "SIZE_EXPAND_FILL", value = 3 },
+	{ name = "SIZE_SHRINK_CENTER", value = 4 },
+	{ name = "SIZE_SHRINK_END", value = 8 },
+]
+
+[[dep]]
+name = "Style"
+include = '"Style.h"'
+kind = "Enum"
+gdpp = true
+bitfield = true
+values = [
+	{ name = "NONE", value = 0 },
+	{ name = "BOLD", implicit = true },
+	{ name = "ITALIC", implicit = true },
+	{ name = "BOTH", expr = "BOLD | ITALIC" },
 ]

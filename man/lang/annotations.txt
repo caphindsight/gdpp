@@ -108,6 +108,11 @@ A variable can have at most one export annotation, and any section annotations. 
 
 Variables of externs take no annotations.
 
+# Enums
+
+@bitfield
+  Make an enum type a bitfield, whose values without "=" are flags: 1, 2, 4, and so on. See `gd++ man enums`.
+
 # Code blocks
 
 @global
@@ -115,7 +120,7 @@ Variables of externs take no annotations.
 
 # No annotations
 
-Signals, enums, enum values, integer constants, externs, ctor, dtor, import and noimport take no annotations.
+Signals, enum values, integer constants, externs, ctor, dtor, import and noimport take no annotations.
 
 # Errors
 

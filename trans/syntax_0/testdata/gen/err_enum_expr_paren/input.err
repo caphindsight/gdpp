@@ -1,0 +1,4 @@
+input.gd++:1:21: Expected an operator or ")", but found name "B".
+ 1 | enum E { A = (1 | 2 B) }
+   |                     ^
+Hint: Combine values with |, &, ^, ~, +, -, *, / and %.

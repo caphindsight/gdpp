@@ -46,7 +46,7 @@ PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DE
 		PropertyHint p_hint = PROPERTY_HINT_NONE, const String &p_hint_string = "") {
 	PropertyInfo result = GetTypeInfo<T>::get_class_info();
 	result.name = p_name;
-	result.usage = p_usage | (result.usage & (PROPERTY_USAGE_NIL_IS_VARIANT | PROPERTY_USAGE_CLASS_IS_ENUM));
+	result.usage = p_usage | (result.usage & (PROPERTY_USAGE_NIL_IS_VARIANT | PROPERTY_USAGE_CLASS_IS_ENUM | PROPERTY_USAGE_CLASS_IS_BITFIELD));
 	if constexpr (std::is_pointer_v<T>) {
 		if constexpr (std::is_base_of_v<Node, std::remove_pointer_t<T>>) {
 			result.hint = PROPERTY_HINT_NODE_TYPE;
@@ -281,13 +281,19 @@ struct VariantCaster<gdpp::ExtRef<T>> {
 
 // GDPP_ENUM_TAG makes m_tag, a class's stand-in for one of the package's enums, bind as the enum m_name
 // (e.g. "MyNode.Suit"), since each class exposes its own copy of the enums it uses. Use it in namespace godot.
-#define GDPP_ENUM_TAG(m_tag, m_name) \
+#define GDPP_ENUM_TAG(m_tag, m_name) GDPP_INT_TAG(m_tag, m_name, PROPERTY_USAGE_CLASS_IS_ENUM)
+
+// GDPP_BITFIELD_TAG is GDPP_ENUM_TAG for bitfields.
+#define GDPP_BITFIELD_TAG(m_tag, m_name) GDPP_INT_TAG(m_tag, m_name, PROPERTY_USAGE_CLASS_IS_BITFIELD)
+
+// GDPP_INT_TAG makes m_tag bind as an int with m_usage, e.g. PROPERTY_USAGE_CLASS_IS_ENUM, and class name m_name.
+#define GDPP_INT_TAG(m_tag, m_name, m_usage) \
 	template <> \
 	struct GetTypeInfo<m_tag> { \
 		static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_INT; \
 		static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE; \
 		static inline PropertyInfo get_class_info() { \
-			return PropertyInfo(Variant::INT, "", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM, m_name); \
+			return PropertyInfo(Variant::INT, "", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | m_usage, m_name); \
 		} \
 	}; \
 	template <> \
@@ -306,3 +312,13 @@ struct VariantCaster<gdpp::ExtRef<T>> {
 			*reinterpret_cast<int64_t *>(p_ptr) = p_val; \
 		} \
 	};
+
+// GDPP_BITFIELD gives m_enum, a GD++ bitfield, the bitwise operators. Use it in namespace godot.
+#define GDPP_BITFIELD(m_enum) \
+	constexpr m_enum operator|(m_enum a, m_enum b) { return m_enum(int64_t(a) | int64_t(b)); } \
+	constexpr m_enum operator&(m_enum a, m_enum b) { return m_enum(int64_t(a) & int64_t(b)); } \
+	constexpr m_enum operator^(m_enum a, m_enum b) { return m_enum(int64_t(a) ^ int64_t(b)); } \
+	constexpr m_enum operator~(m_enum a) { return m_enum(~int64_t(a)); } \
+	constexpr m_enum &operator|=(m_enum &a, m_enum b) { return a = a | b; } \
+	constexpr m_enum &operator&=(m_enum &a, m_enum b) { return a = a & b; } \
+	constexpr m_enum &operator^=(m_enum &a, m_enum b) { return a = a ^ b; }

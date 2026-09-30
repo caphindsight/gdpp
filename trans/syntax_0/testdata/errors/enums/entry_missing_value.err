@@ -1,4 +1,0 @@
-errors/enums/entry_missing_value.gd++:3:3: Expected an integer or another enum's value after "=", but found name "B".
- 3 |   B
-   |   ^
-Hint: Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS.

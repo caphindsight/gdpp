@@ -5,11 +5,14 @@ File: @1:1
       Entries:
         - @2:3
           Name: ON
-          Ref: @2:8 GeometryInstance3D.ShadowCastingSetting.ON
+          Value: @2:8
+            Ref: @2:8 GeometryInstance3D.ShadowCastingSetting.ON
         - @3:3 B
         - @3:6
           Name: C
-          Ref: @3:10 Suit.HEARTS
+          Value: @3:10
+            Ref: @3:10 Suit.HEARTS
         - @3:22
           Name: D
-          Ref: @3:26 E.ON
+          Value: @3:26
+            Ref: @3:26 E.ON

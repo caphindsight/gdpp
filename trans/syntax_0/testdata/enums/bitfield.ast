@@ -1,0 +1,22 @@
+File: @1:1
+  InlineEnums:
+    - @2:1
+      Annotations:
+        - @1:1 bitfield
+      Name: Effect
+      Entries:
+        - @2:15
+          Name: NONE
+          Value: @2:22
+            Int: @2:22 0
+        - @2:24 RED
+        - @2:28 BOLD
+        - @2:33 BLINKING
+        - @2:42
+          Name: RED_AND_BOLD
+          Value: @2:57
+            Op: |
+            Left: @2:57
+              Ref: @2:57 RED
+            Right: @2:63
+              Ref: @2:63 BOLD

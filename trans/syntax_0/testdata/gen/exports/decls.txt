@@ -1,1 +1,1 @@
-{Name:Settings2 Kind:1 Base:Node Values:[] Icon: Tool:false}
+{Name:Settings2 Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false}

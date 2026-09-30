@@ -76,7 +76,7 @@ Each class becomes a C++ class in namespace godot, with GDCLASS, in a header and
 - Variables: var name: type = value, and properties with their own get and set. See `gd++ man variables`.
 - Exports: @export and its family, to show variables in the inspector. See `gd++ man exports`.
 - Signals: signal name(params), sent with emit. See `gd++ man signals`.
-- Enums and constants: enum Name { A B C } and enum NAME = 42. See `gd++ man enums`.
+- Enums and constants: enum Name { A B C }, @bitfield enum Name { A B C } and enum NAME = 42. See `gd++ man enums`.
 - Constructors and destructors: ctor { } and dtor { }, and @onready. See `gd++ man lifecycle`.
 - Networking: @rpc, and rpc and rpc_id calls. See `gd++ man rpc`.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
