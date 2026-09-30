@@ -46,11 +46,11 @@ func done(task: Async[void]) -> bool {
 func search(steps: int) -> int {
   int64_t done = 0;
   for (; done < steps; done++) {
-    if (cancelled) {
+    if (is_cancelled) {
       break;
     }
   }
-  bool stop = gdpp::cancelled() || !cancelled;
+  bool stop = gdpp::is_cancelled() || !is_cancelled;
   return stop ? done : -done;
 }
 

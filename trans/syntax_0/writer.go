@@ -43,7 +43,7 @@ func (w *writer) String() string {
 //   - `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
 //   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
 //   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
-//   - `cancelled`, a bare word, becomes `gdpp::cancelled()`.
+//   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`.
 func cpp(code string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
@@ -65,9 +65,9 @@ func cpp(code string) string {
 		if ts[i].Type == tokIdent && ts[i].Value == "emit" {
 			out[i] = "(void)"
 		}
-		if ts[i].Type == tokIdent && ts[i].Value == "cancelled" && !isMember(ts, i) {
+		if ts[i].Type == tokIdent && ts[i].Value == "is_cancelled" && !isMember(ts, i) {
 			if next := skipSpace(ts, i+1); next == len(ts) || !isPunct(ts[next], "(") {
-				out[i] = "gdpp::cancelled()"
+				out[i] = "gdpp::is_cancelled()"
 			}
 		}
 		if ts[i].Type == tokIdent && asyncWords[ts[i].Value] {

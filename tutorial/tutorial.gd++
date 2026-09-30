@@ -272,7 +272,7 @@ func count_primes(limit: int) -> int {
   int64_t count = 0;
   for (int64_t n = 2; n < limit; n++) {
     bool prime = true;
-    if (cancelled) {  // True once the game quits, or the task is cancelled: then stop early.
+    if (is_cancelled) {  // True once the game quits, or the task is cancelled: then stop early.
       return count;
     }
     for (int64_t d = 2; d * d <= n && prime; d++) {
@@ -302,7 +302,7 @@ func poll_primes() -> void {
   }
 }
 
-// `cancel primes` asks the task to stop early: cancelled becomes true in its body. It's always safe, even for a task
+// `cancel primes` asks the task to stop early: is_cancelled becomes true in its body. It's always safe, even for a task
 // that's done, or an empty Async.
 
 func stop_primes() -> void {

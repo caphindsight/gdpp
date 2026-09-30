@@ -272,7 +272,7 @@ File: @36:1
                 int64_t count = 0;
                 for (int64_t n = 2; n < limit; n++) {
                   bool prime = true;
-                  if (cancelled) {
+                  if (is_cancelled) {
                     return count;
                   }
                   for (int64_t d = 2; d * d <= n && prime; d++) {

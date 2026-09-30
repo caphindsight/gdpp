@@ -23,7 +23,7 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "emit f(); rpc(1) g(); rpc_id(1, \"g\");", Styled("emit", CodeKeyword) + " " + Styled("f", CodeFunction) + "(); " + Styled("rpc", CodeKeyword) +
 			"(" + Styled("1", CodeLiteral) + ") " + Styled("g", CodeFunction) + "(); " + Styled("rpc_id", CodeFunction) + "(" + Styled("1", CodeLiteral) + ", " +
 			Styled("\"g\"", CodeLiteral) + ");"},
-		{"gd++", "if (cancelled) x = is_done t;", Styled("if", CodeKeyword) + " (" + Styled("cancelled", CodeKeyword) + ") x = " +
+		{"gd++", "if (is_cancelled) x = is_done t;", Styled("if", CodeKeyword) + " (" + Styled("is_cancelled", CodeKeyword) + ") x = " +
 			Styled("is_done", CodeKeyword) + " t;"},
 		{"gd++", "cancel t; t.cancel();", Styled("cancel", CodeKeyword) + " t; t." + Styled("cancel", CodeFunction) + "();"},
 		{"", "var x", "var x"},

@@ -176,7 +176,7 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
 }
 ```
 
-With @onthread, every call to the function, from C++ or from scripts, runs its body on Godot's WorkerThreadPool, and returns right away, with an Async of the function's type: here, an Async[PackedVector2Array]. The caller tests whether it's done with `is_done`, takes the result with `claim`, and can ask the task to stop with `cancel`, which the body notices with `cancelled`. GD++ puts the body in a second method, _gdpp_body_NAME, which the task calls. See `gd++ man async`.
+With @onthread, every call to the function, from C++ or from scripts, runs its body on Godot's WorkerThreadPool, and returns right away, with an Async of the function's type: here, an Async[PackedVector2Array]. The caller tests whether it's done with `is_done`, takes the result with `claim`, and can ask the task to stop with `cancel`, which the body notices with `is_cancelled`. GD++ puts the body in a second method, _gdpp_body_NAME, which the task calls. See `gd++ man async`.
 
 # @trace and @profile
 

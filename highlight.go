@@ -39,7 +39,7 @@ const (
 		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
 	gdscriptWords = "pass and or not in"
 	// GD++'s words in C++ code that are keywords wherever they appear.
-	rewriteWords = "emit rpc cancelled"
+	rewriteWords = "emit rpc is_cancelled"
 	// GD++'s words in C++ code that are also method names, e.g. in task.is_done(): they're keywords only where a name
 	// follows them, which is where GD++ rewrites them.
 	rewriteOperatorWords = "is_done claim cancel"

@@ -147,7 +147,7 @@ func checkLines(t *testing.T, src, self, text string) {
 			continue
 		}
 		// Lines after the first come straight from the source (minus comments), so their identifiers match, except
-		// for the rewrites of emit, rpc, cancelled, claim, is_done and cancel, whose operand may start on the next line.
+		// for the rewrites of emit, rpc, is_cancelled, claim, is_done and cancel, whose operand may start on the next line.
 		for k := 1; i+1+k < len(lines) && !lineDirective.MatchString(lines[i+1+k]); k++ {
 			if n+k > len(srcLines) {
 				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])

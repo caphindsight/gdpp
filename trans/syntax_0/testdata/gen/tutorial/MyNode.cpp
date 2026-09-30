@@ -226,7 +226,7 @@ int64_t MyNode::_gdpp_body_count_primes(int64_t limit) {
   int64_t count = 0;
   for (int64_t n = 2; n < limit; n++) {
     bool prime = true;
-    if (gdpp::cancelled()) {
+    if (gdpp::is_cancelled()) {
       return count;
     }
     for (int64_t d = 2; d * d <= n && prime; d++) {

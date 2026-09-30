@@ -122,11 +122,11 @@ int64_t Pathfinder::_gdpp_body_search(int64_t steps) {
 
   int64_t done = 0;
   for (; done < steps; done++) {
-    if (gdpp::cancelled()) {
+    if (gdpp::is_cancelled()) {
       break;
     }
   }
-  bool stop = gdpp::cancelled() || !gdpp::cancelled();
+  bool stop = gdpp::is_cancelled() || !gdpp::is_cancelled();
   return stop ? done : -done;
 
 #line 133 "Pathfinder.cpp"

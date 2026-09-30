@@ -161,7 +161,7 @@ A running task can't be stopped from outside: no thread can be killed safely. In
 func generate(size: int) -> Terrain {
   Ref<Terrain> terrain;
   for (int64_t row = 0; row < size; row++) {
-    if (cancelled) {
+    if (is_cancelled) {
       return {};
     }
     ...
@@ -170,13 +170,13 @@ func generate(size: int) -> Terrain {
 }
 ```
 
-`cancelled` is true in a body once its task should stop: after its Async's cancel(), or once the game is quitting. It's GD++'s word for gdpp::cancelled(), see `gd++ man rewrites`. Checking it is cheap, so long bodies can check it in every loop. What the body returns then is up to it, e.g. an empty result; it's the task's result, as usual. Outside of tasks, cancelled is true while the game quits.
+`is_cancelled` is true in a body once its task should stop: after its Async's cancel(), or once the game is quitting. Like is_done, it's GD++'s word: it becomes gdpp::is_cancelled(), see `gd++ man rewrites`. Checking it is cheap, so long bodies can check it in every loop. What the body returns then is up to it, e.g. an empty result; it's the task's result, as usual. Outside of tasks, is_cancelled is true while the game quits.
 
-`cancel TASK` in C++, or task.cancel() in a script, asks a task to stop. Like is_done and claim, cancel is GD++'s own word: it becomes `TASK.cancel()`, and makes the place that stops another task stand out. It only sets the flag: the body goes on until it checks cancelled, and the Async stays as it is, so its result is still claimed, or dropped, as usual. It's always safe: cancelling a task that's done, or an empty Async, does nothing.
+`cancel TASK` in C++, or task.cancel() in a script, asks a task to stop. Like is_done and claim, cancel is GD++'s own word: it becomes `TASK.cancel()`, and makes the place that stops another task stand out. It only sets the flag: the body goes on until it checks is_cancelled, and the Async stays as it is, so its result is still claimed, or dropped, as usual. It's always safe: cancelling a task that's done, or an empty Async, does nothing.
 
 # When the game quits
 
-When the game quits, e.g. when its window is closed, running tasks would hold it up: Godot waits for them. So when quitting starts, cancelled becomes true in every task, and the package's tasks get a grace period, 1 second by default, to finish. If some still run when it's over, the game exits right away, and prints how many tasks were still running. Such an exit skips the rest of Godot's cleanup, so a body that ignores cancelled can end the game abruptly: check cancelled in long bodies.
+When the game quits, e.g. when its window is closed, running tasks would hold it up: Godot waits for them. So when quitting starts, is_cancelled becomes true in every task, and the package's tasks get a grace period, 1 second by default, to finish. If some still run when it's over, the game exits right away, and prints how many tasks were still running. Such an exit skips the rest of Godot's cleanup, so a body that ignores is_cancelled can end the game abruptly: check is_cancelled in long bodies.
 
 The grace period is the package's quit_timeout setting, in seconds; set it with `gd++ init PATH --update --quit-timeout SECONDS`. See `gd++ man packages`.
 
@@ -231,7 +231,7 @@ For an @onthread function f, GD++ generates:
 
 The object of the class of tasks stores the body's result as a Variant, and the Async converts it back to the function's type. Godot requires waiting once for each task of the WorkerThreadPool, with wait_for_task_completion: the object does so in wait, which claim calls, or else when it's freed. If a task frees the last reference to itself, e.g. by freeing the object that held it, it can't wait for itself, so the main thread waits for it instead, right after.
 
-For quitting, the runtime watches the root window, from the package's first task on: the window leaves the scene tree when the game starts quitting, before any node is freed. From then on, cancelled is true, and waiting for a task ends the game when the grace period is over. When the package's library is unloaded, it also waits for the package's running tasks, within the same grace period, since their code must not be unloaded while they run.
+For quitting, the runtime watches the root window, from the package's first task on: the window leaves the scene tree when the game starts quitting, before any node is freed. From then on, is_cancelled is true, and waiting for a task ends the game when the grace period is over. When the package's library is unloaded, it also waits for the package's running tasks, within the same grace period, since their code must not be unloaded while they run.
 
 Run `gd++ trans FILE` to see the code, and see `gd++ man generated` and `gd++ man runtime`.
 

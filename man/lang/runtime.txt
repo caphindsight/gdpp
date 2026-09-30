@@ -39,8 +39,8 @@ gdpp::ExtPtr<T>, gdpp::ExtRef<T> and gdpp::Ext<T>
 gdpp::Async<T>
   The C++ type of Async[T]: a task, e.g. the call of an @onthread function. It references an object of a class of tasks, whose methods it calls by name, so it works with the tasks of any package, and copies share the task. It's true while it holds a task, running or done. is_done() is true if it holds a task that has finished, and false while the task runs, and for an empty Async. claim() returns the result of a done task, and empties the Async. wait() waits for the task to finish, then claims. cancel() asks the task to stop, and is always safe: for an empty Async or a done task, it does nothing. Claiming from an empty Async or before the task is done, and waiting on an empty Async, print an error in debug builds, and are undefined in release builds. A default-constructed Async is empty, and destroying it does nothing. In GD++ code, `is_done TASK`, `claim TASK` and `cancel TASK` call these methods, see `gd++ man rewrites`. See `gd++ man async`.
 
-gdpp::cancelled()
-  Whether the task running on this thread should stop: its Async was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. In GD++ code, the word cancelled calls it. See `gd++ man async`.
+gdpp::is_cancelled()
+  Whether the task running on this thread should stop: its Async was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. In GD++ code, the word is_cancelled calls it. See `gd++ man async`.
 
 gdpp::Emitted
   What a signal's emit function returns: a [[nodiscard]] struct with the Error of emit_signal, in its field error. See `gd++ man signals`.

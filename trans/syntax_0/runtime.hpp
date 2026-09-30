@@ -254,9 +254,9 @@ inline int64_t now_usec() {
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
-// cancelled reports whether the task running on this thread should stop: its Async was cancelled, or the game is
+// is_cancelled reports whether the task running on this thread should stop: its Async was cancelled, or the game is
 // quitting. Outside of tasks, it reports whether the game is quitting. It's cheap, so long bodies can check it often.
-inline bool cancelled() {
+inline bool is_cancelled() {
 	return quitting.load(std::memory_order_relaxed) || (current_cancel && current_cancel->load(std::memory_order_relaxed));
 }
 
@@ -349,7 +349,7 @@ public:
 		return result;
 	}
 
-	// cancel asks the job to stop: gdpp::cancelled() is true in it from now on.
+	// cancel asks the job to stop: gdpp::is_cancelled() is true in it from now on.
 	void cancel() { cancel_requested.store(true, std::memory_order_relaxed); }
 
 	// start runs p_job on the WorkerThreadPool, as the task named p_name.
@@ -467,7 +467,7 @@ public:
 		return take();
 	}
 
-	// cancel asks the task to stop: gdpp::cancelled() is true in its body from now on. It's up to the body to check it,
+	// cancel asks the task to stop: gdpp::is_cancelled() is true in its body from now on. It's up to the body to check it,
 	// and return early. The Async stays as it is: its result is still claimed, or dropped, as usual. It's always safe:
 	// for an empty Async, or a task that's done, it does nothing.
 	void cancel() {
