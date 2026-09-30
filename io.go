@@ -328,6 +328,9 @@ func (s *Silencer) End() {
 // logMsg prints a formatted message with icon, unless suppressible and
 // suppressed by -q/--quiet or Silence.
 func logMsg(icon string, suppressible bool, format string, params []any) {
+	if !suppressible {
+		failRunningTask()
+	}
 	if !suppressible || !quiet() {
 		fmt.Fprintln(os.Stderr, formatMsg(icon, fmt.Sprintf(format, params...)))
 	}
@@ -352,6 +355,7 @@ func errorIcon() string { return Styled(unicodeOr("×", "x"), Bold, Red) }
 // program via Fail. Errors in GD++ code span several lines, with a caret under
 // the problem, which wrapping would misalign.
 func FailWithText(err error) {
+	failRunningTask()
 	fmt.Fprintln(os.Stderr, "["+errorIcon()+"] "+strings.ReplaceAll(err.Error(), "\n", "\n    "))
 	Fail()
 }
@@ -400,12 +404,25 @@ type Task struct {
 	exited chan struct{} // closed when the animation goroutine returns
 }
 
+// runningTask is the task started by LogTask and not yet finished, if any.
+var runningTask *Task
+
+// failRunningTask marks the running task, if any, as failed, so an error
+// printed during it lands below its final message rather than below its log
+// rows, and its animation can't draw over the error.
+func failRunningTask() {
+	if runningTask != nil {
+		runningTask.finish(errorIcon(), "Task failed: ", false)
+	}
+}
+
 // LogTask prints a formatted task message and returns the task. On a terminal,
 // the icon is animated until Done is called, with the latest log lines shown
 // under the message, unless hidden per taskLogsHidden. Under -q/--quiet or
 // Silence, the message and log lines are erased once the task succeeds.
 func LogTask(format string, params ...any) *Task {
 	t := &Task{msg: fmt.Sprintf(format, params...), stop: make(chan struct{}), exited: make(chan struct{})}
+	runningTask = t
 	if !isTTY {
 		fmt.Fprintln(os.Stderr, formatMsg("$", t.label("Running task: ")))
 		return t
@@ -522,6 +539,7 @@ func (t *Task) failedName() string {
 // clears the log lines shown under the task message, and with erase set it
 // clears the task message too instead of printing anything.
 func (t *Task) finish(icon, status string, erase bool) {
+	runningTask = nil
 	if !isTTY {
 		fmt.Fprintln(os.Stderr, formatMsg(icon, t.label(status)))
 		return

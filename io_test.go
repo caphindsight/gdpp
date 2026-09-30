@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -612,6 +613,43 @@ func TestTaskFailTTYShortLog(t *testing.T) {
 	}
 	if want := wantTaskFailTTY(Args.LogDepth); !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want suffix %q", out, want)
+	}
+}
+
+// TestErrorDuringTaskTTY checks that an error printed while a task is running
+// first marks the task failed, clearing its empty log rows.
+func TestErrorDuringTaskTTY(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = true
+		isUnicode = true
+		LogTask("Build...")
+		FailWithText(errors.New("Oops."))
+		return
+	}
+	out, code := runFailHelper(t, "TestErrorDuringTaskTTY")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	want := fmt.Sprintf("\x1b[%dF\x1b[J", 1+Args.LogDepth) + "[\x1b[1;31m×\x1b[0m] Build.\n[\x1b[1;31m×\x1b[0m] Oops.\n"
+	if !strings.HasSuffix(out, want) {
+		t.Errorf("output = %q, want suffix %q", out, want)
+	}
+}
+
+func TestErrorDuringTaskNonTTY(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		isUnicode = true
+		LogTask("Build...")
+		LogFatal("Oops.")
+		return
+	}
+	out, code := runFailHelper(t, "TestErrorDuringTaskNonTTY")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if want := "[$] Running task: build...\n[x] Task failed: build\n[x] Oops.\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 
