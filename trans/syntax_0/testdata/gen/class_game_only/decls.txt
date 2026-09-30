@@ -1,2 +1,2 @@
-{Name:Mob Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false}
-{Name:Mood Kind:3 Base: Values:[{Name:CALM Value:0 Doc: Implicit:true Expr:} {Name:ANGRY Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false}
+{Name:Mob Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:true Trace:false Profile:false}
+{Name:Mood Kind:3 Base: Values:[{Name:CALM Value:0 Doc: Implicit:true Expr:} {Name:ANGRY Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}

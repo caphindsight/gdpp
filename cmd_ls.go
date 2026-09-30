@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"gd++/trans"
 )
 
 // CmdLs prints an overview of the project: its settings, its cached
@@ -29,13 +31,13 @@ type lsPackage struct {
 // so commands can't change them. A GD++ class with an empty Name stands for a
 // GD++ file with errors.
 type lsClass struct {
-	Name       string
-	File, Icon Path   // The header of a C++ class, or the GD++ file of a GD++ class.
-	FileText   string // For GD++ classes, the file's pkg:// path; if empty, File's.
-	IconText   string // The icon's path as written, e.g. pkg://icon.svg; if empty, Icon's.
-	Gdpp       bool
-	Tool       bool // A class whose code runs in the editor too.
-	Clash      bool // Another class has the same name.
+	Name                           string
+	File, Icon                     Path   // The header of a C++ class, or the GD++ file of a GD++ class.
+	FileText                       string // For GD++ classes, the file's pkg:// path; if empty, File's.
+	Base                           string // For GD++ classes.
+	Gdpp                           bool
+	Tool, GameOnly, Trace, Profile bool
+	Clash                          bool // Another class has the same name.
 }
 
 func (c *CmdLs) Run() {
@@ -60,23 +62,29 @@ func (c *CmdLs) Run() {
 	PrintResult(lsProject(p, pkgs, c.Deps || c.All))
 }
 
-// lsClasses returns the classes of the package: those in its config, in
-// order, then those in its GD++ files, by name, and a row per GD++ file with
+// lsClasses returns the classes of the package: those in its config, then
+// those of each GD++ file, in order, and last a class per GD++ file with
 // errors.
 func lsClasses(p Project, pkg Package) []lsClass {
-	var classes []lsClass
+	var classes, broken []lsClass
 	for _, class := range pkg.Config.Classes {
-		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), IconText: class.Icon, Tool: class.Tool})
+		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), Tool: class.Tool})
 	}
-	files := listGdppFiles(p, pkg)
-	for _, class := range gdppClasses(files) {
-		classes = append(classes, lsClass{Name: class.Name, File: class.File.File, FileText: "pkg://" + class.File.Rel, Icon: pkg.ClassPath(class.Icon), IconText: class.Icon, Gdpp: true, Tool: class.Tool})
-	}
-	for _, f := range files {
+	for _, f := range listGdppFiles(p, pkg) {
+		file := lsClass{File: f.File, FileText: "pkg://" + f.Rel, Gdpp: true}
 		if f.Err != nil {
-			classes = append(classes, lsClass{File: f.File, FileText: "pkg://" + f.Rel, Gdpp: true})
+			broken = append(broken, file)
+		}
+		for _, d := range f.Decls {
+			if d.Kind == trans.ClassDecl {
+				class := file
+				class.Name, class.Base, class.Icon = d.Name, d.Base, pkg.ClassPath(d.Icon)
+				class.Tool, class.GameOnly, class.Trace, class.Profile = d.Tool, d.GameOnly, d.Trace, d.Profile
+				classes = append(classes, class)
+			}
 		}
 	}
+	classes = append(classes, broken...)
 	count := map[string]int{}
 	for _, class := range classes {
 		count[class.Name]++
@@ -100,7 +108,7 @@ func isUnused(cache ProjectDepCache, name string, pkgs []lsPackage) bool {
 
 func lsKey(s string) string     { return Styled(s+":", Bold) }
 func lsSep() string             { return Styled(unicodeOr("  •  ", "  *  "), Bold) }
-func lsMissing(s string) string { return Styled(unicodeOr("✗ ", "x ")+s, Red) }
+func lsMissing(s string) string { return Styled(s, Red) }
 
 // lsProject renders the overview of p and its packages. With deps, it lists
 // every dependency instead of counting them.
@@ -184,7 +192,7 @@ func lsPackages(caches []ProjectDepCache, pkgs []lsPackage) string {
 		}
 		switch {
 		case pkg.Expanded:
-			out.WriteString("\n" + AlignColumns(rows, "  "))
+			out.WriteString("\n" + AlignColumns(rows, "  ") + lsClassTable(pkg.Classes))
 		case missing:
 			out.WriteString("  " + lsMissing("missing dependencies") + "\n")
 		default:
@@ -212,42 +220,70 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 		rows = append(rows, []string{lsKey(cache.Desc), name, status})
 	}
 	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard})
-	if len(pkg.Classes) > 0 {
-		// In the same table, so both align.
-		rows = append(rows, nil, []string{Styled("Classes", Bold), Styled("Kind", Bold), Styled("File", Bold), Styled("Icon", Bold)})
-	}
-	for _, class := range pkg.Classes {
-		name, kind, file := class.Name, "C++", lsClassPath(class.File, class.FileText)
-		switch {
-		case class.Gdpp && class.Tool:
-			kind = "GD++ @tool"
-		case class.Gdpp:
-			kind = "GD++"
-		case class.Tool:
-			kind = "C++ tool"
-		}
-		switch {
-		case class.Name == "":
-			name, file = "?", lsMissing(class.FileText+": has errors, see gd++ build")
-		case class.Clash:
-			name = lsMissing(class.Name + ": declared twice")
-		}
-		rows = append(rows, []string{name, kind, file, lsClassPath(class.Icon, class.IconText)})
-	}
 	return rows, missing
 }
 
-// lsClassPath renders a class's file, marked if it's missing: as text, the
-// path as written (e.g. pkg://icon.svg), or else as p's path.
+// lsClassTable renders the classes, grouped by the file declaring them: first
+// the C++ classes, then those of each GD++ file, and last the GD++ files with
+// errors.
+func lsClassTable(classes []lsClass) string {
+	var out strings.Builder
+	var rows [][]string
+	group := ""
+	for _, class := range classes {
+		title, second := "C++ classes in the package", lsClassPath(class.File, "")
+		if class.Gdpp {
+			title, second = "Classes in "+class.FileText, "extends "+class.Base
+		}
+		if title != group || class.Name == "" {
+			out.WriteString(AlignColumns(rows, "    "))
+			rows, group = nil, title
+			if out.Len() == 0 {
+				out.WriteString("\n")
+			}
+			if class.Name == "" {
+				out.WriteString("  " + lsMissing(class.FileText+": has errors, see gd++ build") + "\n")
+				continue
+			}
+			out.WriteString("  " + Styled(title, Bold) + "\n")
+		}
+		name := class.Name
+		if class.Clash {
+			name = lsMissing(name + ": declared twice")
+		}
+		rows = append(rows, []string{name, second, lsTags(class)})
+	}
+	return out.String() + AlignColumns(rows, "    ")
+}
+
+// lsTags renders the annotations of a class, e.g. "@tool @icon".
+func lsTags(class lsClass) string {
+	var tags []string
+	for _, t := range []struct {
+		on   bool
+		name string
+	}{{class.Tool, "@tool"}, {class.GameOnly, "@game_only"}, {class.Trace, "@trace"}, {class.Profile, "@profile"}} {
+		if t.on {
+			tags = append(tags, t.name)
+		}
+	}
+	if class.Icon != (Path{}) {
+		tags = append(tags, lsClassPath(class.Icon, "@icon"))
+	}
+	return strings.Join(tags, " ")
+}
+
+// lsClassPath renders a class's file as text, or if empty as p's path, and
+// marks it if it's missing. A zero p renders as "".
 func lsClassPath(p Path, text string) string {
 	if p == (Path{}) {
-		return "none"
+		return ""
 	}
 	if text == "" {
 		text = p.ToString()
 	}
 	if !p.IsFile() {
-		return lsMissing(text)
+		return lsMissing(text + " (missing)")
 	}
 	return text
 }

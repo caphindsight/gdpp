@@ -69,6 +69,9 @@ type Declaration struct {
 	Icon     string      // For classes: the icon's res:// or pkg:// path, from @icon.
 	Tool     bool        // For classes: whether @tool makes its functions run in the editor too.
 	Bitfield bool        // For enums: whether @bitfield makes it a bitfield.
+	GameOnly bool        // For classes: whether @game_only keeps its code from running in the editor.
+	Trace    bool        // For classes: whether it has @trace.
+	Profile  bool        // For classes: whether it has @profile.
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

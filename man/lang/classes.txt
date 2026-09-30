@@ -93,7 +93,7 @@ Without @tool, a class is registered with Godot as a runtime class. In the edito
 
 So a runtime class can't break the editor, e.g. by moving nodes around in a scene you're editing. Games run from the editor, and exported games, run all code. Inline classes need their own @tool: it's not inherited from the file-level class, nor from the base class.
 
-`gd++ ls` shows @tool classes as "GD++ @tool".
+`gd++ ls` shows @tool classes with the tag @tool.
 
 # @game_only
 

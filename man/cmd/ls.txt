@@ -11,7 +11,7 @@ gd++ ls (-l | -a)
 
 Prints an overview of the project: its name and settings, the dependencies in its caches, and its packages. The package that contains PATH, or the current directory, is expanded: its dependencies, settings and classes are shown. Other packages take one line each. If the project has only one package, it is always expanded.
 
-It is the quickest way to check a project's state, e.g. after cloning it: it marks missing dependencies, unused dependencies, missing files, and GD++ files with errors.
+It is the quickest way to check a project's state, e.g. after cloning it: it shows missing dependencies, unused dependencies, missing files, and GD++ files with errors.
 
 # Options
 
@@ -45,13 +45,16 @@ Package: res://gameplay
   GD++ syntax:         0
   C++ standard:        c++20
 
-  Classes  Kind        File                      Icon
-  Spinner  C++         res://gameplay/spinner.h  none
-  Gizmo    GD++ @tool  pkg://gizmo.gd++          none
-  Player   GD++        pkg://player.gd++         pkg://icons/player.svg
-  ?        GD++        ✗ pkg://broken.gd++: has errors, see gd++ build  none
+  C++ classes in the package
+    Spinner  res://gameplay/spinner.h  @tool
+  Classes in pkg://gizmo.gd++
+    Gizmo  extends Node3D  @tool @trace
+  Classes in pkg://player.gd++
+    Player  extends CharacterBody3D  @game_only @icon
+    Stats   extends Resource         @icon (missing)
+  pkg://broken.gd++: has errors, see gd++ build
 
-Package: res://tools  ✗ missing dependencies
+Package: res://tools  missing dependencies
 
 To fix: gd++ fetch --missing
 ```
@@ -60,12 +63,12 @@ The parts:
 
 - Project: the name from project.godot, the project's id (its directory name) in brackets, the Godot version from project.godot, and the vcs setting from gd++proj.toml.
 - Dependencies: per kind, how many are checked in, cached (in the ephemeral cache) and unused (named by no package). With --deps, one row per dependency, newest first, with its cache and whether it's unused.
-- Package: the package's path, and for the root package, its id in brackets. An expanded package shows its bindings and spec, marked "✗ missing" if the project doesn't have them, its GD++ syntax and C++ standard, and its classes.
-- Classes: the C++ classes from gd++pkg.toml, in order, then the GD++ classes, by name. Kind is "C++", "C++ tool", "GD++", or "GD++ @tool": the tool kinds run in the editor, the others are runtime classes. File is the header of a C++ class, or the GD++ file of a GD++ class. Icon is the class's icon, or none. Missing files and icons are marked with ✗. A class declared twice is marked "declared twice". A GD++ file with errors gets a row "?", since its classes can't be read: run `gd++ build` or `gd++ trans` on it to see the error.
+- Package: the package's path, and for the root package, its id in brackets. An expanded package shows its bindings and spec, marked "missing" if the project doesn't have them, its GD++ syntax and C++ standard, and its classes.
+- Classes: grouped by where they're declared. First the C++ classes from gd++pkg.toml, in order, each with its header. Then the classes of each GD++ file, in order, each with its base class. After each class, its tags: @tool (it runs in the editor too; without it, it's a runtime class), @game_only, @trace, @profile and @icon, from its annotations, or for a C++ class from gd++pkg.toml. A missing header or icon is marked "(missing)". A class declared twice is marked "declared twice". A GD++ file with errors gets a line of its own at the end, since its classes can't be read: run `gd++ build` or `gd++ trans` on it to see the error.
 
-A collapsed package shows "✗ missing dependencies" if it lacks any. If any package lacks dependencies, a hint at the end says how to fix it.
+A collapsed package shows "missing dependencies" if it lacks any. If any package lacks dependencies, a hint at the end says how to fix it. Problems are shown in red.
 
-On terminals without Unicode, "•" and "✗" are "*" and "x".
+On terminals without Unicode, "•" is "*".
 
 The output goes to stdout, so you can save it or search it, e.g. `gd++ ls -a > overview.txt`.
 

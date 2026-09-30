@@ -1,1 +1,1 @@
-{Name:Shape Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false}
+{Name:Shape Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}

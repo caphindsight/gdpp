@@ -156,11 +156,12 @@ A C++ class can also extend a GD++ class of the same package, e.g. class FastPla
 
 # In gd++ ls
 
-`gd++ ls` lists a package's C++ classes, with kind "C++", or "C++ tool" for tool classes, their header and their icon, and marks the ones whose header or icon is missing in red.
+`gd++ ls` lists a package's C++ classes with their header, and the tags @tool for tool classes and @icon for classes with an icon. A missing header or icon is marked "(missing)", in red.
 
 ```
-Classes  Kind        File                        Icon
-Spinner  C++ tool    res://src/spinner.h         pkg://icons/spinner.svg
-Wobbler  C++         res://src/wobbler.h         none
-Player   GD++        pkg://player.gd++           none
+C++ classes in the package
+  Spinner  res://src/spinner.h  @tool @icon
+  Wobbler  res://src/wobbler.h
+Classes in pkg://player.gd++
+  Player  extends CharacterBody3D
 ```

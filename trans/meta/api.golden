@@ -42,3 +42,6 @@ field Options.Trace []string
 field Options.Profile []string
 field Options.ProfilePeriod int
 field Options.ProfileFPS int
+field Declaration.GameOnly bool
+field Declaration.Trace bool
+field Declaration.Profile bool

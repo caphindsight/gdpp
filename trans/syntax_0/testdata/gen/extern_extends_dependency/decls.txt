@@ -1,3 +1,3 @@
-{Name:Garage Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false}
-{Name:Highway Kind:2 Base:Road Values:[] Icon: Tool:false Bitfield:false}
-{Name:Profile Kind:2 Base:Settings Values:[] Icon: Tool:false Bitfield:false}
+{Name:Garage Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Highway Kind:2 Base:Road Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}
+{Name:Profile Kind:2 Base:Settings Values:[] Icon: Tool:false Bitfield:false GameOnly:false Trace:false Profile:false}

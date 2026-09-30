@@ -98,14 +98,14 @@ func TestLsCmdPackages(t *testing.T) {
 	collapsed := lsDepsOut +
 		"\n" +
 		"Package: res://foo\n" +
-		"Package: res://foo/icons  x missing dependencies\n" +
+		"Package: res://foo/icons  missing dependencies\n" +
 		"Package: res://zed\n" +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
 	fooExpanded := lsDepsOut +
 		"\n" + lsFooOut +
 		"\n" +
-		"Package: res://foo/icons  x missing dependencies\n" +
+		"Package: res://foo/icons  missing dependencies\n" +
 		"Package: res://zed\n" +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
@@ -136,12 +136,12 @@ func TestLsCmdRootPackage(t *testing.T) {
 	out := captureStdout(t, (&CmdLs{Path: "res://src"}).Run)
 	want := "" +
 		"Package: res:// [my_game]\n" +
-		"  Godot C++ bindings:  b           x missing\n"
+		"  Godot C++ bindings:  b           missing\n"
 	if !strings.Contains(out, want) {
 		t.Errorf("output = %q, want it to contain %q", out, want)
 	}
 	out = captureStdout(t, (&CmdLs{Path: "res://zed"}).Run)
-	if want := "\nPackage: res:// [my_game]  x missing dependencies\nPackage: res://foo\n"; !strings.Contains(out, want) {
+	if want := "\nPackage: res:// [my_game]  missing dependencies\nPackage: res://foo\n"; !strings.Contains(out, want) {
 		t.Errorf("output = %q, want it to contain %q", out, want)
 	}
 }
@@ -154,9 +154,9 @@ func TestLsCmdOnePackage(t *testing.T) {
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := "\n" + lsFooOut +
 		"\n" +
-		"  Classes              Kind           File              Icon\n" +
-		"  Tree                 C++            res://foo/tree.h  res://foo/icons/tree.svg\n" +
-		"  Bush                 C++ tool       none              none\n"
+		"  C++ classes in the package\n" +
+		"    Tree  res://foo/tree.h  @icon\n" +
+		"    Bush                    @tool\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -170,14 +170,23 @@ func TestLsCmdGdppClasses(t *testing.T) {
 	foo.Cd("player.gd++").WriteString("@icon(\"pkg://icons/tree.svg\")\n@tool\nclass_name Player\nextends Node\n")
 	foo.Cd("icons", "helper.gg").WriteString("class Helper {}\nenum Mood { HAPPY }\n")
 	foo.Cd("broken.gdpp").WriteString("fun f() {}\n")
+	foo.Cd("spawner.gd++").WriteString("@game_only\n@trace\nclass_name Spawner\nextends Node3D\n\n" +
+		"@profile\n@icon(\"pkg://icons/gone.svg\")\nclass Wave {\n  extends Resource\n}\n")
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := "" +
-		"  Classes                   Kind           File                                             Icon\n" +
-		"  Tree                      C++            res://foo/tree.h                                 pkg://icons/tree.svg\n" +
-		"  x Player: declared twice  C++            none                                             none\n" +
-		"  Helper                    GD++           pkg://icons/helper.gg                            none\n" +
-		"  x Player: declared twice  GD++ @tool     pkg://player.gd++                                pkg://icons/tree.svg\n" +
-		"  ?                         GD++           x pkg://broken.gdpp: has errors, see gd++ build  none\n"
+		"  C++ standard:        c++20\n" +
+		"\n" +
+		"  C++ classes in the package\n" +
+		"    Tree                    res://foo/tree.h  @icon\n" +
+		"    Player: declared twice\n" +
+		"  Classes in pkg://icons/helper.gg\n" +
+		"    Helper  extends RefCounted\n" +
+		"  Classes in pkg://player.gd++\n" +
+		"    Player: declared twice  extends Node  @tool @icon\n" +
+		"  Classes in pkg://spawner.gd++\n" +
+		"    Spawner  extends Node3D    @game_only @trace\n" +
+		"    Wave     extends Resource  @profile @icon (missing)\n" +
+		"  pkg://broken.gdpp: has errors, see gd++ build\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -190,7 +199,7 @@ func TestLsCmdAllPackages(t *testing.T) {
 		"\n" + lsFooOut +
 		"\n" +
 		"Package: res://foo/icons\n" +
-		"  Godot C++ bindings:  b           x missing\n" +
+		"  Godot C++ bindings:  b           missing\n" +
 		"  Godot API spec:      4.3-stable\n" +
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++20\n" +
@@ -234,15 +243,15 @@ func TestLsPackages(t *testing.T) {
 	pkgWant := "" +
 		"\n" +
 		"Package: res://foo\n" +
-		"  Godot C++ bindings:  b           x missing\n" +
+		"  Godot C++ bindings:  b           missing\n" +
 		"  Godot API spec:      4.3-stable\n" +
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++23\n" +
 		"\n" +
-		"  Classes              Kind        File                Icon\n" +
-		"  Tree                 C++         res://foo/tree.h    res://foo/icons/tree.svg\n" +
-		"  Bush                 C++         x res://foo/bush.h  x res://foo/icons/bush.svg\n" +
-		"  GrassPatch           C++         none                none\n" +
+		"  C++ classes in the package\n" +
+		"    Tree        res://foo/tree.h            @icon\n" +
+		"    Bush        res://foo/bush.h (missing)  @icon (missing)\n" +
+		"    GrassPatch\n" +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
 	for _, c := range []struct {

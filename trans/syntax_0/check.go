@@ -209,8 +209,9 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			if err != nil {
 				return nil, err
 			}
-			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(s.class.Extends), Icon: icon,
-				Tool: slices.ContainsFunc(s.class.Annotations, func(a *Annotation) bool { return a.Name == "tool" })})
+			c := s.class
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
+				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Trace: hasAnnotation(c, "trace"), Profile: hasAnnotation(c, "profile")})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
@@ -218,6 +219,11 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 		}
 	}
 	return decls, nil
+}
+
+// hasAnnotation reports whether class c has the annotation named name.
+func hasAnnotation(c *Class, name string) bool {
+	return slices.ContainsFunc(c.Annotations, func(a *Annotation) bool { return a.Name == name })
 }
 
 // classIcon returns the path from the @icon annotation of class c, or "" if it has none.
