@@ -117,7 +117,7 @@ func TestTranspilePackage(t *testing.T) {
 		files = append(files, file)
 	}
 	wantFiles := []string{"Hitbox.cpp", "Hitbox.h", "Player.cpp", "Player.h", "Power.h", "Tiny.cpp", "Tiny.h", "Weapon.cpp", "Weapon.h",
-		"doc_classes/", "doc_classes/Hitbox.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml", "gd++/", "gd++/syntax_0.hpp"}
+		"doc_classes/", "doc_classes/Hitbox.xml", "doc_classes/PkgAsync.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml", "gd++/", "gd++/syntax_0.hpp"}
 	slices.Sort(files)
 	if !reflect.DeepEqual(files, wantFiles) {
 		t.Errorf("generated files = %q, want %q", files, wantFiles)
@@ -125,10 +125,11 @@ func TestTranspilePackage(t *testing.T) {
 	for file, wants := range map[string][]string{
 		"Player.h": {`#include "Weapon.h"`, `#include "Power.h"`, "#include <godot_cpp/classes/node3d.hpp>",
 			"Ref<Weapon> weapon{};", "void hit(Power power);", `GDPP_ENUM_TAG(_gdpp_Player_Power, "Player.Power")`},
-		"Player.cpp":             {`#include "Player.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "../player.gd++"`},
-		"Weapon.h":               {`#include "Player.h"`, "Player *owner{};"},
-		"Power.h":                {"enum class Power : int64_t {"},
-		"doc_classes/Player.xml": {"A player."},
+		"Player.cpp":               {`#include "Player.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "../player.gd++"`},
+		"Weapon.h":                 {`#include "Player.h"`, "Player *owner{};"},
+		"Power.h":                  {"enum class Power : int64_t {"},
+		"doc_classes/Player.xml":   {"A player."},
+		"doc_classes/PkgAsync.xml": {`<class name="PkgAsync" inherits="RefCounted"`, `<method name="is_done" qualifiers="const">`},
 	} {
 		for _, want := range wants {
 			if !strings.Contains(gen[file], want) {
@@ -153,7 +154,7 @@ func TestTranspilePackage(t *testing.T) {
 	delete(m.nodes, pkgDir+"misc.gg")
 	transpileTestPackage(t, false)
 	gen = subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
-	for _, file := range []string{"Tiny.h", "Tiny.cpp", "doc_classes/", "doc_classes/Player.xml"} {
+	for _, file := range []string{"Tiny.h", "Tiny.cpp", "doc_classes/", "doc_classes/Player.xml", "doc_classes/PkgAsync.xml"} {
 		if _, ok := gen[file]; ok {
 			t.Errorf("%s wasn't deleted.", file)
 		}

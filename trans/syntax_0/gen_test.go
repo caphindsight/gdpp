@@ -193,3 +193,20 @@ func checkXML(t *testing.T, doc string) {
 		}
 	}
 }
+
+// TestDocumentBuiltinClasses checks the documentation of the classes that the runtime adds, against
+// testdata/builtin, and that it's well-formed.
+func TestDocumentBuiltinClasses(t *testing.T) {
+	for _, f := range DocumentBuiltinClasses(meta.Options{AsyncClass: "FooAsync"}) {
+		checkXML(t, f.Text)
+		path := filepath.Join("testdata", "builtin", f.Name)
+		if *update {
+			os.MkdirAll(filepath.Dir(path), 0o755)
+			os.WriteFile(path, []byte(f.Text), 0o644)
+			continue
+		}
+		if want, _ := os.ReadFile(path); string(want) != f.Text {
+			t.Errorf("%s mismatch.\n--- got:\n%s\n--- want:\n%s", path, f.Text, want)
+		}
+	}
+}

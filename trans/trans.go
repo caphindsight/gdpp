@@ -35,13 +35,14 @@ const (
 type fork struct {
 	listClasses   func(filename, src string) ([]meta.Declaration, error)
 	documentClass func(filename, src, class string, opts meta.Options) (string, error)
+	builtinDocs   func(opts meta.Options) []meta.File
 	generate      func(filename, src string, opts meta.Options) ([]meta.File, error)
 	runtimeName   string
 	runtimeText   string
 }
 
 var forks = map[int]fork{
-	0: {syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.Generate,
+	0: {syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.DocumentBuiltinClasses, syntax_0.Generate,
 		syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
 }
 
@@ -73,6 +74,16 @@ func DocumentClass(name, src, class string, opts Options, syntax int) (string, e
 		return "", err
 	}
 	return f.documentClass(name, src, class, opts)
+}
+
+// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package with
+// GD++ classes, e.g. its class of tasks: a file "<Class>.xml" per class.
+func DocumentBuiltinClasses(opts Options, syntax int) ([]File, error) {
+	f, err := get(syntax)
+	if err != nil {
+		return nil, err
+	}
+	return f.builtinDocs(opts), nil
 }
 
 // Generate returns the C++ files for the GD++ file, in the order of its declarations.

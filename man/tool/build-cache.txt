@@ -45,7 +45,7 @@ The names cache belongs to the bindings and spec of the last sync, so it's delet
 
 Each build transpiles every GD++ file of the package into the gdpp directory: a header per class, extern and enum, a source per class, and the runtime header. Files whose contents didn't change are left alone, so the C++ compiler doesn't recompile them. Files that no GD++ file generates any more, e.g. after you rename a class, are deleted.
 
-In debug builds, gdpp/doc_classes holds each class's documentation, in Godot's XML format; release builds delete it. See `gd++ man docs`.
+In debug builds, gdpp/doc_classes holds each class's documentation, in Godot's XML format, the classes that GD++ adds included, e.g. the class of tasks; release builds delete it. See `gd++ man docs`.
 
 The generated C++ is meant to be read: when the compiler reports an error in generated code, open the file it names, e.g. my_package/.gd++pkg/gdpp/Player.cpp. To see it without building, use `gd++ trans`. See `gd++ man generated`.
 

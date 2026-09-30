@@ -411,3 +411,55 @@ func (u *unit) document(c *classModel) string {
 	x.ln(0, "</class>")
 	return x.sb.String()
 }
+
+// documentAsyncClass returns the Godot XML documentation of the class of tasks named name.
+func documentAsyncClass(name string) string {
+	x := &xmlWriter{}
+	x.ln(0, `<?xml version="1.0" encoding="UTF-8" ?>`)
+	x.ln(0, fmt.Sprintf(`<class name="%s" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">`,
+		xmlEscape(name, true)))
+	x.ln(1, "<brief_description>")
+	x.ln(2, "A task: a job that runs on the [WorkerThreadPool], e.g. a call of an [code]@onthread[/code] function, and its result.")
+	x.ln(1, "</brief_description>")
+	x.ln(1, "<description>")
+	for _, p := range []string{
+		"A call of an [code]@onthread[/code] function of a GD++ class returns an object of this class: a task, whose job, the function's body, runs on the [WorkerThreadPool], while the caller goes on. Check [method is_done], or the [member done] property, once in a while, e.g. in [method Node._process], and take the result with [method claim] once it's done, like [code]claim[/code] in GD++ code. [method get_result], or the [member result] property, reads the result without taking it, [method wait] blocks until the job is done instead, and [method cancel] asks the job to stop early.",
+		"When the last reference to a task is gone, it waits for its job to finish, if it still runs. So keep the task until [method is_done] is [code]true[/code].",
+		"All its methods are thread-safe. Each package with GD++ classes has its own class of tasks, named after its prefix, e.g. [code]FooAsync[/code]. In GD++ code, the type [code]Async[lb]T[rb][/code] names it.",
+	} {
+		x.ln(2, p)
+	}
+	x.ln(1, "</description>")
+	x.ln(1, "<tutorials>")
+	x.ln(1, "</tutorials>")
+	x.ln(1, "<methods>")
+	for _, m := range []struct{ name, qualifiers, ret, doc string }{
+		{"cancel", "", "void", "Asks the job to stop: in it, [code]is_cancelled[/code] is [code]true[/code] from now on, so it can return early. The job decides what it returns then. It does nothing if the job is done."},
+		{"claim", "", "Variant", "Returns the job's result, and lets go of it: [method is_done] is [code]false[/code] from now on, and the task holds no result any more. Each result can be claimed once. The job must be done: see [method is_done]. In debug builds, claiming earlier, or twice, prints an error and returns [code]null[/code]; in release builds, it's undefined."},
+		{"get_result", "const", "Variant", "Returns the job's result, and keeps it, unlike [method claim]. The job must be done, and its result not claimed: see [method is_done]. In debug builds, calling it earlier, or after [method claim], prints an error and returns [code]null[/code]; in release builds, it's undefined."},
+		{"is_done", "const", "bool", "Returns [code]true[/code] once the job has finished, so [method claim] and [method get_result] return its result, and [method wait] returns right away. It's [code]false[/code] again once the result is claimed. An object that runs no job, e.g. from [code]new()[/code], is done, and its result is [code]null[/code]."},
+		{"wait", "", "Variant", "Waits for the job to finish, and returns its result, and keeps it, like [method get_result]. It blocks the calling thread until then: on the main thread, the game stops, so prefer checking [method is_done]. After [method claim], there's no result any more: in debug builds, it prints an error and returns [code]null[/code]."},
+	} {
+		attrs := ""
+		if m.qualifiers != "" {
+			attrs = fmt.Sprintf(" qualifiers=\"%s\"", m.qualifiers)
+		}
+		x.ln(2, fmt.Sprintf("<method name=\"%s\"%s>", m.name, attrs))
+		x.ln(3, fmt.Sprintf("<return type=\"%s\" />", m.ret))
+		x.ln(3, "<description>")
+		x.ln(4, m.doc)
+		x.ln(3, "</description>")
+		x.ln(2, "</method>")
+	}
+	x.ln(1, "</methods>")
+	x.ln(1, "<members>")
+	x.ln(2, `<member name="done" type="bool" setter="" getter="is_done">`)
+	x.ln(3, "Whether the job has finished, and its result hasn't been claimed, read-only: the same as [method is_done].")
+	x.ln(2, "</member>")
+	x.ln(2, `<member name="result" type="Variant" setter="" getter="get_result">`)
+	x.ln(3, "The job's result, read-only: the same as [method get_result], with its checks. The job must be done, and its result not claimed: see [method is_done].")
+	x.ln(2, "</member>")
+	x.ln(1, "</members>")
+	x.ln(0, "</class>")
+	return x.sb.String()
+}

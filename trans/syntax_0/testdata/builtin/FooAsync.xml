@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FooAsync" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A task: a job that runs on the [WorkerThreadPool], e.g. a call of an [code]@onthread[/code] function, and its result.
+	</brief_description>
+	<description>
+		A call of an [code]@onthread[/code] function of a GD++ class returns an object of this class: a task, whose job, the function's body, runs on the [WorkerThreadPool], while the caller goes on. Check [method is_done], or the [member done] property, once in a while, e.g. in [method Node._process], and take the result with [method claim] once it's done, like [code]claim[/code] in GD++ code. [method get_result], or the [member result] property, reads the result without taking it, [method wait] blocks until the job is done instead, and [method cancel] asks the job to stop early.
+		When the last reference to a task is gone, it waits for its job to finish, if it still runs. So keep the task until [method is_done] is [code]true[/code].
+		All its methods are thread-safe. Each package with GD++ classes has its own class of tasks, named after its prefix, e.g. [code]FooAsync[/code]. In GD++ code, the type [code]Async[lb]T[rb][/code] names it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cancel">
+			<return type="void" />
+			<description>
+				Asks the job to stop: in it, [code]is_cancelled[/code] is [code]true[/code] from now on, so it can return early. The job decides what it returns then. It does nothing if the job is done.
+			</description>
+		</method>
+		<method name="claim">
+			<return type="Variant" />
+			<description>
+				Returns the job's result, and lets go of it: [method is_done] is [code]false[/code] from now on, and the task holds no result any more. Each result can be claimed once. The job must be done: see [method is_done]. In debug builds, claiming earlier, or twice, prints an error and returns [code]null[/code]; in release builds, it's undefined.
+			</description>
+		</method>
+		<method name="get_result" qualifiers="const">
+			<return type="Variant" />
+			<description>
+				Returns the job's result, and keeps it, unlike [method claim]. The job must be done, and its result not claimed: see [method is_done]. In debug builds, calling it earlier, or after [method claim], prints an error and returns [code]null[/code]; in release builds, it's undefined.
+			</description>
+		</method>
+		<method name="is_done" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] once the job has finished, so [method claim] and [method get_result] return its result, and [method wait] returns right away. It's [code]false[/code] again once the result is claimed. An object that runs no job, e.g. from [code]new()[/code], is done, and its result is [code]null[/code].
+			</description>
+		</method>
+		<method name="wait">
+			<return type="Variant" />
+			<description>
+				Waits for the job to finish, and returns its result, and keeps it, like [method get_result]. It blocks the calling thread until then: on the main thread, the game stops, so prefer checking [method is_done]. After [method claim], there's no result any more: in debug builds, it prints an error and returns [code]null[/code].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="done" type="bool" setter="" getter="is_done">
+			Whether the job has finished, and its result hasn't been claimed, read-only: the same as [method is_done].
+		</member>
+		<member name="result" type="Variant" setter="" getter="get_result">
+			The job's result, read-only: the same as [method get_result], with its checks. The job must be done, and its result not claimed: see [method is_done].
+		</member>
+	</members>
+</class>

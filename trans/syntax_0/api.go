@@ -1,6 +1,7 @@
 package syntax_0
 
 import (
+	"cmp"
 	_ "embed"
 	"fmt"
 	"maps"
@@ -55,6 +56,13 @@ func (u *unit) only(s *symbol) *unit {
 	d.classes = slices.DeleteFunc(slices.Clone(u.classes), func(c *classModel) bool { return c.name != s.name })
 	d.externs = slices.DeleteFunc(slices.Clone(u.externs), func(e *externModel) bool { return e.name != s.name })
 	return &d
+}
+
+// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package with
+// GD++ classes, e.g. its class of tasks, named opts.AsyncClass: a file "<Class>.xml" per class.
+func DocumentBuiltinClasses(opts meta.Options) []meta.File {
+	name := cmp.Or(opts.AsyncClass, "GdppAsync")
+	return []meta.File{{Name: name + ".xml", Text: documentAsyncClass(name)}}
 }
 
 // DocumentClass returns the Godot XML documentation of the class named class in the GD++ source src.

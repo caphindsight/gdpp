@@ -333,7 +333,24 @@ class GDPP_ASYNC_CLASS : public RefCounted {
 	GDPP_GDCLASS(GDPP_ASYNC_CLASS, RefCounted)
 
 public:
-	bool is_done() const { return done.load(std::memory_order_acquire); }
+	// is_done reports whether the job has finished, and its result hasn't been claimed.
+	bool is_done() const { return done.load(std::memory_order_acquire) && !claimed.load(std::memory_order_relaxed); }
+
+	// claim returns the result of the finished job, and lets go of it: the task isn't done any more, like an empty
+	// Async. The job must be done, and not claimed yet: debug builds check it, release builds don't.
+	Variant claim() {
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND_V_MSG(claimed.load(), Variant(), "The task's result has already been claimed.");
+		ERR_FAIL_COND_V_MSG(!is_done(), Variant(), "The task isn't done yet. Check is_done() before claim(), or call wait().");
+#endif
+		join();
+		if (claimed.exchange(true)) {
+			return Variant(); // Another thread claimed it at the same time.
+		}
+		Variant value = result;
+		result = Variant();
+		return value;
+	}
 
 	// wait waits for the job to finish, and returns its result.
 	Variant wait() {
@@ -344,6 +361,7 @@ public:
 	// get_result returns the result. The job must be done: debug builds check it, release builds don't.
 	Variant get_result() const {
 #ifdef DEBUG_ENABLED
+		ERR_FAIL_COND_V_MSG(claimed.load(), Variant(), "The task's result has been claimed.");
 		ERR_FAIL_COND_V_MSG(!is_done(), Variant(), "The task isn't done yet. Check is_done() before get_result(), or call wait().");
 #endif
 		return result;
@@ -370,7 +388,13 @@ protected:
 		ClassDB::bind_method(D_METHOD("is_done"), &GDPP_ASYNC_CLASS::is_done);
 		ClassDB::bind_method(D_METHOD("wait"), &GDPP_ASYNC_CLASS::wait);
 		ClassDB::bind_method(D_METHOD("get_result"), &GDPP_ASYNC_CLASS::get_result);
+		ClassDB::bind_method(D_METHOD("claim"), &GDPP_ASYNC_CLASS::claim);
 		ClassDB::bind_method(D_METHOD("cancel"), &GDPP_ASYNC_CLASS::cancel);
+		// Read-only. result isn't for the inspector or the debugger, which would read it before the job is done.
+		ClassDB::add_property(get_class_static(), PropertyInfo(Variant::BOOL, "done", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY),
+				"", "is_done");
+		ClassDB::add_property(get_class_static(), PropertyInfo(Variant::NIL, "result", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NIL_IS_VARIANT),
+				"", "get_result");
 	}
 
 private:
@@ -380,6 +404,7 @@ private:
 	Variant result; // Set before done.
 	std::atomic<bool> done = true; // Until started: an object that runs nothing, e.g. from new(), is done, without result.
 	std::atomic<bool> cancel_requested = false;
+	std::atomic<bool> claimed = false; // Whether claim took the result.
 	std::mutex mutex;
 	bool waited = false; // Godot requires waiting for each task once.
 

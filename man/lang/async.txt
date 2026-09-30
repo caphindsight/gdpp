@@ -36,14 +36,13 @@ func follow(path: PackedVector2Array) -> void { ... }
 
 _ready starts the first search. Each frame, _process checks whether pending holds a search that's done. Then claim takes the path out of pending, and _process starts the next search, which runs while the game goes on. No frame waits for a search.
 
-Scripts call the function the same way, and get an object with is_done, wait, get_result and cancel methods:
+Scripts call the function the same way, and get an object with is_done, claim, get_result, wait and cancel methods:
 
 ```gdscript
 var task = $Pathfinder.find_path(position, goal)
 # ... later, e.g. in _process:
 if task and task.is_done():
-    follow(task.get_result())
-    task = null
+    follow(task.claim())
 ```
 
 # @onthread
@@ -128,23 +127,30 @@ The result has the function's type in C++, e.g. PackedVector2Array for an Async[
 
 # In scripts
 
-Scripts see an Async as an object of the class of tasks, with four methods:
+Scripts see an Async as an object of the class of tasks, with five methods:
 
 is_done()
-  Whether the task has finished. Once it has, get_result returns its result, and wait returns right away.
+  Whether the task has finished, and its result hasn't been claimed. Once it has finished, claim and get_result return its result, and wait returns right away.
 
-wait()
-  Wait for the task to finish, and return its result. On the main thread, the game stops until then, so prefer checking is_done.
+claim()
+  The result of the task, which must have finished, like claim in GD++ code: it takes the result, so is_done is false from then on, and the task holds no result any more. Each result can be claimed once. In debug builds, claiming earlier, or twice, prints an error and returns null. Release builds don't check, so it's undefined.
 
 get_result()
-  The result of the task, which must have finished. In debug builds, calling it earlier prints an error and returns null. Release builds don't check, so calling it earlier is undefined: check is_done first, or call wait.
+  The result of the task, which must have finished, without taking it. In debug builds, calling it earlier, or after claim, prints an error and returns null. Release builds don't check, so it's undefined: check is_done first, or call wait.
+
+wait()
+  Wait for the task to finish, and return its result, without taking it, like get_result. On the main thread, the game stops until then, so prefer checking is_done.
+
+The class also has two read-only properties: done, which is is_done, e.g. `if task.done:`, and result, which reads the result like get_result, with the same checks, e.g. `task.result`. When you inspect a task while the game runs, e.g. from the debugger's Stack Variables or its remote scene tree, the inspector shows done, but not result, since it would read result again and again, also before the task is done.
 
 cancel()
   Ask the task to stop. See "Stopping tasks" below.
 
-They return Variants, and an enum result is an int. A script can read a result as often as it likes; to let go of a task, it drops its reference, e.g. with `task = null`. An object of the class of tasks that no task runs in, e.g. FooAsync.new(), is done, and its result is null.
+They return Variants, and an enum result is an int. A script can claim a result once, or read it with get_result as often as it likes, and lets go of a task by dropping its reference, e.g. with `task = null`. An object of the class of tasks that no task runs in, e.g. FooAsync.new(), is done, and its result is null.
 
-The checks above, of claim and wait in C++, and of get_result in scripts, are only in debug builds. Release builds skip them, so the mistakes they catch are undefined there.
+A script's claim takes the result from the task object itself, while each C++ Async claims for itself: copies of an Async each claim once, from the same task. So a task that both C++ code and a script hold is best claimed on one side only.
+
+The checks above, of claim and wait in C++, and of claim and get_result in scripts, are only in debug builds. Release builds skip them, so the mistakes they catch are undefined there.
 
 # The task's lifetime
 
@@ -203,7 +209,7 @@ prefix = "Foo"                         # FooAsync
 
 Set it with `gd++ init PATH --update --prefix NAME`. See `gd++ man packages`.
 
-Each package with GD++ classes registers its own class of tasks, so packages built separately never clash. The GD++ runtime defines it, and the package's generated registration code registers it. Its name must differ from the package's other classes: the build fails otherwise, and asks for another prefix. Changing the prefix renames the class, so scripts that name it, e.g. in a type hint, must change too. The editor's help shows Async types as this class, e.g. FooAsync. The class has the four methods above.
+Each package with GD++ classes registers its own class of tasks, so packages built separately never clash. The GD++ runtime defines it, and the package's generated registration code registers it. Its name must differ from the package's other classes: the build fails otherwise, and asks for another prefix. Changing the prefix renames the class, so scripts that name it, e.g. in a type hint, must change too. The editor's help shows Async types as this class, e.g. FooAsync, and documents the class itself, with its five methods and its done and result properties, in builds with documentation. See `gd++ man docs`.
 
 `gd++ trans` on a file outside any package names the class GdppAsync.
 

@@ -291,6 +291,15 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 			}
 		}
 	}
+	if o.docs() && slices.ContainsFunc(files, func(f gdppFile) bool {
+		return slices.ContainsFunc(f.Decls, func(d trans.Declaration) bool { return d.Kind == trans.ClassDecl })
+	}) {
+		docs, err := trans.DocumentBuiltinClasses(trans.Options{AsyncClass: pkg.AsyncClass()}, syntax)
+		Check(err, "Failed to document the classes that GD++ adds")
+		for _, d := range docs {
+			write("doc_classes/"+d.Name, d.Text)
+		}
+	}
 	runtimeName, runtimeText, err := trans.RuntimeHeader(syntax)
 	Check(err, "Failed to generate the GD++ runtime header")
 	write(runtimeName, runtimeText)
