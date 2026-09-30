@@ -68,7 +68,7 @@ macos.x86_32 doesn't exist, since godot-cpp doesn't support it. Cross-compiling 
 A debug build, the default, is for development:
 
 - Built with godot-cpp's template_debug target, as a dev build, with debug symbols, so you can debug your code in a debugger.
-- Unoptimized by default, so it compiles fast and debugs well.
+- Unoptimized by default, so it compiles fast and debugs well, but runs slower, sometimes slower than GDScript. See `gd++ man performance`.
 - Hot reload: rebuild while the editor runs, and the editor reloads the library when its window gets focus, without a restart.
 - Loaded by the editor, and by games run from the editor or exported in debug mode.
 - Includes the documentation of GD++ classes, for the editor's help. See `gd++ man docs`.

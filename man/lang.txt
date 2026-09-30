@@ -81,6 +81,7 @@ Each class becomes a C++ class in namespace godot, with GDCLASS, in a header and
 - Networking: @rpc, and rpc and rpc_id calls. See `gd++ man rpc`.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
 - Debugging: @trace prints calls and changes, and @profile times code. See `gd++ man debugging`.
+- Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: decl, impl and @global blocks. See `gd++ man code`.
 - Includes: automatic, with import and noimport to adjust them. See `gd++ man includes`.
 - Doc comments: /// and /** */, which become the editor's help. See `gd++ man docs`.

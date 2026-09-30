@@ -407,4 +407,4 @@ A source file that uses any of these defines GDPP_DEBUGGING before its includes,
 
 # See also
 
-`gd++ man build`, `gd++ man trans`, `gd++ man annotations`, `gd++ man building`, `gd++ man runtime`.
+`gd++ man build`, `gd++ man trans`, `gd++ man annotations`, `gd++ man building`, `gd++ man performance`, `gd++ man runtime`.
