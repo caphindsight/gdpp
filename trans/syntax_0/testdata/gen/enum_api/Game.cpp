@@ -29,17 +29,12 @@ Game::Game() {
 }
 
 Mode Game::set_mode_to(Mode m) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 11 "input.gd++"
 
   mode = m;
   return m;
 
-#line 43 "Game.cpp"
+#line 38 "Game.cpp"
 }
 
 _gdpp_Game_Mode Game::_gdpp_set_mode_to(_gdpp_Game_Mode m) {
@@ -47,16 +42,11 @@ _gdpp_Game_Mode Game::_gdpp_set_mode_to(_gdpp_Game_Mode m) {
 }
 
 Mode Game::default_mode() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 17 "input.gd++"
 
   return Mode::EASY;
 
-#line 60 "Game.cpp"
+#line 50 "Game.cpp"
 }
 
 _gdpp_Game_Mode Game::_gdpp_default_mode() {
@@ -64,11 +54,6 @@ _gdpp_Game_Mode Game::_gdpp_default_mode() {
 }
 
 Mode Game::_pick(int64_t options) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	_gdpp_Game_Mode _gdpp_ret;
 	if (GDVIRTUAL_CALL(_pick, options, _gdpp_ret)) {
 		return static_cast<Mode>(_gdpp_ret);

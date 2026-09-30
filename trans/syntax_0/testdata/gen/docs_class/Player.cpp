@@ -21,14 +21,9 @@ void Player::_bind_methods() {
 }
 
 void Player::jump(double height) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 17 "input.gd++"
 
-#line 32 "Player.cpp"
+#line 27 "Player.cpp"
 }
 
 int64_t Player::get_hp() const {

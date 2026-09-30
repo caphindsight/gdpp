@@ -11,16 +11,11 @@ void C::_bind_methods() {
 }
 
 A *C::a() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 17 "input.gd++"
 
     return nullptr;
 
-#line 24 "C.cpp"
+#line 19 "C.cpp"
 }
 
 #undef This

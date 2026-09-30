@@ -22,47 +22,27 @@ void Sorted::_bind_methods() {
 }
 
 void Sorted::b10() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 3 "input.gd++"
 
-#line 33 "Sorted.cpp"
+#line 28 "Sorted.cpp"
 }
 
 void Sorted::b2() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 4 "input.gd++"
 
-#line 44 "Sorted.cpp"
+#line 34 "Sorted.cpp"
 }
 
 void Sorted::A() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 5 "input.gd++"
 
-#line 55 "Sorted.cpp"
+#line 40 "Sorted.cpp"
 }
 
 void Sorted::a() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 6 "input.gd++"
 
-#line 66 "Sorted.cpp"
+#line 46 "Sorted.cpp"
 }
 
 int64_t Sorted::get_z() const {

@@ -14,18 +14,13 @@ void Scene::_bind_methods() {
 }
 
 void Scene::ready() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 11 "input.gd++"
 
   if (Engine::get_singleton()->is_editor_hint()) return;
   MeshInstance2D *m = nullptr;
   Texture2D *t = nullptr;
 
-#line 29 "Scene.cpp"
+#line 24 "Scene.cpp"
 }
 
 #undef This

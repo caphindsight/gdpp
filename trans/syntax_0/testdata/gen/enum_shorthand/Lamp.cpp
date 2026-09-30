@@ -52,16 +52,11 @@ Lamp::Lamp() {
 }
 
 void Lamp::set_all(ShadowCastingSetting setting, Level other) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 12 "input.gd++"
 
   set_cast_shadows(static_cast<GeometryInstance3D::ShadowCastingSetting>(setting));
 
-#line 65 "Lamp.cpp"
+#line 60 "Lamp.cpp"
 }
 
 void Lamp::_gdpp_set_all(_gdpp_Lamp_ShadowCastingSetting setting, _gdpp_Lamp_Level other) {
@@ -71,13 +66,13 @@ void Lamp::_gdpp_set_all(_gdpp_Lamp_ShadowCastingSetting setting, _gdpp_Lamp_Lev
 ShadowCastingSetting Lamp::_gdpp_default_set_all_setting() {
 #line 12 "input.gd++"
 	return ShadowCastingSetting::OFF;
-#line 75 "Lamp.cpp"
+#line 70 "Lamp.cpp"
 }
 
 Level Lamp::_gdpp_default_set_all_other() {
 #line 12 "input.gd++"
 	return Level::EASY;
-#line 81 "Lamp.cpp"
+#line 76 "Lamp.cpp"
 }
 
 ShadowCastingSetting Lamp::get_casting() const {

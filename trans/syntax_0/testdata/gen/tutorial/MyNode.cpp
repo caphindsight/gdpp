@@ -78,38 +78,28 @@ MyNode::~MyNode() {
 }
 
 void MyNode::greet_user(const String &name) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 168 "input.gd++"
 
 
   gd::print("Hello ", name, "!");
 
-#line 92 "MyNode.cpp"
+#line 87 "MyNode.cpp"
 }
 
 void MyNode::greet_users(int64_t count, const String &greeting) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 180 "input.gd++"
 
   for (int64_t i = 0; i < count; i++) {
     gd::print(greeting, "!");
   }
 
-#line 107 "MyNode.cpp"
+#line 97 "MyNode.cpp"
 }
 
 int64_t MyNode::_gdpp_default_greet_users_count() {
 #line 178 "input.gd++"
 	return 1;
-#line 113 "MyNode.cpp"
+#line 103 "MyNode.cpp"
 }
 
 String MyNode::_gdpp_default_greet_users_greeting() {
@@ -117,15 +107,10 @@ String MyNode::_gdpp_default_greet_users_greeting() {
 
   return String("Hello");
 
-#line 121 "MyNode.cpp"
+#line 111 "MyNode.cpp"
 }
 
 int64_t MyNode::_foo() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	int64_t _gdpp_ret;
 	if (GDVIRTUAL_CALL(_foo, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -134,15 +119,10 @@ int64_t MyNode::_foo() {
 
   return 0;
 
-#line 138 "MyNode.cpp"
+#line 123 "MyNode.cpp"
 }
 
 int64_t MyNode::_bar() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	int64_t _gdpp_ret;
 	if (GDVIRTUAL_CALL(_bar, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -151,80 +131,55 @@ int64_t MyNode::_bar() {
 }
 
 int64_t MyNode::foo_plus_bar() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 203 "input.gd++"
 
   return _foo() + _bar();
 
-#line 164 "MyNode.cpp"
+#line 139 "MyNode.cpp"
 }
 
 void MyNode::_ready() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 311 "input.gd++"
 	child_node_1 = get_node<Node3D>("MyNode1");
-#line 175 "MyNode.cpp"
+#line 145 "MyNode.cpp"
 #line 314 "input.gd++"
 	child_node_2 = [&]() -> Node3D * {
   Node3D* res = memnew(Node3D);
   add_child(res);
   return res;
 }();
-#line 182 "MyNode.cpp"
+#line 152 "MyNode.cpp"
 #line 213 "input.gd++"
 
 
 
   gd::print("My node is ready.");
 
-#line 189 "MyNode.cpp"
+#line 159 "MyNode.cpp"
 }
 
 int64_t MyNode::get_my_value() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 226 "input.gd++"
 
   return my_value;
 
-#line 202 "MyNode.cpp"
+#line 167 "MyNode.cpp"
 }
 
 void MyNode::my_static_func() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 233 "input.gd++"
 
   gd::print("Hello!");
 
-#line 215 "MyNode.cpp"
+#line 175 "MyNode.cpp"
 }
 
 void MyNode::take_damage(int64_t amount) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 240 "input.gd++"
 
   gd::print("Took ", amount, " damage.");
 
-#line 228 "MyNode.cpp"
+#line 183 "MyNode.cpp"
 }
 
 Error MyNode::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount) {
@@ -232,65 +187,40 @@ Error MyNode::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount) {
 }
 
 void MyNode::hurt_everyone(int64_t peer) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 248 "input.gd++"
 
   _gdpp_rpc_take_damage(0, 10);
   _gdpp_rpc_take_damage(peer, 10);
   take_damage(10);
 
-#line 247 "MyNode.cpp"
+#line 197 "MyNode.cpp"
 }
 
 void MyNode::respawn() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 	this->call_deferred(GDPP_STRING_NAME("_gdpp_body_respawn"));
 }
 
 void MyNode::_gdpp_body_respawn() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 260 "input.gd++"
 
   gd::print("Respawned.");
 
-#line 269 "MyNode.cpp"
+#line 209 "MyNode.cpp"
 }
 
 void MyNode::emit_both_signals() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 291 "input.gd++"
 
   (void) something_happened(42);
   (void) something_else_happened();
 
-#line 283 "MyNode.cpp"
+#line 218 "MyNode.cpp"
 }
 
 void MyNode::foo() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 387 "input.gd++"
 
-#line 294 "MyNode.cpp"
+#line 224 "MyNode.cpp"
 }
 
 int64_t MyNode::get_simple_var() const {
@@ -331,7 +261,7 @@ int64_t MyNode::get_my_property() const {
 
     return my_property;
 
-#line 335 "MyNode.cpp"
+#line 265 "MyNode.cpp"
 }
 
 void MyNode::set_my_property(int64_t val) {
@@ -341,7 +271,7 @@ void MyNode::set_my_property(int64_t val) {
     if (val < 0) val = 0;
     my_property = val;
 
-#line 345 "MyNode.cpp"
+#line 275 "MyNode.cpp"
 }
 
 int64_t MyNode::get_my_range_var() const {
@@ -389,14 +319,14 @@ gdpp::Emitted MyNode::something_else_happened() {
     gd::print("Hello, world!");
   }
 
-#line 393 "MyNode.cpp"
+#line 323 "MyNode.cpp"
 
 #line 85 "input.gd++"
 
   #define FOO 42
 
 
-#line 400 "MyNode.cpp"
+#line 330 "MyNode.cpp"
 
 #undef This
 

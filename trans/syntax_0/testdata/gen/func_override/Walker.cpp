@@ -14,14 +14,9 @@ Walker::Walker() {
 }
 
 void Walker::_process(double delta) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 22 "input.gd++"
 
-#line 25 "Walker.cpp"
+#line 20 "Walker.cpp"
 }
 
 #undef This

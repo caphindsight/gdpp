@@ -43,16 +43,11 @@ void Board::_bind_methods() {
 }
 
 void Board::finish(Result result) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 20 "input.gd++"
 
   set_process_mode(static_cast<Node::ProcessMode>(mode));
 
-#line 56 "Board.cpp"
+#line 51 "Board.cpp"
 }
 
 void Board::_gdpp_finish(_gdpp_Board_Result result) {

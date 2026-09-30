@@ -36,34 +36,24 @@ Stage::Stage() {
 }
 
 int64_t Stage::compute(int64_t a, int64_t b) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 22 "input.gd++"
 
   return a + b;
 
-#line 49 "Stage.cpp"
+#line 44 "Stage.cpp"
 }
 
 void Stage::_ready() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 8 "input.gd++"
 	camera = get_node<Camera3D>("Camera");
-#line 60 "Stage.cpp"
+#line 50 "Stage.cpp"
 #line 11 "input.gd++"
 	mesh = [&]() -> MeshInstance3D * {
   MeshInstance3D* mesh = memnew(MeshInstance3D);
   add_child(mesh);
   return mesh;
 }();
-#line 67 "Stage.cpp"
+#line 57 "Stage.cpp"
 }
 
 int64_t Stage::get_count() const {

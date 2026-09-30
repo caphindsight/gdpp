@@ -28,7 +28,7 @@ type classModel struct {
 	cls        *Class
 	base       string
 	refCounted bool
-	tool       bool    // Whether its functions run in the editor too.
+	gameOnly   bool    // Whether @game_only guards all its code against running in the editor.
 	codes      []*Code // decl and impl blocks inside the class.
 	globals    []*Code // @global decl and impl blocks, outside the class and namespace godot.
 	ctor, dtor *Block
@@ -649,7 +649,7 @@ func (u *unit) enumShorthand(t *gtype, init *Init) error {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "global", "icon", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "onready",
 	"override", "rpc", "static", "thread_safe", "tool", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -679,7 +679,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 	for _, pair := range [][2]string{{"static", "virtual"}, {"static", "override"}, {"static", "const"}, {"virtual", "override"},
 		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}, {"static", "deferred"}, {"virtual", "deferred"},
 		{"override", "deferred"}, {"static", "thread_safe"}, {"virtual", "thread_safe"}, {"override", "thread_safe"},
-		{"deferred", "thread_safe"}} {
+		{"deferred", "thread_safe"}, {"tool", "game_only"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -1132,11 +1132,11 @@ func (u *unit) buildClasses() error {
 
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted}
-	a, err := u.annotations(c.Annotations, "a class", "icon", "tool")
+	a, err := u.annotations(c.Annotations, "a class", "game_only", "icon", "tool")
 	if err != nil {
 		return nil, err
 	}
-	m.tool = a["tool"] != nil
+	m.gameOnly = a["game_only"] != nil
 	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}

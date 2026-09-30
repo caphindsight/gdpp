@@ -45,7 +45,7 @@ A function without a body gets a generated one, which returns the type's default
 
 - It declares the function as a public method of the C++ class, and defines it in the class's source file, with your body.
 - It binds the function in _bind_methods with ClassDB::bind_method, with its parameter names and default values, so Godot can call it. @static functions are bound with ClassDB::bind_static_method, @virtual ones with GDVIRTUAL_BIND, and @override ones not at all, since the engine binds them.
-- In a class without @tool, the body starts with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
+- In a @game_only class, the body starts with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
 
 Functions are plain C++ methods, so C++ code calls them directly, e.g. `jump();` or `player->jump();`, at full speed.
 

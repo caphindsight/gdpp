@@ -28,6 +28,9 @@ A declaration's doc comment can come before its annotations or between them, but
 @tool
   Run the class's code in the editor too. See `gd++ man classes`.
 
+@game_only
+  Run the class's code only in the game, never in the editor, not even when other code calls it. Can't be used with @tool. See `gd++ man classes`.
+
 @icon(PATH)
   The class's icon in the editor: a string with a res:// or pkg:// path. See `gd++ man classes`.
 

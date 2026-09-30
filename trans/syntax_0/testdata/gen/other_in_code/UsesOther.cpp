@@ -13,16 +13,11 @@ void UsesOther::_bind_methods() {
 }
 
 void UsesOther::f() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 3 "input.gd++"
 
   TypedArray<int64_t> a;
 
-#line 26 "UsesOther.cpp"
+#line 21 "UsesOther.cpp"
 }
 
 #undef This

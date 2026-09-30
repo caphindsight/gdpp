@@ -83,7 +83,7 @@ A new class needs --include, or --noinclude if another included header declares 
 
 The build generates __register_types__.cpp in the build cache. It includes the headers of all the package's classes, C++ and GD++, and registers them when Godot loads the library, at the scene initialization level. A class is registered after its base class, if the base is a class of the same package, since Godot requires that. The code is in namespace godot, or sees it with using namespace godot, so C++ classes can be declared in namespace godot or at global scope.
 
-C++ classes are registered with GDREGISTER_CLASS, so their code runs in the editor too, like GD++ classes with @tool. For a runtime-only class, check Engine::get_singleton()->is_editor_hint() in your code.
+C++ classes are registered with GDREGISTER_CLASS, so their code runs in the editor too, like GD++ classes with @tool. For a runtime-only class, check Engine::get_singleton()->is_editor_hint() in your code, like GD++ classes with @game_only do.
 
 The library's entry symbol is gdpp_library_init, which the .gdextension file names. Don't define your own entry point.
 

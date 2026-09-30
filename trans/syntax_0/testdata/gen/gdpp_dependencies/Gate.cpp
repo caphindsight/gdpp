@@ -25,16 +25,11 @@ void Gate::_bind_methods() {
 }
 
 Door *Gate::open(const Ref<Key> &key) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 15 "input.gd++"
 
   return door;
 
-#line 38 "Gate.cpp"
+#line 33 "Gate.cpp"
 }
 
 Door *Gate::get_door() const {

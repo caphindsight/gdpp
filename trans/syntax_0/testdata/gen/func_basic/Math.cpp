@@ -14,53 +14,33 @@ void Math::_bind_methods() {
 }
 
 int64_t Math::add(int64_t a, int64_t b) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 3 "input.gd++"
 
   return a + b;
 
-#line 27 "Math.cpp"
+#line 22 "Math.cpp"
 }
 
 void Math::log(const String &message) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 7 "input.gd++"
 
   gd::print(message);
 
-#line 40 "Math.cpp"
+#line 30 "Math.cpp"
 }
 
 Variant Math::identity(const Variant &value) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 11 "input.gd++"
 
   return value;
 
-#line 53 "Math.cpp"
+#line 38 "Math.cpp"
 }
 
 Variant Math::nothing() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 15 "input.gd++"
 
-#line 64 "Math.cpp"
+#line 44 "Math.cpp"
 }
 
 #undef This

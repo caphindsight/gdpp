@@ -12,27 +12,17 @@ void Helper::_bind_methods() {
 }
 
 int64_t Helper::count() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 13 "input.gd++"
 
     return 0;
 
-#line 25 "Helper.cpp"
+#line 20 "Helper.cpp"
 }
 
 void Helper::reset() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 17 "input.gd++"
 
-#line 36 "Helper.cpp"
+#line 26 "Helper.cpp"
 }
 
 #undef This

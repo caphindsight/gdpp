@@ -14,40 +14,25 @@ Player::Player() {
 }
 
 void Player::_ready() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 5 "input.gd++"
 
   gd::print("ready");
 
-#line 27 "Player.cpp"
+#line 22 "Player.cpp"
 }
 
 void Player::_physics_process(double delta) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 10 "input.gd++"
 
-#line 38 "Player.cpp"
+#line 28 "Player.cpp"
 }
 
 PackedStringArray Player::_get_configuration_warnings() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 14 "input.gd++"
 
   return {};
 
-#line 51 "Player.cpp"
+#line 36 "Player.cpp"
 }
 
 #undef This

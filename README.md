@@ -177,7 +177,7 @@ class Inventory {
 
 Both kinds work the same. GD++ has no nested classes.
 
-Add `@tool` to run a class in the editor, and `@icon("res://player.svg")` to give it an icon.
+Add `@tool` to run a class in the editor, `@game_only` to make sure it never runs there, and `@icon("res://player.svg")` to give it an icon.
 
 ### Types
 

@@ -44,6 +44,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsCtor() {
 		w.ln("")
 		w.ln("%s::%s() {", c.name, c.name)
+		guard(w, c, "")
 		for _, f := range c.funcs {
 			if r := f.rpc; r != nil {
 				w.ln("\tgdpp::rpc_config<This>(this, %q, %s, %s, %t, %s);", f.f.Name, r.mode, r.transfer, r.callLocal, r.channel)
@@ -61,6 +62,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.dtor != nil {
 		w.ln("")
 		w.ln("%s::~%s() {", c.name, c.name)
+		guard(w, c, "")
 		w.block(c.dtor, "\t{", "}")
 		w.ln("}")
 	}
@@ -70,6 +72,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		if f.rpc != nil {
 			w.ln("")
 			w.ln("Error %s::%s {", c.name, rpcDecl(f, params(nil, f.params, f.f.Params)))
+			guard(w, c, "Error")
 			w.ln("\treturn %s;", rpcCall(f))
 			w.ln("}")
 		}
@@ -80,6 +83,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	for _, s := range c.signals {
 		w.ln("")
 		w.ln("gdpp::Emitted %s::%s(%s) {", c.name, s.s.Name, params(nil, s.params, s.s.Params))
+		guard(w, c, "gdpp::Emitted")
 		w.ln("\treturn gdpp::Emitted{ emit_signal(%q%s) };", s.s.Name, args(s.params, s.s.Params))
 		w.ln("}")
 	}
@@ -106,6 +110,24 @@ func (u *unit) initializers(w *writer, c *classModel, onready bool) {
 			w.user(init.Pos, "\t"+v.v.Name+" = ", init.Expr, ";")
 		}
 	}
+}
+
+// guard writes the check of a @game_only class that returns right away, with a default value, when its code is
+// called in the editor, which only loads debug builds. ret is the C++ return type, empty for constructors and
+// destructors.
+func guard(w *writer, c *classModel, ret string) {
+	if !c.gameOnly {
+		return
+	}
+	w.ln("#ifdef DEBUG_ENABLED")
+	w.ln("\tif (Engine::get_singleton()->is_editor_hint()) {")
+	if ret == "" || ret == "void" {
+		w.ln("\t\treturn;")
+	} else {
+		w.ln("\t\treturn {};")
+	}
+	w.ln("\t}")
+	w.ln("#endif")
 }
 
 // qualified returns the out-of-class declarator of a method of c, e.g. "int64_t MyNode::f(int64_t a) const".
@@ -139,18 +161,7 @@ func cast(c *classModel, t *gtype, expr string, toTag bool) string {
 func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
 	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
-	if !c.tool {
-		// Like GDScript, only @tool classes run their code in the editor, which only loads debug builds.
-		w.ln("#ifdef DEBUG_ENABLED")
-		w.ln("\tif (Engine::get_singleton()->is_editor_hint()) {")
-		if f.ret.void {
-			w.ln("\t\treturn;")
-		} else {
-			w.ln("\t\treturn {};")
-		}
-		w.ln("\t}")
-		w.ln("#endif")
-	}
+	guard(w, c, f.ret.cpp)
 	if f.virtual {
 		callArgs := castList(c, f.params, f.f.Params, true)
 		if f.ret.void {
@@ -182,6 +193,7 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	}
 	w.ln("")
 	w.ln("%s {", qualified(c, tagged(c, f.ret), "_gdpp_"+f.f.Name, params(c, f.params, f.f.Params), f.isConst))
+	guard(w, c, f.ret.cpp)
 	call := fmt.Sprintf("%s(%s)", f.f.Name, castList(c, f.params, f.f.Params, false))
 	if f.ret.void {
 		w.ln("\t%s;", call)
@@ -200,6 +212,7 @@ func defaultDefs(w *writer, c *classModel, f *funcModel) {
 		}
 		w.ln("")
 		w.ln("%s {", qualified(c, f.params[i].cpp, defaultName(f, p), "", false))
+		guard(w, c, f.params[i].cpp)
 		if d.Block != nil {
 			w.block(d.Block, "", "")
 		} else {
@@ -214,6 +227,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, v.t.cpp, v.getter, "", true))
+		guard(w, c, v.t.cpp)
 		if v.get != nil {
 			w.block(v.get, "", "")
 		} else {
@@ -224,6 +238,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.setter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", v.setter, withSpace(v.t.param())+v.setterParam(), false))
+		guard(w, c, "void")
 		if v.set != nil {
 			w.block(v.set.Body, "", "")
 		} else {
@@ -238,12 +253,14 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, tag, "_gdpp_"+v.getter, "", true))
+		guard(w, c, tag)
 		w.ln("\treturn static_cast<%s>(%s());", tag, v.getter)
 		w.ln("}")
 	}
 	if v.setter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", "_gdpp_"+v.setter, tag+" p_value", false))
+		guard(w, c, "void")
 		w.ln("\t%s(static_cast<%s>(p_value));", v.setter, v.t.cpp)
 		w.ln("}")
 	}

@@ -1,4 +1,4 @@
-Classes: declaring Godot classes, bases, @tool and @icon
+Classes: declaring Godot classes, bases, @tool, @game_only and @icon
 
 A GD++ class is a Godot class, like Node3D or Resource: once built, it shows up in the editor's "Create New Node" dialog (or the resource list), GDScript can use it, and it can be the base of scripts. This page explains how to declare classes, and what GD++ makes of them.
 
@@ -89,14 +89,25 @@ func _process(delta: float) -> void {
 }
 ```
 
-Without @tool, a class is a runtime class:
-
-- It's registered with Godot as a runtime class. In the editor, Godot creates placeholders for its objects: they store their property values, which you set in the inspector, but run none of the class's code.
-- In debug builds, which the editor loads, each of its functions starts with a check that returns right away, with a default value, when called in the editor.
+Without @tool, a class is registered with Godot as a runtime class. In the editor, Godot creates placeholders for its objects: they store their property values, which you set in the inspector, but run none of the class's code.
 
 So a runtime class can't break the editor, e.g. by moving nodes around in a scene you're editing. Games run from the editor, and exported games, run all code. Inline classes need their own @tool: it's not inherited from the file-level class, nor from the base class.
 
 `gd++ ls` shows @tool classes as "GD++ @tool".
+
+# @game_only
+
+Placeholders only stop code that Godot calls. Code that already runs in the editor, e.g. a @tool class or a C++ class, can still create a runtime class's object with memnew, or call its static functions, and then that code runs. @game_only makes sure it doesn't: the class's code only ever runs in the game.
+
+```gd++
+@game_only
+class_name Spawner
+extends Node3D
+```
+
+A @game_only class is a runtime class, and in debug builds, which the editor loads, every function that GD++ generates for it starts with a check. In the editor, it returns right away, with a default value. This covers its functions, constructor, destructor, getters, setters, signal emit functions, and the helpers that GD++ adds, e.g. for enums, default values and RPCs. Your own decl and impl code isn't checked. Release builds have no checks.
+
+@game_only can't be used with @tool. Like @tool, it's not inherited.
 
 # @icon
 
@@ -119,7 +130,7 @@ GD++ writes the icons into the package's .gdextension file. A missing icon file 
 
 # Annotations and doc comments
 
-A class can have @tool and @icon, in any order, and a doc comment, before class_name or class:
+A class can have @tool or @game_only, and @icon, in any order, and a doc comment, before class_name or class:
 
 ```gd++
 /// The player's character.

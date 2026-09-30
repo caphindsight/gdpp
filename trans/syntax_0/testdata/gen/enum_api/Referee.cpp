@@ -14,14 +14,9 @@ void Referee::_bind_methods() {
 }
 
 void Referee::judge(Mode m) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 25 "input.gd++"
 
-#line 25 "Referee.cpp"
+#line 20 "Referee.cpp"
 }
 
 void Referee::_gdpp_judge(_gdpp_Referee_Mode m) {

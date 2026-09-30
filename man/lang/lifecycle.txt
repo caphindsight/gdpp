@@ -91,7 +91,7 @@ Note step 2: values from the scene overwrite the initial values, since they come
 
 # In the editor
 
-In the editor, Godot doesn't create objects of classes without @tool: it creates placeholders, which hold property values but run no code. So neither their constructor nor their destructor, nor any other of their functions, runs in the editor. Classes with @tool run everything in the editor too. See `gd++ man classes`.
+In the editor, Godot doesn't create objects of classes without @tool: it creates placeholders, which hold property values but run no code. So neither their constructor nor their destructor, nor any other of their functions, runs in the editor. Classes with @tool run everything in the editor too. Other code can still create an object of a runtime class with memnew, and then its code runs: @game_only classes check for the editor in every function, to prevent that. See `gd++ man classes`.
 
 # Notifications
 

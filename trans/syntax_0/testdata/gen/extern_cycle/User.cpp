@@ -14,16 +14,11 @@ void User::_bind_methods() {
 }
 
 gdpp::ExtRef<B> User::b() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 18 "input.gd++"
 
     return nullptr;
 
-#line 27 "User.cpp"
+#line 22 "User.cpp"
 }
 
 gdpp::ExtPtr<A> User::get_a() const {

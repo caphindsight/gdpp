@@ -39,16 +39,11 @@ Painter::Painter() {
 }
 
 Effect Painter::paint(Effect extra) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 22 "input.gd++"
 
   return effect | extra;
 
-#line 52 "Painter.cpp"
+#line 47 "Painter.cpp"
 }
 
 _gdpp_Painter_Effect Painter::_gdpp_paint(_gdpp_Painter_Effect extra) {
@@ -58,7 +53,7 @@ _gdpp_Painter_Effect Painter::_gdpp_paint(_gdpp_Painter_Effect extra) {
 Effect Painter::_gdpp_default_paint_extra() {
 #line 22 "input.gd++"
 	return Effect::BOLD | Effect::BLINKING;
-#line 62 "Painter.cpp"
+#line 57 "Painter.cpp"
 }
 
 Effect Painter::get_effect() const {

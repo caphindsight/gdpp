@@ -11,11 +11,6 @@ void Lock::_bind_methods() {
 }
 
 Door *Lock::_open(const Ref<Key> &key) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	Door * _gdpp_ret;
 	if (GDVIRTUAL_CALL(_open, key, _gdpp_ret)) {
 		return _gdpp_ret;

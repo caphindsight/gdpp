@@ -25,14 +25,9 @@ Player::Player() {
 }
 
 void Player::ping() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 7 "input.gd++"
 
-#line 36 "Player.cpp"
+#line 31 "Player.cpp"
 }
 
 Error Player::_gdpp_rpc_ping(int64_t p_peer) {
@@ -40,14 +35,9 @@ Error Player::_gdpp_rpc_ping(int64_t p_peer) {
 }
 
 void Player::take_damage(int64_t amount, Team from) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 10 "input.gd++"
 
-#line 51 "Player.cpp"
+#line 41 "Player.cpp"
 }
 
 void Player::_gdpp_take_damage(int64_t amount, _gdpp_Player_Team from) {
@@ -59,16 +49,11 @@ Error Player::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount, Team from) {
 }
 
 int64_t Player::sync_position(const Vector3 &pos) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 13 "input.gd++"
 
   return 0;
 
-#line 72 "Player.cpp"
+#line 57 "Player.cpp"
 }
 
 Error Player::_gdpp_rpc_sync_position(int64_t p_peer, const Vector3 &pos) {
@@ -76,11 +61,6 @@ Error Player::_gdpp_rpc_sync_position(int64_t p_peer, const Vector3 &pos) {
 }
 
 void Player::hit(int64_t peer, Player *other) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 17 "input.gd++"
 
   _gdpp_rpc_ping(0);
@@ -92,7 +72,7 @@ void Player::hit(int64_t peer, Player *other) {
   rpc_id(1, "ping");
   take_damage(1, Team::RED);
 
-#line 96 "Player.cpp"
+#line 76 "Player.cpp"
 }
 
 #undef This

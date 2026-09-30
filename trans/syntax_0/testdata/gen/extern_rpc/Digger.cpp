@@ -14,18 +14,13 @@ void Digger::_bind_methods() {
 }
 
 void Digger::use(int64_t peer) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 12 "input.gd++"
 
   terrain->_gdpp_rpc_dig(0, Vector3());
   terrain->_gdpp_rpc_reset(peer);
   terrain->reset();
 
-#line 29 "Digger.cpp"
+#line 24 "Digger.cpp"
 }
 
 gdpp::ExtPtr<Terrain2> Digger::get_terrain() const {

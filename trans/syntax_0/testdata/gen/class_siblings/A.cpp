@@ -14,16 +14,11 @@ void A::_bind_methods() {
 }
 
 Ref<C> A::make_c() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 5 "input.gd++"
 
     return memnew(C);
 
-#line 27 "A.cpp"
+#line 22 "A.cpp"
 }
 
 B *A::get_b() const {

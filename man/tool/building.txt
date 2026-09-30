@@ -109,7 +109,8 @@ The task name of each build says what it builds, e.g. "Building res:// [my_game]
 
 Like GDScript, GD++ runs the code of a class in the editor only if the class has @tool:
 
-- A class without @tool is a runtime class. In the editor, Godot shows placeholders for its objects: they keep their property values, but run none of the class's code. In debug builds, its functions also return right away when called in the editor.
+- A class without @tool is a runtime class. In the editor, Godot shows placeholders for its objects: they keep their property values, but run none of the class's code.
+- A class with @game_only is a runtime class too. In debug builds, all its functions also return right away when called in the editor, e.g. by a @tool class.
 - A class with @tool runs in the editor too, e.g. to draw gizmos or react to property changes.
 
 Games run from the editor and exported games run all code. See `gd++ man classes`.

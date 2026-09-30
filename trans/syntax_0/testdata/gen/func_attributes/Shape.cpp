@@ -12,42 +12,27 @@ void Shape::_bind_methods() {
 }
 
 double Shape::area() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 5 "input.gd++"
 
   return 0.0;
 
-#line 25 "Shape.cpp"
+#line 20 "Shape.cpp"
 }
 
 double Shape::unit() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 #line 10 "input.gd++"
 
   return 1.0;
 
-#line 38 "Shape.cpp"
+#line 28 "Shape.cpp"
 }
 
 void Shape::_ready() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 15 "input.gd++"
 
   gd::print("ready");
 
-#line 51 "Shape.cpp"
+#line 36 "Shape.cpp"
 }
 
 #undef This

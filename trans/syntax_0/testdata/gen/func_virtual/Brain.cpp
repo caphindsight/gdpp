@@ -15,11 +15,6 @@ void Brain::_bind_methods() {
 }
 
 int64_t Brain::_think(double delta) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	int64_t _gdpp_ret;
 	if (GDVIRTUAL_CALL(_think, delta, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -28,15 +23,10 @@ int64_t Brain::_think(double delta) {
 
   return 0;
 
-#line 32 "Brain.cpp"
+#line 27 "Brain.cpp"
 }
 
 String Brain::_idle() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	String _gdpp_ret;
 	if (GDVIRTUAL_CALL(_idle, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -45,11 +35,6 @@ String Brain::_idle() {
 }
 
 Variant Brain::_notify(int64_t what) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	Variant _gdpp_ret;
 	if (GDVIRTUAL_CALL(_notify, what, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -58,11 +43,6 @@ Variant Brain::_notify(int64_t what) {
 }
 
 double Brain::_score() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	double _gdpp_ret;
 	if (GDVIRTUAL_CALL(_score, _gdpp_ret)) {
 		return _gdpp_ret;
@@ -71,21 +51,16 @@ double Brain::_score() const {
 
   return 1.0;
 
-#line 75 "Brain.cpp"
+#line 55 "Brain.cpp"
 }
 
 void Brain::_done() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 	if (GDVIRTUAL_CALL(_done)) {
 		return;
 	}
 #line 21 "input.gd++"
 
-#line 89 "Brain.cpp"
+#line 64 "Brain.cpp"
 }
 
 #undef This

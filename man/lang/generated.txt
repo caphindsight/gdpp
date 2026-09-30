@@ -98,23 +98,18 @@ Counter::Counter() {
 }
 
 void Counter::add(int64_t amount) {
-#ifdef DEBUG_ENABLED
-  if (Engine::get_singleton()->is_editor_hint()) {
-    return;
-  }
-#endif
 #line 8 "counter.gd++"
 
   count += amount;
   (void) changed(count);
 
-#line 35 "Counter.cpp"
+#line 30 "Counter.cpp"
 }
 
 int64_t Counter::_gdpp_default_add_amount() {
 #line 8 "counter.gd++"
   return 1;
-#line 41 "Counter.cpp"
+#line 36 "Counter.cpp"
 }
 
 int64_t Counter::get_count() const {
@@ -164,10 +159,12 @@ In order:
    - _bind_methods: binds each function (with its default values), each variable's getter and setter and its property (after the inspector sections it starts), each signal, each integer constant, and each value of each exposed enum (as a bitfield flag for a bitfield),
    - the constructor, if needed: RPC configurations, set_process(true) and set_physics_process(true) for overrides, the initial values of variables, then the ctor block. See `gd++ man lifecycle`.
    - the destructor, with the dtor block,
-   - each function: the editor check if the class isn't @tool, the GDVIRTUAL_CALL of a @virtual function, the @onready initial values in _ready, then the body (or for @deferred and @thread_safe, the call that runs _gdpp_body_NAME later); then its enum wrapper, default value functions and RPC helper,
+   - each function: the GDVIRTUAL_CALL of a @virtual function, the @onready initial values in _ready, then the body (or for @deferred and @thread_safe, the call that runs _gdpp_body_NAME later); then its enum wrapper, default value functions and RPC helper,
    - each variable's getter and setter, and their enum wrappers,
    - each signal's emit function,
    - the impl blocks.
+
+In a @game_only class, each of these functions except _bind_methods starts with an editor check, in debug builds. See `gd++ man classes`.
 
 # Generated names
 

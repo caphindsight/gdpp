@@ -18,11 +18,6 @@ void Spawner::_bind_methods() {
 }
 
 void Spawner::spawn(int64_t count, Mode mode) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 	this->call_deferred(GDPP_STRING_NAME("_gdpp_body_spawn"), count, static_cast<int64_t>(mode));
 }
 
@@ -33,20 +28,15 @@ void Spawner::_gdpp_spawn(int64_t count, _gdpp_Spawner_Mode mode) {
 Mode Spawner::_gdpp_default_spawn_mode() {
 #line 7 "input.gd++"
 	return Mode::ONE;
-#line 37 "Spawner.cpp"
+#line 32 "Spawner.cpp"
 }
 
 void Spawner::_gdpp_body_spawn(int64_t count, Mode mode) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 7 "input.gd++"
 
   gd::print(count);
 
-#line 50 "Spawner.cpp"
+#line 40 "Spawner.cpp"
 }
 
 void Spawner::_gdpp__gdpp_body_spawn(int64_t count, _gdpp_Spawner_Mode mode) {
@@ -54,47 +44,27 @@ void Spawner::_gdpp__gdpp_body_spawn(int64_t count, _gdpp_Spawner_Mode mode) {
 }
 
 void Spawner::report(const String &text) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 	gdpp::call_thread_safe(this, GDPP_STRING_NAME("_gdpp_body_report"), text);
 }
 
 void Spawner::_gdpp_body_report(const String &text) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 12 "input.gd++"
 
   gd::print(text);
 
-#line 76 "Spawner.cpp"
+#line 56 "Spawner.cpp"
 }
 
 void Spawner::log() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 	const_cast<Spawner *>(this)->call_deferred(GDPP_STRING_NAME("_gdpp_body_log"));
 }
 
 void Spawner::_gdpp_body_log() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 #line 17 "input.gd++"
 
   gd::print("log");
 
-#line 98 "Spawner.cpp"
+#line 68 "Spawner.cpp"
 }
 
 #undef This
