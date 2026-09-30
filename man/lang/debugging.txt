@@ -138,10 +138,10 @@ Calls made during a traced call are indented, so nested calls read as a tree:
 [f1204] ◀ Player "Hero".take_damage → true  301.2 µs
 ```
 
-Every call of the function is traced, however it's called: from your C++ code, from GDScript, from a signal, or with call_deferred. Some functions have details:
+Every call of the function is traced, however it's called: from your C++ code, from GDScript, from a signal, or with call_deferred. The one exception is a @virtual function that a script overrides, below. Some functions have details:
 
 - A @deferred or @thread_safe function is traced when its body runs, later, not when the call is queued. It shows with its own name.
-- A @virtual function is traced even when a script overrides it, and its time includes the script's code.
+- A @virtual function is traced when C++ code calls it, also when a script overrides it: then the time includes the script's code. But calls of an overridden function by name, from GDScript, with call(), or from a signal, go straight to the script's version, and never reach the C++ function, so they aren't traced. That's rarely a problem, since C++ code is what usually calls a class's virtual functions. To catch such calls, call the function from C++ instead, e.g. from a traced function that calls it.
 - A function that returns early, with return, prints its end line all the same.
 
 # @trace on variables
@@ -225,7 +225,7 @@ func _physics_process(delta: float) -> void { ... }
 
 @profile measures how long every call takes, and prints nothing per call:
 
-- On a function, it times the function. Like with @trace, a @deferred function is timed when its body runs, and a @virtual one includes a script's override.
+- On a function, it times the function. Like with @trace, a @deferred function is timed when its body runs, and a @virtual one includes a script's override when C++ code calls it, but calls by name of an overridden @virtual function aren't timed. See "@trace on functions", above.
 - On a variable, it times the variable's getter and setter, e.g. Player.get_ammo and Player.set_ammo. That's useful for properties whose get or set block does real work. A simple variable's getter and setter only copy a value, and your C++ code uses the field directly, not them.
 - On a class, it times all its functions, and the getters and setters of its properties with get and set blocks.
 
@@ -379,6 +379,7 @@ Does my code run on threads? The Thread column says where each profiled function
 - @trace on a function traces that function, not the functions that override it in subclasses: to trace an override, put @trace on the override.
 - A @game_only class returns right away in the editor, before any tracing or profiling, and other classes without @tool don't run in the editor at all. So only @tool classes trace and profile in the editor, e.g. while you edit a scene.
 - Both work in debug and release builds, but the monitors only show while the editor's debugger is connected to the game.
+- Calls by name, e.g. from GDScript, of a @virtual function that a script overrides go straight to the script, so they aren't traced or timed. Calls from C++ are.
 - Trace lines of different threads can mix. Each line is printed whole.
 
 # What GD++ generates
