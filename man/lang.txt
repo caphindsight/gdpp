@@ -52,7 +52,7 @@ The declarations look like GDScript: class_name, extends, signal, var, func and 
 A GD++ file mixes two languages:
 
 - GD++ declarations, in the class declaration scope: classes, functions, variables, signals, enums and so on. GD++ parses these, and turns them into C++ declarations and bindings.
-- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and decl and impl blocks. GD++ copies this code into the generated C++, almost unchanged. It only removes comments, and rewrites a few words of GD++'s own: emit, rpc, is_done, claim, This and gd.
+- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and decl and impl blocks. GD++ copies this code into the generated C++, almost unchanged. It only removes comments, and rewrites a few words of GD++'s own: emit, rpc, cancelled, is_done, claim, cancel, This and gd.
 
 In C++ code, everything that godot-cpp offers works: Godot's classes, Variant, memnew, Ref, UtilityFunctions and so on. GD++ adds a few helpers. See `gd++ man runtime`.
 
@@ -84,7 +84,7 @@ Each class becomes a C++ class in namespace godot, with GDCLASS, in a header and
 - Debugging: @trace prints calls and changes, and @profile times code. See `gd++ man debugging`.
 - Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: decl, impl and @global blocks. See `gd++ man code`.
-- Rewrites: emit, rpc, is_done and claim, GD++'s few words in C++ code. See `gd++ man rewrites`.
+- Rewrites: emit, rpc, cancelled, is_done, claim and cancel, GD++'s few words in C++ code. See `gd++ man rewrites`.
 - Includes: automatic, with import and noimport to adjust them. See `gd++ man includes`.
 - Doc comments: /// and /** */, which become the editor's help. See `gd++ man docs`.
 

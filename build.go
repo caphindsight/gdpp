@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -266,6 +267,7 @@ func generateBuildCache(p Project, pkg Package) {
 		"ProjectRoot": relPath(cache, p.Root),
 		"Sources":     cppSources(p, pkg),
 		"AsyncClass":  pkg.AsyncClass(),
+		"QuitTimeout": int64(math.Round(pkg.QuitTimeout() * 1e6)),
 	})
 }
 
@@ -300,8 +302,11 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		}
 	}
 	// GD++ adds the class of tasks, which Async types name, to packages with GD++ classes.
-	asyncClass := ""
+	asyncClass, runtimeName := "", ""
 	if len(gdpp) > 0 {
+		var err error
+		runtimeName, _, err = trans.RuntimeHeader(pkg.Config.Syntax)
+		Check(err, "Failed to find the GD++ runtime header")
 		asyncClass = pkg.AsyncClass()
 		Assert(!slices.Contains(classes, asyncClass), "Class %s is declared in %s, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init %s --prefix NAME`.",
 			asyncClass, pkg.Root.Cd(packageFileName).ToString(), pkg.Root.ToString())
@@ -322,6 +327,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		"RuntimeClasses": runtime,
 		"Includes":       uniqueSorted(includes, strings.Compare),
 		"AsyncClass":     asyncClass,
+		"Runtime":        runtimeName,
 	}) {
 		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}

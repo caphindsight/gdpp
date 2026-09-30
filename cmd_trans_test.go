@@ -66,7 +66,7 @@ func TestTransDebug(t *testing.T) {
 			[]string{`static gdpp::ProfileStats _gdpp_stats("Player.run");`}, []string{"gdpp::Trace"}},
 		"print": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true}},
 			[]string{`_gdpp_stats("Player.run", 10);`}, nil},
-		"period": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true, ProfilePeriod: intPtr(3), ProfileFPS: 144}},
+		"period": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true, ProfilePeriod: ptr(3), ProfileFPS: 144}},
 			[]string{`_gdpp_stats("Player.run", 3, 144);`}, nil},
 	}
 	for name, tc := range cases {
@@ -241,7 +241,7 @@ func TestTransFails(t *testing.T) {
 		"no file":                   {CmdTrans{}, "[x] Invalid arguments: missing the GD++ file.\n"},
 		"missing file":              {CmdTrans{File: "missing.gd++"}, "[x] There is no file at missing.gd++.\n"},
 		"bad dependency":            {CmdTrans{File: "player.gd++", Enum: []string{"Suit:A=x"}}, "[x] Invalid arguments: --enum Suit:A=x: \"x\" is not an integer.\n"},
-		"unknown syntax":            {CmdTrans{File: "player.gd++", Syntax: intPtr(9)}, "[x] Unsupported GD++ syntax 9.\n"},
+		"unknown syntax":            {CmdTrans{File: "player.gd++", Syntax: ptr(9)}, "[x] Unsupported GD++ syntax 9.\n"},
 		"bad group":                 {CmdTrans{File: "player.gd++", DebugOptions: DebugOptions{Trace: []string{"a b"}}}, "[x] Invalid arguments: \"a b\" is not a valid group name.\n"},
 		"spec outside of a project": {CmdTrans{File: "player.gd++", Spec: "4.3"}, "[x] Path . is not contained in a Godot project.\n"},
 		"missing spec": {CmdTrans{File: "src/a.gd++", Spec: "4.4"},

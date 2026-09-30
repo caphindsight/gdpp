@@ -90,6 +90,7 @@ func TestGenerateBuildCache(t *testing.T) {
 	for _, want := range []string{
 		`project_root = "../../.."`,
 		`env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", "PkgAsync")])`,
+		`env.Append(CPPDEFINES=[("GDPP_QUIT_TIMEOUT_USEC", 1000000)])`,
 		`"-std=") + "c++20"`,
 		`objects + "package/" + "enemy/enemy.cc" + env["SHOBJSUFFIX"], package_root + "/" + "enemy/enemy.cc"))` + "\n" +
 			`    sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n" +
@@ -287,7 +288,7 @@ func TestBuildDescribe(t *testing.T) {
 		{BuildOptions{Ship: true, NoOpt: true}, host, false, host + ", \x1b[35mrelease\x1b[0m, \x1b[35munoptimized\x1b[0m"},
 		{BuildOptions{Small: true}, "windows.arm64", false, "\x1b[35mwindows.arm64\x1b[0m, debug, \x1b[35msize-optimized\x1b[0m"},
 		{BuildOptions{DebugOptions: DebugOptions{Trace: []string{"combat", "ai"}, Profile: []string{"all"}}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mtrace combat ai\x1b[0m, \x1b[35mprofiling\x1b[0m"},
-		{BuildOptions{DebugOptions: DebugOptions{Profile: []string{"Player"}, ProfilePrint: true, ProfilePeriod: intPtr(5), ProfileFPS: 144}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mprofiling\x1b[0m"},
+		{BuildOptions{DebugOptions: DebugOptions{Profile: []string{"Player"}, ProfilePrint: true, ProfilePeriod: ptr(5), ProfileFPS: 144}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mprofiling\x1b[0m"},
 		{BuildOptions{DebugOptions: DebugOptions{Trace: []string{"all"}}}, host, false, host + ", debug, unoptimized"},
 	}
 	for _, tc := range cases {
@@ -348,9 +349,9 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"doc":      {CmdBuild{BuildOptions: BuildOptions{Doc: true, NoDoc: true}}, "--doc and --nodoc cannot be used together"},
 		"group":    {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Trace: []string{"combat"}, Profile: []string{"a-b"}}}}, `"a-b" is not a valid group name`},
 		"print":    {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{ProfilePrint: true}}}, "--profile-print needs --profile"},
-		"period":   {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePeriod: intPtr(5)}}}, "--profile-period needs --profile-print"},
+		"period":   {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePeriod: ptr(5)}}}, "--profile-period needs --profile-print"},
 		"budget":   {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Profile: []string{"all"}, ProfileFPS: 144}}}, "--profile-fps needs --profile-print"},
-		"negative": {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true, ProfilePeriod: intPtr(0)}}}, "--profile-period must be positive"},
+		"negative": {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true, ProfilePeriod: ptr(0)}}}, "--profile-period must be positive"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

@@ -220,7 +220,7 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 		rows = append(rows, []string{lsKey(cache.Desc), name, status})
 	}
 	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard},
-		[]string{lsKey("Class prefix"), pkg.Prefix()})
+		[]string{lsKey("Class prefix"), pkg.Prefix()}, []string{lsKey("Quit timeout"), seconds(pkg.QuitTimeout())})
 	return rows, missing
 }
 

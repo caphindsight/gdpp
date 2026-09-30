@@ -124,7 +124,7 @@ The build generates __register_types__.cpp in the build cache. It includes the h
 
 Runtime classes, i.e. C++ classes without tool = true and GD++ classes without @tool, are registered with GDREGISTER_RUNTIME_CLASS. The others are registered with GDREGISTER_CLASS. Don't register classes yourself: every class is registered once, by the generated code.
 
-A package with GD++ classes also gets its class of tasks, which Async types name, e.g. FooAsync for the prefix Foo. It's defined in __register_types__.cpp itself, and registered first, with GDREGISTER_CLASS. No other class of the package, C++ or GD++, can have its name: the build fails, and asks for another prefix. SConstruct defines GDPP_ASYNC_CLASS as the name for all the package's C++. See `gd++ man async`.
+A package with GD++ classes also gets its class of tasks, which Async types name, e.g. FooAsync for the prefix Foo. The GD++ runtime defines it, and __register_types__.cpp includes the runtime, and registers the class first, with GDREGISTER_CLASS. No other class of the package, C++ or GD++, can have its name: the build fails, and asks for another prefix. SConstruct defines GDPP_ASYNC_CLASS as the name for all the package's C++. See `gd++ man async`.
 
 The library's entry symbol is gdpp_library_init, which the .gdextension file names. Don't define your own entry point.
 

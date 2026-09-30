@@ -26,7 +26,7 @@ For each package, gd++:
 2. Syncs its build cache, res://.../.gd++pkg: copies the bindings and the spec into it, if they changed. If the package's settings changed since the last build (its id, bindings, spec, syntax or C++ standard), it first cleans the package, so the build starts from scratch. See `gd++ man build-cache`.
 3. Writes the build script, SConstruct, into the build cache. It lists the package's C and C++ sources.
 4. If the package has GD++ files: finds what godot-cpp declares, and transpiles each GD++ file into C++. The first time, this generates godot-cpp's bindings from the spec and scans their headers; the result is cached. Transpiling fails on the first error in any GD++ file. See `gd++ man lang`.
-5. Writes __register_types__.cpp, the code that registers the package's classes with Godot when the library loads, and, if the package has GD++ classes, defines its class of tasks. See `gd++ man async`.
+5. Writes __register_types__.cpp, the code that registers the package's classes with Godot when the library loads, and, if the package has GD++ classes, its class of tasks. See `gd++ man async`.
 6. Runs SCons for each target, which compiles godot-cpp, the generated C++ and your C++ sources, and links the library into the package root.
 7. Writes the .gdextension file and its .uid file.
 

@@ -33,6 +33,8 @@ public:
 	Variant _gdpp_body_untyped();
 	gdpp::Async<String> follow(gdpp::Async<PackedVector2Array> path);
 	bool done(gdpp::Async<void> task);
+	gdpp::Async<int64_t> search(int64_t steps);
+	int64_t _gdpp_body_search(int64_t steps);
 	int64_t poll();
 	gdpp::Async<PackedVector2Array> get_pending() const;
 	void set_pending(gdpp::Async<PackedVector2Array> p_value);

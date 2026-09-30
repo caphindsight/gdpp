@@ -69,7 +69,7 @@ func  get  impl  import  noimport  set  signal  var
 
 GD++ has no other keywords: e.g. const, static, pass, if and return are not GD++ keywords. Attributes such as @static are annotations. See `gd++ man annotations`.
 
-In C++ code, GD++ gives a meaning to six more words: emit, rpc, is_done and claim, which it rewrites, see `gd++ man rewrites`, and This and gd, see `gd++ man code`.
+In C++ code, GD++ gives a meaning to eight more words: emit, rpc, cancelled, is_done, claim and cancel, which it rewrites, see `gd++ man rewrites`, and This and gd, see `gd++ man code`.
 
 # Numbers
 

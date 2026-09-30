@@ -66,7 +66,7 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 379 "input.gd++"
+#line 383 "input.gd++"
 
 
     int64_t my_property = 0;

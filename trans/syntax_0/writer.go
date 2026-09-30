@@ -42,7 +42,8 @@ func (w *writer) String() string {
 // cpp turns user C++ into plain C++:
 //   - `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
 //   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
-//   - `claim x` and `is_done x` become `x.claim()` and `x.is_done()`, for an Async x.
+//   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
+//   - `cancelled`, a bare word, becomes `gdpp::cancelled()`.
 func cpp(code string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
@@ -63,6 +64,11 @@ func cpp(code string) string {
 	for i := 0; i < len(ts); i++ {
 		if ts[i].Type == tokIdent && ts[i].Value == "emit" {
 			out[i] = "(void)"
+		}
+		if ts[i].Type == tokIdent && ts[i].Value == "cancelled" && !isMember(ts, i) {
+			if next := skipSpace(ts, i+1); next == len(ts) || !isPunct(ts[next], "(") {
+				out[i] = "gdpp::cancelled()"
+			}
 		}
 		if ts[i].Type == tokIdent && asyncWords[ts[i].Value] {
 			j := skipSpace(ts, i+1)
@@ -103,7 +109,7 @@ func cpp(code string) string {
 }
 
 // asyncWords are the words that call the method of the same name on an Async: `claim x` is `x.claim()`.
-var asyncWords = map[string]bool{"claim": true, "is_done": true}
+var asyncWords = map[string]bool{"claim": true, "is_done": true, "cancel": true}
 
 // postfixEnd returns the end of the expression at ts[j] that an Async word applies to: a name, followed by
 // member accesses, scopes, calls and subscripts, e.g. `tasks[i]`, `this->pending` or `find(a).task`. It returns j if
@@ -182,6 +188,15 @@ func rpcTarget(ts []lexer.Token, i int) (peer []lexer.Token, chain, name, paren 
 		}
 	}
 	return
+}
+
+// isMember reports whether the name at ts[i] follows ".", "->" or "::", so it's a member or in a scope.
+func isMember(ts []lexer.Token, i int) bool {
+	j := i - 1
+	for j >= 0 && (ts[j].Type == tokWhitespace || ts[j].Type == tokNewline) {
+		j--
+	}
+	return j >= 0 && (isPunct(ts[j], ".") || isPunct(ts[j], "->") || isPunct(ts[j], ":") && j > 0 && isPunct(ts[j-1], ":"))
 }
 
 // skipSpace returns the index of the first token at or after i that isn't whitespace.

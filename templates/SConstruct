@@ -28,6 +28,8 @@ else:
     env.Append(CPPPATH=[package_root, project_root, "gdpp"])
     # The name of the package's class of tasks, which Async types name.
     env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", {{printf "%q" .AsyncClass}})])
+    # How long its tasks may still run after the game started quitting, from its quit_timeout setting.
+    env.Append(CPPDEFINES=[("GDPP_QUIT_TIMEOUT_USEC", {{.QuitTimeout}})])
 {{- if .Color}}
     # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
     # the build signature, so it doesn't trigger rebuilds.

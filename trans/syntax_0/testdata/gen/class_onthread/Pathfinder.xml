@@ -38,6 +38,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="search">
+			<return type="GdppAsync" />
+			<param index="0" name="steps" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="terrain_at">
 			<return type="GdppAsync" />
 			<param index="0" name="at" type="Vector2i" />

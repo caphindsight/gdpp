@@ -172,7 +172,8 @@ Some compiler errors are about the generated code, but caused by the GD++ declar
 - "marked 'override', but does not override": an @override function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and @const. See `gd++ doc CLASS.FUNCTION`.
 - "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
 - "ignoring return value ... declared with attribute 'nodiscard'": a signal was called without emit. Write `emit NAME(...)`.
-- "'claim' was not declared in this scope", or the same for is_done: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
+- "'claim' was not declared in this scope", or the same for is_done or cancel: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
+- "expected unqualified-id before 'gdpp'", or a similar error at a declaration: a variable or field is named cancelled, which GD++ reserves and rewrites to gdpp::cancelled(). Rename it. See `gd++ man rewrites`.
 - Errors in the file NAME.h or NAME.cpp of the build cache point to generated code. Open the file, e.g. res://.gd++pkg/gdpp/Player.cpp, to see what GD++ generated, and which declaration it came from.
 
 # See also

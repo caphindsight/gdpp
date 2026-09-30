@@ -10,7 +10,7 @@ In a build, it's in the build cache, at gdpp/gd++/syntax_0.hpp.
 
 # What it includes
 
-The runtime header includes the godot-cpp headers that generated code always needs, so your code can use their names without GD++ finding them first: Engine, Node, Object, RefCounted, Ref, Resource, ResourceLoader, ProjectSettings, the global constants (e.g. Error and PropertyHint), ClassDB, Variant, TypedArray, TypedDictionary, UtilityFunctions, ClassDBSingleton and CallableCustom, and <cstdint>, <cstddef>, <functional> and <type_traits>.
+The runtime header includes the godot-cpp headers that generated code always needs, so your code can use their names without GD++ finding them first: Engine, Node, Object, RefCounted, Ref, Resource, ResourceLoader, ProjectSettings, the global constants (e.g. Error and PropertyHint), ClassDB, Variant, TypedArray, TypedDictionary, UtilityFunctions, CallableCustom, SceneTree, Window and WorkerThreadPool, and <atomic>, <chrono>, <cstdint>, <cstddef>, <cstdio>, <cstdlib>, <functional>, <mutex>, <thread> and <type_traits>.
 
 A source file that defines GDPP_DEBUGGING before its includes also gets the code of @trace and @profile, and the headers it needs: OS, Performance, SceneTree, Window, and standard headers like <atomic>, <chrono>, <functional>, <mutex> and <vector>. GD++ defines it in the sources of classes, and the headers of externs, whose @trace or @profile annotations are on, so other files don't compile any of it. The debugging code has its own include guard, so an extern's header gets it even when the runtime header was included before without it. See `gd++ man debugging`.
 
@@ -37,7 +37,10 @@ gdpp::ExtPtr<T>, gdpp::ExtRef<T> and gdpp::Ext<T>
   The C++ types of externs: a pointer or a reference to an object of an extern's class, whose members are called by name. Ext<T> is ExtRef<T> if T's base is refcounted, and ExtPtr<T> otherwise. See `gd++ man externs`.
 
 gdpp::Async<T>
-  The C++ type of Async[T]: a task, e.g. the call of an @onthread function. It references an object of a class of tasks, whose methods it calls by name, so it works with the tasks of any package, and copies share the task. It's true while it holds a task, running or done. is_done() is true once the task has finished, and for an empty Async. claim() returns the result of a done task, and empties the Async. wait() waits for the task to finish, then claims. Claiming from an empty Async or before the task is done, and waiting on an empty Async, print an error in debug builds, and are undefined in release builds. A default-constructed Async is empty, and destroying it does nothing. In GD++ code, `is_done TASK` and `claim TASK` call these methods, see `gd++ man rewrites`. See `gd++ man async`.
+  The C++ type of Async[T]: a task, e.g. the call of an @onthread function. It references an object of a class of tasks, whose methods it calls by name, so it works with the tasks of any package, and copies share the task. It's true while it holds a task, running or done. is_done() is true if it holds a task that has finished, and false while the task runs, and for an empty Async. claim() returns the result of a done task, and empties the Async. wait() waits for the task to finish, then claims. cancel() asks the task to stop, and is always safe: for an empty Async or a done task, it does nothing. Claiming from an empty Async or before the task is done, and waiting on an empty Async, print an error in debug builds, and are undefined in release builds. A default-constructed Async is empty, and destroying it does nothing. In GD++ code, `is_done TASK`, `claim TASK` and `cancel TASK` call these methods, see `gd++ man rewrites`. See `gd++ man async`.
+
+gdpp::cancelled()
+  Whether the task running on this thread should stop: its Async was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. In GD++ code, the word cancelled calls it. See `gd++ man async`.
 
 gdpp::Emitted
   What a signal's emit function returns: a [[nodiscard]] struct with the Error of emit_signal, in its field error. See `gd++ man signals`.
@@ -57,7 +60,8 @@ These are used by the code that GD++ generates. Your code rarely needs them:
 - gdpp::add_property_category(class, name) adds an inspector category, for @export_category.
 - gdpp::rpc_config<T>(node, method, ...) configures an RPC, for @rpc. It fails to compile if T doesn't extend Node.
 - gdpp::call_thread_safe(node, method, args...) calls a method with call_thread_safe, for @thread_safe. It fails to compile if the node's class doesn't extend Node.
-- gdpp::run_task(self, name, job) starts the call of an @onthread function: it creates an object of the package's class of tasks, whose name the build defines as GDPP_ASYNC_CLASS, e.g. FooAsync, and gdpp::async_class holds as a string. gdpp::TaskCallable is the Callable that runs the body. See `gd++ man async`.
+- gdpp::GDPP_ASYNC_CLASS is the package's class of tasks, whose name the build defines as GDPP_ASYNC_CLASS, e.g. FooAsync, and gdpp::async_class holds as a string. The package's generated registration code registers it. gdpp::run_task(self, name, job) starts the call of an @onthread function with an object of it, and gdpp::TaskCallable is the Callable that runs the body. See `gd++ man async`.
+- For quitting: gdpp::watch_quit notices when the game starts quitting, gdpp::await_quit waits for a task within the package's quit_timeout, which the build defines as GDPP_QUIT_TIMEOUT_USEC, and ends the game when it runs out, and gdpp::finish_tasks waits for the package's running tasks before its library is unloaded. See "When the game quits" in `gd++ man async`.
 - gdpp::from_variant<T>(value) converts a Variant to T, enums and Async types included, for calls on externs.
 - GDPP_ENUM_TAG(TAG, NAME) makes a class's stand-in type for an enum bind as the enum NAME, e.g. "Player.Suit". GDPP_BITFIELD_TAG does the same for a bitfield. See `gd++ man enums`.
 - GDPP_BITFIELD(ENUM) gives the enum class of a bitfield the operators |, &, ^, ~, |=, &= and ^=.

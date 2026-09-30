@@ -93,7 +93,8 @@ const lsFooOut = "" +
 	"  Godot API spec:      4.3-stable\n" +
 	"  GD++ syntax:         0\n" +
 	"  C++ standard:        c++20\n" +
-	"  Class prefix:        Foo\n"
+	"  Class prefix:        Foo\n" +
+	"  Quit timeout:        1 second\n"
 
 func TestLsCmdPackages(t *testing.T) {
 	collapsed := lsDepsOut +
@@ -177,6 +178,7 @@ func TestLsCmdGdppClasses(t *testing.T) {
 	want := "" +
 		"  C++ standard:        c++20\n" +
 		"  Class prefix:        Foo\n" +
+		"  Quit timeout:        1 second\n" +
 		"\n" +
 		"  C++ classes in the package\n" +
 		"    Tree                    res://foo/tree.h  @icon\n" +
@@ -206,6 +208,7 @@ func TestLsCmdAllPackages(t *testing.T) {
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++20\n" +
 		"  Class prefix:        Icons\n" +
+		"  Quit timeout:        1 second\n" +
 		"\n" +
 		strings.NewReplacer("foo", "zed", "Foo", "Zed").Replace(lsFooOut) +
 		"\n" +
@@ -235,7 +238,7 @@ func TestLsPackages(t *testing.T) {
 	withLsProject(t)
 	root := NewPath("/games/my_game/foo")
 	pkgs := []lsPackage{{
-		Package:  Package{Root: root, Config: PackageConfig{Bindings: "b", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++23", Prefix: "Pk"}},
+		Package:  Package{Root: root, Config: PackageConfig{Bindings: "b", ApiSpec: "4.3-stable", Syntax: 0, CppStandard: "c++23", Prefix: "Pk", QuitTimeout: ptr(2.5)}},
 		Expanded: true,
 		Classes: []lsClass{
 			{Name: "Tree", File: root.Cd("tree.h"), Icon: root.Cd("icons", "tree.svg")},
@@ -246,11 +249,12 @@ func TestLsPackages(t *testing.T) {
 	pkgWant := "" +
 		"\n" +
 		"Package: res://foo\n" +
-		"  Godot C++ bindings:  b           missing\n" +
+		"  Godot C++ bindings:  b            missing\n" +
 		"  Godot API spec:      4.3-stable\n" +
 		"  GD++ syntax:         0\n" +
 		"  C++ standard:        c++23\n" +
 		"  Class prefix:        Pk\n" +
+		"  Quit timeout:        2.5 seconds\n" +
 		"\n" +
 		"  C++ classes in the package\n" +
 		"    Tree        res://foo/tree.h            @icon\n" +

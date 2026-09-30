@@ -5,6 +5,7 @@ package main
 import (
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -23,7 +24,8 @@ type PackageConfig struct {
 	ApiSpec     string         `toml:"spec"` // mandatory
 	Syntax      int            `toml:"syntax"`
 	CppStandard string         `toml:"std"`
-	Prefix      string         `toml:"prefix,omitempty"` // default: the package ID in PascalCase
+	Prefix      string         `toml:"prefix,omitempty"`       // default: the package ID in PascalCase
+	QuitTimeout *float64       `toml:"quit_timeout,omitempty"` // seconds; default: 1
 	Classes     []PackageClass `toml:"class,omitempty"`
 }
 
@@ -54,6 +56,23 @@ func (pkg Package) Prefix() string {
 // types name, e.g. FooAsync.
 func (pkg Package) AsyncClass() string {
 	return pkg.Prefix() + "Async"
+}
+
+// QuitTimeout returns how many seconds the package's tasks may still run after
+// the game started quitting, before the game exits anyway.
+func (pkg Package) QuitTimeout() float64 {
+	if pkg.Config.QuitTimeout != nil {
+		return *pkg.Config.QuitTimeout
+	}
+	return 1
+}
+
+// seconds renders a number of seconds, e.g. "2.5 seconds".
+func seconds(s float64) string {
+	if s == 1 {
+		return "1 second"
+	}
+	return strconv.FormatFloat(s, 'f', -1, 64) + " seconds"
 }
 
 // pascalCase converts an ID such as "my_game" or "my-game" to a class name
@@ -128,6 +147,9 @@ func LoadPackage(p Path) Package {
 	meta := decodeToml(file, &config)
 	for _, key := range []string{"bind", "spec"} {
 		Assert(meta.IsDefined(key), "Missing key %s in %s.", key, file.ToString())
+	}
+	if q := config.QuitTimeout; q != nil {
+		Assert(*q >= 0, "Invalid quit_timeout %v in %s: it can't be negative.", *q, file.ToString())
 	}
 	names := map[string]bool{}
 	for _, class := range config.Classes {

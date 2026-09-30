@@ -293,14 +293,14 @@ gd++ build --profile all --profile-print --profile-period 5
 ```
 
 ```out
-━━ GD++ profile · last 10.0 s · 600 frames · debug, unoptimized ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Function                     Thread       Calls    Total ms     Self ms      Avg µs      Max µs    ms/frame   Budget (60 FPS)
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Enemy._physics_process         main       24000      950.40      412.77       39.60     1822.11       1.584              9.5%
-Enemy.find_path                main         310      537.63      537.63     1734.29     9807.40       0.896              5.4%
-Chunk.generate            subthread          12      402.00      402.00    33500.00    51220.87       0.670              4.0%
-Player._physics_process        main         600       68.75       66.34      114.59      903.17       0.115              0.7%
-Player.take_damage         80% main           4        0.05        0.05       12.40       31.02       0.000              0.0%
+━━ GD++ profile · last 10.0 s · 600 frames · debug, unoptimized ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Function                     Thread       Calls    Total ms     Self ms      Avg µs      Max µs    ms/frame        Budget (60 FPS)
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Enemy._physics_process         main       24000      950.40      412.77       39.60     1822.11       1.584                   9.5%
+Enemy.find_path                main         310      537.63      537.63     1734.29     9807.40       0.896                   5.4%
+Chunk.generate            subthread          12      402.00      402.00    33500.00    51220.87       0.670   4.0% (on background)
+Player._physics_process        main         600       68.75       66.34      114.59      903.17       0.115                   0.7%
+Player.take_damage         80% main           4        0.05        0.05       12.40       31.02       0.000   0.0% (on background)
 ```
 
 The title line says how much time the table covers, in seconds of real time and in frames, and what kind of build measured it. Each table covers only the time since the table before it, so it shows what the game does now, not averages since the start. It lists the functions that ran in that time, the slowest first, by total time. If none ran, it prints nothing.
@@ -329,7 +329,7 @@ ms/frame
   Total divided by the frames: the time it takes per frame, on average.
 
 Budget (60 FPS)
-  ms/frame as a share of a frame's time at 60 frames per second, 16.7 ms. It's green below 10%, yellow up to 50%, and red above. `--profile-fps FPS` sets another frame rate, e.g. `--profile-fps 144` for 6.9 ms frames, and the column's name says which.
+  ms/frame as a share of a frame's time at 60 frames per second, 16.7 ms. For a function that only ever ran on the main thread, it's green below 10%, yellow up to 50%, and red above. A function that ran on other threads, e.g. an @onthread body, doesn't hold up the main thread's frames, or not all of the time: its share isn't colored, and says "(on background)", e.g. "4.0% (on background)". `--profile-fps FPS` sets another frame rate, e.g. `--profile-fps 144` for 6.9 ms frames, and the column's name says which.
 
 A recursive call's time is already in the time of the call it's inside, so Total, Max, ms/frame and Budget only count the outermost call. Calls and Self count every call, so for recursive functions, Avg is lower than the time of an outermost call.
 

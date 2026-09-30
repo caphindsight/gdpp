@@ -272,6 +272,9 @@ func count_primes(limit: int) -> int {
   int64_t count = 0;
   for (int64_t n = 2; n < limit; n++) {
     bool prime = true;
+    if (cancelled) {  // True once the game quits, or the task is cancelled: then stop early.
+      return count;
+    }
     for (int64_t d = 2; d * d <= n && prime; d++) {
       prime = n % d != 0;
     }
@@ -288,12 +291,13 @@ func start_primes() -> void {
   primes = count_primes(100000);
 }
 
-// Call this every frame, e.g. from _process. An Async is true while it holds a task, and `is_done` once the task
-// has finished. Then `claim` takes the result, and empties the Async, so it's false again: each result is claimed once.
-// `is_done primes` and `claim primes` are primes.is_done() and primes.claim(), spelled to stand out, like emit and rpc.
+// Call this every frame, e.g. from _process. An Async is true while it holds a task, and `is_done` once it holds a
+// task that has finished. Then `claim` takes the result, and empties the Async, so it's false, and not done, again:
+// each result is claimed once. `is_done primes` and `claim primes` are primes.is_done() and primes.claim(),
+// spelled to stand out, like emit and rpc.
 
 func poll_primes() -> void {
-  if (primes && is_done primes) {
+  if (is_done primes) {
     gd::print("Primes: ", claim primes);
   }
 }

@@ -3,12 +3,17 @@
 #ifndef GDPP_SYNTAX_0_HPP
 #define GDPP_SYNTAX_0_HPP
 
+#include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <functional>
+#include <mutex>
+#include <thread>
 #include <type_traits>
 
-#include <godot_cpp/classes/class_db_singleton.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
@@ -17,6 +22,9 @@
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/window.hpp>
+#include <godot_cpp/classes/worker_thread_pool.hpp>
 #include <godot_cpp/core/binder_common.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/gdvirtual.gen.inc>
@@ -229,6 +237,67 @@ inline String assert_message(const char *p_condition, const String &p_message = 
 #define GDPP_STRINGIFY_(m_name) #m_name
 inline constexpr const char *async_class = GDPP_STRINGIFY(GDPP_ASYNC_CLASS);
 
+// GDPP_QUIT_TIMEOUT_USEC is how long the package's tasks may still run after the game started quitting, before
+// the game exits anyway: its quit_timeout setting. The build defines it.
+#ifndef GDPP_QUIT_TIMEOUT_USEC
+#define GDPP_QUIT_TIMEOUT_USEC 1000000
+#endif
+
+// The state of the package's tasks.
+inline std::atomic<bool> quitting = false; // Whether the game has started quitting.
+inline std::atomic<bool> watching_quit = false; // Whether watch_quit was scheduled.
+inline std::atomic<int64_t> quit_deadline_usec = 0; // When the quit timeout runs out, in now_usec() time.
+inline std::atomic<int64_t> running_tasks = 0; // The package's tasks whose jobs are running.
+inline thread_local const std::atomic<bool> *current_cancel = nullptr; // The cancel flag of this thread's task.
+
+inline int64_t now_usec() {
+	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+// cancelled reports whether the task running on this thread should stop: its Async was cancelled, or the game is
+// quitting. Outside of tasks, it reports whether the game is quitting. It's cheap, so long bodies can check it often.
+inline bool cancelled() {
+	return quitting.load(std::memory_order_relaxed) || (current_cancel && current_cancel->load(std::memory_order_relaxed));
+}
+
+// begin_quit starts the quit timeout, once.
+inline void begin_quit() {
+	if (!quitting.exchange(true)) {
+		quit_deadline_usec = now_usec() + GDPP_QUIT_TIMEOUT_USEC;
+	}
+}
+
+// watch_quit makes the root window call begin_quit when it leaves the tree, which is when the game starts quitting,
+// before any node is freed. It runs on the main thread.
+inline void watch_quit() {
+	SceneTree *tree = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	if (tree && tree->get_root()) {
+		tree->get_root()->connect("tree_exiting", callable_mp_static(&begin_quit));
+	}
+}
+
+// await_quit waits until p_done returns true. While the game quits, in games, it ends the game when the quit
+// timeout runs out, since a running task can't be stopped otherwise. The editor waits for as long as it takes.
+template <typename F>
+void await_quit(F p_done) {
+	bool game = !Engine::get_singleton()->is_editor_hint();
+	while (!p_done()) {
+		if (game && now_usec() >= quit_deadline_usec.load()) {
+			std::fprintf(stderr, "GD++: %lld tasks were still running when the quit timeout ran out, so the game exits now.\n",
+					static_cast<long long>(running_tasks.load()));
+			std::fflush(stderr);
+			std::_Exit(0);
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+}
+
+// finish_tasks waits for the package's running tasks, before its library is unloaded, within the quit timeout.
+inline void finish_tasks() {
+	begin_quit();
+	await_quit([] { return running_tasks.load() == 0; });
+}
+
 // TaskCallable is a Callable that runs a function once, returns its result, and then frees it.
 class TaskCallable : public CallableCustom {
 public:
@@ -255,6 +324,101 @@ private:
 	mutable std::function<Variant()> run;
 };
 
+#define GDPP_GDCLASS(m_class, m_inherits) GDCLASS(m_class, m_inherits) // Expands m_class before GDCLASS quotes it.
+
+// GDPP_ASYNC_CLASS is the package's class of tasks, which Async types name: a job that runs on the WorkerThreadPool,
+// e.g. the body of an @onthread function, and its result once done. It's thread-safe. GD++ code calls its methods by
+// name, so it works with the tasks of other packages too. The package registers it, if it has GD++ classes.
+class GDPP_ASYNC_CLASS : public RefCounted {
+	GDPP_GDCLASS(GDPP_ASYNC_CLASS, RefCounted)
+
+public:
+	bool is_done() const { return done.load(std::memory_order_acquire); }
+
+	// wait waits for the job to finish, and returns its result.
+	Variant wait() {
+		join();
+		return get_result();
+	}
+
+	// get_result returns the result. The job must be done: debug builds check it, release builds don't.
+	Variant get_result() const {
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND_V_MSG(!is_done(), Variant(), "The task isn't done yet. Check is_done() before get_result(), or call wait().");
+#endif
+		return result;
+	}
+
+	// cancel asks the job to stop: gdpp::cancelled() is true in it from now on.
+	void cancel() { cancel_requested.store(true, std::memory_order_relaxed); }
+
+	// start runs p_job on the WorkerThreadPool, as the task named p_name.
+	void start(const Callable &p_job, const String &p_name) {
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND_MSG(id >= 0, "The task has already started.");
+#endif
+		job = p_job;
+		running = Ref<RefCounted>(this);
+		done.store(false, std::memory_order_relaxed); // Before the task starts, and before other threads see the object.
+		id = WorkerThreadPool::get_singleton()->add_task(callable_mp(this, &GDPP_ASYNC_CLASS::run), false, p_name);
+	}
+
+	~GDPP_ASYNC_CLASS() { join(); }
+
+protected:
+	static void _bind_methods() {
+		ClassDB::bind_method(D_METHOD("is_done"), &GDPP_ASYNC_CLASS::is_done);
+		ClassDB::bind_method(D_METHOD("wait"), &GDPP_ASYNC_CLASS::wait);
+		ClassDB::bind_method(D_METHOD("get_result"), &GDPP_ASYNC_CLASS::get_result);
+		ClassDB::bind_method(D_METHOD("cancel"), &GDPP_ASYNC_CLASS::cancel);
+	}
+
+private:
+	int64_t id = -1;
+	Callable job;
+	Ref<RefCounted> running; // Keeps the object alive while the job runs.
+	Variant result; // Set before done.
+	std::atomic<bool> done = true; // Until started: an object that runs nothing, e.g. from new(), is done, without result.
+	std::atomic<bool> cancel_requested = false;
+	std::mutex mutex;
+	bool waited = false; // Godot requires waiting for each task once.
+
+	void run() {
+		running_tasks.fetch_add(1);
+		current_cancel = &cancel_requested;
+		result = job.call();
+		current_cancel = nullptr;
+		job = Callable(); // Frees what the job holds, e.g. the object it was called on.
+		done.store(true, std::memory_order_release);
+		Ref<RefCounted> self = running;
+		running.unref();
+		self.unref(); // May free this object, whose destructor then runs in this task.
+		running_tasks.fetch_sub(1);
+	}
+
+	void join() {
+		std::lock_guard<std::mutex> lock(mutex);
+		if (waited || id < 0) {
+			return;
+		}
+		waited = true;
+		WorkerThreadPool *pool = WorkerThreadPool::get_singleton();
+		if (pool->get_caller_task_id() == id) {
+			// A task can't wait for itself, so the main thread waits for it once it's done.
+			callable_mp_static(&GDPP_ASYNC_CLASS::join_task).call_deferred(id);
+			return;
+		}
+		if (quitting.load()) {
+			await_quit([&] { return pool->is_task_completed(id); });
+		}
+		pool->wait_for_task_completion(id);
+	}
+
+	static void join_task(int64_t p_id) {
+		WorkerThreadPool::get_singleton()->wait_for_task_completion(p_id);
+	}
+};
+
 // Async<T> is the C++ type of Async[T]: a task, whose result has type T, e.g. the call of an @onthread function,
 // which runs on the WorkerThreadPool. It references an object of the package's class of tasks, and calls its
 // methods by name, so it works with the tasks of other packages too. Copies share the task. An Async is valid while
@@ -271,9 +435,9 @@ public:
 	// An Async is true while it holds a task, running or done, and false when it's empty: new, or claimed.
 	explicit operator bool() const { return task.is_valid(); }
 
-	// is_done reports whether the task has finished, so claim returns its result at once. It's also true for an empty
-	// Async, whose task has been claimed, or which never had one.
-	bool is_done() const { return task.is_null() || task->call(GDPP_STRING_NAME("is_done")).operator bool(); }
+	// is_done reports whether the Async holds a task that has finished, so claim returns its result at once. It's false
+	// while the task runs, and for an empty Async, whose task has been claimed, or which never had one.
+	bool is_done() const { return task.is_valid() && task->call(GDPP_STRING_NAME("is_done")).operator bool(); }
 
 	// claim returns the result of a done task, and empties the Async. The Async must be true, and its task done: debug
 	// builds check it, and print an error and return the default value if not. Release builds don't check it.
@@ -303,6 +467,15 @@ public:
 		return take();
 	}
 
+	// cancel asks the task to stop: gdpp::cancelled() is true in its body from now on. It's up to the body to check it,
+	// and return early. The Async stays as it is: its result is still claimed, or dropped, as usual. It's always safe:
+	// for an empty Async, or a task that's done, it does nothing.
+	void cancel() {
+		if (task.is_valid()) {
+			task->call(GDPP_STRING_NAME("cancel"));
+		}
+	}
+
 	// task is the object of the class of tasks, or null for an empty Async.
 	const Ref<RefCounted> &object() const { return task; }
 	operator Variant() const { return task; }
@@ -326,10 +499,11 @@ private:
 template <typename F>
 auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::invoke_result_t<F>> {
 	using R = std::invoke_result_t<F>;
-	Ref<RefCounted> task = ClassDBSingleton::get_singleton()->instantiate(async_class);
-#ifdef DEBUG_ENABLED
-	ERR_FAIL_COND_V_MSG(task.is_null(), {}, String("There is no class ") + async_class + ", which the package registers for its tasks.");
-#endif
+	if (!watching_quit.exchange(true)) {
+		callable_mp_static(&watch_quit).call_deferred(); // On the main thread, which owns the scene tree.
+	}
+	Ref<GDPP_ASYNC_CLASS> task;
+	task.instantiate();
 	Ref<RefCounted> self = Object::cast_to<RefCounted>(const_cast<Object *>(p_self));
 	Callable job(memnew(TaskCallable([self, p_job]() -> Variant {
 		if constexpr (std::is_void_v<R>) {
@@ -341,8 +515,8 @@ auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::i
 			return Variant(p_job());
 		}
 	})));
-	task->call(GDPP_STRING_NAME("_gdpp_start"), job, p_name);
-	return Async<R>(task);
+	task->start(job, p_name);
+	return Async<R>(Ref<RefCounted>(task.ptr()));
 }
 
 } // namespace gdpp
@@ -887,6 +1061,7 @@ inline void print_profile() {
 		const char *name;
 		int64_t calls, total, self, max;
 		String thread;
+		bool main_only; // Whether it only ever ran on the main thread, so it uses up the frame's budget.
 	};
 	std::vector<Row> rows;
 	for (ProfileStats *s : p.stats) {
@@ -894,7 +1069,7 @@ inline void print_profile() {
 		// Where the function ran so far, not only since the last table.
 		int64_t main = s->main_calls.load();
 		String thread = main == calls ? String("main") : main == 0 ? String("subthread") : String::num_int64(main * 100 / calls) + "% main";
-		Row row{ s->name, calls - s->printed_calls, total - s->printed_total, self - s->printed_self, s->max.exchange(0), thread };
+		Row row{ s->name, calls - s->printed_calls, total - s->printed_total, self - s->printed_self, s->max.exchange(0), thread, main == calls };
 		s->printed_calls = calls;
 		s->printed_total = total;
 		s->printed_self = self;
@@ -927,11 +1102,25 @@ inline void print_profile() {
 	}
 	std::vector<String> headers = { "Thread", "Calls", "Total ms", "Self ms", String(U"Avg µs"), String(U"Max µs"), "ms/frame",
 		"Budget (" + String::num_int64(p.fps) + " FPS)" };
+	// The cells of each row. A function that ran on other threads doesn't use up the main thread's frame, so its
+	// budget isn't colored, and says so.
+	std::vector<std::vector<String>> cells;
+	for (const Row &r : rows) {
+		double ms_per_frame = r.total / 1e6 / frames;
+		double budget = ms_per_frame * p.fps / 10;
+		cells.push_back({ r.thread, String::num_uint64(r.calls), String::num(r.total / 1e6, 2), String::num(r.self / 1e6, 2),
+				String::num(r.total / 1e3 / r.calls, 2), String::num(r.max / 1e3, 2), String::num(ms_per_frame, 3),
+				String::num(budget, 1) + "%" + (r.main_only ? "" : " (on background)") });
+	}
 	std::vector<int64_t> widths;
 	int64_t total_width = width;
-	for (const String &header : headers) {
-		widths.push_back(std::max<int64_t>(12, header.length() + 2));
-		total_width += widths.back();
+	for (size_t i = 0; i < headers.size(); i++) {
+		int64_t w = std::max<int64_t>(12, headers[i].length() + 2);
+		for (const std::vector<String> &row : cells) {
+			w = std::max<int64_t>(w, row[i].length() + 2);
+		}
+		widths.push_back(w);
+		total_width += w;
 	}
 	// One print, so no other output lands inside the table, and in [code], so its columns line up in the editor.
 	String title = String(U"━━ GD++ profile · last ") + String::num(seconds, 1) + String(U" s · ") + String::num_uint64(frames) + String(U" frames · ") + build + " ";
@@ -946,13 +1135,10 @@ inline void print_profile() {
 	};
 	line("Function", headers, "");
 	table += "[color=gray]" + String(U"─").repeat(total_width) + "[/color]\n";
-	for (const Row &r : rows) {
-		double ms_per_frame = r.total / 1e6 / frames;
-		double budget = ms_per_frame * p.fps / 10;
-		line(r.name, { r.thread, String::num_uint64(r.calls), String::num(r.total / 1e6, 2), String::num(r.self / 1e6, 2),
-					 String::num(r.total / 1e3 / r.calls, 2), String::num(r.max / 1e3, 2), String::num(ms_per_frame, 3),
-					 String::num(budget, 1) + "%" },
-				budget < 10 ? "green" : budget <= 50 ? "yellow" : "red");
+	for (size_t i = 0; i < rows.size(); i++) {
+		double budget = rows[i].total / 1e6 / frames * p.fps / 10;
+		String color = !rows[i].main_only ? "" : budget < 10 ? "green" : budget <= 50 ? "yellow" : "red";
+		line(rows[i].name, cells[i], color);
 	}
 	UtilityFunctions::print_rich(table.trim_suffix("\n") + "[/code]");
 }

@@ -22,8 +22,6 @@ func runInit(t *testing.T, c CmdInit, pkgs map[string]string) (out string, after
 	return out, subtree(m.tree(), "/games/my_game/")
 }
 
-func intPtr(n int) *int { return &n }
-
 func TestInitProject(t *testing.T) {
 	out, after := runInit(t, CmdInit{Vcs: "git"}, nil)
 	want := "" +
@@ -145,7 +143,7 @@ func TestInitNestedPackages(t *testing.T) {
 
 func TestInitUpdatePackage(t *testing.T) {
 	pkgs := map[string]string{"src/pkg": "bind = \"4.2\"\nspec = \"4.3\"\n"}
-	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Bind: "4.3", Syntax: intPtr(1)}, pkgs)
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Bind: "4.3", Syntax: ptr(1)}, pkgs)
 	want := "" +
 		"[-] Set the Godot C++ bindings to 4.3.\n" +
 		"[-] Set the GD++ syntax to 1.\n" +
@@ -174,6 +172,17 @@ func TestInitPackagePrefix(t *testing.T) {
 	}
 }
 
+func TestInitPackageQuitTimeout(t *testing.T) {
+	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\n"}
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, QuitTimeout: ptr(2.5)}, pkgs)
+	if want := "[-] Set the quit timeout to 2.5 seconds.\n"; !strings.HasPrefix(out, want) {
+		t.Errorf("output = %q, want it to start with %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\nquit_timeout = 2.5\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
 func TestInitExistingPackage(t *testing.T) {
 	withForce(t, true)
 	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"}
@@ -191,14 +200,16 @@ func TestInitInvalidArgs(t *testing.T) {
 		c    CmdInit
 		want string
 	}{
-		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std, --prefix and --class require a package path"},
-		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std, --prefix and --class require a package path"},
-		"project_prefix":  {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix and --class require a package path"},
+		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
+		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
+		"project_prefix":  {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
 		"package_prefix":  {CmdInit{Path: "src/pkg", Prefix: "my pkg"}, `"my pkg" is not a valid class name prefix`},
-		"class_prefix":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std and --prefix cannot be used with --class"},
+		"negative_quit":   {CmdInit{Path: "src/pkg", QuitTimeout: ptr(-1.0)}, "--quit-timeout cannot be negative"},
+		"project_quit":    {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
+		"class_prefix":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class"},
 		"project_icon":    {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
 		"package_icon":    {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
-		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std and --prefix cannot be used with --class"},
+		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class"},
 		"class_name":      {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
 		"class_include":   {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
 		"class_noinclude": {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},

@@ -42,16 +42,30 @@ func done(task: Async[void]) -> bool {
   return bool(task);
 }
 
+@onthread
+func search(steps: int) -> int {
+  int64_t done = 0;
+  for (; done < steps; done++) {
+    if (cancelled) {
+      break;
+    }
+  }
+  bool stop = gdpp::cancelled() || !cancelled;
+  return stop ? done : -done;
+}
+
 func poll() -> int {
-  if (pending && is_done pending) {
+  if (is_done pending) {
     PackedVector2Array path = claim pending;
     return path.size();
   }
-  gdpp::Async<int64_t> none;  // Empty: false, and done, with nothing to claim.
+  gdpp::Async<int64_t> none;  // Empty: false, and not done, with nothing to claim.
   gdpp::Async<void> nothing;
-  if (!none && is_done none && !nothing && nothing.is_done()) {
+  if (!none && !is_done none && !nothing && !nothing.is_done()) {
     return count().wait() + find_path(Vector2(), Vector2()).wait().size();
   }
+  cancel pending;
+  anything.cancel();
   gdpp::Async<Variant> tasks[2] = {anything, untyped()};
   if (tasks[1] && is_done tasks[1]) {
     claim tasks[1];

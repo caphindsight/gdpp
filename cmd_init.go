@@ -12,33 +12,36 @@ import (
 // no path it inits the project; with one it inits the package there; with
 // --class it adds or updates a class of the package there.
 type CmdInit struct {
-	Path      string `arg:"positional" help:"the package directory; omit to init the project"`
-	Vcs       string `arg:"--vcs" placeholder:"none|git" help:"the project's version control system"`
-	Update    bool   `arg:"--update" help:"update an existing package or class instead of creating one"`
-	Bind      string `arg:"--bind" placeholder:"NAME" help:"the package's Godot C++ bindings"`
-	Spec      string `arg:"--spec" placeholder:"NAME" help:"the package's Godot API spec"`
-	Syntax    *int   `arg:"--syntax" placeholder:"N" help:"the package's GD++ syntax version"`
-	Std       string `arg:"--std" placeholder:"STD" help:"the package's C++ standard, e.g. c++20"`
-	Prefix    string `arg:"--prefix" placeholder:"NAME" help:"the prefix of the classes GD++ adds to the package, e.g. Foo for FooAsync [default: the package directory's name in PascalCase]"`
-	Class     string `arg:"--class" placeholder:"NAME" help:"the name of a class to add or update in the package"`
-	Include   string `arg:"--include" placeholder:"PATH" help:"the class's header, e.g. pkg://my_node.h"`
-	NoInclude bool   `arg:"--noinclude" help:"remove the class's header, or create the class without one"`
-	Icon      string `arg:"--icon" placeholder:"PATH" help:"the class's icon, e.g. pkg://my_node.svg"`
-	NoIcon    bool   `arg:"--noicon" help:"remove the class's icon"`
-	Tool      bool   `arg:"--tool" help:"make the class run in the editor too"`
-	NoTool    bool   `arg:"--notool" help:"make the class run only in the game"`
+	Path        string   `arg:"positional" help:"the package directory; omit to init the project"`
+	Vcs         string   `arg:"--vcs" placeholder:"none|git" help:"the project's version control system"`
+	Update      bool     `arg:"--update" help:"update an existing package or class instead of creating one"`
+	Bind        string   `arg:"--bind" placeholder:"NAME" help:"the package's Godot C++ bindings"`
+	Spec        string   `arg:"--spec" placeholder:"NAME" help:"the package's Godot API spec"`
+	Syntax      *int     `arg:"--syntax" placeholder:"N" help:"the package's GD++ syntax version"`
+	Std         string   `arg:"--std" placeholder:"STD" help:"the package's C++ standard, e.g. c++20"`
+	Prefix      string   `arg:"--prefix" placeholder:"NAME" help:"the prefix of the classes GD++ adds to the package, e.g. Foo for FooAsync [default: the package directory's name in PascalCase]"`
+	QuitTimeout *float64 `arg:"--quit-timeout" placeholder:"SECONDS" help:"how long the package's tasks may still run after the game started quitting, before it exits anyway [default: 1]"`
+	Class       string   `arg:"--class" placeholder:"NAME" help:"the name of a class to add or update in the package"`
+	Include     string   `arg:"--include" placeholder:"PATH" help:"the class's header, e.g. pkg://my_node.h"`
+	NoInclude   bool     `arg:"--noinclude" help:"remove the class's header, or create the class without one"`
+	Icon        string   `arg:"--icon" placeholder:"PATH" help:"the class's icon, e.g. pkg://my_node.svg"`
+	NoIcon      bool     `arg:"--noicon" help:"remove the class's icon"`
+	Tool        bool     `arg:"--tool" help:"make the class run in the editor too"`
+	NoTool      bool     `arg:"--notool" help:"make the class run only in the game"`
 }
 
 func (c *CmdInit) Run() {
 	if c.Path == "" {
-		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.Class == "", "Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix and --class require a package path.")
+		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && c.Class == "",
+			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path.")
 		Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon && !c.Tool && !c.NoTool, "Invalid arguments: --include, --noinclude, --icon, --noicon, --tool and --notool require --class.")
 		c.initProject()
 		return
 	}
 	Assert(c.Vcs == "", "Invalid arguments: --vcs cannot be used with a package path.")
 	if c.Class != "" {
-		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "", "Invalid arguments: --bind, --spec, --syntax, --std and --prefix cannot be used with --class.")
+		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil,
+			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class.")
 		c.initClass(ParsePath(c.Path))
 		return
 	}
@@ -49,6 +52,7 @@ func (c *CmdInit) Run() {
 		}
 	}
 	Assert(c.Prefix == "" || classNameRegexp.MatchString(c.Prefix), "Invalid arguments: %q is not a valid class name prefix.", c.Prefix)
+	Assert(c.QuitTimeout == nil || *c.QuitTimeout >= 0, "Invalid arguments: --quit-timeout cannot be negative.")
 	root := ParsePath(c.Path)
 	p := LoadProject(root)
 	switch {
@@ -202,6 +206,10 @@ func (c *CmdInit) setPackageFlags(config *PackageConfig) (changes []string) {
 	}
 	set(&config.CppStandard, c.Std, "the C++ standard")
 	set(&config.Prefix, c.Prefix, "the class name prefix")
+	if q := c.QuitTimeout; q != nil && (config.QuitTimeout == nil || *config.QuitTimeout != *q) {
+		config.QuitTimeout = q
+		changes = append(changes, "the quit timeout to "+seconds(*q))
+	}
 	return changes
 }
 

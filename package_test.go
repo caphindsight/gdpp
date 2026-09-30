@@ -75,6 +75,18 @@ func TestAsyncClass(t *testing.T) {
 	}
 }
 
+func TestQuitTimeout(t *testing.T) {
+	for _, tc := range []struct {
+		config *float64
+		want   float64
+		text   string
+	}{{nil, 1, "1 second"}, {ptr(2.5), 2.5, "2.5 seconds"}, {ptr(0.0), 0, "0 seconds"}} {
+		if got := (Package{Config: PackageConfig{QuitTimeout: tc.config}}).QuitTimeout(); got != tc.want || seconds(got) != tc.text {
+			t.Errorf("QuitTimeout = %v (%s), want %v (%s)", got, seconds(got), tc.want, tc.text)
+		}
+	}
+}
+
 func TestLoadPackageFails(t *testing.T) {
 	tests := []struct {
 		name, config, want string
@@ -84,6 +96,7 @@ func TestLoadPackageFails(t *testing.T) {
 		{"UnknownKey", "bind = \"a\"\nspec = \"b\"\njobs = 4\n", "[x] Unknown key jobs in res://pkg/gd++pkg.toml.\n"},
 		{"ClassName", classes(`name = "a-b"`), "[x] Invalid class name \"a-b\" in res://pkg/gd++pkg.toml.\n"},
 		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[x] Duplicate class A in res://pkg/gd++pkg.toml.\n"},
+		{"QuitTimeout", "bind = \"a\"\nspec = \"b\"\nquit_timeout = -1.5\n", "[x] Invalid quit_timeout -1.5 in res://pkg/gd++pkg.toml: it can't be negative.\n"},
 		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[x] Path a.svg of class A in res://pkg/gd++pkg.toml must start with pkg:// or res://.\n"},
 	}
 	for _, tt := range tests {

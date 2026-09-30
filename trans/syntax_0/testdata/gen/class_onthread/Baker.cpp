@@ -21,7 +21,7 @@ gdpp::Async<String> Baker::_gdpp_bake(_gdpp_Baker_Terrain mode) {
 }
 
 String Baker::_gdpp_body_bake(Terrain mode) {
-#line 71 "input.gd++"
+#line 85 "input.gd++"
 
     return "done";
 

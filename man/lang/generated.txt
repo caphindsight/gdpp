@@ -248,7 +248,7 @@ A bitfield's enum class is followed by `GDPP_BITFIELD(Name)`, which gives it the
 
 The build also generates __register_types__.cpp, in the build cache, outside gdpp/. It includes every class's header, and registers each class when the library loads, bases first, with GDREGISTER_RUNTIME_CLASS for runtime classes, i.e. GD++ classes without @tool and C++ classes without tool = true, and GDREGISTER_CLASS for the others. Its entry point is gdpp_library_init. See `gd++ man cpp-classes`.
 
-A package with GD++ classes also gets its class of tasks there, e.g. FooAsync, which Async types name, and registers it first. SConstruct defines GDPP_ASYNC_CLASS as its name for all the package's C++. See `gd++ man async`.
+A package with GD++ classes also registers its class of tasks there, first, e.g. FooAsync, which Async types name: the GD++ runtime defines it, and __register_types__.cpp includes the runtime for it. When the library is unloaded, it waits for the package's running tasks, with gdpp::finish_tasks. SConstruct defines GDPP_ASYNC_CLASS as the class's name, and GDPP_QUIT_TIMEOUT_USEC as the package's quit_timeout, for all the package's C++. See `gd++ man async`.
 
 # Using generated classes from C++
 

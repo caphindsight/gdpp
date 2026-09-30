@@ -430,3 +430,6 @@ func runFailHelperWithStdin(t *testing.T, name string, stdin string) (output str
 	}
 	return string(out), exitErr.ExitCode()
 }
+
+// ptr returns a pointer to a copy of v, e.g. for optional flags.
+func ptr[T any](v T) *T { return &v }
