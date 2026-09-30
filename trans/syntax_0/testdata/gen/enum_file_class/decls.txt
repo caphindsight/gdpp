@@ -1,2 +1,2 @@
 {Name:Cards Kind:1 Base:RefCounted Values:[] Icon: Tool:false}
-{Name:Suit Kind:3 Base: Values:[{Name:DIAMONDS Value:0 Doc:} {Name:CLUBS Value:3 Doc:} {Name:SPADES Value:4 Doc:}] Icon: Tool:false}
+{Name:Suit Kind:3 Base: Values:[{Name:DIAMONDS Value:0 Doc: Implicit:true Ref:} {Name:CLUBS Value:3 Doc: Implicit:false Ref:} {Name:SPADES Value:4 Doc: Implicit:true Ref:}] Icon: Tool:false}

@@ -1,0 +1,3 @@
+class A {
+  var s: Node.ProcessMode
+}

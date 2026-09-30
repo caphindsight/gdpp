@@ -1,0 +1,4 @@
+/// Cards.
+enum_name Deck
+extends Suit
+JOKER

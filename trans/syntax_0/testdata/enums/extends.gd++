@@ -1,0 +1,6 @@
+enum Mode {
+  extends Node.ProcessMode
+  PROCESS_MODE_CUSTOM
+}
+
+enum Suit2 { extends Suit JOKER }

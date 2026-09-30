@@ -1,0 +1,6 @@
+enum K { extends Clash.Kind }
+
+enum Pre { PRE_A PRE_B }
+enum Post { extends Pre }
+
+enum Keys { extends KeyCode }

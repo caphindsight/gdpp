@@ -23,19 +23,19 @@ import (
 func TestGenerate(t *testing.T) {
 	var file struct {
 		Dep []struct {
-			Name, Include, Kind string
-			Values              []meta.EnumValue
-			Gdpp                bool
+			Name, Include, Kind, Base string
+			Values                    []meta.EnumValue
+			Gdpp                      bool
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
 		t.Fatal(err)
 	}
 	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
-		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other}
+		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other, "GodotEnum": meta.GodotEnum}
 	var opts meta.Options
 	for _, d := range file.Dep {
-		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Gdpp: d.Gdpp})
+		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp})
 	}
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")
 	if err != nil {

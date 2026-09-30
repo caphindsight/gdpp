@@ -126,7 +126,7 @@ type Setter struct {
 	Body  *Block `parser:"@@"`
 }
 
-// Enum is an integer constant (enum NAME = 42, Value set) or an enum type (Entries),
+// Enum is an integer constant (enum NAME = 42, Value set) or an enum type (Entries, after the values of Extends),
 // declared with enum_name (the rest of the file) or inline with enum Name { ... }.
 type Enum struct {
 	Pos         lexer.Position
@@ -134,7 +134,14 @@ type Enum struct {
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"'enum' @Ident"`
 	Value       *Int          `parser:"( '=' @@"`
-	Entries     []*EnumEntry  `parser:"| '{' @@* '}' )"`
+	Extends     *EnumBase     `parser:"| '{' ( 'extends' @@ )?"`
+	Entries     []*EnumEntry  `parser:"  @@* '}' )"`
+}
+
+// EnumBase is the enum that an enum extends: a GD++ enum, or an engine enum, e.g. Node.ProcessMode.
+type EnumBase struct {
+	Pos  lexer.Position
+	Name string `parser:"@Ident ( @'.' @Ident )?"`
 }
 
 type EnumEntry struct {
@@ -142,7 +149,14 @@ type EnumEntry struct {
 	Doc         *Doc          `parser:"@@?"`
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"@Ident"`
-	Value       *Int          `parser:"( '=' @@ )? ','?"`
+	Value       *Int          `parser:"( '=' ( @@"`
+	Ref         *EnumRef      `parser:"  | @@ ) )? ','?"`
+}
+
+// EnumRef is a value of another enum, e.g. Suit.HEARTS or GeometryInstance3D.ShadowCastingSetting.ON.
+type EnumRef struct {
+	Pos  lexer.Position
+	Name string `parser:"@Ident ( @'.' @Ident )+"`
 }
 
 // Int is an integer literal. Raw is the source text; Parse converts it into Value.

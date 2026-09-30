@@ -71,7 +71,7 @@ SPADES = 10
 HEARTS
 ```
 
-enum_name NAME makes the whole file an enum: everything after it is a value of that enum. Nothing else can follow, not even inline classes. It's rarely used, but exists for consistency. The file then declares no classes, so it adds nothing to Godot by itself, but every GD++ file of the package can use the enum. See `gd++ man enums`.
+enum_name NAME makes the whole file an enum: everything after it is a value of that enum, after an optional `extends Base` line. Nothing else can follow, not even inline classes. It's rarely used, but exists for consistency. The file then declares no classes, so it adds nothing to Godot by itself, but every GD++ file of the package can use the enum. See `gd++ man enums`.
 
 # A file without a file-level declaration
 

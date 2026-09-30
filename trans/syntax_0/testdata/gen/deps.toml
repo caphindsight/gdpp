@@ -105,3 +105,77 @@ name = "MultiplayerPeer"
 include = "<godot_cpp/classes/multiplayer_peer.hpp>"
 kind = "RefCounted"
 
+
+[[dep]]
+name = "Difficulty"
+include = '"Difficulty.h"'
+kind = "Enum"
+gdpp = true
+base = "Level"
+values = [
+	{ name = "INSANE", value = 0, implicit = true },
+	{ name = "CUSTOM", value = 100 },
+]
+
+[[dep]]
+name = "Node.ProcessMode"
+include = "<godot_cpp/classes/node.hpp>"
+kind = "GodotEnum"
+values = [
+	{ name = "PROCESS_MODE_INHERIT", value = 0 },
+	{ name = "PROCESS_MODE_PAUSABLE", value = 1 },
+	{ name = "PROCESS_MODE_WHEN_PAUSED", value = 2 },
+	{ name = "PROCESS_MODE_ALWAYS", value = 3 },
+	{ name = "PROCESS_MODE_DISABLED", value = 4 },
+]
+
+[[dep]]
+name = "Error"
+include = "<godot_cpp/classes/global_constants.hpp>"
+kind = "GodotEnum"
+values = [
+	{ name = "OK", value = 0 },
+	{ name = "FAILED", value = 1 },
+]
+
+[[dep]]
+name = "Speed"
+include = '"Speed.h"'
+kind = "Enum"
+gdpp = true
+values = [
+	{ name = "FAST", ref = "Level.HARD" },
+	{ name = "FASTER", implicit = true },
+]
+
+[[dep]]
+name = "GeometryInstance3D.ShadowCastingSetting"
+include = "<godot_cpp/classes/geometry_instance3d.hpp>"
+kind = "GodotEnum"
+values = [
+	{ name = "SHADOW_CASTING_SETTING_OFF", value = 0 },
+	{ name = "SHADOW_CASTING_SETTING_ON", value = 1 },
+	{ name = "SHADOW_CASTING_SETTING_DOUBLE_SIDED", value = 2 },
+	{ name = "SHADOW_CASTING_SETTING_SHADOWS_ONLY", value = 3 },
+]
+
+[[dep]]
+name = "Clash.Kind"
+kind = "GodotEnum"
+values = [
+	{ name = "KIND_A", value = 0 },
+	{ name = "A", value = 1 },
+]
+
+[[dep]]
+name = "GeometryInstance3D"
+include = "<godot_cpp/classes/geometry_instance3d.hpp>"
+kind = "Object"
+
+[[dep]]
+name = "KeyCode"
+kind = "GodotEnum"
+values = [
+	{ name = "KEY_CODE_A", value = 65 },
+	{ name = "KEY_CODE_3", value = 51 },
+]

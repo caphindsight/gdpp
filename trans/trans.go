@@ -25,6 +25,7 @@ const (
 	RefCountedExtern = meta.RefCountedExtern
 	Enum             = meta.Enum
 	Other            = meta.Other
+	GodotEnum        = meta.GodotEnum
 	ClassDecl        = meta.ClassDecl
 	ExternDecl       = meta.ExternDecl
 	EnumDecl         = meta.EnumDecl

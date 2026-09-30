@@ -1,0 +1,4 @@
+input.gd++:4:22: Enum Mode has no value ONN.
+ 4 |   var s: Mode = Mode.ONN
+   |                      ^^^
+Hint: Did you mean "ON"?

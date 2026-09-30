@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Board" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="finish">
+			<return type="void" />
+			<param index="0" name="result" type="int" enum="Board.Result" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="hard" type="int" enum="Board.Hard" setter="set_hard" getter="get_hard">
+		</member>
+		<member name="mode" type="int" enum="Board.Mode" setter="set_mode" getter="get_mode">
+		</member>
+	</members>
+	<constants>
+		<constant name="RESULT_OK" value="0" enum="Result">
+		</constant>
+		<constant name="RESULT_FAILED" value="1" enum="Result">
+		</constant>
+		<constant name="MODE_INHERIT" value="0" enum="Mode">
+		</constant>
+		<constant name="MODE_PAUSABLE" value="1" enum="Mode">
+		</constant>
+		<constant name="MODE_WHEN_PAUSED" value="2" enum="Mode">
+		</constant>
+		<constant name="MODE_ALWAYS" value="3" enum="Mode">
+		</constant>
+		<constant name="MODE_DISABLED" value="4" enum="Mode">
+		</constant>
+		<constant name="MODE_EDITOR" value="5" enum="Mode">
+			Processes in the editor only.
+		</constant>
+		<constant name="HARD_EASY" value="0" enum="Hard">
+			For beginners.
+		</constant>
+		<constant name="HARD_HARD" value="5" enum="Hard" deprecated="Use [constant LEVEL_EASY].">
+		</constant>
+		<constant name="HARD_INSANE" value="6" enum="Hard">
+		</constant>
+		<constant name="HARD_CUSTOM" value="100" enum="Hard">
+		</constant>
+		<constant name="HARD_EXTREME" value="101" enum="Hard">
+		</constant>
+		<constant name="BASE_A" value="0" enum="Base">
+		</constant>
+		<constant name="BASE_B" value="10" enum="Base">
+		</constant>
+		<constant name="DERIVED_A" value="0" enum="Derived">
+		</constant>
+		<constant name="DERIVED_B" value="10" enum="Derived">
+		</constant>
+		<constant name="DERIVED_C" value="11" enum="Derived">
+		</constant>
+		<constant name="DERIVED_D" value="20" enum="Derived">
+		</constant>
+		<constant name="DERIVED_E" value="21" enum="Derived">
+		</constant>
+		<constant name="TWICE_A" value="0" enum="Twice">
+		</constant>
+		<constant name="TWICE_B" value="10" enum="Twice">
+		</constant>
+		<constant name="TWICE_C" value="11" enum="Twice">
+		</constant>
+		<constant name="TWICE_D" value="20" enum="Twice">
+		</constant>
+		<constant name="TWICE_E" value="21" enum="Twice">
+		</constant>
+		<constant name="TWICE_F" value="22" enum="Twice">
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,4 @@
+errors/enums/ref_no_dot.gd++:2:7: Expected an integer or another enum's value after "=", but found name "B".
+ 2 |   A = B
+   |       ^
+Hint: Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS.

@@ -2,6 +2,7 @@ package syntax_0
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -147,11 +148,18 @@ func parseUnit(filename, src string) (*unit, error) {
 			continue // A class constant.
 		}
 		s := &symbol{kind: meta.Enum, enum: e}
+		if e.Extends != nil {
+			s.base = e.Extends.Name
+		}
 		if err := declare(e.Pos, e.Name, s); err != nil {
 			return nil, err
 		}
 		next := int64(0)
 		for _, entry := range e.Entries {
+			if entry.Name == "extends" {
+				return nil, u.errorAt(entry.Pos, len(entry.Name), "Expected an enum value name, but found keyword \"extends\".",
+					"\"extends\" comes before the values and names the base enum: \"enum Name { extends Base A B }\".")
+			}
 			if entry.Value != nil {
 				next = entry.Value.Value
 			}
@@ -162,7 +170,11 @@ func parseUnit(filename, src string) (*unit, error) {
 			if entry.Doc != nil {
 				doc = entry.Doc.Text
 			}
-			s.values = append(s.values, meta.EnumValue{Name: entry.Name, Value: next, Doc: doc})
+			v := meta.EnumValue{Name: entry.Name, Value: next, Doc: doc, Implicit: entry.Value == nil && entry.Ref == nil}
+			if entry.Ref != nil {
+				v.Value, v.Ref = 0, entry.Ref.Name
+			}
+			s.values = append(s.values, v)
 			next++
 		}
 		u.enums = append(u.enums, s)
@@ -185,7 +197,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
-			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.EnumDecl, Values: s.values})
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.EnumDecl, Base: s.base, Values: s.values})
 		}
 	}
 	return decls, nil
@@ -259,7 +271,11 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
 				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
 		}
-		u.symbols[d.Name] = &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, gdpp: d.Gdpp}
+		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp}
+		if d.Kind == meta.GodotEnum {
+			s.values, s.godotNames = godotValues(d.Name, d.Values)
+		}
+		u.symbols[d.Name] = s
 	}
 	for _, s := range u.sortedSymbols() {
 		if s.kind == 0 {
@@ -267,6 +283,12 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				return nil, err
 			}
 		}
+		if _, err := u.enumValues(s, nil); err != nil {
+			return nil, err
+		}
+	}
+	for _, s := range u.symbols {
+		u.enumValues(s, nil) // Dependencies, which classes may expose.
 	}
 	if err := u.buildExterns(); err != nil {
 		return nil, err
@@ -325,6 +347,212 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	s.kind = kind
 	return kind, nil
 }
+
+// enumValues returns the values of enum s, those of its base first, with references to other enums' values
+// resolved, and stores them in s. Values without "= N" count on from the previous one, e.g. the base's last one.
+// Only the file's own enums report errors: a dependency's are reported when its own file is transpiled, so there
+// a broken base counts as empty, and a broken reference as a value without "= N".
+func (u *unit) enumValues(s *symbol, seen []*symbol) ([]meta.EnumValue, error) {
+	if s.base == "" && !slices.ContainsFunc(s.values, func(v meta.EnumValue) bool { return v.Ref != "" }) {
+		return s.values, nil
+	}
+	seen = append(seen, s)
+	// enum returns the values of the enum called name, which s names at pos.
+	enum := func(name string, pos lexer.Position) ([]meta.EnumValue, error) {
+		b := u.symbols[name]
+		switch {
+		case b == nil:
+			var names []string
+			for n, sym := range u.symbols {
+				if sym.kind == meta.Enum || sym.kind == meta.GodotEnum {
+					names = append(names, n)
+				}
+			}
+			hint := "Enums are the package's enums, or engine enums, e.g. Node.ProcessMode."
+			if sug := suggest(name, names...); sug != "" {
+				hint = fmt.Sprintf("Did you mean %q?", sug)
+			}
+			return nil, u.errorAt(pos, len(name), fmt.Sprintf("Unknown enum %q.", name), hint)
+		case b.kind != meta.Enum && b.kind != meta.GodotEnum:
+			return nil, u.errorAt(pos, len(name), fmt.Sprintf("%s is not an enum.", name), "")
+		case slices.Contains(seen, b):
+			return nil, u.errorAt(pos, len(name), fmt.Sprintf("Enum %s depends on itself, through its base or its values.", s.name), "")
+		}
+		return u.enumValues(b, seen)
+	}
+	var values []meta.EnumValue
+	if s.base != "" {
+		var pos lexer.Position
+		if s.local() {
+			pos = s.enum.Extends.Pos
+		}
+		base, err := enum(s.base, pos)
+		if err != nil && s.local() {
+			return nil, err
+		}
+		values = slices.Clone(base)
+	}
+	inherited := len(values)
+	next := int64(0)
+	if len(values) > 0 {
+		next = values[len(values)-1].Value + 1
+	}
+	for i, v := range s.values {
+		var entry *EnumEntry
+		if s.local() {
+			entry = s.enum.Entries[i]
+		}
+		switch {
+		case v.Ref != "":
+			value, err := u.enumRef(s, v.Ref, entry, values, enum)
+			if err != nil && s.local() {
+				return nil, err
+			} else if err == nil {
+				next = value
+			}
+		case !v.Implicit:
+			next = v.Value
+		}
+		if k := slices.IndexFunc(values, func(w meta.EnumValue) bool { return w.Name == v.Name }); k >= 0 {
+			if !s.local() {
+				continue
+			}
+			hint := ""
+			if k < inherited {
+				hint = fmt.Sprintf("It inherits %s from %s.", v.Name, s.base)
+			}
+			return nil, u.errorAt(entry.Pos, len(entry.Name), fmt.Sprintf("Enum %s has two values named %s.", s.name, v.Name), hint)
+		}
+		values = append(values, meta.EnumValue{Name: v.Name, Value: next, Doc: v.Doc})
+		next++
+	}
+	s.values, s.base = values, ""
+	return values, nil
+}
+
+// enumRef returns the number of ref, which enum s names in entry (nil in dependencies): a value of an enum in GD++,
+// e.g. Suit.HEARTS or GeometryInstance3D.ShadowCastingSetting.ON, or an engine enum's value as a constant of its
+// class, like in GDScript, e.g. GeometryInstance3D.SHADOW_CASTING_SETTING_ON. s's own values are those in values,
+// the ones before entry; enum returns the values of other enums.
+func (u *unit) enumRef(s *symbol, ref string, entry *EnumEntry, values []meta.EnumValue,
+	enum func(string, lexer.Position) ([]meta.EnumValue, error)) (int64, error) {
+	i := strings.LastIndex(ref, ".")
+	enumName, name := ref[:i], ref[i+1:]
+	var pos lexer.Position
+	if entry != nil {
+		pos = entry.Ref.Pos
+	}
+	namePos := pos
+	namePos.Offset, namePos.Column = pos.Offset+i+1, pos.Column+i+1
+	if b := u.symbols[enumName]; b != nil && (b.kind == meta.Object || b.kind == meta.RefCounted) {
+		return u.classConstant(enumName, name, namePos)
+	}
+	from := values
+	if enumName != s.name {
+		var err error
+		if from, err = enum(enumName, pos); err != nil {
+			return 0, err
+		}
+	}
+	if v, ok := enumValue(from, name); ok {
+		return v.Value, nil
+	}
+	hint := ""
+	if enumName == s.name {
+		hint = "A value can only be one of the values before it."
+	}
+	if b := u.symbols[enumName]; b != nil {
+		if k := slices.Index(b.godotNames, name); k >= 0 {
+			class := enumName[:strings.LastIndex(enumName, ".")+1]
+			return 0, u.errorAt(namePos, len(name), fmt.Sprintf("Enum %s has no value %s.", enumName, name),
+				fmt.Sprintf("Write %s.%s, or %s%s as in GDScript.", enumName, b.values[k].Name, class, name))
+		}
+	}
+	return 0, u.noValue(namePos, enumName, from, name, hint)
+}
+
+// classConstant returns the number of the value that the engine class called class has as the constant name, e.g.
+// GeometryInstance3D's SHADOW_CASTING_SETTING_ON. pos is the position of name.
+func (u *unit) classConstant(class, name string, pos lexer.Position) (int64, error) {
+	var names []string
+	for n, s := range u.symbols {
+		if s.kind != meta.GodotEnum || !strings.HasPrefix(n, class+".") {
+			continue
+		}
+		if k := slices.Index(s.godotNames, name); k >= 0 {
+			return s.values[k].Value, nil
+		}
+		names = append(names, s.godotNames...)
+	}
+	hint := ""
+	if sug := suggest(name, names...); sug != "" {
+		hint = fmt.Sprintf("Did you mean %q?", sug)
+	}
+	return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s has no enum value %s.", class, name), hint)
+}
+
+// enumValue returns the value called name among values.
+func enumValue(values []meta.EnumValue, name string) (meta.EnumValue, bool) {
+	if i := slices.IndexFunc(values, func(v meta.EnumValue) bool { return v.Name == name }); i >= 0 {
+		return values[i], true
+	}
+	return meta.EnumValue{}, false
+}
+
+// godotValues returns the values of the engine enum called name, with their GD++ names, and Godot's names. A GD++
+// name leaves out the prefix that the enum's name gives, e.g. ON for GeometryInstance3D.ShadowCastingSetting's
+// SHADOW_CASTING_SETTING_ON, unless the rest isn't a name, e.g. Key's KEY_3, or is another value's name.
+func godotValues(name string, values []meta.EnumValue) ([]meta.EnumValue, []string) {
+	var godotNames []string
+	for _, v := range values {
+		godotNames = append(godotNames, v.Name)
+	}
+	prefix := upperSnake(name[strings.LastIndex(name, ".")+1:]) + "_"
+	values = slices.Clone(values)
+	for i, v := range values {
+		if short, ok := strings.CutPrefix(v.Name, prefix); ok && identRegexp.MatchString(short) && !slices.Contains(godotNames, short) {
+			values[i].Name = short
+		}
+	}
+	return values, godotNames
+}
+
+// noValue returns the error for name at pos, which isn't among values, those of the enum called enumName.
+func (u *unit) noValue(pos lexer.Position, enumName string, values []meta.EnumValue, name, hint string) error {
+	var names []string
+	for _, v := range values {
+		names = append(names, v.Name)
+	}
+	if sug := suggest(name, names...); sug != "" {
+		hint = fmt.Sprintf("Did you mean %q?", sug)
+	}
+	return u.errorAt(pos, len(name), fmt.Sprintf("Enum %s has no value %s.", enumName, name), hint)
+}
+
+// enumShorthand turns init, the initial or default value of a value of type t, into C++ if it's a value of t's
+// enum, e.g. ON or GeometryInstance3D.ShadowCastingSetting.ON. Other values are C++ already.
+func (u *unit) enumShorthand(t *gtype, init *Init) error {
+	s := t.enum
+	if s == nil || init == nil || init.Block != nil {
+		return nil
+	}
+	name, qualified := strings.CutPrefix(init.Expr, s.name+".")
+	if !identRegexp.MatchString(name) {
+		return nil
+	}
+	if v, ok := enumValue(s.values, name); ok {
+		init.Expr = strings.ReplaceAll(s.name, ".", "::") + "::" + v.Name
+		return nil
+	}
+	if !qualified {
+		return nil // C++, e.g. a constant.
+	}
+	pos := init.Pos
+	pos.Offset, pos.Column = pos.Offset+len(s.name)+1, pos.Column+len(s.name)+1
+	return u.noValue(pos, s.name, s.values, name, "")
+}
+
+var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "global", "icon", "onready",
@@ -388,6 +616,9 @@ func (u *unit) buildFunc(f *Func, ext bool) (*funcModel, error) {
 			return nil, err
 		}
 		m.params = append(m.params, t)
+		if err := u.enumShorthand(t, (*Init)(p.Default)); err != nil {
+			return nil, err
+		}
 		switch {
 		case ext && p.Default != nil:
 			return nil, u.errorAt(p.Default.Pos, 1, "Extern functions can't have default values.", "Externs only declare what another package defines.")
@@ -493,6 +724,9 @@ func (u *unit) buildVar(v *Var, ext bool) (*varModel, error) {
 	}
 	if ext && (v.Init != nil || v.Property != nil) {
 		return nil, u.errorAt(v.Pos, 3, "Extern variables can't have an initial value or a property body.", "Externs only declare what another package defines.")
+	}
+	if err := u.enumShorthand(m.t, v.Init); err != nil {
+		return nil, err
 	}
 	if err := u.exportHint(m); err != nil {
 		return nil, err

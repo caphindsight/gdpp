@@ -1,0 +1,4 @@
+errors/funcs/dotted_return.gd++:2:20: Types can't contain ".", but found Error.Foo.
+ 2 |   func f() -> Error.Foo
+   |                    ^
+Hint: For an engine enum, declare a GD++ enum that extends it, and use that: "enum Foo { extends Error.Foo }".

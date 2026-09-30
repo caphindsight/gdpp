@@ -162,6 +162,34 @@ func TestTranspilePackage(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageEnumBases(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"a.gd++": "enum Big { extends Small HUGE }\n",
+		"b.gd++": "enum Small { extends Node.ProcessMode TINY }\nenum Result { extends Error }\n",
+		"c.gd++": "class Code {\n  func f() -> void { Error e = OK; }\n}\n",
+	})
+	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{
+		"global_enums": [{"name": "Error", "values": [{"name": "OK", "value": 0}, {"name": "FAILED", "value": 1}]}],
+		"classes": [{"name": "Node", "enums": [{"name": "ProcessMode", "values": [{"name": "PROCESS_MODE_INHERIT", "value": 0}]}]}]}`)
+	old := testGodotNames
+	testGodotNames = append(slices.Clone(old), godotName{"Error", "<godot_cpp/core/error_macros.hpp>", trans.Other, "enum", ""})
+	t.Cleanup(func() { testGodotNames = old })
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	for file, want := range map[string]string{
+		"Big.h":    "\tINHERIT = 0,\n\tTINY = 1,\n\tHUGE = 2,\n",
+		"Small.h":  "\tINHERIT = 0,\n\tTINY = 1,\n",
+		"Result.h": "\tOK = 0,\n\tFAILED = 1,\n",
+		"Code.cpp": "#include <godot_cpp/core/error_macros.hpp>",
+	} {
+		if !strings.Contains(gen[file], want) {
+			t.Errorf("%s = %s\nwant it to contain %q", file, gen[file], want)
+		}
+	}
+}
+
 func TestLoadGodotNamesOutdated(t *testing.T) {
 	m := withBuildFS(t)
 	pkg := LoadPackage(Cwd())

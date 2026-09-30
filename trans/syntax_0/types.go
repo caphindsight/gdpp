@@ -22,14 +22,16 @@ var builtins = map[string]string{
 
 // symbol is a class, extern or enum type that GD++ code can name: a dependency or a declaration in the file.
 type symbol struct {
-	name    string
-	kind    meta.Kind
-	include string // What follows #include. Declarations in the file are in "<Name>.h".
-	gdpp    bool   // Whether a GD++ file declares it: this one or another.
-	values  []meta.EnumValue
-	class   *Class  // Set for classes in the file.
-	extern  *Extern // Set for externs in the file.
-	enum    *Enum   // Set for enums in the file.
+	name       string
+	kind       meta.Kind
+	include    string // What follows #include. Declarations in the file are in "<Name>.h".
+	gdpp       bool   // Whether a GD++ file declares it: this one or another.
+	values     []meta.EnumValue
+	base       string   // For enums: the enum it extends, until enumValues adds the base's values to values.
+	godotNames []string // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
+	class      *Class   // Set for classes in the file.
+	extern     *Extern  // Set for externs in the file.
+	enum       *Enum    // Set for enums in the file.
 }
 
 // local reports whether the file declares s.
@@ -107,6 +109,9 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		return &gtype{cpp: "gdpp::ExtRef<" + s.name + ">", doc: s.name}, nil
 	case meta.Enum:
 		return &gtype{cpp: s.name, doc: "int", enum: s}, nil
+	case meta.GodotEnum:
+		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("%s is not a GD++ type.", t.Name),
+			fmt.Sprintf("Use int, or redefine it as a GD++ enum: \"enum My%s { extends %s }\".", t.Name, t.Name))
 	}
 	return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("%s is not a Godot type.", t.Name),
 		"Types are Godot's built-in types and classes, and the package's classes, externs and enums.")

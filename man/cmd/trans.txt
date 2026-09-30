@@ -18,7 +18,7 @@ Transpiles a GD++ file, and prints the C++ files that GD++ generates from it, ea
 gd++ trans player.gd++
 ```
 
-In a package, the file sees what it would see in a build: Godot's classes, from the package's spec and bindings, and the classes, externs and enums of the package's other GD++ files. So the output is what the build compiles, apart from the #line directives, which name the file as you passed it.
+In a package, the file sees what it would see in a build: Godot's classes and enums, from the package's spec and bindings, and the classes, externs and enums of the package's other GD++ files. So the output is what the build compiles, apart from the #line directives, which name the file as you passed it.
 
 Outside of a package, the file sees only what you declare with the flags below. Even RefCounted, the default base class, must be declared then, e.g. with --refcounted RefCounted, or taken from a spec in the project's cache, with --spec.
 
@@ -36,10 +36,10 @@ FILE
   The GD++ syntax version to use. Default: the package's, or else 0.
 
 --spec NAME
-  Take Godot's classes from this Godot API spec in the project's cache, instead of from the package. Works outside of packages too, but must run in a project.
+  Take Godot's classes and enums from this Godot API spec in the project's cache, instead of from the package. Works outside of packages too, but must run in a project.
 
 --nospec
-  Don't take Godot's classes from the package. Only the flags declare them then.
+  Don't take Godot's classes and enums from the package. Only the flags declare classes then.
 
 --object NAME[=INCLUDE]
   Declare a Godot class that isn't refcounted, e.g. Node, used as NAME*. The include defaults to godot-cpp's header for the class, e.g. <godot_cpp/classes/node3d.hpp> for Node3D.

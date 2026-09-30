@@ -1,4 +1,4 @@
 {Name:Game Kind:1 Base:RefCounted Values:[] Icon: Tool:false}
-{Name:Mode Kind:3 Base: Values:[{Name:EASY Value:0 Doc:} {Name:NORMAL Value:1 Doc:} {Name:HARD Value:2 Doc:}] Icon: Tool:false}
+{Name:Mode Kind:3 Base: Values:[{Name:EASY Value:0 Doc: Implicit:true Ref:} {Name:NORMAL Value:1 Doc: Implicit:true Ref:} {Name:HARD Value:2 Doc: Implicit:true Ref:}] Icon: Tool:false}
 {Name:Referee Kind:1 Base:RefCounted Values:[] Icon: Tool:false}
 {Name:Bystander Kind:1 Base:RefCounted Values:[] Icon: Tool:false}

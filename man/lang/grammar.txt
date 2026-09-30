@@ -25,11 +25,11 @@ File        = Code* FileHead? TopItem*
 FileHead    = ClassHead | ExternHead | EnumHead
 ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )?
 ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
-EnumHead    = Doc? Annotation* 'enum_name' Ident EnumEntry*
+EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEntry*
 TopItem     = Class | Extern | Member
 ```
 
-Code before the file head is always an error: decl and impl blocks must be in a class. After class_name or extern_name, every Member belongs to that class or extern. In a file without either, only enum types are allowed as members at the top level. After enum_name, only enum values follow.
+Code before the file head is always an error: decl and impl blocks must be in a class. After class_name or extern_name, every Member belongs to that class or extern. In a file without either, only enum types are allowed as members at the top level. After enum_name, only an optional extends and enum values follow.
 
 # Classes and externs
 
@@ -87,11 +87,13 @@ A property needs exactly one get, at most one set, and any number of decl.
 # Enums and constants
 
 ```
-Enum        = Doc? Annotation* 'enum' Ident ( '=' Int | '{' EnumEntry* '}' )
-EnumEntry   = Doc? Annotation* Ident ( '=' Int )? ','?
+Enum        = Doc? Annotation* 'enum' Ident ( '=' Int | '{' ( 'extends' EnumBase )? EnumEntry* '}' )
+EnumBase    = Ident ( '.' Ident )?
+EnumEntry   = Doc? Annotation* Ident ( '=' ( Int | EnumRef ) )? ','?
+EnumRef     = Ident ( '.' Ident )+
 ```
 
-`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type.
+`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type. EnumBase is a GD++ enum, or an engine enum, e.g. Node.ProcessMode or Error. EnumRef is a value of another enum: Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.INHERIT, or Class.CONSTANT, e.g. Node.PROCESS_MODE_INHERIT.
 
 # Types
 

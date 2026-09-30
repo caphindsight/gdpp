@@ -40,6 +40,7 @@ type enumHead struct {
 	Doc         *Doc          `parser:"@@?"`
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"'enum_name' @Ident"`
+	Extends     *EnumBase     `parser:"( 'extends' @@ )?"`
 	Entries     []*EnumEntry  `parser:"@@*"`
 }
 
@@ -69,7 +70,7 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 		members = &f.FileExtern.Members
 	case pf.Enum != nil:
 		h := pf.Enum
-		f.FileEnum = &Enum{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Entries: h.Entries}
+		f.FileEnum = &Enum{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Extends: h.Extends, Entries: h.Entries}
 	}
 	for _, item := range pf.Items {
 		m := item.Member

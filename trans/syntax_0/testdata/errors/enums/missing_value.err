@@ -1,4 +1,4 @@
 errors/enums/missing_value.gd++:2:1: Expected an integer value after "=", but found keyword "var".
  2 | var y: int
    | ^^^
-Hint: Enum values are integers, such as 42, -1 or 0x10.
+Hint: Constants are integers, such as 42, -1 or 0x10.

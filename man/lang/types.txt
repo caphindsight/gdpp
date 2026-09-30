@@ -115,13 +115,17 @@ func play(suit: Suit) -> void { ... }
 
 In C++, it's an enum class with int64_t values, e.g. Suit::HEARTS. Godot sees it as an int, marked as an enum of the class. See `gd++ man enums`.
 
-Godot's own enums, e.g. Error, Key or Node::ProcessMode, can't be GD++ types. Use int, and cast in C++:
+Godot's own enums, e.g. Error, Key or Node.ProcessMode, aren't GD++ types themselves. Redeclare them as GD++ enums, which copy all their values, and cast in C++ to pass them to the engine:
 
 ```gd++
-func set_mode(mode: int) -> void {
+enum ProcessMode { extends Node.ProcessMode }
+
+func set_mode(mode: ProcessMode) -> void {
   set_process_mode(static_cast<Node::ProcessMode>(mode));
 }
 ```
+
+Global enums, e.g. Error or Key, need a new name, since Godot's names are taken: `enum KeyCode { extends Key }`. Or use int, and cast in C++. See `gd++ man enums`.
 
 # Externs
 

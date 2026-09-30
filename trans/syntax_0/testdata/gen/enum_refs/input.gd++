@@ -1,0 +1,15 @@
+enum MyShadowSetting {
+  OFF = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  ON = GeometryInstance3D.ShadowCastingSetting.ON
+  NEXT
+  HARD = Level.HARD
+  FAST = Speed.FASTER
+  LATER = MyShadowSetting.NEXT
+  OK = Error.OK
+}
+
+enum Extended {
+  extends MyShadowSetting
+  EXTRA = MyShadowSetting.FAST
+  AGAIN = Extended.ON
+}

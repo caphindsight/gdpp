@@ -6,10 +6,13 @@
 
 namespace godot {
 
-enum class Difficulty : int64_t {
-	EASY = 0,
-	NORMAL = 5,
-	HARD = 6,
+enum class Twice : int64_t {
+	A = 0,
+	B = 10,
+	C = 11,
+	D = 20,
+	E = 21,
+	F = 22,
 };
 
 } // namespace godot

@@ -1,0 +1,4 @@
+enum E {
+  ON = GeometryInstance3D.ShadowCastingSetting.ON
+  B, C = Suit.HEARTS D = E.ON
+}

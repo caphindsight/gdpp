@@ -1,2 +1,2 @@
 {Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false}
-{Name:Team Kind:3 Base: Values:[{Name:RED Value:0 Doc:} {Name:BLUE Value:1 Doc:}] Icon: Tool:false}
+{Name:Team Kind:3 Base: Values:[{Name:RED Value:0 Doc: Implicit:true Ref:} {Name:BLUE Value:1 Doc: Implicit:true Ref:}] Icon: Tool:false}

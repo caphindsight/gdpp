@@ -28,6 +28,24 @@ enum Flags {
 }
 ```
 
+A value can also be a value of another enum, whose number GD++ copies. Write it like in GD++, Enum.VALUE, for a GD++ enum or an engine enum, or like in GDScript, Class.CONSTANT, for an engine enum of a class:
+
+```gd++
+enum MyShadowSetting {
+  OFF = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  ON = GeometryInstance3D.ShadowCastingSetting.ON
+  DOUBLE_SIDED
+  HARD = Level.HARD
+  ALSO_ON = MyShadowSetting.ON
+}
+```
+
+In GD++, the values of an engine enum leave out the prefix that the enum's name gives, like values of GD++ enums have none: GeometryInstance3D.ShadowCastingSetting's SHADOW_CASTING_SETTING_ON is ON, and Node.ProcessMode's PROCESS_MODE_INHERIT is INHERIT. A value keeps its full name if the rest isn't a name, e.g. Key's KEY_3, or is the name of another value of the enum. Error's values keep theirs, e.g. OK and ERR_BUSY, since they don't start with ERROR_.
+
+So GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF, which mixes the two spellings, is an error. Global engine enums, e.g. Error, have only the GD++ spelling: Error.OK.
+
+A value of the enum itself must come before the one that uses it. A value without a number counts on from the value before it, as usual: DOUBLE_SIDED is 2.
+
 Each value can have a doc comment, which Godot's help shows. See `gd++ man docs`.
 
 ```gd++
@@ -55,6 +73,36 @@ DIAMONDS
 CLUBS
 SPADES
 HEARTS
+```
+
+# Extending enums
+
+```gd++
+enum Suit { DIAMONDS CLUBS SPADES HEARTS }
+
+enum TarotSuit {
+  extends Suit
+  TRUMPS
+}
+
+enum Mode {
+  extends Node.ProcessMode
+  EDITOR
+}
+```
+
+`extends Base`, first in the braces, makes an enum copy all values of Base, with their GD++ names, as if they were written before its own. Base is a GD++ enum of the package, or an engine enum: one of a class, e.g. Node.ProcessMode, or a global one, e.g. Error. Engine enums' values come from the package's API spec, and their GD++ names leave out the enum's prefix, as explained above. So Mode has INHERIT, PAUSABLE, WHEN_PAUSED, ALWAYS, DISABLED and EDITOR. A GD++ base's values keep their names exactly, prefix or not.
+
+A value without a number is the previous value plus one, so the first own value counts on from the base's last one: TRUMPS is 4, and EDITOR is 5, after DISABLED = 4.
+
+The result is an enum like any other: in C++ a new enum class, e.g. Mode::INHERIT, and in Godot an enum of each class that exposes it, e.g. Board.MODE_INHERIT. A global enum needs a new name, e.g. `enum KeyCode { extends Key }`, since Godot's names are taken.
+
+With enum_name, extends goes on the line after the name:
+
+```gd++
+enum_name TarotSuit
+extends Suit
+TRUMPS
 ```
 
 # In C++
@@ -86,9 +134,29 @@ func set_trump_index(i: int) -> void {
 
 GD++ includes the enum's header wherever it's used.
 
+An initial value or a default value of an enum type can name one of the enum's values, without C++: `HEARTS` or `Suit.HEARTS` for Suit::HEARTS. Anything else is C++, as usual.
+
+```gd++
+var trump: Suit = HEARTS
+
+func deal(suit: Suit = Suit.SPADES) -> void { ... }
+```
+
+An enum and its base are different C++ types, even with the same values: convert between them with static_cast. Redeclaring an engine enum is how GD++ code uses it as a type:
+
+```gd++
+enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
+
+@export var casting: ShadowCastingSetting = ON
+
+func _ready() -> void {
+  mesh->set_cast_shadows_setting(static_cast<GeometryInstance3D::ShadowCastingSetting>(casting));
+}
+```
+
 # In Godot
 
-Godot has no global enums of its own: every enum belongs to a class, e.g. Node.ProcessMode. So GD++ gives each class that needs an enum its own copy of it. A class exposes an enum if:
+Godot has no global enums of its own for extensions: every enum belongs to a class, e.g. Node.ProcessMode. So GD++ gives each class that needs an enum its own copy of it. A class exposes an enum if:
 
 - it uses the enum in its API: the type of a variable, a parameter or return value of a function (except @override functions), or a parameter of a signal,
 - it imports the enum, with `import Suit`,
@@ -143,7 +211,11 @@ Constants take a doc comment, but no annotations.
 
 - Enum types and constants take no annotations.
 - An integer constant outside a class is an error: "This enum is outside of any class.".
-- A value that isn't an integer is an error, e.g. `A = 1.5` or `A = B`.
+- A value that isn't an integer or another enum's value is an error, e.g. `A = 1.5` or `A = B`.
+- A value of an unknown enum, or an unknown value, is an error, and so is an enum that depends on itself through its values.
+- A value of an engine enum must use one spelling: GeometryInstance3D.ShadowCastingSetting.OFF or GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, not GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF.
+- An enum can't extend itself through its bases, a class, or an unknown name, and its own values can't have the names of inherited ones.
+- extends must come before the values: "enum A { X extends Suit }" is an error.
 - An enum can't be the base of a class, nor an element type of Array[T] or Dictionary[K, V]; use int there.
 
 # See also

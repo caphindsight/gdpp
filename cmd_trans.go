@@ -22,8 +22,8 @@ type CmdTrans struct {
 	File             string   `arg:"positional" help:"the GD++ file to transpile"`
 	Runtime          bool     `arg:"--runtime" help:"print the runtime header that all generated C++ includes, without a file"`
 	Syntax           *int     `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: the package's, or else 0]"`
-	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes from this Godot API spec in the project's cache, instead of the package's"`
-	NoSpec           bool     `arg:"--nospec" help:"don't take Godot's classes from the package's spec"`
+	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes and enums from this Godot API spec in the project's cache, instead of the package's"`
+	NoSpec           bool     `arg:"--nospec" help:"don't take Godot's classes and enums from the package's spec"`
 	Object           []string `arg:"--object,separate" placeholder:"NAME[=INCLUDE]" help:"a class that isn't refcounted; the include defaults to godot-cpp's header"`
 	RefCounted       []string `arg:"--refcounted,separate" placeholder:"NAME[=INCLUDE]" help:"a refcounted class; the include defaults to godot-cpp's header"`
 	Extern           []string `arg:"--extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base isn't refcounted [default include: \"NAME.h\"]"`
@@ -49,6 +49,7 @@ func (c *CmdTrans) Run() {
 	Assert(file.IsFile(), "There is no file at %s.", file.ToString())
 	var files []gdppFile
 	var names []godotName
+	var enums []trans.Dependency
 	self := ""
 	if root, ok := GetPackageRootMaybe(file); ok {
 		p, pkg := LoadProject(root), LoadPackage(root)
@@ -58,13 +59,14 @@ func (c *CmdTrans) Run() {
 		}
 		if c.Spec == "" && !c.NoSpec {
 			names = packageGodotNames(p, pkg)
+			enums = specEnums(pkg.BuildCache.Cd("extension_api.json"))
 		}
 	}
 	if c.Spec != "" {
-		names = specNames(c.Spec)
+		names, enums = specNames(c.Spec)
 	}
 	// Flags come first, so they win over other dependencies of the same name.
-	deps := append(c.flagDependencies(), packageDeps(files, names, self)...)
+	deps := append(c.flagDependencies(), packageDeps(files, names, enums, self)...)
 	generated, err := trans.Generate(c.File, file.ReadString(), trans.Options{Dependencies: deps}, syntax)
 	if err != nil {
 		FailWithText(err)
@@ -105,9 +107,9 @@ func (c *CmdTrans) flagDependencies() []trans.Dependency {
 	return deps
 }
 
-// specNames returns Godot's classes in the API spec named name in the
-// project's cache.
-func specNames(name string) []godotName {
+// specNames returns Godot's classes and enums in the API spec named name in
+// the project's cache.
+func specNames(name string) ([]godotName, []trans.Dependency) {
 	cache := LoadProject(Cwd()).Caches[slices.IndexFunc(depKinds, func(k DepKind) bool { return k.Name == "spec" })]
 	Assert(cache.Has(name), "Missing %s %s, run `gd++ fetch --spec %s` to fetch it.", cache.Desc, name, name)
 	spec := cache.GetPath(name).Cd("extension_api.json")
@@ -127,7 +129,7 @@ func specNames(name string) []godotName {
 		}
 		names = append(names, godotName{Name: class.Name, Include: godotCppInclude(class.Name), Kind: kind})
 	}
-	return names
+	return names, specEnums(spec)
 }
 
 // parseTransDep parses a dependency flag's value: NAME[=INCLUDE], plus

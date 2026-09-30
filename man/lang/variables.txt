@@ -47,6 +47,8 @@ var weights: PackedFloat32Array = {
 }
 ```
 
+For a variable of a GD++ enum type, the initial value can also be one of the enum's values, e.g. `var trump: Suit = HEARTS`. See `gd++ man enums`.
+
 GD++ assigns initial values in the constructor, in the order of the declarations, before the body of your ctor. A block becomes a lambda that is called right away, so it can use the object, this, and its other fields. See `gd++ man lifecycle`.
 
 # @onready

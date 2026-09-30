@@ -24,6 +24,7 @@ const (
 	RefCountedExtern Kind = 4 // A GD++ extern whose base is refcounted, used as ExtRef<T>.
 	Enum             Kind = 5 // A GD++ enum.
 	Other            Kind = 6 // A name in namespace godot that isn't a class, e.g. TypedArray: code may use it, but not as a GD++ type.
+	GodotEnum        Kind = 7 // An enum of Godot's API, e.g. Node.ProcessMode or Error: GD++ enums may extend it, but it isn't a GD++ type.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -32,7 +33,8 @@ type Dependency struct {
 	Name    string      // E.g. "Node3D".
 	Include string      // What follows #include, e.g. `<godot_cpp/classes/node3d.hpp>`, or `"Terrain.h"` for GD++ declarations.
 	Kind    Kind        //
-	Values  []EnumValue // For Kind Enum: its values, so classes using the enum can expose a copy.
+	Values  []EnumValue // For Kind Enum and GodotEnum: its values, so classes using the enum can expose a copy.
+	Base    string      // For Kind Enum: the enum it extends, if any. Values then holds only its own values.
 	Gdpp    bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
 }
 
@@ -41,6 +43,10 @@ type EnumValue struct {
 	Name  string // As written in GD++, e.g. "DIAMONDS".
 	Value int64  //
 	Doc   string // The doc comment's text, without comment markers.
+	// Whether the value has no "= N", so it's the previous value plus one. Enums with a Base renumber these
+	// after the base's values.
+	Implicit bool
+	Ref      string // For a value written as another enum's, e.g. "Suit.HEARTS": that value. The translator resolves Value.
 }
 
 // DeclKind says what a GD++ file declares. Stable: additive changes only.
@@ -57,8 +63,8 @@ const (
 type Declaration struct {
 	Name   string      //
 	Kind   DeclKind    //
-	Base   string      // For classes and externs: the base class.
-	Values []EnumValue // For enums.
+	Base   string      // For classes and externs: the base class. For enums: the enum it extends, if any.
+	Values []EnumValue // For enums: its own values, without those of its base.
 	Icon   string      // For classes: the icon's res:// or pkg:// path, from @icon.
 	Tool   bool        // For classes: whether @tool makes its functions run in the editor too.
 }

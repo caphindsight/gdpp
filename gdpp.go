@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"path"
 	"slices"
 	"strings"
@@ -139,21 +140,60 @@ func packageGodotNames(p Project, pkg Package) []godotName {
 	return bindingNames(pkg, BuildOptions{}.sconsArgs(hostPlatform+"."+hostArch))
 }
 
-// packageDeps returns the dependencies of the package's GD++ file whose path
-// relative to the package root is self: names, e.g. godot-cpp's, then what the
-// package's other GD++ files declare.
-func packageDeps(files []gdppFile, names []godotName, self string) []trans.Dependency {
-	godot := map[string]godotName{}
+// specEnums returns the enums of the API spec file, which GD++ enums may
+// extend: those of classes, e.g. Node.ProcessMode, and global ones, e.g.
+// Error. Returns nil if there is no file.
+func specEnums(file Path) []trans.Dependency {
+	if !file.IsFile() {
+		return nil
+	}
+	type enum struct {
+		Name   string            `json:"name"`
+		Values []trans.EnumValue `json:"values"`
+	}
+	var api struct {
+		GlobalEnums []enum `json:"global_enums"`
+		Classes     []struct {
+			Name  string `json:"name"`
+			Enums []enum `json:"enums"`
+		} `json:"classes"`
+	}
+	Check(json.Unmarshal([]byte(file.ReadString()), &api), "Failed to parse %s", file.ToString())
 	var deps []trans.Dependency
+	for _, e := range api.GlobalEnums {
+		deps = append(deps, trans.Dependency{Name: e.Name, Kind: trans.GodotEnum, Values: e.Values})
+	}
+	for _, c := range api.Classes {
+		for _, e := range c.Enums {
+			deps = append(deps, trans.Dependency{Name: c.Name + "." + e.Name, Kind: trans.GodotEnum, Values: e.Values})
+		}
+	}
+	return deps
+}
+
+// packageDeps returns the dependencies of the package's GD++ file whose path
+// relative to the package root is self: the spec's enums, names, e.g.
+// godot-cpp's, then what the package's other GD++ files declare. The spec's
+// enums come first, so e.g. Error is an enum, not just a name.
+func packageDeps(files []gdppFile, names []godotName, enums []trans.Dependency, self string) []trans.Dependency {
+	godot := map[string]godotName{}
 	for _, n := range names {
 		godot[n.Name] = n
+	}
+	deps := slices.Clone(enums)
+	for i, e := range deps {
+		// A class's enum, e.g. Node.ProcessMode, is in the class's header; a global one, e.g. Error, in its own.
+		class, _, _ := strings.Cut(e.Name, ".")
+		deps[i].Include = godot[class].Include
+	}
+	for _, n := range names {
 		deps = append(deps, trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind})
 	}
 	kinds := gdppKinds(files, godot)
 	for _, f := range files {
 		for _, d := range f.Decls {
 			if f.Rel != self {
-				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Gdpp: true})
+				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true})
 			}
 		}
 	}
@@ -222,6 +262,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 		writeIfChanged(dir.Cd(rel), text)
 	}
 	syntax := pkg.Config.Syntax
+	enums := specEnums(pkg.BuildCache.Cd("extension_api.json"))
 	check := func(text string, err error) string {
 		if err != nil {
 			FailWithText(err)
@@ -230,7 +271,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, docs boo
 	}
 	for _, f := range files {
 		// #line names the GD++ file relative to the build cache, where SCons runs, like it names C++ sources.
-		opts := trans.Options{Dependencies: packageDeps(files, names, f.Rel), SourceName: "../" + f.Rel}
+		opts := trans.Options{Dependencies: packageDeps(files, names, enums, f.Rel), SourceName: "../" + f.Rel}
 		name := f.File.ToString()
 		generated, err := trans.Generate(name, f.Src, opts, syntax)
 		if err != nil {

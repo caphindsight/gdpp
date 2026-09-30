@@ -20,6 +20,7 @@ The tool itself is written in Go. C++ is only the language of the Godot projects
 - Commands: `cmd_*.go` files never depend on each other; helpers shared between commands live in non-command files (e.g. `utils.go`).
 - Commands: keep the commands in `main.go` sorted alphabetically, both in the `Args` definitions and in the `switch` cases.
 - Paths: never interpolate a Path's raw absolute path (`p.absolutePath`) into a log, `Assert`, or `Check` message; use `p.ToString()` instead, so messages show a `res://`-relative or cwd-relative path rather than leaking the user's filesystem layout. Exception: functions on `ToString()`'s own dependency path (`stat`, `Exists`, `IsDir`, `IsFile`, and `ToString()` itself) must not call `p.ToString()` in their own messages, since Go evaluates call arguments eagerly and that would recurse forever; they omit the path instead.
+- Syntax forks: `trans/syntax_0` is nightly, so breaking changes are fine and no backward compatibility is needed. `trans/syntax_N` for N>0 are immutable snapshots: never edit them.
 - Always minimize cognitive load.
 
 ## Mandatory rules for AI agents (always obey, no exceptions)

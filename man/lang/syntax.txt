@@ -12,7 +12,7 @@ A file has four kinds of scope. Each one allows different things:
 
 1. The class declaration scope: the top of a file, the rest of a file after class_name, and the inside of class { ... } and extern { ... }. It holds declarations: func, var, signal, enum, ctor, dtor, decl, impl, import and noimport. The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
 2. The property declaration scope: the braces after `var name: type { ... }`. It holds decl, get and set blocks only. See `gd++ man variables`.
-3. The enum declaration scope: the braces after `enum Name { ... }`, and the rest of a file after enum_name. It holds enum values only. See `gd++ man enums`.
+3. The enum declaration scope: the braces after `enum Name { ... }`, and the rest of a file after enum_name. It holds an optional extends, then enum values. See `gd++ man enums`.
 4. The C++ scope: the inside of every other pair of braces, i.e. function bodies, ctor and dtor, decl and impl blocks, get and set blocks, and initial values and default values. It holds any C++ code, which GD++ copies into the generated C++. See `gd++ man code`.
 
 In all scopes, GD++ splits the text into the same kinds of tokens, described below, and handles comments the same way. So a C++ block ends at the "}" that matches its "{", and braces inside strings, character literals and comments don't count.
@@ -73,7 +73,7 @@ In C++ code, GD++ gives a meaning to five more words: emit, rpc, rpc_id, This an
 
 # Numbers
 
-Numbers are C-like. In declarations, only integers are used: enum values, constants and annotation arguments. Integers can be:
+Numbers are C-like. In declarations, only integers are used: enum values (unless they name another enum's value), constants and annotation arguments. Integers can be:
 
 ```gd++
 42        decimal

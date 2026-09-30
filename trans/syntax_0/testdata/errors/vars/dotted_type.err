@@ -1,0 +1,4 @@
+errors/vars/dotted_type.gd++:2:14: Types can't contain ".", but found Node.ProcessMode.
+ 2 |   var s: Node.ProcessMode
+   |              ^
+Hint: For an engine enum, declare a GD++ enum that extends it, and use that: "enum ProcessMode { extends Node.ProcessMode }".

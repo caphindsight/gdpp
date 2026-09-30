@@ -337,6 +337,10 @@ func diagnose(sig []lexer.Token, j int) (int, string, string) {
 		return d, "This doc comment is not followed by a declaration.",
 			"Doc comments document the declaration right after them. Use \"//\" for a regular comment."
 	}
+	if isPunct(at(sig, j-2), "=") && at(sig, j-1).Type == tokIdent && !isPunct(sig[j], ".") && inEnumValues(sig, j) {
+		return j - 1, fmt.Sprintf("Expected an integer or another enum's value after \"=\", but found %s.", describe(sig[j-1])),
+			"Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS."
+	}
 	msg, hint := diagnoseAt(sig, j)
 	if p, p2 := at(sig, j-1), at(sig, j-2); names[p2.Value] != "" && (p2.Type == tokIdent || isPunct(p2, "@")) &&
 		p.Type == tokIdent && slices.Contains(append(declKeywords, "class_name", "enum_name", "extern_name"), p.Value) {
@@ -369,6 +373,19 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 	case isDoc(u):
 		return "This doc comment is not followed by a declaration.",
 			"Doc comments document the declaration right after them. Use \"//\" for a regular comment."
+
+	case (p.Type == tokIdent && p.Value == "extends" || isPunct(p, ".") && at(sig, j-3).Value == "extends") && !isName && inEnumValues(sig, j):
+		return fmt.Sprintf("Expected a base enum name after %q, but found %s.", p.Value, found),
+			"E.g. \"extends Suit\" for a GD++ enum, or \"extends Node.ProcessMode\" for an engine enum."
+
+	case isPunct(u, ".") && p.Type == tokIdent && (isPunct(p2, ":") || isPunct(p2, "->")):
+		name := p.Value + "." + at(sig, j+1).Value
+		return fmt.Sprintf("Types can't contain \".\", but found %s.", name),
+			fmt.Sprintf("For an engine enum, declare a GD++ enum that extends it, and use that: \"enum %s { extends %s }\".", at(sig, j+1).Value, name)
+
+	case isPunct(p, ".") && !isName && inEnumValues(sig, j):
+		return fmt.Sprintf("Expected a name after \".\", but found %s.", found),
+			"Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.PROCESS_MODE_ALWAYS."
 
 	case slices.ContainsFunc(sig[:j], func(t lexer.Token) bool { return t.Type == tokIdent && t.Value == "enum_name" }):
 		return fmt.Sprintf("Expected an enum value name, but found %s.", found),
@@ -425,9 +442,13 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 		return fmt.Sprintf("Expected \"=\" or \"{\" after the enum name, but found %s.", found),
 			"Write \"enum NAME = 42\" for a constant, or \"enum Name { A B C }\" for an enum type."
 
-	case isPunct(p, "=") && (kw == "enum" || inEnum(sig, j)) && u.Type != tokNumber && !isPunct(u, "-"):
+	case isPunct(p, "=") && inEnumValues(sig, j) && u.Type != tokNumber && !isPunct(u, "-"):
+		return fmt.Sprintf("Expected an integer or another enum's value after \"=\", but found %s.", found),
+			"Enum values are integers, such as 42, -1 or 0x10, or values of other enums, such as Suit.HEARTS."
+
+	case isPunct(p, "=") && kw == "enum" && u.Type != tokNumber && !isPunct(u, "-"):
 		return fmt.Sprintf("Expected an integer value after \"=\", but found %s.", found),
-			"Enum values are integers, such as 42, -1 or 0x10."
+			"Constants are integers, such as 42, -1 or 0x10."
 
 	case (p2.Value == "class" || p2.Value == "extern") && p2.Type == tokIdent && p.Type == tokIdent && !isPunct(u, "{"):
 		if u.Value == "extends" {
@@ -473,6 +494,11 @@ func inProperty(sig []lexer.Token, j int) bool {
 func inEnum(sig []lexer.Token, j int) bool {
 	o := enclosing(sig, j, "{")
 	return o >= 2 && at(sig, o-2).Value == "enum" && at(sig, o-1).Type == tokIdent
+}
+
+// inEnumValues reports whether sig[j] is among the values of an enum: in its braces, or after enum_name.
+func inEnumValues(sig []lexer.Token, j int) bool {
+	return inEnum(sig, j) || slices.ContainsFunc(sig[:j], func(t lexer.Token) bool { return t.Type == tokIdent && t.Value == "enum_name" })
 }
 
 // declarationHint suggests a fix for token u found where a declaration should start.
