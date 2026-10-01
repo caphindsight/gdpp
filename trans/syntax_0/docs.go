@@ -437,7 +437,7 @@ A task is in one of three states. It goes through them in this order, and never 
 [b]1. Running:[/b] the job runs.
 - [member valid] is [code]true[/code], and [member done] is [code]false[/code].
 - [method wait] blocks until the job is done, then returns its result.
-- [method claim] and [member result] are mistakes: there's no result yet.
+- [method claim] and [member result] are errors: there's no result yet.
 - [method cancel] asks the job to stop.
 [b]2. Done:[/b] the job has finished, and the task holds its result.
 - [member valid] and [member done] are [code]true[/code].
@@ -446,9 +446,9 @@ A task is in one of three states. It goes through them in this order, and never 
 - [method cancel] does nothing.
 [b]3. Claimed:[/b] [method claim] took the result, and the task holds nothing any more.
 - [member valid] and [member done] are [code]false[/code].
-- [method claim], [member result] and [method wait] are mistakes: the result is gone.
+- [method claim], [member result] and [method wait] are errors: the result is gone.
 - [method cancel] does nothing.
-In debug builds, a mistake prints an error, and returns [code]null[/code]. Release builds don't check, so a mistake is undefined there. A task made with [code]new()[/code] runs no job: it starts Claimed, so [member valid] and [member done] are [code]false[/code], like an empty [code]Async[/code] in GD++ code.
+In debug builds, an error prints a message, and returns [code]null[/code]. Release builds don't check, so an error is undefined behavior there. A task made with [code]new()[/code] runs no job: it starts Claimed, so [member valid] and [member done] are [code]false[/code], like an empty [code]Async[/code] in GD++ code.
 Check [member done] once a frame, e.g. in [method Node._process], and claim the result once it's [code]true[/code]. Here, a character follows a path that a worker thread finds, and starts the next search when it has one:
 [codeblock]
 var search = null
@@ -460,7 +460,7 @@ func _process(_delta):
 		follow(search.claim())
 		search = null
 [/codeblock]
-[member valid] tells a Running task from a Claimed one, since neither is [member done]. Here, a level loads in the background, a spinner shows while it does, and a button cancels it, after which the job may return [code]null[/code]:
+[member valid] tells a Running task from a Claimed one, since neither is [member done]. Test [member valid], not the task object itself: [code]if loading:[/code] is [code]true[/code] for a Claimed task too. Here, a level loads in the background, a spinner shows while it does, and a button cancels it, after which the job may return [code]null[/code]:
 [codeblock]
 @onready var loading = $Levels.load_level("forest")
 
@@ -481,8 +481,8 @@ When the last reference to a task is gone, it waits for its job to finish, if it
 	x.ln(1, "<methods>")
 	for _, m := range []struct{ name, ret, doc string }{
 		{"cancel", "void", "Asks the job to stop, while the task is Running: in the job, [code]is_cancelled[/code] is [code]true[/code] from now on, so it can return early. What it returns then is its result, as usual, and the task gets Done. Does nothing when the task is Done or Claimed."},
-		{"claim", "Variant", "Returns the result, and lets go of it: the task moves from Done to Claimed, so each result is claimed once. Call it when [member done] is [code]true[/code]. While the task is Running, or once it's Claimed, it's a mistake: in debug builds, it prints an error and returns [code]null[/code]; in release builds, it's undefined."},
-		{"wait", "Variant", "Returns the result, and keeps it, like [member result], but while the task is Running, it first blocks until the job is done. On the main thread, the game freezes while it waits, so prefer checking [member done] once a frame. Once the task is Claimed, it's a mistake: it returns [code]null[/code], and prints an error in debug builds."},
+		{"claim", "Variant", "Returns the result, and lets go of it: the task moves from Done to Claimed, so each result is claimed once. Call it when [member done] is [code]true[/code]. While the task is Running, or once it's Claimed, it's an error: in debug builds, it prints a message and returns [code]null[/code]; in release builds, it's undefined behavior."},
+		{"wait", "Variant", "Returns the result, and keeps it, like [member result], but while the task is Running, it first blocks until the job is done. On the main thread, the game freezes while it waits, so prefer checking [member done] once a frame. Once the task is Claimed, it's an error: in debug builds, it prints a message and returns [code]null[/code]; in release builds, it's undefined behavior."},
 	} {
 		x.ln(2, fmt.Sprintf("<method name=\"%s\">", m.name))
 		x.ln(3, fmt.Sprintf("<return type=\"%s\" />", m.ret))
@@ -495,8 +495,8 @@ When the last reference to a task is gone, it waits for its job to finish, if it
 	x.ln(1, "<members>")
 	for _, m := range []struct{ name, typ, getter, doc string }{
 		{"done", "bool", "is_done", "[code]true[/code] when the task is Done: the job has finished, and its result can be claimed. [code]false[/code] while the task is Running, and once it's Claimed. Read-only."},
-		{"result", "Variant", "get_result", "The job's result, when the task is Done. Reading it keeps the result, unlike [method claim], so it can be read as often as you like. While the task is Running, or once it's Claimed, it's a mistake: in debug builds, it prints an error and returns [code]null[/code]; in release builds, it's undefined. Read-only. The inspector doesn't show it, since it would read it before the job is done."},
-		{"valid", "bool", "is_valid", "[code]true[/code] while the task is Running or Done, and [code]false[/code] once it's Claimed: whether the task has a result, or will have one. Testing an [code]Async[/code] in GD++ code, e.g. [code]if (task)[/code], gives the same. With [member done], it tells the three states apart: the task is Running when it's [member valid] but not [member done]. Read-only."},
+		{"result", "Variant", "get_result", "The job's result, when the task is Done. Reading it keeps the result, unlike [method claim], so it can be read as often as you like. In GD++ code, [code]task.result()[/code] does the same. While the task is Running, or once it's Claimed, it's an error: in debug builds, it prints a message and returns [code]null[/code]; in release builds, it's undefined behavior. Read-only. The inspector doesn't show it, since it would read it before the job is done."},
+		{"valid", "bool", "is_valid", "[code]true[/code] while the task is Running or Done, and [code]false[/code] once it's Claimed: whether the task has a result, or will have one. In GD++ code, testing an [code]Async[/code], e.g. [code]if (task)[/code], gives the same. In scripts, test [member valid], not the task object: [code]if task:[/code] only checks that it isn't [code]null[/code], so it's [code]true[/code] for a Claimed task too. With [member done], it tells the three states apart: the task is Running when it's [member valid] but not [member done]. Read-only."},
 	} {
 		x.ln(2, fmt.Sprintf(`<member name="%s" type="%s" setter="" getter="%s">`, m.name, m.typ, m.getter))
 		x.ln(3, m.doc)

@@ -327,8 +327,8 @@ private:
 #define GDPP_GDCLASS(m_class, m_inherits) GDCLASS(m_class, m_inherits) // Expands m_class before GDCLASS quotes it.
 
 // GDPP_ASYNC_CLASS is the package's class of tasks, which Async types name: a job that runs on the WorkerThreadPool,
-// e.g. the body of an @onthread function, and its result once done. It's thread-safe. GD++ code calls its methods by
-// name, so it works with the tasks of other packages too. The package registers it, if it has GD++ classes.
+// e.g. the body of an @onthread function, and its result once done. It's thread-safe. GD++ code calls its methods
+// directly, and those of other packages' classes of tasks by name, so it works with their tasks too. The package registers it, if it has GD++ classes.
 class GDPP_ASYNC_CLASS : public RefCounted {
 	GDPP_GDCLASS(GDPP_ASYNC_CLASS, RefCounted)
 
@@ -453,57 +453,45 @@ private:
 
 // Async<T> is the C++ type of Async[T]: a task, whose result has type T, e.g. the call of an @onthread function,
 // which runs on the WorkerThreadPool. It references an object of the package's class of tasks, and calls its
-// methods by name, so it works with the tasks of other packages too. Copies share the task. An Async is valid while
-// it holds a task, running or done, and becomes empty when its result is claimed. A new Async is empty too, and
-// destroying an empty one does nothing. When the last reference to a task is gone, the task object waits for the task
-// to finish, unless it already has.
+// methods by name, so it works with the tasks of other packages too. Copies share the task, like references to the
+// task object in scripts, and each method does what the object's method of the same name does: claiming through one
+// copy claims the task for all of them. A new Async is empty: it's false, like a claimed one, and destroying it does
+// nothing. When the last reference to a task is gone, the task object waits for the task to finish, unless it
+// already has.
 template <typename T>
 class Async {
 public:
 	Async() = default;
 	explicit Async(const Ref<RefCounted> &p_task) :
-			task(p_task) {}
+			task(p_task), own(Object::cast_to<GDPP_ASYNC_CLASS>(p_task.ptr())) {}
 
-	// An Async is true while it holds a task, running or done, and false when it's empty: new, or claimed.
-	explicit operator bool() const { return task.is_valid(); }
+	// An Async is true while its task is running or done, and false once it's claimed, or when it's empty.
+	explicit operator bool() const { return task.is_valid() && (own ? own->is_valid() : task->call(GDPP_STRING_NAME("is_valid")).operator bool()); }
 
-	// is_done reports whether the Async holds a task that has finished, so claim returns its result at once. It's false
-	// while the task runs, and for an empty Async, whose task has been claimed, or which never had one.
-	bool is_done() const { return task.is_valid() && task->call(GDPP_STRING_NAME("is_done")).operator bool(); }
+	// is_done reports whether the task has finished, and its result hasn't been claimed. It's false while the task
+	// runs, once it's claimed, and for an empty Async.
+	bool is_done() const { return task.is_valid() && (own ? own->is_done() : task->call(GDPP_STRING_NAME("is_done")).operator bool()); }
 
-	// claim returns the result of a done task, and empties the Async. The Async must be true, and its task done: debug
-	// builds check it, and print an error and return the default value if not. Release builds don't check it.
-	T claim() {
-#ifdef DEBUG_ENABLED
-		if (task.is_null()) {
-			ERR_PRINT("There is no task to claim: the Async is new, or its result has been claimed already.");
-			return T();
-		}
-		if (!is_done()) {
-			ERR_PRINT("The task isn't done yet. Check is_done() before claiming its result, or call wait().");
-			return T();
-		}
-#endif
-		return take();
-	}
+	// claim returns the result of a done task, and lets go of it: the task is claimed, for every copy. The task must
+	// be done, and not claimed yet: debug builds check it, and print an error and return the default value if not.
+	// Release builds don't check it.
+	T claim() const { return call(GDPP_STRING_NAME("claim"), &GDPP_ASYNC_CLASS::claim); }
 
-	// wait waits for the task to finish, and claims its result. The Async must be true: debug builds check it, and
-	// print an error and return the default value if not. Release builds don't check it.
-	T wait() {
-#ifdef DEBUG_ENABLED
-		if (task.is_null()) {
-			ERR_PRINT("There is no task to wait for: the Async is new, or its result has been claimed already.");
-			return T();
-		}
-#endif
-		return take();
-	}
+	// result returns the result of a done task, and keeps it, unlike claim. The task must be done, and not claimed
+	// yet, like for claim.
+	T result() const { return call(GDPP_STRING_NAME("get_result"), &GDPP_ASYNC_CLASS::get_result); }
+
+	// wait waits for the task to finish, and returns its result, which it keeps, like result. The task must not be
+	// claimed yet, like for claim.
+	T wait() const { return call(GDPP_STRING_NAME("wait"), &GDPP_ASYNC_CLASS::wait); }
 
 	// cancel asks the task to stop: gdpp::is_cancelled() is true in its body from now on. It's up to the body to check it,
-	// and return early. The Async stays as it is: its result is still claimed, or dropped, as usual. It's always safe:
-	// for an empty Async, or a task that's done, it does nothing.
+	// and return early. The task's result is still claimed, or dropped, as usual. It's always safe: for an empty Async,
+	// or a task that's done or claimed, it does nothing.
 	void cancel() {
-		if (task.is_valid()) {
+		if (own) {
+			own->cancel();
+		} else if (task.is_valid()) {
 			task->call(GDPP_STRING_NAME("cancel"));
 		}
 	}
@@ -514,11 +502,20 @@ public:
 
 private:
 	Ref<RefCounted> task; // Null for an empty Async, which touches nothing, not even when destroyed.
+	// own is task, if it's of this package's class of tasks, whose methods it then calls directly, without the engine.
+	// It's null for the tasks of other packages, whose methods it calls by name.
+	GDPP_ASYNC_CLASS *own = nullptr;
 
-	// take waits for the task, as Godot requires once per task, empties the Async, and returns the result.
-	T take() {
-		Variant value = task->call(GDPP_STRING_NAME("wait"));
-		task.unref();
+	// call calls the task object's method p_method, p_own_method if it's own, and converts its result to T.
+	template <typename M>
+	T call(const StringName &p_method, M p_own_method) const {
+#ifdef DEBUG_ENABLED
+		if (task.is_null()) {
+			ERR_PRINT("There is no task: the Async is empty.");
+			return T();
+		}
+#endif
+		Variant value = own ? (own->*p_own_method)() : task->call(p_method);
 		if constexpr (!std::is_void_v<T>) {
 			return value.get_type() == Variant::NIL ? T() : from_variant<T>(value);
 		}
