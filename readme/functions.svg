@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="453" height="229" viewBox="0 0 453 229">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
-  <text y="30"><tspan x="16.0" textLength="33.6" fill="#e3b341">func</tspan><tspan x="58.0" textLength="42.0" fill="#56d4dd">greet</tspan><tspan x="100.0" textLength="58.8" fill="#e6edf3">(name: </tspan><tspan x="158.8" textLength="50.4" fill="#7ee787">String</tspan><tspan x="209.2" textLength="75.6" fill="#e6edf3">, times: </tspan><tspan x="284.8" textLength="25.2" fill="#7ee787">int</tspan><tspan x="318.4" textLength="16.8" fill="#e6edf3">= </tspan><tspan x="335.2" textLength="8.4" fill="#d2a8ff">1</tspan><tspan x="343.6" textLength="42.0" fill="#e6edf3">) -&gt; </tspan><tspan x="385.6" textLength="33.6" fill="#7ee787">void</tspan><tspan x="427.6" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="50"><tspan x="32.8" textLength="25.2" fill="#e3b341">for</tspan><tspan x="66.4" textLength="8.4" fill="#e6edf3">(</tspan><tspan x="74.8" textLength="58.8" fill="#7ee787">int64_t</tspan><tspan x="142.0" textLength="33.6" fill="#e6edf3">i = </tspan><tspan x="175.6" textLength="8.4" fill="#d2a8ff">0</tspan><tspan x="184.0" textLength="159.6" fill="#e6edf3">; i &lt; times; i++) {</tspan></text>
-  <text y="70"><tspan x="49.6" textLength="16.8" fill="#7ee787">gd</tspan><tspan x="66.4" textLength="16.8" fill="#e6edf3">::</tspan><tspan x="83.2" textLength="42.0" fill="#56d4dd">print</tspan><tspan x="125.2" textLength="8.4" fill="#e6edf3">(</tspan><tspan x="133.6" textLength="75.6" fill="#d2a8ff">"Hello, "</tspan><tspan x="209.2" textLength="67.2" fill="#e6edf3">, name, </tspan><tspan x="276.4" textLength="25.2" fill="#d2a8ff">"!"</tspan><tspan x="301.6" textLength="16.8" fill="#e6edf3">);</tspan></text>
-  <text y="90"><tspan x="32.8" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="110"><tspan x="16.0" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="130"></text>
-  <text y="150"><tspan x="16.0" textLength="75.6" fill="#79c0ff">@override</tspan></text>
-  <text y="170"><tspan x="16.0" textLength="33.6" fill="#e3b341">func</tspan><tspan x="58.0" textLength="50.4" fill="#56d4dd">_ready</tspan><tspan x="108.4" textLength="50.4" fill="#e6edf3">() -&gt; </tspan><tspan x="158.8" textLength="33.6" fill="#7ee787">void</tspan><tspan x="200.8" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="190"><tspan x="32.8" textLength="42.0" fill="#56d4dd">greet</tspan><tspan x="74.8" textLength="8.4" fill="#e6edf3">(</tspan><tspan x="83.2" textLength="58.8" fill="#d2a8ff">"world"</tspan><tspan x="142.0" textLength="16.8" fill="#e6edf3">);</tspan></text>
-  <text y="210"><tspan x="16.0" textLength="8.4" fill="#e6edf3">}</tspan></text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">greet</tspan><tspan fill="#e6edf3">(name: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">, times: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">1</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> (</tspan><tspan fill="#7ee787">int64_t</tspan><tspan fill="#e6edf3"> i = </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">; i &lt; times; i++) {</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">    </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">::</tspan><tspan fill="#56d4dd">print</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Hello, "</tspan><tspan fill="#e6edf3">, name, </tspan><tspan fill="#d2a8ff">"!"</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="130"></text>
+  <text x="16" y="150"><tspan fill="#79c0ff">@override</tspan></text>
+  <text x="16" y="170"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_ready</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">greet</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"world"</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

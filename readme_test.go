@@ -54,8 +54,7 @@ func readmeSVG(code string) string {
 	var body strings.Builder
 	for i, line := range lines {
 		cols = max(cols, visibleLen(line))
-		fmt.Fprintf(&body, "  <text y=\"%d\">", pad+fontSize+i*lineHeight)
-		col := 0
+		fmt.Fprintf(&body, "  <text x=\"%d\" y=\"%d\">", pad, pad+fontSize+i*lineHeight)
 		for j, part := range strings.Split(line, "\x1b[") {
 			style, text := "", part
 			if j > 0 {
@@ -64,22 +63,19 @@ func readmeSVG(code string) string {
 					style = ""
 				}
 			}
-			// Each run starts at its own column and fills its columns exactly, so the layout doesn't depend on the font.
-			trimmed := strings.TrimLeft(text, " ")
-			col += len(text) - len(trimmed)
-			if trimmed != "" {
-				escaped := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(trimmed)
-				fmt.Fprintf(&body, "<tspan x=\"%.1f\" textLength=\"%.1f\" fill=\"%s\">%s</tspan>",
-					pad+float64(col*fontSize)*0.6, float64(visibleLen(trimmed)*fontSize)*0.6, readmeColors[style], escaped)
+			// Runs flow one after another, so the font's own spacing applies, with no gaps between them.
+			// Spaces are non-breaking, since renderers collapse plain ones, e.g. the indentation.
+			if text != "" {
+				escaped := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", " ", "\u00a0").Replace(text)
+				fmt.Fprintf(&body, "<tspan fill=\"%s\">%s</tspan>", readmeColors[style], escaped)
 			}
-			col += visibleLen(trimmed)
 		}
 		body.WriteString("</text>\n")
 	}
 	width, height := 2*pad+cols*fontSize*6/10+1, 2*pad+len(lines)*lineHeight-(lineHeight-fontSize)/2
 	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">
   <rect width="100%%" height="100%%" rx="8" fill="#0d1117"/>
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="%d" xml:space="preserve">
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="%d">
 %s  </g>
 </svg>
 `, width, height, width, height, fontSize, body.String())

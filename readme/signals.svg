@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="612" height="269" viewBox="0 0 612 269">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
-  <text y="30"><tspan x="16.0" textLength="50.4" fill="#e3b341">signal</tspan><tspan x="74.8" textLength="117.6" fill="#56d4dd">health_changed</tspan><tspan x="192.4" textLength="75.6" fill="#e6edf3">(health: </tspan><tspan x="268.0" textLength="25.2" fill="#7ee787">int</tspan><tspan x="293.2" textLength="8.4" fill="#e6edf3">)</tspan></text>
-  <text y="50"></text>
-  <text y="70"><tspan x="16.0" textLength="33.6" fill="#e3b341">enum</tspan><tspan x="58.0" textLength="33.6" fill="#7ee787">Suit</tspan><tspan x="100.0" textLength="268.8" fill="#e6edf3">{ DIAMONDS CLUBS SPADES HEARTS }</tspan></text>
-  <text y="90"><tspan x="16.0" textLength="33.6" fill="#e3b341">enum</tspan><tspan x="58.0" textLength="117.6" fill="#e6edf3">MAX_PLAYERS = </tspan><tspan x="175.6" textLength="8.4" fill="#d2a8ff">4</tspan></text>
-  <text y="110"></text>
-  <text y="130"><tspan x="16.0" textLength="33.6" fill="#e3b341">func</tspan><tspan x="58.0" textLength="134.4" fill="#56d4dd">_on_body_entered</tspan><tspan x="192.4" textLength="58.8" fill="#e6edf3">(body: </tspan><tspan x="251.2" textLength="50.4" fill="#7ee787">Node3D</tspan><tspan x="301.6" textLength="42.0" fill="#e6edf3">) -&gt; </tspan><tspan x="343.6" textLength="33.6" fill="#7ee787">void</tspan><tspan x="385.6" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="150"><tspan x="32.8" textLength="50.4" fill="#7ee787">Player</tspan><tspan x="91.6" textLength="126.0" fill="#e6edf3">*player = body </tspan><tspan x="217.6" textLength="16.8" fill="#e3b341">as</tspan><tspan x="242.8" textLength="50.4" fill="#7ee787">Player</tspan><tspan x="301.6" textLength="42.0" fill="#e6edf3">*;   </tspan><tspan x="343.6" textLength="252.0" fill="#8b949e">// null if body isn't a Player</tspan></text>
-  <text y="170"><tspan x="32.8" textLength="16.8" fill="#e3b341">if</tspan><tspan x="58.0" textLength="84.0" fill="#e6edf3">(player) {</tspan></text>
-  <text y="190"><tspan x="49.6" textLength="67.2" fill="#e6edf3">player-&gt;</tspan><tspan x="116.8" textLength="33.6" fill="#56d4dd">hurt</tspan><tspan x="150.4" textLength="8.4" fill="#e6edf3">(</tspan><tspan x="158.8" textLength="16.8" fill="#d2a8ff">10</tspan><tspan x="175.6" textLength="16.8" fill="#e6edf3">);</tspan></text>
-  <text y="210"><tspan x="49.6" textLength="33.6" fill="#e3b341">emit</tspan><tspan x="91.6" textLength="117.6" fill="#56d4dd">health_changed</tspan><tspan x="209.2" textLength="142.8" fill="#e6edf3">(player-&gt;health);</tspan></text>
-  <text y="230"><tspan x="32.8" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="250"><tspan x="16.0" textLength="8.4" fill="#e6edf3">}</tspan></text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#e3b341">signal</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">health_changed</tspan><tspan fill="#e6edf3">(health: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="50"></text>
+  <text x="16" y="70"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Suit</tspan><tspan fill="#e6edf3"> { DIAMONDS CLUBS SPADES HEARTS }</tspan></text>
+  <text x="16" y="90"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> MAX_PLAYERS = </tspan><tspan fill="#d2a8ff">4</tspan></text>
+  <text x="16" y="110"></text>
+  <text x="16" y="130"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_on_body_entered</tspan><tspan fill="#e6edf3">(body: </tspan><tspan fill="#7ee787">Node3D</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Player</tspan><tspan fill="#e6edf3"> *player = body </tspan><tspan fill="#e3b341">as</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Player</tspan><tspan fill="#e6edf3"> *;   </tspan><tspan fill="#8b949e">// null if body isn't a Player</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (player) {</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">    player-&gt;</tspan><tspan fill="#56d4dd">hurt</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">10</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">emit</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">health_changed</tspan><tspan fill="#e6edf3">(player-&gt;health);</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

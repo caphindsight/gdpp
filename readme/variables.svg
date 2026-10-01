@@ -1,20 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="537" height="329" viewBox="0 0 537 329">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
-  <text y="30"><tspan x="16.0" textLength="58.8" fill="#79c0ff">@export</tspan><tspan x="83.2" textLength="25.2" fill="#e3b341">var</tspan><tspan x="116.8" textLength="58.8" fill="#e6edf3">speed: </tspan><tspan x="175.6" textLength="42.0" fill="#7ee787">float</tspan><tspan x="226.0" textLength="16.8" fill="#e6edf3">= </tspan><tspan x="242.8" textLength="25.2" fill="#d2a8ff">5.0</tspan></text>
-  <text y="50"></text>
-  <text y="70"><tspan x="16.0" textLength="67.2" fill="#79c0ff">@onready</tspan><tspan x="91.6" textLength="25.2" fill="#e3b341">var</tspan><tspan x="125.2" textLength="67.2" fill="#e6edf3">camera: </tspan><tspan x="192.4" textLength="67.2" fill="#7ee787">Camera3D</tspan><tspan x="268.0" textLength="92.4" fill="#e6edf3">= get_node&lt;</tspan><tspan x="360.4" textLength="67.2" fill="#7ee787">Camera3D</tspan><tspan x="427.6" textLength="16.8" fill="#e6edf3">&gt;(</tspan><tspan x="444.4" textLength="67.2" fill="#d2a8ff">"Camera"</tspan><tspan x="511.6" textLength="8.4" fill="#e6edf3">)</tspan></text>
-  <text y="90"></text>
-  <text y="110"><tspan x="16.0" textLength="25.2" fill="#e3b341">var</tspan><tspan x="49.6" textLength="50.4" fill="#e6edf3">ammo: </tspan><tspan x="100.0" textLength="25.2" fill="#7ee787">int</tspan><tspan x="133.6" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="130"><tspan x="32.8" textLength="33.6" fill="#e3b341">decl</tspan><tspan x="74.8" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="150"><tspan x="49.6" textLength="58.8" fill="#7ee787">int64_t</tspan><tspan x="116.8" textLength="67.2" fill="#e6edf3">ammo_ = </tspan><tspan x="184.0" textLength="8.4" fill="#d2a8ff">0</tspan><tspan x="192.4" textLength="8.4" fill="#e6edf3">;</tspan></text>
-  <text y="170"><tspan x="32.8" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="190"><tspan x="32.8" textLength="25.2" fill="#e3b341">get</tspan><tspan x="66.4" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="210"><tspan x="49.6" textLength="50.4" fill="#e3b341">return</tspan><tspan x="108.4" textLength="50.4" fill="#e6edf3">ammo_;</tspan></text>
-  <text y="230"><tspan x="32.8" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="250"><tspan x="32.8" textLength="25.2" fill="#e3b341">set</tspan><tspan x="58.0" textLength="75.6" fill="#e6edf3">(value) {</tspan></text>
-  <text y="270"><tspan x="49.6" textLength="134.4" fill="#e6edf3">ammo_ = value &lt; </tspan><tspan x="184.0" textLength="8.4" fill="#d2a8ff">0</tspan><tspan x="200.8" textLength="16.8" fill="#e6edf3">? </tspan><tspan x="217.6" textLength="8.4" fill="#d2a8ff">0</tspan><tspan x="234.4" textLength="67.2" fill="#e6edf3">: value;</tspan></text>
-  <text y="290"><tspan x="32.8" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="310"><tspan x="16.0" textLength="8.4" fill="#e6edf3">}</tspan></text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> speed: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">5.0</tspan></text>
+  <text x="16" y="50"></text>
+  <text x="16" y="70"><tspan fill="#79c0ff">@onready</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> camera: </tspan><tspan fill="#7ee787">Camera3D</tspan><tspan fill="#e6edf3"> = get_node&lt;</tspan><tspan fill="#7ee787">Camera3D</tspan><tspan fill="#e6edf3">&gt;(</tspan><tspan fill="#d2a8ff">"Camera"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="90"></text>
+  <text x="16" y="110"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> ammo: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">decl</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">    </tspan><tspan fill="#7ee787">int64_t</tspan><tspan fill="#e6edf3"> ammo_ = </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">get</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> ammo_;</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">set</tspan><tspan fill="#e6edf3">(value) {</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">    ammo_ = value &lt; </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3"> ? </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3"> : value;</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="310"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="587" height="349" viewBox="0 0 587 349">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
-  <text y="30"><tspan x="16.0" textLength="25.2" fill="#e3b341">var</tspan><tspan x="49.6" textLength="75.6" fill="#e6edf3">pending: </tspan><tspan x="125.2" textLength="42.0" fill="#7ee787">Async</tspan><tspan x="167.2" textLength="8.4" fill="#e6edf3">[</tspan><tspan x="175.6" textLength="151.2" fill="#7ee787">PackedVector2Array</tspan><tspan x="326.8" textLength="8.4" fill="#e6edf3">]</tspan></text>
-  <text y="50"></text>
-  <text y="70"><tspan x="16.0" textLength="75.6" fill="#79c0ff">@onthread</tspan></text>
-  <text y="90"><tspan x="16.0" textLength="33.6" fill="#e3b341">func</tspan><tspan x="58.0" textLength="75.6" fill="#56d4dd">find_path</tspan><tspan x="133.6" textLength="58.8" fill="#e6edf3">(from: </tspan><tspan x="192.4" textLength="58.8" fill="#7ee787">Vector2</tspan><tspan x="251.2" textLength="50.4" fill="#e6edf3">, to: </tspan><tspan x="301.6" textLength="58.8" fill="#7ee787">Vector2</tspan><tspan x="360.4" textLength="42.0" fill="#e6edf3">) -&gt; </tspan><tspan x="402.4" textLength="151.2" fill="#7ee787">PackedVector2Array</tspan><tspan x="562.0" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="110"><tspan x="32.8" textLength="151.2" fill="#7ee787">PackedVector2Array</tspan><tspan x="192.4" textLength="42.0" fill="#e6edf3">path;</tspan></text>
-  <text y="130"><tspan x="32.8" textLength="369.6" fill="#8b949e">// ... a long search, on a worker thread ...</tspan></text>
-  <text y="150"><tspan x="32.8" textLength="50.4" fill="#e3b341">return</tspan><tspan x="91.6" textLength="42.0" fill="#e6edf3">path;</tspan></text>
-  <text y="170"><tspan x="16.0" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="190"></text>
-  <text y="210"><tspan x="16.0" textLength="75.6" fill="#79c0ff">@override</tspan></text>
-  <text y="230"><tspan x="16.0" textLength="33.6" fill="#e3b341">func</tspan><tspan x="58.0" textLength="67.2" fill="#56d4dd">_process</tspan><tspan x="125.2" textLength="67.2" fill="#e6edf3">(delta: </tspan><tspan x="192.4" textLength="42.0" fill="#7ee787">float</tspan><tspan x="234.4" textLength="42.0" fill="#e6edf3">) -&gt; </tspan><tspan x="276.4" textLength="33.6" fill="#7ee787">void</tspan><tspan x="318.4" textLength="8.4" fill="#e6edf3">{</tspan></text>
-  <text y="250"><tspan x="32.8" textLength="16.8" fill="#e3b341">if</tspan><tspan x="58.0" textLength="8.4" fill="#e6edf3">(</tspan><tspan x="66.4" textLength="58.8" fill="#e3b341">is_done</tspan><tspan x="133.6" textLength="84.0" fill="#e6edf3">pending) {</tspan></text>
-  <text y="270"><tspan x="49.6" textLength="50.4" fill="#56d4dd">follow</tspan><tspan x="100.0" textLength="8.4" fill="#e6edf3">(</tspan><tspan x="108.4" textLength="42.0" fill="#e3b341">claim</tspan><tspan x="158.8" textLength="75.6" fill="#e6edf3">pending);</tspan></text>
-  <text y="290"><tspan x="49.6" textLength="84.0" fill="#e6edf3">pending = </tspan><tspan x="133.6" textLength="75.6" fill="#56d4dd">find_path</tspan><tspan x="209.2" textLength="8.4" fill="#e6edf3">(</tspan><tspan x="217.6" textLength="100.8" fill="#56d4dd">get_position</tspan><tspan x="318.4" textLength="100.8" fill="#e6edf3">(), target);</tspan></text>
-  <text y="310"><tspan x="32.8" textLength="8.4" fill="#e6edf3">}</tspan></text>
-  <text y="330"><tspan x="16.0" textLength="8.4" fill="#e6edf3">}</tspan></text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> pending: </tspan><tspan fill="#7ee787">Async</tspan><tspan fill="#e6edf3">[</tspan><tspan fill="#7ee787">PackedVector2Array</tspan><tspan fill="#e6edf3">]</tspan></text>
+  <text x="16" y="50"></text>
+  <text x="16" y="70"><tspan fill="#79c0ff">@onthread</tspan></text>
+  <text x="16" y="90"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">find_path</tspan><tspan fill="#e6edf3">(from: </tspan><tspan fill="#7ee787">Vector2</tspan><tspan fill="#e6edf3">, to: </tspan><tspan fill="#7ee787">Vector2</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">PackedVector2Array</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">PackedVector2Array</tspan><tspan fill="#e6edf3"> path;</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// ... a long search, on a worker thread ...</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> path;</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="190"></text>
+  <text x="16" y="210"><tspan fill="#79c0ff">@override</tspan></text>
+  <text x="16" y="230"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (</tspan><tspan fill="#e3b341">is_done</tspan><tspan fill="#e6edf3"> pending) {</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">    </tspan><tspan fill="#56d4dd">follow</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#e3b341">claim</tspan><tspan fill="#e6edf3"> pending);</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">    pending = </tspan><tspan fill="#56d4dd">find_path</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#56d4dd">get_position</tspan><tspan fill="#e6edf3">(), target);</tspan></text>
+  <text x="16" y="310"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>
