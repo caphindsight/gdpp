@@ -54,9 +54,7 @@ gd++ install --echo   # or just prints the commands, to run them yourself
 
 ## The manual
 
-The full documentation is built into the tool, and matches the version you run. Run `gd++ man` to list its pages, and start with `gd++ man intro`. The language pages describe the syntax version of the package you're in.
-
-[tutorial/tutorial.gd++](tutorial/tutorial.gd++) is a tour of the language in one file.
+The full documentation is built into the tool, and matches the version you run. Run `gd++ man` to list its pages, and start with `gd++ man intro` and `gd++ man lang`.
 
 ## The language by example
 
