@@ -344,7 +344,7 @@ public:
 	// Async. The job must be done, and not claimed yet: debug builds check it, release builds don't.
 	Variant claim() {
 #ifdef DEBUG_ENABLED
-		ERR_FAIL_COND_V_MSG(claimed.load(), Variant(), "The task's result has already been claimed.");
+		ERR_FAIL_COND_V_MSG(claimed.load(), Variant(), "The task holds no result: it's new, or its result has been claimed already.");
 		ERR_FAIL_COND_V_MSG(!is_done(), Variant(), "The task isn't done yet. Check is_done() before claim(), or call wait().");
 #endif
 		join();
@@ -365,7 +365,7 @@ public:
 	// get_result returns the result. The job must be done: debug builds check it, release builds don't.
 	Variant get_result() const {
 #ifdef DEBUG_ENABLED
-		ERR_FAIL_COND_V_MSG(claimed.load(), Variant(), "The task's result has been claimed.");
+		ERR_FAIL_COND_V_MSG(claimed.load(), Variant(), "The task holds no result: it's new, or its result has been claimed already.");
 		ERR_FAIL_COND_V_MSG(!is_done(), Variant(), "The task isn't done yet. Check is_done() before get_result(), or call wait().");
 #endif
 		return result;
@@ -381,7 +381,7 @@ public:
 #endif
 		job = p_job;
 		running = Ref<RefCounted>(this);
-		done.store(false, std::memory_order_relaxed); // Before the task starts, and before other threads see the object.
+		claimed.store(false, std::memory_order_relaxed); // Before the task starts, and before other threads see the object.
 		id = WorkerThreadPool::get_singleton()->add_task(callable_mp(this, &GDPP_ASYNC_CLASS::run), false, p_name);
 	}
 
@@ -409,9 +409,9 @@ private:
 	Callable job;
 	Ref<RefCounted> running; // Keeps the object alive while the job runs.
 	Variant result; // Set before done.
-	std::atomic<bool> done = true; // Until started: an object that runs nothing, e.g. from new(), is done, without result.
+	std::atomic<bool> done = false;
 	std::atomic<bool> cancel_requested = false;
-	std::atomic<bool> claimed = false; // Whether claim took the result.
+	std::atomic<bool> claimed = true; // Whether claim took the result. Until started: an object that runs nothing, e.g. from new(), holds nothing.
 	std::mutex mutex;
 	bool waited = false; // Godot requires waiting for each task once.
 

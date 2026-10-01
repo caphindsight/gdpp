@@ -197,7 +197,7 @@ func _on_cancel_pressed():
     loading.cancel()
 ```
 
-valid tells a Running task from a Claimed one, since neither is done: here, the spinner hides once the level is claimed. A script lets go of a task by dropping its reference, e.g. with `search = null`. An object of the class of tasks that no task runs in, e.g. FooAsync.new(), is Done, and its result is null.
+valid tells a Running task from a Claimed one, since neither is done: here, the spinner hides once the level is claimed. A script lets go of a task by dropping its reference, e.g. with `search = null`. An object of the class of tasks that no task runs in, e.g. FooAsync.new(), is Claimed: valid and done are false, like an empty Async in GD++ code.
 
 # The task's lifetime
 

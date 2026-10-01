@@ -448,7 +448,7 @@ A task is in one of three states. It goes through them in this order, and never 
 - [member valid] and [member done] are [code]false[/code].
 - [method claim], [member result] and [method wait] are mistakes: the result is gone.
 - [method cancel] does nothing.
-In debug builds, a mistake prints an error, and returns [code]null[/code]. Release builds don't check, so a mistake is undefined there. A task made with [code]new()[/code] runs no job: it starts Done, with a [code]null[/code] result.
+In debug builds, a mistake prints an error, and returns [code]null[/code]. Release builds don't check, so a mistake is undefined there. A task made with [code]new()[/code] runs no job: it starts Claimed, so [member valid] and [member done] are [code]false[/code], like an empty [code]Async[/code] in GD++ code.
 Check [member done] once a frame, e.g. in [method Node._process], and claim the result once it's [code]true[/code]. Here, a character follows a path that a worker thread finds, and starts the next search when it has one:
 [codeblock]
 var search = null
