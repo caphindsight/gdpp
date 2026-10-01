@@ -11,11 +11,11 @@ gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noic
 
 # Description
 
-gd++ init does one of three things, depending on its arguments:
+`gd++ init` does one of three things, depending on its arguments:
 
-- Without PATH, it sets up GD++ in the project that contains the current directory: it writes res://gd++proj.toml.
-- With PATH, it creates the package at PATH, or updates it: it writes PATH/gd++pkg.toml.
-- With PATH and --class, it adds a C++ class to the package at PATH, or updates it.
+- Without PATH, it sets up GD++ in the project that contains the current directory: it writes `res://gd++proj.toml`.
+- With PATH, it creates or updates the package at PATH: it writes `PATH/gd++pkg.toml`.
+- With PATH and `--class`, it adds or updates a C++ class of the package at PATH.
 
 Every change is logged, e.g. "Set the Godot API spec to 4.7.2-stable." or "Set class Spinner to a tool class.". If the file already says what you asked for, it warns "No changes were made." and changes nothing.
 
@@ -25,12 +25,12 @@ Every change is logged, e.g. "Set the Godot API spec to 4.7.2-stable." or "Set c
 gd++ init [--vcs none|git]
 ```
 
-Writes res://gd++proj.toml, with the project's settings. See `gd++ man projects`.
+Writes `res://gd++proj.toml`, with the project's settings. See `gd++ man projects`.
 
 --vcs none|git
-  The project's version control system. With git, GD++ writes its blocks of ignores into the .gitignore files of the project and every package; with none, it removes them. See `gd++ man vcs`.
+  The project's version control system. With `git`, GD++ writes its blocks of ignores into the `.gitignore` files of the project and every package, and with `none`, it removes them. See `gd++ man vcs`.
 
-Without --vcs, it creates gd++proj.toml with the defaults, or reformats it. The file is optional, so this step is too, unless you want git support.
+Without `--vcs`, it creates `gd++proj.toml` with the defaults, or reformats it. The file is optional, so you only need this step for git support.
 
 # Creating a package
 
@@ -38,28 +38,28 @@ Without --vcs, it creates gd++proj.toml with the defaults, or reformats it. The 
 gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
 ```
 
-Creates the directory PATH if it doesn't exist, and writes PATH/gd++pkg.toml. PATH must be inside a project; "." makes the current directory a package, e.g. the project root. If the project uses git, it also writes the package-level block into PATH/.gitignore. If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`. See `gd++ man packages`.
+Creates the directory PATH if it doesn't exist, and writes `PATH/gd++pkg.toml`. PATH must be inside a project. `.` makes the current directory a package, e.g. the project root. If the project uses git, it also writes the package-level block into `PATH/.gitignore`. If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`. See `gd++ man packages`.
 
 --bind NAME
-  The package's Godot C++ bindings, e.g. 10.0.0-stable. Required for a new package.
+  The package's Godot C++ bindings, e.g. `10.0.0-stable`. Required for a new package.
 
 --spec NAME
-  The package's Godot API spec, e.g. 4.7.2-stable. Required for a new package.
+  The package's Godot API spec, e.g. `4.7.2-stable`. Required for a new package.
 
 --syntax N
-  The package's GD++ syntax version. Default for a new package: the latest stable one; `gd++ --syntax` lists them all. See "Syntax versions" in `gd++ man packages`. Syntax 0 is the nightly version, which may break your code at any time: init warns that it should never be used in production. For a version that this gd++ doesn't know, e.g. 2, init asks whether to continue, since either the value is wrong or gd++ is outdated.
+  The package's GD++ syntax version. Default for a new package: the latest stable one. `gd++ --syntax` lists them all. See "Syntax versions" in `gd++ man packages`. Syntax 0 is the nightly version, which may break your code at any time, so `gd++ init` warns that it should never be used in production. For a version that this `gd++` doesn't know, e.g. `2`, `gd++ init` asks whether to continue, since either the value is wrong or `gd++` is outdated.
 
 --nightly
-  The same as --syntax 0.
+  The same as `--syntax 0`.
 
 --std STD
-  The package's C++ standard, e.g. c++17, c++20 or c++23. Default: c++20.
+  The package's C++ standard, e.g. `c++17`, `c++20` or `c++23`. Default: `c++20`.
 
 --prefix NAME
-  The prefix of the names of the classes that GD++ adds to the package, e.g. Foo for FooAsync, the class of its tasks. Default: the package's id in PascalCase, e.g. MyGame for my_game. See `gd++ man async`.
+  The prefix of the names of the classes that GD++ adds to the package, e.g. `Foo` for `FooAsync`, the class of its tasks. Default: the package's id in PascalCase, e.g. `MyGame` for `my_game`. See `gd++ man async`.
 
 --quit-timeout SECONDS
-  How long the package's tasks may still run after the game started quitting, before it exits anyway, e.g. 2.5. Default: 1. See "When the game quits" in `gd++ man async`.
+  How long the package's tasks may still run after the game started quitting, before the game exits anyway, e.g. `2.5`. Default: `1`. See "When the game quits" in `gd++ man async`.
 
 To see which bindings and specs exist, run `gd++ fetch --index`.
 
@@ -69,10 +69,10 @@ To see which bindings and specs exist, run `gd++ fetch --index`.
 gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
 ```
 
-Changes the given settings of the existing package at PATH, and keeps the others. Without --update, init asks "Package PATH already exists. Update it?" when PATH is a package already. Changing the bindings, spec, syntax or standard makes the package's next build start from scratch.
+Changes the given settings of the existing package at PATH, and keeps the others. Without `--update`, `gd++ init` asks "Package PATH already exists. Update it?" when PATH is a package already. Changing any setting makes the package's next build start from scratch.
 
 --update
-  Update an existing package, or class with --class, without asking, instead of creating one. Fails if it doesn't exist.
+  Update an existing package, or with `--class` an existing class, without asking, instead of creating one. Fails if it doesn't exist.
 
 # Adding or updating a C++ class
 
@@ -80,40 +80,40 @@ Changes the given settings of the existing package at PATH, and keeps the others
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--update]
 ```
 
-Adds the plain C++ class NAME to the gd++pkg.toml of the package at PATH, so the package registers it with Godot, or updates it if it's there already. GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here. See `gd++ man cpp-classes`.
+Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so the package registers it with Godot, or updates the class if it's there already. GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here. See `gd++ man cpp-classes`.
 
 --class NAME
   The name of the class to add or update. It must be a C++ identifier.
 
 --include PATH
-  The header that declares the class, as a pkg:// or res:// path, e.g. pkg://src/spinner.h. If it doesn't end with .h or .hpp, init asks you to confirm.
+  The header that declares the class, as a `pkg://` or `res://` path, e.g. `pkg://src/spinner.h`. If it doesn't end with `.h` or `.hpp`, `gd++ init` asks you to confirm.
 
 --noinclude
-  Remove the class's header, or create the class without one, e.g. when another header already declares it. A new class needs --include or --noinclude.
+  Remove the class's header, or create the class without one, e.g. when another header already declares it. A new class needs `--include` or `--noinclude`.
 
 --icon PATH
-  The class's icon in the editor, as a pkg:// or res:// path, e.g. pkg://icons/spinner.svg.
+  The class's icon in the editor, as a `pkg://` or `res://` path, e.g. `pkg://icons/spinner.svg`.
 
 --noicon
   Remove the class's icon.
 
 --tool
-  Make the class a tool class: its code runs in the editor too, like a GD++ class with @tool. Sets tool = true in its [[class]] table.
+  Make the class a tool class: its code runs in the editor too, like a GD++ class with `@tool`. Sets `tool = true` in its `[[class]]` table.
 
 --notool
-  Make the class a runtime class: in the editor, Godot shows placeholders for its objects, which run none of its code. Removes tool = true from its [[class]] table.
+  Make the class a runtime class: in the editor, Godot shows placeholders for its objects, which run none of its code. Removes `tool = true` from its `[[class]]` table.
 
-When updating a class, --include and --icon change the path, --noinclude and --noicon clear it, and without either, the path stays. Likewise, --tool and --notool change the class's kind, and without either, it stays. A new class is a runtime class, unless you give --tool. Without --update, init asks "Class NAME already exists in PATH. Update it?".
+When you update a class, `--include` and `--icon` change the path, `--noinclude` and `--noicon` clear it, and without either, the path stays. In the same way, `--tool` and `--notool` change the class's kind, and without either, it stays. A new class is a runtime class, unless you pass `--tool`. Without `--update`, `gd++ init` asks "Class NAME already exists in PATH. Update it?".
 
 # Rules
 
-- --vcs works only without PATH.
-- --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class need PATH.
-- --include, --noinclude, --icon, --noicon, --tool and --notool need --class.
-- --bind, --spec, --syntax, --std, --prefix and --quit-timeout can't be used with --class.
-- --quit-timeout and --syntax can't be negative.
-- --syntax and --nightly can't be used together.
-- --include and --noinclude, --icon and --noicon, and --tool and --notool, can't be used together.
+- `--vcs` works only without PATH.
+- `--update`, `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout` and `--class` need PATH.
+- `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool` and `--notool` need `--class`.
+- `--bind`, `--spec`, `--syntax`, `--std`, `--prefix` and `--quit-timeout` can't be used with `--class`.
+- `--quit-timeout` and `--syntax` can't be negative.
+- `--syntax` and `--nightly` can't be used together.
+- `--include` and `--noinclude`, `--icon` and `--noicon`, and `--tool` and `--notool` can't be used together.
 
 # Examples
 
@@ -158,7 +158,7 @@ gd++ init . --class Gizmo --update --notool
 - "Invalid arguments: --bind and --spec are required for a new package."
 - "Invalid arguments: a new class requires --include or --noinclude."
 - "Class NAME is declared in FILE, so it can only be changed there." It's a GD++ class.
-- "There is no class NAME in PATH." With --update, the class must exist.
+- "There is no class NAME in PATH." With `--update`, the class must exist.
 - "Path ... is not contained in a Godot project." Run it inside a project.
 
 # See also

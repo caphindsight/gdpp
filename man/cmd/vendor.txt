@@ -9,9 +9,9 @@ gd++ vendor (--bind NAME | --spec NAME | --engine NAME) --to PATH [--tar | --zip
 
 # Description
 
-Copies one dependency between the project's cache and your disk. With --from, it copies a directory or an archive into the cache, under the name NAME. With --to, it copies the dependency NAME out of the cache, to a directory or an archive. It's how you add dependencies that the GD++ dependency repository doesn't have, e.g. the API spec of your own build of Godot, and how you share them. See `gd++ man dependencies`.
+Copies one dependency between the project's cache and your disk. With `--from`, it copies a directory or an archive into the cache, under the name NAME. With `--to`, it copies the dependency NAME out of the cache, to a directory or an archive. Use it to add dependencies that the GD++ dependency repository doesn't have, e.g. the API spec of your own build of Godot, and to share them. See `gd++ man dependencies`.
 
-The cache always stores dependencies as directories. The directory must have the dependency's layout: a spec is a directory with an extension_api.json file, bindings are a copy of godot-cpp, with its SConstruct at the top.
+The cache always stores dependencies as directories, which must have the dependency's layout: a spec is a directory with an `extension_api.json` file, and bindings are a copy of godot-cpp, with its `SConstruct` at the top.
 
 # Options
 
@@ -19,27 +19,27 @@ The cache always stores dependencies as directories. The directory must have the
   The kind of dependency, and its name in the cache. Exactly one is required. The name can be any directory name.
 
 --from PATH
-  Copy into the cache from PATH: a directory, or with --tar or --zip, an archive. Into the ephemeral cache, or with --checkin, the checked in one.
+  Copy into the cache from PATH: a directory, or with `--tar` or `--zip`, an archive. It goes into the ephemeral cache, or with `--checkin`, the checked in one.
 
 --to PATH
-  Copy out of the cache to PATH: a directory, or with --tar or --zip, an archive. Exactly one of --from and --to is required.
+  Copy out of the cache to PATH: a directory, or with `--tar` or `--zip`, an archive. Exactly one of `--from` and `--to` is required.
 
 --checkin
-  With --from, copy into the checked in cache, res://_gd++proj, instead of the ephemeral one.
+  With `--from`, copy into the checked in cache, `res://_gd++proj`, instead of the ephemeral one.
 
 --tar
-  PATH is a gzip-compressed tarball (.tar.gz or .tgz) instead of a directory.
+  PATH is a gzip-compressed tarball (`.tar.gz` or `.tgz`) instead of a directory.
 
 --zip
-  PATH is a .zip file instead of a directory.
+  PATH is a `.zip` file instead of a directory.
 
 # Details
 
-- With --from, the archive's or directory's contents become the dependency's directory: an archive holds the files of the dependency at its top, not in a subdirectory.
-- If the cache already has the dependency, gd++ asks before overwriting it. Files that didn't change are left alone, and files that the new copy lacks are deleted.
-- With --to, if PATH exists, gd++ asks before overwriting it. A directory at PATH becomes an exact copy of the dependency.
-- If PATH's extension doesn't match --tar (.tar.gz, .tgz) or --zip (.zip), gd++ asks whether to use it anyway.
-- Archives keep file permissions. Archives are written to a temporary file first, so a failure never leaves half an archive. Archives with entries that point outside of them are refused.
+- With `--from`, the contents of the archive or directory become the dependency's directory: an archive holds the files of the dependency at its top, not in a subdirectory.
+- If the cache already has the dependency, `gd++` asks before overwriting it. Files that didn't change are left alone, and files that the new copy lacks are deleted.
+- With `--to`, if PATH exists, `gd++` asks before overwriting it. A directory at PATH becomes an exact copy of the dependency.
+- If PATH's extension doesn't match `--tar` (`.tar.gz`, `.tgz`) or `--zip` (`.zip`), `gd++` asks whether to use it anyway.
+- Archives keep file permissions. They are written to a temporary file first, so a failure never leaves half an archive behind. Archives with entries that point outside of them are refused.
 
 # Examples
 

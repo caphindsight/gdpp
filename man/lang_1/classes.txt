@@ -1,6 +1,6 @@
 Classes: declaring Godot classes, bases, @tool, @game_only, @icon, @trace and @profile
 
-A GD++ class is a Godot class, like Node3D or Resource: once built, it shows up in the editor's "Create New Node" dialog (or the resource list), GDScript can use it, and it can be the base of scripts. This page explains how to declare classes, and what GD++ makes of them.
+A GD++ class is a Godot class, like `Node3D` or `Resource`: once built, it shows up in the editor's "Create New Node" dialog (or in the list of resources), GDScript can use it, and scripts can extend it. This page explains how to declare classes, and what GD++ makes of them.
 
 # Declaring a class
 
@@ -13,7 +13,7 @@ extends CharacterBody3D
 var speed: float = 5.0
 ```
 
-An inline class takes a pair of braces, and extends goes first inside them:
+An inline class takes a pair of braces, with `extends` first inside them:
 
 ```gd++
 class Bullet {
@@ -26,12 +26,12 @@ Both are the same kind of class. A file can have one file-level class and any nu
 
 # Base classes
 
-extends names the base class. It can be:
+`extends` names the base class. It can be:
 
-- a Godot class, e.g. Node, Node3D, Resource or Object, from the package's API spec,
+- a Godot class from the package's API spec, e.g. `Node`, `Node3D`, `Resource` or `Object`,
 - another GD++ class of the same package, from any file.
 
-Without extends, the class extends RefCounted, like in GDScript.
+Without `extends`, the class extends `RefCounted`, like in GDScript.
 
 ```gd++
 class_name Enemy
@@ -57,8 +57,8 @@ A class can't extend an extern, an enum, a C++ class of the package, or itself t
 
 Godot has two kinds of classes, and GD++ uses them differently in C++:
 
-- Refcounted classes: RefCounted and every class that extends it, e.g. Resource, Texture2D or your class Stats above. Godot deletes their objects when the last reference goes away. In C++, GD++ types them as Ref<Stats>.
-- Other classes: Object and every class that extends it but not RefCounted, e.g. Node and all nodes. You delete their objects yourself, e.g. with queue_free() or memdelete(). In C++, GD++ types them as pointers, e.g. Player*.
+- Refcounted classes: `RefCounted` and every class that extends it, e.g. `Resource`, `Texture2D` or the class `Stats` above. Godot deletes their objects when the last reference goes away. In C++, GD++ uses them through references, e.g. `Ref<Stats>`.
+- Other classes: `Object` and every class that extends it but not `RefCounted`, e.g. `Node` and all nodes. You delete their objects yourself, e.g. with `queue_free()` or `memdelete()`. In C++, GD++ uses them through pointers, e.g. `Player *`.
 
 A GD++ class is refcounted if its base is. See `gd++ man types`.
 
@@ -72,11 +72,11 @@ Ref<Stats> stats;                          // a refcounted object
 stats.instantiate();
 ```
 
-In GDScript, use them like built-in classes: Bullet.new(), `var s: Stats`, `extends Player`, and so on.
+In GDScript, use them like built-in classes: `Bullet.new()`, `var s: Stats`, `extends Player`, and so on.
 
 # @tool
 
-Like in GDScript, the code of a class runs in the editor only if the class has @tool:
+Like in GDScript, the code of a class runs in the editor only if the class has `@tool`:
 
 ```gd++
 @tool
@@ -89,15 +89,15 @@ func _process(delta: float) -> void {
 }
 ```
 
-Without @tool, a class is registered with Godot as a runtime class. In the editor, Godot creates placeholders for its objects: they store their property values, which you set in the inspector, but run none of the class's code.
+Without `@tool`, a class is registered with Godot as a runtime class. In the editor, Godot creates placeholders for its objects: they store the property values that you set in the inspector, but run none of the class's code.
 
-So a runtime class can't break the editor, e.g. by moving nodes around in a scene you're editing. Games run from the editor, and exported games, run all code. Inline classes need their own @tool: it's not inherited from the file-level class, nor from the base class.
+So a runtime class can't break the editor, e.g. by moving nodes around in a scene you're editing. Games run from the editor and exported games run all code. Inline classes need their own `@tool`: it's not inherited from the file-level class, nor from the base class.
 
-`gd++ ls` shows @tool classes with the tag @tool.
+`gd++ ls` shows `@tool` classes with the tag `@tool`.
 
 # @game_only
 
-Placeholders only stop code that Godot calls. Code that already runs in the editor, e.g. a @tool class or a C++ tool class, can still create a runtime class's object with memnew, or call its static functions, and then that code runs. @game_only makes sure it doesn't: the class's code only ever runs in the game.
+Placeholders only stop the code that Godot calls. Code that already runs in the editor, e.g. that of a `@tool` class or of a C++ tool class, can still create an object of a runtime class with `memnew`, or call its static functions, and then the runtime class's code runs. `@game_only` prevents this: the class's code only ever runs in the game.
 
 ```gd++
 @game_only
@@ -105,9 +105,9 @@ class_name Spawner
 extends Node3D
 ```
 
-A @game_only class is a runtime class, and in debug builds, which the editor loads, every function that GD++ generates for it starts with a check. In the editor, it returns right away, with a default value; an @onthread function returns an empty Async, and starts no task. This covers its functions, constructor, destructor, getters, setters, signal emit functions, and the helpers that GD++ adds, e.g. for enums, default values and RPCs. Your own decl and impl code isn't checked. Release builds have no checks.
+A `@game_only` class is a runtime class. In debug builds, which the editor loads, every function that GD++ generates for it starts with a check: in the editor, the function returns right away, with a default value, and an `@onthread` function returns an empty `Async`, without starting a task. This covers the class's functions, constructor, destructor, getters, setters, signal emit functions, and the helpers that GD++ adds, e.g. for enums, default values and RPCs. Your own `decl` and `impl` code isn't checked. Release builds have no checks.
 
-@game_only can't be used with @tool. Like @tool, it's not inherited.
+`@game_only` can't be used with `@tool`. Like `@tool`, it's not inherited.
 
 # @icon
 
@@ -117,7 +117,7 @@ class_name Player
 extends CharacterBody3D
 ```
 
-@icon sets the class's icon in the editor, e.g. in the scene tree and the "Create New Node" dialog. It takes one argument, a string with the path of the icon, usually an SVG file. The path must start with res://, relative to the project, or pkg://, relative to the package:
+`@icon` sets the class's icon in the editor, e.g. in the scene tree and the "Create New Node" dialog. It takes one argument, a string with the path of the icon, usually an SVG file. The path must start with `res://`, relative to the project, or `pkg://`, relative to the package:
 
 ```gd++
 @icon("pkg://icons/bullet.svg")
@@ -126,7 +126,7 @@ class Bullet {
 }
 ```
 
-GD++ writes the icons into the package's .gdextension file. A missing icon file is shown in red by `gd++ ls`.
+GD++ writes the icons into the package's `.gdextension` file. `gd++ ls` shows a missing icon file in red.
 
 # @trace and @profile
 
@@ -137,11 +137,11 @@ class_name Chest
 extends Node3D
 ```
 
-For debugging. @trace on a class traces all its functions (except _process and _physics_process, which run every frame), variables and signals, and prints each creation and destruction of its objects. @profile times all its functions, and the getters and setters of its properties. They only generate code in builds that turn on one of their groups, here `--trace loot`, `--trace Chest` or `--trace all` for @trace, and `--profile Chest` or `--profile all` for @profile. Like @tool, they're not inherited. See `gd++ man debugging`.
+These are for debugging. `@trace` on a class traces all its functions (except `_process` and `_physics_process`, which run every frame), variables and signals, and prints each creation and destruction of its objects. `@profile` times all its functions, and the getters and setters of its properties. They only generate code in builds that turn on one of their groups: here, `--trace loot`, `--trace Chest` or `--trace all` for `@trace`, and `--profile Chest` or `--profile all` for `@profile`. Like `@tool`, they're not inherited. See `gd++ man debugging`.
 
 # Annotations and doc comments
 
-A class can have @tool or @game_only, @icon, @trace and @profile, in any order, and a doc comment, before class_name or class:
+A class can have `@tool` or `@game_only`, `@icon`, `@trace` and `@profile`, in any order, and a doc comment, before `class_name` or `class`:
 
 ```gd++
 /// The player's character.
@@ -153,7 +153,7 @@ class_name Player
 extends CharacterBody3D
 ```
 
-The first paragraph of a class's doc comment is its brief description, and the rest its full description. See `gd++ man docs`.
+The first paragraph of a class's doc comment is its brief description, and the rest is its full description. See `gd++ man docs`.
 
 # Members
 
@@ -166,7 +166,7 @@ signal     signals                        gd++ man signals
 enum       enums and integer constants    gd++ man enums
 ctor       the constructor                gd++ man lifecycle
 dtor       the destructor                 gd++ man lifecycle
-notif      handle notifications           gd++ man lifecycle
+notif      notification handlers          gd++ man lifecycle
 decl, impl plain C++                      gd++ man code
 import     force an include               gd++ man includes
 noimport   prevent an include             gd++ man includes
@@ -174,8 +174,8 @@ noimport   prevent an include             gd++ man includes
 
 Functions, variables, signals and constants share one namespace, since they all become C++ members of one class:
 
-- A var x also declares its getter get_x and its setter set_x.
-- A signal s also declares a C++ method s, which emits it.
+- A `var x` also declares its getter `get_x` and its setter `set_x`.
+- A `signal s` also declares a C++ method `s`, which emits it.
 
 So `var x` and `func get_x()` can't be in the same class:
 
@@ -186,11 +186,11 @@ So `var x` and `func get_x()` can't be in the same class:
     Hint: Members share one namespace. A var x also declares get_x and set_x, and a signal declares its emit function.
 ```
 
-Names that start with _gdpp_ are reserved for code that GD++ generates.
+Names that start with `_gdpp_` are reserved for the code that GD++ generates.
 
 # This
 
-In the C++ code of a class, This is the name of the class, like Self in Rust:
+In the C++ code of a class, `This` is the name of the class, like `Self` in Rust:
 
 ```gd++
 func clone() -> Player {
@@ -204,7 +204,7 @@ It's a macro that GD++ defines around the class's code. See `gd++ man code`.
 
 # What GD++ generates
 
-For a class Player, GD++ generates Player.h and Player.cpp:
+For a class `Player`, GD++ generates `Player.h` and `Player.cpp`, in namespace `godot`:
 
 ```cpp
 class Player : public CharacterBody3D {
@@ -215,7 +215,7 @@ protected:
 };
 ```
 
-in namespace godot, with all members, and _bind_methods, which binds them to Godot. The build registers the class when Godot loads the library, after its base class if that's a class of the package too. See `gd++ man generated`.
+The class has all the members, and `_bind_methods`, which binds them to Godot. The build registers the class when Godot loads the library, after its base class if that's a class of the package too. See `gd++ man generated`.
 
 # Examples
 

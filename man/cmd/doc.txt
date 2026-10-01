@@ -10,11 +10,11 @@ gd++ doc [PKG] [-i]
 
 # Description
 
-Shows the C++ declaration of a name in godot-cpp, like `go doc`: the class, function, alias or enum, its comments, the header to include, and its public members, then the members it inherits, grouped by base class. It's the reference for godot-cpp's own helpers, e.g. TypedArray, Ref, memnew or UtilityFunctions, which Godot's help doesn't describe. Godot's classes are declared there too, e.g. Node3D; for what they do, see Godot's help, which the output points to.
+Shows the C++ declaration of a name in godot-cpp, like `go doc`: the class, function, alias or enum, its comments, the header to include, and its public members, then the members it inherits, grouped by base class. It's the reference for godot-cpp's own helpers, e.g. `TypedArray`, `Ref`, `memnew` or `UtilityFunctions`, which Godot's help doesn't describe. Godot's classes are declared there too, e.g. `Node3D`. For what they do, see Godot's help, which the output points to.
 
-Names come from the bindings of a package, generated from its API spec, so you see exactly what your code can use. PKG is a path in that package; without it, the package that contains the current directory. The first run in a package may take a while, since it generates the bindings. See `gd++ man build-cache`.
+The names come from the bindings of a package, generated from its API spec, so you see exactly what your code can use. PKG is a path in that package. Without it, `gd++ doc` uses the package that contains the current directory. The first run in a package may take a while, since it generates the bindings. See `gd++ man build-cache`.
 
-Output goes through the pager when it doesn't fit the terminal, with C++ syntax highlighting on terminals. See `gd++ man cli`.
+The output goes through the pager when it doesn't fit the terminal, and is highlighted as C++ on terminals. See `gd++ man cli`.
 
 # Arguments and options
 
@@ -22,10 +22,10 @@ PKG
   A path in the package whose bindings to use. Default: the current directory.
 
 NAME
-  The name to show, e.g. TypedArray, Node3D, Vector3 or memnew. Names are case sensitive.
+  The name to show, e.g. `TypedArray`, `Node3D`, `Vector3` or `memnew`. Names are case sensitive.
 
 NAME.MEMBER
-  Show only the members called MEMBER of NAME, with their comments, e.g. Array.push_back. All overloads are shown. If NAME doesn't declare it, its base classes are searched, nearest first, and through aliases too.
+  Show only the members called MEMBER of NAME, with their comments, e.g. `Array.push_back`. All overloads are shown. If NAME doesn't declare the member, its base classes are searched, nearest first, through aliases too.
 
 -i, --index
   List every type that godot-cpp declares: its kind, e.g. class, struct, enum, template class or alias, its name, and its base class or what it aliases. This is the default without a name. Can't be used with a name.
@@ -52,9 +52,9 @@ class TypedArray : public Array {
 };
 ```
 
-The output reads like a C++ header. First comes the #include line to use the name, then its declarations, each with the comments right before it in the header, and its public members in braces, indented by the tab width (see `-T` in `gd++ man cli`). For an alias, the type it aliases follows in full. The members of each base class come last in the braces, in order. For classes generated from the API spec, a last line says "See Godot's help for a description of NAME.".
+The output reads like a C++ header. First comes the `#include` line that you need to use the name, then its declarations, each with the comments right before it in the header, and its public members in braces, indented by the tab width (see `-T` in `gd++ man cli`). An alias is followed by the type it aliases, in full. The members of each base class come last in the braces, in order. For classes generated from the API spec, a last line says "See Godot's help for a description of NAME.".
 
-With NAME.MEMBER, the #include line of the class that declares the member comes first, then the member.
+With NAME.MEMBER, the `#include` line of the class that declares the member comes first, then the member.
 
 The index lists one type per line:
 
@@ -78,7 +78,7 @@ gd++ doc | grep Packed               # all packed array types
 
 # Errors
 
-- "There is no name NAME in godot-cpp. Similar names: A, B." The name doesn't exist; the names that contain it, ignoring case, are listed if there are at most 10.
+- "There is no name NAME in godot-cpp. Similar names: A, B." The name doesn't exist. The names that contain it, ignoring case, are listed if there are at most 10.
 - "Name NAME has no public member MEMBER."
 - "Path ... is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`."
 - "Failed to find the header ..., run `gd++ clean` to fix this." The build cache is out of date.

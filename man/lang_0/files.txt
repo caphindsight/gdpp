@@ -1,6 +1,6 @@
 Files: what a GD++ file declares, and how it's laid out
 
-A GD++ file declares classes, externs and enums. It can declare several of them, and every other GD++ file of the package can use them. This page explains the layout of a file: file-level and inline declarations, and what goes where.
+A GD++ file declares classes, externs and enums. It can declare any number of them, and every other GD++ file of the package can use them. This page explains the layout of a file: file-level and inline declarations, and what goes where.
 
 # File-level and inline declarations
 
@@ -17,7 +17,7 @@ enum_name Suit           // a file-level enum: the rest of the file is its value
 enum Rank { ... }        // an inline enum
 ```
 
-Both forms work the same. The file-level form saves a level of braces and indentation, like in GDScript, where a file is a class. A file has at most one file-level declaration, and it must come first, before anything else except comments.
+Both forms work the same. The file-level form saves a level of braces and indentation, like in GDScript, where a file is a class. A file has at most one file-level declaration, and it must come first, before anything but comments.
 
 # A file-level class
 
@@ -32,7 +32,7 @@ func jump() -> void {
 }
 ```
 
-class_name NAME starts the file. extends, if any, comes right after it, even on the same line: `class_name Player extends CharacterBody3D`. Everything after it, to the end of the file, is a member of the class, except inline classes and externs, which can appear between members:
+`class_name NAME` starts the file. `extends`, if any, comes right after it, even on the same line: `class_name Player extends CharacterBody3D`. Everything after it, to the end of the file, is a member of the class, except inline classes and externs, which can appear between the members:
 
 ```gd++
 class_name Player
@@ -59,7 +59,7 @@ func height_at(x: float, z: float) -> float
 signal changed
 ```
 
-Like class_name, but for an extern: the rest of the file declares its members. Inline classes and externs can appear between them. See `gd++ man externs`.
+Like `class_name`, but for an extern: the rest of the file declares its members. Inline classes and externs can appear between them. See `gd++ man externs`.
 
 # A file-level enum
 
@@ -71,7 +71,7 @@ SPADES = 10
 HEARTS
 ```
 
-enum_name NAME makes the whole file an enum: everything after it is a value of that enum, after an optional `extends Base` line. Nothing else can follow, not even inline classes. It's rarely used, but exists for consistency. The file then declares no classes, so it adds nothing to Godot by itself, but every GD++ file of the package can use the enum. See `gd++ man enums`.
+`enum_name NAME` makes the whole file an enum: everything after it, and after an optional `extends Base` line, is a value of the enum. Nothing else can follow, not even inline classes. This form is rarely used, but exists for consistency. The file declares no classes, so it adds nothing to Godot by itself, but every GD++ file of the package can use the enum. See `gd++ man enums`.
 
 # A file without a file-level declaration
 
@@ -94,7 +94,7 @@ extern Terrain {
 }
 ```
 
-At its top level, such a file can only have inline classes, inline externs and inline enums. Anything else, e.g. a func, a var, an integer constant or a decl block, belongs in a class:
+At its top level, such a file can only have inline classes, externs and enums. Anything else, e.g. a `func`, a `var`, an integer constant or a `decl` block, belongs in a class:
 
 ```out
 [×] res://enemies.gd++:12:1: This func is outside of any class.
@@ -105,7 +105,7 @@ At its top level, such a file can only have inline classes, inline externs and i
 
 # No nesting
 
-Classes and externs can't be nested: an inline class can't be inside another class or extern, even a file-level one's braces. They're all listed next to each other. Enums can be declared inside a class, but they are global types anyway. See `gd++ man enums`.
+Classes and externs can't be nested: an inline class can't be inside another class or extern. They're all listed next to each other. Enums can be declared inside a class, but they are global types anyway. See `gd++ man enums`.
 
 # Order
 
@@ -113,13 +113,13 @@ The order of declarations in a file doesn't matter: a class can extend a class d
 
 # Names
 
-Every class, extern and enum has a name, which must be unique in the package: two GD++ files can't declare the same name, and a name can't be declared twice in one file. Names must also differ from Godot's classes and from godot-cpp's names, e.g. Node or TypedArray.
+Every class, extern and enum has a name, which must be unique in the package: two GD++ files can't declare the same name, and a name can't be declared twice in one file. Names must also differ from Godot's classes and from godot-cpp's names, e.g. `Node` or `TypedArray`.
 
-The name of a class or enum becomes the name of its generated files, e.g. Player.h and Player.cpp, and the name of the class in Godot. It doesn't need to match the file's name: player.gd++ can declare Player, or anything else.
+The name of a declaration becomes the name of its generated files, e.g. `Player.h` and `Player.cpp`, and a class's name is also its name in Godot. It doesn't need to match the file's name: `player.gd++` can declare `Player`, or anything else.
 
 # One file, many outputs
 
-Each declaration generates its own files, as if it were alone in its file: a class generates NAME.h and NAME.cpp, an extern and an enum generate NAME.h. The declarations of one file see each other just like they see the declarations of other files. See `gd++ man generated`.
+Each declaration generates its own files, as if it were alone in its file: a class generates `NAME.h` and `NAME.cpp`, and an extern or an enum generates `NAME.h`. The declarations of one file see each other just like they see the declarations of other files. See `gd++ man generated`.
 
 # Example: a typical file
 

@@ -1,6 +1,6 @@
 Signals: declaring signals, and sending them with emit
 
-A signal is a message that an object sends, and that other objects can connect to, like a button's pressed signal. GD++ declares signals like GDScript, and sends them with a bit of syntax of its own, emit.
+A signal is a message that an object sends, and that other objects can connect to, like a button's `pressed` signal. GD++ declares signals like GDScript, and sends them with a word of its own, `emit`.
 
 # Declaring signals
 
@@ -10,9 +10,9 @@ signal health_changed(health: int)
 signal hit(by: Node3D, damage: int, info)
 ```
 
-`signal name`, then optionally the parameters in parentheses, like a function's: `name: Type`, or just `name` for a Variant. The parentheses are optional when there are no parameters. Signal parameters can't have default values. See `gd++ man types`.
+A signal is `signal name`, then optionally the parameters in parentheses, like a function's: `name: Type`, or just `name` for a `Variant`. Without parameters, the parentheses are optional. Signal parameters can't have default values. See `gd++ man types`.
 
-Signals take a doc comment, but no annotations.
+Signals take a doc comment, and the only annotation they take is `@trace` (see "Tracing signals" below).
 
 # Sending signals
 
@@ -28,7 +28,7 @@ func take_damage(amount: int) -> void {
 
 `emit NAME(ARGS);` sends the signal, like `NAME.emit(ARGS)` in GDScript. Every connected function is called with the arguments. Note the parentheses, even without arguments: `emit died();`.
 
-emit makes sending a signal look different from calling a function, on purpose: they do different things, so they should read differently.
+`emit` makes sending a signal look different from calling a function, on purpose: they do different things, so they should read differently.
 
 It also works on other objects of GD++ classes, and on externs:
 
@@ -39,27 +39,27 @@ emit terrain->changed();
 
 # How it works
 
-For each signal, GD++ generates a public C++ method with the signal's name and parameters, which emits the signal with emit_signal:
+For each signal, GD++ generates a public C++ method with the signal's name and parameters, which emits the signal with `emit_signal`:
 
 ```cpp
 gdpp::Emitted health_changed(int64_t health);
 ```
 
-It returns Emitted, a struct marked [[nodiscard]], which holds the Error that emit_signal returned. So a plain call, `health_changed(5);`, makes the compiler warn that the result is unused. In C++ code, GD++ replaces the word emit with (void), which uses the result:
+It returns `Emitted`, a struct marked `[[nodiscard]]`, which holds the `Error` that `emit_signal` returned. So a plain call, `health_changed(5);`, makes the compiler warn that the result is unused. In C++ code, GD++ replaces the word `emit` with `(void)`, which uses the result:
 
 ```gd++
 emit health_changed(5);      // becomes:  (void) health_changed(5);
 ```
 
-To check whether sending worked, use the result instead of emit:
+To check whether sending worked, use the result instead of `emit`:
 
 ```cpp
 Error err = health_changed(5).error;
 ```
 
-GD++ registers each signal in _bind_methods, with its parameter names and types, so the editor's Node dock lists it, and GDScript can connect to it.
+GD++ registers each signal in `_bind_methods`, with its parameter names and types, so the editor's Node dock lists it, and GDScript can connect to it.
 
-Since emit is replaced wherever it appears as a word in C++ code, don't use emit as a name in your C++ code, e.g. for a variable. Comments and strings are safe.
+Since `emit` is replaced wherever it appears as a word in C++ code, don't use `emit` as a name in your C++ code, e.g. for a variable, and don't call methods named `emit`, e.g. `Signal::emit`. Comments and strings are safe.
 
 # Names
 
@@ -67,7 +67,7 @@ A signal declares a C++ method, so its name shares its class's namespace with fu
 
 # Connecting to signals
 
-Connect in C++ as in godot-cpp, with callable_mp for methods of your class:
+Connect in C++ like in godot-cpp, with `callable_mp` for the methods of your class:
 
 ```gd++
 @override
@@ -86,14 +86,14 @@ func on_died() -> void {
 }
 ```
 
-Functions declared with func are bound, so you can also connect them by name, e.g. Callable(this, "on_died"), or in the editor's Node dock. In GDScript, connect as usual: player.died.connect(_on_player_died).
+Functions declared with `func` are bound, so you can also connect them by name, e.g. with `Callable(this, "on_died")`, or in the editor's Node dock. In GDScript, connect as usual: `player.died.connect(_on_player_died)`.
 
 # Enums in signals
 
-A signal parameter can be a GD++ enum. Godot sees it as an int, marked with the enum, and emit converts it for you:
+A signal parameter can be a GD++ enum. Godot sees it as an `int`, marked with the enum, and `emit` converts it for you:
 
 ```gd++
-enum State { IDLE RUNNING JUMPING }
+enum State { IDLE, RUNNING, JUMPING }
 signal state_changed(state: State)
 
 func jump() -> void {
@@ -103,14 +103,14 @@ func jump() -> void {
 
 # Tracing signals
 
-For debugging, a signal can have @trace:
+For debugging, a signal can have `@trace`:
 
 ```gd++
 @trace
 signal health_changed(health: int)
 ```
 
-In builds with `--trace Player` (the class's name) or `--trace all`, each emit of the signal prints a line with its arguments, before its handlers run, e.g. `⚡ Player "Hero" emits health_changed(health: 70)`. The line comes from the signal's emit function, so emissions with emit_signal by name, and from GDScript, don't show. In other builds, @trace generates nothing. See `gd++ man debugging`.
+In builds with `--trace Player` (the class's name) or `--trace all`, each `emit` of the signal prints a line with its arguments, before its handlers run, e.g. `⚡ Player "Hero" emits health_changed(health: 70)`. The line comes from the signal's emit function, so emissions by name with `emit_signal`, and from GDScript, don't show. In other builds, `@trace` generates nothing. See `gd++ man debugging`.
 
 # Example
 

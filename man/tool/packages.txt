@@ -1,6 +1,6 @@
 Packages: gd++pkg.toml, source files, and what a package builds into
 
-A package is a directory in a project with a gd++pkg.toml file. Each package builds into one GDExtension library, with all the classes of its GD++ and C++ files. A project can have many packages, and a package can be the project root itself.
+A package is a directory in a project with a `gd++pkg.toml` file. Each package builds into one GDExtension library, with all the classes of its GD++ and C++ files. A project can have many packages, and the project root itself can be one.
 
 # Creating a package
 
@@ -8,7 +8,7 @@ A package is a directory in a project with a gd++pkg.toml file. Each package bui
 gd++ init my_package --bind 10.0.0-stable --spec 4.7.2-stable
 ```
 
-This creates the directory my_package if needed, and writes my_package/gd++pkg.toml. For a small game, put the package at the project root:
+This creates the directory `my_package` if needed, and writes `my_package/gd++pkg.toml`. For a small game, put the package at the project root:
 
 ```sh
 gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
@@ -34,40 +34,40 @@ tool = true
 ```
 
 bind (required)
-  The name of the Godot C++ bindings (godot-cpp) to build with, e.g. "10.0.0-stable". They must be in one of the project's dependency caches: `gd++ fetch --missing` downloads them. See `gd++ man dependencies`.
+  The name of the Godot C++ bindings (godot-cpp) to build with, e.g. `"10.0.0-stable"`. They must be in one of the project's dependency caches: `gd++ fetch --missing` downloads them. See `gd++ man dependencies`.
 
 spec (required)
-  The name of the Godot API spec to build against, e.g. "4.7.2-stable". The spec describes the classes of one Godot version, and decides which classes and methods your code can use. The library then needs at least that Godot version: the generated .gdextension file says so, and older versions of Godot refuse to load it. The bindings are generated from the spec, so they don't need to match the spec's version exactly, but they must support it.
+  The name of the Godot API spec to build against, e.g. `"4.7.2-stable"`. The spec describes the classes of one Godot version, and decides which classes and methods your code can use. The library then needs at least that Godot version: the generated `.gdextension` file says so, and older versions of Godot refuse to load it. The bindings are generated from the spec, so their version doesn't need to match the spec's exactly, but they must support it.
 
 syntax (optional, default 0)
   The version of the GD++ language that the package's GD++ files use. `gd++ init` writes the latest stable version for a new package. Without the key, a package uses syntax 0, the nightly version. See "Syntax versions" below.
 
-std (optional, default "c++20")
-  The C++ standard to compile with, e.g. "c++17", "c++20" or "c++23". It becomes -std=... for GCC and Clang, and /std:... for MSVC. It must be at least what godot-cpp needs, i.e. c++17.
+std (optional, default `"c++20"`)
+  The C++ standard to compile with, e.g. `"c++17"`, `"c++20"` or `"c++23"`. It becomes `-std=...` for GCC and Clang, and `/std:...` for MSVC. It must be at least what godot-cpp needs, i.e. C++17.
 
 prefix (optional, default: the package's id in PascalCase)
-  The prefix of the names of the classes that GD++ adds to the package, e.g. "Foo". A package whose GD++ classes use Async, e.g. with an @onthread function, registers FooAsync, the class of its tasks, which Async types name. The default turns the id into PascalCase: my_game gives MyGame, and an id that starts with a digit, e.g. 3d_tools, gets "Pkg" in front: Pkg3dTools. Set it when the default clashes with a class name, or reads badly. See `gd++ man async`.
+  The prefix of the names of the classes that GD++ adds to the package, e.g. `"Foo"`. If the package's GD++ classes use `Async`, e.g. in an `@onthread` function, the package registers `FooAsync`, the class of its tasks. The default is the id in PascalCase: `my_game` gives `MyGame`, and an id that starts with a digit gets `Pkg` in front, e.g. `3d_tools` gives `Pkg3dTools`. Set the prefix when the default clashes with a class name, or reads badly. See `gd++ man async`.
 
 quit_timeout (optional, default 1)
-  How many seconds the package's tasks may still run after the game started quitting, before the game exits anyway, e.g. 2.5. 0 exits as soon as the game quits, if tasks still run. It can't be negative. See "When the game quits" in `gd++ man async`.
+  How many seconds the package's tasks may still run after the game started quitting, before the game exits anyway, e.g. `2.5`. With `0`, the game exits right away, even if tasks still run. It can't be negative. See "When the game quits" in `gd++ man async`.
 
 [[class]] (optional, any number)
-  A plain C++ class that the package registers with Godot. Each has a name, the header that declares it, an optional icon, and tool = true if its code runs in the editor too; without it, the class is a runtime class, whose code runs only in the game. GD++ classes are not listed here: GD++ finds them in the GD++ files. See `gd++ man cpp-classes`.
+  A plain C++ class that the package registers with Godot. Each one has a name, the header that declares it, an optional icon, and `tool = true` if its code runs in the editor too. Without `tool`, it is a runtime class, whose code runs only in the game. GD++ classes are not listed here: GD++ finds them in the GD++ files. See `gd++ man cpp-classes`.
 
-Missing required keys and unknown keys are errors, e.g. "Missing key spec in res://my_package/gd++pkg.toml.". Change the file with `gd++ init --update`, or by hand. `gd++ fix` reformats it and sorts its classes by name.
+Missing required keys and unknown keys are errors, e.g. "Missing key spec in res://my_package/gd++pkg.toml.". Change the file with `gd++ init PATH --update`, or by hand. `gd++ fix` reformats it and sorts its classes by name.
 
 # Syntax versions
 
-Each package chooses the version of the GD++ language that its files use, with the syntax key. `gd++ init` gives a new package the latest stable version. `gd++ --syntax` lists the versions that your gd++ supports.
+Each package chooses the version of the GD++ language that its files use, with the `syntax` key. `gd++ init` gives a new package the latest stable version. `gd++ --syntax` lists the versions that your `gd++` supports.
 
-- Stable versions, 1 and up, never change: code that builds with one keeps building with every later gd++. Changes to the language come in a new syntax version, and you choose when to upgrade a package, with `gd++ init PATH --update --syntax N`.
-- Syntax 0 is the nightly version: the language as it's being developed. It's explicitly not backward compatible: any new gd++ may break code written for it. Use it to try out new features, never in production. `gd++ init` warns when you choose it, and `gd++ ls` marks it.
+- Stable versions, 1 and up, never change: code that builds with one keeps building with every later `gd++`. Changes to the language come in a new syntax version, and you choose when to upgrade a package, with `gd++ init PATH --update --syntax N`.
+- Syntax 0 is the nightly version: the language as it's being developed. It's explicitly not backward compatible: any new `gd++` may break code written for it. Use it to try out new features, never in production. `gd++ init` warns when you choose it, and `gd++ ls` marks it.
 
-The language pages of this manual describe one syntax version, which their titles name: in a package, the package's, and elsewhere the latest stable one. `gd++ man --syntax N` or `gd++ man --nightly` shows another, e.g. `gd++ man --nightly signals`.
+The language pages of this manual describe one syntax version, which their titles show: in a package, the package's, and elsewhere the latest stable one. `gd++ man --syntax N` or `gd++ man --nightly` shows another, e.g. `gd++ man --nightly signals`.
 
 # The package's id
 
-A package's id is the name of its directory, e.g. my_package. The id names its library, e.g. libmy_package.linux.debug.x86_64.so, and its .gdextension file, my_package.gdextension. For the package at the project root, the id is the name of the project directory.
+A package's id is the name of its directory, e.g. `my_package`. The id names its library, e.g. `libmy_package.linux.debug.x86_64.so`, and its `.gdextension` file, `my_package.gdextension`. For the package at the project root, the id is the name of the project directory.
 
 Renaming or moving a package's directory changes its id. The next build notices, cleans the package and rebuilds it from scratch.
 
@@ -75,16 +75,16 @@ Renaming or moving a package's directory changes its id. The next build notices,
 
 Every file in the package with one of these extensions is part of the package. You don't list them anywhere.
 
-- GD++ files: .gd++, .gdpp and .gg. All three are the same; use whichever your tools like best.
-- C and C++ sources: .c, .cc, .cpp, .cxx and .c++. They are compiled into the library.
-- Headers, e.g. .h and .hpp, are not compiled on their own, but sources and GD++ code can include them.
+- GD++ files: `.gd++`, `.gdpp` and `.gg`. All three work the same: use whichever your tools like best.
+- C and C++ sources: `.c`, `.cc`, `.cpp`, `.cxx` and `.c++`. They are compiled into the library.
+- Headers, e.g. `.h` and `.hpp`, are not compiled on their own, but sources and GD++ code can include them.
 
-Files can be anywhere in the package directory, in any subdirectory, except:
+Files can be anywhere in the package directory, at any depth, except:
 
 - in hidden directories, whose names start with ".",
-- in nested packages (subdirectories with their own gd++pkg.toml), whose files belong to them,
-- in nested Godot projects (subdirectories with their own project.godot),
-- in res://_gd++proj.
+- in nested packages (subdirectories with their own `gd++pkg.toml`), whose files belong to them,
+- in nested Godot projects (subdirectories with their own `project.godot`),
+- in `res://_gd++proj`.
 
 Adding, removing or renaming a file needs no command: the next build picks it up.
 
@@ -92,30 +92,30 @@ Adding, removing or renaming a file needs no command: the next build picks it up
 
 C++ code in the package can include headers relative to these directories:
 
-- the package root, e.g. #include "src/util.h" for pkg://src/util.h,
-- the project root, e.g. #include "shared/math.h" for res://shared/math.h,
-- the directory of the C++ that GD++ generates, e.g. #include "Player.h" for the header of the GD++ class Player.
+- the package root, e.g. `#include "src/util.h"` for `pkg://src/util.h`,
+- the project root, e.g. `#include "shared/math.h"` for `res://shared/math.h`,
+- the directory of the C++ that GD++ generates, e.g. `#include "Player.h"` for the header of the GD++ class `Player`.
 
-GD++ code rarely needs #include at all. See `gd++ man includes`.
+GD++ code rarely needs `#include` at all. See `gd++ man includes`.
 
 # What a package builds into
 
 `gd++ build` compiles the package, and writes into its root:
 
-- A library per target, named lib<id>.<platform>.<debug|release>.<arch>.<ext>, e.g. libmy_package.windows.release.x86_64.dll.
-- <id>.gdextension, which tells Godot where the libraries are, for every platform, and which icons the classes have.
-- <id>.gdextension.uid, the resource UID of the .gdextension file, so Godot doesn't make one up.
+- A library per target, named `lib<id>.<platform>.<debug|release>.<arch>.<ext>`, e.g. `libmy_package.windows.release.x86_64.dll`.
+- `<id>.gdextension`, which tells Godot where the libraries are, for every platform, and which icons the classes have.
+- `<id>.gdextension.uid`, the resource UID of the `.gdextension` file, so Godot doesn't make one up.
 
-Godot finds .gdextension files anywhere in a project, and loads them. So once a package is built, its classes show up in the editor. See `gd++ man building`.
+Godot finds `.gdextension` files anywhere in a project, and loads them. So once a package is built, its classes show up in the editor. See `gd++ man building`.
 
 # The package's classes
 
 A package registers these classes with Godot:
 
 - every class declared in its GD++ files, see `gd++ man classes`,
-- every C++ class listed in its gd++pkg.toml, see `gd++ man cpp-classes`.
+- every C++ class listed in its `gd++pkg.toml`, see `gd++ man cpp-classes`.
 
-Class names must be unique in the package: GD++ fails if two files declare the same name, or if a GD++ class has the same name as a class in gd++pkg.toml. They should also be unique in the whole project, and differ from Godot's classes, since Godot has one namespace for all classes. `gd++ ls` shows every package's classes, and marks the ones declared twice.
+Class names must be unique in the package: GD++ fails if two files declare the same name, or if a GD++ class has the same name as a class in `gd++pkg.toml`. They should also be unique in the whole project, and differ from Godot's classes, since Godot has one namespace for all classes. `gd++ ls` shows every package's classes, and marks the names that are declared twice.
 
 # Packages and each other
 
@@ -123,7 +123,7 @@ A package can't use another package's classes at compile time: each package is c
 
 # Nested packages
 
-A package can contain another package, e.g. the project root package and a package in a subdirectory. The files in the inner package belong to the inner package only. Each builds into its own library.
+A package can contain another package, e.g. the project root package and a package in a subdirectory. The files in the inner package belong to the inner package only. Each one builds into its own library.
 
 # Removing a package
 
@@ -131,4 +131,4 @@ A package can contain another package, e.g. the project root package and a packa
 gd++ rm --pkg my_package
 ```
 
-This deletes the package's gd++pkg.toml, build cache, libraries and .gdextension files, but keeps its source files. Add --dir to delete the whole directory. See `gd++ man rm`.
+This deletes the package's `gd++pkg.toml`, build cache, libraries and `.gdextension` files, but keeps its source files. Add `--dir` to delete the whole directory. See `gd++ man rm`.

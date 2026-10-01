@@ -1,20 +1,20 @@
 Paths: res://, pkg://, and how commands find projects and packages
 
-Commands take paths as arguments, e.g. `gd++ build src/player` or `gd++ init --class Foo --include pkg://foo.h`. This page explains how gd++ reads them, and how it shows paths in messages.
+Commands take paths as arguments, e.g. `gd++ build src/player` or `gd++ init . --class Foo --include pkg://foo.h`. This page explains how `gd++` reads them, and how it shows paths in messages.
 
 # Kinds of paths
 
-gd++ understands five kinds of paths:
+`gd++` understands five kinds of paths:
 
-- Relative paths, e.g. src/player or ../assets, are relative to the current directory.
-- Absolute paths, e.g. /home/me/game or C:\games\game, are used as they are.
-- Home paths, ~ and ~/games/game, are relative to your home directory. On Windows, ~\games\game works too.
-- res:// paths, e.g. res://src/player, are relative to the root of the project that contains the current directory, like in Godot. res:// alone is the project root.
-- pkg:// paths, e.g. pkg://icons/player.svg, are relative to the root of the package that contains the current directory. pkg:// alone is the package root.
+- Relative paths, e.g. `src/player` or `../assets`, are relative to the current directory.
+- Absolute paths, e.g. `/home/me/game` or `C:\games\game`, are used as they are.
+- Home paths, `~` and `~/games/game`, are relative to your home directory. On Windows, `~\games\game` works too.
+- `res://` paths, e.g. `res://src/player`, are relative to the root of the project that contains the current directory, like in Godot. `res://` alone is the project root.
+- `pkg://` paths, e.g. `pkg://icons/player.svg`, are relative to the root of the package that contains the current directory. `pkg://` alone is the package root.
 
-Paths use forward slashes on every platform; on Windows, backslashes work too.
+Paths use forward slashes on every platform. On Windows, backslashes work too.
 
-Examples, run from res://src/player in a project whose package root is res://src:
+Examples, run from `res://src/player` in a project whose package root is `res://src`:
 
 ```sh
 gd++ build .                  # the package containing res://src/player, i.e. res://src
@@ -25,48 +25,48 @@ gd++ vendor --spec my-4.7 --from ~/specs/my-4.7
 
 # Paths in config files
 
-gd++pkg.toml and GD++'s @icon annotation store paths too. They must be res:// or pkg:// paths, so they don't depend on the directory you run gd++ from:
+`gd++pkg.toml` and GD++'s `@icon` annotation store paths too. They must be `res://` or `pkg://` paths, so they don't depend on the directory you run `gd++` from:
 
-- res:// is the root of the project that contains the package.
-- pkg:// is the root of the package itself.
+- `res://` is the root of the project that contains the package.
+- `pkg://` is the root of the package itself.
 
 E.g. `include = "pkg://src/foo.h"` or `@icon("res://icons/player.svg")`. See `gd++ man cpp-classes` and `gd++ man classes`.
 
 # Finding the project
 
-A project is a directory with a project.godot file. Most commands work on the project that contains the current directory: gd++ checks the current directory, then its parent, then its parent's parent, and so on, up to the root of the file system. The first directory with a project.godot file is the project root. If there is none, the command fails:
+A project is a directory with a `project.godot` file. Most commands work on the project that contains the current directory: `gd++` checks the current directory, then its parent, then its parent's parent, and so on, up to the root of the file system. The first directory with a `project.godot` file is the project root. If there is none, the command fails:
 
 ```out
 [×] Path games is not contained in a Godot project.
 ```
 
-So you can run gd++ from anywhere inside a project, like git. If projects are nested, the innermost one wins.
+So you can run `gd++` from anywhere inside a project, like git. If projects are nested, the innermost one wins.
 
 # Finding the package
 
-A package is a directory with a gd++pkg.toml file. Commands that work on one package, e.g. build, clean, doc and ls, take an optional path, and use the package that contains it: the path itself if it's a package root, or else its nearest parent that is one. Without a path, they use the current directory. So inside a package, `gd++ build` builds it, wherever you are in it.
+A package is a directory with a `gd++pkg.toml` file. Commands that work on one package, e.g. `build`, `clean` and `doc`, take an optional path, and use the package that contains it: the path itself if it's a package root, or else its nearest parent that is one. Without a path, they use the current directory. So inside a package, `gd++ build` builds it, wherever you are in it.
 
 A package must be inside a project. If packages are nested, the innermost one wins.
 
-Some commands need the path of a package root itself, not of a directory inside it: `gd++ init PATH --class ...`, `gd++ rm PATH --class ...` and `gd++ rm --pkg PATH`. They fail with "There is no GD++ package at ..." otherwise.
+Some commands need the path of a package root itself, not of a directory inside it: `gd++ init PATH --class ...`, `gd++ rm PATH --class ...` and `gd++ rm --pkg PATH`. Otherwise, they fail with "There is no GD++ package at ...".
 
 # Paths in messages
 
-gd++ shows paths in messages in a short, portable form:
+`gd++` shows paths in messages in a short, portable form:
 
-- Paths inside the project are shown as res:// paths, e.g. res://src/player.gd++.
-- Other paths are shown relative to the current directory, e.g. ../other_game.
+- Paths inside the project are shown as `res://` paths, e.g. `res://src/player.gd++`.
+- Other paths are shown relative to the current directory, e.g. `../other_game`.
 
-gd++ never prints absolute paths, so its logs don't leak your file system's layout, and are safe to share.
+`gd++` never prints absolute paths, so its logs don't reveal how your file system is laid out, and are safe to share.
 
-Packages are shown by their path. The package at the project root is shown as res://, with the project directory's name in brackets, e.g. "res:// [my_game]", since its path alone doesn't say which package it is.
+Packages are shown by their path. The package at the project root is shown as `res://`, followed by the project directory's name in brackets, e.g. "res:// [my_game]", since its path alone doesn't say which package it is.
 
-# Hidden directories
+# Skipped directories
 
-When gd++ walks a project, to find packages or the source files of a package, it skips:
+When `gd++` walks a project, to find its packages or the source files of a package, it skips:
 
-- Hidden files and directories, whose names start with ".", e.g. .godot, .git and .gd++proj.
-- The checked in dependency cache, res://_gd++proj.
-- Nested Godot projects: directories with their own project.godot file, and everything inside them.
+- Hidden files and directories, whose names start with ".", e.g. `.godot`, `.git` and `.gd++proj`.
+- The checked in dependency cache, `res://_gd++proj`.
+- Nested Godot projects: directories with their own `project.godot` file, and everything inside them.
 
-When it collects the files of one package, it also skips nested packages, whose files are their own.
+When it collects the files of one package, it also skips nested packages, since their files belong to them.

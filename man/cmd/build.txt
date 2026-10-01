@@ -11,72 +11,70 @@ gd++ build --proj [options...]
 
 # Description
 
-Builds the package that contains PATH, or the current directory, into GDExtension libraries, one per target, and writes them into the package root, with the package's .gdextension file. Godot loads them from there. With --proj, builds every package in the project instead.
+Builds the package that contains PATH, or the current directory, into GDExtension libraries, one per target, and writes them into the package root, along with the package's `.gdextension` file. Godot loads them from there. With `--proj`, builds every package in the project instead.
 
-This page lists the options. For how builds work, targets, and debug and release builds in depth, see `gd++ man building`.
+This page lists the options. For how builds work, and for targets and debug and release builds in depth, see `gd++ man building`.
 
 # Options
 
 PATH
-  Build the package containing this path. Default: the current directory. Can't be used with --proj.
+  Build the package that contains this path. Default: the current directory. Can't be used with `--proj`.
 
 --proj
   Build all packages in the project, one after another, sorted by path.
 
 --for PLATFORM.ARCH...
-  Build for each of these targets, e.g. windows.x86_64 or w.x64. Platforms: windows (win, w), linux (lin, l), macos (mac, m). Architectures: x86_32 (x32), x86_64 (x64), arm64 (a64). Duplicates are built once. Default: this machine. Can't be used with -w, --platform or --arch.
+  Build for each of these targets, e.g. `windows.x86_64` or `w.x64`. Platforms: `windows` (`win`, `w`), `linux` (`lin`, `l`), `macos` (`mac`, `m`). Architectures: `x86_32` (`x32`), `x86_64` (`x64`), `arm64` (`a64`). Duplicates are built once. Default: this machine. Can't be used with `-w`, `--platform` or `--arch`.
 
 -p PLATFORM, --platform PLATFORM
-  Build for this platform, with --arch or this machine's architecture: windows, linux or macos, or their short names. Default: this machine's.
+  Build for this platform: `windows`, `linux` or `macos`, or their short names. The architecture is that of `--arch`, or else this machine's. Default: this machine's platform.
 
 -w
-  Shorthand for --platform windows.
+  Short for `--platform windows`.
 
 --arch ARCH
-  Build for this CPU architecture: x86_32, x86_64 or arm64, or their short names. Default: this machine's.
+  Build for this CPU architecture: `x86_32`, `x86_64` or `arm64`, or their short names. Default: this machine's.
 
 --ship
-  Build for release instead of debugging: godot-cpp's template_release target, with link-time optimization, optimized for speed, without documentation. The default is a debug build: godot-cpp's template_debug target, a dev build with debug symbols and hot reload, unoptimized, with documentation.
+  Build for release instead of debugging: godot-cpp's `template_release` target, with link-time optimization, optimized for speed, without documentation. The default is a debug build: godot-cpp's `template_debug` target, a dev build with debug symbols and hot reload, unoptimized, with documentation.
 
 --opt
-  Optimize for speed. Default with --ship.
+  Optimize for speed. Default with `--ship`.
 
 --small
   Optimize for binary size.
 
 --noopt
-  Don't optimize. Default without --ship.
+  Don't optimize. Default without `--ship`.
 
 --doc
-  Compile the documentation of GD++ classes into the library, for the editor's help. Default without --ship.
+  Compile the documentation of GD++ classes into the library, for the editor's help. Default without `--ship`.
 
 --nodoc
-  Don't compile the documentation. Default with --ship.
+  Don't compile the documentation. Default with `--ship`.
 
 --trace GROUP...
-  Compile in the @trace annotations of these groups, or with `all`, of all groups. An annotation is in the group of its class's name, and in the groups its arguments name. Other @trace annotations generate nothing. See `gd++ man debugging`.
+  Compile in the `@trace` annotations of these groups, or with `all`, of all groups. An annotation is in the group named after its class, and in the groups that its arguments name. Other `@trace` annotations generate nothing. See `gd++ man debugging`.
 
 --profile GROUP...
-  Compile in the @profile annotations of these groups, or with `all`, of all groups, like --trace does for @trace. Their timings show in the editor's Debugger > Monitors tab. See `gd++ man debugging`.
+  Compile in the `@profile` annotations of these groups, or with `all`, of all groups, like `--trace` does for `@trace`. Their timings show in the editor's Debugger > Monitors tab. See `gd++ man debugging`.
 
 --print
-  With --profile, also print a table of the timings every few seconds while the game runs.
+  With `--profile`, also print a table of the timings every few seconds while the game runs.
 
 --period SECONDS
-  With --print, the seconds between tables. Default: 10.
+  With `--print`, the seconds between tables. Default: 10.
 
 --fps FPS
-  With --print, the frame rate that the table's budget column assumes. Default: 60.
-
-Group names are made of letters, digits and underscores. --print needs --profile, and --period and --fps need --print.
+  With `--print`, the frame rate that the table's budget column assumes. Default: 60.
 
 -j N, --jobs N
-  Run N compile jobs at once. Default: one per CPU core but one.
+  Run N compile jobs at once. Default: one per CPU core, minus one.
 
 --clean
-  Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and .gdextension files, so the build starts from scratch.
+  Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files, so the build starts from scratch.
 
-Only one of --opt, --small and --noopt, and only one of --doc and --nodoc, can be used.
+Only one of `--opt`, `--small` and `--noopt`, and only one of `--doc` and `--nodoc`, can be used. Group names are made of letters, digits and underscores. `--print` needs `--profile`, and `--period` and `--fps` need `--print`.
 
 # Output
 
@@ -86,7 +84,7 @@ For each package and target, a task like:
 [•] Building res://gameplay for windows.x86_64, release, optimized, no docs.
 ```
 
-It names the package, the target, debug or release, the optimization, and for packages with GD++ files, whether docs are compiled, and the groups of --trace, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the .gdextension file changed.
+It names the package, the target, debug or release, and the optimization. For packages with GD++ files, it also says whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
 
 Files written into the package root:
 
@@ -96,7 +94,7 @@ lib<id>.<platform>.<debug|release>.<arch>.<so|dll|dylib>
 <id>.gdextension.uid
 ```
 
-where <id> is the name of the package's directory.
+where `<id>` is the name of the package's directory.
 
 # Examples
 
@@ -124,13 +122,13 @@ Build for Windows on a Linux machine:
 gd++ build -w
 ```
 
-Build a debug build that runs fast, e.g. to profile:
+Make a debug build that runs fast, e.g. to profile:
 
 ```sh
 gd++ build --opt
 ```
 
-Trace the @trace annotations of the group combat, and of the class Player:
+Turn on the `@trace` annotations of the group `combat`, and of the class `Player`:
 
 ```sh
 gd++ build --trace combat Player
@@ -152,15 +150,15 @@ gd++ build --clean
 
 - "Missing Godot C++ bindings NAME, run `gd++ fetch --missing` to fix this." The package's dependencies aren't in the project. Run `gd++ fetch --missing`.
 - "Failed to find SCons, see https://scons.org to install it: ..." Run `gd++ install`.
-- "Failed to detect the platform, use --platform to choose one." This machine's platform or architecture isn't one GD++ supports, so name the target.
+- "Failed to detect the platform, use --platform to choose one." GD++ doesn't support this machine's platform or architecture, so name the target.
 - "Invalid arguments: \"x\" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64."
-- "Invalid arguments: \"a-b\" is not a valid group name." A --trace or --profile group isn't a name.
+- "Invalid arguments: \"a-b\" is not a valid group name." A `--trace` or `--profile` group isn't a valid name.
 - "Invalid arguments: --print needs --profile.", "--period needs --print." and "--fps needs --print." The option does nothing without the other one.
 - "Invalid arguments: --period must be positive."
 - An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
 - "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
 - "Class X is declared in FILE and in gd++pkg.toml." A GD++ class and a C++ class have the same name.
-- "Task failed: building ..." The compiler or linker failed. Its whole output follows. Errors in C++ code inside GD++ files point to the GD++ files.
+- The building task fails. The compiler or linker failed, and its whole output follows. Errors in the C++ code of GD++ files point to the GD++ files.
 
 # See also
 

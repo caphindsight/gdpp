@@ -1,6 +1,6 @@
 Shipping: release builds, and exporting a game with GD++ libraries
 
-Exporting a game with GD++ code works like exporting any game with GDExtensions: build the libraries for every platform you ship, in release mode, then export from Godot as usual.
+You export a game with GD++ code like any game with GDExtensions: build the libraries for every platform you ship to, in release mode, then export from Godot as usual.
 
 # 1. Build release libraries
 
@@ -8,9 +8,9 @@ Exporting a game with GD++ code works like exporting any game with GDExtensions:
 gd++ build --proj --ship --for l.x64 w.x64
 ```
 
---proj builds every package in the project, --ship builds in release mode, and --for names the targets. Build for every platform and architecture you export to. See `gd++ man building`.
+`--proj` builds every package in the project, `--ship` builds in release mode, and `--for` names the targets. Build for every platform and architecture you export to. See `gd++ man building`.
 
-Release builds are optimized for speed and use link-time optimization. To optimize for size instead, add --small. They don't include the documentation of GD++ classes, which only the editor shows.
+Release builds are optimized for speed and use link-time optimization. To optimize for size instead, add `--small`. They don't include the documentation of GD++ classes, which only the editor shows.
 
 If you export in debug mode too, e.g. for testers, also build debug libraries for those targets:
 
@@ -18,17 +18,17 @@ If you export in debug mode too, e.g. for testers, also build debug libraries fo
 gd++ build --proj --for l.x64 w.x64
 ```
 
-Each package's .gdextension file lists the libraries of every target, debug and release, so Godot picks the right one. Libraries you haven't built are simply missing: an export for a target without its library fails to load the extension. So check that the package roots have a library for each target you export, e.g. libmy_game.windows.release.x86_64.dll.
+Each package's `.gdextension` file lists the libraries of every target, debug and release, so Godot picks the right one. The libraries you haven't built are simply missing, and a game exported for a target without its library fails to load the extension. So check that the package roots have a library for each target you export to, e.g. `libmy_game.windows.release.x86_64.dll`.
 
 # 2. Keep sources out of the export
 
-In Godot's Export dialog, add these to the preset's "Filters to exclude files/folders from project", so they don't end up in the exported game:
+Godot exports only resources, and the files that match the preset's "Filters to export non-resource files/folders". So your GD++ and C++ sources, `gd++pkg.toml` and `gd++proj.toml` stay out of the exported game, unless such a filter matches them. The caches never get in: hidden directories, like `.gd++proj` and `.gd++pkg`, and directories with a `.gdignore` file, like `_gd++proj`, are invisible to Godot.
+
+If a filter does match them, e.g. `*`, add these to "Filters to exclude files/folders from project":
 
 ```
 *.gd++, *.gdpp, *.gg, *.h, *.hpp, *.c, *.cc, *.cpp, *.cxx, *.c++, gd++pkg.toml, gd++proj.toml
 ```
-
-Godot already leaves hidden directories out, e.g. .gd++proj and .gd++pkg. Also exclude _gd++proj/* if you use the checked in dependency cache.
 
 # 3. Export
 
@@ -48,11 +48,11 @@ On Linux and macOS, `gd++ install` also installs MinGW-w64, so you can build Win
 gd++ build --ship --for w.x64
 ```
 
-Building for macOS generally needs a Mac with Xcode. Building for Linux needs Linux, or a cross-compiler you set up yourself.
+Building for macOS generally needs a Mac with Xcode. Building for Linux needs Linux, or a cross-compiler that you set up yourself.
 
 # The minimum Godot version
 
-The library needs at least the Godot version of the package's API spec: the .gdextension file says so, e.g. compatibility_minimum = "4.7", and older versions of Godot refuse to load it. Newer versions load it, since Godot keeps its API compatible. To support older versions of Godot, build against an older spec.
+The library needs at least the Godot version of the package's API spec: the `.gdextension` file says so, e.g. `compatibility_minimum = "4.7"`, and older versions of Godot refuse to load it. Newer versions load it, since Godot keeps its API compatible. To support older versions of Godot, build against an older spec.
 
 # A build script
 
@@ -65,4 +65,4 @@ godot --headless --export-release "Linux" out/linux/my_game.x86_64
 godot --headless --export-release "Windows Desktop" out/windows/my_game.exe
 ```
 
-Use -f with commands that may ask for confirmation, since scripts can't answer prompts. See `gd++ man cli`.
+Scripts can't answer prompts, so pass `-f` to the commands that may ask for confirmation. See `gd++ man cli`.

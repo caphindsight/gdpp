@@ -1,10 +1,10 @@
 Types: Godot types, and the C++ types they become
 
-GD++ uses Godot's type system: the types you write in declarations are Godot's, e.g. int, Vector3 or Node. Each one maps to exactly one C++ type, which the generated code uses, and which your C++ code works with. This page lists them all.
+GD++ uses Godot's type system: the types you write in declarations are Godot's, e.g. `int`, `Vector3` or `Node`. Each one maps to exactly one C++ type, which the generated code uses, and which your C++ code works with. This page lists them all.
 
 # Where types appear
 
-Types appear in declarations only: variables, function parameters and return values, signal parameters, and the element types of typed arrays and dictionaries.
+Types appear in declarations only: in variables, function parameters and return values, signal parameters, and as the element types of typed arrays and dictionaries.
 
 ```gd++
 var speed: float
@@ -12,7 +12,7 @@ func hit(target: Node3D, damage: int = 1) -> bool { ... }
 signal scored(points: int, by: Player)
 ```
 
-A missing type means Variant, which holds any value:
+A missing type means `Variant`, which holds any value:
 
 ```gd++
 var anything              // a Variant
@@ -22,33 +22,33 @@ func get_any()            // returns a Variant
 
 GD++ doesn't infer types, so `var x := 5` is an error: write `var x: int = 5`.
 
-void is only allowed as a return type, and means the function returns nothing.
+`void` is only allowed as a return type, and means that the function returns nothing.
 
 # The mapping
 
 ```
-GD++ type                     C++ type                  passed as
-bool                          bool                      bool
-int                           int64_t                   int64_t
-float                         double (float64_t)        double
-Variant, or no type           Variant                   const Variant &
-String, StringName, NodePath  the same name             const T &
-Vector2, Vector3, Color, ...  the same name             const T &
-Array, Dictionary             the same name             const T &
-PackedByteArray, ...          the same name             const T &
-Array[T]                      TypedArray<T>             const TypedArray<T> &
-Dictionary[K, V]              TypedDictionary<K, V>     const TypedDictionary<K, V> &
-Node, Node3D, Object, ...     Node *, Node3D *, ...     the pointer
-RefCounted, Resource, ...     Ref<Resource>, ...        const Ref<T> &
+GD++ type                     C++ type                       passed as
+bool                          bool                           bool
+int                           int64_t                        int64_t
+float                         double (float64_t)             double
+Variant, or no type           Variant                        const Variant &
+String, StringName, NodePath  the same name                  const T &
+Vector2, Vector3, Color, ...  the same name                  const T &
+Array, Dictionary             the same name                  const T &
+PackedByteArray, ...          the same name                  const T &
+Array[T]                      TypedArray<T>                  const TypedArray<T> &
+Dictionary[K, V]              TypedDictionary<K, V>          const TypedDictionary<K, V> &
+Node, Node3D, Object, ...     Node *, Node3D *, ...          the pointer
+RefCounted, Resource, ...     Ref<Resource>, ...             const Ref<T> &
 your GD++ classes             like their base: Player * or Ref<Stats>
-your GD++ enums               the C++ enum class        by value
-externs                       ExtPtr<T> or ExtRef<T>    by value
-Async[T], Async               Async<T>, Async<Variant>  by value
+your GD++ enums               the C++ enum class             by value
+externs                       gdpp::ExtPtr<T> or ExtRef<T>   by value
+Async[T], Async               gdpp::Async<T>, Async<Variant> by value
 ```
 
 "Passed as" is how function parameters and setters take the type. Return values and fields always use the plain C++ type.
 
-Godot's float is a 64-bit double. The runtime header defines float64_t as a name for double, to match int64_t. Note that godot-cpp's own vector types use real_t, which is float in default builds, so e.g. Vector3's components are 32-bit.
+Godot's `float` is a 64-bit `double`. The runtime header defines `float64_t` as a name for `double`, to match `int64_t`. Note that godot-cpp's own vector types use `real_t`, which is `float` in default builds, so e.g. the components of a `Vector3` are 32-bit.
 
 # Built-in types
 
@@ -66,10 +66,10 @@ PackedStringArray  PackedVector2Array  PackedVector3Array  PackedVector4Array  P
 
 # Classes
 
-Any class of the package's API spec is a type, e.g. Node, Camera3D, Resource or Texture2D, and so is any class that a GD++ file of the package declares.
+Any class of the package's API spec is a type, e.g. `Node`, `Camera3D`, `Resource` or `Texture2D`, and so is any class that a GD++ file of the package declares.
 
-- A class that extends RefCounted is used through a reference, Ref<T>, which keeps the object alive. Godot deletes it when the last reference goes away.
-- Any other class, i.e. Object and all nodes, is used through a pointer, T*. The pointer doesn't keep the object alive: the object lives until someone deletes it, e.g. a node until it or its parent is freed.
+- A class that extends `RefCounted` is used through a reference, `Ref<T>`, which keeps the object alive. Godot deletes the object when the last reference goes away.
+- Any other class, i.e. `Object` and all nodes, is used through a pointer, `T *`. The pointer doesn't keep the object alive: the object lives until someone deletes it, e.g. a node until it or its parent is freed.
 
 ```gd++
 var camera: Camera3D        // Camera3D *camera;
@@ -83,7 +83,7 @@ func use() -> void {
 }
 ```
 
-Pointers start as nullptr, and references as null references.
+Pointers start as `nullptr`, and references as null references.
 
 GD++ only knows the classes of the package's API spec, so the spec's Godot version decides which classes you can use.
 
@@ -95,11 +95,11 @@ var scores: Array[int]                     // TypedArray<int64_t>
 var names: Dictionary[String, Node3D]      // TypedDictionary<String, Node3D>
 ```
 
-Array[T] is an array that only holds values of type T. Dictionary[K, V] is a dictionary with keys of type K and values of type V. In C++, they are godot-cpp's TypedArray and TypedDictionary, with the element types spelled by name: TypedArray<Node>, not TypedArray<Node *>.
+`Array[T]` is an array that only holds values of type `T`. `Dictionary[K, V]` is a dictionary with keys of type `K` and values of type `V`. In C++, they are godot-cpp's `TypedArray` and `TypedDictionary`, with the element types spelled by name: `TypedArray<Node>`, not `TypedArray<Node *>`.
 
-- Only Array and Dictionary take type arguments: Array takes one, Dictionary two.
-- Element types can be built-in types and classes, but not enums or externs, since Godot can't check those.
-- Typed collections can't be nested: Array[Array[int]] is an error. Use Array[Array] instead.
+- Only `Array` and `Dictionary` take type arguments (and `Async`, see below): `Array` takes one, and `Dictionary` two.
+- Element types can be built-in types and classes, but not enums, externs or `Async` types.
+- Typed collections can't be nested: `Array[Array[int]]` is an error. Use `Array[Array]` instead.
 
 Typed dictionaries need Godot 4.4 or newer.
 
@@ -108,15 +108,15 @@ Typed dictionaries need Godot 4.4 or newer.
 A GD++ enum declared in any GD++ file of the package is a type:
 
 ```gd++
-enum Suit { DIAMONDS CLUBS SPADES HEARTS }
+enum Suit { DIAMONDS, CLUBS, SPADES, HEARTS }
 
 var trump: Suit                // Suit trump;
 func play(suit: Suit) -> void { ... }
 ```
 
-In C++, it's an enum class with int64_t values, e.g. Suit::HEARTS. Godot sees it as an int, marked as an enum of the class, or a bitfield for a @bitfield enum. See `gd++ man enums`.
+In C++, it's an enum class with `int64_t` values, e.g. `Suit::HEARTS`. Godot sees it as an `int`, marked as an enum of the class, or as a bitfield for a `@bitfield` enum. See `gd++ man enums`.
 
-Godot's own enums, e.g. Error, Key or Node.ProcessMode, aren't GD++ types themselves. Redeclare them as GD++ enums, which copy all their values, and convert them with `as` in C++ to pass them to the engine:
+Godot's own enums, e.g. `Error`, `Key` or `Node.ProcessMode`, aren't GD++ types. Declare GD++ enums that copy all their values instead, and convert them with `as` in C++ to pass them to the engine:
 
 ```gd++
 enum ProcessMode { extends Node.ProcessMode }
@@ -126,21 +126,21 @@ func set_mode(mode: ProcessMode) -> void {
 }
 ```
 
-Global enums, e.g. Error or Key, need a new name, since Godot's names are taken: `enum KeyCode { extends Key }`. Or use int, and convert with `as` in C++. See `gd++ man enums`.
+Global enums, e.g. `Error` or `Key`, need a new name, since Godot's names are taken: `enum KeyCode { extends Key }`. Or use `int`, and convert with `as` in C++. See `gd++ man enums`.
 
 # Externs
 
-An extern declared in any GD++ file of the package is a type. In C++, it's an ExtPtr<T>, or an ExtRef<T> if its base class is refcounted, which calls the members of the object by name, and converts to the externs it extends. Godot sees it as its base class. See `gd++ man externs`.
+An extern declared in any GD++ file of the package is a type. In C++, it's a `gdpp::ExtPtr<T>`, or a `gdpp::ExtRef<T>` if its base class is refcounted. It calls the members of the object by name, and converts to the externs it extends. Godot sees it as its base class. See `gd++ man externs`.
 
 # Async
 
-Async[T] is a task whose result has type T, e.g. the call of an @onthread function, which runs on another thread. Async[void] has no result, and a plain Async has a Variant result. Godot sees it as the package's class of tasks, e.g. FooAsync for a package whose prefix is Foo; in C++, it's an Async<T>, a reference to that object. Copies share the task, so it can be passed around, stored in variables, and sent in signals, like any refcounted object.
+`Async[T]` is a task whose result has type `T`, e.g. a call of an `@onthread` function, which runs on another thread. `Async[void]` has no result, and a plain `Async` has a `Variant` result. Godot sees the task as an object of the package's class of tasks, e.g. `FooAsync` for a package whose prefix is `Foo`. In C++, it's a `gdpp::Async<T>`, a reference to that object. Copies share the task, so it can be passed around, stored in variables, and sent in signals, like any refcounted object.
 
-Async types can't be exported, typed collections can't hold them, and a task's result can't be another task. See `gd++ man async`.
+`Async` types can't be exported, typed collections can't hold them, and a task's result can't be another task. See `gd++ man async`.
 
 # Other names
 
-godot-cpp declares more names than classes, e.g. TypedArray, Ref, UtilityFunctions or memnew. Your C++ code can use them all, and GD++ includes their headers. But they aren't GD++ types:
+godot-cpp declares more names than classes, e.g. `TypedArray`, `Ref`, `UtilityFunctions` or `memnew`. Your C++ code can use them all, and GD++ includes their headers. But they aren't GD++ types:
 
 ```out
 [×] res://a.gd++:3:8: TypedArray is not a Godot type.
@@ -149,7 +149,7 @@ godot-cpp declares more names than classes, e.g. TypedArray, Ref, UtilityFunctio
     Hint: Types are Godot's built-in types and classes, and the package's classes, externs and enums.
 ```
 
-Use Array[T] instead of TypedArray<T>, and a class name instead of Ref<T>.
+Use `Array[T]` instead of `TypedArray<T>`, and a class name instead of `Ref<T>`.
 
 # Unknown types
 
@@ -164,7 +164,7 @@ A misspelled type is an error, with a suggestion if a known type is close:
 
 # In Godot's documentation
 
-The editor's help shows GD++ types like GDScript does: int, float, Vector3, Node3D, int[] for Array[int], Dictionary[String, Node3D], and the class of tasks, e.g. FooAsync, for Async types. Enums show as int, with the enum's name. See `gd++ man docs`.
+The editor's help shows GD++ types like GDScript does: `int`, `float`, `Vector3`, `Node3D`, `int[]` for `Array[int]`, `Dictionary[String, Node3D]`, and the class of tasks, e.g. `FooAsync`, for `Async` types. Enums show as `int`, with the enum's name. See `gd++ man docs`.
 
 # See also
 

@@ -1,4 +1,4 @@
-Lifecycle: `ctor`, `dtor`, initial values, `@onready`, `notif`, and the order things run in
+Lifecycle: ctor, dtor, initial values, @onready, notif, and the order in which things run
 
 This page explains what runs when an object of a GD++ class is created, gets ready, and is deleted: constructors, destructors, initial values of variables, `@onready`, and `notif` blocks.
 
@@ -17,7 +17,7 @@ dtor {
 }
 ```
 
-ctor { ... } is the class's constructor, and dtor { ... } its destructor. Their bodies are C++. A class has at most one of each, and neither takes arguments, since Godot creates objects without any:
+`ctor { ... }` is the class's constructor, and `dtor { ... }` its destructor. Their bodies are C++. A class has at most one of each, and neither takes arguments, since Godot creates objects without any:
 
 ```out
 [×] res://enemy.gd++:4:5: Expected "{" to start the ctor block, but found "(".
@@ -26,7 +26,7 @@ ctor { ... } is the class's constructor, and dtor { ... } its destructor. Their 
     Hint: Constructors and destructors take no arguments: "ctor { ... }".
 ```
 
-For objects that need arguments, write a @static function that creates and sets them up:
+For objects that need arguments, write a `@static` function that creates and sets them up:
 
 ```gd++
 @static
@@ -37,18 +37,18 @@ func create(hp: int) -> Enemy {
 }
 ```
 
-The constructor runs whenever an object is created: by memnew in C++, by Enemy.new() in GDScript, and when Godot loads a scene or resource with it. The destructor runs when the object is deleted: for nodes, when they're freed, e.g. with queue_free(); for refcounted objects, when the last reference goes away.
+The constructor runs whenever an object is created: by `memnew` in C++, by `Enemy.new()` in GDScript, and when Godot loads a scene or resource that holds it. The destructor runs when the object is deleted: for nodes, when they're freed, e.g. with `queue_free()`, and for refcounted objects, when the last reference goes away.
 
 # What the constructor does
 
-GD++ generates a constructor if the class needs one: if it has a ctor, a variable with an initial value that isn't @onready, an @rpc function, or an override of _process or _physics_process. The constructor does, in this order:
+GD++ generates a constructor if the class needs one: if it has a `ctor`, a variable with an initial value that isn't `@onready`, an `@rpc` function, or an override of `_process` or `_physics_process`. The constructor does this, in order:
 
-1. For each @rpc function, set its RPC configuration. See `gd++ man rpc`.
-2. If the class overrides _process or _physics_process, turn it on with set_process(true) or set_physics_process(true).
-3. Assign the initial values of the variables that aren't @onready, in the order of their declarations.
-4. Run the body of ctor, in a block of its own.
+1. For each `@rpc` function, set its RPC configuration. See `gd++ man rpc`.
+2. If the class overrides `_process` or `_physics_process`, turn it on with `set_process(true)` or `set_physics_process(true)`.
+3. Assign the initial values of the variables that aren't `@onready`, in the order of their declarations.
+4. Run the body of `ctor`, in a block of its own.
 
-So the ctor's body sees every variable with its initial value.
+So the body of `ctor` sees every variable with its initial value.
 
 ```gd++
 var speed: float = 5.0
@@ -61,7 +61,7 @@ ctor {
 
 # @onready and _ready
 
-A node gets ready when it and all its children have entered the scene tree, which is when Godot calls _ready. Variables with @onready get their initial values then, at the start of _ready, in the order of their declarations, since their initial values often need the node's children:
+A node gets ready when it and all its children have entered the scene tree, which is when Godot calls `_ready`. Variables with `@onready` get their initial values then, at the start of `_ready`, in the order of their declarations, since their initial values often need the node's children:
 
 ```gd++
 @onready
@@ -73,7 +73,7 @@ func _ready() -> void {
 }
 ```
 
-If the class doesn't override _ready, GD++ adds an override that assigns the @onready variables. If it does, their initializers run before its body. @onready only works in classes that extend Node, since only nodes get ready: elsewhere, it's an error.
+If the class doesn't override `_ready`, GD++ adds an override that assigns the `@onready` variables. If it does, their initializers run before its body. `@onready` only works in classes that extend `Node`, since only nodes get ready: elsewhere, it's an error.
 
 # The order of everything
 
@@ -81,21 +81,21 @@ For a node created by a scene, Godot:
 
 1. creates the object: the constructor runs, with the initial values of variables, then `notif(POSTINITIALIZE)`,
 2. sets the properties saved in the scene, i.e. the exported variables, through their setters,
-3. adds it to the scene tree: _enter_tree runs,
-4. once its children are ready: _ready runs, starting with the @onready initial values,
-5. every frame: _process and _physics_process run,
-6. removes it from the tree: _exit_tree runs,
+3. adds it to the scene tree: `_enter_tree` runs,
+4. once its children are ready: `_ready` runs, starting with the `@onready` initial values,
+5. every frame: `_process` and `_physics_process` run,
+6. removes it from the tree: `_exit_tree` runs,
 7. deletes it: `notif(PREDELETE)` runs, then the destructor.
 
-Note step 2: values from the scene overwrite the initial values, since they come after the constructor.
+Note step 2: values from the scene overwrite the initial values, since they're set after the constructor runs.
 
 # In the editor
 
-In the editor, Godot doesn't create objects of classes without @tool: it creates placeholders, which hold property values but run no code. So neither their constructor nor their destructor, nor any other of their functions, runs in the editor. Classes with @tool run everything in the editor too. Other code can still create an object of a runtime class with memnew, and then its code runs: @game_only classes check for the editor in every function, to prevent that. See `gd++ man classes`.
+In the editor, Godot doesn't create objects of classes without `@tool`: it creates placeholders, which hold property values but run no code. So neither their constructor nor their destructor, nor any other of their functions, runs in the editor. Classes with `@tool` run everything in the editor too. Other code can still create an object of a runtime class with `memnew`, and then its code runs: `@game_only` classes check for the editor in every function, to prevent that. See `gd++ man classes`.
 
 # Tracing objects' lives
 
-With @trace on a class, and a build that turns it on, the constructor prints a line when an object is created, and the destructor when it's freed, e.g. `+ Bullet#28347 created` and `- Bullet#28347 freed`. They name the object by its instance id, since a node has no name yet in its constructor. An id without a "freed" line, once the object should be gone, points to a leak. See `gd++ man debugging`.
+With `@trace` on a class, in a build that turns it on, the constructor prints a line when an object is created, and the destructor when it's freed, e.g. `+ Bullet#28347 created` and `- Bullet#28347 freed`. They name the object by its instance id, since a node has no name yet in its constructor. An id without a "freed" line, once the object should be gone, points to a leak. See `gd++ man debugging`.
 
 # Notifications
 
@@ -111,7 +111,7 @@ notif(ENTER_TREE, EXIT_TREE) {
 }
 ```
 
-Write the names without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. Object's `POSTINITIALIZE` and `PREDELETE`, and Node's `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `WHAT`, an int, is the notification that it's handling.
+Write the names without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. `Object`'s `POSTINITIALIZE` and `PREDELETE`, and `Node`'s `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `WHAT`, an `int`, is the notification that it's handling.
 
 A class can have any number of `notif` blocks, and a notification can be in more than one. When the object gets a notification, every block that lists it runs, in the order of the file. Each block runs on its own, so a `return` ends only that block.
 

@@ -13,17 +13,17 @@ gd++ trans --runtime [--syntax N | --nightly]
 
 # Description
 
-Transpiles a GD++ file, and prints the C++ files that GD++ generates from it, each after a line naming it, e.g. "// ==== Player.h ====". It's for learning GD++, trying it out, and seeing what your code turns into. Builds don't use it: they transpile whole packages. It changes no files, except the package's build cache, which it syncs like a build.
+Transpiles a GD++ file, and prints the C++ files that GD++ generates from it, each after a line naming it, e.g. `// ==== Player.h ====`. It's for learning GD++, trying it out, and seeing what your code turns into. Builds don't use it: they transpile whole packages. It changes no files, except the package's build cache, which it syncs like a build does.
 
 ```sh
 gd++ trans player.gd++
 ```
 
-In a package, the file sees what it would see in a build: Godot's classes and enums, from the package's spec and bindings, and the classes, externs and enums of the package's other GD++ files. So the output is what the build compiles, apart from the #line directives, which name the file as you passed it.
+In a package, the file sees what it would see in a build: Godot's classes and enums, from the package's spec and bindings, and the classes, externs and enums of the package's other GD++ files. So the output is what the build compiles, apart from the `#line` directives, which name the file as you passed it.
 
-Outside of a package, the file sees only what you declare with the flags below. Even RefCounted, the default base class, must be declared then, e.g. with --refcounted RefCounted, or taken from a spec in the project's cache, with --spec. Async types name the class GdppAsync then, since there's no package prefix. See `gd++ man async`.
+Outside of a package, the file sees only what you declare with the options below. Even `RefCounted`, the default base class, must be declared then, e.g. with `--refcounted RefCounted`, or taken from a spec in the project's cache, with `--spec`. Async types name the class `GdppAsync` then, since there's no package prefix. See `gd++ man async`.
 
-If the file has errors, trans shows them like a build does. If it declares nothing, it says "The file declares no classes, externs or enums.".
+If the file has errors, `gd++ trans` shows them like a build does. If the file declares nothing, it says "The file declares no classes, externs or enums.".
 
 # Options
 
@@ -31,51 +31,51 @@ FILE
   The GD++ file to transpile.
 
 --runtime
-  Print the runtime header that all generated C++ includes, gd++/syntax_N.hpp for syntax N, instead of transpiling a file. See `gd++ man runtime`.
+  Print the runtime header that all generated C++ includes, `gd++/syntax_N.hpp` for syntax N, instead of transpiling a file. Without `--syntax` or `--nightly`, it's the header of the latest stable syntax. See `gd++ man runtime`.
 
 --syntax N
   The GD++ syntax version to use. Default: the package's, or else the latest stable one, which `gd++ --syntax` shows.
 
 --nightly
-  The same as --syntax 0, the nightly syntax.
+  The same as `--syntax 0`, the nightly syntax.
 
 --spec NAME
-  Take Godot's classes and enums from this Godot API spec in the project's cache, instead of from the package. Works outside of packages too, but must run in a project.
+  Take Godot's classes and enums from this Godot API spec in the project's cache, instead of from the package. This works outside of packages too, but must run in a project.
 
 --nospec
-  Don't take Godot's classes and enums from the package. Only the flags declare classes then.
+  Don't take Godot's classes and enums from the package. Then the file only sees the package's other GD++ files and what the options declare.
 
 --object NAME[=INCLUDE]
-  Declare a Godot class that isn't refcounted, e.g. Node, used as NAME*. The include defaults to godot-cpp's header for the class, e.g. <godot_cpp/classes/node3d.hpp> for Node3D.
+  Declare a Godot class that isn't refcounted, e.g. `Node`, used as `NAME *`. The include defaults to godot-cpp's header for the class, e.g. `<godot_cpp/classes/node3d.hpp>` for `Node3D`.
 
 --refcounted NAME[=INCLUDE]
-  Declare a refcounted Godot class, e.g. Resource, used as Ref<NAME>. The include defaults to godot-cpp's header.
+  Declare a refcounted Godot class, e.g. `Resource`, used as `Ref<NAME>`. The include defaults to godot-cpp's header.
 
 --extern NAME[=INCLUDE]
-  Declare an extern of another GD++ file, whose base class isn't refcounted. The include defaults to "NAME.h".
+  Declare an extern of another GD++ file, whose base class isn't refcounted. The include defaults to `"NAME.h"`.
 
 --refcounted-extern NAME[=INCLUDE]
-  Declare an extern of another GD++ file, whose base class is refcounted. The include defaults to "NAME.h".
+  Declare an extern of another GD++ file, whose base class is refcounted. The include defaults to `"NAME.h"`.
 
 --enum NAME[=INCLUDE][:VALUES]
-  Declare an enum of another GD++ file, with its values, e.g. Suit:HEARTS,SPADES=5. Values without a number count up from the previous one, from 0. The include defaults to "NAME.h".
+  Declare an enum of another GD++ file, with its values, e.g. `Suit:HEARTS,SPADES=5`. Values without a number count up from the previous one, starting at 0. The include defaults to `"NAME.h"`.
 
-Each of these flags can be repeated, one name each time. An INCLUDE is written as after #include: <a/b.hpp> or "a/b.h". Without brackets or quotes, it gets quotes. Flags win over the package's declarations of the same name.
+Each of these options can be repeated, with one name each time. An INCLUDE is written like after `#include`: `<a/b.hpp>` or `"a/b.h"`. Without brackets or quotes, it gets quotes. The options win over the package's declarations of the same name.
 
 --trace GROUP...
-  Turn on the @trace annotations of these groups, or with `all`, of all groups, like `gd++ build --trace`. See `gd++ man debugging`.
+  Turn on the `@trace` annotations of these groups, or with `all`, of all groups, like `gd++ build --trace`. See `gd++ man debugging`.
 
 --profile GROUP...
-  Turn on the @profile annotations of these groups, or with `all`, of all groups, like `gd++ build --profile`. See `gd++ man debugging`.
+  Turn on the `@profile` annotations of these groups, or with `all`, of all groups, like `gd++ build --profile`. See `gd++ man debugging`.
 
 --print
-  With --profile, print a table of timings every few seconds, like `gd++ build --print`.
+  With `--profile`, print a table of timings every few seconds, like `gd++ build --print`.
 
 --period SECONDS
-  With --print, the seconds between tables, like `gd++ build --period`. Default: 10.
+  With `--print`, the seconds between tables, like `gd++ build --period`. Default: 10.
 
 --fps FPS
-  With --print, the frame rate that the table's budget column assumes, like `gd++ build --fps`.
+  With `--print`, the frame rate that the table's budget column assumes, like `gd++ build --fps`. Default: 60.
 
 # Examples
 
@@ -97,7 +97,7 @@ Without any project, declaring the classes by hand:
 gd++ trans test.gd++ --refcounted RefCounted --object Node --object Node3D --enum Suit:HEARTS,SPADES
 ```
 
-See the code that @trace and @profile annotations generate:
+See the code that `@trace` and `@profile` annotations generate:
 
 ```sh
 gd++ trans src/player.gd++ --trace all --profile all

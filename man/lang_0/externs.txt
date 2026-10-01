@@ -19,23 +19,23 @@ An extern lists what your code needs of the class: its base class and some of it
 
 - a GD++ class of another package,
 - a class of any other GDExtension, written with GD++ or not,
-- a GDScript class with a class_name, or a class of any other scripting language.
+- a GDScript class with a `class_name`, or a class of any other scripting language.
 
 The extern's name must be the name of that class. It must not be the name of a class the package already knows: Godot's own classes, and the package's own classes, can be used directly.
 
-Externs can be file-level, with extern_name, or inline, like classes. See `gd++ man files`.
+Externs can be file-level, with `extern_name`, or inline, like classes. See `gd++ man files`.
 
 # Base class
 
-extends names the extern's base class: a Godot class, a GD++ class of the package, or another extern. Without extends, it's RefCounted. The base decides:
+`extends` names the extern's base class: a Godot class, a GD++ class of the package, or another extern. Without `extends`, it extends `RefCounted`. The base decides:
 
 - what your code can do with the object without calling by name: everything the base class can,
-- whether the extern is used through a pointer, ExtPtr<Terrain>, if the base isn't refcounted, or through a reference, ExtRef<Terrain>, if it is,
+- whether the extern is used through a pointer, `ExtPtr<Terrain>`, if the base isn't refcounted, or through a reference, `ExtRef<Terrain>`, if it is,
 - how Godot sees it: as an object of the base class.
 
-Use the class's real base class, or any class above it, e.g. Node3D or Node, as long as it's true of the object.
+Use the class's real base class, or any class above it, e.g. `Node3D` or `Node`, as long as the object really is one.
 
-An extern that extends another extern has that extern's members too, and converts to it, e.g. to pass an ExtPtr<Car> where an ExtPtr<Vehicle> is expected:
+An extern that extends another extern has that extern's members too, and converts to it, e.g. to pass an `ExtPtr<Car>` where an `ExtPtr<Vehicle>` is expected:
 
 ```gd++
 extern Vehicle {
@@ -49,22 +49,22 @@ extern Car {
 }
 ```
 
-The chain of bases must end with a Godot class or a GD++ class of the package, e.g. Node3D here, which decides the three points above.
+The chain of bases must end with a Godot class or a GD++ class of the package, e.g. `Node3D` here, which decides the three points above.
 
 # Members
 
 Externs can only declare:
 
 func
-  Functions, without a body and without default values. They can have @const, @deferred, @thread_safe, @rpc without arguments, @trace and @profile, but not @onthread. The return type must match what the class returns.
+  Functions, without a body and without default values. They can have `@const`, `@deferred`, `@thread_safe`, `@rpc` without arguments, `@trace` and `@profile`, but not `@onthread`. The return type must match what the class returns.
 
 var
-  Variables, without an initial value or a property body. They're read with get_NAME() and written with set_NAME(value). They can have @profile.
+  Variables, without an initial value or a property body. They're read with `get_NAME()` and written with `set_NAME(value)`. They can have `@profile`.
 
 signal
-  Signals, to send them on the object, with emit. They can have @trace.
+  Signals, to send them on the object, with `emit`. They can have `@trace`.
 
-The extern itself can have @trace and @profile, for all its members. See "Externs" in `gd++ man debugging`.
+The extern itself can have `@trace` and `@profile`, for all its members. See "Externs" in `gd++ man debugging`.
 
 Everything else, e.g. `ctor`, `dtor`, `notif` blocks, enums, `decl` and `impl` blocks, is an error: "Externs can't contain ...". You only need to declare the members that your code uses.
 
@@ -92,21 +92,21 @@ func regenerate(seed: int) -> void {
 }
 ```
 
-- Functions: `terrain->height_at(x, z)` calls height_at on the object, by name, and converts the result to the declared return type.
+- Functions: `terrain->height_at(x, z)` calls `height_at` on the object, by name, and converts the result to the declared return type.
 - Variables: `terrain->get_seed()` and `terrain->set_seed(5)` get and set the property by name.
 - Signals: `emit terrain->changed()` emits the signal on the object.
-- The base class: `terrain.base()` returns the object as its base class, Node3D*, to use anything else, e.g. `add_child(terrain.base())` or `terrain.base()->get_position()`.
+- The base class: `terrain.base()` returns the object as its base class, `Node3D *`, to use anything else, e.g. `add_child(terrain.base())` or `terrain.base()->get_position()`.
 
-In C++, an ExtPtr<T>:
+In C++, an `ExtPtr<T>`:
 
-- starts null, and can be set from a pointer to the base class or nullptr: `terrain = get_node<Node3D>("Terrain");`,
+- starts as null, and can be set from a pointer to the base class or `nullptr`: `terrain = get_node<Node3D>("Terrain");`,
 - tests as a bool: `if (terrain) { ... }`,
-- compares with == to another ExtPtr<T>,
-- converts to a Variant, e.g. to pass it to Godot.
+- compares with `==` to another `ExtPtr<T>`,
+- converts to a `Variant`, e.g. to pass it to Godot.
 
-An ExtRef<T> is the same, but holds a reference, which keeps the object alive, and base() returns a Ref<Base>. Ext<T> is whichever of the two fits T.
+An `ExtRef<T>` is the same, but holds a reference, which keeps the object alive, and `base()` returns a `Ref<Base>`. `Ext<T>` is whichever of the two fits `T`.
 
-Converting a base class pointer to an extern doesn't check the object's class: if it's not really a Terrain, calls fail at runtime, with Godot's errors about missing methods. For exported variables, the editor checks it for you, see below.
+Converting a base class pointer to an extern doesn't check the object's class: if it's not really a `Terrain`, calls fail at runtime, with Godot's errors about missing methods. For exported variables, the editor checks it for you, see below.
 
 # Exported externs
 
@@ -114,7 +114,7 @@ Converting a base class pointer to an extern doesn't check the object's class: i
 @export var terrain: Terrain
 ```
 
-In Godot, the variable's type is the base class, Node3D, but the editor only accepts objects whose class is named Terrain, if the base is a Node or a Resource: the node picker only offers Terrain nodes, and the resource picker only Terrain resources. That's the usual way to connect objects of different packages: in the editor, not in code.
+In Godot, the variable's type is the base class, `Node3D`, but the editor only accepts objects whose class is named `Terrain`, if the base is a `Node` or a `Resource`: the node picker only offers `Terrain` nodes, and the resource picker only `Terrain` resources. That's the usual way to connect objects of different packages: in the editor, not in code.
 
 # Creating and deleting objects
 
@@ -125,7 +125,7 @@ add_child(terrain.base());
 memdelete_ext(some_terrain);      // only for ExtPtr, like memdelete
 ```
 
-memnew_ext(T) creates an object of the class named like the extern: a class that Godot's ClassDB knows, e.g. of a GDExtension, or else a global script class, i.e. a script with a class_name, which it loads and calls new() on. If there's no such class, it prints an error and returns null. memdelete_ext deletes an ExtPtr's object, like memdelete; refcounted objects delete themselves when their last ExtRef goes away.
+`memnew_ext(T)` creates an object of the class named like the extern: a class that Godot's `ClassDB` knows, e.g. of a GDExtension, or else a global script class, i.e. a script with a `class_name`, which it loads and calls `new()` on. If there's no such class, it prints an error and returns null. `memdelete_ext` deletes an `ExtPtr`'s object, like `memdelete`; refcounted objects delete themselves when their last `ExtRef` goes away.
 
 # @deferred
 
@@ -136,9 +136,9 @@ extern Terrain {
 }
 ```
 
-Calls to a @deferred function go through call_deferred instead of call: they run later, at the end of the frame. So @deferred functions must return void. @thread_safe is the same with call_thread_safe, and needs an extern that extends Node.
+Calls to a `@deferred` function go through `call_deferred` instead of `call`: they run later, at the end of the frame. So `@deferred` functions must return `void`. `@thread_safe` is the same with `call_thread_safe`, and needs an extern that extends `Node`.
 
-Classes have @deferred and @thread_safe too, which defer every call, not only those through the extern. So if the class already defers the function, its extern doesn't need to. See `gd++ man functions`.
+Classes have `@deferred` and `@thread_safe` too, which defer every call, not only those through the extern. So if the class already defers the function, its extern doesn't need to. See `gd++ man functions`.
 
 # @onthread functions
 
@@ -149,7 +149,7 @@ extern Planner {
 }
 ```
 
-An @onthread function of another package returns a task, so its extern declares the Async as the return type, without @onthread: the class already runs every call on a worker thread. A call returns an Async<Array>, which works like the tasks of your own package. See "Across packages" in `gd++ man async`.
+An `@onthread` function of another package returns a task, so its extern declares an `Async` as the return type, without `@onthread`: the class already runs every call on a worker thread. A call returns an `Async<Array>`, which works like the tasks of your own package. See "Across packages" in `gd++ man async`.
 
 # @rpc
 
@@ -162,21 +162,21 @@ extern Lobby {
 rpc(1) lobby->join("Me");
 ```
 
-An @rpc function of an extern can be called over the network with rpc, like one of your own classes. It takes no arguments, since the class that defines the function configures it. The extern must extend Node. See `gd++ man rpc`.
+An `@rpc` function of an extern can be called over the network with `rpc`, like one of your own classes. It takes no arguments, since the class that defines the function configures it. The extern must extend `Node`. See `gd++ man rpc`.
 
 # Speed
 
-Every call on an extern goes through Godot's call by name: the arguments are packed into Variants, the method is looked up by name, and the result is unpacked. That's much slower than a C++ call, though the names are interned only once. Use externs where you need them, e.g. to connect packages, not in hot loops.
+Every call on an extern goes through Godot's `call` by name: the arguments are packed into `Variant`s, the method is looked up by name, and the result is unpacked. That's much slower than a C++ call, though the names are interned only once. Use externs where you need them, e.g. to connect packages, not in hot loops.
 
 # How it works
 
-For each extern, GD++ generates a header, e.g. Terrain.h, with a small wrapper class in namespace godot. It holds a pointer to the object, and has a method for each declared member, which calls the object's call, call_deferred, get, set or emit_signal with the member's name. ExtPtr<T> and ExtRef<T> hold the object, and their operator-> returns such a wrapper. Externs aren't registered with Godot: they're only names for classes that are registered elsewhere. See `gd++ man runtime` and `gd++ man generated`.
+For each extern, GD++ generates a header, e.g. `Terrain.h`, with a small wrapper class in namespace `godot`. It holds a pointer to the object, and has a method for each declared member, which calls the object's `call`, `call_deferred`, `get`, `set` or `emit_signal` with the member's name. `ExtPtr<T>` and `ExtRef<T>` hold the object, and their `operator->` returns such a wrapper. Externs aren't registered with Godot: they're only names for classes that are registered elsewhere. See `gd++ man runtime` and `gd++ man generated`.
 
 # Example
 
-Two packages: res://world builds the terrain, and res://vehicles uses it.
+Two packages: `res://world` builds the terrain, and `res://vehicles` uses it.
 
-res://world/terrain.gd++:
+`res://world/terrain.gd++`:
 
 ```gd++
 class_name Terrain
@@ -189,7 +189,7 @@ func height_at(x: float, z: float) -> float {
 }
 ```
 
-res://vehicles/terrain.gd++:
+`res://vehicles/terrain.gd++`:
 
 ```gd++
 extern_name Terrain
@@ -199,7 +199,7 @@ func height_at(x: float, z: float) -> float
 signal changed
 ```
 
-res://vehicles/car.gd++:
+`res://vehicles/car.gd++`:
 
 ```gd++
 class_name Car

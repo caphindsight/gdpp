@@ -1,28 +1,28 @@
 Projects: Godot projects, gd++proj.toml, and what GD++ keeps in them
 
-A GD++ project is just a Godot project: a directory with a project.godot file. There is nothing to convert. GD++ adds a few files and directories to it, all described on this page.
+A GD++ project is just a Godot project, i.e. a directory with a `project.godot` file. There is nothing to convert. GD++ adds a few files and directories to it, all described on this page.
 
 # What GD++ reads from project.godot
 
-gd++ reads two settings from the [application] section of project.godot, which Godot writes:
+`gd++` reads two settings from the `[application]` section of `project.godot`, which Godot writes:
 
-- config/name: the project's name, shown by `gd++ ls`.
-- config/features: the Godot version the project was made with, e.g. "4.3", shown by `gd++ ls`.
+- `config/name`: the project's name, shown by `gd++ ls`.
+- `config/features`: the Godot version that the project was made with, e.g. `4.3`, shown by `gd++ ls`.
 
-If either is missing, commands fail with "Failed to find the project name in res://project.godot." or "Failed to find the Godot version in ...". Open the project in the Godot editor once to fix this. gd++ never writes project.godot.
+If either is missing, commands fail with "Failed to find the project name in res://project.godot." or "Failed to find the Godot version in ...". To fix this, open the project in the Godot editor once. `gd++` never writes `project.godot`.
 
-The project's id is the name of its root directory. The package at the project root is named after it too.
+The project's id is the name of its root directory. The package at the project root has the same id.
 
 # gd++proj.toml
 
-The project's GD++ settings live in res://gd++proj.toml. The file is optional: without it, every setting has its default. `gd++ init` without a path creates it:
+The project's GD++ settings live in `res://gd++proj.toml`. The file is optional: without it, every setting has its default. `gd++ init` without a path creates it:
 
 ```toml
 vcs = "none"
 ```
 
 vcs
-  The version control system the project uses: "none" (the default) or "git". With git, GD++ keeps its blocks of ignores in the .gitignore files of the project and its packages. See `gd++ man vcs`.
+  The version control system that the project uses: `"none"` (the default) or `"git"`. With `"git"`, GD++ keeps its blocks of ignores in the `.gitignore` files of the project and its packages. See `gd++ man vcs`.
 
 Unknown keys are an error: "Unknown key ... in res://gd++proj.toml.". `gd++ fix` reformats the file to its canonical form.
 
@@ -30,7 +30,7 @@ Unknown keys are an error: "Unknown key ... in res://gd++proj.toml.". `gd++ fix`
 
 ```
 res://
-  project.godot        Godot's, not changed by GD++
+  project.godot        Godot's, never changed by GD++
   gd++proj.toml        the project's GD++ settings (optional)
   .gd++proj/           the ephemeral dependency cache
     bind/NAME/         Godot C++ bindings
@@ -47,23 +47,23 @@ res://
 
 The two dependency caches are explained in `gd++ man dependencies`, packages in `gd++ man packages`, and build caches in `gd++ man build-cache`.
 
-gd++ creates directories only when it first needs them: a fresh project has none of them. It also deletes cache directories that become empty, e.g. when you remove the last dependency.
+`gd++` creates directories only when it first needs them, so a fresh project has none of them. It also deletes cache directories that become empty, e.g. when you remove the last dependency.
 
-Whenever gd++ creates res://_gd++proj, res://.gd++proj or a package's .gd++pkg, it writes an empty .gdignore file into it, so Godot never imports the files in the caches. Check in res://_gd++proj/.gdignore along with the rest of res://_gd++proj.
+Whenever `gd++` creates `res://_gd++proj`, `res://.gd++proj` or a package's `.gd++pkg`, it writes an empty `.gdignore` file into it, so Godot never imports the files in the caches. Commit `res://_gd++proj/.gdignore` along with the rest of `res://_gd++proj`.
 
 # Temporary files
 
-Commands that download or unpack something, `gd++ fetch` and `gd++ vendor`, work in a random directory in res://.gd++proj/temp, and delete it when they finish, or fail. If gd++ is killed, e.g. with Ctrl+C, the directory may stay behind. `gd++ fix` deletes it.
+The commands that download or unpack something, `gd++ fetch` and `gd++ vendor`, work in a randomly named directory in `res://.gd++proj/temp`, and delete it when they finish or fail. If `gd++` is killed, e.g. with Ctrl+C, the directory may stay behind. `gd++ fix` deletes it.
 
 # Many packages in one project
 
-A project can have any number of packages, anywhere in it, even nested in each other, and at its root. Each builds into its own library. Commands that take --proj, e.g. `gd++ build --proj` and `gd++ clean --proj`, work on all of them. `gd++ ls` shows them all.
+A project can have any number of packages, anywhere in it, including at its root and nested in each other. Each one builds into its own library. Commands that take `--proj`, e.g. `gd++ build --proj` and `gd++ clean --proj`, work on all of them, and `gd++ ls` shows them all.
 
 Packages in one project share the dependency caches, but each one chooses its own bindings and spec.
 
 # Nested projects
 
-A directory inside a project that has its own project.godot file is a separate project. gd++ doesn't look inside it when it works on the outer project, and commands run inside it work on it, not on the outer project.
+A directory inside a project that has its own `project.godot` file is a separate project. `gd++` doesn't look inside it when it works on the outer project, and commands run inside it work on it, not on the outer project.
 
 # Example
 
@@ -81,7 +81,11 @@ my_game/
   tools/
     gd++pkg.toml
     level_editor.gd++
+```
 
+It's set up with:
+
+```sh
 cd my_game
 gd++ init --vcs git                                              # creates gd++proj.toml
 gd++ init gameplay --bind 10.0.0-stable --spec 4.7.2-stable

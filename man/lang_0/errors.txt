@@ -162,23 +162,23 @@ Class MyGameAsync is declared in res://gd++pkg.toml, but GD++ adds a class of th
 
 # C++ compiler errors
 
-GD++ checks the GD++ parts of a file, but not the C++ code in it: that's the C++ compiler's job, during `gd++ build`. When it fails, the build shows the compiler's output. Thanks to #line directives, errors in your C++ code point to the GD++ file and line:
+GD++ checks the GD++ parts of a file, but not the C++ code in it: that's the C++ compiler's job, during `gd++ build`. When it fails, the build shows the compiler's output. Thanks to `#line` directives, errors in your C++ code point to the GD++ file and line:
 
 ```
 ../player.gd++:12:5: error: 'helth' was not declared in this scope
 ```
 
-The path is relative to the build cache, where the compiler runs: ../ is the package root. See `gd++ man code`.
+The path is relative to the build cache, where the compiler runs: `../` is the package root. See `gd++ man code`.
 
 Some compiler errors are about the generated code, but caused by the GD++ declarations. The usual ones:
 
-- "marked 'override', but does not override": an @override function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and @const. See `gd++ doc CLASS.FUNCTION`.
-- "overriding final function": an @override function overrides a @final one. See `gd++ man functions`.
+- "marked 'override', but does not override": an `@override` function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and `@const`. See `gd++ doc CLASS.FUNCTION`.
+- "overriding final function": an `@override` function overrides a `@final` one. See `gd++ man functions`.
 - "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
-- "ignoring return value ... declared with attribute 'nodiscard'": a signal was called without emit. Write `emit NAME(...)`.
-- "'claim' was not declared in this scope", or the same for is_done or cancel: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
-- "expected unqualified-id before 'gdpp'", or a similar error at a declaration: a variable or field is named is_cancelled, which GD++ reserves and rewrites to gdpp::is_cancelled(). Rename it. See `gd++ man rewrites`.
-- Errors in the file NAME.h or NAME.cpp of the build cache point to generated code. Open the file, e.g. res://.gd++pkg/gdpp/Player.cpp, to see what GD++ generated, and which declaration it came from.
+- "ignoring return value ... declared with attribute 'nodiscard'": a signal's emit function was called without `emit`. Write `emit NAME(...)`.
+- "'claim' was not declared in this scope", or the same for `is_done` or `cancel`: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
+- "expected unqualified-id before 'gdpp'", or a similar error at a declaration: a variable or field is named `is_cancelled`, which GD++ reserves and rewrites to `gdpp::is_cancelled()`. Rename it. See `gd++ man rewrites`.
+- Errors in a file `NAME.h` or `NAME.cpp` of the build cache point to generated code. Open the file, e.g. `res://.gd++pkg/gdpp/Player.cpp`, to see what GD++ generated, and which declaration it came from.
 
 # See also
 

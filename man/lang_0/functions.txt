@@ -1,6 +1,6 @@
 Functions: func, parameters, default values, and @override, @virtual, @final, @const, @static
 
-A function is a method of its class that Godot knows: GDScript can call it, e.g. player.jump(), and so can call(), signals and the editor. Its signature is GD++; its body is C++.
+A function is a method of its class that Godot knows: GDScript can call it, e.g. `player.jump()`, and so can `call()`, signals and the editor. Its signature is GD++, and its body is C++.
 
 # Syntax
 
@@ -12,12 +12,12 @@ func greet(name: String, times: int = 1) -> void {
 }
 ```
 
-- func, then the name, then the parameters in parentheses, separated by commas. A trailing comma is allowed.
-- Each parameter is `name: Type`, or just `name` for a Variant, with an optional default value after "=".
-- Then, optionally, "->" and the return type. Without it, the function returns a Variant.
+- `func`, then the name, then the parameters in parentheses, separated by commas. A trailing comma is allowed.
+- Each parameter is `name: Type`, or just `name` for a `Variant`, with an optional default value after `=`.
+- Then, optionally, `->` and the return type. Without it, the function returns a `Variant`.
 - Then the body: C++ code in braces. The body is optional.
 
-In the body, parameters have their C++ types: here, name is a const String & and times an int64_t. See `gd++ man types`.
+In the body, parameters have their C++ types: here, `name` is a `const String &` and `times` an `int64_t`. See `gd++ man types`.
 
 ```gd++
 func area(width: float, height: float) -> float {
@@ -39,13 +39,13 @@ func random_thing() {                   // returns a Variant
 func not_done_yet() -> int
 ```
 
-A function without a body gets a generated one, which returns the type's default value: 0, false, an empty String, nullptr, and so on; or nothing, for void. It's handy for @virtual functions, and to sketch a class's API.
+A function without a body gets a generated one, which returns the type's default value: `0`, `false`, an empty `String`, `nullptr`, and so on, or nothing for `void`. This is handy for `@virtual` functions, and to sketch a class's API.
 
 # What GD++ does with a function
 
 - It declares the function as a public method of the C++ class, and defines it in the class's source file, with your body.
-- It binds the function in _bind_methods with ClassDB::bind_method, with its parameter names and default values, so Godot can call it. @static functions are bound with ClassDB::bind_static_method, @virtual ones with GDVIRTUAL_BIND, and @override ones not at all, since the engine binds them.
-- In a @game_only class, the body starts with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
+- It binds the function in `_bind_methods` with `ClassDB::bind_method`, with its parameter names and default values, so Godot can call it. `@static` functions are bound with `ClassDB::bind_static_method`, `@virtual` ones with `GDVIRTUAL_BIND`, and `@override` ones not at all, since the engine binds them.
+- In a `@game_only` class, the body starts with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
 
 Functions are plain C++ methods, so C++ code calls them directly, e.g. `jump();` or `player->jump();`, at full speed.
 
@@ -57,7 +57,7 @@ Function names must be unique in their class, including the getters and setters 
 func spawn(count: int = 1, at: Vector3 = Vector3(0, 1, 0), kind: Kind = Kind::BIG) -> void { ... }
 ```
 
-A default value is a C++ expression, up to the "," or ")" that ends it, or a block of C++ that returns the value:
+A default value is a C++ expression, up to the `,` or `)` that ends it, or a block of C++ that returns the value:
 
 ```gd++
 func shout(text: String = {
@@ -65,7 +65,7 @@ func shout(text: String = {
 }) -> void { ... }
 ```
 
-For a parameter of a GD++ enum type, the default value can also be one of the enum's values, e.g. `suit: Suit = HEARTS`, or for a bitfield, several combined, e.g. `mask: Layer = WORLD | PLAYER`. See `gd++ man enums`.
+For a parameter of a GD++ enum type, the default value can also be one of the enum's values, e.g. `suit: Suit = HEARTS`, or for a bitfield, several of them combined, e.g. `mask: Layer = WORLD | PLAYER`. See `gd++ man enums`.
 
 Parameters with default values must come last:
 
@@ -76,9 +76,9 @@ Parameters with default values must come last:
     Hint: Parameters with default values must come last.
 ```
 
-GD++ puts each default value into a static method of the class. Godot calls it once, when it registers the class, and uses the result whenever GDScript leaves the parameter out. C++ callers get the default values too, since the C++ declaration uses them. Since the default is computed in a static method, it can't use the object (this) or the other parameters.
+GD++ puts each default value into a static method of the class. Godot calls it once, when it registers the class, and uses the result whenever GDScript leaves the parameter out. C++ callers get the default values too, since the C++ declaration has them. Since the default is computed in a static method, it can't use the object (`this`) or the other parameters.
 
-The editor's help shows a default value as written, if it's an expression rather than a block.
+If a default value is an expression rather than a block, the editor's help shows it as written.
 
 # @override
 
@@ -94,14 +94,14 @@ func _process(delta: float) -> void {
 }
 ```
 
-@override overrides a virtual function of the engine, i.e. of the base class, e.g. _ready, _process, _physics_process, _input, _unhandled_input, _enter_tree, _exit_tree, _draw or _get_configuration_warnings. The engine calls it, like in GDScript. It also overrides a @virtual function of a GD++ base class, see "@virtual" below.
+`@override` overrides a virtual function of the engine, i.e. of the base class, e.g. `_ready`, `_process`, `_physics_process`, `_input`, `_unhandled_input`, `_enter_tree`, `_exit_tree`, `_draw` or `_get_configuration_warnings`. The engine calls it, like in GDScript. `@override` also overrides a `@virtual` function of a GD++ base class: see "@virtual" below.
 
-The signature must match the engine's exactly, in C++ terms, including the return type: without `-> void`, the function returns a Variant, and the C++ compiler reports that it doesn't override anything. Use `gd++ doc Node._process` to see a signature. A const engine function, e.g. _get_configuration_warnings, needs @const too: `@const @override`. Note that the engine's float parameters are double, like GD++'s float.
+The signature must match the engine's exactly, in C++ terms, including the return type: without `-> void`, the function returns a `Variant`, and the C++ compiler reports that it doesn't override anything. Use `gd++ doc Node._process` to see a signature. A const engine function, e.g. `_get_configuration_warnings`, needs `@const` too: `@const @override`. Note that the engine's `float` parameters are `double`, like GD++'s `float`.
 
 Overrides are not bound, since the base class binds them already. GD++ also does two things for you:
 
-- Overriding _process or _physics_process turns processing on in the constructor, with set_process(true) or set_physics_process(true), since godot-cpp doesn't do so on its own.
-- Overriding _ready runs the initializers of @onready variables at its start, before your code. See `gd++ man lifecycle`.
+- Overriding `_process` or `_physics_process` turns processing on in the constructor, with `set_process(true)` or `set_physics_process(true)`, since godot-cpp doesn't do so on its own.
+- Overriding `_ready` runs the initializers of `@onready` variables at its start, before your code. See `gd++ man lifecycle`.
 
 # @virtual
 
@@ -115,7 +115,7 @@ func _can_pick(item: Item) -> bool {
 func _on_hit(damage: int) -> void
 ```
 
-@virtual declares a function that scripts can override, like the engine's own virtual functions. A GDScript that extends the class overrides it by defining a function of the same name:
+`@virtual` declares a function that scripts can override, like the engine's own virtual functions. A GDScript that extends the class overrides it by defining a function of the same name:
 
 ```gdscript
 extends Player
@@ -124,11 +124,11 @@ func _can_pick(item):
     return item.price < 10
 ```
 
-When C++ code calls the function, the script's version runs if a script overrides it; otherwise the body runs, as a fallback, or without a body, the type's default value is returned. By convention, virtual functions start with an underscore.
+When C++ code calls the function, the script's version runs if a script overrides it. Otherwise the body runs, as a fallback, or without a body, the type's default value is returned. By convention, the names of virtual functions start with an underscore.
 
-@virtual generates a GDVIRTUAL declaration and binds it with GDVIRTUAL_BIND, and the editor's help marks the function "virtual". In C++, it's a virtual method.
+`@virtual` generates a `GDVIRTUAL` declaration and binds it with `GDVIRTUAL_BIND`, and the editor's help marks the function "virtual". In C++, it's a virtual method.
 
-A GD++ subclass overrides the function with @override, and a script can then override it again:
+A GD++ subclass overrides the function with `@override`, and a script can then override it again:
 
 ```gd++
 class_name Hero
@@ -140,7 +140,7 @@ func _can_pick(item: Item) -> bool {
 }
 ```
 
-When C++ code calls _can_pick, through a Player or a Hero, a script's version runs first, if a script overrides it; otherwise Hero's body runs. The override doesn't redeclare the function for scripts: Player's GDVIRTUAL does that.
+When C++ code calls `_can_pick`, through a `Player` or a `Hero`, a script's version runs first, if a script overrides it. Otherwise, `Hero`'s body runs. The override doesn't redeclare the function for scripts: `Player`'s `GDVIRTUAL` does that.
 
 # @final
 
@@ -151,9 +151,9 @@ func _can_pick(item: Item) -> bool {
 }
 ```
 
-@final on an @override of a GD++ @virtual function makes it the last version: subclasses can't override it (in C++, it's `override final`), and C++ calls never run a script's version. A script can still define a function of that name, but only calls by name, e.g. from GDScript, reach it.
+`@final` on an `@override` of a GD++ `@virtual` function makes it the last version: subclasses can't override it (in C++, it's `override final`), and C++ calls never run a script's version. A script can still define a function of that name, but only calls by name, e.g. from GDScript, reach it.
 
-@final only works there: the engine runs scripts' overrides of its own virtual functions, e.g. _ready, so GD++ can't stop that.
+`@final` only works there: the engine runs scripts' overrides of its own virtual functions, e.g. `_ready`, so GD++ can't stop that.
 
 # @const
 
@@ -164,7 +164,7 @@ func is_alive() -> bool {
 }
 ```
 
-@const makes the function a const method in C++: it can't change the object's fields, and can be called through const pointers and references. The editor's help marks it "const". Combine it with @virtual for a const virtual function.
+`@const` makes the function a const method in C++: it can't change the object's fields, and can be called through const pointers and references. The editor's help marks it "const". Combine it with `@virtual` for a const virtual function.
 
 # @static
 
@@ -175,11 +175,11 @@ func lerp_angle(from: float, to: float, weight: float) -> float {
 }
 ```
 
-@static makes the function static: it belongs to the class, not to an object, so it has no this, and can't use the object's fields. GDScript calls it on the class: Player.lerp_angle(0, 1, 0.5).
+`@static` makes the function static: it belongs to the class, not to an object, so it has no `this`, and can't use the object's fields. GDScript calls it on the class: `Player.lerp_angle(0, 1, 0.5)`.
 
 # @rpc
 
-@rpc makes the function callable over the network. See `gd++ man rpc`.
+`@rpc` makes the function callable over the network. See `gd++ man rpc`.
 
 # @deferred and @thread_safe
 
@@ -190,9 +190,9 @@ func respawn(at: Vector3) -> void {
 }
 ```
 
-With @deferred, every call to the function goes through call_deferred: from C++, from scripts, and over the network. The body runs later, at the end of the frame. @thread_safe is the same with call_thread_safe: a call from another thread runs later on the main thread, and a call from the main thread runs right away. Only classes that extend Node can use @thread_safe.
+With `@deferred`, every call of the function goes through `call_deferred`: from C++, from scripts, and over the network. The body runs later, at the end of the frame. `@thread_safe` is the same with `call_thread_safe`: a call from another thread runs later on the main thread, and a call from the main thread runs right away. Only classes that extend `Node` can use `@thread_safe`.
 
-Since the body runs later, the function must return void. GD++ puts the body in a second method, _gdpp_body_NAME, which the call runs by name. See `gd++ man generated`.
+Since the body runs later, the function must return `void`. GD++ puts the body in a second method, `_gdpp_body_NAME`, which the call runs by name. See `gd++ man generated`.
 
 # @onthread
 
@@ -203,7 +203,7 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
 }
 ```
 
-With @onthread, every call to the function, from C++ or from scripts, runs its body on Godot's WorkerThreadPool, and returns right away, with an Async of the function's type: here, an Async[PackedVector2Array]. The caller tests whether it's done with `is_done`, takes the result with `claim`, and can ask the task to stop with `cancel`, which the body notices with `is_cancelled`. GD++ puts the body in a second method, _gdpp_body_NAME, which the task calls. See `gd++ man async`.
+With `@onthread`, every call of the function, from C++ or from scripts, runs its body on Godot's `WorkerThreadPool`, and returns right away, with an `Async` of the function's return type: here, an `Async[PackedVector2Array]`. The caller tests whether the task is done with `is_done`, takes the result with `claim`, and can ask the task to stop with `cancel`, which the body notices with `is_cancelled`. GD++ puts the body in a second method, `_gdpp_body_NAME`, which the task calls. See `gd++ man async`.
 
 # @trace and @profile
 
@@ -220,11 +220,11 @@ func find_path(to: Vector3) -> PackedVector3Array {
 }
 ```
 
-For debugging: in builds with `--trace Player` (the class's name) or `--trace all`, @trace prints each call of take_damage when it starts, with its arguments, and when it returns, with its result and how long it took. In builds with `--profile ai`, @profile times each call of find_path, for the editor's monitors and a table of timings. In other builds, they generate nothing. Their arguments name groups, which the flags choose. They work on every kind of function, static, @virtual, @override, @deferred and @onthread ones included, except that calls by name of a @virtual function that a script overrides, e.g. from GDScript, go straight to the script, and aren't traced or timed. Calls from C++ are. See `gd++ man debugging`.
+These are for debugging. In builds with `--trace Player` (the class's name) or `--trace all`, `@trace` prints each call of `take_damage` when it starts, with its arguments, and when it returns, with its result and how long it took. In builds with `--profile ai`, `@profile` times each call of `find_path`, for the editor's monitors and a table of timings. In other builds, they generate nothing. Their arguments name groups, which the options choose. They work on every kind of function, including static, `@virtual`, `@override`, `@deferred` and `@onthread` ones. But calls by name of a `@virtual` function that a script overrides, e.g. from GDScript, go straight to the script, and aren't traced or timed. Calls from C++ are. See `gd++ man debugging`.
 
-# Combining attributes
+# Combining annotations
 
-Attributes can be combined where it makes sense, e.g. @virtual @const. These combinations are errors:
+Annotations can be combined where it makes sense, e.g. `@virtual @const`. These combinations are errors:
 
 ```
 @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe
@@ -236,11 +236,11 @@ Attributes can be combined where it makes sense, e.g. @virtual @const. These com
 @thread_safe with @onthread
 ```
 
-@trace and @profile combine with all of them. Each attribute can be used once per function. They take no arguments, except @rpc, @trace and @profile.
+`@trace` and `@profile` combine with all of them. Each annotation can be used once per function. They take no arguments, except `@rpc`, `@trace` and `@profile`.
 
 # Enums in signatures
 
-A function whose parameters or return type use a GD++ enum is bound through a generated wrapper, named _gdpp_ and the function's name, which converts between the enum and the class's own copy of it that Godot sees. Your function keeps the plain enum type. See `gd++ man enums`.
+A function whose parameters or return type use a GD++ enum is bound through a generated wrapper, named `_gdpp_` followed by the function's name, which converts between the enum and the class's own copy of it, which Godot sees. Your function keeps the plain enum type. See `gd++ man enums`.
 
 # Doc comments
 
@@ -250,7 +250,7 @@ A function whose parameters or return type use a GD++ enum is bound through a ge
 func hurt(damage: int) -> bool { ... }
 ```
 
-A doc comment before a function becomes its description in the editor's help. Annotations and the doc comment can be in any order. See `gd++ man docs`.
+A doc comment before a function becomes its description in the editor's help. Annotations and the doc comment can come in any order. See `gd++ man docs`.
 
 # Examples
 

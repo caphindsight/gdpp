@@ -16,7 +16,7 @@ String      a string literal
 Block       '{' C++ code '}', up to the matching '}'
 ```
 
-Whitespace, newlines and comments may appear between any two tokens, except inside Expr (see below).
+Whitespace, newlines and comments may appear between any two tokens, except inside `Expr` (see below).
 
 # Files
 
@@ -29,7 +29,7 @@ EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEnt
 TopItem     = Class | Extern | Member
 ```
 
-Code before the file head is always an error: decl and impl blocks must be in a class. After class_name or extern_name, every Member belongs to that class or extern. In a file without either, only enum types are allowed as members at the top level. After enum_name, only an optional extends and enum values follow.
+`Code` before the file head is always an error: `decl` and `impl` blocks must be in a class. After `class_name` or `extern_name`, every `Member` belongs to that class or extern. In a file without either, only enum types are allowed as members at the top level. After `enum_name`, only an optional `extends` and enum values follow.
 
 # Classes and externs
 
@@ -49,7 +49,7 @@ Member      = Code
             | 'noimport' Type
 ```
 
-Externs only allow Func, Signal and Var members, without bodies, initial values or default values.
+Externs only allow `Func`, `Signal` and `Var` members, without bodies, initial values or default values.
 
 # Code blocks
 
@@ -83,7 +83,7 @@ Accessor    = 'decl' Block
             | 'set' '(' Ident ( ':' Type )? ')' Block
 ```
 
-A property needs exactly one get, at most one set, and any number of decl.
+A property needs exactly one `get`, at most one `set`, and any number of `decl`.
 
 # Enums and constants
 
@@ -100,7 +100,7 @@ EnumUnary   = ( '~' | '-' ) EnumUnary | '(' EnumExpr ')' | Int | EnumRef
 EnumRef     = Ident ( '.' Ident )*
 ```
 
-`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type. EnumBase is a GD++ enum, or an engine enum, e.g. Node.ProcessMode or Error. EnumRef is an earlier value of the enum itself, e.g. HEARTS, or a value of another enum: Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.INHERIT, or Class.CONSTANT, e.g. Node.PROCESS_MODE_INHERIT. EnumExpr gives the operators C's precedence; a value ends where no operator continues it, so `A = B | C D` holds two values.
+`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type. `EnumBase` is a GD++ enum, or an engine enum, e.g. `Node.ProcessMode` or `Error`. `EnumRef` is an earlier value of the enum itself, e.g. `HEARTS`, or a value of another enum: `Enum.VALUE`, e.g. `Suit.HEARTS` or `Node.ProcessMode.INHERIT`, or `Class.CONSTANT`, e.g. `Node.PROCESS_MODE_INHERIT`. `EnumExpr` gives the operators C's precedence. A value ends where no operator continues it, so `A = B | C D` holds two values.
 
 # Types
 
@@ -108,7 +108,7 @@ EnumRef     = Ident ( '.' Ident )*
 Type        = Ident ( '[' Type ( ',' Type )* ']' )?
 ```
 
-Only Array takes one type argument, and Dictionary two.
+Only `Array`, `Dictionary` and `Async` take type arguments: `Array` and `Async` take one, and `Dictionary` two.
 
 # Annotations
 
@@ -134,7 +134,7 @@ Init        = Block | Expr
 Default     = Block | Expr
 ```
 
-Expr is C++ code that starts after "=" and runs to the end of the line, but continues while a "(", "[" or "{" is open. A Default also ends at a "," outside brackets, and before the ")" that closes the parameter list. A value that starts with "{" is a Block, which returns the value.
+`Expr` is C++ code that starts after `=` and runs to the end of the line, but continues while a `(`, `[` or `{` is open. A `Default` also ends at a `,` outside brackets, and before the `)` that closes the parameter list. A value that starts with `{` is a `Block`, which returns the value.
 
 # Keywords
 
@@ -143,7 +143,7 @@ class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_na
 func  get  impl  import  noimport  notif  set  signal  var
 ```
 
-In C++ code, GD++ also gives a meaning to emit, rpc, is_cancelled, is_done, claim and cancel, see `gd++ man rewrites`, and to This and gd, see `gd++ man code`.
+In C++ code, GD++ also gives a meaning to `emit`, `rpc`, `is_cancelled`, `is_done`, `claim`, `cancel` and `as` (see `gd++ man rewrites`), and to `This` and `gd` (see `gd++ man code`).
 
 # See also
 

@@ -2,8 +2,8 @@ Debugging: tracing calls and changes with @trace, and timing code with @profile
 
 Two annotations help you see what your code does while the game runs:
 
-- @trace prints what happens: the calls of functions, with their arguments, results and times, the changes of variables, the signals objects emit, and the creation and destruction of objects.
-- @profile measures how long functions take, and shows it live in the editor's monitors, and if you want, in a table printed every few seconds.
+- `@trace` prints what happens: the calls of functions, with their arguments, results and times, the changes of variables, the signals objects emit, and the creation and destruction of objects.
+- `@profile` measures how long functions take, and shows it live in the editor's monitors, and if you want, in a table printed every few seconds.
 
 Both are off unless a build turns them on, and then they generate no code at all. So you can leave them in your code for good, like switched-off log statements, and turn on the ones you need, with a flag, when you need them.
 
@@ -24,13 +24,13 @@ func take_damage(amount: int) -> bool {
 }
 ```
 
-Build with tracing on, for the class Player:
+Build with tracing on, for the class `Player`:
 
 ```sh
 gd++ build --trace Player
 ```
 
-Run the game, and the Output panel shows every call of take_damage, and every change of health:
+Run the game, and the Output panel shows every call of `take_damage`, and every change of `health`:
 
 ```out
 [f812] ▶ Player "Hero".take_damage(amount: 5)
@@ -46,10 +46,10 @@ gd++ build
 
 # Groups: choosing what to turn on
 
-Every @trace and @profile annotation belongs to one or more groups:
+Every `@trace` and `@profile` annotation belongs to one or more groups:
 
-- the group named after its class, always, e.g. Player,
-- the groups that its arguments name: @trace("combat") is in the groups Player and combat, and @trace("combat", "ai") in Player, combat and ai.
+- the group named after its class, always, e.g. `Player`,
+- the groups that its arguments name: `@trace("combat")` is in the groups `Player` and `combat`, and `@trace("combat", "ai")` in `Player`, `combat` and `ai`.
 
 Builds turn groups on with two flags, each followed by any number of group names:
 
@@ -62,9 +62,9 @@ gd++ build --profile all                   # all @profile annotations
 gd++ build --trace ai --profile all        # both at once
 ```
 
-`all` turns on every annotation of its kind. The flags are independent: --trace only turns on @trace annotations, and --profile only @profile ones. An annotation whose groups are all off generates nothing.
+`all` turns on every annotation of its kind. The flags are independent: `--trace` only turns on `@trace` annotations, and `--profile` only `@profile` ones. An annotation whose groups are all off generates nothing.
 
-The arguments of the annotations are names in double quotes, e.g. @trace("combat"). Without arguments, an annotation is only in its class's group. Group names are made of letters, digits and underscores, and don't start with a digit.
+The arguments of the annotations are names in double quotes, e.g. `@trace("combat")`. Without arguments, an annotation is only in its class's group. Group names are made of letters, digits and underscores, and don't start with a digit.
 
 A member is on if its own annotation is on, or its class's annotation is. With this class:
 
@@ -79,7 +79,7 @@ func steer(delta: float) -> void { ... }
 func think() -> void { ... }
 ```
 
-`--profile ai` profiles steer and think, through the class's annotation, and `--profile physics` only steer. `--profile Enemy` and `--profile all` profile both.
+`--profile ai` profiles `steer` and `think`, through the class's annotation, and `--profile physics` only `steer`. `--profile Enemy` and `--profile all` profile both.
 
 The build's task name says when tracing or profiling is on, e.g. "Building res://game for linux.x86_64, debug, unoptimized, with docs, trace combat ai, profiling...". Changing the flags only recompiles the files whose generated code changes, and with hot reload, the editor picks up the new library without a restart. See `gd++ man building`.
 
@@ -93,7 +93,7 @@ A group name that no annotation uses turns nothing on, without an error. If a bu
 
 # @trace on functions
 
-@trace on a function prints two lines per call: one when it starts, with its arguments, and one when it returns, with its result, if it has one, and how long it took.
+`@trace` on a function prints two lines per call: one when it starts, with its arguments, and one when it returns, with its result, if it has one, and how long it took.
 
 ```gd++
 @trace
@@ -110,19 +110,19 @@ func pick_up(item: Item, count: int = 1) -> bool {
 The parts of a line:
 
 [f1204]
-  The frame in which the line was printed, from Engine.get_process_frames(). Lines of the same frame have the same number, so you can see what happens together. Off the main thread, the thread's id follows, e.g. [f1204] [thread 13985]. These parts are gray.
+  The frame in which the line was printed, from `Engine.get_process_frames()`. Lines of the same frame have the same number, so you can see what happens together. Off the main thread, the thread's id follows, e.g. `[f1204] [thread 13985]`. These parts are gray.
 
 ▶ and ◀
   The start and the end of a call.
 
 Player "Hero".pick_up
-  The object and the function. A node is named by its class and its name, e.g. Player "Hero". Other objects, e.g. resources, by their class and instance id, e.g. Item#28347. The class is the object's own, so a function of Player, called on an object of its subclass Boss, shows Boss "Hero". Static functions show only the class, e.g. Player.create.
+  The object and the function. A node is named by its class and its name, e.g. `Player "Hero"`. Other objects, e.g. resources, are named by their class and instance id, e.g. `Item#28347`. The class is the object's own, so a function of `Player`, called on an object of its subclass `Boss`, shows `Boss "Hero"`. Static functions show only the class, e.g. `Player.create`.
 
 (item: Item#28347, count: 1)
-  The arguments, by name. Strings, StringNames and NodePaths are quoted, objects are named like above, enums show as numbers, and other values in their text form, e.g. (1.0, 2.0, 3.0) for a Vector3. Values longer than 60 characters are cut, with "…".
+  The arguments, by name. Values of type `String`, `StringName` and `NodePath` are quoted, objects are named like above, enums show as numbers, and other values in their text form, e.g. `(1.0, 2.0, 3.0)` for a `Vector3`. Values longer than 60 characters are cut, with "…".
 
 → true
-  The result, like an argument. Functions that return void have none.
+  The result, shown like an argument. Functions that return `void` have none.
 
 3.1 µs
   How long the call took: in µs below one millisecond, in ms above. It includes the functions it called, but not the time spent printing and measuring. See "How accurate the times are", below.
@@ -138,16 +138,16 @@ Calls made during a traced call are indented, so nested calls read as a tree:
 [f1204] ◀ Player "Hero".take_damage → true  301.2 µs
 ```
 
-Every call of the function is traced, however it's called: from your C++ code, from GDScript, from a signal, or with call_deferred. The one exception is a @virtual function that a script overrides, below. Some functions have details:
+Every call of the function is traced, however it's called: from your C++ code, from GDScript, from a signal, or with `call_deferred`. The one exception is a `@virtual` function that a script overrides, below. Some functions have details:
 
-- A @deferred or @thread_safe function is traced when its body runs, later, not when the call is queued. It shows with its own name.
-- An @onthread function is traced when its body runs, on a worker thread, not when the call starts the task. Its lines show the thread, and are indented by the calls on that thread. Its result is the body's, not the Async. See `gd++ man async`.
-- A @virtual function is traced when C++ code calls it, also when a script overrides it: then the time includes the script's code. But calls of an overridden function by name, from GDScript, with call(), or from a signal, go straight to the script's version, and never reach the C++ function, so they aren't traced. That's rarely a problem, since C++ code is what usually calls a class's virtual functions. To catch such calls, call the function from C++ instead, e.g. from a traced function that calls it.
+- A `@deferred` or `@thread_safe` function is traced when its body runs, later, not when the call is queued. It shows with its own name.
+- An `@onthread` function is traced when its body runs, on a worker thread, not when the call starts the task. Its lines show the thread, and are indented by the calls on that thread. Its result is the body's, not the `Async`. See `gd++ man async`.
+- A `@virtual` function is traced when C++ code calls it, also when a script overrides it: then the time includes the script's code. But calls of an overridden function by name, from GDScript, with `call()`, or from a signal, go straight to the script's version, and never reach the C++ function, so they aren't traced. That's rarely a problem, since C++ code is what usually calls a class's virtual functions. To catch such calls, call the function from C++ instead, e.g. from a traced function that calls it.
 - A function that returns early, with return, prints its end line all the same.
 
 # @trace on variables
 
-@trace on a variable prints each change of its value, with the function of its class that made it:
+`@trace` on a variable prints each change of its value, with the function of its class that made it:
 
 ```gd++
 @trace
@@ -164,7 +164,7 @@ var inventory: Array[Item]
 
 Every function of the class that could change the variable compares its value before and after the call, and prints the changes just before the call's end line. That makes it the fastest way to answer "who changes this value?": you don't need to trace any function, and only changes print.
 
-- The functions that check are the class's non-static, non-const functions, including the setters of its variables, @override functions like _process, and the bodies of @deferred and @onthread functions. The body of an @onthread function runs on another thread, so changes that other threads make while it runs show as its changes too. So a change from GDScript, e.g. `player.health = 5`, shows as made in set_health.
+- The functions that check are the class's non-static, non-const functions, including the setters of its variables, `@override` functions like `_process`, and the bodies of `@deferred` and `@onthread` functions. The body of an `@onthread` function runs on another thread, so changes that other threads make while it runs show as its changes too. So a change from GDScript, e.g. `player.health = 5`, shows as made in `set_health`.
 - A change made in a function that another function of the same object called shows once, in the innermost function.
 - Arrays and dictionaries are copied deeply and compared item by item, so a change of an item inside them shows too. Objects are compared by identity: which object the variable points to, not what's in it.
 - A property with a get block is read through its getter.
@@ -178,7 +178,7 @@ Checking takes time in every checking function, most of all for big arrays and d
 
 # @trace on signals
 
-@trace on a signal prints each emission, with its arguments, before the handlers run:
+`@trace` on a signal prints each emission, with its arguments, before the handlers run:
 
 ```gd++
 @trace
@@ -189,11 +189,11 @@ signal died(cause: DeathCause)
 [f1204]   ⚡ Player "Hero" emits died(cause: 2)
 ```
 
-Only emissions with emit show, since GD++ traces them in the signal's emit function. Code that calls emit_signal("died") by name, and GDScript that emits the signal, bypass it. See `gd++ man signals`.
+Only emissions with `emit` show, since GD++ traces them in the signal's emit function. Code that calls `emit_signal("died")` by name, and GDScript that emits the signal, bypass it. See `gd++ man signals`.
 
 # @trace on classes
 
-@trace on a class works like @trace on all its functions, variables and signals, and also prints the creation and destruction of its objects:
+`@trace` on a class works like `@trace` on all its functions, variables and signals, and also prints the creation and destruction of its objects:
 
 ```gd++
 @trace("loot")
@@ -214,7 +214,7 @@ extends Node3D
 
 Creation and destruction lines name the object by its instance id: a node has no name yet when it's created, and can't be asked for it any more while it's destroyed. Match them to the other lines with the id, or with the frame numbers. A "created" line without a "freed" line, once the object should be gone, points to a leak.
 
-A class's @trace leaves out _process and _physics_process, since they run every frame and would bury everything else. They still check the traced variables. To trace them anyway, put @trace on them too:
+A class's `@trace` leaves out `_process` and `_physics_process`, since they run every frame and would bury everything else. They still check the traced variables. To trace them anyway, put `@trace` on them too:
 
 ```gd++
 @trace("frame")
@@ -224,17 +224,17 @@ func _physics_process(delta: float) -> void { ... }
 
 # @profile on functions, variables and classes
 
-@profile measures how long every call takes, and prints nothing per call:
+`@profile` measures how long every call takes, and prints nothing per call:
 
-- On a function, it times the function. Like with @trace, a @deferred or @onthread function is timed when its body runs, and a @virtual one includes a script's override when C++ code calls it, but calls by name of an overridden @virtual function aren't timed. See "@trace on functions", above.
-- On a variable, it times the variable's getter and setter, e.g. Player.get_ammo and Player.set_ammo. That's useful for properties whose get or set block does real work. A simple variable's getter and setter only copy a value, and your C++ code uses the field directly, not them.
+- On a function, it times the function. Like with `@trace`, a `@deferred` or `@onthread` function is timed when its body runs, and a `@virtual` one includes a script's override when C++ code calls it, but calls by name of an overridden `@virtual` function aren't timed. See "@trace on functions", above.
+- On a variable, it times the variable's getter and setter, e.g. `Player.get_ammo` and `Player.set_ammo`. That's useful for properties whose get or set block does real work. A simple variable's getter and setter only copy a value, and your C++ code uses the field directly, not them.
 - On a class, it times all its functions, and the getters and setters of its properties with get and set blocks.
 
-The timings show in the editor's monitors, and with --print, in a table printed every few seconds.
+The timings show in the editor's monitors, and with `--print`, in a table printed every few seconds.
 
 # Externs
 
-@trace and @profile work on externs too, to watch the calls from your package into other packages, GDExtensions and scripts:
+`@trace` and `@profile` work on externs too, to watch the calls from your package into other packages, GDExtensions and scripts:
 
 ```gd++
 @profile("net")
@@ -251,11 +251,11 @@ extern Lobby {
 }
 ```
 
-- @trace on a function prints each call through the extern, and @profile times it, including the time of the call by name, which is often most of it. See "Speed" in `gd++ man externs`.
-- @profile on a variable times its getter and setter, e.g. extern Lobby.get_players. Variables can't have @trace: the extern can't see their changes.
-- @trace on a signal prints each emit through the extern.
-- On the extern, they work like on all of its functions, variables and signals, except that @profile leaves out @deferred and @thread_safe functions, and @trace leaves out variables. Objects of externs have no creation and destruction lines.
-- @profile can't be used on @deferred and @thread_safe functions: a call through the extern only queues them, so there's nothing to time.
+- `@trace` on a function prints each call through the extern, and `@profile` times it, including the time of the call by name, which is often most of it. See "Speed" in `gd++ man externs`.
+- `@profile` on a variable times its getter and setter, e.g. `extern Lobby.get_players`. Variables can't have `@trace`: the extern can't see their changes.
+- `@trace` on a signal prints each emit through the extern.
+- On the extern, they work like on all of its functions, variables and signals, except that `@profile` leaves out `@deferred` and `@thread_safe` functions, and `@trace` leaves out variables. Objects of externs have no creation and destruction lines.
+- `@profile` can't be used on `@deferred` and `@thread_safe` functions: a call through the extern only queues them, so there's nothing to time.
 
 The group named after the extern is its name, e.g. `--trace Lobby`, like a class's. If the class is a GD++ class of another package, the same flag turns on its own annotations in that package's build too.
 
@@ -271,9 +271,9 @@ The hooks are in the extern's wrapper, so they only see the calls that go throug
 
 - Calls through an extern use ▷ and ◁, and say "extern" before the object.
 - Emissions through an extern say "extern" too.
-- Their profile rows and monitors are named "extern Lobby.join", next to "Lobby.join" of the class, if it's profiled too.
+- Their profile rows and monitors are named `extern Lobby.join`, next to the class's `Lobby.join`, if it's profiled too.
 
-Here, the class Lobby is traced in its own package too, so its lines show inside the extern's: the difference in time is the cost of the call by name.
+Here, the class `Lobby` is traced in its own package too, so its lines show inside the extern's: the difference in time is the cost of the call by name.
 
 If two packages profile the same member of the same extern, the editor's monitors only show the first package's: they share the name.
 
@@ -319,7 +319,7 @@ Total ms
   The time it took in all, including the time of the functions it called.
 
 Self ms
-  Total minus the time of the profiled functions it called. Functions without @profile count as its own time.
+  Total minus the time of the profiled functions it called. Functions without `@profile` count as its own time.
 
 Avg µs
   The average time of a call: Total divided by Calls.
@@ -331,25 +331,25 @@ ms/frame
   Total divided by the frames: the time it takes per frame, on average.
 
 Budget (60 FPS)
-  ms/frame as a share of a frame's time at 60 frames per second, 16.7 ms. For a function that only ever ran on the main thread, it's green below 10%, yellow up to 50%, and red above. A function that ran on other threads, e.g. an @onthread body, doesn't hold up the main thread's frames, or not all of the time: its share isn't colored, and says "(on background)", e.g. "4.0% (on background)". `--fps FPS` sets another frame rate, e.g. `--fps 144` for 6.9 ms frames, and the column's name says which.
+  ms/frame as a share of a frame's time at 60 frames per second, 16.7 ms. For a function that only ever ran on the main thread, it's green below 10%, yellow up to 50%, and red above. A function that ran on other threads, e.g. an `@onthread` body, doesn't hold up the main thread's frames, or not all of the time: its share isn't colored, and says "(on background)", e.g. "4.0% (on background)". `--fps FPS` sets another frame rate, e.g. `--fps 144` for 6.9 ms frames, and the column's name says which.
 
 A recursive call's time is already in the time of the call it's inside, so Total, Max, ms/frame and Budget only count the outermost call. Calls and Self count every call, so for recursive functions, Avg is lower than the time of an outermost call.
 
 The table is one message, after a blank line, in a monospace font, so it lines up in the editor's Output panel, and other output can't land inside it. The first table prints one period after the first profiled function ran.
 
---print needs --profile, and --period and --fps need --print.
+`--print` needs `--profile`, and `--period` and `--fps` need `--print`.
 
 # How accurate the times are
 
-The times that @trace prints and @profile measures are the real times of the calls, measured with the system's steady clock, at nanosecond resolution. GD++ takes care that measuring doesn't count as your code's time:
+The times that `@trace` prints and `@profile` measures are the real times of the calls, measured with the system's steady clock, at nanosecond resolution. GD++ takes care that measuring doesn't count as your code's time:
 
 - Timing a call costs a few tens of nanoseconds. GD++ measures that cost once, when the first profiled function runs, and subtracts it from every call, and from the calls around it. So even functions that take less than a microsecond show their own time.
-- The time spent printing traces and checking variables doesn't count, neither in trace times nor in profile times. So --trace and --profile can be on together, even on the same functions.
+- The time spent printing traces and checking variables doesn't count, neither in trace times nor in profile times. So `--trace` and `--profile` can be on together, even on the same functions.
 
 What GD++ can't take out:
 
 - Optimization. A debug build is unoptimized by default, and unoptimized C++ is often several times slower. The table's title line then says "unoptimized". Compare functions with each other in such a build, but for times close to the shipped game's, build with `--opt`, which keeps the debug build's other features, or with `--ship`.
-- The game around your code. Tracing slows the whole game down, since printing takes time: frames take longer, and fewer of them run. Profile without --trace to see the game at its real speed.
+- The game around your code. Tracing slows the whole game down, since printing takes time: frames take longer, and fewer of them run. Profile without `--trace` to see the game at its real speed.
 - The machine. Other programs, power saving and cold caches all change times. Look at several tables, not one.
 
 # Recipes
@@ -374,7 +374,7 @@ Is a function called at all, and with what? Trace it:
 func _on_body_entered(body: Node3D) -> void { ... }
 ```
 
-In what order do things happen? Trace the functions involved, and read the frames and the indentation: calls in the same frame have the same [f...] number, and calls made inside other calls are indented under them. Traced @deferred functions show when their bodies run, at the end of the frame.
+In what order do things happen? Trace the functions involved, and read the frames and the indentation: calls in the same frame have the same `[f...]` number, and calls made inside other calls are indented under them. Traced `@deferred` functions show when their bodies run, at the end of the frame.
 
 Which signal handlers run? Trace the signal and its handlers:
 
@@ -385,7 +385,7 @@ signal died(cause: DeathCause)
 
 The handlers' calls print right under the emission.
 
-Do objects leak? Trace the class, e.g. @trace on class Bullet, and build with `--trace Bullet`. In a long session, every id that has a "created" line should get a "freed" line.
+Do objects leak? Trace the class, e.g. `@trace` on class `Bullet`, and build with `--trace Bullet`. In a long session, every id that has a "created" line should get a "freed" line.
 
 What eats my frame? Profile the systems, in an optimized build:
 
@@ -411,28 +411,28 @@ Does my code run on threads? The Thread column says where each profiled function
 # Best practices
 
 - Leave the annotations in your code. Off, they cost nothing, and the next time something breaks, the tracing is already in place. Remove the ones that turn out to be noise.
-- Name groups after the game's features and systems, e.g. combat, ai, save, ui or net, not after a bug. Then `--trace combat` means the same thing a month later, to everyone on the team.
+- Name groups after the game's features and systems, e.g. `combat`, `ai`, `save`, `ui` or `net`, not after a bug. Then `--trace combat` means the same thing a month later, to everyone on the team.
 - Use a class's own group for a quick look, e.g. `--trace Player`, and named groups for features that span classes.
 - Trace narrowly, profile broadly. Traces of many functions are hard to read, while profiling many functions costs little, and the table sorts them for you. Start with `--profile all`, then trace the few functions that matter.
-- Keep functions that run every frame out of your usual trace groups, e.g. in a group of their own, like @trace("frame"), and turn it on only when needed. At 60 frames per second, one traced _process prints 120 lines per second.
+- Keep functions that run every frame out of your usual trace groups, e.g. in a group of their own, like `@trace("frame")`, and turn it on only when needed. At 60 frames per second, one traced `_process` prints 120 lines per second.
 - To find who changes a value, trace the variable, not the functions.
-- Profile optimized code, with --opt, when absolute times matter, and profile without --trace when frame rates matter.
+- Profile optimized code, with `--opt`, when absolute times matter, and profile without `--trace` when frame rates matter.
 - Look at more than one table. The first ones include loading and warming up.
 - Turn everything off with a plain `gd++ build` when you're done, before you measure the game's real speed, and before you ship.
 - When output looks wrong or is missing, run `gd++ trans FILE` with the same flags, to see what the annotations generate.
 
 # Limits
 
-- @trace and @profile work on classes and externs, and on their functions, variables and signals, except @trace on extern variables. C++ code in decl and impl blocks can't have them.
-- @trace on a function traces that function, not the functions that override it in subclasses: to trace an override, put @trace on the override.
-- A @game_only class returns right away in the editor, before any tracing or profiling, and other classes without @tool don't run in the editor at all. So only @tool classes trace and profile in the editor, e.g. while you edit a scene.
+- `@trace` and `@profile` work on classes and externs, and on their functions, variables and signals, except `@trace` on extern variables. C++ code in `decl` and `impl` blocks can't have them.
+- `@trace` on a function traces that function, not the functions that override it in subclasses: to trace an override, put `@trace` on the override.
+- A `@game_only` class returns right away in the editor, before any tracing or profiling, and other classes without `@tool` don't run in the editor at all. So only `@tool` classes trace and profile in the editor, e.g. while you edit a scene.
 - Both work in debug and release builds, but the monitors only show while the editor's debugger is connected to the game.
-- Calls by name, e.g. from GDScript, of a @virtual function that a script overrides go straight to the script, so they aren't traced or timed. Calls from C++ are.
+- Calls by name, e.g. from GDScript, of a `@virtual` function that a script overrides go straight to the script, so they aren't traced or timed. Calls from C++ are.
 - Trace lines of different threads can mix. Each line is printed whole.
 
 # What GD++ generates
 
-The annotations add a few lines at the start of each function they apply to. With --trace and --profile on, take_damage from the first example becomes:
+The annotations add a few lines at the start of each function they apply to. With `--trace` and `--profile` on, `take_damage` from the first example becomes:
 
 ```cpp
 bool Player::take_damage(int64_t amount) {
@@ -446,13 +446,13 @@ bool Player::take_damage(int64_t amount) {
 }
 ```
 
-- gdpp::ProfileStats holds the function's timings, and gdpp::Profile times the call. With --print, the table's period follows the name, and with --fps, the frame rate, e.g. `_gdpp_stats("Player.take_damage", 10, 144)`.
-- gdpp::Trace prints the start and end lines. A traced function that returns a value runs its body as a lambda, so the trace gets the result of every return.
-- gdpp::Watch checks the class's traced variables.
-- A traced signal's emit function calls gdpp::trace_emit, and the constructor and destructor of a traced class call gdpp::trace_lifetime.
-- The wrappers of externs use the same, with gdpp::via_extern for their traces, and names that start with "extern" for their profiles.
+- `gdpp::ProfileStats` holds the function's timings, and `gdpp::Profile` times the call. With `--print`, the table's period follows the name, and with `--fps`, the frame rate, e.g. `_gdpp_stats("Player.take_damage", 10, 144)`.
+- `gdpp::Trace` prints the start and end lines. A traced function that returns a value runs its body as a lambda, so the trace gets the result of every return.
+- `gdpp::Watch` checks the class's traced variables.
+- A traced signal's emit function calls `gdpp::trace_emit`, and the constructor and destructor of a traced class call `gdpp::trace_lifetime`.
+- The wrappers of externs use the same, with `gdpp::via_extern` for their traces, and names that start with "extern" for their profiles.
 
-A source file or an extern's header that uses any of these defines GDPP_DEBUGGING before its includes, which makes the runtime header include what they need. See `gd++ man runtime` and `gd++ man generated`.
+A source file or an extern's header that uses any of these defines `GDPP_DEBUGGING` before its includes, which makes the runtime header include what they need. See `gd++ man runtime` and `gd++ man generated`.
 
 # See also
 

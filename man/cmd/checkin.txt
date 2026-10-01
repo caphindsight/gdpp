@@ -10,11 +10,11 @@ gd++ checkin -a [--undo]
 
 # Description
 
-Moves dependencies from the project's ephemeral cache, res://.gd++proj, to its checked in cache, res://_gd++proj, which you commit to version control. With --undo, moves them back, so they're ephemeral again. Packages find their dependencies in either cache, so this changes nothing for builds. See `gd++ man dependencies`.
+Moves dependencies from the project's ephemeral cache, `res://.gd++proj`, to its checked in cache, `res://_gd++proj`, which you commit to version control. With `--undo`, moves them back, so they're ephemeral again. Packages find their dependencies in either cache, so this changes nothing for builds. See `gd++ man dependencies`.
 
-A dependency that is already where it should go stays there, with a warning; if it also has a copy in the other cache, that copy is deleted.
+A dependency that is already in the right cache stays there, with a warning. If it also has a copy in the other cache, that copy is deleted.
 
-gd++ checks that every named dependency exists before it moves anything, so a typo changes nothing.
+`gd++` checks that every named dependency exists before it moves anything, so a typo changes nothing.
 
 # Options
 
@@ -37,12 +37,12 @@ gd++ checks that every named dependency exists before it moves anything, so a ty
   Check in all Godot engines.
 
 -a, --all
-  Check in all dependencies of all kinds. Can't be used with the other options, except --undo.
+  Check in all dependencies of all kinds. Can't be used with the other options, except `--undo`.
 
 --undo
   Make the dependencies ephemeral instead: move them from the checked in cache to the ephemeral one.
 
-At least one option that chooses dependencies is required. --bind and --bind-all can't be used together, and likewise for spec and engine.
+At least one option that chooses dependencies is required. `--bind` and `--bind-all` can't be used together, and the same goes for `--spec` and `--engine`.
 
 # Examples
 
@@ -53,7 +53,7 @@ gd++ checkin --spec my-4.7
 git add _gd++proj
 ```
 
-Check in everything the project has:
+Check in all the dependencies that the project has:
 
 ```sh
 gd++ checkin -a
