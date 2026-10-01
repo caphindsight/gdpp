@@ -281,6 +281,8 @@ If two packages profile the same member of the same extern, the editor's monitor
 
 While the game runs from the editor, open the Debugger panel, then its Monitors tab. Each profiled function has a graph there, in the GD++ category, e.g. "Player.take_damage (ms)": the milliseconds per frame that the function took, averaged since the graph's last point. A function shows up in the list once it has run for the first time.
 
+Caveat: the editor reformats every monitor's name the way it does property names, so the category shows as "Gd++", and "Player.take_damage (ms)" as "Player. Take Damage (ms)". GD++ can't turn this off. The profile tables below show the names as they are.
+
 The graphs show when a cost changes, e.g. when a fight starts, and how the functions compare to each other, and to Godot's own monitors, like the frame time.
 
 # Profile tables
