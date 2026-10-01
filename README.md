@@ -82,11 +82,11 @@ For GD++'s custom words in C++, see `gd++ man rewrites`. GD++ binds the function
 
 A call to an `@onthread` function returns right away, with an `Async` task. The task holds the result once it's ready. No frame waits for the search.
 
-### Inline classes
+### Multiplayer
 
-<a href="readme/classes.gd++"><img src="readme/classes.svg" alt="GD++ code: an inline class"></a>
+<a href="readme/rpc.gd++"><img src="readme/rpc.svg" alt="GD++ code: an @rpc function"></a>
 
-A file can hold any number of classes.
+`@rpc` takes the same arguments as in GDScript. `rpc` calls the function on other peers.
 
 ## All language features
 

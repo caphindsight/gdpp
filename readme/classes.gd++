@@ -1,4 +1,0 @@
-class Bullet {
-  extends Area3D
-  var damage: int = 10
-}

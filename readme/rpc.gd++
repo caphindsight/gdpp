@@ -1,0 +1,9 @@
+@rpc("any_peer", "call_local", "reliable")
+func take_damage(amount: int) -> void {
+  health -= amount;
+}
+
+func hit(target: Player) -> void {
+  rpc target->take_damage(10);       // on every peer
+  rpc(1) target->take_damage(10);    // on the server only
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="209" viewBox="0 0 520 209">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#79c0ff">@rpc</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"any_peer"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"call_local"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"reliable"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">take_damage</tspan><tspan fill="#e6edf3">(amount: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">  health -= amount;</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="110"></text>
+  <text x="16" y="130"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">hit</tspan><tspan fill="#e6edf3">(target: </tspan><tspan fill="#7ee787">Player</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">rpc</tspan><tspan fill="#e6edf3"> target-&gt;</tspan><tspan fill="#56d4dd">take_damage</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">10</tspan><tspan fill="#e6edf3">);       </tspan><tspan fill="#8b949e">// on every peer</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">rpc</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">1</tspan><tspan fill="#e6edf3">) target-&gt;</tspan><tspan fill="#56d4dd">take_damage</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">10</tspan><tspan fill="#e6edf3">);    </tspan><tspan fill="#8b949e">// on the server only</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>
