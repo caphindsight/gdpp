@@ -284,7 +284,7 @@ extern Planner {
 
 Calling planner->plan(10) returns an Async<Array> of the other package's task. See `gd++ man externs`.
 
-Godot, though, knows an Async parameter as the package's own class, e.g. FooAsync, so a script's type checks may refuse a task of another package there. To take the tasks of any package, declare the parameter as a Variant, and convert it in C++, e.g. `cast<Async<int64_t>>(task)`, see `gd++ man cast`.
+Godot, though, knows an Async parameter as the package's own class, e.g. FooAsync, so a script's type checks may refuse a task of another package there. To take the tasks of any package, declare the parameter as a Variant, and convert it in C++, e.g. `task as Async<int64_t>`, see `gd++ man cast`.
 
 # How it works
 

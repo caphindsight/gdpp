@@ -240,7 +240,7 @@ extends Node3D
 @export var scene: PackedScene
 
 func spawn() -> Node3D {
-  Node3D *node = cast<Node3D *>(scene->instantiate());
+  Node3D *node = scene->instantiate() as Node3D *;
   add_child(node);
   return node;
 }

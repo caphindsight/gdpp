@@ -2,6 +2,9 @@
 
 #include "Deck.h"
 
+#include "Local.h"
+#include "Suit.h"
+
 namespace godot {
 
 #define This Deck

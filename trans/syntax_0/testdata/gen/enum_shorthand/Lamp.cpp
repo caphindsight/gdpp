@@ -54,7 +54,7 @@ Lamp::Lamp() {
 void Lamp::set_all(ShadowCastingSetting setting, Level other) {
 #line 12 "input.gd++"
 
-  set_cast_shadows(static_cast<GeometryInstance3D::ShadowCastingSetting>(setting));
+  (void) static_cast<GeometryInstance3D::ShadowCastingSetting>(setting);
 
 #line 60 "Lamp.cpp"
 }

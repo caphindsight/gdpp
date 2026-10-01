@@ -41,34 +41,34 @@ void Caster::_bind_methods() {
 int64_t Caster::convert(Node *node, const Ref<Resource> &resource, const Variant &value) {
 #line 12 "input.gd++"
 
-  mode = cast<Mode>(value);
-  level = cast<Level>(int64_t(5));
-  set_process_mode(cast<Node::ProcessMode>(mode));
-  Variant boxed = cast<Variant>(level);
-  Node3D *spatial = cast<Node3D *>(node);
+  mode = gdpp::cast<Mode>(value);
+  level = gdpp::cast<Level>(int64_t(5));
+  set_process_mode(gdpp::cast<Node::ProcessMode>(mode));
+  Variant boxed = gdpp::cast<Variant>(level);
+  Node3D *spatial = gdpp::cast<Node3D *>(node);
   const Node *constant = node;
-  const Node3D *constant_spatial = cast<const Node3D *>(constant);
-  Node *up = cast<Node *>(spatial);
-  Object *object = cast<Object *>(up);
-  Ref<Texture2D> texture = cast<Ref<Texture2D>>(resource);
-  Ref<RefCounted> counted = cast<Ref<RefCounted>>(texture);
-  Ref<Resource> from_object = cast<Ref<Resource>>(object);
-  road = cast<Ext<Road>>(value);
-  road = cast<Ext<Road>>(node);
-  settings = cast<Ext<Settings>>(resource);
-  Ref<Resource> unwrapped = cast<Ref<Resource>>(settings);
-  Node *road_node = cast<Node *>(road);
-  Node3D *road_spatial = cast<Node3D *>(road);
-  Resource *settings_ptr = cast<Resource *>(settings);
-  task = cast<Async<int64_t>>(value);
-  task = cast<Async<int64_t>>(counted);
-  Variant boxed_task = cast<Variant>(task);
+  const Node3D *constant_spatial = gdpp::cast<const Node3D *>(constant);
+  Node *up = gdpp::cast<Node *>(spatial);
+  Object *object = gdpp::cast<Object *>(up);
+  Ref<Texture2D> texture = gdpp::cast<Ref<Texture2D>>(resource);
+  Ref<RefCounted> counted = gdpp::cast<Ref<RefCounted>>(texture);
+  Ref<Resource> from_object = gdpp::cast<Ref<Resource>>(object);
+  road = gdpp::cast<Ext<Road>>(value);
+  road = gdpp::cast<Ext<Road>>(node);
+  settings = gdpp::cast<Ext<Settings>>(resource);
+  Ref<Resource> unwrapped = gdpp::cast<Ref<Resource>>(settings);
+  Node *road_node = gdpp::cast<Node *>(road);
+  Node3D *road_spatial = gdpp::cast<Node3D *>(road);
+  Resource *settings_ptr = gdpp::cast<Resource *>(settings);
+  task = gdpp::cast<Async<int64_t>>(value);
+  task = gdpp::cast<Async<int64_t>>(counted);
+  Variant boxed_task = gdpp::cast<Variant>(task);
   ExtPtr<Road> road_ptr = road;
   ExtRef<Settings> settings_ref = settings;
   bool stop = gdpp::is_cancelled() || !road_ptr || !settings_ref;
-  float64_t ratio = cast<float64_t>(value);
-  TypedArray<Node> nodes = cast<TypedArray<Node>>(Array());
-  return cast<int64_t>(ratio) + stop + (constant_spatial != nullptr) + boxed.operator int64_t() + boxed_task.get_type() +
+  float64_t ratio = gdpp::cast<float64_t>(value);
+  TypedArray<Node> nodes = gdpp::cast<TypedArray<Node>>(Array());
+  return gdpp::cast<int64_t>(ratio) + stop + (constant_spatial != nullptr) + boxed.operator int64_t() + boxed_task.get_type() +
       nodes.size() + unwrapped.is_valid() + (road_node != nullptr) + (road_spatial != nullptr) + (settings_ptr != nullptr) + from_object.is_valid();
 
 #line 75 "Caster.cpp"

@@ -43,7 +43,8 @@ func (w *writer) String() string {
 //   - `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
 //   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
 //   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
-//   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`.
+//   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
+//   - `x as T` becomes `gdpp::cast<T>(x)`.
 func cpp(code string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
@@ -81,6 +82,21 @@ func cpp(code string) string {
 				i = j - 1 // The operand may hold more rewrites, e.g. in a call's arguments.
 				continue
 			}
+		}
+		if start, typeEnd, ok := asCast(ts, i); ok {
+			// Drop `as`, the type and the spaces around them, keeping their newlines so the lines still match.
+			var sb strings.Builder
+			end := prevToken(ts, i)
+			for k := end + 1; k < typeEnd; k++ {
+				if k > i {
+					sb.WriteString(ts[k].Value)
+				}
+				out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
+			}
+			out[start] = "gdpp::cast<" + strings.Join(strings.Fields(sb.String()), " ") + ">(" + out[start]
+			out[end] += ")"
+			i = typeEnd - 1
+			continue
 		}
 		peer, chain, name, paren, ok := rpcTarget(ts, i)
 		if !ok {
@@ -143,6 +159,122 @@ func postfixEnd(ts []lexer.Token, j int) int {
 	}
 }
 
+// asCast matches `x as T` at ts[i], the `as`. It returns the index where x starts and the end of T. It only matches
+// where both are clear, since a wrong guess could compile: x is a name or a group in brackets, followed by member
+// accesses, scopes, calls and subscripts, with nothing before it that could continue it, e.g. `)` in `(int) x as T`;
+// T is a name, followed by scopes, template arguments, `*` and `const`, with no operand after it, e.g. `y` in
+// `x as int * y`.
+func asCast(ts []lexer.Token, i int) (start, typeEnd int, ok bool) {
+	if ts[i].Type != tokIdent || ts[i].Value != "as" || i == 0 || isMember(ts, i) {
+		return
+	}
+	// Walk x backward.
+	start = len(ts)
+	for j := prevToken(ts, i); j >= 0; {
+		switch {
+		case ts[j].Type == tokIdent && !exprWords[ts[j].Value]:
+			start = j
+		case isPunct(ts[j], ")") || isPunct(ts[j], "]"):
+			if start = opening(ts, j); start < 0 {
+				return
+			}
+		default:
+			return
+		}
+		p := prevToken(ts, start)
+		switch {
+		case p >= 0 && (isPunct(ts[p], ".") || isPunct(ts[p], "->") || isPunct(ts[p], ":") && p > 0 && isPunct(ts[p-1], ":")):
+			if isPunct(ts[p], ":") {
+				p--
+			}
+			j = prevToken(ts, p)
+		case p >= 0 && (isPunct(ts[start], "(") || isPunct(ts[start], "[")) && (ts[p].Type == tokIdent && !exprWords[ts[p].Value] ||
+			isPunct(ts[p], ")") || isPunct(ts[p], "]")):
+			j = p
+		case p >= 0 && (isOneOf(ts[p], "Ident", "Number", "String", "Char") && !exprWords[ts[p].Value] ||
+			isPunct(ts[p], ")") || isPunct(ts[p], "]") || isPunct(ts[p], ">") && isPunct(ts[start], "(")):
+			return
+		default:
+			j = -1
+		}
+	}
+	if start == len(ts) {
+		return
+	}
+	// Walk T forward.
+	j := skipSpace(ts, i+1)
+	if j < len(ts) && ts[j].Type == tokIdent && ts[j].Value == "const" {
+		j = skipSpace(ts, j+1)
+	}
+	if j == len(ts) || ts[j].Type != tokIdent {
+		return
+	}
+	typeEnd = j + 1
+	for {
+		k := skipSpace(ts, typeEnd)
+		switch {
+		case k+2 < len(ts) && isPunct(ts[k], ":") && isPunct(ts[k+1], ":") && ts[skipSpace(ts, k+2)].Type == tokIdent:
+			typeEnd = skipSpace(ts, k+2) + 1
+		case k < len(ts) && isPunct(ts[k], "<") && templateEnd(ts, k) > k:
+			typeEnd = templateEnd(ts, k)
+		case k < len(ts) && (isPunct(ts[k], "*") || ts[k].Type == tokIdent && ts[k].Value == "const"):
+			typeEnd = k + 1
+		default:
+			if k < len(ts) && (isOneOf(ts[k], "Ident", "Number", "String", "Char") || isPunct(ts[k], "(")) {
+				return
+			}
+			return start, typeEnd, true
+		}
+	}
+}
+
+// exprWords are the C++ words that an expression may follow, which `as` doesn't apply to.
+var exprWords = map[string]bool{"return": true, "if": true, "while": true, "for": true, "switch": true, "catch": true,
+	"throw": true, "case": true, "else": true, "do": true, "co_return": true, "co_yield": true, "co_await": true,
+	"new": true, "delete": true, "and": true, "or": true, "not": true}
+
+// templateEnd returns the end of the template arguments that start with the '<' at ts[open], or open if they aren't
+// template arguments, e.g. in `n < limit && m > 0`.
+func templateEnd(ts []lexer.Token, open int) int {
+	depth := 0
+	for j := open; j < len(ts); j++ {
+		switch {
+		case isPunct(ts[j], "<"):
+			depth++
+		case isPunct(ts[j], ">"):
+			if depth--; depth == 0 {
+				return j + 1
+			}
+		case !isOneOf(ts[j], "Ident", "Number", "Whitespace", "Newline") && !isPunct(ts[j], ":") && !isPunct(ts[j], ",") &&
+			!isPunct(ts[j], "*"):
+			return open
+		}
+	}
+	return open
+}
+
+// opening returns the index of the bracket that opens the one at ts[close], or -1 if there's none.
+func opening(ts []lexer.Token, close int) int {
+	depth := 0
+	for j := close; j >= 0; j-- {
+		if isPunct(ts[j], ")") || isPunct(ts[j], "]") {
+			depth++
+		} else if isPunct(ts[j], "(") || isPunct(ts[j], "[") {
+			if depth--; depth == 0 {
+				return j
+			}
+		}
+	}
+	return -1
+}
+
+// prevToken returns the index of the last token before i that isn't whitespace, or -1 if there's none.
+func prevToken(ts []lexer.Token, i int) int {
+	for i--; i >= 0 && (ts[i].Type == tokWhitespace || ts[i].Type == tokNewline); i-- {
+	}
+	return i
+}
+
 // closing returns the index of the bracket that closes the one at ts[open], or len(ts) if there's none.
 func closing(ts []lexer.Token, open int) int {
 	depth := 0
@@ -192,10 +324,7 @@ func rpcTarget(ts []lexer.Token, i int) (peer []lexer.Token, chain, name, paren 
 
 // isMember reports whether the name at ts[i] follows ".", "->" or "::", so it's a member or in a scope.
 func isMember(ts []lexer.Token, i int) bool {
-	j := i - 1
-	for j >= 0 && (ts[j].Type == tokWhitespace || ts[j].Type == tokNewline) {
-		j--
-	}
+	j := prevToken(ts, i)
 	return j >= 0 && (isPunct(ts[j], ".") || isPunct(ts[j], "->") || isPunct(ts[j], ":") && j > 0 && isPunct(ts[j-1], ":"))
 }
 

@@ -545,7 +545,8 @@ func (u *unit) headerNames() (names, complete []string) {
 	return append(names, complete...), complete
 }
 
-// sourceNames returns the names used in the source: function bodies, initial values and impl code.
+// sourceNames returns the names used in the source: function bodies, initial values, impl code, and the enums
+// that _bind_methods binds.
 func (u *unit) sourceNames() []string {
 	var names []string
 	code := func(b *Block) {
@@ -554,6 +555,9 @@ func (u *unit) sourceNames() []string {
 		}
 	}
 	for _, c := range u.classes {
+		for _, e := range c.enums {
+			names = append(names, e.name)
+		}
 		code(c.ctor)
 		code(c.dtor)
 		for _, f := range c.funcs {

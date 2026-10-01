@@ -40,10 +40,10 @@ const (
 	gdscriptWords = "pass and or not in"
 	// GD++'s words in C++ code that are keywords wherever they appear.
 	rewriteWords = "emit rpc is_cancelled"
-	// GD++'s words in C++ code that are also method names, e.g. in task.is_done(): they're keywords only where a name
-	// follows them, which is where GD++ rewrites them.
-	rewriteOperatorWords = "is_done claim cancel"
-	// The runtime's cast, and C++'s casts, which it replaces.
+	// GD++'s words in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
+	// where a name follows them, which is where GD++ rewrites them.
+	rewriteOperatorWords = "is_done claim cancel as"
+	// The runtime's cast, which as becomes, and C++'s casts, which it replaces.
 	castWords    = "cast static_cast dynamic_cast const_cast reinterpret_cast"
 	cppTypeWords = "bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t uint8_t uint16_t " +
 		"uint32_t uint64_t"

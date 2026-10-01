@@ -2,6 +2,8 @@
 
 #include "Player.h"
 
+#include "State.h"
+
 namespace godot {
 
 #define This Player
@@ -23,7 +25,7 @@ void Player::_bind_methods() {
 void Player::jump(double height) {
 #line 17 "input.gd++"
 
-#line 27 "Player.cpp"
+#line 29 "Player.cpp"
 }
 
 int64_t Player::get_hp() const {

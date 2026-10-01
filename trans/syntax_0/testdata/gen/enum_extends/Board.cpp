@@ -2,6 +2,10 @@
 
 #include "Board.h"
 
+#include "Base.h"
+#include "Derived.h"
+#include "Twice.h"
+
 namespace godot {
 
 #define This Board
@@ -47,7 +51,7 @@ void Board::finish(Result result) {
 
   set_process_mode(static_cast<Node::ProcessMode>(mode));
 
-#line 51 "Board.cpp"
+#line 55 "Board.cpp"
 }
 
 void Board::_gdpp_finish(_gdpp_Board_Result result) {

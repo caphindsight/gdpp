@@ -624,7 +624,6 @@ auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::i
 
 // The runtime's names for user code, which writes them without a prefix. Generated code spells them gdpp::.
 using gdpp::Async;
-using gdpp::cast;
 using gdpp::Emitted;
 using gdpp::Ext;
 using gdpp::ExtPtr;

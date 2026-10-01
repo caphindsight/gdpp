@@ -15,9 +15,9 @@ var stubs = map[string]string{
 	"Level.h":      "enum class Level : int64_t {\n\tEASY = 0,\n\tHARD = 5,\n};\n",
 	"Difficulty.h": "enum class Difficulty : int64_t {\n\tEASY = 0,\n\tHARD = 5,\n\tINSANE = 6,\n\tCUSTOM = 100,\n};\n",
 	"Road.h": "class Road {\npublic:\n\tusing Base = Node;\n\tstatic constexpr const char *gdpp_name = \"Road\";\n" +
-		"\texplicit Road(Base *p_object) {}\n};\n",
+		"\texplicit Road(Base *p_object) :\n\t\t\t_gdpp_base(p_object) {}\n\nprotected:\n\tBase *_gdpp_base;\n};\n",
 	"Settings.h": "class Settings {\npublic:\n\tusing Base = Resource;\n\tstatic constexpr const char *gdpp_name = \"Settings\";\n" +
-		"\texplicit Settings(Base *p_object) {}\n};\n",
+		"\texplicit Settings(Base *p_object) :\n\t\t\t_gdpp_base(p_object) {}\n\nprotected:\n\tBase *_gdpp_base;\n};\n",
 }
 
 // TestCompile checks that the generated goldens compile. It needs a godot-cpp checkout with generated bindings

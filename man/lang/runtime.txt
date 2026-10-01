@@ -24,11 +24,11 @@ gd
 float64_t
   A name for double, the C++ type of Godot's float, to match int64_t.
 
-cast<T>(VALUE)
-  Converts VALUE to T, whatever the two types are: numbers, enums, Variants, and objects, with up casts done statically and down casts checked, giving null if the class doesn't match. It's at global scope, like gd. See `gd++ man cast`.
+gdpp::cast<T>(VALUE)
+  Converts VALUE to T, whatever the two types are: numbers, enums, Variants, and objects, with up casts done statically and down casts checked, giving null if the class doesn't match. Your code writes it `VALUE as T`, which GD++ rewrites into this, so it keeps its prefix. See `gd++ man cast`.
 
 ```gd++
-Node3D *node = cast<Node3D *>(scene->instantiate());
+Node3D *node = scene->instantiate() as Node3D *;
 ```
 
 gd_assert(CONDITION) and gd_assert(CONDITION, MESSAGE)

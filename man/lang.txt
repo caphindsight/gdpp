@@ -43,16 +43,18 @@ func _physics_process(delta: float) -> void {
 The declarations look like GDScript: class_name, extends, signal, var, func and annotations like @export. But GD++ is not GDScript:
 
 - Blocks use braces, not indentation. GD++ doesn't care about whitespace.
-- Function bodies, initial values and the like are plain C++, compiled by a C++ compiler.
+- Function bodies, initial values and the like are C++, compiled by a C++ compiler.
 - Types are Godot types, e.g. int, float, Vector3 or Node3D, and GD++ maps each to one C++ type, e.g. int64_t, double, Vector3 and Node3D*.
 - Every variable, parameter and return value has a static type, or is a Variant.
+
+GD++ is not C++ either. It emits C++, and its code blocks hold flavoured C++: C++ with a few words of GD++'s own, e.g. `emit` and `as`, which it rewrites into plain C++. See `gd++ man rewrites`.
 
 # Two languages in one file
 
 A GD++ file mixes two languages:
 
 - GD++ declarations, in the class declaration scope: classes, functions, variables, signals, enums and so on. GD++ parses these, and turns them into C++ declarations and bindings.
-- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and decl and impl blocks. GD++ copies this code into the generated C++, almost unchanged. It only removes comments, and rewrites a few words of GD++'s own: emit, rpc, is_cancelled, is_done, claim, cancel, This and gd.
+- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and decl and impl blocks. GD++ copies this code into the generated C++, almost unchanged. It only removes comments, and rewrites a few words of GD++'s own: `emit`, `rpc`, `is_cancelled`, `is_done`, `claim`, `cancel` and `as`. See `gd++ man rewrites`.
 
 In C++ code, everything that godot-cpp offers works: Godot's classes, Variant, memnew, Ref, UtilityFunctions and so on. GD++ adds a few helpers. See `gd++ man runtime`.
 
@@ -72,7 +74,7 @@ Each class becomes a C++ class in namespace godot, with GDCLASS, in a header and
 # Building blocks
 
 - Classes: file-level with class_name, or inline with class Name { ... }. See `gd++ man classes`.
-- Cast: cast<T>(value) converts between any two types, checking down casts. See `gd++ man cast`.
+- Cast: `value as T` converts between any two types, checking down casts. See `gd++ man cast`.
 - Functions: func name(params) -> type { C++ }, with attributes like @override, @virtual, @const, @static. See `gd++ man functions`.
 - Variables: var name: type = value, and properties with their own get and set. See `gd++ man variables`.
 - Exports: @export and its family, to show variables in the inspector. See `gd++ man exports`.

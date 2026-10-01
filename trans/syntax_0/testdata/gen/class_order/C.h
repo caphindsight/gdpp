@@ -9,7 +9,7 @@ namespace godot {
 
 #define This C
 class C : public B {
-	GDCLASS(C, B)
+	GDCLASS(C, ::godot::B)
 
 protected:
 	static void _bind_methods();

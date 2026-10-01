@@ -205,7 +205,11 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("")
 	w.ln("#define This %s", c.name)
 	w.ln("class %s : public %s {", c.name, c.base)
-	w.ln("\tGDCLASS(%s, %s)", c.name, c.base)
+	base := c.base
+	if base == "T" || base == "B" {
+		base = "::godot::" + base // GDCLASS has template parameters T and B, which would hide the base.
+	}
+	w.ln("\tGDCLASS(%s, %s)", c.name, base)
 	for _, code := range c.codes {
 		if code.Decl {
 			w.ln("")

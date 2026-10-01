@@ -2,6 +2,10 @@
 
 #include "Names.h"
 
+#include "HTTPCode.h"
+#include "MyEnum.h"
+#include "X.h"
+
 namespace godot {
 
 #define This Names

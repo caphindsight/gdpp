@@ -1,18 +1,28 @@
-Cast: one cast to rule them all
+One cast to rule them all
 
-C++ has many ways to convert a value, and godot-cpp adds more: static_cast, Object::cast_to, Ref's constructors, VariantCaster. GD++ code needs just one: cast<T>(VALUE) converts VALUE to the C++ type T, whatever the two types are. It's a plain C++ function of the runtime header, written without a prefix, like gd.
+C++ has many ways to convert a value, and godot-cpp adds more: static_cast, Object::cast_to, Ref's constructors, VariantCaster. GD++ code needs just one: `VALUE as T` converts VALUE to the C++ type T, whatever the two types are, like GDScript's `as`.
 
 ```gd++
 func spawn(scene: PackedScene, mode: ProcessMode) -> Node3D {
-  Node3D *node = cast<Node3D *>(scene->instantiate());
-  node->set_process_mode(cast<Node::ProcessMode>(mode));
+  Node3D *node = scene->instantiate() as Node3D *;
+  node->set_process_mode(mode as Node::ProcessMode);
   return node;
 }
 ```
 
+`as` is a word GD++ adds to C++: it rewrites `VALUE as T` into `gdpp::cast<T>(VALUE)`, a function of the runtime header. See `gd++ man rewrites`.
+
+# Precedence
+
+`as` binds VALUE like C++'s member access and calls do, tighter than any other operator: `a + b as float` converts `b` only, and `-x as int` is the negation of `x as int`. Parenthesize to convert more, e.g. `(a + b) as float`.
+
+T ends before anything that isn't part of a type. So `n as int < limit` compares, and `x as Ref<Mesh>` names a template. A `*` after T is part of it, so write `(x as int) * y` to multiply.
+
+GD++ only rewrites `as` where VALUE and T are clear. Elsewhere, e.g. in `x as int * y` or `(int) x as float`, the `as` stays, so the C++ doesn't compile, and the parentheses fix it: `(x as int) * y`, `((int) x) as float`. VALUE must be a name or parentheses, followed by any member accesses, scopes, calls and subscripts, e.g. `body`, `this->items[i]`, `get_node("Mesh")` or `(a + b)`.
+
 # What it does
 
-cast picks the conversion at compile time, from the two types, so nothing is decided while the game runs:
+`as` picks the conversion at compile time, from the two types, so nothing is decided while the game runs:
 
 ```
 FROM                    TO                       CONVERSION
@@ -30,18 +40,18 @@ A conversion that none of these rows allow, e.g. a String to a Node3D *, doesn't
 
 # Up and down casts
 
-A cast to the object's own class, or to one it extends, is an up cast: it always works, so cast does it statically, at no cost. A cast to a class that extends it, or to an unrelated class, is a down cast: it works only if the object is of that class, so cast checks the class while the game runs, like Object::cast_to, and gives nullptr or a null Ref if it doesn't match, like GDScript's as. So check the result of a down cast:
+A cast to the object's own class, or to one it extends, is an up cast: it always works, so `as` does it statically, at no cost. A cast to a class that extends it, or to an unrelated class, is a down cast: it works only if the object is of that class, so `as` checks the class while the game runs, like Object::cast_to, and gives nullptr or a null Ref if it doesn't match, like GDScript's `as`. So check the result of a down cast:
 
 ```gd++
 func _on_body_entered(body: Node3D) -> void {
-  Player *player = cast<Player *>(body);
+  Player *player = body as Player *;
   if (player) {
     player->hurt(10);
   }
 }
 ```
 
-A down cast of a null object gives null. cast keeps const: a const Node * casts to a const Node3D *, but not to a Node3D *.
+A down cast of a null object gives null. `as` keeps const: a const Node * casts to a const Node3D *, but not to a Node3D *.
 
 # Enums
 
@@ -53,8 +63,8 @@ enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
 @export var casting: ShadowCastingSetting = ON
 
 func _ready() -> void {
-  mesh->set_cast_shadows_setting(cast<GeometryInstance3D::ShadowCastingSetting>(casting));
-  gd::print(cast<int64_t>(casting));
+  mesh->set_cast_shadows_setting(casting as GeometryInstance3D::ShadowCastingSetting);
+  gd::print(casting as int64_t);
 }
 ```
 
@@ -64,7 +74,7 @@ A Variant converts to any type, as Godot converts the arguments of a bound metho
 
 ```gd++
 func take(task: Variant) -> void {
-  Async<int64_t> pending = cast<Async<int64_t>>(task);
+  Async<int64_t> pending = task as Async<int64_t>;
   ...
 }
 ```
@@ -85,7 +95,7 @@ Variant                 Ext<Road>                as Godot's bindings do
 ```
 
 ```gd++
-Ext<Terrain> terrain = cast<Ext<Terrain>>(get_node("Terrain"));
+Ext<Terrain> terrain = get_node("Terrain") as Ext<Terrain>;
 ```
 
 The check stops at the base class: Godot can't cheaply check a script class, so a Node of another script still converts to Road. For the same reason, a cast between two externs with the same base class isn't checked at all. An extern whose base isn't refcounted can't become a Ref: that cast doesn't compile.

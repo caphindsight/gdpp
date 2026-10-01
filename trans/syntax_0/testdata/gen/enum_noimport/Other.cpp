@@ -2,6 +2,8 @@
 
 #include "Other.h"
 
+#include "Local.h"
+
 namespace godot {
 
 #define This Other

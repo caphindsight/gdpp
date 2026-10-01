@@ -10,5 +10,5 @@ var level: Level = HARD
 var computed: Level = static_cast<Level>(0)
 
 func set_all(setting: ShadowCastingSetting = OFF, other: Level = Level.EASY) -> void {
-  set_cast_shadows(static_cast<GeometryInstance3D::ShadowCastingSetting>(setting));
+  (void) static_cast<GeometryInstance3D::ShadowCastingSetting>(setting);
 }
