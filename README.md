@@ -1,3 +1,5 @@
+<p align="center"><img src="gdpp_logo.png" alt="GD++ logo" width="200"></p>
+
 # GD++
 
 > [!NOTE]
