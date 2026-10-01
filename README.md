@@ -5,7 +5,7 @@
 
 Write Godot games in flavoured C++, without the boilerplate.
 
-GD++ is a programming language for Godot. It compiles to C++, and plugs into Godot through GDExtension.
+GD++ is a programming language for Godot. It compiles to C++, and plugs into Godot through GDExtension. It's inspired by the conciseness and simplicity of GDScript.
 
 GD++ mixes GDScript and C++, but it is neither GDScript nor C++:
 
