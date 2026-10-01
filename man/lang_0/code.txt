@@ -7,7 +7,7 @@ Wherever GD++ takes a block in braces, the block is C++: function bodies, `ctor`
 GD++ copies C++ code into the generated files almost as it is. It only:
 
 - removes comments, keeping their newlines, so line numbers stay the same. Remember that GD++'s block comments nest (see `gd++ man syntax`),
-- rewrites a few words of its own: `emit`, `rpc`, `is_cancelled`, `is_done`, `claim`, `cancel` and `as` (see `gd++ man rewrites`),
+- rewrites a few words of its own: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel` and `as` (see `gd++ man rewrites`),
 - wraps it in `#line` directives, so compiler errors point to the line in the GD++ file, not in the generated file.
 
 Everything else is plain C++, compiled by a C++ compiler with the package's C++ standard, against godot-cpp. Code in a class is inside namespace `godot`, like godot-cpp's own code, so Godot's names need no `godot::` prefix.

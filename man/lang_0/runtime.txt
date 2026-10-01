@@ -70,6 +70,8 @@ GDPP_STRING_NAME("name")
 node->call(GDPP_STRING_NAME("update"));
 ```
 
+In GD++ code, `string_name "update"` is short for it. See `gd++ man rewrites`.
+
 # For generated code
 
 These are used by the code that GD++ generates. Your code rarely needs them:

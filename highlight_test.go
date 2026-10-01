@@ -28,6 +28,8 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "cancel t; t.cancel();", Styled("cancel", CodeKeyword) + " t; t." + Styled("cancel", CodeFunction) + "();"},
 		{"gd++", "n = x as Node3D *;", "n = x " + Styled("as", CodeKeyword) + " " + Styled("Node3D", CodeType) + " *;"},
 		{"gd++", "as = x;", "as = x;"},
+		{"gd++", "call(string_name \"f\"); string_name = 1;", Styled("call", CodeFunction) + "(" + Styled("string_name", CodeKeyword) + " " +
+			Styled("\"f\"", CodeLiteral) + "); string_name = " + Styled("1", CodeLiteral) + ";"},
 		{"gd++", "notif(READY, PREDELETE) {}", Styled("notif", CodeKeyword) + "(READY, PREDELETE) {}"},
 		{"", "var x", "var x"},
 	}

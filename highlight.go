@@ -43,6 +43,8 @@ const (
 	// GD++'s words in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
 	// where a name follows them, which is where GD++ rewrites them.
 	rewriteOperatorWords = "is_done claim cancel as"
+	// GD++'s words in C++ code that are keywords only where a string follows them, which is where GD++ rewrites them.
+	rewriteStringWords = "string_name"
 	// The runtime's cast, which as becomes, and C++'s casts, which it replaces.
 	castWords    = "cast static_cast dynamic_cast const_cast reinterpret_cast"
 	cppTypeWords = "bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t uint8_t uint16_t " +
@@ -54,6 +56,7 @@ const (
 var (
 	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords, castWords)
 	codeOperators = wordSet(rewriteOperatorWords)
+	codeStringOps = wordSet(rewriteStringWords)
 	codeTypes     = wordSet(cppTypeWords, godotTypeWords)
 )
 
@@ -111,7 +114,8 @@ func highlightGdpp(code string, gdscript bool) string {
 			n = identLen(rest)
 			word := rest[:n]
 			switch {
-			case codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0:
+			case codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,
+				codeStringOps[word] && strings.HasPrefix(strings.TrimLeft(rest[n:], " \t\n"), "\""):
 				style = []Style{CodeKeyword}
 			case codeTypes[word] || word[0] >= 'A' && word[0] <= 'Z' && strings.ToUpper(word) != word:
 				style = []Style{CodeType}

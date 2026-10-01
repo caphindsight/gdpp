@@ -44,6 +44,7 @@ func (w *writer) String() string {
 //   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
 //   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
+//   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`.
 func cpp(code string) string {
 	lex, err := gdppLexer.LexString("", code)
@@ -69,6 +70,17 @@ func cpp(code string) string {
 		if ts[i].Type == tokIdent && ts[i].Value == "is_cancelled" && !isMember(ts, i) {
 			if next := skipSpace(ts, i+1); next == len(ts) || !isPunct(ts[next], "(") {
 				out[i] = "gdpp::is_cancelled()"
+			}
+		}
+		if ts[i].Type == tokIdent && ts[i].Value == "string_name" && !isMember(ts, i) {
+			if j := skipSpace(ts, i+1); j < len(ts) && ts[j].Type == tokString && ts[j].Value[0] == '"' {
+				// Drop the spaces after the keyword, keeping their newlines so the lines still match.
+				for k := i + 1; k < j; k++ {
+					out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
+				}
+				out[i], out[j] = "GDPP_STRING_NAME(", out[j]+")"
+				i = j
+				continue
 			}
 		}
 		if ts[i].Type == tokIdent && asyncWords[ts[i].Value] {

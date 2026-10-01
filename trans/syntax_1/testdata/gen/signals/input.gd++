@@ -8,6 +8,7 @@ signal moved(from: Vector3, to: Vector3, by)
 func click() -> void {
   emit pressed();
   emit toggled(true);
+  emit_signal(string_name "pressed");
   // emit in a comment stays a comment.
   gd::print("emit in a string");
 }

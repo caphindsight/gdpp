@@ -18,10 +18,11 @@ void Button2::click() {
 
   (void) pressed();
   (void) toggled(true);
+  emit_signal(GDPP_STRING_NAME("pressed"));
 
   gd::print("emit in a string");
 
-#line 25 "Button2.cpp"
+#line 26 "Button2.cpp"
 }
 
 gdpp::Emitted Button2::pressed() {

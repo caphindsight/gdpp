@@ -10,7 +10,7 @@ gd++ cat FILE...
 
 Shows any files, in the pager when they don't fit the terminal. The files don't have to be part of a project. Several files are shown one after another, each after a gray line naming it, e.g. `// ==== src/player.gd++ ====`, like in `gd++ trans`. For the pager's keys, see `gd++ man cli`.
 
-On a terminal, C++ and GD++ files are highlighted: keywords, types, functions, literals and comments get their own colors. GD++'s words in C++ code show as keywords too: `emit`, `rpc` and `is_cancelled` everywhere, and `is_done`, `claim`, `cancel` and `as` only where a name follows them, so a plain call like `task.is_done()` shows as a call. See `gd++ man rewrites`.
+On a terminal, C++ and GD++ files are highlighted: keywords, types, functions, literals and comments get their own colors. GD++'s words in C++ code show as keywords too: `emit`, `rpc` and `is_cancelled` everywhere, `is_done`, `claim`, `cancel` and `as` only where a name follows them, and `string_name` only where a string follows it, so a plain call like `task.is_done()` shows as a call. See `gd++ man rewrites`.
 
 A file is C++ if its extension is `.c`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.h`, `.hh`, `.hpp`, `.hxx`, `.h++` or `.inl`, and GD++ if it's `.gd++`, `.gdpp` or `.gg`. Other files are shown as they are. When the output is not a terminal, e.g. in `gd++ cat player.gd++ | grep func`, files are printed as plain text, without the pager.
 
