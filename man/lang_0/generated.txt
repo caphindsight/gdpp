@@ -121,7 +121,7 @@ void Counter::set_count(int64_t p_value) {
 }
 
 gdpp::Emitted Counter::changed(int64_t value) {
-  return gdpp::Emitted{ emit_signal("changed", value) };
+  return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("changed"), value) };
 }
 
 #undef This

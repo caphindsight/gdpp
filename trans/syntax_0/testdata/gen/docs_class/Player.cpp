@@ -45,7 +45,7 @@ void Player::set_legacy(int64_t p_value) {
 }
 
 gdpp::Emitted Player::died(const String &cause) {
-	return gdpp::Emitted{ emit_signal("died", cause) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("died"), cause) };
 }
 
 #undef This

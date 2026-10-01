@@ -372,11 +372,11 @@ void MyNode::set_my_extern(gdpp::ExtPtr<Terrain> p_value) {
 }
 
 gdpp::Emitted MyNode::something_happened(int64_t a) {
-	return gdpp::Emitted{ emit_signal("something_happened", a) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("something_happened"), a) };
 }
 
 gdpp::Emitted MyNode::something_else_happened() {
-	return gdpp::Emitted{ emit_signal("something_else_happened") };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("something_else_happened")) };
 }
 
 #line 70 "input.gd++"

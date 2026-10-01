@@ -112,7 +112,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		if s.trace {
 			w.ln("\tgdpp::trace_emit(this, %q%s);", s.s.Name, namedArgs(s.s.Params))
 		}
-		w.ln("\treturn gdpp::Emitted{ emit_signal(%q%s) };", s.s.Name, args(s.params, s.s.Params))
+		w.ln("\treturn gdpp::Emitted{ emit_signal(GDPP_STRING_NAME(%q)%s) };", s.s.Name, args(s.params, s.s.Params))
 		w.ln("}")
 	}
 	for _, code := range c.codes {

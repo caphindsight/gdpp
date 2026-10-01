@@ -176,7 +176,7 @@ void Player::set_ammo(int64_t value) {
 
 gdpp::Emitted Player::died(Mood cause) {
 	gdpp::trace_emit(this, "died", "cause", cause);
-	return gdpp::Emitted{ emit_signal("died", static_cast<int64_t>(cause)) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("died"), static_cast<int64_t>(cause)) };
 }
 
 #undef This

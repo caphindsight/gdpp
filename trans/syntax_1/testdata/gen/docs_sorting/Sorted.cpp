@@ -62,11 +62,11 @@ void Sorted::set_Y(int64_t p_value) {
 }
 
 gdpp::Emitted Sorted::s2() {
-	return gdpp::Emitted{ emit_signal("s2") };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("s2")) };
 }
 
 gdpp::Emitted Sorted::S1() {
-	return gdpp::Emitted{ emit_signal("S1") };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("S1")) };
 }
 
 #undef This

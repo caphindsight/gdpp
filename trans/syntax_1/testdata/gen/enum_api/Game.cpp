@@ -94,7 +94,7 @@ void Game::_gdpp_set_start(_gdpp_Game_Mode p_value) {
 }
 
 gdpp::Emitted Game::mode_changed(Mode mode) {
-	return gdpp::Emitted{ emit_signal("mode_changed", static_cast<int64_t>(mode)) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("mode_changed"), static_cast<int64_t>(mode)) };
 }
 
 #undef This

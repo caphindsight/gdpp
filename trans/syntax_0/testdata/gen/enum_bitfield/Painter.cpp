@@ -105,7 +105,7 @@ void Painter::_gdpp_set_mixed(_gdpp_Painter_Effect p_value) {
 }
 
 gdpp::Emitted Painter::changed(Effect effect) {
-	return gdpp::Emitted{ emit_signal("changed", static_cast<int64_t>(effect)) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("changed"), static_cast<int64_t>(effect)) };
 }
 
 #undef This

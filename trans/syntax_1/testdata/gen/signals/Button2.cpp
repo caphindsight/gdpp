@@ -26,15 +26,15 @@ void Button2::click() {
 }
 
 gdpp::Emitted Button2::pressed() {
-	return gdpp::Emitted{ emit_signal("pressed") };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("pressed")) };
 }
 
 gdpp::Emitted Button2::toggled(bool on) {
-	return gdpp::Emitted{ emit_signal("toggled", on) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("toggled"), on) };
 }
 
 gdpp::Emitted Button2::moved(const Vector3 &from, const Vector3 &to, const Variant &by) {
-	return gdpp::Emitted{ emit_signal("moved", from, to, by) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("moved"), from, to, by) };
 }
 
 #undef This

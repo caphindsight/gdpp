@@ -177,7 +177,7 @@ void Pathfinder::set_anything(gdpp::Async<Variant> p_value) {
 }
 
 gdpp::Emitted Pathfinder::found(gdpp::Async<PackedVector2Array> path) {
-	return gdpp::Emitted{ emit_signal("found", path) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("found"), path) };
 }
 
 #undef This

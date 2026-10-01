@@ -192,7 +192,7 @@ gdpp::Emitted Mob::hit(int64_t amount) {
 		return {};
 	}
 #endif
-	return gdpp::Emitted{ emit_signal("hit", amount) };
+	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("hit"), amount) };
 }
 
 #undef This
