@@ -43,6 +43,10 @@ A rewrite keeps the code's line breaks, so the line numbers in errors still matc
 
 `gd++ cat` and the code in this manual highlight these words as keywords: `is_done`, `claim`, `cancel` and `as` only where a name follows them, and `string_name` only where a string follows it.
 
+# Trailing commas
+
+In C++ code, a call's arguments may end with a comma, like in GDScript: `f(a, b,)` becomes `f(a, b)`. This helps when each argument is on its own line. GD++ drops any `,` right before `)`, so avoid macro calls with an empty last argument, e.g. `M(a,)`.
+
 # Seeing them
 
 `gd++ trans FILE` prints the generated C++, with every rewrite done. E.g. this function:

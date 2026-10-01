@@ -45,7 +45,8 @@ func (w *writer) String() string {
 //   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
 //   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
-//   - `x as T` becomes `gdpp::cast<T>(x)`.
+//   - `x as T` becomes `gdpp::cast<T>(x)`,
+//   - a `,` before `)` is dropped, so calls may end with a trailing comma.
 func cpp(code string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
@@ -64,6 +65,11 @@ func cpp(code string) string {
 		out = append(out, t.Value)
 	}
 	for i := 0; i < len(ts); i++ {
+		if isPunct(ts[i], ",") {
+			if j := skipSpace(ts, i+1); j < len(ts) && isPunct(ts[j], ")") {
+				out[i] = ""
+			}
+		}
 		if ts[i].Type == tokIdent && ts[i].Value == "emit" {
 			out[i] = "(void)"
 		}
