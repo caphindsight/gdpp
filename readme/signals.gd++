@@ -1,6 +1,6 @@
 signal health_changed(health: int)
 
-enum Suit { DIAMONDS, CLUBS, SPADES, HEARTS }
+enum Suit { DIAMONDS CLUBS SPADES HEARTS }
 enum MAX_PLAYERS = 4
 
 func _on_body_entered(body: Node3D) -> void {

@@ -3,7 +3,7 @@
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
   <text y="30"><tspan x="16.0" textLength="50.4" fill="#e3b341">signal</tspan><tspan x="74.8" textLength="117.6" fill="#56d4dd">health_changed</tspan><tspan x="192.4" textLength="75.6" fill="#e6edf3">(health: </tspan><tspan x="268.0" textLength="25.2" fill="#7ee787">int</tspan><tspan x="293.2" textLength="8.4" fill="#e6edf3">)</tspan></text>
   <text y="50"></text>
-  <text y="70"><tspan x="16.0" textLength="33.6" fill="#e3b341">enum</tspan><tspan x="58.0" textLength="33.6" fill="#7ee787">Suit</tspan><tspan x="100.0" textLength="294.0" fill="#e6edf3">{ DIAMONDS, CLUBS, SPADES, HEARTS }</tspan></text>
+  <text y="70"><tspan x="16.0" textLength="33.6" fill="#e3b341">enum</tspan><tspan x="58.0" textLength="33.6" fill="#7ee787">Suit</tspan><tspan x="100.0" textLength="268.8" fill="#e6edf3">{ DIAMONDS CLUBS SPADES HEARTS }</tspan></text>
   <text y="90"><tspan x="16.0" textLength="33.6" fill="#e3b341">enum</tspan><tspan x="58.0" textLength="117.6" fill="#e6edf3">MAX_PLAYERS = </tspan><tspan x="175.6" textLength="8.4" fill="#d2a8ff">4</tspan></text>
   <text y="110"></text>
   <text y="130"><tspan x="16.0" textLength="33.6" fill="#e3b341">func</tspan><tspan x="58.0" textLength="134.4" fill="#56d4dd">_on_body_entered</tspan><tspan x="192.4" textLength="58.8" fill="#e6edf3">(body: </tspan><tspan x="251.2" textLength="50.4" fill="#7ee787">Node3D</tspan><tspan x="301.6" textLength="42.0" fill="#e6edf3">) -&gt; </tspan><tspan x="343.6" textLength="33.6" fill="#7ee787">void</tspan><tspan x="385.6" textLength="8.4" fill="#e6edf3">{</tspan></text>
