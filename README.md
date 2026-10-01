@@ -1,11 +1,12 @@
-<p align="center"><img src="gdpp_logo.png" alt="GD++ logo" width="100" style="float: right;"></p>
-
 # GD++
+<p align="right">
+  <img src="gdpp_logo.png" alt="GD++ logo" width="128" align="right">
+</p>
+
+Write Godot games in C++, without the boilerplate.
 
 > [!NOTE]
 > The code was mostly written by AI, but a senior engineer made all design decisions.
-
-Write Godot games in C++, without the boilerplate.
 
 ## Overview
 
