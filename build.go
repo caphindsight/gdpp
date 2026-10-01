@@ -48,11 +48,11 @@ type BuildOptions struct {
 // DebugOptions are the options of the build and trans commands that turn on
 // @trace and @profile annotations.
 type DebugOptions struct {
-	Trace         []string `arg:"--trace" placeholder:"GROUP" help:"turn on the @trace annotations of these groups, or of all"`
-	Profile       []string `arg:"--profile" placeholder:"GROUP" help:"turn on the @profile annotations of these groups, or of all"`
-	ProfilePrint  bool     `arg:"--profile-print" help:"with --profile, also print a table of the timings every few seconds while the game runs"`
-	ProfilePeriod *int     `arg:"--profile-period" placeholder:"SECONDS" help:"with --profile-print, the seconds between tables [default: 10]"`
-	ProfileFPS    int      `arg:"--profile-fps" placeholder:"FPS" help:"with --profile-print, the frame rate that the table's budget column assumes [default: 60]"`
+	Trace   []string `arg:"--trace" placeholder:"GROUP" help:"turn on the @trace annotations of these groups, or of all"`
+	Profile []string `arg:"--profile" placeholder:"GROUP" help:"turn on the @profile annotations of these groups, or of all"`
+	Print   bool     `arg:"--print" help:"with --profile, also print a table of the timings every few seconds while the game runs"`
+	Period  *int     `arg:"--period" placeholder:"SECONDS" help:"with --print, the seconds between tables [default: 10]"`
+	FPS     int      `arg:"--fps" placeholder:"FPS" help:"with --print, the frame rate that the table's budget column assumes [default: 60]"`
 }
 
 // validate asserts the group names are valid.
@@ -60,21 +60,21 @@ func (o DebugOptions) validate() {
 	for _, g := range slices.Concat(o.Trace, o.Profile) {
 		Assert(classNameRegexp.MatchString(g), "Invalid arguments: %q is not a valid group name.", g)
 	}
-	Assert(!o.ProfilePrint || len(o.Profile) > 0, "Invalid arguments: --profile-print needs --profile.")
-	Assert(o.ProfilePeriod == nil || *o.ProfilePeriod > 0, "Invalid arguments: --profile-period must be positive.")
-	Assert(o.ProfilePeriod == nil || o.ProfilePrint, "Invalid arguments: --profile-period needs --profile-print.")
-	Assert(o.ProfileFPS >= 0, "Invalid arguments: --profile-fps cannot be negative.")
-	Assert(o.ProfileFPS == 0 || o.ProfilePrint, "Invalid arguments: --profile-fps needs --profile-print.")
+	Assert(!o.Print || len(o.Profile) > 0, "Invalid arguments: --print needs --profile.")
+	Assert(o.Period == nil || *o.Period > 0, "Invalid arguments: --period must be positive.")
+	Assert(o.Period == nil || o.Print, "Invalid arguments: --period needs --print.")
+	Assert(o.FPS >= 0, "Invalid arguments: --fps cannot be negative.")
+	Assert(o.FPS == 0 || o.Print, "Invalid arguments: --fps needs --print.")
 }
 
 // transOptions returns opts with the options' groups, and the table's
 // period and frame rate if it's printed.
 func (o DebugOptions) transOptions(opts trans.Options) trans.Options {
 	opts.Trace, opts.Profile = o.Trace, o.Profile
-	if o.ProfilePrint {
-		opts.ProfilePeriod, opts.ProfileFPS = 10, o.ProfileFPS
-		if o.ProfilePeriod != nil {
-			opts.ProfilePeriod = *o.ProfilePeriod
+	if o.Print {
+		opts.ProfilePeriod, opts.ProfileFPS = 10, o.FPS
+		if o.Period != nil {
+			opts.ProfilePeriod = *o.Period
 		}
 	}
 	return opts
@@ -287,8 +287,9 @@ func cppSources(p Project, pkg Package) []string {
 // generateRegisterTypes writes the build cache's __register_types__.cpp,
 // which registers the package's classes: those in its config, and the GD++
 // classes, which must not clash with them, and the class of tasks, if a GD++
-// class uses Async. Runtime classes (C++ classes
-// without tool, GD++ classes without @tool) don't run their code in the editor.
+// class uses Async. With GD++ classes, it unloads them with the runtime's
+// gdpp::uninitialize. Runtime classes (C++ classes without tool, GD++ classes
+// without @tool) don't run their code in the editor.
 func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 	var classes, runtime, includes []string
 	for _, class := range pkg.Config.Classes {
@@ -302,12 +303,16 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 			includes = append(includes, "<"+rest+">")
 		}
 	}
-	// GD++ adds the class of tasks, which Async types name, to packages whose GD++ classes use Async.
+	// Packages with GD++ classes include the runtime, which unloads their code;
+	// GD++ adds the class of tasks, which Async types name, to those whose GD++
+	// classes use Async.
 	asyncClass, runtimeName := "", ""
-	if slices.ContainsFunc(gdpp, func(c gdppClass) bool { return c.Async }) {
+	if len(gdpp) > 0 {
 		var err error
 		runtimeName, _, err = trans.RuntimeHeader(pkg.Config.Syntax)
 		Check(err, "Failed to find the GD++ runtime header")
+	}
+	if slices.ContainsFunc(gdpp, func(c gdppClass) bool { return c.Async }) {
 		asyncClass = pkg.AsyncClass()
 		Assert(!slices.Contains(classes, asyncClass), "Class %s is declared in %s, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init %s --prefix NAME`.",
 			asyncClass, pkg.Root.Cd(packageFileName).ToString(), pkg.Root.ToString())

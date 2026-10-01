@@ -295,7 +295,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("protected:")
 	w.ln("\tstatic void _bind_methods();")
 	if len(c.notifs) > 0 {
-		w.ln("\tvoid _notification(int what);")
+		w.ln("\tvoid _notification(int WHAT);")
 	}
 	var helpers []string
 	for _, f := range c.funcs {

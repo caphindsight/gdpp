@@ -123,11 +123,11 @@ The @trace and @profile annotations of GD++ code generate nothing unless a build
 gd++ build --trace combat                        # the @trace annotations of the group combat
 gd++ build --trace Player Enemy                  # of the classes Player and Enemy
 gd++ build --profile all                         # all @profile annotations
-gd++ build --opt --profile all --profile-print  # optimized, with a table of timings every 10 seconds
+gd++ build --opt --profile all --print  # optimized, with a table of timings every 10 seconds
 gd++ build                                       # back to none
 ```
 
---trace GROUP... and --profile GROUP... take group names, or `all`. Every annotation is in the group of its class's name, and in the groups its arguments name. With --profile, the editor's Debugger > Monitors tab shows the time per frame of each profiled function. --profile-print also prints a table of the timings every 10 seconds, --profile-period SECONDS changes the period, and --profile-fps FPS sets the frame rate that the table's budget column assumes, 60 by default.
+--trace GROUP... and --profile GROUP... take group names, or `all`. Every annotation is in the group of its class's name, and in the groups its arguments name. With --profile, the editor's Debugger > Monitors tab shows the time per frame of each profiled function. --print also prints a table of the timings every 10 seconds, --period SECONDS changes the period, and --fps FPS sets the frame rate that the table's budget column assumes, 60 by default.
 
 They work in debug and release builds, and with any other option. Switching them only recompiles the files whose code changes, and hot reload picks up the result while the editor runs. `gd++ trans` takes the same flags, to show the code they generate. See `gd++ man debugging`.
 

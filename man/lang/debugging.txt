@@ -230,7 +230,7 @@ func _physics_process(delta: float) -> void { ... }
 - On a variable, it times the variable's getter and setter, e.g. Player.get_ammo and Player.set_ammo. That's useful for properties whose get or set block does real work. A simple variable's getter and setter only copy a value, and your C++ code uses the field directly, not them.
 - On a class, it times all its functions, and the getters and setters of its properties with get and set blocks.
 
-The timings show in the editor's monitors, and with --profile-print, in a table printed every few seconds.
+The timings show in the editor's monitors, and with --print, in a table printed every few seconds.
 
 # Externs
 
@@ -285,11 +285,11 @@ The graphs show when a cost changes, e.g. when a fight starts, and how the funct
 
 # Profile tables
 
-With `--profile-print`, the game also prints a table of the profiled functions every 10 seconds, or with `--profile-period SECONDS`, every SECONDS seconds:
+With `--print`, the game also prints a table of the profiled functions every 10 seconds, or with `--period SECONDS`, every SECONDS seconds:
 
 ```sh
-gd++ build --profile all --profile-print
-gd++ build --profile all --profile-print --profile-period 5
+gd++ build --profile all --print
+gd++ build --profile all --print --period 5
 ```
 
 ```out
@@ -329,13 +329,13 @@ ms/frame
   Total divided by the frames: the time it takes per frame, on average.
 
 Budget (60 FPS)
-  ms/frame as a share of a frame's time at 60 frames per second, 16.7 ms. For a function that only ever ran on the main thread, it's green below 10%, yellow up to 50%, and red above. A function that ran on other threads, e.g. an @onthread body, doesn't hold up the main thread's frames, or not all of the time: its share isn't colored, and says "(on background)", e.g. "4.0% (on background)". `--profile-fps FPS` sets another frame rate, e.g. `--profile-fps 144` for 6.9 ms frames, and the column's name says which.
+  ms/frame as a share of a frame's time at 60 frames per second, 16.7 ms. For a function that only ever ran on the main thread, it's green below 10%, yellow up to 50%, and red above. A function that ran on other threads, e.g. an @onthread body, doesn't hold up the main thread's frames, or not all of the time: its share isn't colored, and says "(on background)", e.g. "4.0% (on background)". `--fps FPS` sets another frame rate, e.g. `--fps 144` for 6.9 ms frames, and the column's name says which.
 
 A recursive call's time is already in the time of the call it's inside, so Total, Max, ms/frame and Budget only count the outermost call. Calls and Self count every call, so for recursive functions, Avg is lower than the time of an outermost call.
 
 The table is one message, after a blank line, in a monospace font, so it lines up in the editor's Output panel, and other output can't land inside it. The first table prints one period after the first profiled function ran.
 
---profile-print needs --profile, and --profile-period and --profile-fps need --profile-print.
+--print needs --profile, and --period and --fps need --print.
 
 # How accurate the times are
 
@@ -394,7 +394,7 @@ extends CharacterBody3D
 ```
 
 ```sh
-gd++ build --opt --profile perf --profile-print --profile-period 5
+gd++ build --opt --profile perf --print --period 5
 ```
 
 Play the slow part of the game, and read the Budget column first: the share of the frame each function takes. Then:
@@ -444,7 +444,7 @@ bool Player::take_damage(int64_t amount) {
 }
 ```
 
-- gdpp::ProfileStats holds the function's timings, and gdpp::Profile times the call. With --profile-print, the table's period follows the name, and with --profile-fps, the frame rate, e.g. `_gdpp_stats("Player.take_damage", 10, 144)`.
+- gdpp::ProfileStats holds the function's timings, and gdpp::Profile times the call. With --print, the table's period follows the name, and with --fps, the frame rate, e.g. `_gdpp_stats("Player.take_damage", 10, 144)`.
 - gdpp::Trace prints the start and end lines. A traced function that returns a value runs its body as a lambda, so the trace gets the result of every return.
 - gdpp::Watch checks the class's traced variables.
 - A traced signal's emit function calls gdpp::trace_emit, and the constructor and destructor of a traced class call gdpp::trace_lifetime.

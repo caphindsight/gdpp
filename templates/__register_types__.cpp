@@ -6,9 +6,9 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
-{{- if .AsyncClass}}
+{{- if .Runtime}}
 
-// The GD++ runtime, which defines the package's class of tasks.
+// The GD++ runtime, which defines the package's class of tasks, and unloads the package's GD++ code.
 #include <{{.Runtime}}>
 {{- end}}
 {{range .Includes}}
@@ -57,10 +57,11 @@ static void gdpp_initialize(ModuleInitializationLevel p_level) {
 }
 
 static void gdpp_uninitialize(ModuleInitializationLevel p_level) {
-{{- if .AsyncClass}}
-	// The code of the package's tasks must not be unloaded while they run.
+{{- if .Runtime}}
+	// Waits for the package's tasks, and removes the engine's hooks into the package's code, which must not run once
+	// it's unloaded, e.g. by hot reload.
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		gdpp::finish_tasks();
+		gdpp::uninitialize();
 	}
 {{- end}}
 }

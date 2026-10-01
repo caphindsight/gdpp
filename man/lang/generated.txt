@@ -145,7 +145,7 @@ In order:
    - `public:` the fields of simple variables, value-initialized with {},
    - `private:` the decl blocks of properties,
    - `public:` integer constants as static constexpr int64_t, the constructor and destructor if any, GDVIRTUAL declarations of @virtual functions, the functions, RPC helpers, getters and setters, and the emit functions of signals,
-   - `protected:` static void _bind_methods(), and `void _notification(int what)` if the class has `notif` blocks,
+   - `protected:` static void _bind_methods(), and `void _notification(int WHAT)` if the class has `notif` blocks,
    - `private:` the generated helpers: enum wrappers, and default value functions.
 6. The #include lines of the GD++ names that were only forward-declared, at the end, after namespace godot.
 
@@ -159,7 +159,7 @@ In order:
    - _bind_methods: binds each function (with its default values, and except the bodies of @onthread functions, which their tasks call directly), each variable's getter and setter and its property (after the inspector sections it starts), each signal, each integer constant, and each value of each exposed enum (as a bitfield flag for a bitfield),
    - the constructor, if needed: the creation line of a class whose @trace is on, RPC configurations, set_process(true) and set_physics_process(true) for overrides, the initial values of variables, then the ctor block. See `gd++ man lifecycle`.
    - the destructor, with the dtor block, if the class has one or a @trace that's on,
-   - `_notification`, if the class has `notif` blocks: each block, in order, as `if (what == NOTIFICATION_A || ...) [&] { ... }();`. See `gd++ man lifecycle`.
+   - `_notification`, if the class has `notif` blocks: each block, in order, as `if (WHAT == NOTIFICATION_A || ...) [&] { ... }();`. See `gd++ man lifecycle`.
    - each function: the GDVIRTUAL_CALL of a @virtual function, or of an @override of one that isn't @final, the @onready initial values in _ready, then the body (or for @deferred and @thread_safe, the call that runs _gdpp_body_NAME later, and for @onthread, gdpp::run_task, which starts a task that runs it on the WorkerThreadPool; see `gd++ man async`); then its enum wrapper, default value functions and RPC helper,
    - each variable's getter and setter, and their enum wrappers,
    - each signal's emit function,
@@ -249,7 +249,7 @@ A bitfield's enum class is followed by `GDPP_BITFIELD(Name)`, which gives it the
 
 The build also generates __register_types__.cpp, in the build cache, outside gdpp/. It includes every class's header, and registers each class when the library loads, bases first, with GDREGISTER_RUNTIME_CLASS for runtime classes, i.e. GD++ classes without @tool and C++ classes without tool = true, and GDREGISTER_CLASS for the others. Its entry point is gdpp_library_init. See `gd++ man cpp-classes`.
 
-A package whose GD++ classes use Async also registers its class of tasks there, first, e.g. FooAsync, which Async types name: the GD++ runtime defines it, and __register_types__.cpp includes the runtime for it. When the library is unloaded, it waits for the package's running tasks, with gdpp::finish_tasks. SConstruct defines GDPP_ASYNC_CLASS as the class's name, and GDPP_QUIT_TIMEOUT_USEC as the package's quit_timeout, for all the package's C++. See `gd++ man async`.
+In a package with GD++ classes, __register_types__.cpp also includes the GD++ runtime, and calls `gdpp::uninitialize()` when the library is unloaded: it waits for the package's running tasks, and removes the engine's hooks into the package's code, e.g. signal connections, so the editor doesn't call the old code after a hot reload. A package whose GD++ classes use Async also registers its class of tasks there, first, e.g. FooAsync, which Async types name: the GD++ runtime defines it. SConstruct defines GDPP_ASYNC_CLASS as the class's name, and GDPP_QUIT_TIMEOUT_USEC as the package's quit_timeout, for all the package's C++. See `gd++ man async`.
 
 # Using generated classes from C++
 

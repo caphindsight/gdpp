@@ -80,12 +80,12 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if len(c.notifs) > 0 {
 		// Each block runs in a lambda, so a return in one doesn't skip the later ones.
 		w.ln("")
-		w.ln("void %s::_notification(int what) {", c.name)
+		w.ln("void %s::_notification(int WHAT) {", c.name)
 		guard(w, c, "")
 		for _, n := range c.notifs {
 			var conds []string
 			for _, name := range n.Names {
-				conds = append(conds, "what == NOTIFICATION_"+name.Name)
+				conds = append(conds, "WHAT == NOTIFICATION_"+name.Name)
 			}
 			w.block(n.Body, "\tif ("+strings.Join(conds, " || ")+") [&] {", "}();")
 		}

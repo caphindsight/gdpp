@@ -9,19 +9,19 @@ namespace godot {
 void Pool::_bind_methods() {
 }
 
-void Pool::_notification(int what) {
+void Pool::_notification(int WHAT) {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
 #endif
 #line 5 "input.gd++"
-	if (what == NOTIFICATION_POSTINITIALIZE || what == NOTIFICATION_PREDELETE) [&] {
-  gd::print("lifecycle ", what);
+	if (WHAT == NOTIFICATION_POSTINITIALIZE || WHAT == NOTIFICATION_PREDELETE) [&] {
+  gd::print("lifecycle ", WHAT);
 }();
 #line 23 "Pool.cpp"
 #line 9 "input.gd++"
-	if (what == NOTIFICATION_PREDELETE) [&] {
+	if (WHAT == NOTIFICATION_PREDELETE) [&] {
   gd::print("deleted");
 }();
 #line 28 "Pool.cpp"

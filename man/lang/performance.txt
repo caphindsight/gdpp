@@ -73,7 +73,7 @@ So in debug, GD++ can be slower than GDScript: dictionaries took almost twice as
 - Keep engine calls few. They cost the same from GD++ as from GDScript, so a loop that mostly calls the engine gains little. Call it less often, e.g. once per frame instead of once per object, or use the engine's bulk functions, like sort.
 - Don't call GDScript from C++ in hot loops, e.g. a script's override of a @virtual function once per item. Call it once per batch instead.
 - Build strings with += in GD++. In GDScript, join them from a PackedStringArray instead.
-- Don't guess: profile. `gd++ build --opt --profile all --profile-print` prints what each function costs per frame. See `gd++ man debugging`.
+- Don't guess: profile. `gd++ build --opt --profile all --print` prints what each function costs per frame. See `gd++ man debugging`.
 
 # The benchmark code
 

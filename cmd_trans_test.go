@@ -64,9 +64,9 @@ func TestTransDebug(t *testing.T) {
 			[]string{"#define GDPP_DEBUGGING", `gdpp::Trace _gdpp_trace("Player", this, "jump");`}, []string{"gdpp::Profile"}},
 		"profile": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}}},
 			[]string{`static gdpp::ProfileStats _gdpp_stats("Player.run");`}, []string{"gdpp::Trace"}},
-		"print": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true}},
+		"print": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, Print: true}},
 			[]string{`_gdpp_stats("Player.run", 10);`}, nil},
-		"period": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, ProfilePrint: true, ProfilePeriod: ptr(3), ProfileFPS: 144}},
+		"period": {CmdTrans{File: file, Object: []string{"Node"}, DebugOptions: DebugOptions{Profile: []string{"all"}, Print: true, Period: ptr(3), FPS: 144}},
 			[]string{`_gdpp_stats("Player.run", 3, 144);`}, nil},
 	}
 	for name, tc := range cases {

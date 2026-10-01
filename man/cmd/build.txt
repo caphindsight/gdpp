@@ -5,7 +5,7 @@ gd++ build: compile a package into a GDExtension library
 ```sh
 gd++ build [PATH] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
            [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [-j N] [--clean]
-           [--trace GROUP...] [--profile GROUP... [--profile-print [--profile-period SECONDS] [--profile-fps FPS]]]
+           [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 gd++ build --proj [options...]
 ```
 
@@ -59,16 +59,16 @@ PATH
 --profile GROUP...
   Compile in the @profile annotations of these groups, or with `all`, of all groups, like --trace does for @trace. Their timings show in the editor's Debugger > Monitors tab. See `gd++ man debugging`.
 
---profile-print
+--print
   With --profile, also print a table of the timings every few seconds while the game runs.
 
---profile-period SECONDS
-  With --profile-print, the seconds between tables. Default: 10.
+--period SECONDS
+  With --print, the seconds between tables. Default: 10.
 
---profile-fps FPS
-  With --profile-print, the frame rate that the table's budget column assumes. Default: 60.
+--fps FPS
+  With --print, the frame rate that the table's budget column assumes. Default: 60.
 
-Group names are made of letters, digits and underscores. --profile-print needs --profile, and --profile-period and --profile-fps need --profile-print.
+Group names are made of letters, digits and underscores. --print needs --profile, and --period and --fps need --print.
 
 -j N, --jobs N
   Run N compile jobs at once. Default: one per CPU core but one.
@@ -139,7 +139,7 @@ gd++ build --trace combat Player
 Profile everything, in an optimized build, and print a table of timings every 10 seconds, with the frame budget of a 144 Hz screen:
 
 ```sh
-gd++ build --opt --profile all --profile-print --profile-fps 144
+gd++ build --opt --profile all --print --fps 144
 ```
 
 Start over after a strange build error:
@@ -155,8 +155,8 @@ gd++ build --clean
 - "Failed to detect the platform, use --platform to choose one." This machine's platform or architecture isn't one GD++ supports, so name the target.
 - "Invalid arguments: \"x\" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64."
 - "Invalid arguments: \"a-b\" is not a valid group name." A --trace or --profile group isn't a name.
-- "Invalid arguments: --profile-print needs --profile.", "--profile-period needs --profile-print." and "--profile-fps needs --profile-print." The option does nothing without the other one.
-- "Invalid arguments: --profile-period must be positive."
+- "Invalid arguments: --print needs --profile.", "--period needs --print." and "--fps needs --print." The option does nothing without the other one.
+- "Invalid arguments: --period must be positive."
 - An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
 - "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
 - "Class X is declared in FILE and in gd++pkg.toml." A GD++ class and a C++ class have the same name.

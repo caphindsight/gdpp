@@ -13,7 +13,7 @@ class Pool : public Node {
 
 protected:
 	static void _bind_methods();
-	void _notification(int what);
+	void _notification(int WHAT);
 };
 #undef This
 

@@ -107,11 +107,11 @@ notif(PREDELETE) {
 }
 
 notif(ENTER_TREE, EXIT_TREE) {
-  gd::print(what == NOTIFICATION_ENTER_TREE ? "Entered the tree." : "Left the tree.");
+  gd::print(WHAT == NOTIFICATION_ENTER_TREE ? "Entered the tree." : "Left the tree.");
 }
 ```
 
-Write the names without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. Object's `POSTINITIALIZE` and `PREDELETE`, and Node's `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `what`, an int, is the notification that it's handling.
+Write the names without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. Object's `POSTINITIALIZE` and `PREDELETE`, and Node's `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `WHAT`, an int, is the notification that it's handling.
 
 A class can have any number of `notif` blocks, and a notification can be in more than one. When the object gets a notification, every block that lists it runs, in the order of the file. Each block runs on its own, so a `return` ends only that block.
 

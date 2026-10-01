@@ -13,6 +13,7 @@
 #include <mutex>
 #include <thread>
 #include <type_traits>
+#include <vector>
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
@@ -43,8 +44,9 @@ typedef double float64_t;
 using gd = godot::UtilityFunctions;
 
 // GDPP_STRING_NAME("name") is the StringName name, created on first use and reused after, like the engine's SNAME.
-// Calls by name use it, so they don't intern the name, which locks a global mutex, on every call.
-#define GDPP_STRING_NAME(m_name) ([]() -> const godot::StringName & { static const godot::StringName name(m_name, true); return name; })()
+// Calls by name use it, so they don't intern the name, which locks a global mutex, on every call. Unlike SNAME, it
+// isn't a static StringName: those keep pointing to the literal, which hot reload unloads with the library.
+#define GDPP_STRING_NAME(m_name) ([]() -> const godot::StringName & { static const godot::StringName name(m_name); return name; })()
 
 namespace gdpp {
 
@@ -322,6 +324,28 @@ inline std::atomic<int64_t> quit_deadline_usec = 0; // When the quit timeout run
 inline std::atomic<int64_t> running_tasks = 0; // The package's tasks whose jobs are running.
 inline thread_local const std::atomic<bool> *current_cancel = nullptr; // The cancel flag of this thread's task.
 
+// The package's hooks into the engine that call its library's code, e.g. signal connections, which uninitialize
+// removes: after a hot reload, the engine would call the unloaded code.
+inline std::mutex unhooks_mutex;
+inline std::vector<std::function<void()>> unhooks;
+
+// on_unload makes uninitialize call p_unhook.
+inline void on_unload(std::function<void()> p_unhook) {
+	std::lock_guard<std::mutex> lock(unhooks_mutex);
+	unhooks.push_back(std::move(p_unhook));
+}
+
+// connect_until_unload connects p_signal of p_object to p_callable, until the library is unloaded.
+inline void connect_until_unload(Object *p_object, const StringName &p_signal, const Callable &p_callable) {
+	p_object->connect(p_signal, p_callable);
+	on_unload([id = p_object->get_instance_id(), p_signal, p_callable] {
+		Object *object = ObjectDB::get_instance(id);
+		if (object && object->is_connected(p_signal, p_callable)) {
+			object->disconnect(p_signal, p_callable);
+		}
+	});
+}
+
 inline int64_t now_usec() {
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
@@ -344,7 +368,7 @@ inline void begin_quit() {
 inline void watch_quit() {
 	SceneTree *tree = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
 	if (tree && tree->get_root()) {
-		tree->get_root()->connect("tree_exiting", callable_mp_static(&begin_quit));
+		connect_until_unload(tree->get_root(), "tree_exiting", callable_mp_static(&begin_quit));
 	}
 }
 
@@ -368,6 +392,17 @@ void await_quit(F p_done) {
 inline void finish_tasks() {
 	begin_quit();
 	await_quit([] { return running_tasks.load() == 0; });
+}
+
+// uninitialize prepares the package's library to be unloaded: it waits for the package's running tasks, and removes
+// its hooks. The package's generated registration code calls it.
+inline void uninitialize() {
+	finish_tasks();
+	std::lock_guard<std::mutex> lock(unhooks_mutex);
+	for (const std::function<void()> &unhook : unhooks) {
+		unhook();
+	}
+	unhooks.clear();
 }
 
 // TaskCallable is a Callable that runs a function once, returns its result, and then frees it.
@@ -1272,6 +1307,11 @@ inline ProfileStats::ProfileStats(const char *p_name, int64_t p_print_seconds, i
 	String id = "GD++/" + String(p_name) + " (ms)";
 	if (!Performance::get_singleton()->has_custom_monitor(id)) {
 		Performance::get_singleton()->add_custom_monitor(id, callable_mp_static(&profile_monitor), index);
+		on_unload([id] {
+			if (Performance::get_singleton()->has_custom_monitor(id)) {
+				Performance::get_singleton()->remove_custom_monitor(id);
+			}
+		});
 	}
 	SceneTree *tree = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
 	if (p_print_seconds > 0 && !p.print_every && tree) {
@@ -1279,7 +1319,7 @@ inline ProfileStats::ProfileStats(const char *p_name, int64_t p_print_seconds, i
 		p.fps = p_fps;
 		p.printed_at = now();
 		p.printed_frame = Engine::get_singleton()->get_process_frames();
-		tree->connect("process_frame", callable_mp_static(&profile_tick));
+		connect_until_unload(tree, "process_frame", callable_mp_static(&profile_tick));
 	}
 }
 
