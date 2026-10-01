@@ -170,9 +170,10 @@ GD++ is ready to be used, but it's still experimental, and comes with **absolute
 
 Each package chooses its syntax version in its `gd++pkg.toml`.
 
-## Similar projects
+## See also
 
-[Godot Object Compiler](https://github.com/LucaTuerk/godot-object-compiler) also generates the boilerplate of GDExtensions, from macros in plain C++ code.
+- [gdpp-vim](https://github.com/caphindsight/gdpp-vim): Vim bindings for GD++.
+- [Godot Object Compiler](https://github.com/LucaTuerk/godot-object-compiler): a similar project, which generates the boilerplate of GDExtensions from macros in plain C++ code.
 
 ## License and credits
 
