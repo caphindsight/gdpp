@@ -14,33 +14,7 @@ GD++ comes as one command line tool, `gd++`: the compiler, plus a small build sy
 
 ## A first look
 
-```gdscript
-/// The player's character.
-class_name Player
-extends CharacterBody3D
-
-signal died
-
-@export_range(0, 100, 1)
-var health: int = 100
-
-@export
-var speed: float = 5.0
-
-func hurt(amount: int) -> void {
-  health -= amount;
-  if (health <= 0) {
-    emit died();
-  }
-}
-
-@override
-func _physics_process(delta: float) -> void {
-  Vector2 input = Input::get_singleton()->get_vector("ui_left", "ui_right", "ui_up", "ui_down");
-  set_velocity(Vector3(input.x, 0, input.y) * speed);
-  move_and_slide();
-}
-```
+<a href="readme/player.gd++"><img src="readme/player.svg" alt="GD++ code: the Player class"></a>
 
 Save it as `player.gd++` anywhere in a Godot project, and run:
 
@@ -100,89 +74,27 @@ GD++ is not GDScript: blocks use braces, not indentation, function bodies are C+
 
 ### Functions
 
-```gdscript
-func greet(name: String, times: int = 1) -> void {
-  for (int64_t i = 0; i < times; i++) {
-    gd::print("Hello, ", name, "!");
-  }
-}
-
-@override
-func _ready() -> void {
-  greet("world");
-}
-```
+<a href="readme/functions.gd++"><img src="readme/functions.svg" alt="GD++ code: functions"></a>
 
 The signature is GD++, and the body is C++. GD++ binds the function, so GDScript can call it too. `gd` is short for `UtilityFunctions`, Godot's global functions.
 
 ### Variables and properties
 
-```gdscript
-@export var speed: float = 5.0
-
-@onready var camera: Camera3D = get_node<Camera3D>("Camera")
-
-var ammo: int {
-  decl {
-    int64_t ammo_ = 0;
-  }
-  get {
-    return ammo_;
-  }
-  set(value) {
-    ammo_ = value < 0 ? 0 : value;
-  }
-}
-```
+<a href="readme/variables.gd++"><img src="readme/variables.svg" alt="GD++ code: variables and properties"></a>
 
 ### Signals, enums and casts
 
-```gdscript
-signal health_changed(health: int)
-
-enum Suit { DIAMONDS, CLUBS, SPADES, HEARTS }
-enum MAX_PLAYERS = 4
-
-func _on_body_entered(body: Node3D) -> void {
-  Player *player = body as Player *;   // null if body isn't a Player
-  if (player) {
-    player->hurt(10);
-    emit health_changed(player->health);
-  }
-}
-```
+<a href="readme/signals.gd++"><img src="readme/signals.svg" alt="GD++ code: signals, enums and casts"></a>
 
 ### Work on other threads
 
-```gdscript
-var pending: Async[PackedVector2Array]
-
-@onthread
-func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
-  PackedVector2Array path;
-  // ... a long search, on a worker thread ...
-  return path;
-}
-
-@override
-func _process(delta: float) -> void {
-  if (is_done pending) {
-    follow(claim pending);
-    pending = find_path(get_position(), target);
-  }
-}
-```
+<a href="readme/threads.gd++"><img src="readme/threads.svg" alt="GD++ code: an @onthread function"></a>
 
 A call to an `@onthread` function returns right away, with an `Async` task that holds the result once it's ready. No frame waits for the search.
 
 ### Inline classes
 
-```gdscript
-class Bullet {
-  extends Area3D
-  var damage: int = 10
-}
-```
+<a href="readme/classes.gd++"><img src="readme/classes.svg" alt="GD++ code: an inline class"></a>
 
 A file can hold any number of classes. `@tool` runs a class's code in the editor too, and `@icon("res://player.svg")` gives it an icon.
 

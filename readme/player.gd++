@@ -1,0 +1,25 @@
+/// The player's character.
+class_name Player
+extends CharacterBody3D
+
+signal died
+
+@export_range(0, 100, 1)
+var health: int = 100
+
+@export
+var speed: float = 5.0
+
+func hurt(amount: int) -> void {
+  health -= amount;
+  if (health <= 0) {
+    emit died();
+  }
+}
+
+@override
+func _physics_process(delta: float) -> void {
+  Vector2 input = Input::get_singleton()->get_vector("ui_left", "ui_right", "ui_up", "ui_down");
+  set_velocity(Vector3(input.x, 0, input.y) * speed);
+  move_and_slide();
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="217" height="109" viewBox="0 0 217 109">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
+  <text y="30"><tspan x="16.0" textLength="42.0" fill="#e3b341">class</tspan><tspan x="66.4" textLength="50.4" fill="#7ee787">Bullet</tspan><tspan x="125.2" textLength="8.4" fill="#e6edf3">{</tspan></text>
+  <text y="50"><tspan x="32.8" textLength="58.8" fill="#e3b341">extends</tspan><tspan x="100.0" textLength="50.4" fill="#7ee787">Area3D</tspan></text>
+  <text y="70"><tspan x="32.8" textLength="25.2" fill="#e3b341">var</tspan><tspan x="66.4" textLength="67.2" fill="#e6edf3">damage: </tspan><tspan x="133.6" textLength="25.2" fill="#7ee787">int</tspan><tspan x="167.2" textLength="16.8" fill="#e6edf3">= </tspan><tspan x="184.0" textLength="16.8" fill="#d2a8ff">10</tspan></text>
+  <text y="90"><tspan x="16.0" textLength="8.4" fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>

@@ -1,0 +1,15 @@
+@export var speed: float = 5.0
+
+@onready var camera: Camera3D = get_node<Camera3D>("Camera")
+
+var ammo: int {
+  decl {
+    int64_t ammo_ = 0;
+  }
+  get {
+    return ammo_;
+  }
+  set(value) {
+    ammo_ = value < 0 ? 0 : value;
+  }
+}
