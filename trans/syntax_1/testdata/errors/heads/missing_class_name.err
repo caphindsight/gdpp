@@ -1,0 +1,3 @@
+errors/heads/missing_class_name.gd++:1:7: Expected a class name after "class", but found "{".
+ 1 | class {
+   |       ^

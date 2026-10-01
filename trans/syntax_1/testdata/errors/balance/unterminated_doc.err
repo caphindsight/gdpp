@@ -1,0 +1,4 @@
+errors/balance/unterminated_doc.gd++:1:1: This doc comment is never closed.
+ 1 | /** Doc.
+   | ^^
+Hint: Block comments nest in GD++, so every "/*" inside a comment needs its own "*/".

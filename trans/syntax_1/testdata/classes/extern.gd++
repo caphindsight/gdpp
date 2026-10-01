@@ -1,0 +1,7 @@
+extern Terrain {
+  extends Node
+  @const func height(x: float, z: float) -> float
+  @deferred func rebuild() -> void
+  var size: int
+  signal done(a: bool, b: int)
+}

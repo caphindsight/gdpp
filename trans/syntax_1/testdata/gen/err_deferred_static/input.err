@@ -1,0 +1,3 @@
+input.gd++:4:1: Annotations @static and @deferred can't be used together.
+ 4 | @deferred @static
+   | ^^^^^^^^^

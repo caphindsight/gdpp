@@ -1,0 +1,4 @@
+input.gd++:2:22: Enum B has two values named X.
+ 2 | enum B { extends A Y X }
+   |                      ^
+Hint: It inherits X from A.

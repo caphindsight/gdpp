@@ -1,0 +1,2 @@
+class_name Test
+var s: String = "// not a comment"

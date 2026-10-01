@@ -1,0 +1,21 @@
+class_name Brain
+extends Node
+
+@virtual
+func _think(delta: float) -> int {
+  return 0;
+}
+
+@virtual
+func _idle() -> String
+
+@virtual
+func _notify(what: int)
+
+@virtual @const
+func _score() -> float {
+  return 1.0;
+}
+
+@virtual
+func _done() -> void {}

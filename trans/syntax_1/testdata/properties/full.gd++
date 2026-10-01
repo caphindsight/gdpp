@@ -1,0 +1,8 @@
+class_name Test
+var x: int {
+  decl { int64_t x_ = 0; }
+  get { return x_; }
+  set(val) {
+    x_ = val;
+  }
+}

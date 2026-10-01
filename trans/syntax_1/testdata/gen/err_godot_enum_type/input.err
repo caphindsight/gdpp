@@ -1,0 +1,4 @@
+input.gd++:2:10: Error is not a GD++ type.
+ 2 |   var e: Error
+   |          ^^^^^
+Hint: Use int, or redefine it as a GD++ enum: "enum MyError { extends Error }".

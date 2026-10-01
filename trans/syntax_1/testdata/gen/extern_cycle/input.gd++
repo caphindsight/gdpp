@@ -1,0 +1,21 @@
+// Externs that use each other in signatures only need forward declarations, so their headers can include each other.
+extern A {
+  extends Node
+  var peer: B
+  func b() -> B
+}
+
+extern B {
+  extends RefCounted
+  func a(x: A) -> A
+  signal found(a: A)
+}
+
+// Fields of extern types only need the extern declared too.
+class User {
+  extends Node
+  var a: A
+  func b() -> B {
+    return nullptr;
+  }
+}

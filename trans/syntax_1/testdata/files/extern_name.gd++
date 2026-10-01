@@ -1,0 +1,5 @@
+extern_name Terrain
+extends Node
+
+func foo() -> void
+signal done

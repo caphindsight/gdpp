@@ -1,0 +1,192 @@
+Variables: var, initial values, @onready, and properties with get and set
+
+A variable is a property of its class that Godot knows: GDScript can read and write it, e.g. player.speed = 3.0, and with an export annotation, the inspector shows it and scenes save it. There are two kinds: simple variables, which GD++ stores for you, and properties, with your own getter and setter. Under the hood, they're the same.
+
+# Simple variables
+
+```gd++
+var health: int
+var speed: float = 5.0
+var target: Node3D
+var anything
+```
+
+`var name: Type`, with an optional initial value after "=". Without a type, the variable is a Variant. See `gd++ man types`.
+
+For each simple variable, GD++ generates:
+
+- a public field of the C++ class, with the variable's name and C++ type, e.g. `int64_t health{};`, which your C++ code reads and writes directly,
+- a getter, `int64_t get_health() const;`, and a setter, `void set_health(int64_t p_value);`, public methods which Godot calls,
+- the binding of both in _bind_methods, and the property that uses them.
+
+Without an initial value, a field starts as its type's default: 0, 0.0, false, an empty String, a zero vector, nullptr, a null reference, and so on.
+
+```gd++
+func heal() -> void {
+  health = 100;           // C++ code uses the field directly.
+}
+```
+
+In GDScript, `player.health = 50` calls set_health, and `player.health` calls get_health.
+
+# Initial values
+
+The initial value is C++: an expression to the end of the line, which can continue on the next lines while a bracket is open, or a block of C++ that returns the value:
+
+```gd++
+var count: int = 3
+var spawn_point: Vector3 = Vector3(0, 2, 0)
+var total: int = compute(1,
+  2)
+
+var weights: PackedFloat32Array = {
+  PackedFloat32Array w;
+  w.push_back(0.5);
+  w.push_back(1.5);
+  return w;
+}
+```
+
+For a variable of a GD++ enum type, the initial value can also be one of the enum's values, e.g. `var trump: Suit = HEARTS`, or for a bitfield, several combined, e.g. `var mask: Layer = WORLD | PLAYER`. See `gd++ man enums`.
+
+GD++ assigns initial values in the constructor, in the order of the declarations, before the body of your ctor. A block becomes a lambda that is called right away, so it can use the object, this, and its other fields. See `gd++ man lifecycle`.
+
+# @onready
+
+```gd++
+@onready
+var camera: Camera3D = get_node<Camera3D>("Camera")
+
+@onready
+var marker: Node3D = {
+  Node3D *res = memnew(Node3D);
+  add_child(res);
+  return res;
+}
+```
+
+@onready assigns the initial value at the start of _ready instead of in the constructor, like in GDScript. That's when the node's children exist, so get_node works. If the class doesn't override _ready, GD++ adds an override that only does this; if it does, the initializers run before your code. Without an initial value, @onready does nothing.
+
+# Properties
+
+A property has its own getter and setter, e.g. to check values, or to compute them:
+
+```gd++
+var ammo: int {
+  decl {
+    int64_t ammo_ = 0;
+  }
+  get {
+    return ammo_;
+  }
+  set(value) {
+    ammo_ = value < 0 ? 0 : value;
+  }
+}
+```
+
+The braces after the type hold three kinds of blocks, in any order:
+
+decl { ... }
+  C++ declarations that go into the private section of the class, typically the field that stores the value. A property has no field of its own: without a decl block, it stores nothing. Any number of decl blocks are allowed.
+
+get { ... }
+  The body of the getter, `int64_t get_ammo() const`, which returns the value. Required, since Godot doesn't support properties that can only be set. It's a const method, so it can't change fields, except mutable ones.
+
+set(NAME) { ... }
+  The body of the setter, `void set_ammo(int64_t value)`, whose parameter is called NAME. Optional: without it, the property is read-only, and Godot can't set it. The parameter's type can be left out, since it's the property's type; if you write it, it must be the same type.
+
+A property can't have an initial value: initialize its storage in its decl block, or in the ctor.
+
+A read-only, computed property:
+
+```gd++
+var is_dead: bool {
+  get {
+    return health <= 0;
+  }
+}
+```
+
+Inside the class, C++ code calls the getter and setter like any method, e.g. set_ammo(10), or uses the storage directly.
+
+# Names
+
+A variable x declares three names in its class: x, get_x and set_x, even for a read-only property. They must not clash with other members:
+
+```gd++
+var speed: float
+func get_speed() -> float { ... }     // error: get_speed is taken
+```
+
+# Visibility in Godot
+
+Every variable is a property in Godot, so GDScript can get and set it by name. But only exported variables show up in the inspector, and are saved in scenes and resources:
+
+```gd++
+@export var health: int           // in the inspector, saved
+@export_storage var rng_seed: int // saved, but not in the inspector
+var cache: int                    // neither: only for code
+```
+
+See `gd++ man exports`.
+
+# Annotations
+
+Variables take @onready, one export annotation, and the section annotations @export_category, @export_group and @export_subgroup. See `gd++ man exports` and `gd++ man annotations`. A doc comment before a variable becomes its description in the editor's help, see `gd++ man docs`.
+
+For debugging, variables also take @trace and @profile:
+
+```gd++
+@trace
+var health: int = 100
+
+@profile
+var path_length: float {
+  get { return compute_path_length(); }
+}
+```
+
+In builds with `--trace Player` (the class's name) or `--trace all`, @trace prints every change of health, and which function of the class made it, e.g. `Player "Hero".health: 100 → 70  (in take_damage)`. It's the quickest way to find out who changes a value. In builds with `--profile Player`, @profile times the getter and setter, here get_path_length. In other builds, they generate nothing. See `gd++ man debugging`.
+
+# Examples
+
+```gd++
+class_name Character
+extends CharacterBody3D
+
+/// Hit points, from 0 to max_health.
+@export_range(0, 1000, 1)
+var health: int = 100
+
+@export
+var max_health: int = 100
+
+@onready
+var sprite: Sprite3D = get_node<Sprite3D>("Sprite")
+
+/// Health as a fraction of max_health, from 0 to 1.
+var health_ratio: float {
+  get {
+    return max_health > 0 ? double(health) / max_health : 0.0;
+  }
+}
+
+/// The character's name, never empty.
+@export
+var title: String {
+  decl {
+    String title_ = "Nameless";
+  }
+  get {
+    return title_;
+  }
+  set(value) {
+    title_ = value.is_empty() ? String("Nameless") : value;
+  }
+}
+```
+
+# See also
+
+`gd++ man exports`, `gd++ man types`, `gd++ man lifecycle`, `gd++ man generated`, `gd++ man debugging`.

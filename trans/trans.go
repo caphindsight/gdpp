@@ -3,9 +3,11 @@ package trans
 
 import (
 	"fmt"
+	"sort"
 
 	"gd++/trans/meta"
 	"gd++/trans/syntax_0"
+	"gd++/trans/syntax_1"
 )
 
 type (
@@ -41,9 +43,33 @@ type fork struct {
 	runtimeText   string
 }
 
+// Syntax 0 is nightly: it may break code at any time. Every other syntax is a stable snapshot.
 var forks = map[int]fork{
 	0: {syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.DocumentBuiltinClasses, syntax_0.Generate,
 		syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
+	1: {syntax_1.ListClasses, syntax_1.DocumentClass, syntax_1.DocumentBuiltinClasses, syntax_1.Generate,
+		syntax_1.RuntimeHeaderName, syntax_1.RuntimeHeader},
+}
+
+const (
+	NightlySyntax = 0
+	LatestSyntax  = 1 // The latest stable syntax.
+)
+
+// Syntaxes returns the syntax versions that this version of GD++ supports, in order.
+func Syntaxes() []int {
+	var syntaxes []int
+	for s := range forks {
+		syntaxes = append(syntaxes, s)
+	}
+	sort.Ints(syntaxes)
+	return syntaxes
+}
+
+// Supports reports whether this version of GD++ supports syntax.
+func Supports(syntax int) bool {
+	_, ok := forks[syntax]
+	return ok
 }
 
 // get returns the fork for syntax.

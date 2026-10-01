@@ -1,0 +1,22 @@
+class_name Board
+extends Node
+
+/// Node.ProcessMode, plus one.
+enum Mode {
+  extends Node.ProcessMode
+  /// Processes in the editor only.
+  EDITOR
+}
+
+enum Base { A B = 10 }
+enum Derived { extends Base C D = 20 E }
+enum Twice { extends Derived F }
+enum Hard { extends Difficulty EXTREME }
+enum Result { extends Error }
+
+var mode: Mode
+var hard: Hard
+
+func finish(result: Result) -> void {
+  set_process_mode(static_cast<Node::ProcessMode>(mode));
+}

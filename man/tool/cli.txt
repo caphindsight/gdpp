@@ -57,6 +57,9 @@ These options work with every command. They can go before or after the command n
 --version
   Print the version of GD++ and exit, e.g. "nightly". Can't be used with a command.
 
+--syntax
+  Print the GD++ syntax versions that this gd++ supports, marking the nightly and the latest stable one, and exit. Can't be used with other arguments. Commands that take --syntax N, e.g. `gd++ init`, use it to choose a version instead. See "Syntax versions" in `gd++ man packages`.
+
 -h, --help
   Print help and exit.
 

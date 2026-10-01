@@ -1,0 +1,2 @@
+class_name Test
+var x = 5 + 3 * y

@@ -1,0 +1,5 @@
+class_name SlidingGate
+extends Gate
+
+@virtual
+func _open() -> bool

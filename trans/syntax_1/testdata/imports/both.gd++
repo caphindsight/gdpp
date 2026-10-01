@@ -1,0 +1,4 @@
+class_name Foo
+import A
+noimport B
+import C

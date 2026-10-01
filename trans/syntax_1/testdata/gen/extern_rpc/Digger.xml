@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Digger" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="use">
+			<return type="void" />
+			<param index="0" name="peer" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="terrain" type="Terrain2" setter="set_terrain" getter="get_terrain">
+		</member>
+	</members>
+</class>

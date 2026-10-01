@@ -1,0 +1,4 @@
+input.gd++:2:20: Extern functions can't have a body.
+ 2 |   func f() -> void {}
+   |                    ^
+Hint: Externs only declare what another package defines.

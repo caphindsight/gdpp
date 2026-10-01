@@ -1,0 +1,3 @@
+input.gd++:2:18: Enum B depends on itself, through its base or its values.
+ 2 | enum B { extends A Y }
+   |                  ^

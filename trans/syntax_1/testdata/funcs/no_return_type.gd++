@@ -1,0 +1,4 @@
+class_name Test
+func f(a) {
+  return a;
+}

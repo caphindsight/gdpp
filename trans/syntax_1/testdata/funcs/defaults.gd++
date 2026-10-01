@@ -1,0 +1,8 @@
+class_name Test
+func f(a: int = 1, b: String = "x, y", c: Vector2 = Vector2(1, 2), d = {
+  return 5;
+}) -> void {}
+func g(
+  a: int = 1,
+  b: int = 2
+) -> void {}

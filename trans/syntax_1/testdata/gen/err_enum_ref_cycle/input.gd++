@@ -1,0 +1,2 @@
+enum A { X = B.Y }
+enum B { Y = A.X }

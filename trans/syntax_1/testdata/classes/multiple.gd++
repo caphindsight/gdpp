@@ -1,0 +1,3 @@
+class A { extends Node }
+class B { extends A }
+class C {}

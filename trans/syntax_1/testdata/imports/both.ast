@@ -1,0 +1,10 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Foo
+    Members:
+      - @2:1
+        Import: @2:8 A
+      - @3:1
+        NoImport: @3:10 B
+      - @4:1
+        Import: @4:8 C

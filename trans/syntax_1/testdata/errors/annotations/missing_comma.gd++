@@ -1,0 +1,2 @@
+@export_range(0 100)
+var x: int

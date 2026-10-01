@@ -1,0 +1,4 @@
+errors/typos/improt.gd++:1:1: Expected a declaration, but found name "improt".
+ 1 | improt Foo
+   | ^^^^^^
+Hint: Did you mean "import"?

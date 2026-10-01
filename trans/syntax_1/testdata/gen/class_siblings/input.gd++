@@ -1,0 +1,27 @@
+// Siblings use each other: B needs A complete as its base, A only needs B declared.
+class A {
+  extends Node
+  var b: B
+  func make_c() -> C {
+    return memnew(C);
+  }
+}
+
+class B {
+  extends A
+  var suit: Suit
+}
+
+class C {
+  extends RefCounted
+  func a() -> A {
+    return nullptr;
+  }
+}
+
+enum Suit { HEARTS, SPADES }
+
+extern Far {
+  extends Node
+  func b() -> B
+}

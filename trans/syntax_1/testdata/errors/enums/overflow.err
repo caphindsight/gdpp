@@ -1,0 +1,4 @@
+errors/enums/overflow.gd++:1:10: The value 99999999999999999999 does not fit in a 64-bit integer.
+ 1 | enum X = 99999999999999999999
+   |          ^^^^^^^^^^^^^^^^^^^^
+Hint: Enum values must be between -9223372036854775808 and 9223372036854775807.

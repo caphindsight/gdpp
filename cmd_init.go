@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"gd++/trans"
 )
 
 // CmdInit sets up GD++ in a project, or creates or updates a package. With
@@ -18,6 +20,7 @@ type CmdInit struct {
 	Bind        string   `arg:"--bind" placeholder:"NAME" help:"the package's Godot C++ bindings"`
 	Spec        string   `arg:"--spec" placeholder:"NAME" help:"the package's Godot API spec"`
 	Syntax      *int     `arg:"--syntax" placeholder:"N" help:"the package's GD++ syntax version"`
+	Nightly     bool     `arg:"--nightly" help:"the same as --syntax 0, the nightly syntax"`
 	Std         string   `arg:"--std" placeholder:"STD" help:"the package's C++ standard, e.g. c++20"`
 	Prefix      string   `arg:"--prefix" placeholder:"NAME" help:"the prefix of the classes GD++ adds to the package, e.g. Foo for FooAsync [default: the package directory's name in PascalCase]"`
 	QuitTimeout *float64 `arg:"--quit-timeout" placeholder:"SECONDS" help:"how long the package's tasks may still run after the game started quitting, before it exits anyway [default: 1]"`
@@ -31,6 +34,7 @@ type CmdInit struct {
 }
 
 func (c *CmdInit) Run() {
+	c.Syntax = chosenSyntax(c.Syntax, c.Nightly)
 	if c.Path == "" {
 		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && c.Class == "",
 			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path.")
@@ -53,6 +57,14 @@ func (c *CmdInit) Run() {
 	}
 	Assert(c.Prefix == "" || classNameRegexp.MatchString(c.Prefix), "Invalid arguments: %q is not a valid class name prefix.", c.Prefix)
 	Assert(c.QuitTimeout == nil || *c.QuitTimeout >= 0, "Invalid arguments: --quit-timeout cannot be negative.")
+	if s := c.Syntax; s != nil {
+		Assert(*s >= 0, "Invalid arguments: --syntax cannot be negative.")
+		if *s == trans.NightlySyntax {
+			LogWarn("Syntax %d is reserved for the nightly version of GD++, which is explicitly not backward compatible: never use it in production!", *s)
+		} else if !trans.Supports(*s) {
+			Confirm("Unknown GD++ syntax %d: either the value is wrong, or this version of gd++ is outdated. Continue?", *s)
+		}
+	}
 	root := ParsePath(c.Path)
 	p := LoadProject(root)
 	switch {
@@ -111,6 +123,7 @@ func (c *CmdInit) initProject() {
 func (c *CmdInit) newPackage(p Project, root Path) {
 	Assert(c.Bind != "" && c.Spec != "", "Invalid arguments: --bind and --spec are required for a new package.")
 	config := DefaultPackageConfig()
+	config.Syntax = trans.LatestSyntax
 	c.setPackageFlags(&config)
 	if !root.Exists() {
 		root.CreateDirectory()

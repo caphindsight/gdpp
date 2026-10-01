@@ -1,0 +1,4 @@
+errors/heads/class_name_braces.gd++:1:16: Unexpected "{".
+ 1 | class_name Foo {
+   |                ^
+Hint: The file-level class declared with "class_name" has no braces: its body is the rest of the file. Use "class Name { ... }" for an inline class.

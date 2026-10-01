@@ -1,0 +1,4 @@
+errors/annotations/unclosed_args.gd++:1:14: This "(" is never closed.
+ 1 | @export_range(0, 100
+   |              ^
+Hint: Add a matching ")".

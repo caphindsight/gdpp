@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Pathfinder" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="count" qualifiers="const">
+			<return type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+		<method name="done">
+			<return type="bool" />
+			<param index="0" name="task" type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+		<method name="find_path">
+			<return type="GdppAsync" />
+			<param index="0" name="from" type="Vector2" />
+			<param index="1" name="to" type="Vector2" />
+			<param index="2" name="steps" type="int" default="10" />
+			<description>
+				Finds a path in the background.
+			</description>
+		</method>
+		<method name="follow">
+			<return type="GdppAsync" />
+			<param index="0" name="path" type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+		<method name="poll">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="search">
+			<return type="GdppAsync" />
+			<param index="0" name="steps" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="terrain_at">
+			<return type="GdppAsync" />
+			<param index="0" name="at" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="untyped">
+			<return type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+		<method name="warm_up" qualifiers="static">
+			<return type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="anything" type="GdppAsync" setter="set_anything" getter="get_anything">
+		</member>
+		<member name="pending" type="GdppAsync" setter="set_pending" getter="get_pending">
+		</member>
+	</members>
+	<signals>
+		<signal name="found">
+			<param index="0" name="path" type="GdppAsync" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="TERRAIN_GRASS" value="0" enum="Terrain">
+		</constant>
+		<constant name="TERRAIN_WATER" value="1" enum="Terrain">
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,4 @@
+errors/vars/walrus.gd++:1:8: Expected a type after ":", but found "=".
+ 1 | var x := 5
+   |        ^
+Hint: GD++ does not infer types, so ":=" is not supported. Write the type, as in "var x: int = 5", or leave out the ":" to get a Variant.

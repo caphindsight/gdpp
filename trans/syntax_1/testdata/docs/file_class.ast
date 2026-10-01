@@ -1,0 +1,7 @@
+File: @1:1
+  FileClass: @3:1
+    Doc: @1:1 The class.
+    Annotations:
+      - @2:1 tool
+    Name: Foo
+    Extends: @4:9 Node

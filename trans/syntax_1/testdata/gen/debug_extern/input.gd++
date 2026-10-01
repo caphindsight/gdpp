@@ -1,0 +1,22 @@
+class_name User
+extends Node
+
+@trace
+extern Terrain {
+  extends Node3D
+  @profile func height(x: float, z: float) -> float
+  @deferred func rebuild() -> void
+  var size: int
+  signal changed(ok: bool)
+}
+
+@profile("net")
+extern Lobby {
+  extends Node
+  func join(name: String) -> void
+  @deferred func leave() -> void
+  var players: int
+  @trace signal joined
+}
+
+@export var terrain: Terrain

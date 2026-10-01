@@ -1,0 +1,5 @@
+class_name Stub
+
+func a() -> int
+func b() -> void
+func c()

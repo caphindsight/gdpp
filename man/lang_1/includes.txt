@@ -1,0 +1,97 @@
+Includes: how GD++ writes #include lines, and import and noimport
+
+In GD++ you don't write #include lines. GD++ knows which header declares each name of godot-cpp and of your package, finds the names your code uses, and includes their headers. To use a class, just use it. This page explains how that works, and what to do in the rare cases where it doesn't.
+
+# Where the names come from
+
+Before transpiling a package, GD++ scans every header of the package's godot-cpp, the hand-written ones and the ones generated from the API spec, and lists every name declared directly in namespace godot: classes, structs, enums, aliases, templates, functions and variables, each with its header. E.g.:
+
+```
+Node3D           <godot_cpp/classes/node3d.hpp>
+TypedArray       <godot_cpp/variant/typed_array.hpp>
+UtilityFunctions <godot_cpp/variant/utility_functions.hpp>
+memnew           <godot_cpp/core/memory.hpp>
+```
+
+It adds the classes, externs and enums of the package's GD++ files, each with its generated header, e.g. "Player.h". The list is cached in the package's build cache. `gd++ doc NAME` shows the header of a name. See `gd++ man doc` and `gd++ man build-cache`.
+
+# Which names are included
+
+GD++ reads every identifier in a class, and includes the header of each one it knows:
+
+- In the class's header: the base class, the types in the class's API (variables, function parameters and return values, signal parameters), imported names, and every identifier in decl and @global decl blocks, and in the decl blocks of properties.
+- In the class's source file: every identifier in function bodies, default values, initial values, `get` and `set` blocks, `ctor`, `dtor` and `notif` blocks, and `impl` and `@global impl` blocks, unless the header includes it already.
+
+So using a class anywhere, even only in code, e.g. `node as MeshInstance3D *` or `memnew(Timer)`, includes it. The match is by name only: a variable of yours named like a Godot class includes that class too, which is harmless.
+
+Every generated file also includes the GD++ runtime header, which includes godot-cpp's core headers and a few basic classes, e.g. Object, Node, RefCounted, Resource and Engine. See `gd++ man runtime`.
+
+# GD++ classes and cycles
+
+GD++ files can use each other freely, even in cycles: Player can have a var of type Enemy, and Enemy one of type Player. In headers, GD++ declares other GD++ classes, externs and enums ahead (class Enemy; or enum class Suit : int64_t;), and includes their headers at the end, which breaks the cycle. A name must be complete earlier when the header needs its definition: the base class, the types of @virtual functions, and names in decl blocks. Those are included at the top.
+
+This is why fields of GD++ class types in decl blocks can create include cycles that don't compile: prefer pointers, and variables declared with var.
+
+# import
+
+```gd++
+import MeshInstance3D
+```
+
+import forces the header of a name into the class's header, even if the class doesn't seem to use it. It goes in a class body, like a member.
+
+It's needed when code uses a class without ever writing its name, which only happens through auto, templates or macros:
+
+```gd++
+import StandardMaterial3D
+
+func tint(mesh: MeshInstance3D) -> void {
+  auto material = mesh->get_active_material(0);                    // Ref<Material>
+  auto standard = material as Ref<StandardMaterial3D>;
+  ...
+}
+```
+
+Here, StandardMaterial3D is written, so it would be included anyway, but Material is only used through auto, so the compiler may complain about an incomplete type: then add `import Material`.
+
+For an enum, import also makes the class expose the enum to Godot. See `gd++ man enums`.
+
+Only classes, externs, enums and godot-cpp's other names can be imported. Built-in types, e.g. int or Vector3, can't, since their headers are always included:
+
+```out
+[×] res://a.gd++:3:8: Built-in type Vector3 can't be imported.
+     3 | import Vector3
+       |        ^^^^^^^
+    Hint: Only classes, externs and enums have includes.
+```
+
+# noimport
+
+```gd++
+noimport MeshInstance2D
+```
+
+noimport stops the class from including the header of a name, in its header and its source file, even if the class uses it. This almost always breaks compilation, but it's allowed, e.g. to include another version of a header yourself, or to work around a conflict.
+
+For an enum, noimport stops the class from exposing the enum to Godot, unless the class uses it in its API, which is an error. See `gd++ man enums`.
+
+# Including other headers
+
+For headers that GD++ doesn't know, e.g. the C++ standard library, other libraries, or the package's plain C++ headers, write #include in a @global decl block, or a @global impl block if only the source file needs it:
+
+```gd++
+@global decl {
+  #include <vector>
+  #include "src/pathfinding.h"
+}
+```
+
+Paths are relative to the package root, the project root, or the generated code's directory. See `gd++ man code` and `gd++ man packages`.
+
+# Outside of packages
+
+`gd++ trans` outside of a package knows only the names you declare with its flags, e.g. --object Node3D, or the classes of a spec, with --spec. See `gd++ man trans`.
+
+# See also
+
+`gd++ man code`, `gd++ man doc`, `gd++ man generated`.

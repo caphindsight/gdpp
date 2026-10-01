@@ -1,0 +1,9 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Var: @2:1
+          Name: n
+          Type: @2:8 Node3D
+          Init: @2:17 get_node<Node3D>("Child")

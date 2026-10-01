@@ -1,0 +1,4 @@
+errors/annotations/keyword_as_name.gd++:2:1: Expected an annotation name after "@", but found keyword "var".
+ 2 | var x: int
+   | ^^^
+Hint: "var" is a keyword, so it can't be used as a name.

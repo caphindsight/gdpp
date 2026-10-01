@@ -1,0 +1,4 @@
+input.gd++:1:54: Enum GeometryInstance3D.ShadowCastingSetting has no value SHADOW_CASTING_SETTING_OFF.
+ 1 | enum E { A = GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF }
+   |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hint: Write GeometryInstance3D.ShadowCastingSetting.OFF, or GeometryInstance3D.SHADOW_CASTING_SETTING_OFF as in GDScript.

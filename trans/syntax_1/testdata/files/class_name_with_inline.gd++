@@ -1,0 +1,7 @@
+class_name Foo
+
+class A {}
+var x: int
+extern B {}
+enum E { X }
+impl { int y; }

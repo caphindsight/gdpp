@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Stage" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="compute">
+			<return type="int" />
+			<param index="0" name="a" type="int" />
+			<param index="1" name="b" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="camera" type="Camera3D" setter="set_camera" getter="get_camera">
+		</member>
+		<member name="count" type="int" setter="set_count" getter="get_count">
+		</member>
+		<member name="ids" type="int[]" setter="set_ids" getter="get_ids">
+		</member>
+		<member name="mesh" type="MeshInstance3D" setter="set_mesh" getter="get_mesh">
+		</member>
+	</members>
+</class>

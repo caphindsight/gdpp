@@ -1,0 +1,6 @@
+class_name A
+
+var x: int
+func get_x() -> int {
+  return 0;
+}

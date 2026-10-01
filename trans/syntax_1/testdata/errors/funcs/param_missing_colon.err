@@ -1,0 +1,4 @@
+errors/funcs/param_missing_colon.gd++:1:10: Expected "," or ")" in the parameter list, but found name "int".
+ 1 | func f(a int) {}
+   |          ^^^
+Hint: Parameter types are written after a colon: "a: int".

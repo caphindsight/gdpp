@@ -1,0 +1,6 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        NoImport: @2:10 MeshInstance2D

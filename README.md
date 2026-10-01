@@ -66,7 +66,7 @@ This writes `my_package/gd++pkg.toml`:
 ```toml
 bind = "10.0.0-stable"  # The Godot C++ bindings (godot-cpp) to build with.
 spec = "4.7.2-stable"   # The Godot API spec: the Godot version to target.
-syntax = 0              # The GD++ language version.
+syntax = 1              # The GD++ language version.
 std = "c++20"           # The C++ standard.
 ```
 

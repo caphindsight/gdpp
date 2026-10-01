@@ -13,7 +13,7 @@ my_package/.gd++pkg/
   __register_types__.cpp    registers the package's classes with Godot
   godot_names.toml          what godot-cpp declares, for GD++
   gdpp/                     the C++ that GD++ generates from the GD++ files
-    gd++/syntax_0.hpp       the GD++ runtime header
+    gd++/syntax_N.hpp       the GD++ runtime header, for syntax N
     Player.h, Player.cpp    a header and a source per class
     Suit.h                  a header per enum and extern
     doc_classes/Player.xml  a class's documentation, in debug builds

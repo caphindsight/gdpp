@@ -1,0 +1,29 @@
+class_name Player
+extends Node
+
+enum Team { RED, BLUE }
+
+@rpc
+func ping() -> void {}
+
+@rpc("any_peer", "call_local", "reliable", 2)
+func take_damage(amount: int, from: Team) -> void {}
+
+@rpc("unreliable_ordered")
+func sync_position(pos: Vector3) -> int {
+  return 0;
+}
+
+func hit(peer: int, other: Player) -> void {
+  rpc ping();
+  rpc take_damage(10, Team::RED);
+  rpc(peer) take_damage(
+      5, Team::BLUE);
+  rpc(get_multiplayer()->get_unique_id()) ping();
+  rpc(0) ping();
+  rpc other->ping();
+  rpc(peer) other->ping();
+  rpc_id(1, "ping");
+  rpc("ping");
+  take_damage(1, Team::RED);
+}

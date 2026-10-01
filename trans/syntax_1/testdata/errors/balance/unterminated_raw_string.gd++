@@ -1,0 +1,3 @@
+func f() -> void {
+  auto s = R"x(abc)";
+}

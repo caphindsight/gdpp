@@ -1,0 +1,13 @@
+File: @1:1
+  FileClass: @1:1
+    Name: C
+    Members:
+      - @3:1
+        Code: @3:1
+          Decl: true
+          Body: @3:6
+            TextPos: 3:7
+            Text: |
+
+                #error don't
+

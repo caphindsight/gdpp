@@ -1,0 +1,6 @@
+class_name Foo
+
+func f() -> void {
+  x();
+}
+var y: int = 3

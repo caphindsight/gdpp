@@ -1,0 +1,42 @@
+class_name Caster
+extends Node
+
+enum Mode { extends Node.ProcessMode }
+
+var mode: Mode
+var level: Level
+var road: Road
+var settings: Settings
+var task: Async[int]
+
+func convert(node: Node, resource: Resource, value: Variant) -> int {
+  mode = value as Mode;
+  level = int64_t(5) as Level;
+  set_process_mode(mode as Node::ProcessMode);
+  Variant boxed = level as Variant;
+  Node3D *spatial = node as Node3D *;
+  const Node *constant = node;
+  const Node3D *constant_spatial = constant as const Node3D *;
+  Node *up = spatial as Node *;
+  Object *object = up as Object *;
+  Ref<Texture2D> texture = resource as Ref<Texture2D>;
+  Ref<RefCounted> counted = texture as Ref<RefCounted>;
+  Ref<Resource> from_object = object as Ref<Resource>;
+  road = value as Ext<Road>;
+  road = node as Ext<Road>;
+  settings = resource as Ext<Settings>;
+  Ref<Resource> unwrapped = settings as Ref<Resource>;
+  Node *road_node = road as Node *;
+  Node3D *road_spatial = road as Node3D *;
+  Resource *settings_ptr = settings as Resource *;
+  task = value as Async<int64_t>;
+  task = counted as Async<int64_t>;
+  Variant boxed_task = task as Variant;
+  ExtPtr<Road> road_ptr = road;
+  ExtRef<Settings> settings_ref = settings;
+  bool stop = is_cancelled || !road_ptr || !settings_ref;
+  float64_t ratio = value as float64_t;
+  TypedArray<Node> nodes = Array() as TypedArray<Node>;
+  return ratio as int64_t + stop + (constant_spatial != nullptr) + boxed.operator int64_t() + boxed_task.get_type() +
+      nodes.size() + unwrapped.is_valid() + (road_node != nullptr) + (road_spatial != nullptr) + (settings_ptr != nullptr) + from_object.is_valid();
+}

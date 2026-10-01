@@ -1,0 +1,4 @@
+class_name Test
+signal a
+signal b
+signal c(x)

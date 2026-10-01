@@ -1,0 +1,4 @@
+errors/vars/bad_accessor.gd++:2:3: Expected "get", "set", "decl" or "}" in the property body, but found name "got".
+ 2 |   got { return x; }
+   |   ^^^
+Hint: Did you mean "get"?

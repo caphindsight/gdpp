@@ -1,0 +1,11 @@
+File: @1:1
+  InlineEnums:
+    - @1:1
+      Name: E
+      Entries:
+        - @1:10 A
+        - @1:12
+          Name: B
+          Value: @1:16
+            Int: @1:16 2
+        - @1:18 C

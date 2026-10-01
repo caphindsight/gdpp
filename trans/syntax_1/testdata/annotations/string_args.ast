@@ -1,0 +1,15 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Var: @3:1
+          Annotations:
+            - @2:1
+              Name: export_enum
+              Args:
+                - @2:14 "A"
+                - @2:19 "B:2"
+                - @2:26 'c'
+          Name: x
+          Type: @3:8 int

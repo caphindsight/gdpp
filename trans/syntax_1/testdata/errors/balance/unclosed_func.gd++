@@ -1,0 +1,7 @@
+class Foo {
+  func f() -> void {
+    gd::print("hi");
+
+  func g() -> void {
+  }
+}

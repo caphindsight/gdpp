@@ -181,9 +181,13 @@ func TestTransPackageFails(t *testing.T) {
 }
 
 func TestTransRuntime(t *testing.T) {
-	_, want, _ := trans.RuntimeHeader(0)
+	_, want, _ := trans.RuntimeHeader(trans.LatestSyntax)
 	if out := captureStdout(t, (&CmdTrans{Runtime: true}).Run); out != want {
 		t.Errorf("output = %q, want the runtime header", out)
+	}
+	_, want, _ = trans.RuntimeHeader(trans.NightlySyntax)
+	if out := captureStdout(t, (&CmdTrans{Runtime: true, Nightly: true}).Run); out != want {
+		t.Errorf("output with --nightly = %q, want the nightly runtime header", out)
 	}
 }
 

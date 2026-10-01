@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="User" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="use">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="other" type="Road" setter="set_other" getter="get_other">
+		</member>
+		<member name="settings" type="Settings" setter="set_settings" getter="get_settings">
+		</member>
+		<member name="terrain" type="Terrain2" setter="set_terrain" getter="get_terrain">
+		</member>
+	</members>
+</class>

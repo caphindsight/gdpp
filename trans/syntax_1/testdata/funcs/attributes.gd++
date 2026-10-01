@@ -1,0 +1,6 @@
+class_name Test
+@virtual @const
+func a() -> int
+@static func b() -> void {}
+@override
+func _ready() -> void {}

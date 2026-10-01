@@ -1,0 +1,4 @@
+errors/balance/unclosed_bracket.gd++:1:13: This "[" is never closed.
+ 1 | var a: Array[int = 5
+   |             ^
+Hint: Add a matching "]".

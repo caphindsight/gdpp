@@ -1,0 +1,30 @@
+// B overrides A's @virtual function, and C overrides B's override. Scripts can override each one.
+enum Suit { HEARTS, SPADES }
+
+class A {
+  extends Node
+  @virtual
+  func _pick(s: Suit) -> Suit {
+    return s;
+  }
+  @virtual
+  func _reset() -> void
+}
+
+class B {
+  extends A
+  @override
+  func _pick(s: Suit) -> Suit {
+    return Suit::SPADES;
+  }
+}
+
+class C {
+  extends B
+  @override
+  func _pick(s: Suit) -> Suit {
+    return Suit::HEARTS;
+  }
+  @override
+  func _reset() -> void {}
+}

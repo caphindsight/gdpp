@@ -3,9 +3,9 @@ gd++ man: read the reference manual
 # Synopsis
 
 ```sh
-gd++ man
-gd++ man PAGE
-gd++ man SECTION/PAGE
+gd++ man [--syntax N | --nightly]
+gd++ man PAGE [--syntax N | --nightly]
+gd++ man SECTION/PAGE [--syntax N | --nightly]
 ```
 
 # Description
@@ -23,13 +23,19 @@ q, Escape, Ctrl+C        quit
 
 On a terminal, pages are wrapped to its width, and headings are bold. When the output is not a terminal, e.g. `gd++ man classes > classes.txt` or `gd++ man classes | grep emit`, pages are printed as plain text, without the pager.
 
-# Arguments
+# Arguments and options
 
 PAGE
   The name of the page to show, e.g. classes, as the list shows it. Names are unique in the whole manual, so a name is enough. If there is no such page, gd++ lists the pages whose names contain PAGE, or are contained in it.
 
 SECTION/PAGE
   The path of the page to show, e.g. lang/classes. Works the same as its name.
+
+--syntax N
+  The GD++ syntax version that the language pages describe. Default: in a package, the package's, and elsewhere the latest stable one, which `gd++ --syntax` shows. Each language page names its version after its title, e.g. "[syntax 1]", or "[syntax 0 (nightly)]". See "Syntax versions" in `gd++ man packages`.
+
+--nightly
+  The same as --syntax 0, the nightly syntax.
 
 # The tree of pages
 
@@ -52,6 +58,7 @@ gd++ man lang            # the language, and its pages
 gd++ man lang/functions  # the same as gd++ man functions
 gd++ man functions       # how functions work in GD++
 gd++ man rm              # the rm command
+gd++ man --nightly lang  # the language of the nightly syntax
 ```
 
 # See also

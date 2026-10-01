@@ -1,0 +1,14 @@
+class_name C
+
+@global
+decl {
+  #include <vector>
+}
+
+@global impl {
+  static int counter;
+}
+
+@global decl impl {
+  #define FOO 1
+}

@@ -1,0 +1,4 @@
+input.gd++:1:18: Unknown enum "Nod.ProcessMode".
+ 1 | enum E { extends Nod.ProcessMode }
+   |                  ^^^^^^^^^^^^^^^
+Hint: Did you mean "Node.ProcessMode"?

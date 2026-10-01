@@ -1,0 +1,4 @@
+input.gd++:3:17: An Async can't have an Async result.
+ 3 | var task: Async[Async[int]]
+   |                 ^^^^^
+Hint: Use the inner type, e.g. Async[int].

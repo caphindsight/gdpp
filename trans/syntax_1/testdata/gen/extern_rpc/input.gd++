@@ -1,0 +1,16 @@
+class_name Digger
+extends Node
+
+extern Terrain2 {
+  extends Node3D
+  @rpc func dig(at: Vector3) -> void
+  @rpc @deferred func reset() -> void
+}
+
+@export var terrain: Terrain2
+
+func use(peer: int) -> void {
+  rpc terrain->dig(Vector3());
+  rpc(peer) terrain->reset();
+  terrain->reset();
+}

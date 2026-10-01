@@ -1,0 +1,4 @@
+errors/enums/extends_dot.gd++:3:1: Expected a base enum name after ".", but found "}".
+ 3 | }
+   | ^
+Hint: E.g. "extends Suit" for a GD++ enum, or "extends Node.ProcessMode" for an engine enum.

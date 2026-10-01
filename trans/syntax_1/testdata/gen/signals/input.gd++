@@ -1,0 +1,13 @@
+class_name Button2
+extends Node
+
+signal pressed
+signal toggled(on: bool)
+signal moved(from: Vector3, to: Vector3, by)
+
+func click() -> void {
+  emit pressed();
+  emit toggled(true);
+  // emit in a comment stays a comment.
+  gd::print("emit in a string");
+}

@@ -1,0 +1,233 @@
+# Dependencies of every code generation case: Godot classes, and declarations from other GD++ files.
+
+[[dep]]
+name = "Object"
+include = "<godot_cpp/classes/object.hpp>"
+kind = "Object"
+
+[[dep]]
+name = "Node"
+include = "<godot_cpp/classes/node.hpp>"
+kind = "Object"
+base = "Object"
+
+[[dep]]
+name = "Node3D"
+include = "<godot_cpp/classes/node3d.hpp>"
+kind = "Object"
+base = "Node"
+
+[[dep]]
+name = "Engine"
+include = "<godot_cpp/classes/engine.hpp>"
+kind = "Object"
+base = "Object"
+
+[[dep]]
+name = "Camera3D"
+include = "<godot_cpp/classes/camera3d.hpp>"
+kind = "Object"
+base = "Node3D"
+
+[[dep]]
+name = "MeshInstance2D"
+include = "<godot_cpp/classes/mesh_instance2d.hpp>"
+kind = "Object"
+base = "Node2D"
+
+[[dep]]
+name = "MeshInstance3D"
+include = "<godot_cpp/classes/mesh_instance3d.hpp>"
+kind = "Object"
+base = "GeometryInstance3D"
+
+[[dep]]
+name = "RefCounted"
+include = "<godot_cpp/classes/ref_counted.hpp>"
+kind = "RefCounted"
+base = "Object"
+
+[[dep]]
+name = "Resource"
+include = "<godot_cpp/classes/resource.hpp>"
+kind = "RefCounted"
+base = "RefCounted"
+
+[[dep]]
+name = "Texture2D"
+include = "<godot_cpp/classes/texture2d.hpp>"
+kind = "RefCounted"
+base = "Texture"
+
+[[dep]]
+name = "Level"
+include = '"Level.h"'
+kind = "Enum"
+gdpp = true
+values = [
+	{ name = "EASY", value = 0, doc = "For beginners." },
+	{ name = "HARD", value = 5, doc = "@deprecated: Use [constant LEVEL_EASY]." },
+]
+
+[[dep]]
+name = "Road"
+include = '"Road.h"'
+kind = "Extern"
+gdpp = true
+base = "Node"
+
+[[dep]]
+name = "Settings"
+include = '"Settings.h"'
+kind = "RefCountedExtern"
+gdpp = true
+base = "Resource"
+
+[[dep]]
+name = "Door"
+include = '"Door.h"'
+kind = "Object"
+gdpp = true
+base = "Node"
+
+[[dep]]
+name = "Key"
+include = '"Key.h"'
+kind = "RefCounted"
+gdpp = true
+base = "Resource"
+
+[[dep]]
+name = "Wall"
+include = '"Wall.h"'
+kind = "Object"
+gdpp = true
+base = "Node3D"
+
+[[dep]]
+name = "TypedArray"
+include = "<godot_cpp/variant/typed_array.hpp>"
+kind = "Other"
+
+[[dep]]
+name = "MultiplayerAPI"
+include = "<godot_cpp/classes/multiplayer_api.hpp>"
+kind = "Object"
+base = "RefCounted"
+
+[[dep]]
+name = "MultiplayerPeer"
+include = "<godot_cpp/classes/multiplayer_peer.hpp>"
+kind = "RefCounted"
+base = "PacketPeer"
+
+
+[[dep]]
+name = "Difficulty"
+include = '"Difficulty.h"'
+kind = "Enum"
+gdpp = true
+base = "Level"
+values = [
+	{ name = "INSANE", value = 0, implicit = true },
+	{ name = "CUSTOM", value = 100 },
+]
+
+[[dep]]
+name = "Node.ProcessMode"
+include = "<godot_cpp/classes/node.hpp>"
+kind = "GodotEnum"
+values = [
+	{ name = "PROCESS_MODE_INHERIT", value = 0 },
+	{ name = "PROCESS_MODE_PAUSABLE", value = 1 },
+	{ name = "PROCESS_MODE_WHEN_PAUSED", value = 2 },
+	{ name = "PROCESS_MODE_ALWAYS", value = 3 },
+	{ name = "PROCESS_MODE_DISABLED", value = 4 },
+]
+
+[[dep]]
+name = "Error"
+include = "<godot_cpp/classes/global_constants.hpp>"
+kind = "GodotEnum"
+values = [
+	{ name = "OK", value = 0 },
+	{ name = "FAILED", value = 1 },
+]
+
+[[dep]]
+name = "Speed"
+include = '"Speed.h"'
+kind = "Enum"
+gdpp = true
+values = [
+	{ name = "FAST", expr = "Level.HARD" },
+	{ name = "FASTER", implicit = true },
+]
+
+[[dep]]
+name = "GeometryInstance3D.ShadowCastingSetting"
+include = "<godot_cpp/classes/geometry_instance3d.hpp>"
+kind = "GodotEnum"
+values = [
+	{ name = "SHADOW_CASTING_SETTING_OFF", value = 0 },
+	{ name = "SHADOW_CASTING_SETTING_ON", value = 1 },
+	{ name = "SHADOW_CASTING_SETTING_DOUBLE_SIDED", value = 2 },
+	{ name = "SHADOW_CASTING_SETTING_SHADOWS_ONLY", value = 3 },
+]
+
+[[dep]]
+name = "Clash.Kind"
+kind = "GodotEnum"
+values = [
+	{ name = "KIND_A", value = 0 },
+	{ name = "A", value = 1 },
+]
+
+[[dep]]
+name = "GeometryInstance3D"
+include = "<godot_cpp/classes/geometry_instance3d.hpp>"
+kind = "Object"
+base = "Node3D"
+
+[[dep]]
+name = "KeyCode"
+kind = "GodotEnum"
+values = [
+	{ name = "KEY_CODE_A", value = 65 },
+	{ name = "KEY_CODE_3", value = 51 },
+]
+
+[[dep]]
+name = "Control.SizeFlags"
+include = "<godot_cpp/classes/control.hpp>"
+kind = "GodotEnum"
+bitfield = true
+values = [
+	{ name = "SIZE_SHRINK_BEGIN", value = 0 },
+	{ name = "SIZE_FILL", value = 1 },
+	{ name = "SIZE_EXPAND", value = 2 },
+	{ name = "SIZE_EXPAND_FILL", value = 3 },
+	{ name = "SIZE_SHRINK_CENTER", value = 4 },
+	{ name = "SIZE_SHRINK_END", value = 8 },
+]
+
+[[dep]]
+name = "Style"
+include = '"Style.h"'
+kind = "Enum"
+gdpp = true
+bitfield = true
+values = [
+	{ name = "NONE", value = 0 },
+	{ name = "BOLD", implicit = true },
+	{ name = "ITALIC", implicit = true },
+	{ name = "BOTH", expr = "BOLD | ITALIC" },
+]
+
+[[dep]]
+name = "Gate"
+include = '"Gate.h"'
+kind = "Object"
+gdpp = true
+base = "Node"
+virtuals = ["_open"]

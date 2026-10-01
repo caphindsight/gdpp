@@ -1,0 +1,9 @@
+File: @1:1
+  InlineClasses:
+    - @1:1
+      Name: A
+      Extends: @1:19 Node
+    - @2:1
+      Name: B
+      Extends: @2:19 A
+    - @3:1 C

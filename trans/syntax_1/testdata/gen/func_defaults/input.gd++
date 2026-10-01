@@ -1,0 +1,22 @@
+class_name Spawner
+extends Node
+
+enum Kind { SMALL, BIG }
+
+func spawn(count: int, kind: Kind = Kind::BIG, at: Vector3 = Vector3(0, 1, 0), tag = "enemy") -> void {}
+
+@static
+func scale(value: float = {
+  float64_t s = 2.0;
+  return s * s;
+}) -> float {
+  return value;
+}
+
+@rpc
+func ping(times: int = 1) -> void {}
+
+func ping_all() -> void {
+  rpc ping();
+  spawn(3);
+}

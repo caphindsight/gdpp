@@ -1,0 +1,66 @@
+Rewrites: emit, rpc, is_cancelled, is_done, claim, cancel and as, GD++'s words in C++ code
+
+C++ code in a GD++ file is plain C++, with a handful of exceptions: words that GD++ adds to C++, and rewrites into plain C++ before the compiler sees it. This page lists them, says why they exist, and where they apply.
+
+# The rewrites
+
+GD++ extends C++ with a few words, which it rewrites into plain C++:
+
+```
+emit NAME(ARGS)                (void) NAME(ARGS)                  send a signal, see `gd++ man signals`
+rpc NAME(ARGS)                 _gdpp_rpc_NAME(0, ARGS)            call an RPC on every peer, see `gd++ man rpc`
+rpc(PEER) NAME(ARGS)           _gdpp_rpc_NAME(PEER, ARGS)         call an RPC on one peer
+is_cancelled                   gdpp::is_cancelled()               test whether a task should stop, see `gd++ man async`
+is_done TASK                   TASK.is_done()                     test whether an Async holds a task that's done
+claim TASK                     TASK.claim()                       take an Async's result
+cancel TASK                    TASK.cancel()                      ask an Async's task to stop
+VALUE as T                     gdpp::cast<T>(VALUE)               convert a value to the type T, see `gd++ man cast`
+```
+
+# Why
+
+They are rare on purpose, and mostly trivial: most just call a method. What they add is the look. A signal, a remote call, polling or stopping a task looks different from a plain function call, is_cancelled reads like a flag, and a conversion reads like GDScript's, so these places stand out when you read the code. The method calls work too, e.g. `task.is_done()`, where you prefer them.
+
+# Where they apply
+
+Each word is only rewritten where it's followed by what it applies to: emit by a call, rpc by a call or by a peer in parentheses and a call, is_done, claim and cancel by a name, `as` by a value before it and a type after it. Elsewhere, the words are left alone, e.g. Godot's own `rpc("ping")`, a variable named `claim`, or the call `task.is_done()`. is_cancelled stands alone: it's rewritten wherever it isn't a member, e.g. `state.is_cancelled`, a name in a scope, e.g. `gdpp::is_cancelled`, or a call, e.g. `is_cancelled()`. So it's reserved: a variable or field named is_cancelled doesn't compile. Avoid all these words as names in your C++ code. Their operands:
+
+- NAME may be written with objects before it, joined by -> or ., e.g. `rpc other->take_damage(5)`. The objects must be named by variables, not by function calls.
+- TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending`, `this->tasks[i]` or `find_path(a, b)`. Like C++'s own prefix operators, the word applies to all of it: `claim find(a).size()` claims the result of `find(a).size()`, so write `(claim find(a)).size()` to call size on the result. TASK must start with a name: `claim (a ? x : y)` isn't rewritten, so write `(a ? x : y).claim()` then.
+- VALUE is like TASK, but may also be in parentheses, e.g. `body`, `get_node("Mesh")` or `(a + b)`. `as` binds it like a C++ postfix operator, so `a + b as float` converts `b` only. T is a type, e.g. `int`, `Node3D *` or `Ref<Mesh>`. `as` is only rewritten where both are clear: in `x as int * y` or `(int) x as float`, it stays, so the code doesn't compile; parentheses fix it, e.g. `(x as int) * y`. See `gd++ man cast`.
+
+A rewrite keeps the code's line breaks, so line numbers in errors still match the GD++ file.
+
+`gd++ cat` and the code in this manual highlight the words as keywords, `is_done`, `claim`, `cancel` and `as` only where a name follows them.
+
+# Seeing them
+
+`gd++ trans FILE` prints the generated C++, with every rewrite done. E.g. this function:
+
+```gd++
+func poll() -> void {
+  if (is_done pending && !is_cancelled) {
+    emit found(claim pending, score as int32_t);
+  }
+  rpc(1) report(score);
+}
+```
+
+becomes, apart from #line directives:
+
+```cpp
+void Pathfinder::poll() {
+  if (pending.is_done() && !gdpp::is_cancelled()) {
+    (void) found(pending.claim(), gdpp::cast<int32_t>(score));
+  }
+  _gdpp_rpc_report(1, score);
+}
+```
+
+# Other names
+
+This and gd aren't rewrites: This is a macro for the current class's name, and gd an alias of UtilityFunctions, both plain C++. See `gd++ man code`.
+
+# See also
+
+`gd++ man code`, `gd++ man signals`, `gd++ man rpc`, `gd++ man async`.

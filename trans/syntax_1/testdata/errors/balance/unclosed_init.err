@@ -1,0 +1,4 @@
+errors/balance/unclosed_init.gd++:1:14: This "{" (the initial value of var "x") is never closed.
+ 1 | var x: int = {
+   |              ^
+Hint: Add a matching "}".

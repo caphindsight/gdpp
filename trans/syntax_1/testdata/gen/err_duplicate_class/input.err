@@ -1,0 +1,4 @@
+input.gd++:2:1: The name "A" is declared twice in this file.
+ 2 | extern A {}
+   | ^
+Hint: Class, extern and enum names must be unique in the package.

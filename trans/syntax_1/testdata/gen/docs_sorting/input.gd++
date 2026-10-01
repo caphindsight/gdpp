@@ -1,0 +1,10 @@
+class_name Sorted
+
+func b10() -> void {}
+func b2() -> void {}
+func A() -> void {}
+func a() -> void {}
+var z: int
+var Y: int
+signal s2
+signal S1

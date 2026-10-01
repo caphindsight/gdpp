@@ -1,0 +1,4 @@
+input.gd++:2:30: Bitfield S has no bits left for X.
+ 2 | @bitfield enum S { extends B X }
+   |                              ^
+Hint: The largest flag is 2^62. Set this value with "=", or split the bitfield in two.

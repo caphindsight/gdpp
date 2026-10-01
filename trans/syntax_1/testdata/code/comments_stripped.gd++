@@ -1,0 +1,9 @@
+class_name Test
+func f() -> void {
+  a(); // Line comment with a } brace.
+  b(/* inline */ 1);
+  c/**/d;
+  /* Multi
+     line } */
+  e(); /* nested /* } */ comment */
+}

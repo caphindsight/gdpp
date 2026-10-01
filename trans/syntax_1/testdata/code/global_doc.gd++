@@ -1,0 +1,4 @@
+class_name C
+
+/// Not allowed.
+@global decl {}

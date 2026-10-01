@@ -8,30 +8,66 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
+
+	"gd++/trans"
 )
 
-// TestManPages checks that manPages lists every page once, parents before
-// children, with unique names, that each page has a title and no trailing
-// spaces, and that pages only refer to pages that exist.
-func TestManPages(t *testing.T) {
-	var files []string
+// manPageFiles lists the paths of the pages in manFiles, mapping the files
+// of the language's pages for syntax N (man/lang_N.txt and man/lang_N/) to
+// lang, and skipping those of other syntax versions.
+func manPageFiles(t *testing.T, syntax int) []string {
+	own, other := regexp.MustCompile(`^lang_`+strconv.Itoa(syntax)+`\b`), regexp.MustCompile(`^lang_[0-9]+\b`)
+	var list []string
 	err := fs.WalkDir(manFiles, "man", func(p string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() {
-			files = append(files, strings.TrimSuffix(strings.TrimPrefix(p, "man/"), ".txt"))
+		if err != nil || d.IsDir() {
+			return err
 		}
-		return err
+		p = strings.TrimSuffix(strings.TrimPrefix(p, "man/"), ".txt")
+		if own.MatchString(p) {
+			list = append(list, own.ReplaceAllString(p, "lang"))
+		} else if !other.MatchString(p) {
+			list = append(list, p)
+		}
+		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(uniqueSorted(manPages, strings.Compare), uniqueSorted(files, strings.Compare)) || len(files) != len(manPages) {
-		t.Errorf("manPages = %v, want each of %v once", manPages, files)
+	return list
+}
+
+// TestManPages checks, for every syntax version, that the manual lists every
+// page once, parents before children, with unique names, that each page has
+// a title and no trailing spaces, and that pages only refer to pages that
+// exist.
+func TestManPages(t *testing.T) {
+	var syntaxes []int
+	for s := range langManPages {
+		syntaxes = append(syntaxes, s)
+	}
+	slices.Sort(syntaxes)
+	if want := trans.Syntaxes(); !slices.Equal(syntaxes, want) {
+		t.Errorf("langManPages has syntaxes %v, want %v", syntaxes, want)
+	}
+	if tops, _ := fs.Glob(manFiles, "man/lang_*.txt"); len(tops) != len(syntaxes) {
+		t.Errorf("language manuals = %v, want one per syntax in %v", tops, syntaxes)
+	}
+	for _, syntax := range syntaxes {
+		t.Run(strconv.Itoa(syntax), func(t *testing.T) { testManPages(t, loadManual(syntax)) })
+	}
+}
+
+func testManPages(t *testing.T, m manual) {
+	files := manPageFiles(t, m.syntax)
+	if !slices.Equal(uniqueSorted(m.pages, strings.Compare), uniqueSorted(files, strings.Compare)) || len(files) != len(m.pages) {
+		t.Errorf("pages = %v, want each of %v once", m.pages, files)
 	}
 	names := map[string]bool{}
-	for i, p := range manPages {
-		if parent := path.Dir(p); parent != "." && !slices.Contains(manPages[:i], parent) {
+	for i, p := range m.pages {
+		if parent := path.Dir(p); parent != "." && !slices.Contains(m.pages[:i], parent) {
 			t.Errorf("page %s comes before its parent %s", p, parent)
 		}
 		if names[path.Base(p)] {
@@ -39,9 +75,9 @@ func TestManPages(t *testing.T) {
 		}
 		names[path.Base(p)] = true
 	}
-	ref := regexp.MustCompile("`gd\\+\\+ man ([a-z/-]+)`")
-	for _, p := range manPages {
-		text := manPage(p)
+	ref := regexp.MustCompile("`gd\\+\\+ man (?:--[a-z]+ (?:[0-9]+ )?)*([a-z][a-z/-]*)`")
+	for _, p := range m.pages {
+		text := m.page(p)
 		if title, _, _ := strings.Cut(text, "\n"); title == "" || strings.HasPrefix(title, "# ") {
 			t.Errorf("page %s: the first line must be its title, got %q", p, title)
 		}
@@ -62,9 +98,9 @@ func TestManPages(t *testing.T) {
 		if fence != "" {
 			t.Errorf("page %s: a code block is never closed", p)
 		}
-		for _, m := range ref.FindAllStringSubmatch(text, -1) {
-			if !names[m[1]] && !slices.Contains(manPages, m[1]) {
-				t.Errorf("page %s refers to the missing page %s", p, m[1])
+		for _, r := range ref.FindAllStringSubmatch(text, -1) {
+			if !names[r[1]] && !slices.Contains(m.pages, r[1]) {
+				t.Errorf("page %s refers to the missing page %s", p, r[1])
 			}
 		}
 	}
@@ -74,7 +110,7 @@ func TestRenderMan(t *testing.T) {
 	withTTY(t, false)
 	text := "Title\n# Heading\naaaa bbbb cccc `dddd` eeee\n- aaaa bbbb cccc dddd eeee\n12. aaaa bbbb cccc dddd eeee\n--term\n  aaaa bbbb cccc dddd eeee\n```sh\ncode that is longer than the width stays\n\nx\n```\n"
 	want := "Title\n-----\nHeading\naaaa bbbb cccc `dddd`\neeee\n- aaaa bbbb cccc dddd\n  eeee\n12. aaaa bbbb cccc dddd\n    eeee\n--term\n  aaaa bbbb cccc dddd\n  eeee\n    code that is longer than the width stays\n\n    x\n"
-	if got := renderMan(text, 23); got != want {
+	if got := renderMan(text, "", 23); got != want {
 		t.Errorf("renderMan = %q, want %q", got, want)
 	}
 	withTTY(t, true)
@@ -82,27 +118,52 @@ func TestRenderMan(t *testing.T) {
 	want = Styled("Title", Bold, BrightBlue) + "\n" + Styled("-----", BrightBlue) + "\n" + Styled("Heading", Bold, Yellow) + "\n" +
 		"aaaa bbbb cccc " + Styled("dddd", Cyan) + " eeee\n- aaaa bbbb cccc dddd eeee\n12. aaaa bbbb cccc dddd eeee\n" + Styled("--term", Bold, Green) +
 		"\n  aaaa bbbb cccc dddd eeee\n    " + Styled("code", Bold) + " that is longer than the width stays\n\n    " + Styled("x", Bold) + "\n"
-	if got := renderMan(text, 0); got != want {
+	if got := renderMan(text, "", 0); got != want {
 		t.Errorf("renderMan with styles = %q, want %q", got, want)
+	}
+	want = Styled("Title", Bold, BrightBlue) + " " + Styled("[syntax 1]", Bold, Magenta) + "\n" + Styled("----------------", BrightBlue) + "\n"
+	if got := renderMan("Title\n", "[syntax 1]", 0); got != want {
+		t.Errorf("renderMan with a tag = %q, want %q", got, want)
 	}
 }
 
 func TestMan(t *testing.T) {
 	withTTY(t, false)
+	withMemFS(t, "/games/my_game", withPackages(nil))
+	m := loadManual(trans.LatestSyntax)
 	for _, page := range []string{"signals", "lang/signals"} {
-		if out := captureStdout(t, (&CmdMan{Page: page}).Run); out != renderMan(manPage("lang/signals"), 0) {
+		if out := captureStdout(t, (&CmdMan{Page: page}).Run); out != renderMan(m.page("lang/signals"), m.tag("lang/signals"), 0) {
 			t.Errorf("gd++ man %s printed %q, want the page without heading markers", page, out)
 		}
 	}
 	out := captureStdout(t, (&CmdMan{}).Run)
-	for _, want := range []string{"\n  intro  ", "\n  lang   ", "\n    signals", "Signals: declaring signals"} {
+	for _, want := range []string{"\n  intro  ", "\n  lang   ", "\n    signals", "Signals: declaring signals", "an overview [syntax 1]\n"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("gd++ man = %q, want it to contain %q", out, want)
 		}
 	}
 	out = captureStdout(t, (&CmdMan{Page: "lang"}).Run)
-	if !strings.HasPrefix(out, renderMan(manPage("lang"), 0)+"\nPages in this section:\n  syntax ") || strings.Contains(out, "  build ") {
+	if !strings.HasPrefix(out, renderMan(m.page("lang"), m.tag("lang"), 0)+"\nPages in this section:\n  syntax ") || strings.Contains(out, "  build ") {
 		t.Errorf("gd++ man lang = %q, want the page, then the pages under lang only", out)
+	}
+	if out := captureStdout(t, (&CmdMan{Page: "intro"}).Run); strings.Contains(out, "[syntax") {
+		t.Errorf("gd++ man intro = %q, want no syntax in the title", out)
+	}
+}
+
+func TestManSyntax(t *testing.T) {
+	withTTY(t, false)
+	const nightly = "Signals: declaring signals, and sending them with emit [syntax 0 (nightly)]\n"
+	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\n"}
+	withMemFS(t, "/games/my_game", withPackages(pkgs))
+	for name, c := range map[string]CmdMan{"nightly": {Page: "signals", Nightly: true}, "syntax": {Page: "signals", Syntax: ptr(0)}} {
+		if out := captureStdout(t, c.Run); !strings.HasPrefix(out, nightly) {
+			t.Errorf("%s: output = %q, want the prefix %q", name, out, nightly)
+		}
+	}
+	withMemFS(t, "/games/my_game/src/pkg", withPackages(pkgs))
+	if out := captureStdout(t, (&CmdMan{Page: "signals"}).Run); !strings.HasPrefix(out, nightly) {
+		t.Errorf("in a package: output = %q, want the prefix %q", out, nightly)
 	}
 }
 
@@ -115,6 +176,7 @@ func TestManFails(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 				withTTY(t, false)
+				withMemFS(t, "/games/my_game", withPackages(nil))
 				(&CmdMan{Page: tc.page}).Run()
 				return
 			}

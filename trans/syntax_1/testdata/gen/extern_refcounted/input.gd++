@@ -1,0 +1,8 @@
+extern Config {
+  extends Resource
+  func get_value(key: String) -> Variant
+}
+
+class Reader {
+  var config: Config
+}

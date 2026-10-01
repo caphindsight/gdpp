@@ -1,0 +1,6 @@
+class_name Test
+/// First line.
+///
+///   Indented line.
+/// Last line.
+var x: int

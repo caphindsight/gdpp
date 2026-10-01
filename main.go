@@ -1,9 +1,15 @@
 package main
 
-import "github.com/alexflint/go-arg"
+import (
+	"os"
+
+	"github.com/alexflint/go-arg"
+)
 
 // Args holds the parsed CLI arguments, available to any function that needs them.
-var Args struct {
+var Args cliArgs
+
+type cliArgs struct {
 	Build    *CmdBuild   `arg:"subcommand:build" help:"compile a package into a GDExtension library"`
 	Cat      *CmdCat     `arg:"subcommand:cat" help:"show files in the pager, highlighting C++ and GD++ code"`
 	CheckIn  *CmdCheckIn `arg:"subcommand:checkin" help:"check in dependencies from the ephemeral cache, or undo it"`
@@ -30,7 +36,18 @@ var Args struct {
 	Version  bool        `arg:"--version" help:"print the version of GD++ and exit"`
 }
 
+// Epilogue documents --syntax, which main handles before parsing: as a field,
+// go-arg would take the --syntax N of commands for it.
+func (cliArgs) Epilogue() string {
+	return "Run `gd++ --syntax` to list the GD++ syntax versions that this gd++ supports."
+}
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--syntax" {
+		Assert(len(os.Args) == 2, "Invalid arguments: --syntax cannot be used with other arguments.")
+		PrintResult(syntaxVersions())
+		return
+	}
 	p := arg.MustParse(&Args)
 
 	if Args.Version {

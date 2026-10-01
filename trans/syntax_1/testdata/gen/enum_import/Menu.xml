@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Menu" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="LEVEL_EASY" value="0" enum="Level">
+			For beginners.
+		</constant>
+		<constant name="LEVEL_HARD" value="5" enum="Level" deprecated="Use [constant LEVEL_EASY].">
+		</constant>
+	</constants>
+</class>

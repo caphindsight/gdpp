@@ -1,0 +1,8 @@
+class_name Test
+func f() -> void {
+  a(); /* one
+  two
+  three */ b();
+  // four
+  c();
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Stats" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="anything" type="Variant" setter="set_anything" getter="get_anything">
+		</member>
+		<member name="hp" type="int" setter="set_hp" getter="get_hp">
+		</member>
+		<member name="name" type="String" setter="set_name" getter="get_name">
+		</member>
+		<member name="speed" type="float" setter="set_speed" getter="get_speed">
+		</member>
+		<member name="target" type="Node3D" setter="set_target" getter="get_target">
+		</member>
+		<member name="texture" type="Texture2D" setter="set_texture" getter="get_texture">
+		</member>
+	</members>
+</class>

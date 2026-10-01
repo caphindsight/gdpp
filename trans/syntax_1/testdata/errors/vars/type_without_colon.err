@@ -1,0 +1,4 @@
+errors/vars/type_without_colon.gd++:1:7: Expected ":", "=" or "{" after the variable name, but found name "int".
+ 1 | var x int
+   |       ^^^
+Hint: Types are written after a colon: "var x: int".

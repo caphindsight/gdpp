@@ -1,0 +1,4 @@
+class_name Test
+signal hit(
+  damage: int,
+)

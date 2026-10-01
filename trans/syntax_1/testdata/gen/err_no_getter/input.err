@@ -1,0 +1,4 @@
+input.gd++:3:1: Property x has no get block.
+ 3 | var x: int {
+   | ^^^
+Hint: Godot doesn't support set-only properties.

@@ -1,0 +1,2 @@
+class_name Test
+func f(a: int, b, c: String) -> void {}

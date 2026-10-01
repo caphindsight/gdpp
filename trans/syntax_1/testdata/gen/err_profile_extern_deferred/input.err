@@ -1,0 +1,4 @@
+input.gd++:6:3: Annotation @profile can't be used on @deferred functions of externs.
+ 6 |   @profile @deferred func f() -> void
+   |   ^^^^^^^^
+Hint: A call through the extern only queues the function, so there's nothing to time. Profile the class that defines it instead.

@@ -1,0 +1,11 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Func: @3:1
+          Doc: @2:1 Says hello.
+          Name: hello
+          Return: @3:17 void
+          Body: @3:22
+            TextPos: 3:23

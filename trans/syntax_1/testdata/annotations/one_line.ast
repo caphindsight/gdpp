@@ -1,0 +1,11 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Var: @2:18
+          Annotations:
+            - @2:1 export
+            - @2:9 onready
+          Name: x
+          Type: @2:25 int

@@ -1,0 +1,4 @@
+errors/vars/init_missing_eof.gd++:1:8: Expected a value after "=", but found the end of the file.
+ 1 | var x =
+   |        ^
+Hint: Write a C++ expression, or a { ... } block that returns the value.

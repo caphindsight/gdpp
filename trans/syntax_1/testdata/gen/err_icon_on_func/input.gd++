@@ -1,0 +1,4 @@
+class_name A
+
+@icon("res://a.svg")
+func f() -> void {}

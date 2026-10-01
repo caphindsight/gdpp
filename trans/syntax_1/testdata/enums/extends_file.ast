@@ -1,0 +1,7 @@
+File: @1:1
+  FileEnum: @2:1
+    Doc: @1:1 Cards.
+    Name: Deck
+    Extends: @3:9 Suit
+    Entries:
+      - @4:1 JOKER

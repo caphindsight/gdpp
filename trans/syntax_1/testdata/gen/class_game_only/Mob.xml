@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Mob" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="attack">
+			<return type="int" />
+			<param index="0" name="mood" type="int" enum="Mob.Mood" default="Mood::ANGRY" />
+			<description>
+			</description>
+		</method>
+		<method name="respawn">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="sync">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="hp" type="int" setter="set_hp" getter="get_hp">
+		</member>
+		<member name="mood" type="int" enum="Mob.Mood" setter="set_mood" getter="get_mood">
+		</member>
+	</members>
+	<signals>
+		<signal name="hit">
+			<param index="0" name="amount" type="int" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="MOOD_CALM" value="0" enum="Mood">
+		</constant>
+		<constant name="MOOD_ANGRY" value="1" enum="Mood">
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,4 @@
+errors/typos/fun.gd++:1:1: Expected a declaration, but found name "fun".
+ 1 | fun foo() {}
+   | ^^^
+Hint: Did you mean "func"?

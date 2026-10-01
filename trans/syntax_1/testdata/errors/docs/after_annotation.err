@@ -1,0 +1,4 @@
+errors/docs/after_annotation.gd++:3:3: This doc comment is not followed by a declaration.
+ 3 |   /// Dangling.
+   |   ^^^^^^^^^^^^^
+Hint: Doc comments document the declaration right after them. Use "//" for a regular comment.

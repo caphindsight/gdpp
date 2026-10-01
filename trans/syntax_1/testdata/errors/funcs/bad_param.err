@@ -1,0 +1,3 @@
+errors/funcs/bad_param.gd++:1:8: Expected a parameter name or ")", but found number 1.
+ 1 | func f(1) {}
+   |        ^

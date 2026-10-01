@@ -75,9 +75,9 @@ func withLsPackages(t *testing.T) {
 	withLsProject(t)
 	NewPath("/games/my_game/zed").CreateDirectory()
 	for _, dir := range []string{"foo", "zed"} {
-		NewPath("/games/my_game").Cd(dir, packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n")
+		NewPath("/games/my_game").Cd(dir, packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\nsyntax = 1\n")
 	}
-	NewPath("/games/my_game/foo/icons").Cd(packageFileName).WriteString("bind = \"b\"\nspec = \"4.3-stable\"\n")
+	NewPath("/games/my_game/foo/icons").Cd(packageFileName).WriteString("bind = \"b\"\nspec = \"4.3-stable\"\nsyntax = 1\n")
 }
 
 // lsDepsOut is the dependencies section of ls in withLsPackages.
@@ -91,7 +91,7 @@ const lsFooOut = "" +
 	"Package: res://foo\n" +
 	"  Godot C++ bindings:  10.0.0-stable\n" +
 	"  Godot API spec:      4.3-stable\n" +
-	"  GD++ syntax:         0\n" +
+	"  GD++ syntax:         1\n" +
 	"  C++ standard:        c++20\n" +
 	"  Class prefix:        Foo\n" +
 	"  Quit timeout:        1 second\n"
@@ -134,7 +134,7 @@ func TestLsCmdPackages(t *testing.T) {
 
 func TestLsCmdRootPackage(t *testing.T) {
 	withLsPackages(t)
-	NewPath("/games/my_game").Cd(packageFileName).WriteString("bind = \"b\"\nspec = \"4.3-stable\"\n")
+	NewPath("/games/my_game").Cd(packageFileName).WriteString("bind = \"b\"\nspec = \"4.3-stable\"\nsyntax = 1\n")
 	out := captureStdout(t, (&CmdLs{Path: "res://src"}).Run)
 	want := "" +
 		"Package: res:// [my_game]\n" +
@@ -150,7 +150,7 @@ func TestLsCmdRootPackage(t *testing.T) {
 
 func TestLsCmdOnePackage(t *testing.T) {
 	withLsProject(t)
-	NewPath("/games/my_game/foo").Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n\n" +
+	NewPath("/games/my_game/foo").Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\nsyntax = 1\n\n" +
 		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\nicon = \"res://foo/icons/tree.svg\"\n\n" +
 		"[[class]]\nname = \"Bush\"\ntool = true\n")
 	out := captureStdout(t, (&CmdLs{}).Run)
@@ -167,7 +167,7 @@ func TestLsCmdOnePackage(t *testing.T) {
 func TestLsCmdGdppClasses(t *testing.T) {
 	withLsProject(t)
 	foo := NewPath("/games/my_game/foo")
-	foo.Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\n\n" +
+	foo.Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\nsyntax = 1\n\n" +
 		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\nicon = \"pkg://icons/tree.svg\"\n\n[[class]]\nname = \"Player\"\n")
 	foo.Cd("player.gd++").WriteString("@icon(\"pkg://icons/tree.svg\")\n@tool\nclass_name Player\nextends Node\n")
 	foo.Cd("icons", "helper.gg").WriteString("class Helper {}\nenum Mood { HAPPY }\n")
@@ -205,7 +205,7 @@ func TestLsCmdAllPackages(t *testing.T) {
 		"Package: res://foo/icons\n" +
 		"  Godot C++ bindings:  b           missing\n" +
 		"  Godot API spec:      4.3-stable\n" +
-		"  GD++ syntax:         0\n" +
+		"  GD++ syntax:         1\n" +
 		"  C++ standard:        c++20\n" +
 		"  Class prefix:        Icons\n" +
 		"  Quit timeout:        1 second\n" +
@@ -249,9 +249,9 @@ func TestLsPackages(t *testing.T) {
 	pkgWant := "" +
 		"\n" +
 		"Package: res://foo\n" +
-		"  Godot C++ bindings:  b            missing\n" +
+		"  Godot C++ bindings:  b                                missing\n" +
 		"  Godot API spec:      4.3-stable\n" +
-		"  GD++ syntax:         0\n" +
+		"  GD++ syntax:         0 (nightly, not for production)\n" +
 		"  C++ standard:        c++23\n" +
 		"  Class prefix:        Pk\n" +
 		"  Quit timeout:        2.5 seconds\n" +

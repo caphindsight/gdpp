@@ -1,0 +1,3 @@
+errors/annotations/missing_comma.gd++:1:17: Expected "," or ")" after the annotation argument, but found number 100.
+ 1 | @export_range(0 100)
+   |                 ^^^

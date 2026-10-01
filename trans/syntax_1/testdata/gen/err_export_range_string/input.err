@@ -1,0 +1,4 @@
+input.gd++:3:1: Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.
+ 3 | @export_range(0, 1)
+   | ^^^^^^^^^^^^^
+Hint: E.g. "@export_range(0, 100, 1, \"or_greater\") var hp: int".

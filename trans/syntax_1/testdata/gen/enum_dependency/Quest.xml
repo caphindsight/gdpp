@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Quest" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="harder">
+			<return type="int" enum="Quest.Level" />
+			<param index="0" name="l" type="int" enum="Quest.Level" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="level" type="int" enum="Quest.Level" setter="set_level" getter="get_level">
+		</member>
+	</members>
+	<constants>
+		<constant name="LEVEL_EASY" value="0" enum="Level">
+			For beginners.
+		</constant>
+		<constant name="LEVEL_HARD" value="5" enum="Level" deprecated="Use [constant LEVEL_EASY].">
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Spawner" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="ping">
+			<return type="void" />
+			<param index="0" name="times" type="int" default="1" />
+			<description>
+			</description>
+		</method>
+		<method name="ping_all">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="scale" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="value" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="spawn">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<param index="1" name="kind" type="int" enum="Spawner.Kind" default="Kind::BIG" />
+			<param index="2" name="at" type="Vector3" default="Vector3(0, 1, 0)" />
+			<param index="3" name="tag" type="Variant" default="&quot;enemy&quot;" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="KIND_SMALL" value="0" enum="Kind">
+		</constant>
+		<constant name="KIND_BIG" value="1" enum="Kind">
+		</constant>
+	</constants>
+</class>

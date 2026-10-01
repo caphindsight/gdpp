@@ -1,0 +1,4 @@
+errors/docs/on_decl.gd++:2:1: Expected a declaration that can take a doc comment, but found keyword "impl".
+ 2 | impl { int x; }
+   | ^^^^
+Hint: Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values. Only @global belongs to decl and impl blocks.

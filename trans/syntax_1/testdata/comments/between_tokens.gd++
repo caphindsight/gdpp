@@ -1,0 +1,2 @@
+class_name Test
+func /* a */ foo( /* b */ ) /* c */ -> /* d */ int /* e */

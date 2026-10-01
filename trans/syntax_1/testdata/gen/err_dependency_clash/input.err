@@ -1,0 +1,4 @@
+input.gd++:1:1: The name "Node3D" is already declared by a dependency.
+ 1 | class_name Node3D
+   | ^
+Hint: Names must differ from Godot's, and from those of the package's other classes, externs and enums.

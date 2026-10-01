@@ -1,0 +1,11 @@
+File: @1:1
+  InlineClasses:
+    - @1:1 A
+  InlineExterns:
+    - @5:1 B
+  InlineEnums:
+    - @3:1
+      Name: E
+      Entries:
+        - @3:10 X
+        - @3:12 Y

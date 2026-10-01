@@ -1,0 +1,4 @@
+input.gd++:2:3: Externs can't contain decl or impl blocks.
+ 2 |   decl { int x; }
+   |   ^^^^
+Hint: Externs only declare the funcs, vars and signals that another package defines.

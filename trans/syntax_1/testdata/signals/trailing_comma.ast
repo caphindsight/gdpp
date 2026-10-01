@@ -1,0 +1,11 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Test
+    Members:
+      - @2:1
+        Signal: @2:1
+          Name: hit
+          Params:
+            - @3:3
+              Name: damage
+              Type: @3:11 int

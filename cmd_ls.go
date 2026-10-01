@@ -219,9 +219,17 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 		}
 		rows = append(rows, []string{lsKey(cache.Desc), name, status})
 	}
-	rows = append(rows, []string{lsKey("GD++ syntax"), strconv.Itoa(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard},
+	rows = append(rows, []string{lsKey("GD++ syntax"), lsSyntax(pkg.Config.Syntax)}, []string{lsKey("C++ standard"), pkg.Config.CppStandard},
 		[]string{lsKey("Class prefix"), pkg.Prefix()}, []string{lsKey("Quit timeout"), seconds(pkg.QuitTimeout())})
 	return rows, missing
+}
+
+// lsSyntax shows the GD++ syntax, warning if it's the nightly one.
+func lsSyntax(syntax int) string {
+	if syntax == trans.NightlySyntax {
+		return strconv.Itoa(syntax) + " " + Styled("(nightly, not for production)", Yellow)
+	}
+	return strconv.Itoa(syntax)
 }
 
 // lsClassTable renders the classes, grouped by the file declaring them: first

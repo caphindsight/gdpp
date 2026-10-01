@@ -1,0 +1,23 @@
+class_name Player
+extends Node
+
+@override
+func _ready() -> void {
+  gd::print("ready");
+}
+
+@override
+func _physics_process(delta: float) -> void {}
+
+@const
+@override
+func _get_configuration_warnings() -> PackedStringArray {
+  return {};
+}
+
+class Walker {
+  extends Player
+
+  @override
+  func _process(delta: float) -> void {}
+}

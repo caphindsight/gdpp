@@ -96,7 +96,7 @@ func TestInitNewPackage(t *testing.T) {
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
-	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++17\"\n"; got != want {
+	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 1\nstd = \"c++17\"\n"; got != want {
 		t.Errorf("config = %q, want %q", got, want)
 	}
 }
@@ -142,7 +142,7 @@ func TestInitNestedPackages(t *testing.T) {
 }
 
 func TestInitUpdatePackage(t *testing.T) {
-	pkgs := map[string]string{"src/pkg": "bind = \"4.2\"\nspec = \"4.3\"\n"}
+	pkgs := map[string]string{"src/pkg": "bind = \"4.2\"\nspec = \"4.3\"\nsyntax = 0\n"}
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Bind: "4.3", Syntax: ptr(1)}, pkgs)
 	want := "" +
 		"[-] Set the Godot C++ bindings to 4.3.\n" +
@@ -183,9 +183,44 @@ func TestInitPackageQuitTimeout(t *testing.T) {
 	}
 }
 
+func TestInitPackageNightlySyntax(t *testing.T) {
+	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 1\n"}
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Nightly: true}, pkgs)
+	want := "[!] Syntax 0 is reserved for the nightly version of GD++, which is explicitly not backward compatible: never use it in production!\n" +
+		"[-] Set the GD++ syntax to 0.\n"
+	if !strings.HasPrefix(out, want) {
+		t.Errorf("output = %q, want it to start with %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
+func TestInitPackageUnknownSyntax(t *testing.T) {
+	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\n"}
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		withMemFS(t, "/games/my_game", withPackages(pkgs))
+		(&CmdInit{Path: "src/pkg", Update: true, Syntax: ptr(2)}).Run()
+		return
+	}
+	out, code := runFailHelper(t, t.Name())
+	if want := "[?] Unknown GD++ syntax 2: either the value is wrong, or this version of gd++ is outdated. Continue? [y/n] n\n"; code != 1 || !strings.HasPrefix(out, want) {
+		t.Errorf("exit code = %d, output = %q, want 1, prefix %q", code, out, want)
+	}
+	withForce(t, true)
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Syntax: ptr(2)}, pkgs)
+	if want := "[-] Set the GD++ syntax to 2.\n"; !strings.HasPrefix(out, want) {
+		t.Errorf("output = %q, want it to start with %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 2\nstd = \"c++20\"\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
 func TestInitExistingPackage(t *testing.T) {
 	withForce(t, true)
-	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"}
+	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 1\nstd = \"c++20\"\n"}
 	out, _ := runInit(t, CmdInit{Path: "src/pkg", Bind: "4.3"}, pkgs)
 	want := "" +
 		"[!] No changes were made.\n" +
@@ -205,6 +240,8 @@ func TestInitInvalidArgs(t *testing.T) {
 		"project_prefix":  {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
 		"package_prefix":  {CmdInit{Path: "src/pkg", Prefix: "my pkg"}, `"my pkg" is not a valid class name prefix`},
 		"negative_quit":   {CmdInit{Path: "src/pkg", QuitTimeout: ptr(-1.0)}, "--quit-timeout cannot be negative"},
+		"negative_syntax": {CmdInit{Path: "src/pkg", Syntax: ptr(-1)}, "--syntax cannot be negative"},
+		"syntax_nightly":  {CmdInit{Path: "src/pkg", Syntax: ptr(1), Nightly: true}, "--syntax and --nightly cannot be used together"},
 		"project_quit":    {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
 		"class_prefix":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class"},
 		"project_icon":    {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
@@ -238,7 +275,7 @@ func TestInitInvalidArgs(t *testing.T) {
 	}
 }
 
-const classPkgConfig = "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
+const classPkgConfig = "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 1\nstd = \"c++20\"\n"
 
 func TestInitNewClass(t *testing.T) {
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "MyNode", Include: "pkg://my_node.h", Icon: "res://my_node.svg"}, map[string]string{"src/pkg": classPkgConfig})

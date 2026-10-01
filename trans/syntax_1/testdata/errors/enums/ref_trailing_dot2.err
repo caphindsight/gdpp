@@ -1,0 +1,4 @@
+errors/enums/ref_trailing_dot2.gd++:3:1: Expected a name after ".", but found "}".
+ 3 | }
+   | ^
+Hint: Values of other enums are written Enum.VALUE, e.g. Suit.HEARTS or Node.ProcessMode.PROCESS_MODE_ALWAYS.

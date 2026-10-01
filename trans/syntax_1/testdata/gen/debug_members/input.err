@@ -1,0 +1,4 @@
+input.gd++:1:1: The name "Gate" is already declared by a dependency.
+ 1 | class_name Gate
+   | ^
+Hint: Names must differ from Godot's, and from those of the package's other classes, externs and enums.

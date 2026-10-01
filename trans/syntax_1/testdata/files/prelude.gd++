@@ -1,0 +1,11 @@
+decl {
+  #include <vector>
+}
+impl {
+  static int counter;
+}
+decl impl {
+  #define FOO 1
+}
+
+class_name Foo

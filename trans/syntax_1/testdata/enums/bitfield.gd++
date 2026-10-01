@@ -1,0 +1,2 @@
+@bitfield
+enum Effect { NONE = 0 RED BOLD BLINKING RED_AND_BOLD = RED | BOLD }

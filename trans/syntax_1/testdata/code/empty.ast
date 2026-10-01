@@ -1,0 +1,14 @@
+File: @1:1
+  FileClass: @1:1
+    Name: C
+    Members:
+      - @3:1
+        Code: @3:1
+          Decl: true
+          Body: @3:6
+            TextPos: 3:7
+      - @4:1
+        Code: @4:1
+          Impl: true
+          Body: @4:6
+            TextPos: 4:7

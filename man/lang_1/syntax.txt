@@ -1,0 +1,135 @@
+Syntax: tokens, comments, literals, keywords and scopes
+
+This page describes the lexical structure of GD++: how a file is split into words, what comments look like, and which scopes a file has. For the grammar of declarations, see `gd++ man grammar`.
+
+# Files
+
+A GD++ file is a text file with the extension .gd++, .gdpp or .gg, in UTF-8. Line endings can be \n or \r\n. Indentation and spacing don't matter, except where this page says so: GD++ is not whitespace sensitive, unlike GDScript.
+
+# Scopes
+
+A file has four kinds of scope. Each one allows different things:
+
+1. The class declaration scope: the top of a file, the rest of a file after class_name, and the inside of class { ... } and extern { ... }. It holds declarations: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `notif`, `decl`, `impl`, `import` and `noimport`. The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
+2. The property declaration scope: the braces after `var name: type { ... }`. It holds decl, get and set blocks only. See `gd++ man variables`.
+3. The enum declaration scope: the braces after `enum Name { ... }`, and the rest of a file after enum_name. It holds an optional extends, then enum values. See `gd++ man enums`.
+4. The C++ scope: the inside of every other pair of braces, i.e. function bodies, `ctor`, `dtor` and `notif` blocks, `decl` and `impl` blocks, `get` and `set` blocks, and initial values and default values. It holds any C++ code, which GD++ copies into the generated C++. See `gd++ man code`.
+
+In all scopes, GD++ splits the text into the same kinds of tokens, described below, and handles comments the same way. So a C++ block ends at the "}" that matches its "{", and braces inside strings, character literals and comments don't count.
+
+# Comments
+
+```gd++
+// A line comment, to the end of the line.
+/* A block comment. */
+/* Block comments /* nest */, so this is still a comment. */
+```
+
+Block comments nest, like in Rust, not like in C++: every "/*" inside a block comment needs its own "*/". This also holds in C++ code inside a GD++ file, so this common C++ trick doesn't work:
+
+```gd++
+/* Disabled: /* old code */     <- still inside the comment here
+```
+
+Comments are removed from the C++ code that GD++ generates. A comment is replaced by the newlines it spans, or a space if it spans none, so the lines of the generated code still match the lines of the GD++ file.
+
+# Doc comments
+
+```gd++
+/// A doc comment: three slashes.
+/// More lines continue it.
+
+/**
+  A block doc comment: slash and two stars.
+*/
+```
+
+Doc comments document the declaration right after them, and become Godot's help for it. See `gd++ man docs`. A few look-alikes are plain comments, not doc comments:
+
+```gd++
+////    four or more slashes
+/**/    an empty block comment
+/***    three or more stars
+```
+
+A doc comment that isn't followed by a declaration is an error. In C++ code, doc comments are plain comments.
+
+# Identifiers
+
+Identifiers are letters, digits and underscores, not starting with a digit: [A-Za-z_][A-Za-z0-9_]*. They name classes, functions, variables, types and so on. Names are case sensitive. Only ASCII letters are allowed in names.
+
+# Keywords
+
+These words have a special meaning in declarations. Don't use them as names of classes, functions, variables and the like, since GD++ would misread them:
+
+```gd++
+class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
+func  get  impl  import  noimport  notif  set  signal  var
+```
+
+GD++ has no other keywords: e.g. const, static, pass, if and return are not GD++ keywords. Attributes such as @static are annotations. See `gd++ man annotations`.
+
+In C++ code, GD++ gives a meaning to eight more words: emit, rpc, is_cancelled, is_done, claim and cancel, which it rewrites, see `gd++ man rewrites`, and This and gd, see `gd++ man code`.
+
+# Numbers
+
+Numbers are C-like. In declarations, only integers are used: in enum values, constants and annotation arguments. Integers can be:
+
+```gd++
+42        decimal
+-7        negative
+0x2A      hexadecimal
+0b101010  binary
+052       octal, with a leading 0
+1'000'000 with C++14 digit separators
+```
+
+They must fit in a signed 64-bit integer. Annotation arguments can also be floating point numbers, e.g. @export_range(0.0, 1.5, 0.01).
+
+In C++ code, any C++ number works, e.g. 1.5e-3, 0x1p4, 10u or 1'000.0f.
+
+# Strings and characters
+
+```gd++
+"A string, with \"escapes\"."
+'c'                           a character
+u8"UTF-8", u"UTF-16", U"UTF-32", L"wide"
+R"(A raw string, with "quotes" and } braces.)"
+R"delim(A raw string ending with )delim"
+```
+
+Strings end on the same line. Raw strings, like in C++, can span lines, and end with ")", their delimiter, and a quote. In declarations, strings are only used as annotation arguments, in double quotes. In C++ code, strings keep their C++ meaning.
+
+An apostrophe that doesn't close on the same line is not a character literal, so C++ code like `#error don't` works.
+
+# Punctuation
+
+Besides the arrow "->", every punctuation character is a token of its own: ( ) [ ] { } , : = @ - and so on. In C++ code, all of C++'s operators work.
+
+# Brackets
+
+Every "(", "[" and "{" in the file must be closed by the matching ")", "]" or "}", in C++ code too. GD++ checks this for the whole file first, and reports the bracket that is never closed, or the one that doesn't match. A missing "}" usually shows up as a "}" that is indented differently from its "{"; GD++ uses that to point at the right place.
+
+# Values after "="
+
+After the "=" of a variable's initial value, or of a parameter's default value, comes C++ in one of two forms:
+
+- An expression, up to the end of the line. It can continue on the next lines while a bracket is open. A default value also ends at a "," outside brackets, and at the ")" of the parameter list.
+- A block in braces, which returns the value, like a function body.
+
+```gd++
+var a: int = 1 + 2
+var b: int = compute(1,
+  2)
+var c: Array = {
+  Array res;
+  res.push_back(1);
+  return res;
+}
+```
+
+See `gd++ man variables` and `gd++ man functions`.
+
+# See also
+
+`gd++ man files`, `gd++ man grammar`, `gd++ man errors`.

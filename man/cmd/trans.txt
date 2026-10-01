@@ -3,12 +3,12 @@ gd++ trans: print the C++ that GD++ generates from a file
 # Synopsis
 
 ```sh
-gd++ trans FILE [--syntax N] [--spec NAME | --nospec]
+gd++ trans FILE [--syntax N | --nightly] [--spec NAME | --nospec]
                 [--object NAME[=INCLUDE]] [--refcounted NAME[=INCLUDE]]
                 [--extern NAME[=INCLUDE]] [--refcounted-extern NAME[=INCLUDE]]
                 [--enum NAME[=INCLUDE][:VALUES]]
                 [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
-gd++ trans --runtime [--syntax N]
+gd++ trans --runtime [--syntax N | --nightly]
 ```
 
 # Description
@@ -31,10 +31,13 @@ FILE
   The GD++ file to transpile.
 
 --runtime
-  Print the runtime header that all generated C++ includes, gd++/syntax_0.hpp, instead of transpiling a file. See `gd++ man runtime`.
+  Print the runtime header that all generated C++ includes, gd++/syntax_N.hpp for syntax N, instead of transpiling a file. See `gd++ man runtime`.
 
 --syntax N
-  The GD++ syntax version to use. Default: the package's, or else 0.
+  The GD++ syntax version to use. Default: the package's, or else the latest stable one, which `gd++ --syntax` shows.
+
+--nightly
+  The same as --syntax 0, the nightly syntax.
 
 --spec NAME
   Take Godot's classes and enums from this Godot API spec in the project's cache, instead of from the package. Works outside of packages too, but must run in a project.

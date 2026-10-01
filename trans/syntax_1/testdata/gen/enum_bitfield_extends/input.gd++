@@ -1,0 +1,4 @@
+@bitfield enum Base { A B }
+@bitfield enum Derived { extends Base C D = A | C }
+@bitfield enum Sizes { extends Control.SizeFlags HUGE }
+@bitfield enum MoreStyle { extends Style UNDERLINE MASK = BOTH | UNDERLINE }

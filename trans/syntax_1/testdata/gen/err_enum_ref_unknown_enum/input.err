@@ -1,0 +1,4 @@
+input.gd++:1:14: Unknown enum "Levl".
+ 1 | enum E { A = Levl.EASY }
+   |              ^^^^
+Hint: Did you mean "Level"?

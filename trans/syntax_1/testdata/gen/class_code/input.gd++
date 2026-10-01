@@ -1,0 +1,34 @@
+class_name Player
+extends Node
+
+@global decl {
+  #include <vector>
+}
+
+@global impl {
+  static int counter = 0;
+}
+
+@global decl impl {
+  #define LIMIT 10
+}
+
+decl {
+  std::vector<int> scores_;
+}
+
+decl {
+ public:
+  void reset();
+}
+
+impl {
+  void This::reset() {
+    scores_.clear();
+    counter++;
+  }
+}
+
+decl impl {
+  #define PLAYER_TAG "player"
+}

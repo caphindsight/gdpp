@@ -1,0 +1,5 @@
+class_name Lock
+extends Node
+
+@virtual
+func _open(key: Key) -> Door

@@ -1,0 +1,9 @@
+extern Terrain3D {
+  extends Node
+  var data: Terrain3DData
+}
+
+extern Terrain3DData {
+  extends Object
+  func get_height(pos: Vector3) -> float
+}

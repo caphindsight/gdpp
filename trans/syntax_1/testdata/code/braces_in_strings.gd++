@@ -1,0 +1,8 @@
+class_name Test
+func f() -> void {
+  s = "}";
+  c = '{';
+  e = "\"}";
+  u = u8"{";
+  w = L'}';
+}

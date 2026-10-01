@@ -1,0 +1,1 @@
+@bitfield enum S { A B C = 7 D }

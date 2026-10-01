@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Spawner" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="items">
+			<return type="int[]" />
+			<param index="0" name="names" type="String[]" />
+			<param index="1" name="nodes" type="Node[]" />
+			<param index="2" name="map" type="Dictionary[String, Resource]" />
+			<description>
+			</description>
+		</method>
+		<method name="spawn">
+			<return type="Node3D" />
+			<param index="0" name="parent" type="Node" />
+			<param index="1" name="tex" type="Texture2D" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

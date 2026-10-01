@@ -21,7 +21,7 @@ See `gd++ man init` for all options.
 ```toml
 bind = "10.0.0-stable"
 spec = "4.7.2-stable"
-syntax = 0
+syntax = 1
 std = "c++20"
 prefix = "Foo"
 quit_timeout = 2.5
@@ -40,7 +40,7 @@ spec (required)
   The name of the Godot API spec to build against, e.g. "4.7.2-stable". The spec describes the classes of one Godot version, and decides which classes and methods your code can use. The library then needs at least that Godot version: the generated .gdextension file says so, and older versions of Godot refuse to load it. The bindings are generated from the spec, so they don't need to match the spec's version exactly, but they must support it.
 
 syntax (optional, default 0)
-  The version of the GD++ language that the package's GD++ files use. Currently, only 0 exists. Future versions of GD++ may change the language in incompatible ways; they will add a new syntax version, and keep supporting the old ones, so your code keeps building. See `gd++ man lang`.
+  The version of the GD++ language that the package's GD++ files use. `gd++ init` writes the latest stable version for a new package. Without the key, a package uses syntax 0, the nightly version. See "Syntax versions" below.
 
 std (optional, default "c++20")
   The C++ standard to compile with, e.g. "c++17", "c++20" or "c++23". It becomes -std=... for GCC and Clang, and /std:... for MSVC. It must be at least what godot-cpp needs, i.e. c++17.
@@ -55,6 +55,15 @@ quit_timeout (optional, default 1)
   A plain C++ class that the package registers with Godot. Each has a name, the header that declares it, an optional icon, and tool = true if its code runs in the editor too; without it, the class is a runtime class, whose code runs only in the game. GD++ classes are not listed here: GD++ finds them in the GD++ files. See `gd++ man cpp-classes`.
 
 Missing required keys and unknown keys are errors, e.g. "Missing key spec in res://my_package/gd++pkg.toml.". Change the file with `gd++ init --update`, or by hand. `gd++ fix` reformats it and sorts its classes by name.
+
+# Syntax versions
+
+Each package chooses the version of the GD++ language that its files use, with the syntax key. `gd++ init` gives a new package the latest stable version. `gd++ --syntax` lists the versions that your gd++ supports.
+
+- Stable versions, 1 and up, never change: code that builds with one keeps building with every later gd++. Changes to the language come in a new syntax version, and you choose when to upgrade a package, with `gd++ init PATH --update --syntax N`.
+- Syntax 0 is the nightly version: the language as it's being developed. It's explicitly not backward compatible: any new gd++ may break code written for it. Use it to try out new features, never in production. `gd++ init` warns when you choose it, and `gd++ ls` marks it.
+
+The language pages of this manual describe one syntax version, which their titles name: in a package, the package's, and elsewhere the latest stable one. `gd++ man --syntax N` or `gd++ man --nightly` shows another, e.g. `gd++ man --nightly signals`.
 
 # The package's id
 

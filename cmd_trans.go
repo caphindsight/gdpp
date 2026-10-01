@@ -21,7 +21,8 @@ import (
 type CmdTrans struct {
 	File             string   `arg:"positional" help:"the GD++ file to transpile"`
 	Runtime          bool     `arg:"--runtime" help:"print the runtime header that all generated C++ includes, without a file"`
-	Syntax           *int     `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: the package's, or else 0]"`
+	Syntax           *int     `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: the package's, or else the latest stable one]"`
+	Nightly          bool     `arg:"--nightly" help:"the same as --syntax 0, the nightly syntax"`
 	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes and enums from this Godot API spec in the project's cache, instead of the package's"`
 	NoSpec           bool     `arg:"--nospec" help:"don't take Godot's classes and enums from the package's spec"`
 	Object           []string `arg:"--object,separate" placeholder:"NAME[=INCLUDE]" help:"a class that isn't refcounted; the include defaults to godot-cpp's header"`
@@ -33,7 +34,8 @@ type CmdTrans struct {
 }
 
 func (c *CmdTrans) Run() {
-	syntax := 0
+	c.Syntax = chosenSyntax(c.Syntax, c.Nightly)
+	syntax := trans.LatestSyntax
 	if c.Syntax != nil {
 		syntax = *c.Syntax
 	}

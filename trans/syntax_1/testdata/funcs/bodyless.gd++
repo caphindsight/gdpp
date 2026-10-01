@@ -1,0 +1,4 @@
+class_name Test
+func a() -> int
+func b()
+func c(x: int) -> void

@@ -1,0 +1,4 @@
+errors/balance/unterminated_comment.gd++:2:1: This comment is never closed.
+ 2 | /* Never closed.
+   | ^^
+Hint: Block comments nest in GD++, so every "/*" inside a comment needs its own "*/".

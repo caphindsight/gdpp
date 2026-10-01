@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+@rpc("reliable", "unreliable")
+func f() -> void {}

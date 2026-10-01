@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+@thread_safe
+func f() -> int { return 0; }

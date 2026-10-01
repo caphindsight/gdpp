@@ -1,0 +1,14 @@
+class_name Lamp
+extends Node
+
+enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
+
+@export var casting: ShadowCastingSetting = ON
+var full: ShadowCastingSetting = ShadowCastingSetting.DOUBLE_SIDED
+var short_name: ShadowCastingSetting = SHADOWS_ONLY
+var level: Level = HARD
+var computed: Level = static_cast<Level>(0)
+
+func set_all(setting: ShadowCastingSetting = OFF, other: Level = Level.EASY) -> void {
+  (void) static_cast<GeometryInstance3D::ShadowCastingSetting>(setting);
+}

@@ -1,0 +1,4 @@
+files/top_level_const.gd++:3:1: This enum is outside of any class.
+ 3 | enum ANSWER = 42
+   | ^^^^
+Hint: Add "class_name Name" at the top of the file to make the whole file a class, or move this into an inline class: "class Name { ... }".

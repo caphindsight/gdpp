@@ -1,0 +1,2 @@
+class_name Test
+@export @onready var x: int

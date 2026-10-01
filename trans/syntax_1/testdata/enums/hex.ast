@@ -1,0 +1,8 @@
+File: @1:1
+  FileClass: @1:1
+    Name: C
+    Members:
+      - @3:1
+        Enum: @3:1
+          Name: MASK
+          Value: @3:13 255

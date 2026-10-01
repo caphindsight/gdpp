@@ -1,0 +1,6 @@
+class_name Test
+@export_range(
+  0,
+  10,
+)
+var x: int

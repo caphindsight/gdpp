@@ -1,0 +1,5 @@
+class_name Test
+func f() -> void {
+  auto g = [&]() { return Vector3{1, 2, 3}; };
+  if (x) { { y(); } }
+}

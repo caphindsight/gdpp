@@ -1,0 +1,4 @@
+/// The class.
+@tool
+class_name Foo
+extends Node

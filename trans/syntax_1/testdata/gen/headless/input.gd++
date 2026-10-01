@@ -1,0 +1,13 @@
+enum Shared { ONE, TWO }
+
+class A {
+  @global decl {
+    struct Helper {};
+  }
+
+  @global impl {
+    int helper_count = 0;
+  }
+
+  func f(s: Shared) -> void {}
+}

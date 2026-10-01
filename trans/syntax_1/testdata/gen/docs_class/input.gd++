@@ -1,0 +1,40 @@
+/// A player character.
+///
+/// Moves around and [b]jumps[/b]. See [method jump].
+/// Second line of the description.
+/// @tutorial(Movement): https://example.com/movement
+/// @tutorial: https://example.com/plain
+/// @experimental: Still changing.
+class_name Player
+extends Node3D
+
+/// Makes the player jump.
+/// [codeblock]
+/// player.jump(2.0)
+///     indented()
+/// [/codeblock]
+/// Afterwards, [code]on_floor[/code] is false.
+func jump(height: float) -> void {}
+
+/// Current health.[br]Never negative.
+/// @deprecated: Use [member health] instead.
+var hp: int
+
+/// @deprecated
+var legacy: int
+
+/**
+  Emitted when the player dies.
+  Escaped: <b> & "quotes".
+*/
+signal died(cause: String)
+
+/// The maximum speed.
+enum MAX_SPEED = 10
+
+enum State {
+  /// Standing still.
+  IDLE
+  /// @experimental
+  RUNNING
+}

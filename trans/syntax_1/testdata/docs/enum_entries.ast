@@ -1,0 +1,13 @@
+File: @1:1
+  InlineEnums:
+    - @1:1
+      Name: Suit
+      Entries:
+        - @3:3
+          Doc: @2:3 Red.
+          Name: DIAMONDS
+        - @5:3
+          Doc: @4:3 Black.
+          Name: CLUBS
+          Value: @5:11
+            Int: @5:11 3

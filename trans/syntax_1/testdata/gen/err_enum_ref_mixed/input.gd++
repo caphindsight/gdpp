@@ -1,0 +1,1 @@
+enum E { A = GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF }

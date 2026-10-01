@@ -1,0 +1,6 @@
+/// Difficulty levels.
+enum_name Difficulty
+/// Easy.
+EASY
+NORMAL = 5
+HARD

@@ -1,0 +1,7 @@
+/// A terrain from another package.
+extern_name Terrain3
+extends Node3D
+
+func height(x: float) -> float
+var size: int
+signal done

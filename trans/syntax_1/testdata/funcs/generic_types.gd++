@@ -1,0 +1,2 @@
+class_name Test
+func f(a: Array[int], b: Dictionary[String, Array[Node]]) -> Array[String] {}

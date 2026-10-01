@@ -1,0 +1,4 @@
+errors/funcs/missing_name.gd++:1:6: Expected a function name after "func", but found "(".
+ 1 | func (a: int) -> void {}
+   |      ^
+Hint: Every function needs a name, e.g. "func my_function()".

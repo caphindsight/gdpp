@@ -1,0 +1,4 @@
+extern E {
+  @onthread
+  func f() -> void
+}

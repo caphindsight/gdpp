@@ -1,0 +1,4 @@
+errors/misc/unicode_caret.gd++:1:9: Expected a declaration, but found name "fun".
+ 1 | /* ü */ fun foo() {}
+   |         ^^^
+Hint: Did you mean "func"?

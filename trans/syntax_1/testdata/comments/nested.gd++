@@ -1,0 +1,3 @@
+/* outer /* inner */ still outer */
+class Foo {}
+/* a /* b /* c */ b */ a */

@@ -1,0 +1,4 @@
+input.gd++:1:33: GeometryInstance3D has no enum value SHADOW_CASTING_SETTING_OF.
+ 1 | enum E { A = GeometryInstance3D.SHADOW_CASTING_SETTING_OF }
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+Hint: Did you mean "SHADOW_CASTING_SETTING_OFF"?

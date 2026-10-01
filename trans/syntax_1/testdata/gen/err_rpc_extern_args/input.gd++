@@ -1,0 +1,7 @@
+class_name A
+extends Node
+
+extern B {
+  extends Node
+  @rpc("reliable") func f() -> void
+}

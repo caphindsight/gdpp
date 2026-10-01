@@ -1,0 +1,15 @@
+class_name Scene
+extends Node
+
+import MeshInstance3D
+noimport MeshInstance2D
+
+decl {
+  Camera3D *camera_ = nullptr;
+}
+
+func ready() -> void {
+  if (Engine::get_singleton()->is_editor_hint()) return;
+  MeshInstance2D *m = nullptr;
+  Texture2D *t = nullptr;
+}

@@ -1,0 +1,11 @@
+@game_only
+class_name Pool
+extends Node
+
+notif(POSTINITIALIZE, PREDELETE) {
+  gd::print("lifecycle ", WHAT);
+}
+
+notif(PREDELETE) {
+  gd::print("deleted");
+}

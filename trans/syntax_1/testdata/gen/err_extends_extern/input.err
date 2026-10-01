@@ -1,0 +1,4 @@
+input.gd++:2:9: A can't extend Road, which is an extern.
+ 2 | extends Road
+   |         ^^^^
+Hint: Extend the extern's base class instead.

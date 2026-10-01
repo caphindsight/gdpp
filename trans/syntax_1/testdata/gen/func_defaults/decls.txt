@@ -1,0 +1,2 @@
+{Name:Spawner Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:Kind Kind:3 Base: Values:[{Name:SMALL Value:0 Doc: Implicit:true Expr:} {Name:BIG Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

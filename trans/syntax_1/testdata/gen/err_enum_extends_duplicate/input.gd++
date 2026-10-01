@@ -1,0 +1,2 @@
+enum A { X }
+enum B { extends A Y X }

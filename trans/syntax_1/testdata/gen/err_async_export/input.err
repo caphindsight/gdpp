@@ -1,0 +1,4 @@
+input.gd++:4:1: Async variables can't be exported.
+ 4 | @export var task: Async[int]
+   | ^^^^^^^
+Hint: Neither the inspector nor scene files can hold a task.

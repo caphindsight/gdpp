@@ -1,0 +1,5 @@
+@flags
+enum E {
+  @deprecated OLD
+  NEW
+}

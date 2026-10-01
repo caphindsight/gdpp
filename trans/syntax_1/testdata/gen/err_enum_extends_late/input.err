@@ -1,0 +1,4 @@
+input.gd++:1:12: Expected an enum value name, but found keyword "extends".
+ 1 | enum A { X extends Level }
+   |            ^^^^^^^
+Hint: "extends" comes before the values and names the base enum: "enum Name { extends Base A B }".

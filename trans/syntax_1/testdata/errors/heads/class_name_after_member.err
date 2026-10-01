@@ -1,0 +1,4 @@
+errors/heads/class_name_after_member.gd++:2:1: Expected a declaration, but found keyword "class_name".
+ 2 | class_name Foo
+   | ^^^^^^^^^^
+Hint: A file has at most one "class_name", at the very top. Only decl and impl blocks may come before it.

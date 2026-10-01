@@ -1,0 +1,3 @@
+errors/heads/missing_extern_name.gd++:1:8: Expected an extern name after "extern", but found "{".
+ 1 | extern {}
+   |        ^

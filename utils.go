@@ -5,10 +5,41 @@ package main
 import (
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+
+	"gd++/trans"
 )
+
+// chosenSyntax returns the GD++ syntax that the --syntax and --nightly flags
+// choose, or nil if neither is given.
+func chosenSyntax(syntax *int, nightly bool) *int {
+	Assert(syntax == nil || !nightly, "Invalid arguments: --syntax and --nightly cannot be used together.")
+	if nightly {
+		s := trans.NightlySyntax
+		return &s
+	}
+	return syntax
+}
+
+// syntaxVersions lists the GD++ syntax versions that this gd++ supports, one
+// per line, marking the nightly and the latest stable one.
+func syntaxVersions() string {
+	var text strings.Builder
+	for _, s := range trans.Syntaxes() {
+		text.WriteString(strconv.Itoa(s))
+		switch s {
+		case trans.NightlySyntax:
+			text.WriteString(" (nightly, not for production)")
+		case trans.LatestSyntax:
+			text.WriteString(" (latest stable)")
+		}
+		text.WriteString("\n")
+	}
+	return text.String()
+}
 
 // countTrue returns how many of bs are true.
 func countTrue(bs ...bool) int {

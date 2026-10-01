@@ -1,0 +1,4 @@
+errors/heads/extends_before_brace.gd++:1:11: Expected "{" after the class name, but found keyword "extends".
+ 1 | class Foo extends Node {
+   |           ^^^^^^^
+Hint: In an inline class, "extends" goes inside the braces: "class Foo { extends ... }".

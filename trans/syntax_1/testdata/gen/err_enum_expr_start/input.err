@@ -1,0 +1,4 @@
+input.gd++:1:14: Expected a value after "=", but found "|".
+ 1 | enum E { A = | 1 }
+   |              ^
+Hint: Enum values are integers, such as 42 or 0x10, earlier values, such as RED, values of other enums, such as Suit.HEARTS, or these combined with |, &, ^, ~, +, -, *, / and % and parentheses.

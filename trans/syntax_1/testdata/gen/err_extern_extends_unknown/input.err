@@ -1,0 +1,4 @@
+input.gd++:5:11: Unknown base class "Nowhere".
+ 5 |   extends Nowhere
+   |           ^^^^^^^
+Hint: Types are Godot types, or classes, externs and enums from the dependencies or this file.

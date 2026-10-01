@@ -1,0 +1,3 @@
+extern_name Foo
+class A {}
+func f()

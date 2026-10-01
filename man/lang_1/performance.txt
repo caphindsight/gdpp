@@ -1,0 +1,392 @@
+Performance: how fast GD++ code runs, compared to GDScript
+
+GD++ compiles to C++, so your own logic, like math and loops, runs 15 to 50 times faster than the same code in GDScript, in release. Work done with Godot's own types, like Array, Dictionary and String, gains only 1.5 to 2.5 times, and calls to the engine, like creating nodes, gain about 10%. This page shows measurements, and what they mean for your code.
+
+# The measurements
+
+A test class, PerfTest, has nine benchmarks. Each is a @profile function that calls a @virtual function, which does the work. A GDScript subclass overrides the @virtual functions with the same code in GDScript, line by line, so the same @profile functions time either language. See `gd++ man debugging` and `gd++ man functions`.
+
+The benchmarks, whose full code is at the end of this page, in "The benchmark code":
+
+```
+tiny_calls      200,000 calls of a function that adds 1 to a number
+integer_math    the Collatz sequences of 1 to 100,000: about 11 million loop steps of int math
+float_math      a 300 by 300 Mandelbrot set, up to 100 steps per point: float math
+vector_math     200,000 steps of normalizing, interpolating and crossing Vector3s
+strings         joins 100,000 numbers into a String with +=, one by one, then splits it
+arrays          fills an Array with 200,000 ints, changes, reverses, shrinks and sums it
+dictionaries    adds 200,000 numbers into a Dictionary of 5,000 keys, then sums its values
+packed_arrays   fills a PackedInt64Array with 200,000 numbers, sorts it, and sums some
+godot_calls     20,000 times: creates a Node2D, sets it up, adds it to the tree, reads it, frees it
+```
+
+The average time of one call, in milliseconds, on one machine:
+
+```
+Benchmark       Release                          Debug
+                GD++    GDScript   GD++ gain     GD++    GDScript   GD++ gain
+tiny_calls        0.66     10.3      16x           1.1      19.3      17x
+integer_math      7.1     316        44x          11.9     592        50x
+float_math        3.2     165        51x           8.9     198        22x
+vector_math       0.79     12.2      15x          13.6      18.4     1.4x
+strings           8.5   17975      2100x          10.5   17935      1700x
+arrays            7.3      17.0     2.3x          17.6      22.7     1.3x
+dictionaries      8.7      13.6     1.6x          32.3      17.5     0.5x
+packed_arrays    10.2      15.6     1.5x           9.6      17.1     1.8x
+godot_calls      63.4      71.1     1.1x          83.9      88.3     1.1x
+```
+
+- Release: the game exported in release mode, with GD++ built by `gd++ build --ship`.
+- Debug: the game run from the editor, with GD++ built by a plain `gd++ build`, so unoptimized.
+
+Your numbers will differ with the machine, but the patterns below hold.
+
+# What the numbers mean
+
+Your own logic is 15 to 50 times faster in release. In integer_math, a loop step takes under 1 ns in GD++, and about 30 ns in GDScript, even in release. Code that only uses ints, floats, bools, vectors and C++'s own types compiles to a few machine instructions, while GDScript runs every step through its interpreter. Vector3 and the other math types gain a bit less, but still a lot: godot-cpp implements them in C++, like the engine does.
+
+Godot's containers gain 1.5 to 2.5 times in release. In C++, every operation on an Array, Dictionary, String or packed array, even reading one item, is a call into the engine, through GDExtension, and Array and Dictionary also convert every item to and from a Variant. So these operations cost about as much as in GDScript, and GD++ only saves the loop around them. In packed_arrays, sorting is a single call into the engine, and takes the same time in both languages.
+
+Engine calls take almost the same time. In godot_calls, a Node2D's round trip takes 3 to 4 µs, nearly all of it in the engine, so the calling language hardly matters.
+
+Calling GDScript from C++ costs about 50 ns in release, and 100 ns in debug. In tiny_calls, the GDScript run measures exactly that: each call goes from C++ into the script. Calls within GD++, also of a @virtual function that no script overrides, take a few ns.
+
+Strings are a special case. In GDScript, `s += x` makes a new string and copies all of `s` into it, so building a long string piece by piece takes time that grows with the square of its length: 18 s for this 100,000 part string, in debug and release alike. In C++, `s += x` appends in place, and costs the same for every part. So the gap is huge here, and grows with the length of the string, but it comes from how the code is written, not from the language's speed: GDScript that collects the parts in a PackedStringArray and joins them once, with "".join(), avoids the copies.
+
+# Debug and release
+
+GD++'s lead is bigger in release, the game you ship. Two things change between the columns:
+
+- GD++ is unoptimized in debug. Unoptimized C++ can be many times slower: vector_math took 17 times longer than in release, and dictionaries almost 4 times. Code that uses Godot's types in C++, like Vector3, Array, Dictionary and Variant, suffers the most, since they are made of many small C++ functions, which only the optimizer removes. Code that spends its time inside the engine, like strings and packed_arrays, changes much less, since the engine is optimized either way.
+- Godot itself is faster in release. Debug GDScript checks more at every step, so GDScript ran up to 2 times faster in release, e.g. in integer_math and tiny_calls. Engine-heavy code gains in both languages: godot_calls took 24% less time with GD++, and 20% less with GDScript.
+
+So in debug, GD++ can be slower than GDScript: dictionaries took almost twice as long as in GDScript, and arrays and vector math were only a little faster. This is fine while you develop, but:
+
+- Measure speed in an optimized build, with `gd++ build --opt` or `gd++ build --ship`, never in a plain debug build.
+- Ship with `gd++ build --ship`, which is optimized.
+- If the game is too slow to play while you develop, develop with --opt. It keeps the other features of debug builds, like hot reload. See `gd++ man building`.
+
+# Writing fast code
+
+- Move hot logic into GD++, e.g. code that runs every frame over many objects: math, physics helpers, procedural generation, path finding, AI. That's where the big gains are.
+- In hot loops, keep data in C++ types: ints, floats, Godot's math types like Vector3, and C++ containers like std::vector, not Array or Dictionary. Every access to a Godot container is a call into the engine. Convert at the edges, where your code talks to the engine or to GDScript.
+- Keep engine calls few. They cost the same from GD++ as from GDScript, so a loop that mostly calls the engine gains little. Call it less often, e.g. once per frame instead of once per object, or use the engine's bulk functions, like sort.
+- Don't call GDScript from C++ in hot loops, e.g. a script's override of a @virtual function once per item. Call it once per batch instead.
+- Build strings with += in GD++. In GDScript, join them from a PackedStringArray instead.
+- Don't guess: profile. `gd++ build --opt --profile all --print` prints what each function costs per frame. See `gd++ man debugging`.
+
+# The benchmark code
+
+PerfTest calls every benchmark once per frame, from _process, with these values of n: 100,000 for integer_math and strings, 300 for float_math, 20,000 for godot_calls, and 200,000 for the rest. Each benchmark is a pair of functions, e.g. for integer_math:
+
+```gd++
+@profile
+func integer_math(n: int) -> int {
+  return _integer_math_impl(n);
+}
+
+@virtual
+func _integer_math_impl(n: int) -> int {
+  ...
+}
+```
+
+The GDScript subclass starts with `extends PerfTest`, and overrides each _NAME_impl function. Below are both versions of each benchmark.
+
+tiny_calls: Calls a function that adds 1 to a number, n times. The loop is in the @profile function, in C++, so with the script, each call goes from C++ into GDScript.
+
+```gd++
+@profile
+func tiny_calls(n: int) -> int {
+  int64_t x = 0;
+  for (int64_t i = 0; i < n; i++) {
+    x = _tiny_impl(x);
+  }
+  return x;
+}
+
+@virtual
+func _tiny_impl(x: int) -> int {
+  return x + 1;
+}
+```
+
+```gdscript
+func _tiny_impl(x: int) -> int:
+    return x + 1
+```
+
+integer_math: The total number of steps of the Collatz sequences of 1 to n.
+
+```gd++
+@virtual
+func _integer_math_impl(n: int) -> int {
+  int64_t steps = 0;
+  for (int64_t i = 1; i <= n; i++) {
+    int64_t x = i;
+    while (x != 1) {
+      if ((x & 1) == 0) {
+        x = x >> 1;
+      } else {
+        x = 3 * x + 1;
+      }
+      steps++;
+    }
+  }
+  return steps;
+}
+```
+
+```gdscript
+func _integer_math_impl(n: int) -> int:
+    var steps := 0
+    for i in range(1, n + 1):
+        var x: int = i
+        while x != 1:
+            if (x & 1) == 0:
+                x = x >> 1
+            else:
+                x = 3 * x + 1
+            steps += 1
+    return steps
+```
+
+float_math: How many points of a size by size grid are in the Mandelbrot set, after 100 steps.
+
+```gd++
+@virtual
+func _float_math_impl(size: int) -> int {
+  int64_t inside = 0;
+  for (int64_t py = 0; py < size; py++) {
+    double ci = -1.5 + 3.0 * py / size;
+    for (int64_t px = 0; px < size; px++) {
+      double cr = -2.0 + 3.0 * px / size;
+      double zr = 0.0;
+      double zi = 0.0;
+      int64_t it = 0;
+      while (it < 100 && zr * zr + zi * zi <= 4.0) {
+        double t = zr * zr - zi * zi + cr;
+        zi = 2.0 * zr * zi + ci;
+        zr = t;
+        it++;
+      }
+      if (it == 100) {
+        inside++;
+      }
+    }
+  }
+  return inside;
+}
+```
+
+```gdscript
+func _float_math_impl(size: int) -> int:
+    var inside := 0
+    for py in size:
+        var ci: float = -1.5 + 3.0 * py / size
+        for px in size:
+            var cr: float = -2.0 + 3.0 * px / size
+            var zr := 0.0
+            var zi := 0.0
+            var it := 0
+            while it < 100 and zr * zr + zi * zi <= 4.0:
+                var t: float = zr * zr - zi * zi + cr
+                zi = 2.0 * zr * zi + ci
+                zr = t
+                it += 1
+            if it == 100:
+                inside += 1
+    return inside
+```
+
+vector_math: n steps of normalizing, interpolating and crossing Vector3s.
+
+```gd++
+@virtual
+func _vector_math_impl(n: int) -> int {
+  Vector3 acc;
+  for (int64_t i = 0; i < n; i++) {
+    Vector3 v(i % 17, i % 13, i % 11 + 1);
+    acc = acc.lerp(v.normalized(), 0.1) + v.cross(Vector3(0, 1, 0)) * 0.001;
+  }
+  return int64_t(double(acc.length()) * 1000000.0);
+}
+```
+
+```gdscript
+func _vector_math_impl(n: int) -> int:
+    var acc := Vector3()
+    for i in n:
+        var v: Vector3 = Vector3(i % 17, i % 13, i % 11 + 1)
+        acc = acc.lerp(v.normalized(), 0.1) + v.cross(Vector3(0, 1, 0)) * 0.001
+    return int(acc.length() * 1000000.0)
+```
+
+strings: Joins n numbers with commas, one by one, then splits the result again.
+
+```gd++
+@virtual
+func _strings_impl(n: int) -> int {
+  String s;
+  for (int64_t i = 0; i < n; i++) {
+    s += String::num_int64(i % 1000);
+    s += ",";
+  }
+  return s.split(",").size() + s.length();
+}
+```
+
+```gdscript
+func _strings_impl(n: int) -> int:
+    var s := ""
+    for i in n:
+        s += str(i % 1000)
+        s += ","
+    return s.split(",").size() + s.length()
+```
+
+arrays: Fills an Array with 0 to n - 1, doubles the multiples of 3, reverses it, drops its second half, and sums the rest.
+
+```gd++
+@virtual
+func _arrays_impl(n: int) -> int {
+  Array a;
+  for (int64_t i = 0; i < n; i++) {
+    a.push_back(i);
+  }
+  for (int64_t i = 0; i < a.size(); i++) {
+    if (int64_t(a[i]) % 3 == 0) {
+      a[i] = int64_t(a[i]) * 2;
+    }
+  }
+  a.reverse();
+  while (a.size() > (n >> 1)) {
+    a.pop_back();
+  }
+  int64_t sum = 0;
+  for (int64_t i = 0; i < a.size(); i++) {
+    sum += int64_t(a[i]);
+  }
+  return sum;
+}
+```
+
+```gdscript
+func _arrays_impl(n: int) -> int:
+    var a := []
+    for i in n:
+        a.push_back(i)
+    for i in a.size():
+        if a[i] % 3 == 0:
+            a[i] = a[i] * 2
+    a.reverse()
+    while a.size() > (n >> 1):
+        a.pop_back()
+    var sum := 0
+    for i in a.size():
+        sum += a[i]
+    return sum
+```
+
+dictionaries: Adds n numbers into 5,000 keys, then sums the values.
+
+```gd++
+@virtual
+func _dictionaries_impl(n: int) -> int {
+  Dictionary d;
+  for (int64_t i = 0; i < n; i++) {
+    int64_t key = i % 5000;
+    d[key] = int64_t(d.get(key, 0)) + i;
+  }
+  Array values = d.values();
+  int64_t sum = 0;
+  for (int64_t i = 0; i < values.size(); i++) {
+    sum += int64_t(values[i]);
+  }
+  return sum;
+}
+```
+
+```gdscript
+func _dictionaries_impl(n: int) -> int:
+    var d := {}
+    for i in n:
+        var key: int = i % 5000
+        d[key] = d.get(key, 0) + i
+    var values: Array = d.values()
+    var sum := 0
+    for i in values.size():
+        sum += values[i]
+    return sum
+```
+
+packed_arrays: Fills a PackedInt64Array with n pseudo-random numbers, sorts it, and sums every 7th number.
+
+```gd++
+@virtual
+func _packed_arrays_impl(n: int) -> int {
+  PackedInt64Array a;
+  int64_t x = 12345;
+  for (int64_t i = 0; i < n; i++) {
+    x = (x * 1103515245 + 12345) & 0x7fffffff;
+    a.push_back(x % 1000000);
+  }
+  a.sort();
+  int64_t sum = 0;
+  for (int64_t i = 0; i < a.size(); i += 7) {
+    sum += a[i];
+  }
+  return sum;
+}
+```
+
+```gdscript
+func _packed_arrays_impl(n: int) -> int:
+    var a := PackedInt64Array()
+    var x := 12345
+    for i in n:
+        x = (x * 1103515245 + 12345) & 0x7fffffff
+        a.push_back(x % 1000000)
+    a.sort()
+    var sum := 0
+    for i in range(0, a.size(), 7):
+        sum += a[i]
+    return sum
+```
+
+godot_calls: Creates n nodes, sets them up, adds them to the tree, reads them back, and frees them.
+
+```gd++
+@virtual
+func _godot_calls_impl(n: int) -> int {
+  int64_t sum = 0;
+  for (int64_t i = 0; i < n; i++) {
+    Node2D *node = memnew(Node2D);
+    node->set_position(Vector2(i % 100, i % 37));
+    node->set_rotation(0.5);
+    add_child(node);
+    sum += int64_t(node->get_global_position().x) + get_child_count();
+    remove_child(node);
+    memdelete(node);
+  }
+  return sum;
+}
+```
+
+```gdscript
+func _godot_calls_impl(n: int) -> int:
+    var sum := 0
+    for i in n:
+        var node := Node2D.new()
+        node.position = Vector2(i % 100, i % 37)
+        node.rotation = 0.5
+        add_child(node)
+        sum += int(node.global_position.x) + get_child_count()
+        remove_child(node)
+        node.free()
+    return sum
+```
+
+# See also
+
+`gd++ man debugging`, `gd++ man building`, `gd++ man build`, `gd++ man functions`, `gd++ man types`.

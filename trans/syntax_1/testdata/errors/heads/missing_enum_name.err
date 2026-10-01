@@ -1,0 +1,3 @@
+errors/heads/missing_enum_name.gd++:1:6: Expected an enum name after "enum", but found "=".
+ 1 | enum = 5
+   |      ^

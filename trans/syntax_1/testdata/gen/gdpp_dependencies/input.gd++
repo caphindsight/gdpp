@@ -1,0 +1,17 @@
+class_name Gate
+extends Wall
+
+extern Lock {
+  extends Node
+  func owner() -> Gate
+  func key() -> Key
+}
+
+var door: Door
+var keys: Array[Key]
+var level: Level
+var lock: Lock
+
+func open(key: Key) -> Door {
+  return door;
+}

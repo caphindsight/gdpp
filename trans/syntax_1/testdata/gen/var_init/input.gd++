@@ -1,0 +1,24 @@
+class_name Stage
+extends Node
+
+var count: int = compute(1,
+  2)
+
+@onready
+var camera: Camera3D = get_node<Camera3D>("Camera")
+
+@onready
+var mesh: MeshInstance3D = {
+  MeshInstance3D* mesh = memnew(MeshInstance3D);
+  add_child(mesh);
+  return mesh;
+}
+
+var ids: Array[int] = {
+  Array ids;
+  return ids;
+}
+
+func compute(a: int, b: int) -> int {
+  return a + b;
+}

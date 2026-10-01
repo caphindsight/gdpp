@@ -1,0 +1,6 @@
+extern Planner {
+  extends Node
+
+  func plan(steps: int) -> Async[Array]
+  func pending() -> Async
+}

@@ -1,0 +1,4 @@
+input.gd++:1:30: Bitfield S's values without "=" must be next to each other.
+ 1 | @bitfield enum S { A B C = 7 D }
+   |                              ^
+Hint: Set this value with "=", or move it next to the others.

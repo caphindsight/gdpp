@@ -1,0 +1,220 @@
+Annotations: the complete list, and where each one goes
+
+Annotations attach information to a declaration, like in GDScript: @export on a variable, @override on a function, @tool on a class. This page lists all of them. Each one is explained in full on the page of its topic.
+
+# Syntax
+
+```gd++
+@name
+@name(ARG, ARG, ...)
+```
+
+An annotation is "@" and a name, with arguments in parentheses if it takes any. Arguments are numbers (negative ones too), strings in double quotes, or names; a trailing comma is fine. Annotations go right before the declaration they belong to, on the same line or on the lines before, in any order:
+
+```gd++
+@export var speed: float
+
+@export_range(0, 100, 1, "or_greater")
+var health: int
+
+@virtual @const
+func _score() -> int
+```
+
+A declaration's doc comment can come before its annotations or between them, but a declaration has at most one doc comment. See `gd++ man docs`.
+
+# Classes
+
+@tool
+  Run the class's code in the editor too. See `gd++ man classes`.
+
+@game_only
+  Run the class's code only in the game, never in the editor, not even when other code calls it. Can't be used with @tool. See `gd++ man classes`.
+
+@icon(PATH)
+  The class's icon in the editor: a string with a res:// or pkg:// path. See `gd++ man classes`.
+
+@trace(GROUPS...)
+  Trace all its functions (except _process and _physics_process), variables and signals, and print the creation and destruction of its objects. See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time all its functions, and the getters and setters of its properties with get and set blocks. See "@trace and @profile" below.
+
+# Functions of classes
+
+@override
+  Override a virtual function of the engine, e.g. _ready, or a @virtual function of a GD++ base class. See `gd++ man functions`.
+
+@virtual
+  Let subclasses and scripts override the function. See `gd++ man functions`.
+
+@final
+  With @override of a GD++ @virtual function: subclasses and scripts can't override it any further. See `gd++ man functions`.
+
+@const
+  Make the function a const method. See `gd++ man functions`.
+
+@static
+  Make the function static. See `gd++ man functions`.
+
+@rpc(ARGS...)
+  Make the function callable over the network. Arguments: "authority" or "any_peer", "call_remote" or "call_local", "unreliable", "unreliable_ordered" or "reliable", and a channel number, last. Only in classes that extend Node. See `gd++ man rpc`.
+
+@deferred
+  Every call, from C++ or from Godot, goes through call_deferred and runs later. The function must return void. See `gd++ man functions`.
+
+@thread_safe
+  Like @deferred, with call_thread_safe: calls from other threads run later, on the main thread. Only in classes that extend Node. See `gd++ man functions`.
+
+@onthread
+  Every call, from C++ or from Godot, runs the body on the WorkerThreadPool, and returns an Async of the function's type, through which the caller waits for the body and gets its result. See `gd++ man async`.
+
+@trace(GROUPS...)
+  Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time each call, for the editor's monitors and the profile table. See "@trace and @profile" below.
+
+These can't be combined: @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe; @virtual with @override, @rpc, @deferred, @thread_safe or @onthread; @override with @rpc, @deferred, @thread_safe or @onthread; @rpc with @onthread; @deferred with @thread_safe or @onthread; @thread_safe with @onthread. @final only works with @override of a GD++ @virtual function.
+
+# Functions of externs
+
+@const
+  The function is a const method of the class.
+
+@deferred
+  Call the function with call_deferred. The function must return void.
+
+@thread_safe
+  Call the function with call_thread_safe. The function must return void. Only in externs that extend Node.
+
+@rpc
+  The function can be called over the network, with rpc. No arguments in externs. Only in externs that extend Node.
+
+@trace(GROUPS...)
+  Print each call through the extern, like @trace on a class's function, marked "extern". See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time each call through the extern, for the editor's monitors and the profile table, as "extern CLASS.NAME". Not on @deferred and @thread_safe functions. See "@trace and @profile" below.
+
+See `gd++ man externs`.
+
+# Variables of classes
+
+@onready
+  Assign the initial value at the start of _ready, instead of in the constructor. Only in classes that extend Node. See `gd++ man lifecycle`.
+
+@export
+  Show the variable in the inspector, and save it.
+
+@export_range(MIN, MAX[, STEP][, EXTRAS...])
+  An int or float in a range.
+
+@export_enum(NAMES...)
+  An int or String chosen from a list.
+
+@export_flags(NAMES...)
+  An int of bit flags.
+
+@export_file([FILTERS...])
+  A String with a file path.
+
+@export_dir
+  A String with a directory path.
+
+@export_multiline
+  A String with many lines.
+
+@export_placeholder(TEXT)
+  A String with a placeholder text.
+
+@export_storage
+  Save the variable, but don't show it in the inspector.
+
+@export_category(NAME)
+  Start a category of the inspector at this variable.
+
+@export_group(NAME[, PREFIX])
+  Start a group of the inspector at this variable.
+
+@export_subgroup(NAME[, PREFIX])
+  Start a subgroup of the inspector at this variable.
+
+A variable can have at most one export annotation, and any section annotations. Export and section annotations only work in classes that extend Node or Resource. See `gd++ man exports`.
+
+@trace(GROUPS...)
+  Print each change of its value, with the function of its class that made it. See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time its getter and setter. See "@trace and @profile" below.
+
+Variables of externs can have @profile, which times the calls of their getter and setter through the extern.
+
+# Signals
+
+@trace(GROUPS...)
+  Print each emission with emit, with its arguments. See "@trace and @profile" below.
+
+Signals of externs can have @trace too, which prints each emission through the extern, marked "extern".
+
+# Enums
+
+@bitfield
+  Make an enum type a bitfield, whose values without "=" are flags: 1, 2, 4, and so on. See `gd++ man enums`.
+
+# Code blocks
+
+@global
+  Put a decl or impl block outside the class and outside namespace godot. See `gd++ man code`.
+
+# @trace and @profile
+
+@trace and @profile are for debugging. They generate code only in builds that turn them on, so they can stay in your code:
+
+```gd++
+@trace("combat")
+var health: int = 100
+
+@trace("combat", "ai")
+@profile
+func take_damage(amount: int) -> bool {
+  health -= amount;
+  return health <= 0;
+}
+```
+
+```sh
+gd++ build --trace combat              # traces health and take_damage
+gd++ build --profile Player            # profiles take_damage
+gd++ build                             # neither: the annotations generate nothing
+```
+
+Their arguments are names of groups, in double quotes: @trace("combat") is in the group combat. Every annotation is also in the group named after its class, e.g. Player, without an argument. `gd++ build --trace GROUP...` turns on the @trace annotations in those groups, `--profile GROUP...` the @profile ones, and `all` all of them. A member is on if its own annotation is on, or its class's.
+
+They combine with every other annotation, and with each other. Externs can have them too, see "Externs" in `gd++ man debugging`. See `gd++ man debugging` for what they print, how to read it, and how to use them well.
+
+# No annotations
+
+Enum values, integer constants, `ctor`, `dtor`, `notif`, `import` and `noimport` take no annotations. Externs themselves only take @trace and @profile, which work like a class's on its functions, variables and signals.
+
+# Errors
+
+- An unknown annotation is an error, with a suggestion if it looks like a typo: "Unknown annotation @exprot." with "Did you mean \"@export\"?".
+- An annotation in the wrong place is an error, e.g. "Annotation @tool can't be used on a func.".
+- An annotation can be used once per declaration: "Annotation @export is used twice.".
+- Annotations that take no arguments reject them: "Annotation @override takes no arguments.".
+- @trace and @profile take only names in double quotes: "Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").".
+- Some annotations need a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
+- An annotation that isn't followed by a declaration is an error: "Expected a declaration after the annotation, ...".
+
+# Not in GD++
+
+Some GDScript annotations have no GD++ version, since GD++ does the same another way, or it doesn't apply to C++:
+
+- @abstract, @static_unload, @warning_ignore and the like: not supported.
+- @export_node_path, @export_color_no_alpha, @export_exp_easing, @export_global_file, @export_global_dir and the like: not supported yet. Use @export, or a property of the right type.
+- `static`, `const` and `onready` without "@" are not keywords: write @static and @onready, and enum NAME = VALUE for constants.
+
+# See also
+
+`gd++ man classes`, `gd++ man functions`, `gd++ man variables`, `gd++ man exports`, `gd++ man externs`, `gd++ man debugging`.

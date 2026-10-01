@@ -1,0 +1,4 @@
+input.gd++:5:10: Class A uses enum Mode in its API, so it must export it.
+ 5 | noimport Mode
+   |          ^^^^
+Hint: Remove this noimport.

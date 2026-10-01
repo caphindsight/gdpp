@@ -1,0 +1,4 @@
+input.gd++:3:1: Classes can't declare _notification, since GD++ generates it.
+ 3 | func _notification(what: int) -> void {}
+   | ^^^^
+Hint: Handle notifications with notif blocks, e.g. "notif(READY) { ... }".

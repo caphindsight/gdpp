@@ -4,8 +4,8 @@ gd++ init: set up the project, or create or update a package or a class
 
 ```sh
 gd++ init [--vcs none|git]
-gd++ init PATH --bind NAME --spec NAME [--syntax N] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
+gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--update]
 ```
 
@@ -35,7 +35,7 @@ Without --vcs, it creates gd++proj.toml with the defaults, or reformats it. The 
 # Creating a package
 
 ```sh
-gd++ init PATH --bind NAME --spec NAME [--syntax N] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
+gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
 ```
 
 Creates the directory PATH if it doesn't exist, and writes PATH/gd++pkg.toml. PATH must be inside a project; "." makes the current directory a package, e.g. the project root. If the project uses git, it also writes the package-level block into PATH/.gitignore. If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`. See `gd++ man packages`.
@@ -47,7 +47,10 @@ Creates the directory PATH if it doesn't exist, and writes PATH/gd++pkg.toml. PA
   The package's Godot API spec, e.g. 4.7.2-stable. Required for a new package.
 
 --syntax N
-  The package's GD++ syntax version. Default: 0, the only one.
+  The package's GD++ syntax version. Default for a new package: the latest stable one; `gd++ --syntax` lists them all. See "Syntax versions" in `gd++ man packages`. Syntax 0 is the nightly version, which may break your code at any time: init warns that it should never be used in production. For a version that this gd++ doesn't know, e.g. 2, init asks whether to continue, since either the value is wrong or gd++ is outdated.
+
+--nightly
+  The same as --syntax 0.
 
 --std STD
   The package's C++ standard, e.g. c++17, c++20 or c++23. Default: c++20.
@@ -63,7 +66,7 @@ To see which bindings and specs exist, run `gd++ fetch --index`.
 # Updating a package
 
 ```sh
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
 ```
 
 Changes the given settings of the existing package at PATH, and keeps the others. Without --update, init asks "Package PATH already exists. Update it?" when PATH is a package already. Changing the bindings, spec, syntax or standard makes the package's next build start from scratch.
@@ -108,7 +111,8 @@ When updating a class, --include and --icon change the path, --noinclude and --n
 - --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class need PATH.
 - --include, --noinclude, --icon, --noicon, --tool and --notool need --class.
 - --bind, --spec, --syntax, --std, --prefix and --quit-timeout can't be used with --class.
-- --quit-timeout can't be negative.
+- --quit-timeout and --syntax can't be negative.
+- --syntax and --nightly can't be used together.
 - --include and --noinclude, --icon and --noicon, and --tool and --notool, can't be used together.
 
 # Examples

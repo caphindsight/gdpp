@@ -1,0 +1,3 @@
+class Undocumented {
+  func f() -> void {}
+}
