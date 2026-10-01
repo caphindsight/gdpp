@@ -76,7 +76,7 @@ For GD++'s custom words in C++, see `gd++ man rewrites`. GD++ binds the function
 
 <a href="readme/signals.gd++"><img src="readme/signals.svg" alt="GD++ code: signals, enums and casts"></a>
 
-### Work on other threads
+### Multithreading
 
 <a href="readme/threads.gd++"><img src="readme/threads.svg" alt="GD++ code: an @onthread function"></a>
 
