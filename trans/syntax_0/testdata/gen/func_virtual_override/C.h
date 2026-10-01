@@ -3,18 +3,19 @@
 #pragma once
 
 #include <gd++/syntax_0.hpp>
-#include <godot_cpp/classes/node.hpp>
+#include "B.h"
 
 namespace godot {
 
-#define This Gate
-class Gate : public Node {
-	GDCLASS(Gate, Node)
+enum class Suit : int64_t;
+
+#define This C
+class C : public B {
+	GDCLASS(C, ::godot::B)
 
 public:
-	double get_angle() const;
-	gdpp::Emitted opened(Node *by);
-	gdpp::Emitted closed();
+	Suit _pick(Suit s) override;
+	void _reset() override;
 
 protected:
 	static void _bind_methods();
@@ -22,3 +23,5 @@ protected:
 #undef This
 
 } // namespace godot
+
+#include "Suit.h"

@@ -1,2 +1,2 @@
-{Name:Caster Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:true}
-{Name:Mode Kind:3 Base:Node.ProcessMode Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Caster Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:true Virtuals:[]}
+{Name:Mode Kind:3 Base:Node.ProcessMode Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

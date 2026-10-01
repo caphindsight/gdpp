@@ -198,7 +198,7 @@ func packageDeps(files []gdppFile, names []godotName, enums []trans.Dependency, 
 	for _, f := range files {
 		for _, d := range f.Decls {
 			if f.Rel != self {
-				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield})
+				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals})
 			}
 		}
 	}

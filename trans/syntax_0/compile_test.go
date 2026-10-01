@@ -9,9 +9,11 @@ import (
 
 // stubs stand in for the headers generated from the other GD++ files that testdata/gen/deps.toml names.
 var stubs = map[string]string{
-	"Door.h":       "class Door : public Node {\n\tGDCLASS(Door, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
-	"Key.h":        "class Key : public RefCounted {\n\tGDCLASS(Key, RefCounted)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
-	"Wall.h":       "class Wall : public Node {\n\tGDCLASS(Wall, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Door.h": "class Door : public Node {\n\tGDCLASS(Door, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Key.h":  "class Key : public RefCounted {\n\tGDCLASS(Key, RefCounted)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Wall.h": "class Wall : public Node {\n\tGDCLASS(Wall, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Gate.h": "class Gate : public Node {\n\tGDCLASS(Gate, Node)\n\npublic:\n\tGDVIRTUAL0R(bool, _open)\n\tvirtual bool _open() { return false; }\n\n" +
+		"protected:\n\tstatic void _bind_methods() {}\n};\n",
 	"Level.h":      "enum class Level : int64_t {\n\tEASY = 0,\n\tHARD = 5,\n};\n",
 	"Difficulty.h": "enum class Difficulty : int64_t {\n\tEASY = 0,\n\tHARD = 5,\n\tINSANE = 6,\n\tCUSTOM = 100,\n};\n",
 	"Road.h": "class Road {\npublic:\n\tusing Base = Node;\n\tstatic constexpr const char *gdpp_name = \"Road\";\n" +

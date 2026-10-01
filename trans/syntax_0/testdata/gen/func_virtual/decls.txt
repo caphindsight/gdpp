@@ -1,1 +1,1 @@
-{Name:Brain Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Brain Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[_think _idle _notify _score _done]}

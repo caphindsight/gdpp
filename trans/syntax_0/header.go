@@ -257,8 +257,13 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		switch {
 		case f.static:
 			prefix = "static "
+		case f.virtual:
+			prefix = "virtual "
 		case f.override:
 			suffix = " override"
+		}
+		if f.final {
+			suffix += " final"
 		}
 		if f.isConst {
 			suffix = " const" + suffix

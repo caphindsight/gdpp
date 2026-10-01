@@ -37,6 +37,7 @@ type Dependency struct {
 	Base     string      // For Kind Enum: the enum it extends, if any. Values then holds only its own values. For classes and externs: the base class, if known.
 	Gdpp     bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
 	Bitfield bool        // For Kind Enum and GodotEnum: whether it's a bitfield, whose values are flags.
+	Virtuals []string    // For GD++ classes: the names of its @virtual functions, which subclasses can override.
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.
@@ -71,6 +72,7 @@ type Declaration struct {
 	Bitfield bool        // For enums: whether @bitfield makes it a bitfield.
 	GameOnly bool        // For classes: whether @game_only keeps its code from running in the editor.
 	Async    bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
+	Virtuals []string    // For classes: the names of its @virtual functions, which subclasses can override.
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

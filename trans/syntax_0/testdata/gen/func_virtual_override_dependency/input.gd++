@@ -1,0 +1,8 @@
+class_name SlidingGate
+extends Gate
+
+// Overrides Gate's @virtual function, from another file.
+@override
+func _open() -> bool {
+  return true;
+}

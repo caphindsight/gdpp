@@ -1,1 +1,1 @@
-{Name:Planner Kind:2 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Planner Kind:2 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

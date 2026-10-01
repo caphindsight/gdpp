@@ -13,15 +13,15 @@ class Brain : public Node {
 
 public:
 	GDVIRTUAL1R(int64_t, _think, double)
-	int64_t _think(double delta);
+	virtual int64_t _think(double delta);
 	GDVIRTUAL0R(String, _idle)
-	String _idle();
+	virtual String _idle();
 	GDVIRTUAL1R(Variant, _notify, int64_t)
-	Variant _notify(int64_t what);
+	virtual Variant _notify(int64_t what);
 	GDVIRTUAL0RC(double, _score)
-	double _score() const;
+	virtual double _score() const;
 	GDVIRTUAL0(_done)
-	void _done();
+	virtual void _done();
 
 protected:
 	static void _bind_methods();

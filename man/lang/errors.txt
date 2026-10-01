@@ -131,6 +131,9 @@ The channel must be the last argument of @rpc.
 Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").
 Annotation @profile can't be used on a signal.
 Annotations @virtual and @onthread can't be used together.
+Function _open is already @virtual in Gate.
+  Use @override to override it.
+Annotation @final only works on @override functions that override a GD++ @virtual function.
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.
 Async variables can't be exported.
@@ -170,6 +173,7 @@ The path is relative to the build cache, where the compiler runs: ../ is the pac
 Some compiler errors are about the generated code, but caused by the GD++ declarations. The usual ones:
 
 - "marked 'override', but does not override": an @override function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and @const. See `gd++ doc CLASS.FUNCTION`.
+- "overriding final function": an @override function overrides a @final one. See `gd++ man functions`.
 - "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
 - "ignoring return value ... declared with attribute 'nodiscard'": a signal was called without emit. Write `emit NAME(...)`.
 - "'claim' was not declared in this scope", or the same for is_done or cancel: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.

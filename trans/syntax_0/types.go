@@ -31,6 +31,7 @@ type symbol struct {
 	base       string   // For enums: the enum it extends, until enumValues adds the base's values to values. For dependency classes and externs: their base, if known.
 	bitfield   bool     // For enums: whether its values are flags.
 	godotNames []string // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
+	virtuals   []string // For dependency classes: the names of their @virtual functions.
 	class      *Class   // Set for classes in the file.
 	extern     *Extern  // Set for externs in the file.
 	enum       *Enum    // Set for enums in the file.

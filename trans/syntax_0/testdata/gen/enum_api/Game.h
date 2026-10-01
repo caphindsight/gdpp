@@ -24,7 +24,7 @@ public:
 	Mode set_mode_to(Mode m);
 	static Mode default_mode();
 	GDVIRTUAL1R(_gdpp_Game_Mode, _pick, int64_t)
-	Mode _pick(int64_t options);
+	virtual Mode _pick(int64_t options);
 	Mode get_mode() const;
 	void set_mode(Mode p_value);
 	Mode get_start() const;

@@ -223,3 +223,11 @@ values = [
 	{ name = "ITALIC", implicit = true },
 	{ name = "BOTH", expr = "BOLD | ITALIC" },
 ]
+
+[[dep]]
+name = "Gate"
+include = '"Gate.h"'
+kind = "Object"
+gdpp = true
+base = "Node"
+virtuals = ["_open"]

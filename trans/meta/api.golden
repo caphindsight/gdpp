@@ -45,3 +45,5 @@ field Options.ProfileFPS int
 field Declaration.GameOnly bool
 field Options.AsyncClass string
 field Declaration.Async bool
+field Dependency.Virtuals []string
+field Declaration.Virtuals []string

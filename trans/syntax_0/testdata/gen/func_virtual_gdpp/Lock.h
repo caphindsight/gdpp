@@ -15,7 +15,7 @@ class Lock : public Node {
 
 public:
 	GDVIRTUAL1R(Door *, _open, Ref<Key>)
-	Door *_open(const Ref<Key> &key);
+	virtual Door *_open(const Ref<Key> &key);
 
 protected:
 	static void _bind_methods();

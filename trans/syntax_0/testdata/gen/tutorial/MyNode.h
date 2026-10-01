@@ -80,9 +80,9 @@ public:
 	void greet_user(const String &name);
 	void greet_users(int64_t count = _gdpp_default_greet_users_count(), const String &greeting = _gdpp_default_greet_users_greeting());
 	GDVIRTUAL0R(int64_t, _foo)
-	int64_t _foo();
+	virtual int64_t _foo();
 	GDVIRTUAL0R(int64_t, _bar)
-	int64_t _bar();
+	virtual int64_t _bar();
 	int64_t foo_plus_bar();
 	void _ready() override;
 	int64_t get_my_value() const;

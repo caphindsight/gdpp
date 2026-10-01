@@ -60,10 +60,14 @@ type funcModel struct {
 	params                             []*gtype
 	ret                                *gtype
 	virtual, override, isConst, static bool
+	final                              bool      // With @final: subclasses and scripts can't override it.
 	deferral                           string    // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
 	hidden                             string    // For the generated body of a class's func with a deferral: that deferral.
 	trace, profile                     bool      // Whether its @trace or @profile, or its class's, is on.
 	rpc                                *rpcModel // Nil without @rpc.
+	// The class whose GDVIRTUAL lets scripts override the function: its own for @virtual, a base's for an
+	// @override of a @virtual function. Empty for others.
+	virtualOf string
 }
 
 // rpcModel is the configuration from @rpc, as C++ values. Empty in externs, whose defining class configures it.
@@ -214,7 +218,8 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			}
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
-				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Async: usesAsync(c)})
+				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Async: usesAsync(c),
+				Virtuals: classVirtuals(c)})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		default:
@@ -247,6 +252,62 @@ func usesAsync(c *Class) bool {
 // hasAnnotation reports whether class c has the annotation named name.
 func hasAnnotation(c *Class, name string) bool {
 	return slices.ContainsFunc(c.Annotations, func(a *Annotation) bool { return a.Name == name })
+}
+
+// classVirtuals returns the names of the @virtual functions of class c.
+func classVirtuals(c *Class) []string {
+	var names []string
+	for _, m := range c.Members {
+		if m.Func != nil && slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "virtual" }) {
+			names = append(names, m.Func.Name)
+		}
+	}
+	return names
+}
+
+// setVirtualOf sets f.virtualOf for f, a function of the class named class with base base.
+func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
+	owner := u.virtualOwner(base, f.f.Name)
+	switch {
+	case f.virtual && owner != "":
+		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "virtual" })]
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already @virtual in %s.", f.f.Name, owner), "Use @override to override it.")
+	case f.final && (!f.override || owner == ""):
+		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "final" })]
+		hint := ""
+		if f.override {
+			hint = "The engine lets scripts override its own virtual functions, so GD++ can't stop that."
+		}
+		return u.errorAt(a.Pos, len(a.Name)+1, "Annotation @final only works on @override functions that override a GD++ @virtual function.", hint)
+	case f.virtual:
+		f.virtualOf = class
+	case f.override && !f.final: // Without a GDVIRTUAL_CALL, scripts' overrides never run.
+		f.virtualOf = owner
+	}
+	return nil
+}
+
+// virtualOwner returns the GD++ class that declares @virtual func name: the class named class, or one of its
+// bases. Empty if there's none. Bases don't cycle: kindOf rejects that first.
+func (u *unit) virtualOwner(class, name string) string {
+	for class != "" {
+		s := u.symbols[class]
+		switch {
+		case s == nil:
+			return ""
+		case s.class != nil:
+			if slices.Contains(classVirtuals(s.class), name) {
+				return class
+			}
+			class = baseName(s.class.Extends)
+		default:
+			if slices.Contains(s.virtuals, name) {
+				return class
+			}
+			class = s.base
+		}
+	}
+	return ""
 }
 
 // classIcon returns the path from the @icon annotation of class c, or "" if it has none.
@@ -317,7 +378,8 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
 				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
 		}
-		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield}
+		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
+			virtuals: d.Virtuals}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}
@@ -684,7 +746,7 @@ func (u *unit) enumShorthand(t *gtype, init *Init) error {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "final", "game_only", "global", "icon", "onready",
 	"onthread", "override", "profile", "rpc", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -746,7 +808,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
+	allowed := []string{"const", "deferred", "final", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "profile", "rpc", "thread_safe", "trace"}
 	}
@@ -758,8 +820,8 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil, isConst: a["const"] != nil,
-		static: a["static"] != nil}
+	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil, final: a["final"] != nil,
+		isConst: a["const"] != nil, static: a["static"] != nil}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
 	}
@@ -1270,6 +1332,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		case member.Func != nil:
 			var f *funcModel
 			if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
+				err = u.setVirtualOf(f, c.Name, m.base)
+			}
+			if err == nil {
 				m.funcs = append(m.funcs, f)
 				err = u.unique(names, f.f.Pos, "func", f.f.Name)
 			}

@@ -1,0 +1,3 @@
+input.gd++:4:1: Annotation @final only works on @override functions that override a GD++ @virtual function.
+ 4 | @final
+   | ^^^^^^

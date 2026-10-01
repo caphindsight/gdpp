@@ -250,15 +250,16 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	if wrap {
 		w.ln("\treturn _gdpp_trace.ret([&]() -> %s {", f.ret.cpp)
 	}
-	if f.virtual {
-		callArgs := castList(c, f.params, f.f.Params, true)
+	if f.virtualOf != "" {
+		owner := &classModel{name: f.virtualOf} // Its GDVIRTUAL uses its enum tags.
+		callArgs := castList(owner, f.params, f.f.Params, true)
 		if f.ret.void {
 			w.ln("\tif (GDVIRTUAL_CALL(%s)) {", strings.Join(slices.DeleteFunc([]string{f.f.Name, callArgs}, func(s string) bool { return s == "" }), ", "))
 			w.ln("\t\treturn;")
 		} else {
-			w.ln("\t%s _gdpp_ret;", tagged(c, f.ret))
+			w.ln("\t%s _gdpp_ret;", tagged(owner, f.ret))
 			w.ln("\tif (GDVIRTUAL_CALL(%s)) {", strings.Join(slices.DeleteFunc([]string{f.f.Name, callArgs, "_gdpp_ret"}, func(s string) bool { return s == "" }), ", "))
-			w.ln("\t\treturn %s;", cast(c, f.ret, "_gdpp_ret", false))
+			w.ln("\t\treturn %s;", cast(owner, f.ret, "_gdpp_ret", false))
 		}
 		w.ln("\t}")
 	}

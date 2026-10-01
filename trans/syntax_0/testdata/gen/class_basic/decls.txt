@@ -1,1 +1,1 @@
-{Name:Player Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Player Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

@@ -1,1 +1,1 @@
-{Name:Deck Kind:3 Base:Level Values:[{Name:JOKER Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Deck Kind:3 Base:Level Values:[{Name:JOKER Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

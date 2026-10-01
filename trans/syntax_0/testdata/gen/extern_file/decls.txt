@@ -1,1 +1,1 @@
-{Name:Terrain3 Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false}
+{Name:Terrain3 Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

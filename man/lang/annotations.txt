@@ -43,10 +43,13 @@ A declaration's doc comment can come before its annotations or between them, but
 # Functions of classes
 
 @override
-  Override a virtual function of the engine, e.g. _ready. See `gd++ man functions`.
+  Override a virtual function of the engine, e.g. _ready, or a @virtual function of a GD++ base class. See `gd++ man functions`.
 
 @virtual
-  Let scripts override the function. See `gd++ man functions`.
+  Let subclasses and scripts override the function. See `gd++ man functions`.
+
+@final
+  With @override of a GD++ @virtual function: subclasses and scripts can't override it any further. See `gd++ man functions`.
 
 @const
   Make the function a const method. See `gd++ man functions`.
@@ -72,7 +75,7 @@ A declaration's doc comment can come before its annotations or between them, but
 @profile(GROUPS...)
   Time each call, for the editor's monitors and the profile table. See "@trace and @profile" below.
 
-These can't be combined: @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe; @virtual with @override, @rpc, @deferred, @thread_safe or @onthread; @override with @rpc, @deferred, @thread_safe or @onthread; @rpc with @onthread; @deferred with @thread_safe or @onthread; @thread_safe with @onthread.
+These can't be combined: @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe; @virtual with @override, @rpc, @deferred, @thread_safe or @onthread; @override with @rpc, @deferred, @thread_safe or @onthread; @rpc with @onthread; @deferred with @thread_safe or @onthread; @thread_safe with @onthread. @final only works with @override of a GD++ @virtual function.
 
 # Functions of externs
 

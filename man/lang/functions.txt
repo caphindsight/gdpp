@@ -1,4 +1,4 @@
-Functions: func, parameters, default values, and @override, @virtual, @const, @static
+Functions: func, parameters, default values, and @override, @virtual, @final, @const, @static
 
 A function is a method of its class that Godot knows: GDScript can call it, e.g. player.jump(), and so can call(), signals and the editor. Its signature is GD++; its body is C++.
 
@@ -94,7 +94,7 @@ func _process(delta: float) -> void {
 }
 ```
 
-@override overrides a virtual function of the engine, i.e. of the base class, e.g. _ready, _process, _physics_process, _input, _unhandled_input, _enter_tree, _exit_tree, _draw or _get_configuration_warnings. The engine calls it, like in GDScript.
+@override overrides a virtual function of the engine, i.e. of the base class, e.g. _ready, _process, _physics_process, _input, _unhandled_input, _enter_tree, _exit_tree, _draw or _get_configuration_warnings. The engine calls it, like in GDScript. It also overrides a @virtual function of a GD++ base class, see "@virtual" below.
 
 The signature must match the engine's exactly, in C++ terms, including the return type: without `-> void`, the function returns a Variant, and the C++ compiler reports that it doesn't override anything. Use `gd++ doc Node._process` to see a signature. A const engine function, e.g. _get_configuration_warnings, needs @const too: `@const @override`. Note that the engine's float parameters are double, like GD++'s float.
 
@@ -126,7 +126,34 @@ func _can_pick(item):
 
 When C++ code calls the function, the script's version runs if a script overrides it; otherwise the body runs, as a fallback, or without a body, the type's default value is returned. By convention, virtual functions start with an underscore.
 
-@virtual generates a GDVIRTUAL declaration and binds it with GDVIRTUAL_BIND, and the editor's help marks the function "virtual".
+@virtual generates a GDVIRTUAL declaration and binds it with GDVIRTUAL_BIND, and the editor's help marks the function "virtual". In C++, it's a virtual method.
+
+A GD++ subclass overrides the function with @override, and a script can then override it again:
+
+```gd++
+class_name Hero
+extends Player
+
+@override
+func _can_pick(item: Item) -> bool {
+  return item->is_light();
+}
+```
+
+When C++ code calls _can_pick, through a Player or a Hero, a script's version runs first, if a script overrides it; otherwise Hero's body runs. The override doesn't redeclare the function for scripts: Player's GDVIRTUAL does that.
+
+# @final
+
+```gd++
+@final @override
+func _can_pick(item: Item) -> bool {
+  return true;
+}
+```
+
+@final on an @override of a GD++ @virtual function makes it the last version: subclasses can't override it (in C++, it's `override final`), and C++ calls never run a script's version. A script can still define a function of that name, but only calls by name, e.g. from GDScript, reach it.
+
+@final only works there: the engine runs scripts' overrides of its own virtual functions, e.g. _ready, so GD++ can't stop that.
 
 # @const
 
@@ -202,6 +229,7 @@ Attributes can be combined where it makes sense, e.g. @virtual @const. These com
 ```
 @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe
 @virtual with @override, @rpc, @deferred, @thread_safe or @onthread
+@final without @override of a GD++ @virtual function
 @override with @rpc, @deferred, @thread_safe or @onthread
 @rpc with @onthread
 @deferred with @thread_safe or @onthread
