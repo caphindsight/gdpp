@@ -172,6 +172,7 @@ Each package chooses its syntax version in its `gd++pkg.toml`.
 
 ## See also
 
+- [Foliage3D](https://github.com/caphindsight/Foliage3D): a realistic project by the same author, written fully in GD++, which shows what GD++ can do.
 - [gdpp-vim](https://github.com/caphindsight/gdpp-vim): Vim bindings for GD++.
 - [Godot Object Compiler](https://github.com/LucaTuerk/godot-object-compiler): a similar project, which generates the boilerplate of GDExtensions from macros in plain C++ code.
 
