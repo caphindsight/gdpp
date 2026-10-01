@@ -72,11 +72,11 @@ func (e *Error) withSource(src string) *Error {
 var keywords = map[string]bool{
 	"class": true, "class_name": true, "ctor": true, "decl": true, "dtor": true, "enum": true, "enum_name": true,
 	"extends": true, "extern": true, "extern_name": true, "func": true, "get": true, "impl": true, "import": true,
-	"noimport": true, "set": true, "signal": true, "var": true,
+	"noimport": true, "notif": true, "set": true, "signal": true, "var": true,
 }
 
 // declKeywords are the words that can start a declaration, in the order hints list them.
-var declKeywords = []string{"func", "var", "signal", "enum", "class", "extern", "decl", "impl", "ctor", "dtor", "import", "noimport"}
+var declKeywords = []string{"func", "var", "signal", "enum", "class", "extern", "decl", "impl", "ctor", "dtor", "notif", "import", "noimport"}
 
 // describe names token t for humans, e.g. `keyword "func"` or `the end of the file`.
 func describe(t lexer.Token) string {
@@ -228,6 +228,8 @@ func owner(sig []lexer.Token, open lexer.Token) string {
 		return fmt.Sprintf(" (the body of func %q)", at(sig, k+1).Value)
 	case sig[k].Value == "set":
 		return " (the set block)"
+	case sig[k].Value == "notif":
+		return " (the notif block)"
 	case sig[k].Value == "var" && prev.Value == "=":
 		return fmt.Sprintf(" (the initial value of var %q)", at(sig, k+1).Value)
 	case sig[k].Value == "var":
@@ -357,7 +359,7 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 	}
 	isName := u.Type == tokIdent
 	switch {
-	case (isDoc(p) || endsAnnotation(sig, j-1)) && isName && slices.Contains([]string{"decl", "impl", "ctor", "dtor", "import", "noimport"}, u.Value):
+	case (isDoc(p) || endsAnnotation(sig, j-1)) && isName && slices.Contains([]string{"decl", "impl", "ctor", "dtor", "notif", "import", "noimport"}, u.Value):
 		what := "an annotation"
 		if isDoc(p) || u.Value == "decl" || u.Value == "impl" { // These take annotations, so a doc comment is before them.
 			what = "a doc comment"
@@ -398,6 +400,10 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 			hint = fmt.Sprintf("Constructors and destructors take no arguments: \"%s { ... }\".", p.Value)
 		}
 		return fmt.Sprintf("Expected \"{\" to start the %s block, but found %s.", p.Value, found), hint
+
+	case p.Type == tokIdent && p.Value == "notif" && !isPunct(u, "("):
+		return fmt.Sprintf("Expected \"(\" after \"notif\", but found %s.", found),
+			"List the notifications that the block handles, e.g. \"notif(READY) { ... }\"."
 
 	case p.Type == tokIdent && p.Value == "set" && !isPunct(u, "("):
 		return fmt.Sprintf("Expected \"(\" after \"set\", but found %s.", found),

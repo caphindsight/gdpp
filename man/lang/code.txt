@@ -1,6 +1,6 @@
 C++ code: function bodies, decl, impl and @global blocks, and GD++'s words in C++
 
-Wherever GD++ takes a block in braces, the block is C++: function bodies, ctor and dtor, get and set, initial values and default values. decl and impl blocks go further: they put any C++ into the generated files, e.g. private helpers or #include lines. This page explains how GD++ treats C++ code, and where each block ends up.
+Wherever GD++ takes a block in braces, the block is C++: function bodies, `ctor`, `dtor` and `notif` blocks, `get` and `set`, initial values and default values. decl and impl blocks go further: they put any C++ into the generated files, e.g. private helpers or #include lines. This page explains how GD++ treats C++ code, and where each block ends up.
 
 # What GD++ does to C++ code
 
@@ -105,7 +105,7 @@ private:     decl blocks, each in turn
 public:      fields of simple variables
 private:     decl blocks of properties
 public:      constants, constructor, destructor, functions, getters, setters, signals
-protected:   _bind_methods
+protected:   _bind_methods, _notification
 private:     generated helpers
 };
 }
@@ -117,7 +117,7 @@ In the source file:
 #include lines
 @global impl blocks
 namespace godot {
-_bind_methods, constructor, destructor, functions, getters and setters, signals
+_bind_methods, constructor, destructor, _notification, functions, getters and setters, signals
 impl blocks
 }
 ```

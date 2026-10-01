@@ -4,6 +4,7 @@ class Foo {
   impl { int Foo::b_ = 0; }
   ctor { a_ = 1; }
   dtor { a_ = 0; }
+  notif(READY, PREDELETE,) { a_ = 2; }
   func f() -> void {}
   signal s
   var v: int = 1

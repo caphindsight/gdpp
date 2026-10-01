@@ -115,6 +115,8 @@ func (m *Member) keyword() (string, lexer.Position) {
 		return "ctor", m.Pos
 	case m.Dtor != nil:
 		return "dtor", m.Pos
+	case m.Notif != nil:
+		return "notif", m.Pos
 	case m.Import != nil:
 		return "import", m.Pos
 	case m.NoImport != nil:

@@ -34,7 +34,7 @@ func highlightCode(code, lang string) string {
 
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
-	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport set signal var"
+	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport notif set signal var"
 	cppWords  = "if else for while do return switch case break continue default new delete auto const static constexpr namespace using " +
 		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
 	gdscriptWords = "pass and or not in"

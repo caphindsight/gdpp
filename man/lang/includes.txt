@@ -20,7 +20,7 @@ It adds the classes, externs and enums of the package's GD++ files, each with it
 GD++ reads every identifier in a class, and includes the header of each one it knows:
 
 - In the class's header: the base class, the types in the class's API (variables, function parameters and return values, signal parameters), imported names, and every identifier in decl and @global decl blocks, and in the decl blocks of properties.
-- In the class's source file: every identifier in function bodies, default values, initial values, get and set blocks, ctor and dtor, and impl and @global impl blocks, unless the header includes it already.
+- In the class's source file: every identifier in function bodies, default values, initial values, `get` and `set` blocks, `ctor`, `dtor` and `notif` blocks, and `impl` and `@global impl` blocks, unless the header includes it already.
 
 So using a class anywhere, even only in code, e.g. `node as MeshInstance3D *` or `memnew(Timer)`, includes it. The match is by name only: a variable of yours named like a Godot class includes that class too, which is harmless.
 

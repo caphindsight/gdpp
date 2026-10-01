@@ -40,6 +40,7 @@ Extern      = Doc? Annotation* 'extern' Ident '{' ( 'extends' Type )? Member* '}
 Member      = Code
             | 'ctor' Block
             | 'dtor' Block
+            | 'notif' '(' Ident ( ',' Ident )* ','? ')' Block
             | Func
             | Signal
             | Var
@@ -139,7 +140,7 @@ Expr is C++ code that starts after "=" and runs to the end of the line, but cont
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  noimport  set  signal  var
+func  get  impl  import  noimport  notif  set  signal  var
 ```
 
 In C++ code, GD++ also gives a meaning to emit, rpc, is_cancelled, is_done, claim and cancel, see `gd++ man rewrites`, and to This and gd, see `gd++ man code`.

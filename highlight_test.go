@@ -28,6 +28,7 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "cancel t; t.cancel();", Styled("cancel", CodeKeyword) + " t; t." + Styled("cancel", CodeFunction) + "();"},
 		{"gd++", "n = x as Node3D *;", "n = x " + Styled("as", CodeKeyword) + " " + Styled("Node3D", CodeType) + " *;"},
 		{"gd++", "as = x;", "as = x;"},
+		{"gd++", "notif(READY, PREDELETE) {}", Styled("notif", CodeKeyword) + "(READY, PREDELETE) {}"},
 		{"", "var x", "var x"},
 	}
 	for _, tc := range cases {

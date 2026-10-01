@@ -25,24 +25,32 @@ File: @1:1
             TextPos: 6:9
             Text: " a_ = 0;"
         - @7:3
-          Func: @7:3
-            Name: f
-            Return: @7:15 void
-            Body: @7:20
-              TextPos: 7:21
+          Notif: @7:3
+            Names:
+              - @7:9 READY
+              - @7:16 PREDELETE
+            Body: @7:28
+              TextPos: 7:29
+              Text: " a_ = 2;"
         - @8:3
-          Signal: @8:3 s
+          Func: @8:3
+            Name: f
+            Return: @8:15 void
+            Body: @8:20
+              TextPos: 8:21
         - @9:3
-          Var: @9:3
-            Name: v
-            Type: @9:10 int
-            Init: @9:16 1
+          Signal: @9:3 s
         - @10:3
-          Enum: @10:3
+          Var: @10:3
+            Name: v
+            Type: @10:10 int
+            Init: @10:16 1
+        - @11:3
+          Enum: @11:3
             Name: E
             Entries:
-              - @10:12 A
-        - @11:3
-          Import: @11:10 Bar
+              - @11:12 A
         - @12:3
-          NoImport: @12:12 Baz
+          Import: @12:10 Bar
+        - @13:3
+          NoImport: @13:12 Baz

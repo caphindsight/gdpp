@@ -1,0 +1,3 @@
+extern_name Pool
+
+notif(READY) {}

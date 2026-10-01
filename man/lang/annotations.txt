@@ -195,7 +195,7 @@ They combine with every other annotation, and with each other. Externs can have 
 
 # No annotations
 
-Enum values, integer constants, ctor, dtor, import and noimport take no annotations. Externs themselves only take @trace and @profile, which work like a class's on its functions, variables and signals.
+Enum values, integer constants, `ctor`, `dtor`, `notif`, `import` and `noimport` take no annotations. Externs themselves only take @trace and @profile, which work like a class's on its functions, variables and signals.
 
 # Errors
 

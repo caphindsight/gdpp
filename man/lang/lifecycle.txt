@@ -1,6 +1,6 @@
-Lifecycle: ctor, dtor, initial values, @onready, and the order things run in
+Lifecycle: `ctor`, `dtor`, initial values, `@onready`, `notif`, and the order things run in
 
-This page explains what runs when an object of a GD++ class is created, gets ready, and is deleted: constructors, destructors, initial values of variables, and @onready.
+This page explains what runs when an object of a GD++ class is created, gets ready, and is deleted: constructors, destructors, initial values of variables, `@onready`, and `notif` blocks.
 
 # ctor and dtor
 
@@ -79,13 +79,13 @@ If the class doesn't override _ready, GD++ adds an override that assigns the @on
 
 For a node created by a scene, Godot:
 
-1. creates the object: the constructor runs, with the initial values of variables,
+1. creates the object: the constructor runs, with the initial values of variables, then `notif(POSTINITIALIZE)`,
 2. sets the properties saved in the scene, i.e. the exported variables, through their setters,
 3. adds it to the scene tree: _enter_tree runs,
 4. once its children are ready: _ready runs, starting with the @onready initial values,
 5. every frame: _process and _physics_process run,
 6. removes it from the tree: _exit_tree runs,
-7. deletes it: the destructor runs.
+7. deletes it: `notif(PREDELETE)` runs, then the destructor.
 
 Note step 2: values from the scene overwrite the initial values, since they come after the constructor.
 
@@ -99,17 +99,28 @@ With @trace on a class, and a build that turns it on, the constructor prints a l
 
 # Notifications
 
-godot-cpp calls a class's _notification(int p_what) method, if it has one, for every notification, e.g. NOTIFICATION_PREDELETE. It's not a virtual function, so declare it in a decl block, not with @override:
+Godot tells an object about events with notifications, e.g. `NOTIFICATION_READY` or `NOTIFICATION_PREDELETE`. A `notif` block runs when the object gets one of the notifications it lists:
 
 ```gd++
-decl {
-  void _notification(int p_what) {
-    if (p_what == NOTIFICATION_PREDELETE) {
-      gd::print("About to be deleted.");
-    }
-  }
+notif(PREDELETE) {
+  gd::print("About to be deleted.");
+}
+
+notif(ENTER_TREE, EXIT_TREE) {
+  gd::print(what == NOTIFICATION_ENTER_TREE ? "Entered the tree." : "Left the tree.");
 }
 ```
+
+Write the names without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. Object's `POSTINITIALIZE` and `PREDELETE`, and Node's `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `what`, an int, is the notification that it's handling.
+
+A class can have any number of `notif` blocks, and a notification can be in more than one. When the object gets a notification, every block that lists it runs, in the order of the file. Each block runs on its own, so a `return` ends only that block.
+
+Two notifications are worth knowing:
+
+- `POSTINITIALIZE` comes right after the constructor, once the object is fully created.
+- `PREDELETE` comes when the object is about to be deleted, before the destructor. The object is still whole, e.g. a node is still in the tree, so it can still emit signals and call the engine.
+
+GD++ generates the class's `_notification` method from its `notif` blocks, so a class can't declare its own `_notification`. Godot calls the `_notification` of each class in the chain of bases itself, so a subclass's `notif` blocks don't replace its base's: both run.
 
 # See also
 

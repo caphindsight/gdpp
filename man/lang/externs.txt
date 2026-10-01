@@ -66,7 +66,7 @@ signal
 
 The extern itself can have @trace and @profile, for all its members. See "Externs" in `gd++ man debugging`.
 
-Everything else, e.g. ctor, dtor, enums, decl and impl blocks, is an error: "Externs can't contain ...". You only need to declare the members that your code uses.
+Everything else, e.g. `ctor`, `dtor`, `notif` blocks, enums, `decl` and `impl` blocks, is an error: "Externs can't contain ...". You only need to declare the members that your code uses.
 
 # Using an extern
 

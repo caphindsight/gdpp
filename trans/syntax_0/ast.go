@@ -24,12 +24,25 @@ type Member struct {
 	Code     *Code   `parser:"( @@"`
 	Ctor     *Block  `parser:"| 'ctor' @@"`
 	Dtor     *Block  `parser:"| 'dtor' @@"`
+	Notif    *Notif  `parser:"| @@"`
 	Func     *Func   `parser:"| @@"`
 	Signal   *Signal `parser:"| @@"`
 	Var      *Var    `parser:"| @@"`
 	Enum     *Enum   `parser:"| @@"`
 	Import   *Type   `parser:"| 'import' @@"`
 	NoImport *Type   `parser:"| 'noimport' @@ )"`
+}
+
+// Notif is a notif block: Body runs when the object gets one of the notifications Names (without NOTIFICATION_).
+type Notif struct {
+	Pos   lexer.Position
+	Names []*NotifName `parser:"'notif' '(' @@ ( ',' @@ )* ','? ')'"`
+	Body  *Block       `parser:"@@"`
+}
+
+type NotifName struct {
+	Pos  lexer.Position
+	Name string `parser:"@Ident"`
 }
 
 // Code is an embedded C++ block: decl, impl or decl impl. It takes annotations, but no doc comment.

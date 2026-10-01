@@ -34,6 +34,7 @@ type classModel struct {
 	codes      []*Code // decl and impl blocks inside the class.
 	globals    []*Code // @global decl and impl blocks, outside the class and namespace godot.
 	ctor, dtor *Block
+	notifs     []*Notif
 	funcs      []*funcModel
 	vars       []*varModel
 	signals    []*signalModel
@@ -1237,7 +1238,7 @@ func (u *unit) buildExterns() error {
 			default:
 				keyword, pos := member.keyword()
 				return u.errorAt(pos, len(keyword), fmt.Sprintf("Externs can't contain %s.", map[string]string{"decl": "decl or impl blocks",
-					"ctor": "a ctor", "dtor": "a dtor", "enum": "enums", "import": "imports", "noimport": "imports"}[keyword]),
+					"ctor": "a ctor", "dtor": "a dtor", "notif": "notif blocks", "enum": "enums", "import": "imports", "noimport": "imports"}[keyword]),
 					"Externs only declare the funcs, vars and signals that another package defines.")
 			}
 			if err != nil {
@@ -1329,6 +1330,17 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			m.ctor = member.Ctor
 		case member.Dtor != nil:
 			m.dtor = member.Dtor
+		case member.Notif != nil:
+			for _, n := range member.Notif.Names {
+				if name, ok := strings.CutPrefix(n.Name, "NOTIFICATION_"); ok {
+					return nil, u.errorAt(n.Pos, len(n.Name), fmt.Sprintf("Write notification %s without NOTIFICATION_.", n.Name),
+						fmt.Sprintf("GD++ adds the prefix: \"notif(%s)\".", name))
+				}
+			}
+			m.notifs = append(m.notifs, member.Notif)
+		case member.Func != nil && member.Func.Name == "_notification":
+			return nil, u.errorAt(member.Func.Pos, 4, "Classes can't declare _notification, since GD++ generates it.",
+				"Handle notifications with notif blocks, e.g. \"notif(READY) { ... }\".")
 		case member.Func != nil:
 			var f *funcModel
 			if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
