@@ -1,4 +1,4 @@
-<p align="center"><img src="gdpp_logo.png" alt="GD++ logo" width="200"></p>
+<p align="center"><img src="gdpp_logo.png" alt="GD++ logo" width="100" style="float: right;"></p>
 
 # GD++
 
