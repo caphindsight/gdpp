@@ -45,7 +45,7 @@ inline Error Terrain::_gdpp_rpc_qux(int64_t p_peer) const {
 }
 
 inline int64_t Terrain::get_baz() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("baz")));
+	return gdpp::cast<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("baz")));
 }
 
 inline void Terrain::set_baz(int64_t p_value) const {

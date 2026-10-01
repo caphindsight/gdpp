@@ -22,7 +22,7 @@ GD++ reads every identifier in a class, and includes the header of each one it k
 - In the class's header: the base class, the types in the class's API (variables, function parameters and return values, signal parameters), imported names, and every identifier in decl and @global decl blocks, and in the decl blocks of properties.
 - In the class's source file: every identifier in function bodies, default values, initial values, get and set blocks, ctor and dtor, and impl and @global impl blocks, unless the header includes it already.
 
-So using a class anywhere, even only in code, e.g. `Object::cast_to<MeshInstance3D>(node)` or `memnew(Timer)`, includes it. The match is by name only: a variable of yours named like a Godot class includes that class too, which is harmless.
+So using a class anywhere, even only in code, e.g. `cast<MeshInstance3D *>(node)` or `memnew(Timer)`, includes it. The match is by name only: a variable of yours named like a Godot class includes that class too, which is harmless.
 
 Every generated file also includes the GD++ runtime header, which includes godot-cpp's core headers and a few basic classes, e.g. Object, Node, RefCounted, Resource and Engine. See `gd++ man runtime`.
 
@@ -47,7 +47,7 @@ import StandardMaterial3D
 
 func tint(mesh: MeshInstance3D) -> void {
   auto material = mesh->get_active_material(0);                    // Ref<Material>
-  auto standard = Object::cast_to<StandardMaterial3D>(material.ptr());
+  auto standard = cast<Ref<StandardMaterial3D>>(material);
   ...
 }
 ```

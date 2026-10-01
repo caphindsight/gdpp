@@ -30,7 +30,7 @@ protected:
 namespace godot {
 
 inline B *Far::b() const {
-	return gdpp::from_variant<B *>(_gdpp_base->call(GDPP_STRING_NAME("b")));
+	return gdpp::cast<B *>(_gdpp_base->call(GDPP_STRING_NAME("b")));
 }
 
 } // namespace godot

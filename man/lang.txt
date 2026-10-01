@@ -72,6 +72,7 @@ Each class becomes a C++ class in namespace godot, with GDCLASS, in a header and
 # Building blocks
 
 - Classes: file-level with class_name, or inline with class Name { ... }. See `gd++ man classes`.
+- Cast: cast<T>(value) converts between any two types, checking down casts. See `gd++ man cast`.
 - Functions: func name(params) -> type { C++ }, with attributes like @override, @virtual, @const, @static. See `gd++ man functions`.
 - Variables: var name: type = value, and properties with their own get and set. See `gd++ man variables`.
 - Exports: @export and its family, to show variables in the inspector. See `gd++ man exports`.

@@ -42,8 +42,8 @@ Node, Node3D, Object, ...     Node *, Node3D *, ...     the pointer
 RefCounted, Resource, ...     Ref<Resource>, ...        const Ref<T> &
 your GD++ classes             like their base: Player * or Ref<Stats>
 your GD++ enums               the C++ enum class        by value
-externs                       gdpp::ExtPtr<T> or gdpp::ExtRef<T>   by value
-Async[T], Async               gdpp::Async<T>, gdpp::Async<Variant>  by value
+externs                       ExtPtr<T> or ExtRef<T>    by value
+Async[T], Async               Async<T>, Async<Variant>  by value
 ```
 
 "Passed as" is how function parameters and setters take the type. Return values and fields always use the plain C++ type.
@@ -122,7 +122,7 @@ Godot's own enums, e.g. Error, Key or Node.ProcessMode, aren't GD++ types themse
 enum ProcessMode { extends Node.ProcessMode }
 
 func set_mode(mode: ProcessMode) -> void {
-  set_process_mode(static_cast<Node::ProcessMode>(mode));
+  set_process_mode(cast<Node::ProcessMode>(mode));
 }
 ```
 
@@ -130,11 +130,11 @@ Global enums, e.g. Error or Key, need a new name, since Godot's names are taken:
 
 # Externs
 
-An extern declared in any GD++ file of the package is a type. In C++, it's a gdpp::ExtPtr<T>, or a gdpp::ExtRef<T> if its base class is refcounted, which calls the members of the object by name, and converts to the externs it extends. Godot sees it as its base class. See `gd++ man externs`.
+An extern declared in any GD++ file of the package is a type. In C++, it's an ExtPtr<T>, or an ExtRef<T> if its base class is refcounted, which calls the members of the object by name, and converts to the externs it extends. Godot sees it as its base class. See `gd++ man externs`.
 
 # Async
 
-Async[T] is a task whose result has type T, e.g. the call of an @onthread function, which runs on another thread. Async[void] has no result, and a plain Async has a Variant result. Godot sees it as the package's class of tasks, e.g. FooAsync for a package whose prefix is Foo; in C++, it's a gdpp::Async<T>, a reference to that object. Copies share the task, so it can be passed around, stored in variables, and sent in signals, like any refcounted object.
+Async[T] is a task whose result has type T, e.g. the call of an @onthread function, which runs on another thread. Async[void] has no result, and a plain Async has a Variant result. Godot sees it as the package's class of tasks, e.g. FooAsync for a package whose prefix is Foo; in C++, it's an Async<T>, a reference to that object. Copies share the task, so it can be passed around, stored in variables, and sent in signals, like any refcounted object.
 
 Async types can't be exported, typed collections can't hold them, and a task's result can't be another task. See `gd++ man async`.
 
@@ -168,4 +168,4 @@ The editor's help shows GD++ types like GDScript does: int, float, Vector3, Node
 
 # See also
 
-`gd++ man variables`, `gd++ man functions`, `gd++ man enums`, `gd++ man externs`, `gd++ man async`.
+`gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man enums`, `gd++ man externs`, `gd++ man async`.

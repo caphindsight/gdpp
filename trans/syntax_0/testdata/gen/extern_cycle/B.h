@@ -31,7 +31,7 @@ protected:
 namespace godot {
 
 inline gdpp::ExtPtr<A> B::a(gdpp::ExtPtr<A> x) const {
-	return gdpp::from_variant<gdpp::ExtPtr<A>>(_gdpp_base->call(GDPP_STRING_NAME("a"), x));
+	return gdpp::cast<gdpp::ExtPtr<A>>(_gdpp_base->call(GDPP_STRING_NAME("a"), x));
 }
 
 inline gdpp::Emitted B::found(gdpp::ExtPtr<A> a) const {

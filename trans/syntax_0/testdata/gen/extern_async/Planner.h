@@ -23,11 +23,11 @@ protected:
 };
 
 inline gdpp::Async<Array> Planner::plan(int64_t steps) const {
-	return gdpp::from_variant<gdpp::Async<Array>>(_gdpp_base->call(GDPP_STRING_NAME("plan"), steps));
+	return gdpp::cast<gdpp::Async<Array>>(_gdpp_base->call(GDPP_STRING_NAME("plan"), steps));
 }
 
 inline gdpp::Async<Variant> Planner::pending() const {
-	return gdpp::from_variant<gdpp::Async<Variant>>(_gdpp_base->call(GDPP_STRING_NAME("pending")));
+	return gdpp::cast<gdpp::Async<Variant>>(_gdpp_base->call(GDPP_STRING_NAME("pending")));
 }
 
 } // namespace godot

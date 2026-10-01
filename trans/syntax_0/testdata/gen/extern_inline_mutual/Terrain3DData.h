@@ -22,7 +22,7 @@ protected:
 };
 
 inline double Terrain3DData::get_height(const Vector3 &pos) const {
-	return gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("get_height"), pos));
+	return gdpp::cast<double>(_gdpp_base->call(GDPP_STRING_NAME("get_height"), pos));
 }
 
 } // namespace godot

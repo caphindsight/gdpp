@@ -43,14 +43,16 @@ const (
 	// GD++'s words in C++ code that are also method names, e.g. in task.is_done(): they're keywords only where a name
 	// follows them, which is where GD++ rewrites them.
 	rewriteOperatorWords = "is_done claim cancel"
-	cppTypeWords         = "bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t uint8_t uint16_t " +
+	// The runtime's cast, and C++'s casts, which it replaces.
+	castWords    = "cast static_cast dynamic_cast const_cast reinterpret_cast"
+	cppTypeWords = "bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t uint8_t uint16_t " +
 		"uint32_t uint64_t"
 	// Godot's names for types that aren't written in PascalCase, which is how highlightGdpp spots other types.
 	godotTypeWords = "float64_t real_t gd RID AABB"
 )
 
 var (
-	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords)
+	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords, castWords)
 	codeOperators = wordSet(rewriteOperatorWords)
 	codeTypes     = wordSet(cppTypeWords, godotTypeWords)
 )

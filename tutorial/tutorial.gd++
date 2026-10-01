@@ -283,7 +283,7 @@ func count_primes(limit: int) -> int {
   return count;
 }
 
-// So count_primes returns an Async[int], which is a gdpp::Async<int64_t> in C++. Async is a type like any other:
+// So count_primes returns an Async[int], which is an Async<int64_t> in C++. Async is a type like any other:
 
 var primes: Async[int]
 

@@ -134,7 +134,7 @@ C++ classes and GD++ classes live side by side in one package, and are registere
 
 GD++ code knows Godot's classes and the package's GD++ classes, but not your C++ classes. So:
 
-- A GD++ class can't use a C++ class as a type in its API, e.g. as the type of a var or a parameter. Use the C++ class's Godot base class instead, e.g. Node3D, and cast in code with Object::cast_to<Spinner>(node).
+- A GD++ class can't use a C++ class as a type in its API, e.g. as the type of a var or a parameter. Use the C++ class's Godot base class instead, e.g. Node3D, and cast in code with cast<Spinner *>(node), see `gd++ man cast`.
 - To use a C++ class in the code of a GD++ class, include its header yourself, with a @global block:
 
 ```gd++

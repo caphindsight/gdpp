@@ -24,7 +24,7 @@ inline void Car::honk() const {
 }
 
 inline int64_t Car::get_doors() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("doors")));
+	return gdpp::cast<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("doors")));
 }
 
 inline void Car::set_doors(int64_t p_value) const {

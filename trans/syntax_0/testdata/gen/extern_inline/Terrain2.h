@@ -28,7 +28,7 @@ protected:
 };
 
 inline double Terrain2::height(double x, double z) const {
-	return gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("height"), x, z));
+	return gdpp::cast<double>(_gdpp_base->call(GDPP_STRING_NAME("height"), x, z));
 }
 
 inline void Terrain2::rebuild() const {
@@ -40,11 +40,11 @@ inline void Terrain2::refresh(int64_t x) const {
 }
 
 inline String Terrain2::name() const {
-	return gdpp::from_variant<String>(_gdpp_base->call(GDPP_STRING_NAME("name")));
+	return gdpp::cast<String>(_gdpp_base->call(GDPP_STRING_NAME("name")));
 }
 
 inline int64_t Terrain2::get_size() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("size")));
+	return gdpp::cast<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("size")));
 }
 
 inline void Terrain2::set_size(int64_t p_value) const {

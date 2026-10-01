@@ -45,7 +45,7 @@ For each signal, GD++ generates a public C++ method with the signal's name and p
 gdpp::Emitted health_changed(int64_t health);
 ```
 
-It returns gdpp::Emitted, a struct marked [[nodiscard]], which holds the Error that emit_signal returned. So a plain call, `health_changed(5);`, makes the compiler warn that the result is unused. In C++ code, GD++ replaces the word emit with (void), which uses the result:
+It returns Emitted, a struct marked [[nodiscard]], which holds the Error that emit_signal returned. So a plain call, `health_changed(5);`, makes the compiler warn that the result is unused. In C++ code, GD++ replaces the word emit with (void), which uses the result:
 
 ```gd++
 emit health_changed(5);      // becomes:  (void) health_changed(5);

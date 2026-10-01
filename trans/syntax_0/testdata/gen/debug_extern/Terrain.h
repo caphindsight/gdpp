@@ -28,7 +28,7 @@ protected:
 
 inline double Terrain::height(double x, double z) const {
 	gdpp::Trace _gdpp_trace(gdpp::via_extern, _gdpp_base, "height", "x", x, "z", z);
-	return _gdpp_trace.ret(gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("height"), x, z)));
+	return _gdpp_trace.ret(gdpp::cast<double>(_gdpp_base->call(GDPP_STRING_NAME("height"), x, z)));
 }
 
 inline void Terrain::rebuild() const {
@@ -37,7 +37,7 @@ inline void Terrain::rebuild() const {
 }
 
 inline int64_t Terrain::get_size() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("size")));
+	return gdpp::cast<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("size")));
 }
 
 inline void Terrain::set_size(int64_t p_value) const {

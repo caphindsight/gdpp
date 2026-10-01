@@ -32,7 +32,7 @@ var manPages = []string{
 	"tool/cpp-classes", "tool/vcs", "tool/shipping",
 	"cmd", "cmd/build", "cmd/cat", "cmd/checkin", "cmd/clean", "cmd/doc", "cmd/fetch", "cmd/fix", "cmd/init", "cmd/install", "cmd/ls", "cmd/man",
 	"cmd/rm", "cmd/trans", "cmd/vendor",
-	"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/functions", "lang/variables", "lang/exports", "lang/signals",
+	"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/cast", "lang/functions", "lang/variables", "lang/exports", "lang/signals",
 	"lang/enums", "lang/lifecycle", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance", "lang/code", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs",
 	"lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 }

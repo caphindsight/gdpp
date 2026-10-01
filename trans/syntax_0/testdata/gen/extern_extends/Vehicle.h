@@ -22,7 +22,7 @@ protected:
 };
 
 inline double Vehicle::speed() const {
-	return gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("speed")));
+	return gdpp::cast<double>(_gdpp_base->call(GDPP_STRING_NAME("speed")));
 }
 
 } // namespace godot

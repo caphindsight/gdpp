@@ -105,13 +105,85 @@ void call_thread_safe(T *p_node, const StringName &p_method, const Args &...p_ar
 	p_node->call_thread_safe(p_method, p_args...);
 }
 
-// from_variant converts the result of a call resolved by name.
 template <typename T>
-T from_variant(const Variant &p_value) {
-	if constexpr (std::is_enum_v<T>) {
-		return static_cast<T>(p_value.operator int64_t());
+class ExtPtr;
+template <typename T>
+class ExtRef;
+template <typename T>
+class Async;
+
+// object_class<T>::type is the class of the object that T points to, for a pointer, Ref, extern or Async, and void
+// for other types.
+template <typename T>
+struct object_class {
+	using type = void;
+};
+template <typename T>
+struct object_class<T *> {
+	using type = T;
+};
+template <typename T>
+struct object_class<Ref<T>> {
+	using type = T;
+};
+template <typename T>
+struct object_class<ExtPtr<T>> {
+	using type = typename T::Base;
+};
+template <typename T>
+struct object_class<ExtRef<T>> {
+	using type = typename T::Base;
+};
+template <typename T>
+struct object_class<Async<T>> {
+	using type = RefCounted;
+};
+
+// object_ptr returns the raw pointer to the object that p_value points to.
+template <typename T>
+T *object_ptr(T *p_value) { return p_value; }
+template <typename T>
+T *object_ptr(const Ref<T> &p_value) { return p_value.ptr(); }
+template <typename T>
+auto object_ptr(const ExtPtr<T> &p_value) { return p_value.base(); }
+template <typename T>
+auto object_ptr(const ExtRef<T> &p_value) { return p_value.base().ptr(); }
+template <typename T>
+RefCounted *object_ptr(const Async<T> &p_value) { return p_value.object().ptr(); }
+
+// cast converts p_value to T, picking the conversion at compile time:
+//   - from a Variant, as Godot's bindings do, with enums as ints,
+//   - to a Variant, with enums as ints,
+//   - between pointers, Refs, externs and Asyncs: up casts are static, other casts check the object's class, and give
+//     null if it doesn't match; externs only check their base class,
+//   - anything else with static_cast, e.g. numbers and enums.
+template <typename T, typename U>
+T cast(const U &p_value) {
+	using To = typename object_class<T>::type;
+	using From = typename object_class<U>::type;
+	if constexpr (std::is_same_v<T, U>) {
+		return p_value;
+	} else if constexpr (std::is_same_v<U, Variant>) {
+		if constexpr (std::is_enum_v<T>) {
+			return static_cast<T>(p_value.operator int64_t());
+		} else {
+			return VariantCaster<T>::cast(p_value);
+		}
+	} else if constexpr (std::is_same_v<T, Variant>) {
+		if constexpr (std::is_enum_v<U>) {
+			return static_cast<int64_t>(p_value);
+		} else {
+			return Variant(p_value);
+		}
+	} else if constexpr (std::is_base_of_v<Object, To> && std::is_base_of_v<Object, From>) {
+		// Braces, unlike T(...), don't cast a const pointer to a mutable one.
+		if constexpr (std::is_base_of_v<To, From>) {
+			return T{ object_ptr(p_value) };
+		} else {
+			return T{ Object::cast_to<std::remove_cv_t<To>>(object_ptr(p_value)) };
+		}
 	} else {
-		return VariantCaster<T>::cast(p_value);
+		return static_cast<T>(p_value);
 	}
 }
 
@@ -517,7 +589,7 @@ private:
 #endif
 		Variant value = own ? (own->*p_own_method)() : task->call(p_method);
 		if constexpr (!std::is_void_v<T>) {
-			return value.get_type() == Variant::NIL ? T() : from_variant<T>(value);
+			return value.get_type() == Variant::NIL ? T() : cast<T>(value);
 		}
 	}
 };
@@ -549,6 +621,14 @@ auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::i
 }
 
 } // namespace gdpp
+
+// The runtime's names for user code, which writes them without a prefix. Generated code spells them gdpp::.
+using gdpp::Async;
+using gdpp::cast;
+using gdpp::Emitted;
+using gdpp::Ext;
+using gdpp::ExtPtr;
+using gdpp::ExtRef;
 
 // gd_assert(condition) and gd_assert(condition, "message") mirror GDScript's assert: a failed condition prints an error.
 // Like in GDScript, release builds skip the check and don't evaluate the condition. C's assert is a macro, so gd::assert

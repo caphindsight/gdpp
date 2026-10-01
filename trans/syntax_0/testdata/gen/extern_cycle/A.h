@@ -32,11 +32,11 @@ protected:
 namespace godot {
 
 inline gdpp::ExtRef<B> A::b() const {
-	return gdpp::from_variant<gdpp::ExtRef<B>>(_gdpp_base->call(GDPP_STRING_NAME("b")));
+	return gdpp::cast<gdpp::ExtRef<B>>(_gdpp_base->call(GDPP_STRING_NAME("b")));
 }
 
 inline gdpp::ExtRef<B> A::get_peer() const {
-	return gdpp::from_variant<gdpp::ExtRef<B>>(_gdpp_base->get(GDPP_STRING_NAME("peer")));
+	return gdpp::cast<gdpp::ExtRef<B>>(_gdpp_base->get(GDPP_STRING_NAME("peer")));
 }
 
 inline void A::set_peer(gdpp::ExtRef<B> p_value) const {

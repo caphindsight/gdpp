@@ -445,9 +445,9 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		case f.ret.void:
 			w.ln("\t%s;", call)
 		case f.trace:
-			w.ln("\treturn _gdpp_trace.ret(gdpp::from_variant<%s>(%s));", f.ret.cpp, call)
+			w.ln("\treturn _gdpp_trace.ret(gdpp::cast<%s>(%s));", f.ret.cpp, call)
 		default:
-			w.ln("\treturn gdpp::from_variant<%s>(%s);", f.ret.cpp, call)
+			w.ln("\treturn gdpp::cast<%s>(%s);", f.ret.cpp, call)
 		}
 		w.ln("}")
 		if f.rpc != nil {
@@ -464,7 +464,7 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		if v.profile {
 			u.profile(w, "extern "+e.name+"."+v.getter)
 		}
-		w.ln("\treturn gdpp::from_variant<%s>(_gdpp_base->get(GDPP_STRING_NAME(%q)));", v.t.cpp, v.v.Name)
+		w.ln("\treturn gdpp::cast<%s>(_gdpp_base->get(GDPP_STRING_NAME(%q)));", v.t.cpp, v.v.Name)
 		w.ln("}")
 		w.ln("")
 		w.ln("inline void %s::%s(%sp_value) const {", e.name, v.setter, withSpace(v.t.param()))

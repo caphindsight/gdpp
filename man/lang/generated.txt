@@ -221,7 +221,7 @@ inline double Terrain::height_at(double x, double z) const {
   static gdpp::ProfileStats _gdpp_stats("extern Terrain.height_at");
   gdpp::Profile _gdpp_profile(_gdpp_stats);
   gdpp::Trace _gdpp_trace(gdpp::via_extern, _gdpp_base, "height_at", "x", x, "z", z);
-  return _gdpp_trace.ret(gdpp::from_variant<double>(_gdpp_base->call(GDPP_STRING_NAME("height_at"), x, z)));
+  return _gdpp_trace.ret(gdpp::cast<double>(_gdpp_base->call(GDPP_STRING_NAME("height_at"), x, z)));
 }
 ```
 

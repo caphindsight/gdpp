@@ -79,7 +79,7 @@ signal started(task: Async[int])
 func track(task: Async[int]) -> void { ... }
 ```
 
-In C++, Async[T] is a gdpp::Async<T>, e.g. gdpp::Async<int64_t> for Async[int]. Godot sees it as an object of the package's class of tasks, e.g. FooAsync for a package whose prefix is Foo. See "The class of tasks" below.
+In C++, Async[T] is an Async<T>, e.g. Async<int64_t> for Async[int]. Godot sees it as an object of the package's class of tasks, e.g. FooAsync for a package whose prefix is Foo. See "The class of tasks" below.
 
 A few uses are errors:
 
@@ -267,13 +267,13 @@ Each package that uses Async registers its own class of tasks, so packages built
 
 The editor's help shows Async types as this class, e.g. FooAsync, and documents the class itself in builds with documentation, see `gd++ man docs`. Like Godot's own classes, it lists valid, done and result as properties, and not their getters.
 
-To see how the class is implemented, run `gd++ trans --runtime`: the runtime header defines it, as GDPP_ASYNC_CLASS, together with gdpp::Async<T>. "How it works" below gives an overview.
+To see how the class is implemented, run `gd++ trans --runtime`: the runtime header defines it, as GDPP_ASYNC_CLASS, together with Async<T>. "How it works" below gives an overview.
 
 `gd++ trans` on a file outside any package names the class GdppAsync.
 
 # Across packages
 
-C++ code works with the tasks of any package: a gdpp::Async<T> calls the methods of the package's own tasks directly, and those of other packages' tasks by name. So an extern can declare that a function of another package returns an Async, e.g. an @onthread function:
+C++ code works with the tasks of any package: an Async<T> calls the methods of the package's own tasks directly, and those of other packages' tasks by name. So an extern can declare that a function of another package returns an Async, e.g. an @onthread function:
 
 ```gd++
 extern Planner {
@@ -282,22 +282,22 @@ extern Planner {
 }
 ```
 
-Calling planner->plan(10) returns a gdpp::Async<Array> of the other package's task. See `gd++ man externs`.
+Calling planner->plan(10) returns an Async<Array> of the other package's task. See `gd++ man externs`.
 
-Godot, though, knows an Async parameter as the package's own class, e.g. FooAsync, so a script's type checks may refuse a task of another package there. To take the tasks of any package, declare the parameter as a Variant, and convert it in C++, e.g. `gdpp::from_variant<gdpp::Async<int64_t>>(task)`.
+Godot, though, knows an Async parameter as the package's own class, e.g. FooAsync, so a script's type checks may refuse a task of another package there. To take the tasks of any package, declare the parameter as a Variant, and convert it in C++, e.g. `cast<Async<int64_t>>(task)`, see `gd++ man cast`.
 
 # How it works
 
 For an @onthread function f, GD++ generates:
 
-- f itself, which returns a gdpp::Async of the function's type. It calls gdpp::run_task, which creates an object of the package's class of tasks, and starts the task on the WorkerThreadPool with WorkerThreadPool::add_task.
+- f itself, which returns an Async of the function's type. It calls gdpp::run_task, which creates an object of the package's class of tasks, and starts the task on the WorkerThreadPool with WorkerThreadPool::add_task.
 - _gdpp_body_f, a method with the body, which the task calls. It isn't bound, so scripts can't call it.
 
 The object of the class of tasks stores the body's result as a Variant, and the Async converts it back to the function's type. Godot requires waiting once for each task of the WorkerThreadPool, with wait_for_task_completion: the object does so in wait, which claim calls, or else when it's freed. If a task frees the last reference to itself, e.g. by freeing the object that held it, it can't wait for itself, so the main thread waits for it instead, right after.
 
 For quitting, the runtime watches the root window, from the package's first task on: the window leaves the scene tree when the game starts quitting, before any node is freed. From then on, is_cancelled is true, and waiting for a task ends the game when the grace period is over. When the package's library is unloaded, it also waits for the package's running tasks, within the same grace period, since their code must not be unloaded while they run.
 
-Run `gd++ trans FILE` to see the code, and `gd++ trans --runtime` to see the class of tasks and gdpp::Async<T>. See also `gd++ man generated` and `gd++ man runtime`.
+Run `gd++ trans FILE` to see the code, and `gd++ trans --runtime` to see the class of tasks and Async<T>. See also `gd++ man generated` and `gd++ man runtime`.
 
 # See also
 

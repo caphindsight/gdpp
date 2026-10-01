@@ -33,11 +33,11 @@ protected:
 namespace godot {
 
 inline Gate *Lock::owner() const {
-	return gdpp::from_variant<Gate *>(_gdpp_base->call(GDPP_STRING_NAME("owner")));
+	return gdpp::cast<Gate *>(_gdpp_base->call(GDPP_STRING_NAME("owner")));
 }
 
 inline Ref<Key> Lock::key() const {
-	return gdpp::from_variant<Ref<Key>>(_gdpp_base->call(GDPP_STRING_NAME("key")));
+	return gdpp::cast<Ref<Key>>(_gdpp_base->call(GDPP_STRING_NAME("key")));
 }
 
 } // namespace godot

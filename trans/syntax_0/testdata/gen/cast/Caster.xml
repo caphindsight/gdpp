@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Caster" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="convert">
+			<return type="int" />
+			<param index="0" name="node" type="Node" />
+			<param index="1" name="resource" type="Resource" />
+			<param index="2" name="value" type="Variant" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="level" type="int" enum="Caster.Level" setter="set_level" getter="get_level">
+		</member>
+		<member name="mode" type="int" enum="Caster.Mode" setter="set_mode" getter="get_mode">
+		</member>
+		<member name="road" type="Road" setter="set_road" getter="get_road">
+		</member>
+		<member name="settings" type="Settings" setter="set_settings" getter="get_settings">
+		</member>
+		<member name="task" type="GdppAsync" setter="set_task" getter="get_task">
+		</member>
+	</members>
+	<constants>
+		<constant name="MODE_INHERIT" value="0" enum="Mode">
+		</constant>
+		<constant name="MODE_PAUSABLE" value="1" enum="Mode">
+		</constant>
+		<constant name="MODE_WHEN_PAUSED" value="2" enum="Mode">
+		</constant>
+		<constant name="MODE_ALWAYS" value="3" enum="Mode">
+		</constant>
+		<constant name="MODE_DISABLED" value="4" enum="Mode">
+		</constant>
+		<constant name="LEVEL_EASY" value="0" enum="Level">
+			For beginners.
+		</constant>
+		<constant name="LEVEL_HARD" value="5" enum="Level" deprecated="Use [constant LEVEL_EASY].">
+		</constant>
+	</constants>
+</class>

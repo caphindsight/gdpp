@@ -39,7 +39,7 @@ inline void Lobby::leave() const {
 inline int64_t Lobby::get_players() const {
 	static gdpp::ProfileStats _gdpp_stats("extern Lobby.get_players");
 	gdpp::Profile _gdpp_profile(_gdpp_stats);
-	return gdpp::from_variant<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("players")));
+	return gdpp::cast<int64_t>(_gdpp_base->get(GDPP_STRING_NAME("players")));
 }
 
 inline void Lobby::set_players(int64_t p_value) const {

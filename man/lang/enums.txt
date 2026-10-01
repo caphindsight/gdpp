@@ -199,17 +199,17 @@ enum class Suit : int64_t {
 };
 ```
 
-So values are scoped: write Suit::HEARTS in C++ code. Convert to and from integers with static_cast:
+So values are scoped: write Suit::HEARTS in C++ code. Convert to and from integers with cast, see `gd++ man cast`:
 
 ```gd++
 var trump: Suit = Suit::HEARTS
 
 func trump_index() -> int {
-  return static_cast<int64_t>(trump);
+  return cast<int64_t>(trump);
 }
 
 func set_trump_index(i: int) -> void {
-  trump = static_cast<Suit>(i);
+  trump = cast<Suit>(i);
 }
 ```
 
@@ -223,7 +223,7 @@ var trump: Suit = HEARTS
 func deal(suit: Suit = Suit.SPADES) -> void { ... }
 ```
 
-An enum and its base are different C++ types, even with the same values: convert between them with static_cast. Redeclaring an engine enum is how GD++ code uses it as a type:
+An enum and its base are different C++ types, even with the same values: convert between them with cast. Redeclaring an engine enum is how GD++ code uses it as a type:
 
 ```gd++
 enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
@@ -231,7 +231,7 @@ enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
 @export var casting: ShadowCastingSetting = ON
 
 func _ready() -> void {
-  mesh->set_cast_shadows_setting(static_cast<GeometryInstance3D::ShadowCastingSetting>(casting));
+  mesh->set_cast_shadows_setting(cast<GeometryInstance3D::ShadowCastingSetting>(casting));
 }
 ```
 

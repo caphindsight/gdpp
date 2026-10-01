@@ -16,11 +16,20 @@ A source file that defines GDPP_DEBUGGING before its includes also gets the code
 
 # For your code
 
+Your code writes these without a prefix. Generated code spells most of them with gdpp::, e.g. gdpp::Async, where the runtime defines them, so a name of yours can't hide them there.
+
 gd
   An alias of UtilityFunctions, Godot's global functions, at global scope: gd::print("Hello"), gd::push_error("Oops"), gd::randi_range(1, 6), gd::lerp(a, b, 0.5), gd::is_instance_valid(obj), and all the others of GDScript's global scope. See `gd++ doc UtilityFunctions` for the list.
 
 float64_t
   A name for double, the C++ type of Godot's float, to match int64_t.
+
+cast<T>(VALUE)
+  Converts VALUE to T, whatever the two types are: numbers, enums, Variants, and objects, with up casts done statically and down casts checked, giving null if the class doesn't match. It's at global scope, like gd. See `gd++ man cast`.
+
+```gd++
+Node3D *node = cast<Node3D *>(scene->instantiate());
+```
 
 gd_assert(CONDITION) and gd_assert(CONDITION, MESSAGE)
   Like GDScript's assert: if CONDITION is false, prints an error, "Assertion failed: CONDITION - MESSAGE.", and goes on. In release builds, it does nothing, and doesn't evaluate CONDITION. It's a macro, since C's assert is one already.
@@ -33,16 +42,16 @@ gd_assert(target != nullptr, "The target must be set before calling fire().");
 memnew_ext(T) and memdelete_ext(OBJECT)
   Create and delete objects of the extern T, like memnew and memdelete. See `gd++ man externs`.
 
-gdpp::ExtPtr<T>, gdpp::ExtRef<T> and gdpp::Ext<T>
+ExtPtr<T>, ExtRef<T> and Ext<T>
   The C++ types of externs: a pointer or a reference to an object of an extern's class, whose members are called by name. Ext<T> is ExtRef<T> if T's base is refcounted, and ExtPtr<T> otherwise. See `gd++ man externs`.
 
-gdpp::Async<T>
+Async<T>
   The C++ type of Async[T]: a task, e.g. the call of an @onthread function. It references an object of a class of tasks, whose methods it calls directly for the package's own tasks, and by name for those of other packages, so it works with the tasks of any package, and copies share the task, like references to the task object in scripts, and its methods do what the object's do. It's true while its task is running or done, and false once it's claimed, or when it's empty. is_done() is true when its task has finished, and isn't claimed yet. claim() returns the result of a done task, and claims it, for every copy. result() returns it too, but keeps it. wait() waits for the task to finish, then returns the result, and keeps it, like result(). cancel() asks the task to stop, and is always safe: for an empty Async, or a task that's done or claimed, it does nothing. Claiming or reading the result before the task is done, or once it's claimed, and calling claim(), result() or wait() on an empty Async, print an error in debug builds, and are undefined in release builds. A default-constructed Async is empty, and destroying it does nothing. In GD++ code, `is_done TASK`, `claim TASK` and `cancel TASK` call these methods, see `gd++ man rewrites`. See `gd++ man async`.
 
-gdpp::is_cancelled()
-  Whether the task running on this thread should stop: its Async was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. In GD++ code, the word is_cancelled calls it. See `gd++ man async`.
+is_cancelled
+  Whether the task running on this thread should stop: its Async was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. It's GD++'s word, which calls the runtime's gdpp::is_cancelled(). See `gd++ man rewrites` and `gd++ man async`.
 
-gdpp::Emitted
+Emitted
   What a signal's emit function returns: a [[nodiscard]] struct with the Error of emit_signal, in its field error. See `gd++ man signals`.
 
 GDPP_STRING_NAME("name")
@@ -62,7 +71,6 @@ These are used by the code that GD++ generates. Your code rarely needs them:
 - gdpp::call_thread_safe(node, method, args...) calls a method with call_thread_safe, for @thread_safe. It fails to compile if the node's class doesn't extend Node.
 - gdpp::GDPP_ASYNC_CLASS is the package's class of tasks, whose name the build defines as GDPP_ASYNC_CLASS, e.g. FooAsync, and gdpp::async_class holds as a string. The package's generated registration code registers it. gdpp::run_task(self, name, job) starts the call of an @onthread function with an object of it, and gdpp::TaskCallable is the Callable that runs the body. See `gd++ man async`.
 - For quitting: gdpp::watch_quit notices when the game starts quitting, gdpp::await_quit waits for a task within the package's quit_timeout, which the build defines as GDPP_QUIT_TIMEOUT_USEC, and in games ends the game when it runs out, and gdpp::finish_tasks waits for the package's running tasks before its library is unloaded. See "When the game quits" in `gd++ man async`.
-- gdpp::from_variant<T>(value) converts a Variant to T, enums and Async types included, for calls on externs.
 - GDPP_ENUM_TAG(TAG, NAME) makes a class's stand-in type for an enum bind as the enum NAME, e.g. "Player.Suit". GDPP_BITFIELD_TAG does the same for a bitfield. See `gd++ man enums`.
 - GDPP_BITFIELD(ENUM) gives the enum class of a bitfield the operators |, &, ^, ~, |=, &= and ^=.
 - Specializations of godot-cpp's GetTypeInfo, PtrToArg and VariantCaster for ExtPtr and ExtRef, so bindings see externs as their base classes, and for Async, so bindings see it as the package's class of tasks.
@@ -86,4 +94,4 @@ The runtime header belongs to a syntax version: code generated with syntax 0 use
 
 # See also
 
-`gd++ man code`, `gd++ man externs`, `gd++ man generated`, `gd++ man trans`, `gd++ man debugging`.
+`gd++ man code`, `gd++ man cast`, `gd++ man externs`, `gd++ man generated`, `gd++ man trans`, `gd++ man debugging`.

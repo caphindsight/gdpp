@@ -31,7 +31,7 @@ protected:
 namespace godot {
 
 inline gdpp::ExtPtr<Terrain3DData> Terrain3D::get_data() const {
-	return gdpp::from_variant<gdpp::ExtPtr<Terrain3DData>>(_gdpp_base->get(GDPP_STRING_NAME("data")));
+	return gdpp::cast<gdpp::ExtPtr<Terrain3DData>>(_gdpp_base->get(GDPP_STRING_NAME("data")));
 }
 
 inline void Terrain3D::set_data(gdpp::ExtPtr<Terrain3DData> p_value) const {

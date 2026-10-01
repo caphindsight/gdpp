@@ -18,7 +18,7 @@ public:
 };
 
 inline int64_t Highway::lanes() const {
-	return gdpp::from_variant<int64_t>(_gdpp_base->call(GDPP_STRING_NAME("lanes")));
+	return gdpp::cast<int64_t>(_gdpp_base->call(GDPP_STRING_NAME("lanes")));
 }
 
 } // namespace godot
