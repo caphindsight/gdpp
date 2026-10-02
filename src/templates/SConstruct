@@ -46,9 +46,15 @@ else:
             print("MSVC only supports AddressSanitizer.")
             Exit(1)
         env.Append(CCFLAGS=["/fsanitize=address"])
+    elif sanitizers and env.get("use_mingw", False):
+        print("MinGW doesn't support sanitizers.")
+        Exit(1)
     elif sanitizers:
         flags = ["-fsanitize=" + sanitizers, "-fno-omit-frame-pointer"]
         env.Append(CCFLAGS=flags, LINKFLAGS=flags)
+    # godot-cpp's headers refuse to compile with a sanitizer unless its macro is defined.
+    macros = {"address": "ASAN_ENABLED", "undefined": "UBSAN_ENABLED", "thread": "TSAN_ENABLED"}
+    env.Append(CPPDEFINES=[macros[s] for s in sanitizers.split(",") if s])
 {{- if .Color}}
     # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
     # the build signature, so it doesn't trigger rebuilds.
