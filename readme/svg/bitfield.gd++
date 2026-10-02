@@ -4,5 +4,5 @@ enum Layer { NONE = 0, WORLD, PLAYER, ENEMY }
 @export var hits: Layer = WORLD | ENEMY
 
 func hits_player() -> bool {
-  return (hits & Layer::PLAYER) != Layer::NONE;
+  return bool(hits & Layer::PLAYER);
 }

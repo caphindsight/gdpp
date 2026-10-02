@@ -243,7 +243,7 @@ enum class Suit : int64_t {
 };
 ```
 
-A bitfield's enum class is followed by `GDPP_BITFIELD(Name)`, which gives it the bitwise operators.
+A bitfield's enum class is followed by `GDPP_BITFIELD(Name)`, which gives it the bitwise operators, and lets `&` test as a `bool`.
 
 # Registration
 

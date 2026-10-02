@@ -64,19 +64,19 @@ Unlike GDScript, blocks use braces, and every value has a static type. Types are
 
 A file has at most one file-level class, with `class_name`, and any number of inline ones. Without `extends`, a class extends `RefCounted`. See `gd++ man classes`.
 
-### `@tool` classes
+### Tool classes
 
 <a href="readme/svg/tool.gd++"><img src="readme/svg/tool.svg" alt="GD++ code: tool"></a>
 
 It spins in the editor too. Without `@tool`, the editor runs none of the class's code. See `gd++ man classes`.
 
-### `@game_only` classes
+### Game-only classes
 
 <a href="readme/svg/game_only.gd++"><img src="readme/svg/game_only.svg" alt="GD++ code: game_only"></a>
 
 Its code only ever runs in the game, even if editor code, e.g. of a `@tool` class, creates one. See `gd++ man classes`.
 
-### `@icon`
+### Class icons
 
 <a href="readme/svg/icon.gd++"><img src="readme/svg/icon.svg" alt="GD++ code: icon"></a>
 
@@ -100,7 +100,7 @@ An initial value is a C++ expression, or a block that returns it. C++ code uses 
 
 A `decl` block holds the property's storage. Without `set`, a property is read-only. See `gd++ man variables`.
 
-### `@onready`
+### Ready-time initial values
 
 <a href="readme/svg/onready.gd++"><img src="readme/svg/onready.svg" alt="GD++ code: onready"></a>
 
@@ -142,19 +142,19 @@ With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ ma
 
 `_ready`, `_process` and the like need no annotation: they run from the class's notification handler, so a script that extends the class can't replace them. `_process` and `_physics_process` also turn processing on. See `gd++ man functions`.
 
-### `@override`
+### Overrides
 
 <a href="readme/svg/override.gd++"><img src="readme/svg/override.svg" alt="GD++ code: override"></a>
 
 It overrides any engine callback, or a `@virtual` function. A script's function of the same name replaces it, but with `"super"`, the script can still call it, as `_super_unhandled_input`. See `gd++ man functions`.
 
-### `@virtual` and `@override("final")`
+### Virtual and final functions
 
 <a href="readme/svg/virtual.gd++"><img src="readme/svg/virtual.svg" alt="GD++ code: virtual"></a>
 
 A script that extends `Weapon` can override `_damage`, and any script can call it as `damage()`. `"final"` stops overrides for `Sword`. See `gd++ man functions`.
 
-### `@const` and `@static`
+### Const and static functions
 
 <a href="readme/svg/const_static.gd++"><img src="readme/svg/const_static.svg" alt="GD++ code: const_static"></a>
 
@@ -166,25 +166,25 @@ GDScript calls a static function on the class, e.g. `Bomb.damage_at(3.0)`. See `
 
 A default value is a C++ expression, or a block that returns it. See `gd++ man functions`.
 
-### `@deferred`
+### Deferred functions
 
 <a href="readme/svg/deferred.gd++"><img src="readme/svg/deferred.svg" alt="GD++ code: deferred"></a>
 
 Every call, from C++ or GDScript, runs at the end of the frame, through `call_deferred`. See `gd++ man functions`.
 
-### `@thread_safe`
+### Thread-safe functions
 
 <a href="readme/svg/thread_safe.gd++"><img src="readme/svg/thread_safe.svg" alt="GD++ code: thread_safe"></a>
 
 A call from another thread runs later, on the main thread, where it can change the scene tree. See `gd++ man functions`.
 
-### `@onthread`
+### Functions on worker threads
 
 <a href="readme/svg/onthread.gd++"><img src="readme/svg/onthread.svg" alt="GD++ code: onthread"></a>
 
 A call to an `@onthread` function runs it on a worker thread, and returns right away, with an `Async` task. `is_done` tells whether the task is done, and `claim` takes its result. No frame waits for the search. See `gd++ man async`.
 
-### `@rpc`
+### Remote procedure calls
 
 <a href="readme/svg/rpc.gd++"><img src="readme/svg/rpc.svg" alt="GD++ code: rpc"></a>
 
@@ -196,11 +196,11 @@ A call to an `@onthread` function runs it on a worker thread, and returns right 
 
 An enum type belongs to the whole package. In C++, it's an enum class. `enum NAME = VALUE` is an integer constant of the class. See `gd++ man enums`.
 
-### `@bitfield` enums
+### Bitfield enums
 
 <a href="readme/svg/bitfield.gd++"><img src="readme/svg/bitfield.svg" alt="GD++ code: bitfield"></a>
 
-The flags count 1, 2, 4 and so on, and the inspector shows a checkbox for each. See `gd++ man enums`.
+The flags count 1, 2, 4 and so on, and the inspector shows a checkbox for each. In C++, `&` tests as a `bool`, e.g. `if (hits & Layer::PLAYER)`. See `gd++ man enums`.
 
 ### Extending enums
 
@@ -226,7 +226,7 @@ Neither takes arguments, since Godot creates objects without any. See `gd++ man 
 
 An extern declares a class that lives elsewhere: in another package, another GDExtension, or a script with a `class_name`. Its members are called by name, at runtime. See `gd++ man externs`.
 
-### `@trace`
+### Tracing
 
 <a href="readme/svg/trace.gd++"><img src="readme/svg/trace.svg" alt="GD++ code: trace"></a>
 
@@ -240,7 +240,7 @@ After `gd++ build --trace Player`, the game prints every call and every change:
 
 See `gd++ man debugging`.
 
-### `@profile`
+### Profiling
 
 <a href="readme/svg/profile.gd++"><img src="readme/svg/profile.svg" alt="GD++ code: profile"></a>
 
@@ -252,7 +252,7 @@ After `gd++ build --profile ai`, the editor's monitors show its timings live. `@
 
 `decl` goes into the class's header, and `impl` into its source file. With `@global`, they go outside the class. `This` is the name of the class. See `gd++ man code`.
 
-### `import` and `noimport`
+### Forcing and preventing includes
 
 <a href="readme/svg/import.gd++"><img src="readme/svg/import.svg" alt="GD++ code: import"></a>
 
@@ -264,13 +264,13 @@ GD++ writes the `#include` lines for the names it sees. `import` adds one for a 
 
 They become the editor's help, with Godot's BBCode tags. See `gd++ man docs`.
 
-### `gd_assert`
+### Assertions
 
 <a href="readme/svg/assert.gd++"><img src="readme/svg/assert.svg" alt="GD++ code: assert"></a>
 
 Like GDScript's `assert`, it's gone in release builds. See `gd++ man runtime`.
 
-### `string_name`
+### Cached string names
 
 <a href="readme/svg/string_name.gd++"><img src="readme/svg/string_name.svg" alt="GD++ code: string_name"></a>
 

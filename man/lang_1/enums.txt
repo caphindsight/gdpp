@@ -168,19 +168,21 @@ enum MySizeFlags {
 
 `PICKUP` is 8, after `ACTORS = 6`, and `HUGE` is 16, after `Control.SizeFlags`'s `SIZE_SHRINK_END = 8`.
 
-In C++, a bitfield is an enum class like any other (see "In C++" below), with the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`, so values combine without casts. Test a flag by comparing:
+In C++, a bitfield is an enum class like any other (see "In C++" below), with the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`, so values combine without casts. A value of `&` also tests as a `bool`, true if any flag is set, so test a flag with `if (mask & Layer::ENEMY)`:
 
 ```gd++
 @export var mask: Layer = WORLD | PLAYER
 
 func hits_enemies() -> bool {
-  return (mask & Layer::ENEMY) != Layer::NONE;
+  return bool(mask & Layer::ENEMY);
 }
 
 func add(layers: Layer = ENEMY) -> void {
   mask |= layers;
 }
 ```
+
+The `bool` works where C++ expects a condition: in `if`, `while`, `!`, `&&`, `||` and `? :`. Elsewhere, e.g. in `return` or `bool b = ...`, write `bool(...)`. Otherwise, the value of `&` is a `Layer`: `Layer hit = mask & Layer::ENEMY;`. With `auto`, it stays a `gdpp::Masked<Layer>`, which converts to `Layer` but takes no `|=` and the like, so write the type.
 
 An initial value or a default value of a bitfield type can combine the bitfield's values with `|`, `&`, `^`, `~` and parentheses without C++: `WORLD | PLAYER` stands for `Layer::WORLD | Layer::PLAYER`.
 

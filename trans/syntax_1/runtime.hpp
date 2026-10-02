@@ -655,6 +655,15 @@ auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::i
 	return Async<R>(Ref<RefCounted>(task.ptr()));
 }
 
+// Masked is what & returns for a bitfield E: it converts to E, and tests as true if any flag is set, so
+// if (mask & Layer::ENEMY) works.
+template <typename E>
+struct Masked {
+	E value;
+	constexpr operator E() const { return value; }
+	constexpr explicit operator bool() const { return static_cast<int64_t>(value) != 0; }
+};
+
 } // namespace gdpp
 
 // The runtime's names for user code, which writes them without a prefix. Generated code spells them gdpp::.
@@ -807,10 +816,11 @@ struct VariantCaster<gdpp::Async<T>> {
 		} \
 	};
 
-// GDPP_BITFIELD gives m_enum, a GD++ bitfield, the bitwise operators. Use it in namespace godot.
+// GDPP_BITFIELD gives m_enum, a GD++ bitfield, the bitwise operators. & returns a gdpp::Masked, which tests as a bool.
+// Use it in namespace godot.
 #define GDPP_BITFIELD(m_enum) \
 	constexpr m_enum operator|(m_enum a, m_enum b) { return m_enum(int64_t(a) | int64_t(b)); } \
-	constexpr m_enum operator&(m_enum a, m_enum b) { return m_enum(int64_t(a) & int64_t(b)); } \
+	constexpr gdpp::Masked<m_enum> operator&(m_enum a, m_enum b) { return { m_enum(int64_t(a) & int64_t(b)) }; } \
 	constexpr m_enum operator^(m_enum a, m_enum b) { return m_enum(int64_t(a) ^ int64_t(b)); } \
 	constexpr m_enum operator~(m_enum a) { return m_enum(~int64_t(a)); } \
 	constexpr m_enum &operator|=(m_enum &a, m_enum b) { return a = a | b; } \
