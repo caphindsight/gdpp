@@ -1,0 +1,4 @@
+input.gd++:4:18: A node path needs a variable of a node type, e.g. Node3D, but n has no type.
+ 4 | @onready var n = $Foo
+   |                  ^^^^
+Hint: $ and % get nodes.

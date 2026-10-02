@@ -134,7 +134,7 @@ Init        = Block | Expr
 Default     = Block | Expr
 ```
 
-`Expr` is C++ code that starts after `=` and runs to the end of the line, but continues while a `(`, `[` or `{` is open. A `Default` also ends at a `,` outside brackets, and before the `)` that closes the parameter list. A value that starts with `{` is a `Block`, which returns the value.
+`Expr` is C++ code that starts after `=` and runs to the end of the line, but continues while a `(`, `[` or `{` is open. A `Default` also ends at a `,` outside brackets, and before the `)` that closes the parameter list. A value that starts with `{` is a `Block`, which returns the value. An `Init` that starts with `$` or `%` is a node path, e.g. `$Hud/Score`. See `gd++ man variables`.
 
 # Keywords
 

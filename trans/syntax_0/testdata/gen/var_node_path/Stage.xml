@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Stage" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="bar" type="Node2D" setter="set_bar" getter="get_bar">
+		</member>
+		<member name="camera" type="Camera3D" setter="set_camera" getter="get_camera">
+		</member>
+		<member name="health" type="Node3D" setter="set_health" getter="get_health">
+		</member>
+		<member name="label" type="Node" setter="set_label" getter="get_label">
+		</member>
+		<member name="next" type="Stage" setter="set_next" getter="get_next">
+		</member>
+		<member name="root" type="Node" setter="set_root" getter="get_root">
+		</member>
+	</members>
+</class>

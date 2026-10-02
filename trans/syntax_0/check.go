@@ -6,6 +6,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/alecthomas/participle/v2/lexer"
 
@@ -751,6 +754,199 @@ func (u *unit) enumShorthand(t *gtype, init *Init) error {
 	return nil
 }
 
+// nodeShorthand turns the initial value of m into C++ if it's a node path, e.g. $Hud/Score or %Health, which becomes
+// get_node<Label>("Hud/Score"). The node only has children once it's ready, so m needs @onready, and a node type.
+func (u *unit) nodeShorthand(m *varModel) error {
+	v, init := m.v, m.v.Init
+	if init == nil || init.Block != nil || init.Expr == "" || init.Expr[0] != '$' && init.Expr[0] != '%' {
+		return nil
+	}
+	path, off, msg, hint := nodePath(init.Expr)
+	if msg != "" {
+		pos := init.Pos
+		pos.Offset, pos.Column = pos.Offset+off, pos.Column+utf8.RuneCountInString(init.Expr[:off])
+		return u.errorAt(pos, 1, msg, hint)
+	}
+	if !m.onready {
+		return u.errorAt(init.Pos, len(init.Expr), "A node path needs @onready, since the node has no children yet in the constructor.", "Add @onready.")
+	}
+	const need, needHint = "A node path needs a variable of a node type, e.g. Node3D, but %s %s.", "$ and % get nodes."
+	if v.Type == nil {
+		return u.errorAt(init.Pos, len(init.Expr), fmt.Sprintf(need, v.Name, "has no type"), needHint)
+	}
+	if m.t.cpp != v.Type.Name+" *" || !u.extends(v.Type.Name, "Node") {
+		return u.errorAt(v.Type.Pos, len(v.Type.Name), fmt.Sprintf(need, v.Name, "has type "+m.t.doc), needHint)
+	}
+	init.Expr = fmt.Sprintf("get_node<%s>(%s)", v.Type.Name, cppString(path))
+	return nil
+}
+
+// nodePath parses expr, a node path with GDScript's rules: "$" or "%", then names or strings joined by "/", where
+// "%" may start a name, and "$" may be followed by "/", e.g. $Hud/Score, %Health, $/root/Main or $"../Sibling".
+// It returns the path, e.g. "Hud/Score" or "%Health", or the offset in expr of the first error, its message and hint.
+func nodePath(expr string) (path string, off int, msg, hint string) {
+	var sb strings.Builder
+	last, i := expr[:1], 1 // The last "$", "%" or "/", or "" after a name.
+	if last == "%" {
+		sb.WriteString(last)
+	} else if j := skipBlanks(expr, i); j < len(expr) && expr[j] == '/' {
+		sb.WriteByte('/')
+		last, i = "/", j+1
+	}
+	for {
+		i = skipBlanks(expr, i)
+		name, n, off, msg := nodeName(expr[i:])
+		if msg != "" {
+			return "", i + off, msg, ""
+		}
+		if n > 0 {
+			sb.WriteString(name)
+			last, i = "", skipBlanks(expr, i+n)
+		}
+		switch {
+		case (i == len(expr) || expr[i] != '/' && expr[i] != '%') && last != "":
+			return "", i, fmt.Sprintf("Expected a node name or a string after %q.", last), ""
+		case i < len(expr) && expr[i] != '/' && expr[i] != '%':
+			return "", i, "A node path must be the whole initial value.", `In C++ code, use get_node<T>("Path").`
+		case i == len(expr):
+			return sb.String(), 0, "", ""
+		case expr[i] == '%' && last != "$" && last != "/":
+			return "", i, `A "%" is only valid at the start of a node name, after "$" or "/".`, ""
+		case expr[i] == '/' && last != "$" && last != "":
+			return "", i, `A "/" is only valid at the start of the path, or after a node name.`, ""
+		}
+		last = expr[i : i+1]
+		sb.WriteString(last)
+		i++
+	}
+}
+
+// skipBlanks returns the index of the first byte at or after i in s that isn't a space or a tab.
+func skipBlanks(s string, i int) int {
+	for i < len(s) && strings.IndexByte(" \t\r", s[i]) >= 0 {
+		i++
+	}
+	return i
+}
+
+// nodeName parses the node name at the start of s, like GDScript: an identifier or a keyword, but not the literals
+// true, false and null, or a string. It returns the name and its length, 0 if there's none, or the offset and message
+// of an error.
+func nodeName(s string) (name string, n, off int, msg string) {
+	if strings.HasPrefix(s, `"`) || strings.HasPrefix(s, "'") || strings.HasPrefix(s, `r"`) || strings.HasPrefix(s, "r'") {
+		return gdscriptString(s)
+	}
+	for n < len(s) {
+		r, size := utf8.DecodeRuneInString(s[n:])
+		if r != '_' && !unicode.In(r, unicode.L, unicode.Nl) && (n == 0 || !unicode.In(r, unicode.Mn, unicode.Mc, unicode.Nd, unicode.Pc)) {
+			break
+		}
+		n += size
+	}
+	if name = s[:n]; name == "true" || name == "false" || name == "null" {
+		return "", 0, 0, ""
+	}
+	return name, n, 0, ""
+}
+
+// gdscriptString parses the GDScript string at the start of s: "...", '...', triple-quoted, or raw, e.g. r"...".
+// It returns its value and its length, or the offset and message of an error.
+func gdscriptString(s string) (value string, n, off int, msg string) {
+	raw := s[0] == 'r'
+	if raw {
+		n = 1
+	}
+	quote := s[n : n+1]
+	if strings.HasPrefix(s[n:], strings.Repeat(quote, 3)) {
+		quote = strings.Repeat(quote, 3)
+	}
+	var sb strings.Builder
+	for n += len(quote); ; {
+		switch {
+		case n == len(s):
+			return "", 0, 0, "This string is never closed."
+		case strings.HasPrefix(s[n:], quote):
+			return sb.String(), n + len(quote), 0, ""
+		case s[n] != '\\':
+			sb.WriteByte(s[n])
+			n++
+		case raw: // Raw strings keep their escapes, but \" (with their quote) and \\ don't end them.
+			size := 1
+			if n+1 < len(s) && (s[n+1] == quote[0] || s[n+1] == '\\') {
+				size = 2
+			}
+			sb.WriteString(s[n : n+size])
+			n += size
+		default:
+			r, size := gdscriptEscape(s[n:])
+			if size == 0 {
+				return "", 0, n, "Invalid escape in string."
+			}
+			sb.WriteRune(r)
+			n += size
+		}
+	}
+}
+
+// gdscriptEscape decodes the GDScript escape at the start of s, e.g. \n or é, where a \u pair may encode a
+// UTF-16 surrogate pair. It returns the character and the escape's length, 0 if it's invalid.
+func gdscriptEscape(s string) (rune, int) {
+	if len(s) < 2 {
+		return 0, 0
+	}
+	if i := strings.IndexByte(`tnrabfv"'\`, s[1]); i >= 0 {
+		return rune("\t\n\r\a\b\f\v\"'\\"[i]), 2
+	}
+	hex := func(s string) (rune, int) { // \uXXXX or \UXXXXXX.
+		digits := 0
+		if len(s) > 1 && s[0] == '\\' {
+			digits = map[byte]int{'u': 4, 'U': 6}[s[1]]
+		}
+		if digits == 0 || len(s) < 2+digits {
+			return 0, 0
+		}
+		v, err := strconv.ParseUint(s[2:2+digits], 16, 32)
+		if err != nil {
+			return 0, 0
+		}
+		return rune(v), 2 + digits
+	}
+	r, n := hex(s)
+	if n == 0 || r > unicode.MaxRune || r >= 0xdc00 && r < 0xe000 {
+		return 0, 0
+	}
+	if utf16.IsSurrogate(r) { // A lead surrogate, which needs a trail one.
+		trail, size := hex(s[n:])
+		if r = utf16.DecodeRune(r, trail); size == 0 || r == unicode.ReplacementChar {
+			return 0, 0
+		}
+		n += size
+	}
+	return r, n
+}
+
+// cppString returns s as a C++ string literal for a NodePath: U"..." if it isn't ASCII, since godot-cpp reads plain
+// literals as Latin-1.
+func cppString(s string) string {
+	var sb strings.Builder
+	if strings.IndexFunc(s, func(r rune) bool { return r >= utf8.RuneSelf }) >= 0 {
+		sb.WriteByte('U')
+	}
+	sb.WriteByte('"')
+	for _, b := range []byte(s) {
+		switch {
+		case b == '"' || b == '\\':
+			sb.WriteString(`\` + string(b))
+		case b < ' ' || b == 0x7f:
+			fmt.Fprintf(&sb, `\%03o`, b) // Octal, since \x takes any number of digits.
+		default:
+			sb.WriteByte(b)
+		}
+	}
+	sb.WriteByte('"')
+	return sb.String()
+}
+
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
@@ -1123,6 +1319,9 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	}
 	if ext && (v.Init != nil || v.Property != nil) {
 		return nil, u.errorAt(v.Pos, 3, "Extern variables can't have an initial value or a property body.", "Externs only declare what another package defines.")
+	}
+	if err := u.nodeShorthand(m); err != nil {
+		return nil, err
 	}
 	if err := u.enumShorthand(m.t, v.Init); err != nil {
 		return nil, err

@@ -1,0 +1,4 @@
+input.gd++:4:17: A node path needs a variable of a node type, e.g. Node3D, but r has type Resource.
+ 4 | @onready var r: Resource = $Foo
+   |                 ^^^^^^^^
+Hint: $ and % get nodes.

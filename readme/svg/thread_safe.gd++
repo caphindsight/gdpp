@@ -1,5 +1,5 @@
 @onready
-var bar: ProgressBar = get_node<ProgressBar>("Bar")
+var bar: ProgressBar = $Bar
 
 @thread_safe
 func set_progress(percent: int) -> void {

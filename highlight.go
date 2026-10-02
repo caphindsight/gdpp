@@ -108,6 +108,8 @@ func highlightGdpp(code string, gdscript bool) string {
 			n, style = min(n+1, lineEnd(rest)), []Style{CodeLiteral}
 		case c == '@' && identLen(rest[1:]) > 0:
 			n, style = 1+identLen(rest[1:]), []Style{CodePreProc}
+		case c == '$' || c == '%' && strings.HasSuffix(strings.TrimRight(code[:i], " \t"), "="):
+			n, style = nodePathLen(rest), []Style{CodeLiteral}
 		case c >= '0' && c <= '9':
 			for n < len(rest) && (isIdentByte(rest[n]) || rest[n] == '.' || rest[n] == '\'') {
 				n++
@@ -137,6 +139,31 @@ func identLen(s string) int {
 	n := 0
 	for n < len(s) && isIdentByte(s[n]) && (n > 0 || s[0] < '0' || s[0] > '9') {
 		n++
+	}
+	return n
+}
+
+// nodePathLen returns the length of the node path at the start of s, e.g. $Hud/"Score Label" or %Health.
+func nodePathLen(s string) int {
+	n := 1
+	for n < len(s) {
+		switch c := s[n]; {
+		case c == '"' || c == '\'':
+			end := n + 1
+			for end < lineEnd(s) && s[end] != c {
+				if s[end] == '\\' {
+					end++
+				}
+				end++
+			}
+			n = min(end+1, lineEnd(s))
+		case c == '/' && n+1 < len(s) && (s[n+1] == '/' || s[n+1] == '*'): // A comment.
+			return n
+		case c == '/' || c == '%' || c >= 0x80 || isIdentByte(c):
+			n++
+		default:
+			return n
+		}
 	}
 	return n
 }

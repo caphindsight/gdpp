@@ -1,0 +1,20 @@
+class_name Stage
+extends Node
+
+@onready
+var root: Node = $/root/Main
+
+@onready
+var camera: Camera3D = $Rig/Camera
+
+@onready
+var health: Node3D = %Health
+
+@onready
+var bar: Node2D = $Hud/%Bar/"Fill Rect"
+
+@onready
+var label: Node = $"Ünit \"1\""
+
+@onready
+var next: Stage = %Next  // Unique.

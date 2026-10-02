@@ -100,6 +100,19 @@ Division by zero.
 The value 99999999999999999999 does not fit in a 64-bit integer.
 ```
 
+Node paths:
+
+```
+A node path needs @onready, since the node has no children yet in the constructor.
+A node path needs a variable of a node type, e.g. Node3D, but x has type int.
+A node path must be the whole initial value.        Hint: In C++ code, use get_node<T>("Path").
+Expected a node name or a string after "/".
+A "%" is only valid at the start of a node name, after "$" or "/".
+A "/" is only valid at the start of the path, or after a node name.
+Invalid escape in string.
+This string is never closed.
+```
+
 Types:
 
 ```

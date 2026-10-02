@@ -1,5 +1,5 @@
 @onready
-var label: Label = get_node<Label>("Score")
+var label: Label = $Hud/Score
 
 func show_score(score: int) -> void {
   label->set_text(String("Score: ") + String::num_int64(score));

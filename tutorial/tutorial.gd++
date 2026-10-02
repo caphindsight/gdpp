@@ -376,7 +376,7 @@ var another_simple_var: int = 5  // Initialized to 5.
 // The initial value can be a C++ expression, or a block of C++ code that returns the value:
 
 @onready
-var child_node_1: Node3D = get_node<Node3D>("MyNode1")
+var child_node_1: Node3D = $MyNode1  // Like GDScript: $Path/To/Node, or %UniqueName.
 
 @onready
 var child_node_2: Node3D = {

@@ -1,0 +1,4 @@
+input.gd++:4:15: A node path needs @onready, since the node has no children yet in the constructor.
+ 4 | var n: Node = $Foo
+   |               ^^^^
+Hint: Add @onready.

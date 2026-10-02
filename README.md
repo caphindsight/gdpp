@@ -104,7 +104,7 @@ A `decl` block holds the property's storage. Without `set`, a property is read-o
 
 <a href="readme/svg/onready.gd++"><img src="readme/svg/onready.svg" alt="GD++ code: onready"></a>
 
-Like in GDScript, the value is set when the node gets ready, so its children exist. It's set before any `_ready` runs, even a script's. See `gd++ man lifecycle`.
+Like in GDScript, the value is set when the node gets ready, so its children exist, and `$` and `%` get them by path or unique name. It's set before any `_ready` runs, even a script's. See `gd++ man variables` and `gd++ man lifecycle`.
 
 ### Typed arrays and dictionaries
 

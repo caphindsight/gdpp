@@ -65,7 +65,7 @@ A node gets ready when it and all its children have entered the scene tree, whic
 
 ```gd++
 @onready
-var label: Label = get_node<Label>("Label")
+var label: Label = $Label
 
 func _ready() -> void {
   label->set_text("Ready.");    // label is set already

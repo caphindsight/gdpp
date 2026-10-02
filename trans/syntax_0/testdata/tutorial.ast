@@ -404,7 +404,7 @@ File: @36:1
             - @378:1 onready
           Name: child_node_1
           Type: @379:19 Node3D
-          Init: @379:28 get_node<Node3D>("MyNode1")
+          Init: @379:28 $MyNode1
       - @381:1
         Var: @382:1
           Annotations:
