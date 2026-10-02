@@ -59,7 +59,8 @@ func assertFor(void bool) string {
 //   - `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
 //   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
 //   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
-//   - `create T` and `destroy x` become `gdpp::create<T>()` and `gdpp::destroy(x)`,
+//   - `create T`, `destroy x` and `queue_destroy x` become `gdpp::create<T>()`, `gdpp::destroy(x)` and
+//     `gdpp::queue_destroy(x)`,
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
 //   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`,
@@ -147,15 +148,15 @@ func cpp(code, assert string) string {
 				continue
 			}
 		}
-		if ts[i].Type == tokIdent && (asyncWords[ts[i].Value] || ts[i].Value == "destroy" && !isMember(ts, i)) {
+		if ts[i].Type == tokIdent && (asyncWords[ts[i].Value] || destroyWords[ts[i].Value] && !isMember(ts, i)) {
 			j := skipSpace(ts, i+1)
 			if end := postfixEnd(ts, j); end > j {
 				// Drop the keyword and the spaces after it, but keep a line break and the indentation after it.
 				for k := i; k < j && ts[k].Type != tokNewline; k++ {
 					out[k] = ""
 				}
-				if ts[i].Value == "destroy" {
-					out[i], out[end-1] = "gdpp::destroy(", out[end-1]+")"
+				if destroyWords[ts[i].Value] {
+					out[i], out[end-1] = "gdpp::"+ts[i].Value+"(", out[end-1]+")"
 				} else {
 					out[end-1] += "." + ts[i].Value + "()"
 				}
@@ -203,6 +204,9 @@ func cpp(code, assert string) string {
 	}
 	return strings.Join(out, "")
 }
+
+// destroyWords are the words that call the runtime's function of the same name: `destroy x` is `gdpp::destroy(x)`.
+var destroyWords = map[string]bool{"destroy": true, "queue_destroy": true}
 
 // asyncWords are the words that call the method of the same name on an Async: `claim x` is `x.claim()`.
 var asyncWords = map[string]bool{"claim": true, "is_done": true, "cancel": true}

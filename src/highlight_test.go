@@ -28,6 +28,9 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "cancel t; t.cancel();", Styled("cancel", CodeKeyword) + " t; t." + Styled("cancel", CodeFunction) + "();"},
 		{"gd++", "n = x as Node3D *;", "n = x " + Styled("as", CodeKeyword) + " " + Styled("Node3D", CodeType) + " *;"},
 		{"gd++", "as = x;", "as = x;"},
+		{"gd++", "memnew(Node); memdelete(a); new Node; delete a;", "memnew(" + Styled("Node", CodeType) + "); memdelete(a); new " + Styled("Node", CodeType) + "; delete a;"},
+		{"gd++", "queue_destroy b; n->queue_destroy(1);", Styled("queue_destroy", CodeKeyword) + " b; n->" + Styled("queue_destroy", CodeFunction) + "(" +
+			Styled("1", CodeLiteral) + ");"},
 		{"gd++", "b = create Bullet; destroy b; Image::create(1);", "b = " + Styled("create", CodeKeyword) + " " + Styled("Bullet", CodeType) + "; " +
 			Styled("destroy", CodeKeyword) + " b; " + Styled("Image", CodeType) + "::" + Styled("create", CodeFunction) + "(" + Styled("1", CodeLiteral) + ");"},
 		{"gd++", "call(string_name \"f\"); string_name = 1;", Styled("call", CodeFunction) + "(" + Styled("string_name", CodeKeyword) + " " +

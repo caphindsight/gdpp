@@ -41,7 +41,7 @@ func _on_hit(bullet: Bullet) -> void {
 }
 ```
 
-`destroy` returns the bullet to the pool: it runs the `@recycle dtor`, removes the node from its parent, and keeps it in the pool. `create` takes a bullet from the pool if there is one, resets its `@recycle` variables, and runs its `@recycle ctor`. Otherwise, it creates a new bullet. A reused node also gets ready again: the next time it enters the tree, its `@onready` values are set and `_ready` runs, just like for a new node.
+`destroy` returns the bullet to the pool: it runs the `@recycle dtor`, removes the node from its parent, and keeps it in the pool. `create` takes a bullet from the pool if there is one, resets its `@recycle` variables, and runs its `@recycle ctor`. Otherwise, it creates a new bullet. To return a bullet at the end of the frame, e.g. from a physics callback, use `queue_destroy bullet;`, the pool's `queue_free()`. Destroying a bullet that's already back in the pool does nothing, so two hits in the same frame can both destroy it. Other objects are different: destroying one that's already deleted is a bug, like deleting it twice in C++. A reused node also gets ready again: the next time it enters the tree, its `@onready` values are set and `_ready` runs, just like for a new node.
 
 # Two kinds of ctor and dtor
 

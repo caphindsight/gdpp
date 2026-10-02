@@ -224,7 +224,7 @@ Neither takes arguments, since Godot creates objects without any. See `gd++ man 
 
 <a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
 
-`create` and `destroy` create and delete objects of every kind: nodes and other objects, which code holds through pointers, refcounted objects, which it holds through references, externs, object pools and scene classes. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. See `gd++ man classes`.
+`create` and `destroy` create and delete objects of every kind: nodes and other objects, which code holds through pointers, refcounted objects, which it holds through references, externs, object pools and scene classes. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. `queue_destroy` destroys a node at the end of the frame, like Godot's `queue_free`, but works with pools too. See `gd++ man classes`.
 
 ### Object pools
 

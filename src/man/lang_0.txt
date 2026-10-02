@@ -61,7 +61,7 @@ GD++ is not quite C++ either. Its code blocks hold C++ with a few rewrites, e.g.
 A GD++ file mixes two languages:
 
 - GD++ declarations: classes, functions, variables, signals, enums and so on. GD++ parses them, and turns them into C++ declarations and bindings.
-- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and `decl` and `impl` blocks. GD++ copies this code into the generated C++, almost unchanged: it only removes comments, and applies its few rewrites, `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `as` and `assert`.
+- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and `decl` and `impl` blocks. GD++ copies this code into the generated C++, almost unchanged: it only removes comments, and applies its few rewrites, `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`.
 
 In C++ code, everything that godot-cpp offers works: Godot's classes, `Variant`, `memnew`, `Ref`, `UtilityFunctions` and so on. GD++ adds a few helpers. See `gd++ man runtime`.
 
@@ -96,7 +96,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Debugging: `@trace` prints calls and changes, and `@profile` times code. See `gd++ man debugging`.
 - Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: `decl`, `impl` and `@global` blocks. See `gd++ man code`.
-- Rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `as` and `assert`, GD++'s few additions to C++ code. See `gd++ man rewrites`.
+- Rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, GD++'s few additions to C++ code. See `gd++ man rewrites`.
 - Includes: automatic, with `import` and `noimport` to adjust them. See `gd++ man includes`.
 - Doc comments: `///` and `/** */`, which become the editor's help. See `gd++ man docs`.
 

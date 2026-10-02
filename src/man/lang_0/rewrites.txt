@@ -17,6 +17,7 @@ claim TASK                     TASK.claim()                       take an Async'
 cancel TASK                    TASK.cancel()                      ask an Async's task to stop
 create T                       gdpp::create<T>()                  create an object, see `gd++ man classes`
 destroy OBJECT                 gdpp::destroy(OBJECT)              delete an object, or give it back to its pool
+queue_destroy NODE             gdpp::queue_destroy(NODE)          destroy a node at the end of the frame
 VALUE as T                     gdpp::cast<T>(VALUE)               convert a value to the type T, see `gd++ man cast`
 assert COND;                   GDPP_ASSERT("COND", COND);         check what must be true, see below
 ```
@@ -34,7 +35,7 @@ Rewrites only happen in C++ code, never in comments or strings. Each rewrite app
 - `rpc` is only rewritten when a call follows it, or a peer in parentheses and then a call. Elsewhere it's left alone, e.g. in Godot's own `rpc("ping")`.
 - `string_name` is only rewritten when a string literal follows it, e.g. `string_name "update"`. Elsewhere it's left alone, e.g. a variable named `string_name`.
 - `is_done`, `claim` and `cancel` are only rewritten when a name follows them. Elsewhere they're left alone, e.g. a variable named `claim`, or the call `task.is_done()`.
-- `create` and `destroy` are only rewritten when a name follows them, and aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
+- `create`, `destroy` and `queue_destroy` are only rewritten when a name follows them, and aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
 - `as` is only rewritten when a value comes before it and a type after it.
 - `assert` is only rewritten where it starts a statement, and a condition and then a `;` follow it. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere it's left alone, e.g. in `s.assert(x);` or `assert = 1;`.
 
@@ -42,12 +43,12 @@ Avoid the names of all rewrites as names in your C++ code. Their operands:
 
 - NAME may be written with objects before it, joined by `->` or `.`, e.g. `rpc other->take_damage(5)`. The objects must be named by variables, not by function calls.
 - TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending`, `this->tasks[i]` or `find_path(a, b)`. Like C++'s own prefix operators, the rewrite applies to all of it: `claim find(a).size()` claims the result of `find(a).size()`, so write `(claim find(a)).size()` to call `size` on the result. TASK must start with a name: `claim (a ? x : y)` isn't rewritten, so write `(a ? x : y).claim()` then.
-- T is the name of a class, maybe in a scope, e.g. `Bullet`, `This` or `godot::Mesh`. OBJECT is like TASK, e.g. `bullet` or `this->bullets[i]`.
+- T is the name of a class, maybe in a scope, e.g. `Bullet`, `This` or `godot::Mesh`. OBJECT and NODE are like TASK, e.g. `bullet` or `this->bullets[i]`.
 - VALUE is like TASK, but may also be in parentheses, e.g. `body`, `get_node("Mesh")` or `(a + b)`. `as` binds it like a C++ postfix operator, so `a + b as float` converts `b` only. T is a type, e.g. `int`, `Node3D *` or `Ref<Mesh>`. `as` is only rewritten where both are clear: in `x as int * y` or `(int) x as float`, it stays, so the code doesn't compile, and parentheses fix it, e.g. `(x as int) * y`. See `gd++ man cast`.
 
 A rewrite keeps the code's line breaks, so the line numbers in errors still match the GD++ file.
 
-`gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
+`gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
 
 # Assertions
 

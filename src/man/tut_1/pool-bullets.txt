@@ -20,13 +20,12 @@ extends Area3D
 @export var lifetime: float = 2.0
 
 var age: float = 0.0
-var active: bool = true
 
 func _physics_process(delta: float) -> void {
   translate(Vector3(0, 0, -speed * delta));
   age += delta;
   if (age >= lifetime) {
-    expire();
+    queue_destroy this;
   }
 }
 
@@ -34,24 +33,12 @@ func _on_body_entered(body: Node3D) -> void {
   Enemy *enemy = body as Enemy *;
   if (enemy) {
     enemy->take_damage(damage);
-    expire();
+    queue_destroy this;
   }
-}
-
-func expire() -> void {
-  if (active) {
-    active = false;
-    remove();
-  }
-}
-
-@deferred
-func remove() -> void {
-  destroy this;
 }
 ```
 
-A bullet destroys itself in `expire`, when it hits an enemy or its lifetime runs out. Step 2 explains why it takes two functions.
+A bullet destroys itself when it hits an enemy or its lifetime runs out. Step 2 explains how.
 
 Build the package, and change the type of the scene's root to `Bullet`. Connect its `body_entered` signal to `_on_body_entered` in the Node dock. `@scene` makes `create Bullet` instantiate `bullet.tscn`, so each bullet comes with its mesh and collision shape. See "@scene" in `gd++ man classes`.
 
@@ -73,10 +60,10 @@ func take_damage(amount: int) -> void {
 
 # 2. Destroy the bullet safely
 
-`expire` could just say `destroy this;`, but two details stop it:
+The bullet uses `queue_destroy` rather than `destroy`, for two reasons:
 
-- `body_entered` comes in the middle of the physics engine's work, which doesn't allow removing a collision object from the tree. `destroy` can't tell when that's the case, so `remove` is `@deferred`: every call runs at the end of the frame, when it's safe. See "@deferred" in `gd++ man functions`.
-- A bullet can hit two enemies in the same frame, or hit one just as its lifetime runs out. Then `expire` runs twice, but `active` makes sure that the bullet is destroyed only once. Destroying an object twice is a bug, which prints an error.
+- `body_entered` comes in the middle of the physics engine's work, which doesn't allow removing a collision object from the tree. `queue_destroy` is like Godot's `queue_free`: it destroys the node at the end of the frame, when that's safe. Unlike `queue_free`, it works with pools: a pooled bullet goes back to its pool instead of being freed. See `gd++ man classes`.
+- A bullet can hit two enemies in the same frame, or hit one just as its lifetime runs out. Then it queues its destruction twice, which is fine: the second time does nothing, since the bullet is already gone, or already back in its pool.
 
 # 3. Fire bullets
 
@@ -110,13 +97,12 @@ Nothing else changes: `create` and `destroy` already handle pools. Now `destroy`
 
 # 5. Reset reused bullets
 
-Run the game again, and fire a few times: the bullets of later shots disappear right away, or don't hit anything. That's because a reused bullet keeps its variables: `age` is still past its `lifetime`, and `active` is still `false`. Variables get their initial values only when an object is actually created, not when it's reused.
+Run the game again, and fire a few times: the bullets of later shots disappear right away. That's because a reused bullet keeps its variables: `age` is still past its `lifetime`. Variables get their initial values only when an object is actually created, not when it's reused.
 
-Mark them with `@recycle`, which resets a variable to its initial value each time the pool reuses an object:
+Mark `age` with `@recycle`, which resets a variable to its initial value each time the pool reuses an object:
 
 ```gd++
 @recycle var age: float = 0.0
-@recycle var active: bool = true
 ```
 
 The exported variables don't need it: nothing changes them while a bullet flies, so a reused bullet still has the values from its scene. See "Resetting variables" in `gd++ man pools`.
@@ -171,4 +157,4 @@ Compare the time of `fire` with and without `@pool`. See `gd++ man optimize`.
 
 # See also
 
-`gd++ man pools`, `gd++ man classes`, `gd++ man lifecycle`, `gd++ man functions`, `gd++ man optimize`.
+`gd++ man pools`, `gd++ man classes`, `gd++ man lifecycle`, `gd++ man optimize`.

@@ -498,11 +498,14 @@ public:
 		return object;
 	}
 
-	// give keeps p_object, after running its @recycle dtor and removing it from the tree.
+	// give keeps p_object, after running its @recycle dtor and removing it from the tree. Giving it back again, before
+	// it's reused, does nothing.
 	void give(T *p_object) {
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
-			ERR_FAIL_COND_MSG(p_object->_gdpp_pool_slot.given, vformat("An object of %s was destroyed twice.", T::get_class_static()));
+			if (p_object->_gdpp_pool_slot.given) {
+				return;
+			}
 			p_object->_gdpp_pool_slot.given = true;
 		}
 		p_object->_gdpp_recycle_dtor();
@@ -680,6 +683,32 @@ void destroy(ExtPtr<T> p_object) {
 	if (p_object && !defer_destroy<ExtPtr<T>>(p_object.base())) {
 		memdelete(p_object.base());
 	}
+}
+
+// queue_destroy destroys a node at the end of the frame, on the main thread, unless it's freed before, like
+// queue_free, which `queue_destroy x` calls. It works on everything that destroy does, pools included, but only on
+// nodes, and from any thread. It does nothing for null.
+template <typename T>
+void queue_destroy(T *p_object) {
+	static_assert(std::is_base_of_v<Node, T>, "queue_destroy only works on nodes. Use destroy for other objects.");
+	if (p_object) {
+		callable_mp_static(&destroy_later<T *>).call_deferred(uint64_t(p_object->get_instance_id()));
+	}
+}
+template <typename T>
+void queue_destroy(ExtPtr<T> p_object) {
+	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
+	if (p_object) {
+		callable_mp_static(&destroy_later<ExtPtr<T>>).call_deferred(uint64_t(p_object.base()->get_instance_id()));
+	}
+}
+template <typename T>
+void queue_destroy(const Ref<T> &) {
+	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
+}
+template <typename T>
+void queue_destroy(const ExtRef<T> &) {
+	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
 template <typename T>
 void destroy(const Ref<T> &) {
