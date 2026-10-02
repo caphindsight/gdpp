@@ -86,7 +86,7 @@ For headers that GD++ doesn't know, e.g. the C++ standard library, other librari
 }
 ```
 
-Paths are relative to the package root, the project root, or the generated code's directory. See `gd++ man code` and `gd++ man packages`.
+Paths in quotes are relative to the package root, and paths in angle brackets to the project root. Both also find the generated code. See `gd++ man code` and `gd++ man packages`.
 
 # Outside of packages
 

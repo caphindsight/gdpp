@@ -29,6 +29,7 @@ func (c *CmdCheckIn) Run() {
 	Assert(chosen, "Invalid arguments: a --bind, --spec, --engine or --all option is required.")
 
 	p := LoadProject(Cwd())
+	SyncExportPresets(p)
 	for i := range kinds {
 		k := &kinds[i]
 		k.cache = p.Caches[i]

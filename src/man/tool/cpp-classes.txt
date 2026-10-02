@@ -1,6 +1,6 @@
 C++ classes: plain C++ in a package
 
-You don't have to write every class in GD++. A package can also have plain C++ classes, written the usual godot-cpp way, with `GDCLASS` and `_bind_methods`. GD++ compiles them into the package's library, and registers them with Godot if you list them. You miss out on what GD++ writes for you, but you get full control.
+You don't have to write every class in GD++. A package can also have plain C++ classes, written the usual godot-cpp way, with `GDCLASS` and `_bind_methods`. GD++ compiles them into the package's library, and registers them with Godot if you list them. You write by hand what GD++ would write for you, e.g. to port existing godot-cpp code, or if you prefer it. GD++ classes can do anything C++ classes can, since their `decl` and `impl` blocks take any C++ (see `gd++ man code`).
 
 # Writing a C++ class
 
@@ -49,7 +49,7 @@ void Spinner::_process(double delta) {
 }
 ```
 
-Every `.c`, `.cc`, `.cpp`, `.cxx` and `.c++` file in the package is compiled, so there's no build file to edit. Includes are relative to the package root or the project root. See `gd++ man packages`.
+Every `.c`, `.cc`, `.cpp`, `.cxx` and `.c++` file in the package is compiled, so there's no build file to edit. Includes in quotes are relative to the package root, and includes in angle brackets to the project root. See `gd++ man packages`.
 
 # Registering it
 

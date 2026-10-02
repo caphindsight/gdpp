@@ -14,9 +14,6 @@ type CmdCat struct {
 	SVG   bool     `arg:"--svg" help:"print the file as a highlighted SVG image, e.g. for a README; takes exactly one file"`
 }
 
-// catCppExtensions are the extensions of C++ files.
-var catCppExtensions = []string{".c", ".cc", ".cpp", ".cxx", ".c++", ".h", ".hh", ".hpp", ".hxx", ".h++", ".inl"}
-
 func (c *CmdCat) Run() {
 	Assert(!c.SVG || len(c.Files) == 1, "Invalid arguments: --svg takes exactly one file.")
 	var out strings.Builder
@@ -25,7 +22,7 @@ func (c *CmdCat) Run() {
 		Assert(file.IsFile(), "There is no file at %s.", file.ToString())
 		text, ext, lang := file.ReadString(), strings.ToLower(path.Ext(name)), ""
 		switch {
-		case slices.Contains(catCppExtensions, ext):
+		case slices.Contains(cppExtensions, ext):
 			lang = "cpp"
 		case slices.Contains(gdppExtensions, ext):
 			lang = "gd++"

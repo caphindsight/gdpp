@@ -9,6 +9,7 @@ const (
 	projectConfigFileName = "gd++proj.toml"
 	packageFileName       = "gd++pkg.toml"
 	gitignoreFileName     = ".gitignore"
+	exportPresetsFileName = "export_presets.cfg"
 	gdignoreFileName      = ".gdignore" // makes Godot skip its directory
 
 	// Dep caches: each lives in a subdirectory named after its kind (see

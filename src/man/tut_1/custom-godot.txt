@@ -1,0 +1,83 @@
+Tutorial: build against your own Godot build
+
+Some games run on their own build of Godot: a fork with engine changes, or a build with extra modules, e.g. a custom physics module. Its API differs from any official version, so the dependency repository doesn't have its spec. This tutorial adds that spec to a project, builds against it, and shares it with the team. It assumes a project with a package, as set up in `gd++ man tour`.
+
+# 1. Dump the API of your Godot
+
+Godot writes the description of its API, `extension_api.json`, when asked:
+
+```sh
+./godot.custom --headless --dump-extension-api
+```
+
+A spec is a directory with that one file in it. Name the directory after your build, e.g. `my-4.7`:
+
+```sh
+mkdir my-4.7 && mv extension_api.json my-4.7/
+```
+
+# 2. Add the spec to the project
+
+```sh
+gd++ vendor --spec my-4.7 --from my-4.7 --checkin
+```
+
+`gd++ vendor` copies the directory into the project's cache, as the spec `my-4.7`. `--checkin` puts it in the checked in cache, `res://_gd++proj`, which you commit: nobody can download this spec, so the repository is where your team gets it. See `gd++ man vendor` and `gd++ man dependencies`.
+
+# 3. Build against it
+
+Point the package at the new spec, and build:
+
+```sh
+gd++ init . --update --spec my-4.7
+gd++ build
+```
+
+The bindings are generated from the spec, so the official godot-cpp usually works with a custom Godot, as long as it supports the Godot version that your build is based on. Your build's own classes, e.g. those of its modules, are in the spec, so GD++ knows them like Godot's own: use them as types, extend them, and look them up:
+
+```sh
+gd++ doc MyPhysicsServer
+```
+
+Only your Godot can load the library: other builds lack its classes. Run the game, and export it, with your build, and with export templates built from the same source.
+
+# 4. Patched godot-cpp, if you need it
+
+If your fork changes more than classes, e.g. the GDExtension interface or the built-in types, godot-cpp may need patches too. Vendor your checkout of godot-cpp as bindings:
+
+```sh
+gd++ vendor --bind my-godot-cpp --from ~/src/godot-cpp --checkin
+gd++ init . --update --bind my-godot-cpp
+```
+
+Bindings are big, since they're a copy of godot-cpp. Instead of checking them in, you can share them as an archive:
+
+```sh
+gd++ vendor --bind my-godot-cpp --to ~/my-godot-cpp.tar.gz --tar
+```
+
+and a teammate adds them with `gd++ vendor --bind my-godot-cpp --from ~/my-godot-cpp.tar.gz --tar`.
+
+# 5. Share it
+
+```sh
+git add _gd++proj gd++pkg.toml
+```
+
+A teammate who pulls gets the spec with the repository, so `gd++ fetch --missing` only downloads what's left, e.g. official bindings. See `gd++ man team-git`.
+
+# 6. Update it when the engine changes
+
+When you change your Godot, dump its API again, as in step 1, and vendor it under a new name, e.g. `my-4.7-2`:
+
+```sh
+gd++ vendor --spec my-4.7-2 --from my-4.7-2 --checkin
+gd++ init . --update --spec my-4.7-2
+gd++ rm --spec my-4.7
+```
+
+A new name changes the package's settings, so the next build starts from scratch, with the new spec. If you reuse the old name instead, `gd++ vendor` asks before it overwrites the spec, and the package's settings stay the same, so run the next build with `--clean`, or it goes on with the copy of the old spec in its build cache. See "Syncing" in `gd++ man build-cache`.
+
+# See also
+
+`gd++ man vendor`, `gd++ man dependencies`, `gd++ man checkin`, `gd++ man upgrade`, `gd++ man shipping`.

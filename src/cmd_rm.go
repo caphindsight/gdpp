@@ -69,6 +69,7 @@ func (c *CmdRm) Run() {
 		return
 	}
 	p := LoadProject(Cwd())
+	SyncExportPresets(p)
 	for i := range kinds {
 		k := &kinds[i]
 		k.cache = p.Caches[i]
@@ -216,6 +217,7 @@ func (c *CmdRm) packageRoots(p Project) []Path {
 // removeClasses removes the classes given by --class or --class-all from the
 // package at root.
 func (c *CmdRm) removeClasses(root Path) {
+	SyncExportPresetsAt(root)
 	config := LoadPackageAt(root).Config
 	names := uniqueSorted(c.Class, strings.Compare) // so each is confirmed once
 	for _, name := range names {

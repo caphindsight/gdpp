@@ -12,6 +12,7 @@ Brings the project into its canonical state. It takes no options, and is always 
 
 - Reformats `res://gd++proj.toml`, if it exists, and every package's `gd++pkg.toml` into the form that `gd++` writes, with the classes in `gd++pkg.toml` sorted by name. Comments and unusual formatting in these files are lost.
 - Updates the GD++ blocks in the `.gitignore` files of the project and its packages to match the project's `vcs` setting: writes missing blocks, updates outdated ones, and removes them if the project doesn't use git. See `gd++ man vcs`.
+- Adds GD++'s exclude filters to every preset in `res://export_presets.cfg`, or removes them if the project's `presets` setting is off, like every other command does too. See `gd++ man shipping`.
 - Deletes `res://.gd++proj/temp`, the temporary files that an interrupted command may have left behind.
 - Deletes empty dependency cache directories, e.g. `res://_gd++proj/engine` after the last engine was removed.
 - Writes a missing `.gdignore` file into `res://_gd++proj`, `res://.gd++proj` and every package's build cache, so Godot skips them. `gd++` writes it whenever it creates these directories, so this is only a last resort, e.g. if you deleted it by hand.

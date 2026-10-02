@@ -16,6 +16,8 @@ import (
 type CmdInit struct {
 	Path        string   `arg:"positional" help:"the package directory; omit to init the project"`
 	Vcs         string   `arg:"--vcs" placeholder:"none|git" help:"the project's version control system"`
+	Presets     bool     `arg:"--presets" help:"keep GD++'s files out of the project's export presets"`
+	NoPresets   bool     `arg:"--nopresets" help:"stop keeping GD++'s files out of the project's export presets"`
 	Update      bool     `arg:"--update" help:"update an existing package or class instead of creating one"`
 	Bind        string   `arg:"--bind" placeholder:"NAME" help:"the package's Godot C++ bindings"`
 	Spec        string   `arg:"--spec" placeholder:"NAME" help:"the package's Godot API spec"`
@@ -42,7 +44,7 @@ func (c *CmdInit) Run() {
 		c.initProject()
 		return
 	}
-	Assert(c.Vcs == "", "Invalid arguments: --vcs cannot be used with a package path.")
+	Assert(c.Vcs == "" && !c.Presets && !c.NoPresets, "Invalid arguments: --vcs, --presets and --nopresets cannot be used with a package path.")
 	if c.Class != "" {
 		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil,
 			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class.")
@@ -67,6 +69,7 @@ func (c *CmdInit) Run() {
 	}
 	root := ParsePath(c.Path)
 	p := LoadProject(root)
+	SyncExportPresets(p)
 	switch {
 	case c.Update:
 		c.updatePackage(p, root)
@@ -102,6 +105,7 @@ func writeConfig(file Path, text string, changes []string) bool {
 
 func (c *CmdInit) initProject() {
 	Assert(c.Vcs == "" || c.Vcs == "none" || c.Vcs == "git", "Invalid arguments: --vcs must be none or git.")
+	Assert(!c.Presets || !c.NoPresets, "Invalid arguments: --presets and --nopresets cannot be used together.")
 	p := LoadProject(Cwd())
 	var changes []string
 	vcsChanged := c.Vcs != "" && c.Vcs != p.Config.VCS
@@ -109,11 +113,21 @@ func (c *CmdInit) initProject() {
 		p.Config.VCS = c.Vcs
 		changes = append(changes, "the VCS to "+c.Vcs)
 	}
+	presetsChanged := (c.Presets || c.NoPresets) && c.Presets != p.Config.Presets
+	if !presetsChanged {
+		SyncExportPresets(p) // otherwise synced once the new setting is written
+	} else {
+		p.Config.Presets = c.Presets
+		changes = append(changes, "the export preset filters to "+map[bool]string{true: "on", false: "off"}[c.Presets])
+	}
 	if !writeConfig(p.Root.Cd(projectConfigFileName), p.Config.Encode(), changes) {
 		return
 	}
 	if vcsChanged {
 		SyncGitignores(p)
+	}
+	if presetsChanged {
+		SyncExportPresets(p)
 	}
 	LogInfo("Success!")
 }
@@ -157,6 +171,7 @@ func (c *CmdInit) initClass(root Path) {
 		Assert(p == "" || isClassPath(p), "Invalid arguments: %s must start with pkg:// or res://.", p)
 	}
 	assertNotGdppClass(root, c.Class)
+	SyncExportPresetsAt(root)
 	config := LoadPackageAt(root).Config
 	i := slices.IndexFunc(config.Classes, func(k PackageClass) bool { return k.Name == c.Class })
 	Assert(i >= 0 || !c.Update, "There is no class %s in %s.", c.Class, root.ToString())

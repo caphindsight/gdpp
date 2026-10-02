@@ -1,0 +1,113 @@
+Tutorial: find and fix a bug
+
+This tutorial goes through the tools for finding bugs in GD++ code, from the cheapest to the heaviest: assertions, tracing, a debugger, and sanitizers. It follows one bug: enemies sometimes ignore hits, and sometimes the game crashes when one dies. It assumes a project that builds, as in `gd++ man tour`.
+
+# 1. Write down what must be true
+
+An assertion checks something that must always hold. Add them where the bug might start:
+
+```gd++
+class_name Enemy
+extends CharacterBody3D
+
+@export var health: int = 100
+@export var target: Node3D
+
+func take_damage(amount: int) -> void {
+  assert amount > 0;
+  health -= amount;
+  if (health <= 0) {
+    die();
+  }
+}
+
+func aim() -> void {
+  assert target != nullptr;
+  look_at(target->get_global_position());
+}
+```
+
+In debug builds, a failed assertion prints an error with its condition, and returns from the function. In release builds, it's gone, at no cost. So leave assertions in for good. See "Assertions" in `gd++ man rewrites`.
+
+# 2. Watch what happens
+
+Most bugs are found by seeing what the code really does. Mark what to watch with `@trace`, in a group named after the feature:
+
+```gd++
+@trace("combat")
+var health: int = 100
+
+@trace("combat")
+func take_damage(amount: int) -> void { ... }
+
+@trace("combat")
+signal died
+```
+
+Then build with the group on, and play until the bug shows:
+
+```sh
+gd++ build --trace combat
+```
+
+The Output panel shows each call with its arguments, each change of `health` with the function that made it, and each emission of `died`:
+
+```out
+[f1204] ▶ Enemy "Grunt".take_damage(amount: 30)
+[f1204]   Enemy "Grunt".health: 20 → -10  (in take_damage)
+[f1204]   ⚡ Enemy "Grunt" emits died()
+[f1204] ◀ Enemy "Grunt".take_damage  41.0 µs
+[f1204] ▶ Enemy "Grunt".take_damage(amount: 30)
+[f1204]   Enemy "Grunt".health: -10 → -40  (in take_damage)
+[f1204]   ⚡ Enemy "Grunt" emits died()
+[f1204] ◀ Enemy "Grunt".take_damage  38.5 µs
+```
+
+Here, the enemy took damage twice in the same frame, `[f1204]`, and died twice: two bullets hit it at once. With `--trace`, failed assertions print a red trace line too, among the calls that led to them.
+
+Without the flag, the annotations generate nothing, so leave them in: the next time something breaks in combat, `--trace combat` is ready. See `gd++ man debugging`, which also has recipes, e.g. for leaks and signal handlers.
+
+# 3. Step through it in a debugger
+
+When the game crashes, a debugger shows where. Debug builds have debug symbols and no optimization, and the compiler knows the GD++ file and line of each piece of your C++ code, so the debugger shows your GD++ code. Run the game, not the editor, under the debugger, e.g. with GDB on Linux:
+
+```sh
+gd++ build
+gdb --args godot --path .
+```
+
+Type `run`, play until it crashes, then `bt` to see the calls that led there. Frames of your code point to the copies of your files in the package's build cache, e.g. `.gd++pkg/package/enemy.gd++`, with the same line numbers as your files. Set breakpoints by function, e.g. `break godot::Enemy::take_damage`. Other debuggers, e.g. those of IDEs, LLDB or Visual Studio's, work the same way. See "Line numbers" in `gd++ man code`.
+
+# 4. Let the compiler check memory
+
+Crashes that make no sense, e.g. in code that looks right, often come from memory errors: a pointer to a node that's already freed, or an index past the end of an array. Sanitizers find them where they happen, not where they crash later:
+
+```sh
+gd++ build --asan --ubsan
+LD_PRELOAD=$(gcc -print-file-name=libasan.so) godot --path .
+```
+
+- `--asan` finds memory errors, e.g. use after free, and out-of-bounds access.
+- `--ubsan` finds undefined behavior, e.g. signed integer overflow.
+- `--tsan` finds data races between threads, e.g. in `@onthread` functions. It can't be combined with `--asan`.
+
+Godot itself is built without sanitizers, so AddressSanitizer and ThreadSanitizer need their library loaded first, with `LD_PRELOAD` on Linux, or `DYLD_INSERT_LIBRARIES` on macOS. They check your package's code only, and make it slower, so use them while testing. See "Sanitizers" in `gd++ man building`.
+
+# 5. Fix it, and go back to normal
+
+The usual suspects, in C++ coming from GDScript:
+
+- A null pointer: a node path that found nothing, an unset `@export`, or a failed downcast with `as`. Check pointers before using them, or assert that they're set.
+- A freed node: pointers don't keep nodes alive. After `queue_free()`, the node goes away at the end of the frame, and pointers to it dangle. To hold on to a node that may go away, keep its id, `uint64_t id = node->get_instance_id();`, and look it up each time with `ObjectDB::get_instance(id)`, which gives `nullptr` once the node is gone.
+- Work done twice in one frame, like the double death above: guard it with a flag, e.g. `if (dead) return;`.
+- An integer that overflows, or a `float` that's divided by zero. `--ubsan` finds the first.
+
+Then build without any flags, so tracing and sanitizers are off again:
+
+```sh
+gd++ build
+```
+
+# See also
+
+`gd++ man debugging`, `gd++ man rewrites`, `gd++ man building`, `gd++ man errors`, `gd++ man optimize`.

@@ -349,7 +349,8 @@ func TestGenerateBuildCacheGdpp(t *testing.T) {
 	for _, want := range []string{
 		`AddOption("--gdpp-bindings"`,
 		"if GetOption(\"gdpp_bindings\"):\n    Default(None)\n    Default(Dir(\"build/godot-cpp/gen\"))\nelse:",
-		`env.Append(CPPPATH=[sources_root, project_root, "gdpp"])`,
+		`env.Append(CPPPATH=[project_root, "gdpp"])`,
+		`env["_CPPINCFLAGS"] = "-iquote " + sources_root`,
 		"    for source in Glob(\"gdpp/*.cpp\"):\n        sources.append(env.SharedObject(objects + \"gdpp/\" + source.name + env[\"SHOBJSUFFIX\"], source))\n",
 		`docs = Glob("gdpp/doc_classes/*.xml")`,
 	} {

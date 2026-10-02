@@ -16,11 +16,11 @@ import (
 
 // CmdMan shows a page of the reference manual of GD++, the build tool and
 // the language, in the pager. Without a page, it lists them all, as a tree.
-// The language's pages are those of one syntax version: in a package, the
+// The tutorials' and the language's pages are those of one syntax version: in a package, the
 // package's, and elsewhere the latest stable one, unless flags choose it.
 type CmdMan struct {
 	Page    string `arg:"positional" help:"the page to show, by name or path, e.g. functions or lang/functions [default: list all pages]"`
-	Syntax  *int   `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version of the language's pages [default: the package's, or else the latest stable one]"`
+	Syntax  *int   `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version of the tutorials' and the language's pages [default: the package's, or else the latest stable one]"`
 	Nightly bool   `arg:"--nightly" help:"the same as --syntax 0, the nightly syntax"`
 }
 
@@ -29,16 +29,32 @@ type CmdMan struct {
 //go:embed man
 var manFiles embed.FS
 
-// toolManPages lists the paths of the build tool's pages, in reading order.
-// The page at a path is man/<path>.txt. A page's children are the pages
-// under its path, e.g. cmd/build under cmd, and come right after it. The last
-// part of a path is the page's name, which is unique in the whole manual.
+// introManPages and toolManPages list the paths of the pages that don't
+// depend on the syntax version, in reading order: the introduction's, which
+// come first, and the build tool's. The page at a path is man/<path>.txt. A
+// page's children are the pages under its path, e.g. cmd/build under cmd, and
+// come right after it. The last part of a path is the page's name, which is
+// unique in the whole manual.
+var introManPages = []string{"intro", "tour"}
+
 var toolManPages = []string{
-	"intro", "tour",
 	"tool", "tool/cli", "tool/paths", "tool/projects", "tool/packages", "tool/dependencies", "tool/building", "tool/build-cache",
 	"tool/cpp-classes", "tool/vcs", "tool/shipping",
 	"cmd", "cmd/build", "cmd/cat", "cmd/checkin", "cmd/clean", "cmd/doc", "cmd/fetch", "cmd/fix", "cmd/init", "cmd/install", "cmd/ls", "cmd/man",
 	"cmd/rm", "cmd/trans", "cmd/vendor",
+}
+
+// tutManPages lists the paths of the tutorials' pages, in reading order, for
+// each syntax version N, like langManPages.
+var tutManPages = map[int][]string{
+	0: {
+		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize",
+		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/upgrade", "tut/custom-godot",
+	},
+	1: {
+		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize",
+		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/upgrade", "tut/custom-godot",
+	},
 }
 
 // langManPages lists the paths of the language's pages, in reading order,
@@ -60,14 +76,15 @@ var langManPages = map[int][]string{
 // manual is the reference manual for one GD++ syntax version.
 type manual struct {
 	syntax int
-	pages  []string // in reading order: the tool's pages, then the language's
+	pages  []string // in reading order: the introduction's, the tutorials', the tool's, then the language's
 }
 
 // loadManual returns the manual for syntax.
 func loadManual(syntax int) manual {
-	pages, ok := langManPages[syntax]
-	Assert(ok, "There is no manual for GD++ syntax %d, run `gd++ --syntax` to list the versions.", syntax)
-	return manual{syntax, append(slices.Clone(toolManPages), pages...)}
+	tut, ok := tutManPages[syntax]
+	lang, ok2 := langManPages[syntax]
+	Assert(ok && ok2, "There is no manual for GD++ syntax %d, run `gd++ --syntax` to list the versions.", syntax)
+	return manual{syntax, slices.Concat(introManPages, tut, toolManPages, lang)}
 }
 
 func (c *CmdMan) Run() {
@@ -105,16 +122,22 @@ func (c *CmdMan) Run() {
 	PageResult(text)
 }
 
-// isLangPage reports whether the page at path p is one of the language's.
-func isLangPage(p string) bool {
-	return p == "lang" || strings.HasPrefix(p, "lang/")
+// syntaxSection returns the section of the page at path p, "tut" or "lang",
+// if the section has a version per syntax, or else "".
+func syntaxSection(p string) string {
+	for _, s := range []string{"tut", "lang"} {
+		if p == s || strings.HasPrefix(p, s+"/") {
+			return s
+		}
+	}
+	return ""
 }
 
 // page returns the text of the page at path p.
 func (m manual) page(p string) string {
 	file := p
-	if isLangPage(p) {
-		file = "lang_" + strconv.Itoa(m.syntax) + strings.TrimPrefix(p, "lang")
+	if s := syntaxSection(p); s != "" {
+		file = s + "_" + strconv.Itoa(m.syntax) + strings.TrimPrefix(p, s)
 	}
 	text, err := manFiles.ReadFile("man/" + file + ".txt")
 	Check(err, "Failed to read the manual page %s", p)
@@ -122,9 +145,9 @@ func (m manual) page(p string) string {
 }
 
 // tag returns the syntax version that the page at path p describes, e.g.
-// "[syntax 0 (nightly)]", or "" for the build tool's pages.
+// "[syntax 0 (nightly)]", or "" for pages that don't depend on it.
 func (m manual) tag(p string) string {
-	if !isLangPage(p) {
+	if syntaxSection(p) == "" {
 		return ""
 	}
 	if m.syntax == trans.NightlySyntax {
@@ -134,8 +157,8 @@ func (m manual) tag(p string) string {
 }
 
 // contents lists the pages under the path parent, or all pages if it's
-// empty, each with its title, indented by its depth below parent. The
-// language's top page also shows its syntax version.
+// empty, each with its title, indented by its depth below parent. The top
+// pages of the tutorials and the language also show their syntax version.
 func (m manual) contents(parent string) string {
 	var rows [][]string
 	for _, p := range m.pages {

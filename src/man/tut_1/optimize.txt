@@ -1,0 +1,157 @@
+Tutorial: find and fix slow code
+
+This tutorial finds out where a game spends its frames, speeds up the slowest part, and checks that it helped. It follows one case: a game that stutters once there are many enemies. It assumes a project that builds, as in `gd++ man tour`.
+
+# 1. Measure in an optimized build
+
+A plain debug build is unoptimized, and unoptimized C++ can be many times slower than the game you ship, sometimes even slower than GDScript. So never judge speed in one. Build with `--opt` instead: it optimizes, and keeps everything else of a debug build, like hot reload and the editor's help.
+
+```sh
+gd++ build --opt
+```
+
+If the game is still slow, it's really slow. See "Debug and release" in `gd++ man performance`.
+
+# 2. Mark what to measure
+
+Put `@profile` on the classes that might be slow, in a group, e.g. `perf`:
+
+```gd++
+@profile("perf")
+class_name Enemy
+extends CharacterBody3D
+```
+
+`@profile` on a class times all its functions. Then build with the group on, and ask for a table of timings every 5 seconds:
+
+```sh
+gd++ build --opt --profile perf --print --period 5
+```
+
+Without `--profile`, the annotations generate nothing, so leave them in your code. `--profile all` turns on every `@profile` in the package, and `--profile process` times every `_process` function, even without annotations. See `gd++ man debugging`.
+
+# 3. Read the table
+
+Play the slow part of the game. Every 5 seconds, the Output panel shows a table, the slowest functions first:
+
+```out
+━━ GD++ profile · last 5.0 s · 300 frames · debug, optimized ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Function                     Thread       Calls    Total ms     Self ms      Avg µs      Max µs    ms/frame        Budget (60 FPS)
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Enemy._physics_process         main       60000     2950.40      310.12       49.17      903.40       9.835                  59.0%
+Enemy.nearest_ally             main       60000     2640.28     2640.28       44.00      880.11       8.801                  52.8%
+Enemy.steer                    main       60000        8.90        8.90        0.15        2.31       0.030                   0.2%
+```
+
+Read it from the left:
+
+- Budget: the share of a 60 FPS frame that the function takes. Here, enemies take 59% of every frame: that's the stutter.
+- Total and Self: `_physics_process` takes 2950 ms in all, but only 310 ms itself. The rest is in a function it calls, `nearest_ally`, whose Self is all of its Total.
+- Calls: 200 enemies, 300 frames, one call each per frame.
+- Max much bigger than Avg would mean a function that's usually fast, but sometimes slow, which also shows as stutter.
+
+While the game runs from the editor, the Debugger panel's Monitors tab also shows a graph per profiled function, next to Godot's own monitors, like the frame time.
+
+# 4. Find out why
+
+The slow function:
+
+```gd++
+func nearest_ally() -> Node3D {
+  TypedArray<Node> allies = get_tree()->get_nodes_in_group(string_name "enemies");
+  Node3D *best = nullptr;
+  double best_distance = INFINITY;
+  for (int64_t i = 0; i < allies.size(); i++) {
+    Node3D *ally = allies[i] as Node3D *;
+    double distance = get_global_position().distance_squared_to(ally->get_global_position());
+    if (ally != this && distance < best_distance) {
+      best = ally;
+      best_distance = distance;
+    }
+  }
+  return best;
+}
+```
+
+The math is cheap, but every step of the loop calls into the engine: reading an item of the array, unpacking its `Variant`, and asking both nodes for their positions. Engine calls cost as much from C++ as from GDScript. And each of the 200 enemies does it for all 200 others, every frame: 40,000 times per frame.
+
+That's the usual pattern. Your own logic in GD++ is fast, so slow code is usually:
+
+- too many calls into the engine,
+- Godot's containers, `Array` and `Dictionary`, in hot loops, since every access is an engine call,
+- calls of GDScript from C++, once per item,
+- doing the same work many times, e.g. once per object instead of once per frame.
+
+See "Writing fast code" in `gd++ man performance`.
+
+# 5. Fix it
+
+Ask the engine once per frame, and keep the data in C++ types. A manager node collects the positions, and the enemies search them:
+
+```gd++
+class_name Horde
+extends Node3D
+
+decl {
+ public:
+  std::vector<Node3D *> members;
+  std::vector<Vector3> positions;
+}
+
+func _physics_process(delta: float) -> void {
+  positions.clear();
+  for (Node3D *member : members) {
+    positions.push_back(member->get_global_position());
+  }
+}
+
+@global decl {
+  #include <vector>
+}
+```
+
+`Enemy` gets the manager with `@export var horde: Horde`, adds itself to `horde->members` in `_ready`, and removes itself in `_exit_tree`. Then `nearest_ally` is a loop over a `std::vector` of `Vector3`, without a single engine call:
+
+```gd++
+func nearest_ally() -> Node3D {
+  Vector3 here = get_global_position();
+  Node3D *best = nullptr;
+  double best_distance = INFINITY;
+  for (size_t i = 0; i < horde->positions.size(); i++) {
+    double distance = here.distance_squared_to(horde->positions[i]);
+    if (horde->members[i] != this && distance < best_distance) {
+      best = horde->members[i];
+      best_distance = distance;
+    }
+  }
+  return best;
+}
+```
+
+Other common fixes:
+
+- Use `string_name "name"` for names that code passes over and over, e.g. to `call`, `connect` or `Input`: it makes the `StringName` once. See `gd++ man rewrites`.
+- Call a script's code once per batch, not once per item.
+- Move heavy work that doesn't need to finish this frame off the main thread. See `gd++ man threads`.
+
+# 6. Measure again
+
+Build with the same flags, play the same part of the game, and compare the tables:
+
+```sh
+gd++ build --opt --profile perf --print --period 5
+```
+
+The first tables include loading, so look at a few. Check Budget again, and the frame time in the editor's monitors.
+
+# 7. Turn it off
+
+```sh
+gd++ build
+```
+
+A plain build turns profiling off again. Ship with `--ship`, which optimizes for speed, and has no profiling unless you ask for it. See `gd++ man ship`.
+
+# See also
+
+`gd++ man debugging`, `gd++ man performance`, `gd++ man building`, `gd++ man threads`.

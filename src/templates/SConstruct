@@ -30,8 +30,14 @@ else:
     env = env.Clone()
     env["CXXFLAGS"] = [f for f in env["CXXFLAGS"] if not str(f).startswith(("-std=", "/std:"))]
     env.Append(CXXFLAGS=[("/std:" if env.get("is_msvc", False) else "-std=") + {{printf "%q" .CppStandard}}])
-    # gdpp holds the C++ that GD++ generates from .gd++ files.
-    env.Append(CPPPATH=[sources_root, project_root, "gdpp"])
+    # Quoted includes are relative to the package root, <> ones to the project root, and both find gdpp, which holds the
+    # C++ that GD++ generates from .gd++ files. MSVC can't tell quotes from <>, so there both find the package root too.
+    env.Append(CPPPATH=[project_root, "gdpp"])
+    if not env.get("is_msvc", False):
+        # The package root is passed as -iquote, but stays in CPPPATH, so SCons still finds the headers it depends on.
+        env["GDPP_INCPATH"] = list(env["CPPPATH"])
+        env["_CPPINCFLAGS"] = "-iquote " + sources_root + " " + env["_CPPINCFLAGS"].replace("CPPPATH", "GDPP_INCPATH")
+    env.Prepend(CPPPATH=[sources_root])
     # The name of the package's class of tasks, which Async types name.
     env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", {{printf "%q" .AsyncClass}})])
     # How long its tasks may still run after the game started quitting, from its quit_timeout setting.

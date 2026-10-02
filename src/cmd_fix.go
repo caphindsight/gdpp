@@ -2,7 +2,8 @@ package main
 
 // CmdFix brings the project into its canonical state: it reformats the config
 // files of the project and its packages (sorting their classes), writes or
-// removes the GD++ blocks in their .gitignore files to match the VCS, deletes
+// removes the GD++ blocks in their .gitignore files to match the VCS, and
+// GD++'s filters in the export presets to match the config, deletes
 // leftover temporary files and empty cache directories, and writes missing
 // .gdignore files into the caches.
 type CmdFix struct{}
@@ -24,6 +25,7 @@ func (c *CmdFix) Run() {
 		format(pkg.Root.Cd(packageFileName), pkg.Config.Encode())
 	}
 	changed = SyncGitignores(p) || changed
+	changed = SyncExportPresets(p) || changed
 	if temp := p.tempDir(); temp.RemoveIfExists() {
 		LogInfo("Deleted the temporary directory %s.", temp.ToString())
 		changed = true

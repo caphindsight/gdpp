@@ -59,7 +59,16 @@ func TestLoadProjectConfig(t *testing.T) {
 	tree := maps.Clone(testProjectTree)
 	tree["/games/my_game/"+projectConfigFileName] = `vcs = "git"`
 	withMemFS(t, "/", tree)
-	if got, want := LoadProject(NewPath("/games/my_game")).Config, (ProjectConfig{VCS: "git"}); got != want {
+	if got, want := LoadProject(NewPath("/games/my_game")).Config, (ProjectConfig{VCS: "git", Presets: true}); got != want {
+		t.Errorf("Config = %+v, want %+v", got, want)
+	}
+}
+
+func TestLoadProjectConfigNoPresets(t *testing.T) {
+	tree := maps.Clone(testProjectTree)
+	tree["/games/my_game/"+projectConfigFileName] = "presets = false"
+	withMemFS(t, "/", tree)
+	if got, want := LoadProject(NewPath("/games/my_game")).Config, (ProjectConfig{VCS: "none"}); got != want {
 		t.Errorf("Config = %+v, want %+v", got, want)
 	}
 }

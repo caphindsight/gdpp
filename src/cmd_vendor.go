@@ -22,6 +22,7 @@ func (c *CmdVendor) Run() {
 	name := c.validate()
 	p := LoadProject(Cwd())
 	defer p.Cleanup()
+	SyncExportPresets(p)
 	cache := c.depCache(p)
 	c.confirmExtension()
 

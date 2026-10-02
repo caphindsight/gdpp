@@ -90,11 +90,13 @@ Adding, removing or renaming a file needs no command: the next build picks it up
 
 # Include paths
 
-C++ code in the package can include headers relative to these directories:
+C++ code in the package includes headers relative to:
 
-- the package root, e.g. `#include "src/util.h"` for `pkg://src/util.h`,
-- the project root, e.g. `#include "shared/math.h"` for `res://shared/math.h`,
-- the directory of the C++ that GD++ generates, e.g. `#include "Player.h"` for the header of the GD++ class `Player`.
+- the package root with quotes, e.g. `#include "src/util.h"` for `pkg://src/util.h`,
+- the project root with angle brackets, e.g. `#include <shared/math.h>` for `res://shared/math.h`,
+- the directory of the C++ that GD++ generates with either, e.g. `#include "Player.h"` for the header of the GD++ class `Player`.
+
+Quotes also find headers next to the including file, and after the package root, the project root. With MSVC, angle brackets also find the package root, since MSVC can't tell the two apart.
 
 GD++ code rarely needs `#include` at all. See `gd++ man includes`.
 

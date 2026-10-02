@@ -17,6 +17,9 @@ import (
 // gdppExtensions are the extensions of GD++ files.
 var gdppExtensions = []string{".gd++", ".gdpp", ".gg"}
 
+// cppExtensions are the extensions of C and C++ sources and headers.
+var cppExtensions = []string{".c", ".cc", ".cpp", ".cxx", ".c++", ".h", ".hh", ".hpp", ".hxx", ".h++", ".inl"}
+
 // gdppDirName is the build cache directory that holds the C++ generated from
 // the package's GD++ files.
 const gdppDirName = "gdpp"

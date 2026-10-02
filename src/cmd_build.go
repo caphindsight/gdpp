@@ -34,6 +34,7 @@ func (c *CmdBuild) Run() {
 		path = ParsePath(c.Path)
 	}
 	p := LoadProject(path)
+	SyncExportPresets(p)
 	pkgs := []Package{}
 	if c.Proj {
 		pkgs = p.ListPackages()

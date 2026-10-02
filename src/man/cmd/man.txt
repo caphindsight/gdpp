@@ -10,7 +10,7 @@ gd++ man SECTION/PAGE [--syntax N | --nightly]
 
 # Description
 
-Shows a page of this manual, the reference manual of GD++: the build tool, its commands, and the GD++ language. Without a page, lists all pages as a tree, with their titles. The manual is built into `gd++`, so it always matches the version you run, and works offline.
+Shows a page of this manual, the reference manual of GD++: tutorials, the build tool, its commands, and the GD++ language. Without a page, lists all pages as a tree, with their titles. The manual is built into `gd++`, so it always matches the version you run, and works offline.
 
 Pages open in a pager when they don't fit the terminal, or with `--pager`:
 
@@ -35,16 +35,17 @@ SECTION/PAGE
   The path of the page to show, e.g. `lang/classes`. Works the same as its name.
 
 --syntax N
-  The GD++ syntax version that the language pages describe. Default: in a package, the package's, and elsewhere the latest stable one, which `gd++ --syntax` shows. Each language page shows its version after its title, e.g. "[syntax 1]" or "[syntax 0 (nightly)]". See "Syntax versions" in `gd++ man packages`.
+  The GD++ syntax version that the tutorials and the language pages describe. Default: in a package, the package's, and elsewhere the latest stable one, which `gd++ --syntax` shows. Each of these pages shows its version after its title, e.g. "[syntax 1]" or "[syntax 0 (nightly)]". See "Syntax versions" in `gd++ man packages`.
 
 --nightly
   The same as `--syntax 0`, the nightly syntax.
 
 # The tree of pages
 
-The manual is a tree. At the top are `intro`, `tour`, and three sections:
+The manual is a tree. At the top are `intro`, `tour`, and four sections:
 
 ```
+tut      tutorials, one page per goal, e.g. tut/ship
 tool     the build tool: projects, packages, dependencies and builds
 cmd      the commands, one page each, named after the command, e.g. cmd/build
 lang     the GD++ language, one page per topic, e.g. lang/signals

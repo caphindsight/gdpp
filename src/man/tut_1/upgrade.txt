@@ -1,0 +1,108 @@
+Tutorial: upgrade Godot, godot-cpp, GD++ and its syntax
+
+A project depends on four versions: the Godot API spec it targets, the godot-cpp bindings it builds with, the `gd++` program, and the GD++ syntax of each package. This tutorial upgrades each of them, one at a time, so that when something breaks, you know why. It assumes a project that builds, as in `gd++ man tour`. The versions below are examples: use the ones `gd++ fetch --index` lists.
+
+# 1. See where you are
+
+```sh
+gd++ ls -a
+gd++ fetch --index
+```
+
+`gd++ ls -a` shows each package's bindings, spec and syntax, and the dependencies in the project's caches. `gd++ fetch --index` lists the versions that can be downloaded, newest first, and marks the ones the project has. See `gd++ man ls` and `gd++ man fetch`.
+
+Commit or back up your work first, so you can go back.
+
+# 2. Upgrade the Godot version
+
+The spec decides which Godot classes and methods your code can use, and the oldest Godot that can load the library. So upgrade it together with the Godot editor, and the export templates, of everyone on the team:
+
+```sh
+gd++ init . --update --spec 4.8.1-stable
+gd++ fetch --missing
+gd++ build
+```
+
+`gd++ init --update` changes only the setting you name, and `gd++ fetch --missing` downloads the new spec. Changing the spec makes the next build start from scratch. See `gd++ man init`.
+
+Godot keeps its API compatible, so code usually builds as before. When it doesn't, e.g. because a method was deprecated and then removed, the compiler says where, and `gd++ doc` shows what the new spec declares:
+
+```sh
+gd++ doc Node3D.look_at
+```
+
+Players with an older Godot can't load the library any more. To keep supporting them, stay on the older spec: a library built against it loads in every later Godot. See "The minimum Godot version" in `gd++ man shipping`.
+
+# 3. Upgrade godot-cpp
+
+The bindings are generated from the spec, so their version doesn't have to match it exactly, but they must support it. Newer bindings also fix bugs, and support newer specs:
+
+```sh
+gd++ init . --update --bind 11.0.0-stable
+gd++ fetch --missing
+gd++ build
+```
+
+The first build compiles godot-cpp again, which takes a while.
+
+# 4. Upgrade every package
+
+In a project with many packages, update each one, then build them all:
+
+```sh
+gd++ init world --update --spec 4.8.1-stable --bind 11.0.0-stable
+gd++ init addons/inventory --update --spec 4.8.1-stable --bind 11.0.0-stable
+gd++ build --proj
+```
+
+Packages don't have to agree, but packages that load in the same game need a Godot at least as new as each of their specs. See `gd++ man multi-package`.
+
+# 5. Upgrade gd++
+
+Build and install the new `gd++` from its source code, as at first:
+
+```sh
+make && sudo make install
+gd++ --version
+gd++ fix
+```
+
+`gd++ fix` brings the project's files up to date with the new version, e.g. GD++'s blocks in `.gitignore` files. Then build every package. A new `gd++` never breaks code written in a stable syntax, 1 and up: that's what stable means. Code in syntax 0, the nightly syntax, may need changes. See `gd++ man fix`.
+
+`gd++ --syntax` lists the syntax versions that this `gd++` supports.
+
+# 6. Upgrade the syntax
+
+A stable syntax never changes, so you never have to upgrade it. When a newer syntax has something you want, read about it first. The manual has the language pages of every syntax that `gd++` supports, e.g. for syntax 2:
+
+```sh
+gd++ man --syntax 2 lang
+gd++ man --syntax 2 signals
+```
+
+Then upgrade one package at a time:
+
+```sh
+gd++ init . --update --syntax 2
+gd++ build
+```
+
+The build checks every GD++ file of the package with the new syntax, and points at what it rejects. To see what changed in the generated C++, compare `gd++ trans --syntax 1 FILE` with `gd++ trans --syntax 2 FILE`. See `gd++ man trans` and "Syntax versions" in `gd++ man packages`.
+
+Other packages of the project can stay on their syntax: each package chooses its own.
+
+# 7. Clean up
+
+Old dependencies stay in the caches until you remove them:
+
+```sh
+gd++ ls --deps
+gd++ rm --spec 4.7.2-stable
+gd++ rm --bind 10.0.0-stable
+```
+
+`gd++ ls --deps` marks the ones that no package uses. If you checked dependencies in, check in the new ones too, with `gd++ checkin`, and commit the change. Teammates get the new versions with `gd++ fetch --missing`. See `gd++ man rm` and `gd++ man team-git`.
+
+# See also
+
+`gd++ man dependencies`, `gd++ man packages`, `gd++ man init`, `gd++ man fetch`, `gd++ man custom-godot`.

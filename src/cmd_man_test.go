@@ -16,10 +16,10 @@ import (
 )
 
 // manPageFiles lists the paths of the pages in manFiles, mapping the files
-// of the language's pages for syntax N (man/lang_N.txt and man/lang_N/) to
-// lang, and skipping those of other syntax versions.
+// of the tutorials' and the language's pages for syntax N (e.g. man/lang_N.txt
+// and man/lang_N/) to tut and lang, and skipping those of other syntax versions.
 func manPageFiles(t *testing.T, syntax int) []string {
-	own, other := regexp.MustCompile(`^lang_`+strconv.Itoa(syntax)+`\b`), regexp.MustCompile(`^lang_[0-9]+\b`)
+	own, other := regexp.MustCompile(`^(tut|lang)_`+strconv.Itoa(syntax)+`\b`), regexp.MustCompile(`^(tut|lang)_[0-9]+\b`)
 	var list []string
 	err := fs.WalkDir(manFiles, "man", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -27,7 +27,7 @@ func manPageFiles(t *testing.T, syntax int) []string {
 		}
 		p = strings.TrimSuffix(strings.TrimPrefix(p, "man/"), ".txt")
 		if own.MatchString(p) {
-			list = append(list, own.ReplaceAllString(p, "lang"))
+			list = append(list, own.ReplaceAllString(p, "$1"))
 		} else if !other.MatchString(p) {
 			list = append(list, p)
 		}
@@ -44,16 +44,18 @@ func manPageFiles(t *testing.T, syntax int) []string {
 // a title and no trailing spaces, and that pages only refer to pages that
 // exist.
 func TestManPages(t *testing.T) {
-	var syntaxes []int
-	for s := range langManPages {
-		syntaxes = append(syntaxes, s)
-	}
-	slices.Sort(syntaxes)
-	if want := trans.Syntaxes(); !slices.Equal(syntaxes, want) {
-		t.Errorf("langManPages has syntaxes %v, want %v", syntaxes, want)
-	}
-	if tops, _ := fs.Glob(manFiles, "man/lang_*.txt"); len(tops) != len(syntaxes) {
-		t.Errorf("language manuals = %v, want one per syntax in %v", tops, syntaxes)
+	syntaxes := trans.Syntaxes()
+	for name, pages := range map[string]map[int][]string{"tut": tutManPages, "lang": langManPages} {
+		var got []int
+		for s := range pages {
+			got = append(got, s)
+		}
+		if slices.Sort(got); !slices.Equal(got, syntaxes) {
+			t.Errorf("%sManPages has syntaxes %v, want %v", name, got, syntaxes)
+		}
+		if tops, _ := fs.Glob(manFiles, "man/"+name+"_*.txt"); len(tops) != len(syntaxes) {
+			t.Errorf("%s manuals = %v, want one per syntax in %v", name, tops, syntaxes)
+		}
 	}
 	for _, syntax := range syntaxes {
 		t.Run(strconv.Itoa(syntax), func(t *testing.T) { testManPages(t, loadManual(syntax)) })
@@ -145,6 +147,9 @@ func TestMan(t *testing.T) {
 	out = captureStdout(t, (&CmdMan{Page: "lang"}).Run)
 	if !strings.HasPrefix(out, renderMan(m.page("lang"), m.tag("lang"), 0)+"\nPages in this section:\n  syntax ") || strings.Contains(out, "  build ") {
 		t.Errorf("gd++ man lang = %q, want the page, then the pages under lang only", out)
+	}
+	if out, want := captureStdout(t, (&CmdMan{Page: "ship", Nightly: true}).Run), "Tutorial: ship a game on several platforms [syntax 0 (nightly)]\n"; !strings.HasPrefix(out, want) {
+		t.Errorf("gd++ man --nightly ship = %q, want the prefix %q", out, want)
 	}
 	if out := captureStdout(t, (&CmdMan{Page: "intro"}).Run); strings.Contains(out, "[syntax") {
 		t.Errorf("gd++ man intro = %q, want no syntax in the title", out)

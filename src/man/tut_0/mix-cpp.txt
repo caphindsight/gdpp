@@ -1,0 +1,140 @@
+Tutorial: mix plain C++ with GD++
+
+A package can mix GD++ with plain C++: helper code, other libraries, and even Godot classes written by hand. Which to use is up to you. GD++ writes headers, includes and bindings for you, and adds `@trace`, `@profile`, `assert` and the like, while its `decl` and `impl` blocks take any C++, so a GD++ class can do whatever a C++ class can. Plain C++ suits code that's shared with projects outside Godot, code that comes from elsewhere, or simply your taste. This tutorial shows each way to mix them, in one package. It assumes a project with a package, as set up in `gd++ man tour`.
+
+# 1. Plain C++ helpers
+
+Code that doesn't talk to Godot, e.g. an algorithm, can be a GD++ class, or plain C++, e.g. to share it with other C++ projects. Plain C++ goes anywhere in the package, e.g. `pkg://src/grid.h`:
+
+```cpp
+#pragma once
+
+#include <vector>
+
+struct Cell {
+  int x, y;
+};
+
+std::vector<Cell> find_path(const std::vector<bool> &walls, int width, Cell from, Cell to);
+```
+
+and `pkg://src/grid.cpp`, which defines `find_path`. Every C++ source in the package is compiled into its library: there's no build file to edit. See `gd++ man packages`.
+
+A GD++ class includes the header in a `@global decl` block, and calls the code from any function:
+
+```gd++
+class_name Level
+extends Node2D
+
+@global decl {
+  #include "src/grid.h"
+}
+
+var walls: PackedByteArray
+var width: int
+
+func path(from: Vector2i, to: Vector2i) -> PackedVector2Array {
+  std::vector<bool> cells(walls.size());
+  for (int64_t i = 0; i < walls.size(); i++) {
+    cells[i] = walls[i] != 0;
+  }
+  PackedVector2Array result;
+  for (Cell c : find_path(cells, width, {from.x, from.y}, {to.x, to.y})) {
+    result.push_back(Vector2(c.x, c.y));
+  }
+  return result;
+}
+```
+
+Includes in quotes are relative to the package root, and includes in angle brackets to the project root. GD++ writes the `#include` lines of Godot's classes for you, but not those of your own headers, nor of the standard library, e.g. `<vector>`. See `gd++ man includes`.
+
+# 2. Private C++ members
+
+A GD++ class can have C++ members that Godot doesn't know: fields of types GD++ doesn't have, and helper methods that scripts shouldn't call. Declare them in a `decl` block, and define them in an `impl` block, e.g. in `Level`:
+
+```gd++
+decl {
+  std::vector<Cell> cache_;
+  bool is_wall(int x, int y) const;
+}
+
+impl {
+  bool This::is_wall(int x, int y) const {
+    return walls[y * width + x] != 0;
+  }
+}
+```
+
+`decl` code starts in the private section of the class. `This` is the class's name. See `gd++ man code`.
+
+# 3. Libraries
+
+To use a small C++ library, copy its headers and sources into the package, e.g. into `pkg://third_party/`, and include them like your own. Mind that every C++ source under the package root is compiled, so copy only the files the library needs, not its tests and examples.
+
+Warnings are errors, so code that warns doesn't build. If a library warns and you can't fix it, `gd++ build --nowarn` turns warnings off, for the whole package. See `gd++ man building`.
+
+# 4. A Godot class in plain C++
+
+Sometimes you want a Godot class written the usual godot-cpp way, e.g. code ported from a godot-cpp project. Write it as usual, with `GDCLASS` and `_bind_methods`, e.g. in `pkg://src/spinner.h` and `pkg://src/spinner.cpp`, then register it:
+
+```sh
+gd++ init . --class Spinner --include pkg://src/spinner.h
+```
+
+This lists the class in `gd++pkg.toml`, and the next build registers it with Godot, next to the GD++ classes. Don't register it yourself, and don't define an entry point: GD++ does both. Add `--tool` if its code must run in the editor too. See `gd++ man cpp-classes` and `gd++ man init`.
+
+# 5. Use a C++ class from GD++
+
+GD++ only knows Godot's classes and its own, so a C++ class can't be the type of a `var` or a parameter. Use its Godot base class there, and cast in code:
+
+```gd++
+class_name Game
+extends Node
+
+@global decl {
+  #include "src/spinner.h"
+}
+
+@export var spinner: Node3D
+
+func _ready() -> void {
+  Spinner *s = spinner as Spinner *;
+  if (s) {
+    s->set_speed(2.0);
+  }
+  add_child(memnew(Spinner));
+}
+```
+
+The downcast gives `nullptr` if the node isn't a `Spinner`. See `gd++ man cast`.
+
+# 6. Use a GD++ class from C++
+
+A C++ file includes a GD++ class's generated header, named after the class:
+
+```cpp
+#include "Level.h"
+
+int64_t count_walls(godot::Level *level) {
+  int64_t count = 0;
+  for (int64_t i = 0; i < level->walls.size(); i++) {
+    count += level->walls[i] != 0;
+  }
+  return count;
+}
+```
+
+GD++ classes are in namespace `godot`. Their functions, getters and setters are public methods, and the fields of simple variables are public too. A C++ class can even extend a GD++ class, but not the other way around. See `gd++ man generated`.
+
+# 7. Check the package
+
+```sh
+gd++ build
+gd++ ls
+```
+
+`gd++ ls` lists the package's C++ classes with their headers, and its GD++ classes by file. A missing header is marked "(missing)". See `gd++ man ls`.
+
+# See also
+
+`gd++ man cpp-classes`, `gd++ man code`, `gd++ man includes`, `gd++ man generated`, `gd++ man packages`.

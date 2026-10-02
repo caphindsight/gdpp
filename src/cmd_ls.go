@@ -48,6 +48,7 @@ func (c *CmdLs) Run() {
 		path = ParsePath(c.Path)
 	}
 	p := LoadProject(path)
+	SyncExportPresets(p)
 	root, _ := GetPackageRootMaybe(path)
 	list := p.ListPackages()
 	var pkgs []lsPackage

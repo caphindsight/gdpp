@@ -1,0 +1,121 @@
+Tutorial: write a tool that runs in the editor
+
+This tutorial writes a node that works while you edit a scene: it scatters rocks around itself, and redraws them whenever you change its settings in the inspector. Along the way, it shows how to keep game-only code out of the editor, how to warn about wrong settings, and how to document the node for the editor's help. It assumes a project that builds, as in `gd++ man tour`.
+
+# 1. Make a tool class
+
+```gd++
+@tool
+class_name Scatter
+extends Node3D
+
+@export var mesh: Mesh
+
+func _ready() -> void {
+  regenerate();
+}
+
+func regenerate() -> void {
+  for (int64_t i = get_child_count() - 1; i >= 0; i--) {
+    get_child(i)->queue_free();
+  }
+  if (mesh.is_null()) {
+    return;
+  }
+  for (int64_t i = 0; i < 20; i++) {
+    MeshInstance3D *rock = memnew(MeshInstance3D);
+    rock->set_mesh(mesh);
+    rock->set_position(Vector3(gd::randf_range(-5, 5), 0, gd::randf_range(-5, 5)));
+    add_child(rock);
+  }
+}
+```
+
+Without `@tool`, the editor runs none of a class's code: it shows a placeholder, which only keeps the values you set in the inspector. With `@tool`, the class runs in the editor too, like a GDScript `@tool` script. Build, add a `Scatter` to a scene, pick a mesh, and reopen the scene: the rocks show up. See "@tool" in `gd++ man classes`.
+
+The rocks have no owner, so the scene doesn't save them: `_ready` makes them again each time the scene opens. To save created nodes in the scene, set their owner to the edited scene's root, with `rock->set_owner(get_tree()->get_edited_scene_root())`.
+
+# 2. React to the inspector
+
+To redraw the rocks as soon as a setting changes, make the settings properties, whose setters call `regenerate`:
+
+```gd++
+@export_range(1, 500, 1)
+var count: int {
+  decl {
+    int64_t count_ = 20;
+  }
+  get {
+    return count_;
+  }
+  set(value) {
+    count_ = value;
+    if (is_inside_tree()) {
+      regenerate();
+    }
+  }
+}
+```
+
+When the scene loads, Godot sets the properties before the node enters the tree, so the setter only regenerates once the node is in it; `_ready` takes care of the first time. Use `count_` in `regenerate` instead of 20. See "Properties" in `gd++ man variables`.
+
+# 3. Keep game code out of the editor
+
+A tool class runs all its code in the editor, including code meant for the game, e.g. rocks that roll away when the player comes close. Mark such functions and variables `@game_only`:
+
+```gd++
+func _process(delta: float) -> void {
+  scare_rocks();
+}
+
+@game_only
+func scare_rocks() -> void {
+  // ... game logic, never run in the editor ...
+}
+```
+
+In debug builds, which the editor loads, a `@game_only` function returns right away in the editor. Engine functions like `_process` can't be `@game_only`, so put the game's part in a function of its own, like here. Anywhere else, `Engine::get_singleton()->is_editor_hint()` tells whether the code runs in the editor. See "@game_only" in `gd++ man classes`.
+
+The same goes for other classes: a tool class that creates objects of a runtime class, e.g. with `memnew`, runs their code in the editor. Mark such classes `@game_only` if their code must never run there.
+
+# 4. Warn about wrong settings
+
+The editor shows a warning icon next to nodes whose configuration warnings aren't empty:
+
+```gd++
+@const @override
+func _get_configuration_warnings() -> PackedStringArray {
+  PackedStringArray warnings;
+  if (mesh.is_null()) {
+    warnings.push_back("Set a mesh to scatter.");
+  }
+  return warnings;
+}
+```
+
+`_get_configuration_warnings` is a const function of the engine, so it needs `@const` along with `@override`. Call `update_configuration_warnings()` in the setters of the settings it checks, so the icon updates right away. See "@override" in `gd++ man functions`.
+
+# 5. Give it an icon and help
+
+```gd++
+/// Scatters copies of a mesh around itself, in the editor and in the game.
+///
+/// Change [member count] or [member mesh] in the inspector, and the copies are made again.
+@tool
+@icon("pkg://icons/scatter.svg")
+class_name Scatter
+extends Node3D
+
+/// The mesh to scatter.
+@export var mesh: Mesh
+```
+
+`@icon` shows the icon in the scene tree and in the "Create New Node" dialog. Doc comments become the class's page in the editor's help, like Godot's own classes, in debug builds. See `gd++ man docs`.
+
+# 6. Iterate with hot reload
+
+Keep the editor open while you work. Change the code, run `gd++ build`, and switch back to the editor: it reloads the library when its window gets focus, without a restart. Tool code that crashes takes the editor down with it, so save your scenes before you try new tool code.
+
+# See also
+
+`gd++ man classes`, `gd++ man variables`, `gd++ man docs`, `gd++ man lifecycle`, `gd++ man cpp-classes`.

@@ -1,0 +1,92 @@
+Tutorial: share a project with a team, with git
+
+This tutorial sets up a GD++ project in a git repository, so that a teammate can clone it and build it with two commands. It assumes a project with a package, as set up in `gd++ man tour`.
+
+# 1. Turn on git support
+
+In the project directory:
+
+```sh
+git init
+gd++ init --vcs git
+```
+
+`gd++ init --vcs git` writes `res://gd++proj.toml` with `vcs = "git"`, and adds GD++'s blocks of ignores to the `.gitignore` files of the project root and of each package. They keep out everything that `gd++` can make again:
+
+- `res://.gd++proj`, the downloaded dependencies,
+- each package's build cache, `.gd++pkg`,
+- the built libraries and `.gdextension` files in package roots,
+- the swap and backup files of editors.
+
+From now on, `gd++ init` adds the block to every new package, and `gd++ rm --pkg` removes it. See `gd++ man vcs`.
+
+Godot's own ignores, e.g. `.godot/`, still belong in `.gitignore` too. Add any line of your own outside of GD++'s blocks, after an empty line: GD++ rewrites its blocks, but never touches the rest of the file.
+
+# 2. Commit
+
+```sh
+git add .
+git status
+```
+
+Check that `git status` lists your sources, `gd++pkg.toml` and `gd++proj.toml`, and no `.so`, `.dll` or `.gdextension` files. Then commit.
+
+# 3. Clone it elsewhere
+
+A teammate, or a build machine, clones the repository, then runs:
+
+```sh
+gd++ fetch --missing
+gd++ build --proj
+```
+
+`gd++ fetch --missing` downloads the bindings and the specs that the packages name in their `gd++pkg.toml` files. `gd++ build --proj` builds every package. Then the project opens in Godot as usual. Run `gd++ install` first on a new machine, to get a C++ compiler and SCons. See `gd++ man install`.
+
+Use the same version of `gd++` on all machines, so everyone's builds generate the same code. `gd++ --version` prints it.
+
+# 4. Pin the dependencies, if you need to
+
+By default, dependencies are downloaded, not committed: they're big, and anyone can download them again. Commit them instead when:
+
+- the team must build offline, or without access to the repository of dependencies,
+- you want the exact files in your history, e.g. for a release that must build the same way for years,
+- a dependency can't be downloaded at all, e.g. the spec of your own Godot build. See `gd++ man custom-godot`.
+
+`gd++ checkin` moves dependencies into `res://_gd++proj`, the checked in cache:
+
+```sh
+gd++ checkin --spec 4.7.2-stable
+git add _gd++proj
+```
+
+Packages find dependencies in either cache, so builds don't change. `gd++ checkin -a` checks in everything the project has, and `gd++ checkin --undo --spec 4.7.2-stable` makes a dependency ephemeral again. See `gd++ man checkin` and `gd++ man dependencies`.
+
+Bindings are large, since they're a copy of godot-cpp. Specs are a single file, so checking them in is cheap.
+
+# 5. Keep the project tidy
+
+Run `gd++ fix` after upgrading `gd++`, after editing `gd++pkg.toml` by hand, or after moving packages around:
+
+```sh
+gd++ fix
+```
+
+It updates GD++'s blocks in the `.gitignore` files, reformats the config files, and removes leftovers of interrupted commands. It's always safe to run. See `gd++ man fix`.
+
+`gd++ ls` shows the state of the project: its dependencies, which cache each is in, and its packages:
+
+```sh
+gd++ ls --deps
+```
+
+See `gd++ man ls`.
+
+# What a teammate does day to day
+
+- After pulling changes: `gd++ fetch --missing`, in case a package now names a new dependency, then `gd++ build --proj`.
+- After adding a package: commit its `gd++pkg.toml` and `.gitignore`.
+- After a merge conflict in `gd++pkg.toml`: resolve it like any file, then run `gd++ fix`.
+
+# See also
+
+`gd++ man vcs`, `gd++ man dependencies`, `gd++ man checkin`, `gd++ man fetch`, `gd++ man fix`.

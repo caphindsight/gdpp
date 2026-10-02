@@ -43,6 +43,7 @@ func (c *CmdFetch) Run() {
 	index := c.validate(kinds)
 	p := LoadProject(Cwd())
 	defer p.Cleanup()
+	SyncExportPresets(p)
 	for i := range kinds {
 		kinds[i].cache = p.Caches[i]
 	}

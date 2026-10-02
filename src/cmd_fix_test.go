@@ -67,7 +67,7 @@ func TestFixConfig(t *testing.T) {
 	if want := "[-] Reformatted res://gd++proj.toml.\n[-] Created res://.gitignore.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
-	if got, want := after[projectConfigFileName], "vcs = \"git\"\n"; got != want {
+	if got, want := after[projectConfigFileName], "vcs = \"git\"\npresets = true\n"; got != want {
 		t.Errorf("config = %q, want %q", got, want)
 	}
 }
@@ -76,14 +76,25 @@ func TestFixNothingToDo(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
 		"/games/my_game/.gd++proj/.gdignore":      "",
 		"/games/my_game/.gd++proj/bind/4.3/a.h":   "a",
-		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\n",
+		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\npresets = true\n",
 		"/games/my_game/.gitignore":               projectBlock,
+		"/games/my_game/" + exportPresetsFileName: testExportPresets(strings.Join(presetExcludes, ", ")),
 	})
 	if want := "[-] The project is already tidy.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if !reflect.DeepEqual(after, before) {
 		t.Errorf("tree = %v, want it unchanged: %v", after, before)
+	}
+}
+
+func TestFixExportPresets(t *testing.T) {
+	out, _, after := runFix(t, map[string]string{"/games/my_game/" + exportPresetsFileName: testExportPresets("")})
+	if want := "[-] Updated res://export_presets.cfg.\n[-] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got, want := after[exportPresetsFileName], testExportPresets(strings.Join(presetExcludes, ", ")); got != want {
+		t.Errorf("export_presets.cfg = %q, want %q", got, want)
 	}
 }
 

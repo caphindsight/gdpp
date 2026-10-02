@@ -1,0 +1,7 @@
+Tutorials: guides to common goals
+
+The rest of this manual is a reference: each page covers one topic, with every detail. A tutorial is the other way around: it takes one goal, e.g. shipping a game or moving work to a thread, and walks through all the steps to reach it, across topics, leaving out the details that the goal doesn't need. Each tutorial links to the reference pages, for when you need more.
+
+The tutorials assume that you've read `gd++ man tour`, and have a project with a package that builds. They're independent of each other: read the ones whose goals you have, in any order.
+
+Like the language's pages, the tutorials describe one syntax version of GD++, which their titles show: in a package, the package's, and elsewhere the latest stable one. See `gd++ man lang`.

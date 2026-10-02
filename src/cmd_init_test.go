@@ -32,7 +32,7 @@ func TestInitProject(t *testing.T) {
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
-	if got, want := after[projectConfigFileName], "vcs = \"git\"\n"; got != want {
+	if got, want := after[projectConfigFileName], "vcs = \"git\"\npresets = true\n"; got != want {
 		t.Errorf("config = %q, want %q", got, want)
 	}
 	if got := after[gitignoreFileName]; got != projectBlock {
@@ -78,12 +78,36 @@ func TestInitProjectNoVcsChange(t *testing.T) {
 
 func TestInitProjectNoChanges(t *testing.T) {
 	tree := withPackages(nil)
-	tree["/games/my_game/"+projectConfigFileName] = "vcs = \"git\"\n"
+	tree["/games/my_game/"+projectConfigFileName] = "vcs = \"git\"\npresets = true\n"
 	withMemFS(t, "/games/my_game", tree)
 	withQuiet(t, false)
 	withTTY(t, false)
-	if out, want := captureStderr(t, (&CmdInit{Vcs: "git"}).Run), "[!] No changes were made.\n"; out != want {
+	if out, want := captureStderr(t, (&CmdInit{Vcs: "git", Presets: true}).Run), "[!] No changes were made.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+func TestInitProjectPresets(t *testing.T) {
+	tree := withPackages(nil)
+	tree["/games/my_game/"+exportPresetsFileName] = testExportPresets("*.txt")
+	m := withMemFS(t, "/games/my_game", tree)
+	withQuiet(t, false)
+	withTTY(t, false)
+	for _, tc := range []struct {
+		c      CmdInit
+		want   string
+		filter string
+	}{
+		{CmdInit{NoPresets: true}, "[-] Created res://gd++proj.toml.\n[-] Set the export preset filters to off.\n[-] Success!\n", "*.txt"},
+		{CmdInit{Presets: true}, "[-] Set the export preset filters to on.\n[-] Updated res://export_presets.cfg.\n[-] Success!\n", "*.txt, " + strings.Join(presetExcludes, ", ")},
+		{CmdInit{NoPresets: true}, "[-] Set the export preset filters to off.\n[-] Updated res://export_presets.cfg.\n[-] Success!\n", "*.txt"},
+	} {
+		if out := captureStderr(t, tc.c.Run); out != tc.want {
+			t.Errorf("%+v: output = %q, want %q", tc.c, out, tc.want)
+		}
+		if got, want := m.tree()["/games/my_game/"+exportPresetsFileName], testExportPresets(tc.filter); got != want {
+			t.Errorf("%+v: export_presets.cfg = %q, want %q", tc.c, got, want)
+		}
 	}
 }
 
@@ -255,7 +279,9 @@ func TestInitInvalidArgs(t *testing.T) {
 		"class_notool":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Tool: true, NoTool: true}, "--tool and --notool cannot be used together"},
 		"class_path":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Icon: "a.svg"}, "a.svg must start with pkg:// or res://"},
 		"project_vcs":     {CmdInit{Vcs: "svn"}, "--vcs must be none or git"},
-		"package_vcs":     {CmdInit{Path: "src/pkg", Vcs: "git"}, "--vcs cannot be used with a package path"},
+		"package_vcs":     {CmdInit{Path: "src/pkg", Vcs: "git"}, "--vcs, --presets and --nopresets cannot be used with a package path"},
+		"package_presets": {CmdInit{Path: "src/pkg", NoPresets: true}, "--vcs, --presets and --nopresets cannot be used with a package path"},
+		"presets_both":    {CmdInit{Presets: true, NoPresets: true}, "--presets and --nopresets cannot be used together"},
 		"new_no_spec":     {CmdInit{Path: "lib", Bind: "4.3"}, "--bind and --spec are required for a new package"},
 		"bad_name":        {CmdInit{Path: "src/pkg", Bind: "../a"}, `"../a" is not a valid dependency name`},
 	}
