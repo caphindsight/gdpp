@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="318" height="229" viewBox="0 0 318 229">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#e3b341">signal</tspan><tspan fill="#e6edf3"> died</tspan></text>
+  <text x="16" y="30"><tspan fill="#e3b341">signal</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">died</tspan></text>
   <text x="16" y="50"><tspan fill="#e3b341">signal</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">health_changed</tspan><tspan fill="#e6edf3">(health: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">)</tspan></text>
   <text x="16" y="70"></text>
   <text x="16" y="90"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">hurt</tspan><tspan fill="#e6edf3">(amount: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>

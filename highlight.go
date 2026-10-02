@@ -124,7 +124,7 @@ func highlightGdpp(code string, gdscript bool) string {
 				style = []Style{CodeKeyword}
 			case codeTypes[word] || word[0] >= 'A' && word[0] <= 'Z' && strings.ToUpper(word) != word:
 				style = []Style{CodeType}
-			case strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "("):
+			case strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "(") || lastWord(code[:i]) == "signal":
 				style = []Style{CodeFunction}
 			}
 		}
@@ -132,6 +132,16 @@ func highlightGdpp(code string, gdscript bool) string {
 		i += n
 	}
 	return out.String()
+}
+
+// lastWord returns the identifier at the end of s, before any spaces, e.g. signal in "signal ".
+func lastWord(s string) string {
+	s = strings.TrimRight(s, " \t")
+	n := len(s)
+	for n > 0 && isIdentByte(s[n-1]) {
+		n--
+	}
+	return s[n:]
 }
 
 // identLen returns the length of the identifier at the start of s.

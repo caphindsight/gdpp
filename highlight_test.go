@@ -32,6 +32,8 @@ func TestHighlightCode(t *testing.T) {
 			Styled("\"f\"", CodeLiteral) + "); string_name = " + Styled("1", CodeLiteral) + ";"},
 		{"gd++", "guard (x; \"m\") { return; }", Styled("guard", CodeKeyword) + " (x; " + Styled("\"m\"", CodeLiteral) + ") { " +
 			Styled("return", CodeKeyword) + "; }"},
+		{"gd++", "signal died\nsignal hit(damage: int)", Styled("signal", CodeKeyword) + " " + Styled("died", CodeFunction) + "\n" +
+			Styled("signal", CodeKeyword) + " " + Styled("hit", CodeFunction) + "(damage: " + Styled("int", CodeType) + ")"},
 		{"gd++", "notif READY, PREDELETE {}", Styled("notif", CodeKeyword) + " READY, PREDELETE {}"},
 		{"gd++", "var x: Node = $Hud/\"a b\" // c", Styled("var", CodeKeyword) + " x: " + Styled("Node", CodeType) + " = " +
 			Styled("$Hud/\"a b\"", CodeLiteral) + " " + Styled("// c", CodeComment)},
