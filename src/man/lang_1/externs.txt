@@ -117,14 +117,14 @@ In Godot, the variable's type is the base class, `Node3D`, but the editor only a
 
 # Creating and deleting objects
 
-```cpp
-Ext<Terrain> terrain = memnew_ext(Terrain);
+```gd++
+Ext<Terrain> terrain = create Terrain;
 add_child(terrain.base());
 
-memdelete_ext(some_terrain);      // only for ExtPtr, like memdelete
+destroy some_terrain;             // only for ExtPtr; refcounted objects delete themselves
 ```
 
-`memnew_ext(T)` creates an object of the class named like the extern: a class that Godot's `ClassDB` knows, e.g. of a GDExtension, or else a global script class, i.e. a script with a `class_name`, which it loads and calls `new()` on. If there's no such class, it prints an error and returns null. `memdelete_ext` deletes an `ExtPtr`'s object, like `memdelete`; refcounted objects delete themselves when their last `ExtRef` goes away.
+`create T` creates an object of the class named like the extern: a class that Godot's `ClassDB` knows, e.g. of a GDExtension, or else a global script class, i.e. a script with a `class_name`, which it loads and calls `new()` on. If there's no such class, it prints an error and returns null. `destroy` deletes an `ExtPtr`'s object; refcounted objects delete themselves when their last `ExtRef` goes away, so `destroy` doesn't compile for an `ExtRef`. They're the same `create` and `destroy` as for any class, see `gd++ man classes`.
 
 # @deferred
 

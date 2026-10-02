@@ -72,6 +72,7 @@ So in debug, GD++ can be slower than GDScript: `dictionaries` took almost twice 
 - In hot loops, keep data in C++ types: ints, floats, Godot's math types like `Vector3`, and C++ containers like `std::vector`, not `Array` or `Dictionary`. Every access to a Godot container is a call into the engine. Convert at the edges, where your code talks to the engine or to GDScript.
 - Keep engine calls few. They cost the same from GD++ as from GDScript, so a loop that mostly calls the engine gains little. Call it less often, e.g. once per frame instead of once per object, or use the engine's bulk functions, like `sort`.
 - Don't call GDScript from C++ in hot loops, e.g. a script's override of a `@virtual` function once per item. Call it once per batch instead.
+- Pool nodes that come and go often, e.g. bullets or effects: with `@pool`, `destroy` keeps a node for `create` to reuse, so the engine doesn't set up a new object each time. See `gd++ man pools`.
 - Build strings with `+=` in GD++. In GDScript, join them from a `PackedStringArray` instead.
 - Don't guess: profile. `gd++ build --opt --profile all --print` prints what each function costs per frame. See `gd++ man debugging`.
 
@@ -361,13 +362,13 @@ func _packed_arrays_impl(n: int) -> int:
 func _godot_calls_impl(n: int) -> int {
   int64_t sum = 0;
   for (int64_t i = 0; i < n; i++) {
-    Node2D *node = memnew(Node2D);
+    Node2D *node = create Node2D;
     node->set_position(Vector2(i % 100, i % 37));
     node->set_rotation(0.5);
     add_child(node);
     sum += int64_t(node->get_global_position().x) + get_child_count();
     remove_child(node);
-    memdelete(node);
+    destroy node;
   }
   return sum;
 }

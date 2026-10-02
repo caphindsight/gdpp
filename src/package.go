@@ -58,6 +58,14 @@ func (pkg Package) AsyncClass() string {
 	return pkg.Prefix() + "Async"
 }
 
+// ResPath returns the res:// path of the package's root, e.g. res://addons/foo.
+func (pkg Package) ResPath() string {
+	if rel := relPath(GetProjectRoot(pkg.Root), pkg.Root); rel != "." {
+		return "res://" + rel
+	}
+	return "res://"
+}
+
 // QuitTimeout returns how many seconds the package's tasks may still run after
 // the game started quitting, before the game exits anyway.
 func (pkg Package) QuitTimeout() float64 {

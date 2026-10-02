@@ -22,8 +22,8 @@ type File struct {
 type Member struct {
 	Pos      lexer.Position
 	Code     *Code   `parser:"( @@"`
-	Ctor     *Block  `parser:"| 'ctor' @@"`
-	Dtor     *Block  `parser:"| 'dtor' @@"`
+	Ctor     *Ctor   `parser:"| @@"`
+	Dtor     *Dtor   `parser:"| @@"`
 	Notif    *Notif  `parser:"| @@"`
 	Func     *Func   `parser:"| @@"`
 	Signal   *Signal `parser:"| @@"`
@@ -31,6 +31,20 @@ type Member struct {
 	Enum     *Enum   `parser:"| @@"`
 	Import   *Type   `parser:"| 'import' @@"`
 	NoImport *Type   `parser:"| 'noimport' @@ )"`
+}
+
+// Ctor is a ctor block: the constructor's body, or with @recycle, what runs when a pool reuses an object.
+type Ctor struct {
+	Pos         lexer.Position
+	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
+	Body        *Block        `parser:"'ctor' @@"`
+}
+
+// Dtor is a dtor block: the destructor's body, or with @recycle, what runs when a pool keeps an object.
+type Dtor struct {
+	Pos         lexer.Position
+	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
+	Body        *Block        `parser:"'dtor' @@"`
 }
 
 // Notif is a notif block: Body runs when the object gets one of the notifications Names (without NOTIFICATION_).

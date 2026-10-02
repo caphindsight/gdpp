@@ -42,7 +42,7 @@ void Stage::_notification(int WHAT) {
 #line 43 "Stage.cpp"
 #line 11 "input.gd++"
 		mesh = [&]() -> MeshInstance3D * {
-  MeshInstance3D* mesh = memnew(MeshInstance3D);
+  MeshInstance3D* mesh = gdpp::create<MeshInstance3D>();
   add_child(mesh);
   return mesh;
 }();

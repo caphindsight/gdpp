@@ -39,8 +39,11 @@ assert health >= 0;
 assert target != nullptr;
 ```
 
-memnew_ext(T) and memdelete_ext(OBJECT)
-  Create and delete objects of the extern `T`, like `memnew` and `memdelete`. See `gd++ man externs`.
+gdpp::create<T>() and gdpp::destroy(OBJECT)
+  What `create T` and `destroy OBJECT` become. `create` creates an object of the class `T`: it takes one from the pool of a `@pool` class, and returns an `Ext<T>` for an extern, a `Ref<T>` for a refcounted class, and a `T *` for other classes, an instance of the class's scene for a `@scene` class. `destroy` gives an object that a pool made back to its pool, and deletes other objects. It does nothing with null, and doesn't compile for a `Ref` or an `ExtRef`. See `gd++ man classes`.
+
+gdpp::Pool<T>
+  The pool of the `@pool` class `T`, which `create` and `destroy` use: a static member of `T`. It's thread-safe, and takes constant time. See `gd++ man pools`.
 
 ExtPtr<T>, ExtRef<T> and Ext<T>
   The C++ types of externs: a pointer or a reference to an object of an extern's class, whose members are called by name. `Ext<T>` is `ExtRef<T>` if `T`'s base is refcounted, and `ExtPtr<T>` otherwise. See `gd++ man externs`.

@@ -84,6 +84,7 @@ type Options struct {
 	ProfilePeriod int          // With Profile, the seconds between the tables of timings printed while the game runs. Default: 0, none.
 	ProfileFPS    int          // With ProfilePeriod, the frame rate that the table's budget column assumes. Default: 0, 60 FPS.
 	AsyncClass    string       // The name of the package's class of tasks, e.g. "FooAsync", which Async types name. Default: "GdppAsync".
+	PackagePath   string       // The package root's res:// path, e.g. "res://addons/foo", which pkg:// paths resolve against. Default: "res://".
 }
 
 // File is a generated C++ file. Each declaration of a GD++ file gets a header, named "<Name>.h", and each class

@@ -130,7 +130,7 @@ Keep connecting signals in the scene, in the editor's Node dock, as with scripts
 Connect in code only where the scene can't, e.g. for nodes that the code creates. Then use `connect`, with `callable_mp` for a function of the class, and `This` for the class's name:
 
 ```gd++
-Coin *coin = memnew(Coin);
+Coin *coin = create Coin;
 coin->connect(string_name "collected", callable_mp(this, &This::_on_coin_collected));
 add_child(coin);
 ```
@@ -180,7 +180,8 @@ sig.connect(f)                      connect in the scene, or if you can't:
 Input.is_action_pressed("jump")     Input::get_singleton()->is_action_pressed(string_name "jump")
 load("res://bullet.tscn")           ResourceLoader::get_singleton()->load("res://bullet.tscn")
 scene.instantiate()                 scene->instantiate() as Bullet *
-Bullet.new()                        memnew(Bullet)
+Bullet.new()                        create Bullet
+preload(PATH).instantiate()         create Bullet, with @scene(PATH) on Bullet
 assert(x > 0)                       assert x > 0;
 ```
 

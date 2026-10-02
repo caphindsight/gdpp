@@ -11,6 +11,6 @@ File: @1:1
               TextPos: 2:18
               Text: |
 
-                  Node3D* res = memnew(Node3D);
+                  Node3D* res = create Node3D;
                   return res;
 

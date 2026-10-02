@@ -1,0 +1,4 @@
+input.gd++:1:8: The scene's path must start with res:// or pkg://.
+ 1 | @scene("scenes/a.tscn")
+   |        ^^^^^^^^^^^^^^^
+Hint: res:// paths are relative to the project, pkg:// paths to the package.

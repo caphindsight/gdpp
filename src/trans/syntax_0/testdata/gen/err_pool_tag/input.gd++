@@ -1,0 +1,3 @@
+@pool(10, "silent")
+class_name A
+extends Node

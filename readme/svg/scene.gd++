@@ -1,0 +1,14 @@
+@scene("pkg://enemy.tscn")
+class_name Enemy
+extends CharacterBody3D
+
+class Spawner {
+  extends Node3D
+
+  func spawn() -> void {
+    Enemy *enemy = create Enemy;
+    if (enemy) {
+      add_child(enemy);
+    }
+  }
+}

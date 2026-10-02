@@ -59,7 +59,7 @@ var camera: Camera3D = $Camera
 
 @onready
 var marker: Node3D = {
-  Node3D *res = memnew(Node3D);
+  Node3D *res = create Node3D;
   add_child(res);
   return res;
 }

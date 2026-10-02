@@ -3,16 +3,18 @@ File: @1:1
     Name: Test
     Members:
       - @2:1
-        Ctor: @2:6
-          TextPos: 2:7
-          Text: |
+        Ctor: @2:1
+          Body: @2:6
+            TextPos: 2:7
+            Text: |
 
-              init();
+                init();
 
       - @5:1
-        Dtor: @5:6
-          TextPos: 5:7
-          Text: |
+        Dtor: @5:1
+          Body: @5:6
+            TextPos: 5:7
+            Text: |
 
-              cleanup();
+                cleanup();
 

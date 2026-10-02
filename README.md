@@ -214,6 +214,18 @@ The flags count 1, 2, 4 and so on, and the inspector shows a checkbox for each. 
 
 Neither takes arguments, since Godot creates objects without any. See `gd++ man lifecycle`.
 
+### Object pools
+
+<a href="readme/svg/pool.gd++"><img src="readme/svg/pool.svg" alt="GD++ code: pool"></a>
+
+`create` creates an object of any class, and `destroy` deletes it. For a `@pool` class, `destroy` keeps the node instead, out of the tree, and `create` reuses it. `ctor` and `dtor` still run only when a bullet is really created and deleted, and `@recycle ctor` and `@recycle dtor` when it's reused and kept. The pool makes at most 100 bullets, and then `create` returns null. Without a size, a pool makes any number, and with `@pool(100, "strict")`, a full pool is an error. See `gd++ man pools`.
+
+### Scene classes
+
+<a href="readme/svg/scene.gd++"><img src="readme/svg/scene.svg" alt="GD++ code: scene"></a>
+
+`create Enemy` instantiates `enemy.tscn`, with its children, and gives its root as an `Enemy *`. The scene is loaded once, by the first `create`. If its root isn't an `Enemy`, `create` prints an error and returns null. Classes without `@scene` pay nothing for it. See `gd++ man classes`.
+
 ### Notification handlers
 
 <a href="readme/svg/notif.gd++"><img src="readme/svg/notif.svg" alt="GD++ code: notif"></a>

@@ -58,19 +58,22 @@ A class can't extend an extern, an enum, a C++ class of the package, or itself t
 Godot has two kinds of classes, and GD++ uses them differently in C++:
 
 - Refcounted classes: `RefCounted` and every class that extends it, e.g. `Resource`, `Texture2D` or the class `Stats` above. Godot deletes their objects when the last reference goes away. In C++, GD++ uses them through references, e.g. `Ref<Stats>`.
-- Other classes: `Object` and every class that extends it but not `RefCounted`, e.g. `Node` and all nodes. You delete their objects yourself, e.g. with `queue_free()` or `memdelete()`. In C++, GD++ uses them through pointers, e.g. `Player *`.
+- Other classes: `Object` and every class that extends it but not `RefCounted`, e.g. `Node` and all nodes. You delete their objects yourself, e.g. with `queue_free()` or `destroy`. In C++, GD++ uses them through pointers, e.g. `Player *`.
 
 A GD++ class is refcounted if its base is. See `gd++ man types`.
 
-In C++ code, create objects of your classes like those of any Godot class:
+In C++ code, `create` creates an object of any class, yours or Godot's, and `destroy` deletes it:
 
 ```gd++
-Bullet *bullet = memnew(Bullet);           // an object
+Bullet *bullet = create Bullet;            // an object
 add_child(bullet);
+destroy bullet;                            // deletes it
 
-Ref<Stats> stats;                          // a refcounted object
-stats.instantiate();
+Ref<Stats> stats = create Stats;           // a refcounted object, deleted with its last reference
+auto mesh = create ArrayMesh;              // a Ref<ArrayMesh>
 ```
+
+`create T` gives what GD++ uses for `T`: a pointer, a `Ref` for refcounted classes, or an `Ext` for externs (see `gd++ man externs`). For a `@pool` class, `create` takes an object from the class's pool, and `destroy` gives it back (see `gd++ man pools`). `destroy` does nothing with null, and doesn't compile for references, since refcounted objects delete themselves. Both are rewrites, of `gdpp::create<T>()` and `gdpp::destroy(OBJECT)`, see `gd++ man rewrites`. godot-cpp's `memnew` and `memdelete` work too, but they skip pools.
 
 In GDScript, use them like built-in classes: `Bullet.new()`, `var s: Stats`, `extends Player`, and so on.
 
@@ -96,7 +99,7 @@ So a runtime class can't break the editor, e.g. by moving nodes around in a scen
 
 # @game_only
 
-Placeholders only stop the code that Godot calls. Code that already runs in the editor, e.g. that of a `@tool` class or of a C++ tool class, can still create an object of a runtime class with `memnew`, or call its static functions, and then the runtime class's code runs. `@game_only` prevents this: the class's code only ever runs in the game.
+Placeholders only stop the code that Godot calls. Code that already runs in the editor, e.g. that of a `@tool` class or of a C++ tool class, can still create an object of a runtime class with `create`, or call its static functions, and then the runtime class's code runs. `@game_only` prevents this: the class's code only ever runs in the game.
 
 ```gd++
 @game_only
@@ -149,6 +152,25 @@ class Bullet {
 
 GD++ writes the icons into the package's `.gdextension` file. `gd++ ls` shows a missing icon file in red.
 
+# @scene
+
+A node's children, e.g. its meshes and collision shapes, and their settings usually live in a scene. With `@scene`, `create` instantiates the class's scene:
+
+```gd++
+@scene("pkg://bullet.tscn")
+class_name Bullet
+extends Area3D
+```
+
+```gd++
+Bullet *bullet = create Bullet;    // the root of bullet.tscn, with its children
+add_child(bullet);
+```
+
+The path starts with `res://`, relative to the project, or `pkg://`, relative to the package. The first `create` loads the scene, and keeps it until the library is unloaded, so later ones only instantiate it. The scene's root must be a `Bullet`: if it isn't, or the scene fails to load, `create` prints an error and returns null. `create` is thread-safe, so worker threads may create scenes too, though only the main thread may add them to the tree.
+
+`@scene` works on classes that extend `Node`, since a scene's root is a node. Only `create` uses the scene: `memnew(Bullet)`, `Bullet.new()` in GDScript and scenes that hold a `Bullet` give the node alone. A class that extends a `@scene` class doesn't use its scene, unless it has a `@scene` of its own. With `@pool`, the pool instantiates the scene for each new object, and reuses objects without it. Classes without `@scene` pay nothing for it: `create` decides at compile time.
+
 # @trace and @profile
 
 ```gd++
@@ -162,7 +184,7 @@ These are for debugging. `@trace` on a class traces all its functions (except `_
 
 # Annotations and doc comments
 
-A class can have `@tool` or `@game_only`, `@icon`, `@trace` and `@profile`, in any order, and a doc comment, before `class_name` or `class`:
+A class can have `@tool` or `@game_only`, `@icon`, `@pool`, `@scene`, `@trace` and `@profile`, in any order, and a doc comment, before `class_name` or `class`:
 
 ```gd++
 /// The player's character.
@@ -216,7 +238,7 @@ In the C++ code of a class, `This` is the name of the class, like `Self` in Rust
 
 ```gd++
 func clone() -> Player {
-  This *copy = memnew(This);
+  This *copy = create This;
   copy->speed = speed;
   return copy;
 }

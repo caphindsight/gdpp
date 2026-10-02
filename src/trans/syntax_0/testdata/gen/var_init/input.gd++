@@ -9,7 +9,7 @@ var camera: Camera3D = get_node<Camera3D>("Camera")
 
 @onready
 var mesh: MeshInstance3D = {
-  MeshInstance3D* mesh = memnew(MeshInstance3D);
+  MeshInstance3D* mesh = create MeshInstance3D;
   add_child(mesh);
   return mesh;
 }

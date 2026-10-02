@@ -1,0 +1,3 @@
+@pool(0)
+class_name A
+extends Node

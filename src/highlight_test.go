@@ -28,6 +28,8 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "cancel t; t.cancel();", Styled("cancel", CodeKeyword) + " t; t." + Styled("cancel", CodeFunction) + "();"},
 		{"gd++", "n = x as Node3D *;", "n = x " + Styled("as", CodeKeyword) + " " + Styled("Node3D", CodeType) + " *;"},
 		{"gd++", "as = x;", "as = x;"},
+		{"gd++", "b = create Bullet; destroy b; Image::create(1);", "b = " + Styled("create", CodeKeyword) + " " + Styled("Bullet", CodeType) + "; " +
+			Styled("destroy", CodeKeyword) + " b; " + Styled("Image", CodeType) + "::" + Styled("create", CodeFunction) + "(" + Styled("1", CodeLiteral) + ");"},
 		{"gd++", "call(string_name \"f\"); string_name = 1;", Styled("call", CodeFunction) + "(" + Styled("string_name", CodeKeyword) + " " +
 			Styled("\"f\"", CodeLiteral) + "); string_name = " + Styled("1", CodeLiteral) + ";"},
 		{"gd++", "assert x > 0;", Styled("assert", CodeKeyword) + " x > " + Styled("0", CodeLiteral) + ";"},

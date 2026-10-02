@@ -45,7 +45,7 @@ const (
 	rewriteWords = "emit rpc is_cancelled assert"
 	// GD++'s rewrites in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
 	// where a name follows them, which is where GD++ rewrites them.
-	rewriteOperatorWords = "is_done claim cancel as"
+	rewriteOperatorWords = "is_done claim cancel as create destroy"
 	// GD++'s rewrites in C++ code that are keywords only where a string follows them, which is where GD++ rewrites them.
 	rewriteStringWords = "string_name"
 	// The runtime's cast, which as becomes, and C++'s casts, which it replaces.

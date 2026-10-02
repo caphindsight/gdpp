@@ -1,0 +1,3 @@
+@scene
+class_name A
+extends Node

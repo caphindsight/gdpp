@@ -1,0 +1,4 @@
+input.gd++:4:1: A @recycle ctor only works in a @pool class, whose objects are reused.
+ 4 | @recycle ctor {
+   | ^^^^^^^^
+Hint: Add @pool to class A, or remove @recycle.

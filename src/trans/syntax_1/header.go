@@ -192,7 +192,7 @@ func (c *classModel) needsNotification() bool {
 }
 
 func (c *classModel) needsDtor() bool {
-	return c.dtor != nil || c.trace
+	return c.dtor != nil || c.trace || c.pool != nil
 }
 
 // rpcDecl returns the declarator of the helper that `rpc f(...)` and `rpc(peer) f(...)` call, without a class name.
@@ -261,6 +261,13 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	}
 	if c.needsDtor() {
 		public = append(public, fmt.Sprintf("~%s();", c.name))
+	}
+	if c.scene != "" {
+		public = append(public, fmt.Sprintf("static constexpr gdpp::Scene<%s> _gdpp_scene{ %q };", c.name, c.scene))
+	}
+	if p := c.pool; p != nil {
+		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, %t };", c.name, p.capacity, p.strict),
+			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();")
 	}
 	for _, f := range c.funcs {
 		if f.virtual {

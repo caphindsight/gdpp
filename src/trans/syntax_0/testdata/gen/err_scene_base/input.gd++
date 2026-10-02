@@ -1,0 +1,2 @@
+@scene("res://a.tscn")
+class_name A

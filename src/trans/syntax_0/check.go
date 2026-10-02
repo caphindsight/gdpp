@@ -1,6 +1,7 @@
 package syntax_0
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
 	"slices"
@@ -32,11 +33,13 @@ type classModel struct {
 	cls        *Class
 	base       string
 	refCounted bool
-	gameOnly   bool    // Whether @game_only guards all its code against running in the editor.
-	trace      bool    // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
-	profile    bool    // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
-	codes      []*Code // decl and impl blocks inside the class.
-	globals    []*Code // @global decl and impl blocks, outside the class and namespace godot.
+	gameOnly   bool       // Whether @game_only guards all its code against running in the editor.
+	trace      bool       // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
+	profile    bool       // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
+	codes      []*Code    // decl and impl blocks inside the class.
+	globals    []*Code    // @global decl and impl blocks, outside the class and namespace godot.
+	pool       *poolModel // Its @pool, or nil.
+	scene      string     // The res:// path of its @scene, or "".
 	ctor, dtor *Block
 	notifs     []*notifModel
 	funcs      []*funcModel
@@ -46,6 +49,9 @@ type classModel struct {
 	enums      []*symbol // Enums the class exposes its own copy of.
 	imports    []*Type
 	noimports  []*Type
+
+	// A @pool class's @recycle ctor and dtor blocks, which run when its pool reuses and keeps an object.
+	recycleCtor, recycleDtor *Block
 }
 
 // notifModel is a handler in the class's _notification: a notif block, or the call of an engine function.
@@ -54,6 +60,12 @@ type notifModel struct {
 	body   *Block // A notif block's body.
 	call   string // An engine function's call, e.g. "_gdpp_body__process(get_process_delta_time())".
 	setter string // For _process and _physics_process: the method that turns processing on.
+}
+
+// poolModel is the pool of a @pool class.
+type poolModel struct {
+	capacity string // The most objects it makes, as C++, or "0" for any number.
+	strict   bool   // Whether it prints an error when it's full.
 }
 
 type externModel struct {
@@ -327,22 +339,27 @@ func (u *unit) virtualOwner(class, name string) string {
 // classIcon returns the path from the @icon annotation of class c, or "" if it has none.
 func (u *unit) classIcon(c *Class) (string, error) {
 	for _, a := range c.Annotations {
-		if a.Name != "icon" {
-			continue
+		if a.Name == "icon" {
+			return u.classPath(a, "icon", "res://icons/player.svg")
 		}
-		if len(a.Args) != 1 || !strings.HasPrefix(a.Args[0].Value, "\"") {
-			return "", u.errorAt(a.Pos, len(a.Name)+1, "Annotation @icon needs one argument: the icon's path, as a string.",
-				"E.g. \"@icon(\\\"res://icons/player.svg\\\")\".")
-		}
-		arg := a.Args[0]
-		path, err := strconv.Unquote(arg.Value)
-		if err != nil || !strings.HasPrefix(path, "res://") && !strings.HasPrefix(path, "pkg://") {
-			return "", u.errorAt(arg.Pos, len(arg.Value), "The icon's path must start with res:// or pkg://.",
-				"res:// paths are relative to the project, pkg:// paths to the package.")
-		}
-		return path, nil
 	}
 	return "", nil
+}
+
+// classPath returns the path that a, a class's @icon or @scene annotation, takes: a res:// or pkg:// path, as a
+// string. what names the file, e.g. "icon", and example is a path for the hint.
+func (u *unit) classPath(a *Annotation, what, example string) (string, error) {
+	if len(a.Args) != 1 || !strings.HasPrefix(a.Args[0].Value, "\"") {
+		return "", u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s needs one argument: the %s's path, as a string.", a.Name, what),
+			fmt.Sprintf("E.g. \"@%s(\\\"%s\\\")\".", a.Name, example))
+	}
+	arg := a.Args[0]
+	path, err := strconv.Unquote(arg.Value)
+	if err != nil || !strings.HasPrefix(path, "res://") && !strings.HasPrefix(path, "pkg://") {
+		return "", u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("The %s's path must start with res:// or pkg://.", what),
+			"res:// paths are relative to the project, pkg:// paths to the package.")
+	}
+	return path, nil
 }
 
 // sortedSymbols returns the file's declarations in source order.
@@ -954,7 +971,7 @@ var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "onready",
-	"onthread", "override", "profile", "rpc", "static", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -975,7 +992,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "profile", "rpc", "trace", "virtual"}, a.Name):
+			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "pool", "profile", "rpc", "scene", "trace", "virtual"}, a.Name):
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
@@ -1217,6 +1234,83 @@ func (u *unit) extends(owner string, bases ...string) bool {
 		}
 	}
 	return true // A cycle, which kindOf reports.
+}
+
+// lifecycle adds member, a ctor or dtor block, to class m: the body of its constructor or destructor, or with
+// @recycle, what its pool runs when it reuses or keeps an object.
+func (u *unit) lifecycle(m *classModel, member *Member) error {
+	keyword, pos := member.keyword()
+	list, body, slot, recycled := []*Annotation(nil), (*Block)(nil), &m.ctor, &m.recycleCtor
+	if member.Ctor != nil {
+		list, body = member.Ctor.Annotations, member.Ctor.Body
+	} else {
+		list, body, slot, recycled = member.Dtor.Annotations, member.Dtor.Body, &m.dtor, &m.recycleDtor
+	}
+	a, err := u.annotations(list, "a "+keyword+" block", "recycle")
+	if err != nil {
+		return err
+	}
+	name, n := keyword, len(keyword)
+	if r := a["recycle"]; r != nil {
+		if m.pool == nil {
+			return u.errorAt(r.Pos, len(r.Name)+1, fmt.Sprintf("A @recycle %s only works in a @pool class, whose objects are reused.", keyword),
+				fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
+		}
+		slot, name, n = recycled, "@recycle "+keyword, len(r.Name)+1
+	}
+	if *slot != nil {
+		return u.errorAt(pos, n, fmt.Sprintf("Class %s has two %ss.", m.name, name), "")
+	}
+	*slot = body
+	return nil
+}
+
+// sceneOf returns the res:// path of the scene that a, the @scene annotation of the class named owner, names, or ""
+// without one.
+func (u *unit) sceneOf(a *Annotation, owner string) (string, error) {
+	if a == nil {
+		return "", nil
+	}
+	if err := u.requireBase(a, owner, "A scene's root is a node.", "Node"); err != nil {
+		return "", err
+	}
+	path, err := u.classPath(a, "scene", "res://bullet.tscn")
+	if rest, ok := strings.CutPrefix(path, "pkg://"); ok {
+		path = strings.TrimSuffix(cmp.Or(u.opts.PackagePath, "res://"), "/") + "/" + rest
+	}
+	return path, err
+}
+
+// poolOf returns the pool that a, the @pool annotation of the class named owner, declares, or nil without one.
+func (u *unit) poolOf(a *Annotation, owner string) (*poolModel, error) {
+	if a == nil {
+		return nil, nil
+	}
+	if err := u.requireBase(a, owner, "A pool takes its objects out of the scene tree, so they must be nodes.", "Node"); err != nil {
+		return nil, err
+	}
+	p, args := &poolModel{capacity: "0"}, a.Args
+	if len(args) > 0 && !isString(args[0].Value) {
+		if n, err := strconv.ParseInt(args[0].Value, 10, 64); err != nil || n <= 0 {
+			return nil, u.errorAt(args[0].Pos, len(args[0].Value), "A pool's size must be a positive integer.", "E.g. \"@pool(100)\".")
+		}
+		p.capacity, args = args[0].Value, args[1:]
+	}
+	for _, arg := range args {
+		v, err := u.argValue(arg)
+		switch {
+		case err != nil:
+			return nil, err
+		case !isString(arg.Value) || v != "strict" || p.strict:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @pool takes a size and \"strict\", both optional.",
+				"E.g. \"@pool\", \"@pool(100)\" or \"@pool(100, \\\"strict\\\")\".")
+		case p.capacity == "0":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Only a pool with a size can be full, so \"strict\" needs one.",
+				"E.g. \"@pool(100, \\\"strict\\\")\".")
+		}
+		p.strict = true
+	}
+	return p, nil
 }
 
 // bodyName is the name of the method that holds the body of a class's @deferred, @thread_safe or @onthread func f.
@@ -1618,11 +1712,17 @@ func (u *unit) buildClasses() error {
 
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted}
-	a, err := u.annotations(c.Annotations, "a class", "game_only", "icon", "profile", "tool", "trace")
+	a, err := u.annotations(c.Annotations, "a class", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
 	m.gameOnly = a["game_only"] != nil
+	if m.pool, err = u.poolOf(a["pool"], c.Name); err != nil {
+		return nil, err
+	}
+	if m.scene, err = u.sceneOf(a["scene"], c.Name); err != nil {
+		return nil, err
+	}
 	if m.trace, err = u.debugOn(a["trace"], c.Name); err != nil {
 		return nil, err
 	}
@@ -1646,13 +1746,10 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			} else {
 				m.codes = append(m.codes, member.Code)
 			}
-		case member.Ctor != nil && m.ctor != nil, member.Dtor != nil && m.dtor != nil:
-			keyword, pos := member.keyword()
-			return nil, u.errorAt(pos, len(keyword), fmt.Sprintf("Class %s has two %ss.", c.Name, keyword), "")
-		case member.Ctor != nil:
-			m.ctor = member.Ctor
-		case member.Dtor != nil:
-			m.dtor = member.Dtor
+		case member.Ctor != nil || member.Dtor != nil:
+			if err := u.lifecycle(m, member); err != nil {
+				return nil, err
+			}
 		case member.Notif != nil:
 			for _, n := range member.Notif.Names {
 				if name, ok := strings.CutPrefix(n.Name, "NOTIFICATION_"); ok {

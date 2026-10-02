@@ -1,0 +1,4 @@
+@scene("res://spark.tscn")
+@pool(10)
+class_name Spark
+extends Node

@@ -16,7 +16,7 @@ void A::_bind_methods() {
 Ref<C> A::make_c() {
 #line 5 "input.gd++"
 
-    return memnew(C);
+    return gdpp::create<C>();
 
 #line 22 "A.cpp"
 }

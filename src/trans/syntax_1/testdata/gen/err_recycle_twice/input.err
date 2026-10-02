@@ -1,0 +1,3 @@
+input.gd++:11:1: Class A has two @recycle dtors.
+ 11 | @recycle dtor {
+    | ^^^^^^^^

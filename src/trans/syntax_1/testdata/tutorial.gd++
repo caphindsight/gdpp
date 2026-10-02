@@ -374,7 +374,7 @@ var child_node_1: Node3D = $MyNode1  // Like GDScript: $Path/To/Node, or %Unique
 
 @onready
 var child_node_2: Node3D = {
-  Node3D* res = memnew(Node3D);
+  Node3D* res = create Node3D;
   add_child(res);
   return res;
 }

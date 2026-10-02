@@ -13,11 +13,13 @@
 #include <mutex>
 #include <thread>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
@@ -261,10 +263,10 @@ private:
 template <typename T>
 using Ext = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, ExtRef<T>, ExtPtr<T>>;
 
-// memnew_ext creates an object of the extern T, like memnew: an instance of the ClassDB class or global script class
-// that T names.
+// create_ext creates an object of the extern T: an instance of the ClassDB class or global script class that T
+// names.
 template <typename T>
-Ext<T> memnew_ext() {
+Ext<T> create_ext() {
 	StringName name = T::gdpp_name;
 	Variant object;
 	if (ClassDB::class_exists(name)) {
@@ -284,14 +286,6 @@ Ext<T> memnew_ext() {
 	ERR_FAIL_COND_V_MSG(!result, nullptr, String("Failed to create an object of the extern ") + T::gdpp_name + ".");
 	return result;
 }
-
-// memdelete_ext frees an object of the extern T, like memdelete. Refcounted objects are freed by their ExtRefs instead.
-template <typename T>
-void memdelete_ext(ExtPtr<T> p_object) {
-	memdelete(p_object.base());
-}
-template <typename T>
-void memdelete_ext(ExtRef<T> p_object) = delete;
 
 // assert_message is the error printed by a failed assertion. It has no location, since Godot shows that below it.
 inline String assert_message(const char *p_condition) {
@@ -388,6 +382,264 @@ inline void connect_until_unload(Object *p_object, const StringName &p_signal, c
 			object->disconnect(p_signal, p_callable);
 		}
 	});
+}
+
+// Scene<T> is the type of the @scene class T's _gdpp_scene: the res:// path of its scene.
+template <typename T>
+struct Scene {
+	const char *path;
+};
+
+// has_scene<T> is true for the @scene class T, but not for classes that extend it.
+template <typename T, typename = void>
+struct has_scene : std::false_type {};
+template <typename T>
+struct has_scene<T, std::void_t<decltype(T::_gdpp_scene)>> : std::is_same<std::remove_cv_t<decltype(T::_gdpp_scene)>, Scene<T>> {};
+
+// scene returns the scene of the @scene class T, which it loads once and keeps until the library is unloaded, or null
+// if it fails to load. It's thread-safe.
+template <typename T>
+PackedScene *scene() {
+	static std::atomic<PackedScene *> loaded = nullptr;
+	if (PackedScene *s = loaded.load(std::memory_order_acquire)) {
+		return s;
+	}
+	Ref<PackedScene> s = ResourceLoader::get_singleton()->load(T::_gdpp_scene.path);
+	ERR_FAIL_COND_V_MSG(s.is_null(), nullptr, vformat("Failed to load the scene %s of %s.", T::_gdpp_scene.path, T::get_class_static()));
+	// loaded holds a reference of its own. Of threads that load it at once, the first keeps its scene.
+	s->reference();
+	PackedScene *first = nullptr;
+	if (!loaded.compare_exchange_strong(first, s.ptr(), std::memory_order_acq_rel)) {
+		s->unreference();
+		return first;
+	}
+	on_unload([] {
+		if (PackedScene *s = loaded.exchange(nullptr); s && s->unreference()) {
+			memdelete(s);
+		}
+	});
+	return s.ptr();
+}
+
+// make creates an object of the class T: for a @scene class, an instance of its scene, whose root must be a T, or
+// null if it isn't; for other classes, memnew(T).
+template <typename T>
+T *make() {
+	if constexpr (has_scene<T>::value) {
+		PackedScene *s = scene<T>();
+		Node *root = s ? s->instantiate() : nullptr;
+		T *object = Object::cast_to<T>(root);
+		if (root && !object) {
+			ERR_PRINT(vformat("The root of the scene %s is a %s, not a %s.", T::_gdpp_scene.path, root->get_class(), T::get_class_static()));
+			memdelete(root);
+		}
+		return object;
+	} else {
+		return memnew(T);
+	}
+}
+
+// PoolSlot is how an object of a @pool class is in its pool: owned tells whether the pool made it, and cell is where
+// it rests in the pool, or null while it's in use.
+template <typename T>
+struct PoolSlot {
+	bool owned = false;
+	T **cell = nullptr;
+};
+
+// Pool<T> keeps the objects of the @pool class T that destroy gave back, for create to reuse. It makes at most
+// capacity objects, or any number with 0, and with strict, prints an error when it's full. It's thread-safe, and each
+// operation is O(1). The resting objects are in a list of chunks of fixed size, so that a pool that grows never moves
+// them, and taking and giving back only touch the last chunk. Chunks are kept once made.
+template <typename T>
+class Pool {
+public:
+	Pool(int64_t p_capacity, bool p_strict) :
+			capacity_(p_capacity), strict_(p_strict) {}
+	~Pool() {
+		for (Chunk *chunk = first_.next; chunk;) {
+			delete std::exchange(chunk, chunk->next);
+		}
+	}
+
+	// take returns a resting object, after running its @recycle ctor, or a new object, or null when full.
+	T *take() {
+		T *object = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(mutex_);
+			if (!hooked_) {
+				hooked_ = true;
+				on_unload([this] { clear(); });
+			}
+			object = pop();
+			if (!object && capacity_ > 0 && alive_ >= capacity_) {
+				if (strict_) {
+					ERR_PRINT(vformat("GD++ object pool overflow for class `%s`, with %d objects.", T::get_class_static(), capacity_));
+				}
+				return nullptr;
+			}
+			if (!object) {
+				alive_++;
+			}
+		}
+		if (object) {
+			object->_gdpp_recycle_ctor();
+			object->request_ready(); // So that it gets ready again when it next enters the tree, like a new node.
+			return object;
+		}
+		if (!(object = make<T>())) {
+			std::lock_guard<std::mutex> lock(mutex_);
+			alive_--;
+			return nullptr;
+		}
+		object->_gdpp_pool_slot.owned = true;
+		return object;
+	}
+
+	// give keeps p_object, after running its @recycle dtor and removing it from the tree.
+	void give(T *p_object) {
+		ERR_FAIL_COND_MSG(p_object->_gdpp_pool_slot.cell, vformat("An object of %s was destroyed twice.", T::get_class_static()));
+		p_object->_gdpp_recycle_dtor();
+		if (Node *parent = p_object->get_parent()) {
+			parent->remove_child(p_object);
+		}
+		std::lock_guard<std::mutex> lock(mutex_);
+		push(p_object);
+	}
+
+	// forget drops p_object, which is being freed. A resting one's cell gets the last resting object.
+	void forget(T *p_object) {
+		std::lock_guard<std::mutex> lock(mutex_);
+		alive_--;
+		if (T **cell = p_object->_gdpp_pool_slot.cell) {
+			if (T *last = pop(); last != p_object) {
+				*cell = last;
+				last->_gdpp_pool_slot.cell = cell;
+			}
+		}
+	}
+
+private:
+	static constexpr int64_t CHUNK_SIZE = 64;
+	struct Chunk {
+		T *items[CHUNK_SIZE];
+		Chunk *prev = nullptr;
+		Chunk *next = nullptr;
+	};
+
+	// pop removes the last resting object and returns it, or null if there's none.
+	T *pop() {
+		if (count_ == 0) {
+			if (!last_->prev) {
+				return nullptr;
+			}
+			last_ = last_->prev;
+			count_ = CHUNK_SIZE;
+		}
+		T *object = last_->items[--count_];
+		object->_gdpp_pool_slot.cell = nullptr;
+		return object;
+	}
+
+	// push adds p_object to the resting objects.
+	void push(T *p_object) {
+		if (count_ == CHUNK_SIZE) {
+			if (!last_->next) {
+				last_->next = new Chunk;
+				last_->next->prev = last_;
+			}
+			last_ = last_->next;
+			count_ = 0;
+		}
+		T **cell = &last_->items[count_++];
+		*cell = p_object;
+		p_object->_gdpp_pool_slot.cell = cell;
+	}
+
+	// clear frees the resting objects, before the library is unloaded. Each one's destructor forgets it.
+	void clear() {
+		while (T *object = peek()) {
+			memdelete(object);
+		}
+	}
+
+	T *peek() {
+		std::lock_guard<std::mutex> lock(mutex_);
+		if (count_ > 0) {
+			return last_->items[count_ - 1];
+		}
+		return last_->prev ? last_->prev->items[CHUNK_SIZE - 1] : nullptr;
+	}
+
+	std::mutex mutex_;
+	int64_t capacity_;
+	bool strict_;
+	bool hooked_ = false; // Whether clear runs on unload.
+	int64_t alive_ = 0; // The objects it made that aren't freed, resting or in use.
+	Chunk first_;
+	Chunk *last_ = &first_; // The chunk of the last resting object, or the first chunk if there's none.
+	int64_t count_ = 0; // The resting objects in last_.
+};
+
+// has_pool<T> is true for the @pool class T, but not for classes that extend it.
+template <typename T, typename = void>
+struct has_pool : std::false_type {};
+template <typename T>
+struct has_pool<T, std::void_t<decltype(T::_gdpp_pool)>> : std::is_same<decltype(T::_gdpp_pool), Pool<T>> {};
+
+// is_extern<T> is true for externs.
+template <typename T, typename = void>
+struct is_extern : std::false_type {};
+template <typename T>
+struct is_extern<T, std::void_t<decltype(T::gdpp_name)>> : std::true_type {};
+
+template <typename>
+inline constexpr bool always_false = false;
+
+// create creates an object of the class T, which `create T` calls: it takes one from T's pool for a @pool class, and
+// returns an Ext<T> for an extern, a Ref<T> for a refcounted class, and a T * otherwise, an instance of T's scene for
+// a @scene class.
+template <typename T>
+auto create() {
+	if constexpr (has_pool<T>::value) {
+		return T::_gdpp_pool.take();
+	} else if constexpr (is_extern<T>::value) {
+		return create_ext<T>();
+	} else if constexpr (std::is_base_of_v<RefCounted, T>) {
+		return Ref<T>(memnew(T));
+	} else {
+		return make<T>();
+	}
+}
+
+// destroy deletes an object, which `destroy x` calls: it gives an object that a pool made back to the pool, and
+// deletes others. It does nothing for null. Refcounted objects free themselves, so it doesn't take them.
+template <typename T>
+void destroy(T *p_object) {
+	if (!p_object) {
+		return;
+	}
+	if constexpr (has_pool<T>::value) {
+		if (p_object->_gdpp_pool_slot.owned) {
+			T::_gdpp_pool.give(p_object);
+			return;
+		}
+	}
+	memdelete(p_object);
+}
+template <typename T>
+void destroy(ExtPtr<T> p_object) {
+	if (p_object) {
+		memdelete(p_object.base());
+	}
+}
+template <typename T>
+void destroy(const Ref<T> &) {
+	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
+}
+template <typename T>
+void destroy(const ExtRef<T> &) {
+	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
 
 inline int64_t now_usec() {
@@ -752,10 +1004,6 @@ using gdpp::ExtRef;
 #endif
 #define GDPP_ASSERT_VOID(m_text, ...) GDPP_ASSERT_(m_text, return, __VA_ARGS__)
 #define GDPP_ASSERT_VALUE(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::Default{}, __VA_ARGS__)
-
-// memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for externs.
-#define memnew_ext(m_class) gdpp::memnew_ext<m_class>()
-#define memdelete_ext(m_object) gdpp::memdelete_ext(m_object)
 
 namespace godot {
 

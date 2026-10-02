@@ -1,0 +1,12 @@
+@pool
+class_name A
+extends Node
+
+@recycle dtor {
+}
+
+ctor {
+}
+
+@recycle dtor {
+}

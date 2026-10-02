@@ -1,0 +1,3 @@
+@scene("scenes/a.tscn")
+class_name A
+extends Node

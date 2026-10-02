@@ -1,0 +1,32 @@
+@pool(100)
+class_name Bullet
+extends Area3D
+
+var speed: float = 20.0
+
+ctor {
+  gd::print("Created.");
+}
+
+@recycle ctor {
+  speed = 20.0;
+}
+
+@recycle dtor {
+  gd::print("Kept for later.");
+}
+
+class Gun {
+  extends Node3D
+
+  func fire() -> void {
+    auto bullet = create Bullet;
+    if (bullet) {
+      add_child(bullet);
+    }
+  }
+
+  func _on_hit(bullet: Bullet) -> void {
+    destroy bullet;
+  }
+}

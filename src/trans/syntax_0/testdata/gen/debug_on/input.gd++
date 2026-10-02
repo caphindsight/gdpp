@@ -28,7 +28,7 @@ func take_damage(amount: int, mood: Mood = Mood::ANGRY) -> bool {
 
 @static
 func create() -> Player {
-  return memnew(Player);
+  return create Player;
 }
 
 @const

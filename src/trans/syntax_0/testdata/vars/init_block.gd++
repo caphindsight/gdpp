@@ -1,5 +1,5 @@
 class_name Test
 var n: Node3D = {
-  Node3D* res = memnew(Node3D);
+  Node3D* res = create Node3D;
   return res;
 }

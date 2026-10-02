@@ -345,18 +345,20 @@ File: @36:1
                 return amount * 2;
 
       - @336:1
-        Ctor: @336:6
-          TextPos: 336:7
-          Text: |
+        Ctor: @336:1
+          Body: @336:6
+            TextPos: 336:7
+            Text: |
 
-              gd::print("This message shows up every time a MyNode is created.");
+                gd::print("This message shows up every time a MyNode is created.");
 
       - @340:1
-        Dtor: @340:6
-          TextPos: 340:7
-          Text: |
+        Dtor: @340:1
+          Body: @340:6
+            TextPos: 340:7
+            Text: |
 
-              gd::print("This message shows up every time a MyNode is deleted.");
+                gd::print("This message shows up every time a MyNode is deleted.");
 
       - @348:1
         Signal: @348:1
@@ -405,7 +407,7 @@ File: @36:1
               TextPos: 376:29
               Text: |
 
-                  Node3D* res = memnew(Node3D);
+                  Node3D* res = create Node3D;
                   add_child(res);
                   return res;
 

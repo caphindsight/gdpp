@@ -80,7 +80,16 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		if c.dtor != nil {
 			w.block(c.dtor, "\t{", "}", assertVoid)
 		}
+		if c.pool != nil {
+			w.ln("\tif (_gdpp_pool_slot.owned) {")
+			w.ln("\t\t_gdpp_pool.forget(this);")
+			w.ln("\t}")
+		}
 		w.ln("}")
+	}
+	if c.pool != nil {
+		recycler(w, c, "ctor", c.recycleCtor)
+		recycler(w, c, "dtor", c.recycleDtor)
 	}
 	if c.needsNotification() {
 		w.ln("")
@@ -151,6 +160,18 @@ func (u *unit) initializers(w *writer, c *classModel, onready bool, indent strin
 			w.user(init.Pos, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
 		}
 	}
+}
+
+// recycler writes the method of @pool class c that its pool calls when it reuses an object, for the keyword ctor, or
+// keeps one, for dtor: it runs body, the @recycle block, if any.
+func recycler(w *writer, c *classModel, keyword string, body *Block) {
+	w.ln("")
+	w.ln("void %s::_gdpp_recycle_%s() {", c.name, keyword)
+	guard(w, c.gameOnly, "")
+	if body != nil {
+		w.block(body, "\t{", "}", assertVoid)
+	}
+	w.ln("}")
 }
 
 // guard writes, if on, the check of @game_only code that returns right away, with a default value, when it's
@@ -589,6 +610,8 @@ func (u *unit) sourceNames() []string {
 		}
 		code(c.ctor)
 		code(c.dtor)
+		code(c.recycleCtor)
+		code(c.recycleDtor)
 		for _, n := range c.notifs {
 			code(n.body)
 		}

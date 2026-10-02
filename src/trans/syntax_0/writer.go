@@ -59,6 +59,7 @@ func assertFor(void bool) string {
 //   - `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
 //   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
 //   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
+//   - `create T` and `destroy x` become `gdpp::create<T>()` and `gdpp::destroy(x)`,
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
 //   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`,
@@ -127,14 +128,37 @@ func cpp(code, assert string) string {
 			i = cond - 1 // The condition may hold more rewrites.
 			continue
 		}
-		if ts[i].Type == tokIdent && asyncWords[ts[i].Value] {
+		if ts[i].Type == tokIdent && ts[i].Value == "create" && !isMember(ts, i) {
+			if j := skipSpace(ts, i+1); j < len(ts) && ts[j].Type == tokIdent {
+				end := j + 1
+				for end+2 < len(ts) && isPunct(ts[end], ":") && isPunct(ts[end+1], ":") && ts[end+2].Type == tokIdent {
+					end += 3
+				}
+				// Drop the spaces and the type, keeping their newlines so the lines still match.
+				var sb strings.Builder
+				for k := i + 1; k < end; k++ {
+					if k >= j {
+						sb.WriteString(ts[k].Value)
+					}
+					out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
+				}
+				out[i] = "gdpp::create<" + sb.String() + ">()"
+				i = end - 1
+				continue
+			}
+		}
+		if ts[i].Type == tokIdent && (asyncWords[ts[i].Value] || ts[i].Value == "destroy" && !isMember(ts, i)) {
 			j := skipSpace(ts, i+1)
 			if end := postfixEnd(ts, j); end > j {
 				// Drop the keyword and the spaces after it, but keep a line break and the indentation after it.
 				for k := i; k < j && ts[k].Type != tokNewline; k++ {
 					out[k] = ""
 				}
-				out[end-1] += "." + ts[i].Value + "()"
+				if ts[i].Value == "destroy" {
+					out[i], out[end-1] = "gdpp::destroy(", out[end-1]+")"
+				} else {
+					out[end-1] += "." + ts[i].Value + "()"
+				}
 				i = j - 1 // The operand may hold more rewrites, e.g. in a call's arguments.
 				continue
 			}

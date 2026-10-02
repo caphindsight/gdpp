@@ -1,0 +1,4 @@
+input.gd++:1:1: Annotation @scene needs one argument: the scene's path, as a string.
+ 1 | @scene
+   | ^^^^^^
+Hint: E.g. "@scene(\"res://bullet.tscn\")".

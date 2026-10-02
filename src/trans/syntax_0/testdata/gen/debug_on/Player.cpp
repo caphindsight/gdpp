@@ -78,7 +78,7 @@ Player *Player::create() {
 	return _gdpp_trace.ret([&]() -> Player * {
 #line 30 "input.gd++"
 
-  return memnew(Player);
+  return gdpp::create<Player>();
 
 #line 84 "Player.cpp"
 	}());

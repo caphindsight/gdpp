@@ -102,7 +102,7 @@ func snap() -> void {
 - `terrain.base()` is the object as its base class, `Node3D *`, for everything the base class can do, e.g. `get_position()`.
 - `@export var terrain: Terrain` shows a node picker that only offers `Terrain` nodes. Connecting objects of different packages in the editor, rather than in code, is the usual way, and so is connecting signals: connect the terrain's `changed` signal to the car's `snap` in the Node dock. The extern doesn't need to declare `changed` for that, only for code that emits it.
 
-To create objects of the other package in code, use `memnew_ext(Terrain)`. See `gd++ man externs`.
+To create objects of the other package in code, use `create Terrain`. See `gd++ man externs`.
 
 # 5. Keep the extern in step
 

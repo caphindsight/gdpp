@@ -94,7 +94,7 @@ void MyNode::_notification(int WHAT) {
 #line 95 "MyNode.cpp"
 #line 376 "input.gd++"
 		child_node_2 = [&]() -> Node3D * {
-  Node3D* res = memnew(Node3D);
+  Node3D* res = gdpp::create<Node3D>();
   add_child(res);
   return res;
 }();

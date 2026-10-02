@@ -23,7 +23,7 @@ func regenerate() -> void {
     return;
   }
   for (int64_t i = 0; i < 20; i++) {
-    MeshInstance3D *rock = memnew(MeshInstance3D);
+    MeshInstance3D *rock = create MeshInstance3D;
     rock->set_mesh(mesh);
     rock->set_position(Vector3(gd::randf_range(-5, 5), 0, gd::randf_range(-5, 5)));
     add_child(rock);
@@ -76,7 +76,7 @@ func scare_rocks() -> void {
 
 In debug builds, which the editor loads, a `@game_only` function returns right away in the editor. Engine functions like `_process` can't be `@game_only`, so put the game's part in a function of its own, like here. Anywhere else, `Engine::get_singleton()->is_editor_hint()` tells whether the code runs in the editor. See "@game_only" in `gd++ man classes`.
 
-The same goes for other classes: a tool class that creates objects of a runtime class, e.g. with `memnew`, runs their code in the editor. Mark such classes `@game_only` if their code must never run there.
+The same goes for other classes: a tool class that creates objects of a runtime class, e.g. with `create`, runs their code in the editor. Mark such classes `@game_only` if their code must never run there.
 
 # 4. Warn about wrong settings
 

@@ -1,0 +1,4 @@
+input.gd++:1:7: A pool's size must be a positive integer.
+ 1 | @pool(0)
+   |       ^
+Hint: E.g. "@pool(100)".

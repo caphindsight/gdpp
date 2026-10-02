@@ -62,7 +62,7 @@ Mood Player::_gdpp_default_take_damage_mood() {
 Player *Player::create() {
 #line 30 "input.gd++"
 
-  return memnew(Player);
+  return gdpp::create<Player>();
 
 #line 68 "Player.cpp"
 }
