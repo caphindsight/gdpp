@@ -3,8 +3,7 @@ gd++ ls: show a project overview
 # Synopsis
 
 ```sh
-gd++ ls [PATH] [--deps]
-gd++ ls (-l | -a)
+gd++ ls [PATH] [--deps] [-l | -a]
 ```
 
 # Description
@@ -16,16 +15,16 @@ It's the quickest way to check a project's state, e.g. after cloning it: it show
 # Options
 
 PATH
-  Expand the package that contains this path. Default: the current directory.
+  Show the project that contains this path, and expand the package that contains it. Default: the current directory.
 
 --deps
   List every dependency in the caches, instead of counting them.
 
 -l, --pkgs
-  Expand all packages. Can't be used with PATH.
+  Expand all packages.
 
 -a, --all
-  Show all details, like `--deps` and `--pkgs` together. Can't be used with PATH.
+  Show all details, like `--deps` and `--pkgs` together.
 
 # Output
 
@@ -63,7 +62,7 @@ To fix: gd++ fetch --missing
 
 The parts:
 
-- Project: the name from `project.godot`, the project's id (its directory name) in brackets, the Godot version from `project.godot`, and the `vcs` setting from `gd++proj.toml`.
+- Project: the name from `project.godot`, the project's id (its directory name) in brackets, the Godot version from `project.godot`, and the `vcs` setting from `gd++proj.toml`. With `-a`, also "Manage presets": the `presets` setting from `gd++proj.toml`, "yes" or "no" (see `gd++ man projects`).
 - Dependencies: per kind, how many are checked in, cached (in the ephemeral cache) and unused (named by no package). With `--deps`, one row per dependency, newest first, with its cache and whether it's unused.
 - Package: the package's path, and for the root package, its id in brackets. An expanded package shows its bindings and spec, marked "missing" if the project doesn't have them, its GD++ syntax, marked "(nightly, not for production)" if it's 0, its C++ standard, class prefix and quit timeout (see `gd++ man packages`), and its classes.
 - Classes: grouped by where they're declared. First come the C++ classes from `gd++pkg.toml`, in order, each with its header. Then come the classes of each GD++ file, in order, each with its base class. Each class is followed by its tags: `@tool` (it runs in the editor too, and without it, it's a runtime class), `@game_only` and `@icon`, from its annotations, or for a C++ class, from `gd++pkg.toml`. Annotations for debugging, like `@trace` and `@profile`, aren't shown. A missing header or icon is marked "(missing)", and a class declared twice "declared twice". A GD++ file with errors gets a line of its own at the end, since its classes can't be read: run `gd++ build`, or `gd++ trans` on the file, to see the error.
@@ -80,6 +79,7 @@ The output goes to stdout, so you can save it or search it, e.g. `gd++ ls -a > o
 gd++ ls                  # the project, with the package you're in expanded
 gd++ ls tools            # with res://tools expanded
 gd++ ls -a               # everything
+gd++ ls -a ~/my_game     # everything, from outside the project
 ```
 
 # See also

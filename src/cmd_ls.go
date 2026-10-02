@@ -12,7 +12,7 @@ import (
 // dependencies and its packages. It expands the package containing the path,
 // or the only package, and lists the others in one line each.
 type CmdLs struct {
-	Path string `arg:"positional" help:"expand the package containing this path [default: the current directory]"`
+	Path string `arg:"positional" help:"show the project containing this path, expanding its package [default: the current directory]"`
 	All  bool   `arg:"-a,--all" help:"show all details"`
 	Deps bool   `arg:"--deps" help:"show project dependencies"`
 	Pkgs bool   `arg:"-l,--pkgs" help:"expand all packages"`
@@ -42,7 +42,6 @@ type lsClass struct {
 
 func (c *CmdLs) Run() {
 	all := c.Pkgs || c.All
-	Assert(!all || c.Path == "", "Invalid arguments: -l/--pkgs and -a/--all cannot be used with a path.")
 	path := Cwd()
 	if c.Path != "" {
 		path = ParsePath(c.Path)
@@ -59,7 +58,7 @@ func (c *CmdLs) Run() {
 		}
 		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: expanded, Classes: classes})
 	}
-	PrintResult(lsProject(p, pkgs, c.Deps || c.All))
+	PrintResult(lsProject(p, pkgs, c.Deps || c.All, c.All))
 }
 
 // lsClasses returns the classes of the package: those in its config, then
@@ -111,15 +110,20 @@ func lsSep() string             { return Styled(unicodeOr("  •  ", "  *  "), B
 func lsMissing(s string) string { return Styled(s, Red) }
 
 // lsProject renders the overview of p and its packages. With deps, it lists
-// every dependency instead of counting them.
-func lsProject(p Project, pkgs []lsPackage, deps bool) string {
-	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(p.Caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
+// every dependency instead of counting them. With all, it shows all settings.
+func lsProject(p Project, pkgs []lsPackage, deps, all bool) string {
+	return lsSummary(p, all) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(p.Caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
 }
 
-// lsSummary renders the project's name and settings.
-func lsSummary(p Project) string {
+// lsSummary renders the project's name and settings. Only with all, it shows
+// the rarely changed ones.
+func lsSummary(p Project, all bool) string {
+	rows := [][]string{{lsKey("Godot"), p.GodotVersion}, {lsKey("VCS"), p.Config.VCS}}
+	if all {
+		rows = append(rows, []string{lsKey("Manage presets"), map[bool]string{true: "yes", false: "no"}[p.Config.Presets]})
+	}
 	return Styled("Project:", Bold, BrightBlue) + " " + Styled(p.Name, Bold, Cyan) + " " + Styled("["+p.Id+"]", Gray) + "\n" +
-		AlignColumns([][]string{{lsKey("Godot"), p.GodotVersion}, {lsKey("VCS"), p.Config.VCS}}, "  ")
+		AlignColumns(rows, "  ")
 }
 
 // lsDeps renders the cached dependencies: with deps, one row each,

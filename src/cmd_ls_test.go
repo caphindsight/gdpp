@@ -5,7 +5,6 @@ package main
 
 import (
 	"maps"
-	"os"
 	"strings"
 	"testing"
 )
@@ -45,16 +44,26 @@ func TestLsCmd(t *testing.T) {
 }
 
 func TestLsCmdDeps(t *testing.T) {
-	want := lsHeader +
+	deps := "" +
 		"  Godot C++ bindings:  10.0.0-stable  cached\n" +
 		"                       9.1.0-stable   checked in\n" +
 		"  Godot API specs:     4.3-stable     cached\n" +
 		"  Godot engines:       none\n"
-	for name, c := range map[string]CmdLs{"deps": {Deps: true}, "all": {All: true}} {
+	allHeader := "" +
+		"Project: My \"Game\" [my_game]\n" +
+		"  Godot:           4.3\n" +
+		"  VCS:             none\n" +
+		"  Manage presets:  yes\n" +
+		"\n" +
+		"Dependencies:\n"
+	for name, c := range map[string]struct {
+		cmd  CmdLs
+		want string
+	}{"deps": {CmdLs{Deps: true}, lsHeader + deps}, "all": {CmdLs{All: true}, allHeader + deps}} {
 		t.Run(name, func(t *testing.T) {
 			withLsProject(t)
-			if out := captureStdout(t, c.Run); out != want {
-				t.Errorf("output = %q, want %q", out, want)
+			if out := captureStdout(t, c.cmd.Run); out != c.want {
+				t.Errorf("output = %q, want %q", out, c.want)
 			}
 		})
 	}
@@ -65,6 +74,15 @@ func TestLsCmdVCS(t *testing.T) {
 	NewPath("/games/my_game").Cd(projectConfigFileName).WriteString(`vcs = "git"`)
 	out := captureStdout(t, (&CmdLs{}).Run)
 	if want := "  Godot:  4.3\n  VCS:    git\n"; !strings.Contains(out, want) {
+		t.Errorf("output = %q, want it to contain %q", out, want)
+	}
+}
+
+func TestLsCmdPresets(t *testing.T) {
+	withLsProject(t)
+	NewPath("/games/my_game").Cd(projectConfigFileName).WriteString("presets = false")
+	out := captureStdout(t, (&CmdLs{All: true}).Run)
+	if want := "  Manage presets:  no\n"; !strings.Contains(out, want) {
 		t.Errorf("output = %q, want it to contain %q", out, want)
 	}
 }
@@ -197,8 +215,6 @@ func TestLsCmdGdppClasses(t *testing.T) {
 }
 
 func TestLsCmdAllPackages(t *testing.T) {
-	withLsPackages(t)
-	out := captureStdout(t, (&CmdLs{Pkgs: true}).Run)
 	want := lsDepsOut +
 		"\n" + lsFooOut +
 		"\n" +
@@ -213,24 +229,13 @@ func TestLsCmdAllPackages(t *testing.T) {
 		strings.NewReplacer("foo", "zed", "Foo", "Zed").Replace(lsFooOut) +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
-	if out != want {
-		t.Errorf("output = %q, want %q", out, want)
-	}
-}
-
-func TestLsCmdInvalidArgs(t *testing.T) {
-	for name, c := range map[string]CmdLs{"pkgs": {Path: "foo", Pkgs: true}, "all": {Path: "foo", All: true}} {
-		t.Run(name, func(t *testing.T) {
-			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-				isTTY = false
-				c.Run()
-				return
-			}
-			out, code := runFailHelper(t, t.Name())
-			if want := "[x] Invalid arguments: -l/--pkgs and -a/--all cannot be used with a path.\n"; code != 1 || out != want {
-				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
-			}
-		})
+	// With a path, from outside the project.
+	for _, c := range []struct{ cwd, path string }{{"/games/my_game", ""}, {"/games", "my_game/foo"}} {
+		withLsPackages(t)
+		fsys.(*memFS).cwd = c.cwd
+		if out := captureStdout(t, (&CmdLs{Path: c.path, Pkgs: true}).Run); out != want {
+			t.Errorf("cwd %s, path %q: output = %q, want %q", c.cwd, c.path, out, want)
+		}
 	}
 }
 
@@ -276,7 +281,7 @@ func TestLsPackages(t *testing.T) {
 			"  Godot API specs:     4.3-stable     cached\n" +
 			"  Godot engines:       none\n" + pkgWant},
 	} {
-		if got := lsProject(LoadProject(Cwd()), pkgs, c.deps); got != c.want {
+		if got := lsProject(LoadProject(Cwd()), pkgs, c.deps, false); got != c.want {
 			t.Errorf("deps %v: output = %q, want %q", c.deps, got, c.want)
 		}
 	}
