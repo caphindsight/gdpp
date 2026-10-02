@@ -40,7 +40,7 @@ assert target != nullptr;
 ```
 
 gdpp::create<T>() and gdpp::destroy(OBJECT)
-  What `create T` and `destroy OBJECT` become. `create` creates an object of the class `T`: it takes one from the pool of a `@pool` class, and returns an `Ext<T>` for an extern, a `Ref<T>` for a refcounted class, and a `T *` for other classes, an instance of the class's scene for a `@scene` class. `destroy` gives an object that a pool made back to its pool, and deletes other objects. It does nothing with null, and doesn't compile for a `Ref` or an `ExtRef`. See `gd++ man classes`.
+  What `create T` and `destroy OBJECT` become. `create` creates an object of the class `T`: it takes one from the pool of a `@pool` class, and returns an `Ext<T>` for an extern, a `Ref<T>` for a refcounted class, and a `T *` for other classes, an instance of the class's scene for a `@scene` class. `destroy` gives an object that a pool made back to its pool, and deletes other objects. It does nothing with null, and doesn't compile for a `Ref` or an `ExtRef`. Both are thread-safe: on threads other than the main one, `destroy` leaves nodes that are in the scene tree to the main thread, at the end of the frame. See `gd++ man classes`.
 
 gdpp::Pool<T>
   The pool of the `@pool` class `T`, which `create` and `destroy` use: a static member of `T`. It's thread-safe, and takes constant time. See `gd++ man pools`.

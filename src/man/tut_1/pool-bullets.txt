@@ -1,0 +1,176 @@
+Tutorial: reuse bullets with an object pool
+
+A game that fires many bullets creates and deletes nodes all the time: each new bullet allocates memory, and Godot sets up the node and all of its children. An object pool avoids this: instead of deleting a bullet, it keeps it, and reuses it for the next shot. This tutorial builds bullets that hit enemies, deal damage and destroy themselves, and then turns them into a pool. It assumes a project that builds, as in `gd++ man tour`.
+
+# The example
+
+A gun fires bullets. A bullet flies straight ahead. When it hits an enemy, it deals damage and destroys itself. If it hits nothing, it destroys itself after two seconds.
+
+# 1. Make the bullet's scene
+
+In the editor, make a scene `bullet.tscn` in the package. Its root is an `Area3D`, with a `MeshInstance3D` and a `CollisionShape3D` as children. Then write the `Bullet` class:
+
+```gd++
+@scene("pkg://bullet.tscn")
+class_name Bullet
+extends Area3D
+
+@export var speed: float = 40.0
+@export var damage: int = 10
+@export var lifetime: float = 2.0
+
+var age: float = 0.0
+var active: bool = true
+
+func _physics_process(delta: float) -> void {
+  translate(Vector3(0, 0, -speed * delta));
+  age += delta;
+  if (age >= lifetime) {
+    expire();
+  }
+}
+
+func _on_body_entered(body: Node3D) -> void {
+  Enemy *enemy = body as Enemy *;
+  if (enemy) {
+    enemy->take_damage(damage);
+    expire();
+  }
+}
+
+func expire() -> void {
+  if (active) {
+    active = false;
+    remove();
+  }
+}
+
+@deferred
+func remove() -> void {
+  destroy this;
+}
+```
+
+A bullet destroys itself in `expire`, when it hits an enemy or its lifetime runs out. Step 2 explains why it takes two functions.
+
+Build the package, and change the type of the scene's root to `Bullet`. Connect its `body_entered` signal to `_on_body_entered` in the Node dock. `@scene` makes `create Bullet` instantiate `bullet.tscn`, so each bullet comes with its mesh and collision shape. See "@scene" in `gd++ man classes`.
+
+The enemy takes the damage:
+
+```gd++
+class_name Enemy
+extends CharacterBody3D
+
+@export var health: int = 100
+
+func take_damage(amount: int) -> void {
+  health -= amount;
+  if (health <= 0) {
+    queue_free();
+  }
+}
+```
+
+# 2. Destroy the bullet safely
+
+`expire` could just say `destroy this;`, but two details stop it:
+
+- `body_entered` comes in the middle of the physics engine's work, which doesn't allow removing a collision object from the tree. `destroy` can't tell when that's the case, so `remove` is `@deferred`: every call runs at the end of the frame, when it's safe. See "@deferred" in `gd++ man functions`.
+- A bullet can hit two enemies in the same frame, or hit one just as its lifetime runs out. Then `expire` runs twice, but `active` makes sure that the bullet is destroyed only once. Destroying an object twice is a bug, which prints an error.
+
+# 3. Fire bullets
+
+The gun creates a bullet, adds it to the level, and places it at the gun's muzzle:
+
+```gd++
+class_name Gun
+extends Node3D
+
+func fire() -> void {
+  Bullet *bullet = create Bullet;
+  get_tree()->get_current_scene()->add_child(bullet);
+  bullet->set_global_transform(get_global_transform());
+}
+```
+
+The bullet is added to the level, not to the gun, so that it doesn't move with the gun. Run the game: bullets fly, hit enemies, and disappear. For now, `destroy` deletes each bullet, and `create` makes a new one for each shot.
+
+# 4. Pool the bullets
+
+Add `@pool` to the class:
+
+```gd++
+@pool
+@scene("pkg://bullet.tscn")
+class_name Bullet
+extends Area3D
+```
+
+Nothing else changes: `create` and `destroy` already handle pools. Now `destroy` doesn't delete the bullet. Instead, it removes the bullet from the tree and keeps it in the pool, and the next `create` reuses it. The pool only instantiates the scene when it has no bullet to reuse. A bullet that's out of the tree gets no `_physics_process` and no collisions, so a bullet waiting in the pool costs nothing. See `gd++ man pools`.
+
+# 5. Reset reused bullets
+
+Run the game again, and fire a few times: the bullets of later shots disappear right away, or don't hit anything. That's because a reused bullet keeps its variables: `age` is still past its `lifetime`, and `active` is still `false`. Variables get their initial values only when an object is actually created, not when it's reused.
+
+A `@recycle ctor` runs each time the pool reuses an object. Reset the bullet there:
+
+```gd++
+@recycle ctor {
+  age = 0.0;
+  active = true;
+}
+```
+
+The plain `ctor` and `dtor` still run only when a bullet is actually created or deleted. A `@recycle dtor` runs when a bullet is returned to the pool, e.g. to stop a sound or a particle effect. See "Two kinds of ctor and dtor" in `gd++ man pools`.
+
+To see the pool at work, print a line in the plain `ctor`:
+
+```gd++
+ctor {
+  gd::print("A new bullet.");
+}
+```
+
+The first shots print it. Once enough bullets are in the pool, firing prints nothing: every shot reuses a bullet.
+
+# 6. Limit the pool's size
+
+`@pool` has no limit: if the gun fires faster than bullets expire, the pool creates as many bullets as needed. To cap the number of bullets, give the pool a size:
+
+```gd++
+@pool(200)
+```
+
+Now the pool can hold up to 200 bullets, counting both those in use and those waiting in the pool. Once all 200 are in use, `create` returns `nullptr`, so the gun must check for it:
+
+```gd++
+func fire() -> void {
+  Bullet *bullet = create Bullet;
+  if (!bullet) {
+    return;    // Too many bullets in flight: skip this shot.
+  }
+  get_tree()->get_current_scene()->add_child(bullet);
+  bullet->set_global_transform(get_global_transform());
+}
+```
+
+Using the null pointer instead would crash the game. If running out of bullets is a bug, write `@pool(200, "strict")`: then a full pool also logs an error.
+
+# 7. Measure
+
+A pool pays off when objects come and go often. To see what it saves, put `@profile` on `fire`, and build with profiling on:
+
+```gd++
+@profile
+func fire() -> void { ... }
+```
+
+```sh
+gd++ build --opt --profile all --print
+```
+
+Compare the time of `fire` with and without `@pool`. See `gd++ man optimize`.
+
+# See also
+
+`gd++ man pools`, `gd++ man classes`, `gd++ man lifecycle`, `gd++ man functions`, `gd++ man optimize`.

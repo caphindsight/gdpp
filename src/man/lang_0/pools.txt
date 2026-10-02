@@ -76,7 +76,7 @@ With `@scene`, the pool instantiates the class's scene for each new object. A re
 
 # Threads and speed
 
-`create` and `destroy` are thread-safe, and take constant time: the pool stores its objects in a list of fixed-size chunks, so it never has to move them. However, Godot only lets the main thread change the scene tree, so destroy nodes that are in the tree on the main thread, e.g. with `call_deferred`.
+`create` and `destroy` are thread-safe, and take constant time: the pool stores its objects in a list of fixed-size chunks, so it never has to move them. Godot only lets the main thread change the scene tree, so when another thread destroys a node that's in the tree, `destroy` leaves it to the main thread, which destroys it at the end of the frame. Until then, the node stays in the tree and keeps running. A node that's out of the tree is destroyed right away, on any thread.
 
 # Unloading
 
@@ -84,4 +84,4 @@ When the library is unloaded, e.g. when the game quits, the pool deletes the obj
 
 # See also
 
-`gd++ man lifecycle`, `gd++ man classes`, `gd++ man annotations`, `gd++ man runtime`, `gd++ man performance`.
+`gd++ man pool-bullets`, `gd++ man lifecycle`, `gd++ man classes`, `gd++ man annotations`, `gd++ man runtime`, `gd++ man performance`.

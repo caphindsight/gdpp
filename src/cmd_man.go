@@ -48,11 +48,11 @@ var toolManPages = []string{
 // each syntax version N, like langManPages.
 var tutManPages = map[int][]string{
 	0: {
-		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize",
+		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
 		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/upgrade", "tut/custom-godot",
 	},
 	1: {
-		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize",
+		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
 		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/upgrade", "tut/custom-godot",
 	},
 }

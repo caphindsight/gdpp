@@ -398,15 +398,16 @@ func capture(t *testing.T, f **os.File, fn func()) string {
 		t.Fatalf("os.Pipe: %v", err)
 	}
 	*f = w
+	// Read while fn runs, since a pipe only buffers so much: a long output would block fn.
+	done := make(chan []byte)
+	go func() {
+		out, _ := io.ReadAll(r)
+		done <- out
+	}()
 	fn()
 	w.Close()
 	*f = orig
-
-	out, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatalf("io.ReadAll: %v", err)
-	}
-	return string(out)
+	return string(<-done)
 }
 
 // runFailHelper re-execs the test binary to run only the test (or subtest)

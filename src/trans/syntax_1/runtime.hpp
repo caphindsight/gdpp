@@ -19,6 +19,7 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/ref.hpp>
@@ -440,10 +441,11 @@ T *make() {
 }
 
 // PoolSlot is how an object of a @pool class is in its pool: owned tells whether the pool made it, and cell is where
-// it rests in the pool, or null while it's in use.
+// it rests in the pool, or null otherwise.
 template <typename T>
 struct PoolSlot {
 	bool owned = false;
+	bool given = false; // Whether destroy gave it back: it rests in the pool, or is on its way there.
 	T **cell = nullptr;
 };
 
@@ -498,7 +500,11 @@ public:
 
 	// give keeps p_object, after running its @recycle dtor and removing it from the tree.
 	void give(T *p_object) {
-		ERR_FAIL_COND_MSG(p_object->_gdpp_pool_slot.cell, vformat("An object of %s was destroyed twice.", T::get_class_static()));
+		{
+			std::lock_guard<std::mutex> lock(mutex_);
+			ERR_FAIL_COND_MSG(p_object->_gdpp_pool_slot.given, vformat("An object of %s was destroyed twice.", T::get_class_static()));
+			p_object->_gdpp_pool_slot.given = true;
+		}
 		p_object->_gdpp_recycle_dtor();
 		if (Node *parent = p_object->get_parent()) {
 			parent->remove_child(p_object);
@@ -538,6 +544,7 @@ private:
 		}
 		T *object = last_->items[--count_];
 		object->_gdpp_pool_slot.cell = nullptr;
+		object->_gdpp_pool_slot.given = false;
 		return object;
 	}
 
@@ -612,12 +619,53 @@ auto create() {
 	}
 }
 
+template <typename T>
+void destroy(T *p_object);
+template <typename T>
+void destroy(ExtPtr<T> p_object);
+
+// on_main_thread reports whether the calling thread is the main thread, which owns the scene tree.
+inline bool on_main_thread() {
+	OS *os = OS::get_singleton();
+	return os->get_thread_caller_id() == os->get_main_thread_id();
+}
+
+// destroy_later destroys the object of id, unless it's gone, once the main thread gets to it. P is a pointer to it.
+template <typename P>
+void destroy_later(uint64_t p_id) {
+	Object *object = ObjectDB::get_instance(p_id);
+	if constexpr (std::is_pointer_v<P>) {
+		destroy(Object::cast_to<std::remove_pointer_t<P>>(object));
+	} else {
+		destroy(P(Object::cast_to<std::remove_pointer_t<decltype(std::declval<P>().base())>>(object)));
+	}
+}
+
+// defer_destroy reports whether destroy must leave p_object, of type P, to the main thread: it's a node in the scene
+// tree, which only the main thread may change, and this is another thread. Then it schedules destroy_later there.
+template <typename P>
+bool defer_destroy(Object *p_object) {
+	Node *node = Object::cast_to<Node>(p_object);
+	if (!node || !node->is_inside_tree() || on_main_thread()) {
+		return false;
+	}
+	callable_mp_static(&destroy_later<P>).call_deferred(uint64_t(p_object->get_instance_id()));
+	return true;
+}
+
 // destroy deletes an object, which `destroy x` calls: it gives an object that a pool made back to the pool, and
-// deletes others. It does nothing for null. Refcounted objects free themselves, so it doesn't take them.
+// deletes others. It does nothing for null. It's thread-safe: on other threads than the main one, it leaves nodes in
+// the scene tree to the main thread, which destroys them at the end of the frame. Refcounted objects free themselves,
+// so it doesn't take them.
 template <typename T>
 void destroy(T *p_object) {
 	if (!p_object) {
 		return;
+	}
+	if constexpr (std::is_base_of_v<Object, T>) {
+		if (defer_destroy<T *>(p_object)) {
+			return;
+		}
 	}
 	if constexpr (has_pool<T>::value) {
 		if (p_object->_gdpp_pool_slot.owned) {
@@ -629,7 +677,7 @@ void destroy(T *p_object) {
 }
 template <typename T>
 void destroy(ExtPtr<T> p_object) {
-	if (p_object) {
+	if (p_object && !defer_destroy<ExtPtr<T>>(p_object.base())) {
 		memdelete(p_object.base());
 	}
 }
