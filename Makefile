@@ -2,7 +2,7 @@ BINARY_NAME=gd++
 PREFIX?=/usr/local
 BINDIR=$(PREFIX)/bin
 
-.PHONY: build install clean
+.PHONY: build install clean readme
 
 build:
 	go build -o $(BINARY_NAME)
@@ -13,3 +13,6 @@ install: build
 
 clean:
 	rm -f $(BINARY_NAME)
+
+readme: build
+	GDPP=$(CURDIR)/$(BINARY_NAME) readme/render.sh
