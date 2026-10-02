@@ -35,7 +35,7 @@ A declaration's doc comment can come before its annotations or between them, but
   The class's icon in the editor: a string with a `res://` or `pkg://` path. See `gd++ man classes`.
 
 @pool, @pool(SIZE) and @pool(SIZE, "strict")
-  Keep the objects that `destroy` deletes, for `create` to reuse. With SIZE, a positive integer, make at most SIZE objects: `create` returns null once they're all in use, so code must check its result, and with `"strict"`, also prints an error. Only for classes that extend `Node`. See `gd++ man pools`.
+  Instead of deleting objects, `destroy` keeps them in a pool, and `create` reuses them. With SIZE, a positive integer, the pool can hold up to SIZE objects, and `create` returns `nullptr` once all of them are in use, so code must check its result. With `"strict"`, a full pool is also logged as an error. Only for classes that extend `Node`. See `gd++ man pools`.
 
 @scene(PATH)
   Make `create` instantiate the class's scene: a string with a `res://` or `pkg://` path. The scene is loaded once, and its root must be an object of the class. Only for classes that extend `Node`. See `gd++ man classes`.
@@ -49,7 +49,7 @@ A declaration's doc comment can come before its annotations or between them, but
 # ctor and dtor blocks
 
 @recycle
-  In a `@pool` class: a `@recycle ctor` runs when the pool reuses an object, and a `@recycle dtor` when it keeps one, instead of the `ctor` and `dtor`, which only run when an object is really created and deleted. See `gd++ man pools`.
+  In a `@pool` class, a `@recycle ctor` runs when the pool reuses an object, and a `@recycle dtor` runs when the pool keeps one. The plain `ctor` and `dtor` run only when an object is actually created or deleted. See `gd++ man pools`.
 
 # Functions of classes
 

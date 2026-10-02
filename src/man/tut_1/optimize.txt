@@ -131,7 +131,7 @@ func nearest_ally() -> Node3D {
 Other common fixes:
 
 - Use `string_name "name"` for names that code passes over and over, e.g. to `call`, `connect` or `Input`: it makes the `StringName` once. See `gd++ man rewrites`.
-- Give classes whose nodes are created and deleted every few frames, e.g. bullets, a `@pool`, and create and delete them with `create` and `destroy`: the pool reuses the nodes. See `gd++ man pools`.
+- If nodes of a class are created and deleted every few frames, e.g. bullets, mark the class with `@pool`, and create and delete them with `create` and `destroy`. The pool then reuses the nodes. See `gd++ man pools`.
 - Call a script's code once per batch, not once per item.
 - Move heavy work that doesn't need to finish this frame off the main thread. See `gd++ man threads`.
 

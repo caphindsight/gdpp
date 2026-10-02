@@ -37,7 +37,7 @@ func with_health(hp: int) -> Enemy {
 }
 ```
 
-The constructor runs whenever an object is created: by `create` in C++, by `Enemy.new()` in GDScript, and when Godot loads a scene or resource that holds it. The destructor runs when the object is deleted: for nodes, when they're freed, e.g. with `queue_free()`, and for refcounted objects, when the last reference goes away. A `@pool` class can also have `@recycle ctor` and `@recycle dtor` blocks, which run when its pool reuses and keeps an object, see `gd++ man pools`.
+The constructor runs whenever an object is created: by `create` in C++, by `Enemy.new()` in GDScript, and when Godot loads a scene or resource that holds it. The destructor runs when the object is deleted: for nodes, when they're freed, e.g. with `queue_free()`, and for refcounted objects, when the last reference goes away. A `@pool` class can also have `@recycle ctor` and `@recycle dtor` blocks, which run when an object is taken from the pool or returned to it. See `gd++ man pools`.
 
 # What the constructor does
 
@@ -145,7 +145,7 @@ Use the engine functions for their notifications, and `notif` blocks for every o
 
 # Pools
 
-A `@pool` class reuses its objects: `destroy` keeps an object, and `create` takes it again. Its `ctor` and `dtor` still only run when an object is really created and deleted, and its `@recycle ctor` and `@recycle dtor` blocks run when it's reused and kept. See `gd++ man pools`.
+A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run when an object is taken from the pool or returned to it. See `gd++ man pools`.
 
 # See also
 
