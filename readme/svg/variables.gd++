@@ -1,0 +1,8 @@
+var health: int = 100
+var target: Node3D
+var spawn_points: PackedVector3Array = {
+  PackedVector3Array points;
+  points.push_back(Vector3(0, 0, 0));
+  points.push_back(Vector3(10, 0, 5));
+  return points;
+}

@@ -1,0 +1,6 @@
+@profile("ai")
+func find_cover(from: Vector3) -> Vector3 {
+  Vector3 best = from;
+  // ... a costly search ...
+  return best;
+}

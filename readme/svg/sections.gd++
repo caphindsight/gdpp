@@ -1,0 +1,9 @@
+@export_category("Hero")
+@export_group("Stats", "stat_")
+@export var stat_health: int = 100
+@export var stat_mana: int = 50
+@export_subgroup("Luck")
+@export var stat_luck: int = 1
+
+@export_group("Movement")
+@export var speed: float = 5.0

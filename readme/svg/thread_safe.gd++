@@ -1,0 +1,7 @@
+@onready
+var bar: ProgressBar = get_node<ProgressBar>("Bar")
+
+@thread_safe
+func set_progress(percent: int) -> void {
+  bar->set_value(percent);
+}

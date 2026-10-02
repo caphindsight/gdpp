@@ -10,7 +10,7 @@ func spawn(scene: PackedScene, mode: ProcessMode) -> Node3D {
 }
 ```
 
-`as` is a word that GD++ adds to C++: it rewrites `VALUE as T` into `gdpp::cast<T>(VALUE)`, a function of the runtime header. See `gd++ man rewrites`.
+`as` is a rewrite, which GD++ adds to C++: it turns `VALUE as T` into `gdpp::cast<T>(VALUE)`, a function of the runtime header. See `gd++ man rewrites`.
 
 # Precedence
 

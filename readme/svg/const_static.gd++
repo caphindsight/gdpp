@@ -1,0 +1,9 @@
+@const
+func is_alive() -> bool {
+  return health > 0;
+}
+
+@static
+func damage_at(distance: float) -> int {
+  return distance < 2.0 ? 50 : 10;
+}

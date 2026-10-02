@@ -3,37 +3,35 @@
   <img src="gdpp_logo.png" alt="GD++ logo" width="128" align="right">
 </p>
 
-Write Godot games in flavoured C++, without the boilerplate.
+GD++ is a programming language for Godot.
+It compiles to C++, and plugs into Godot through GDExtension.
+It's inspired by the conciseness and simplicity of GDScript.
 
-GD++ is a programming language for Godot. It compiles to C++, and plugs into Godot through GDExtension. It's inspired by the conciseness and simplicity of GDScript.
+GD++ looks like GDScript declarations, with C++ implementation.
+But it is neither GDScript nor C++:
 
-GD++ mixes GDScript and C++, but it is neither GDScript nor C++:
+- Declarations are transpiled into C++ code that targets GDExtension via [godot-cpp](https://github.com/godotengine/godot-cpp).
+- Function bodies are flavoured C++: C++ with a few custom quality of life features.
 
-- Declarations look like GDScript.
-- Function bodies are flavoured C++: C++ with a few custom words, like `emit` to send a signal.
-
-GD++ writes the C++ you would write by hand with godot-cpp: headers, `_bind_methods`, getters, setters, `#include` lines and class registration. Math and loops run 15 to 50 times faster than in GDScript (see `gd++ man performance`).
-
-GD++ comes as one command line tool, `gd++`: the compiler, a build system that downloads godot-cpp for you, and a built-in manual.
+GD++ toolchain comes as one command line tool, `gd++`: the compiler, a build system that downloads required build dependencies for you, and a built-in manual.
 
 > [!NOTE]
-> The code was mostly written by AI, but a senior engineer made all design decisions.
+> **Disclaimer:** The code was mostly written by AI, but a senior engineer made all design decisions.
 
-## A first look
+## Hello World
 
-<a href="readme/player.gd++"><img src="readme/player.svg" alt="GD++ code: the Player class"></a>
+<a href="readme/svg/hello_world.gd++"><img src="readme/svg/hello_world.svg" alt="GD++ code: hello_world"></a>
 
-Save it as `player.gd++` anywhere in a Godot project, and run:
+Save it as `hello_world.gd++` (or any other name with extension any of `.gd++`, `.gdpp` or `.gg`) anywhere in a Godot project, and run:
 
 ```sh
-gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
+gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable  # Replace this with the versions you're using.
 gd++ fetch --missing
 gd++ build
 ```
 
-Open the project in Godot: `Player` is now a node type, like any built-in node. Debug builds hot reload while the editor is open.
-
-To see the C++ that GD++ writes for you, run `gd++ trans player.gd++`.
+Open the project in Godot: `HelloWorldNode` is now a node type.
+Add it to the main scene and run it.
 
 ## Getting started
 
@@ -58,72 +56,219 @@ The full documentation is built into the tool, and matches the version you run. 
 
 ## The language by example
 
-Unlike GDScript, blocks use braces, and every value has a static type. Types are Godot's, e.g. `int`, `Vector3` or `Node3D`. Each one maps to a C++ type, e.g. `int64_t`, `Vector3` and `Node3D *`.
+Unlike GDScript, blocks use braces, and every value has a static type. Types are Godot's, e.g. `int`, `Vector3` or `Node3D`. Each one maps to a C++ type, e.g. `int64_t`, `Vector3` and `Node3D *`. Most examples below show a few members of a class, not whole files.
+
+### Classes
+
+<a href="readme/svg/classes.gd++"><img src="readme/svg/classes.svg" alt="GD++ code: classes"></a>
+
+A file has at most one file-level class, with `class_name`, and any number of inline ones. Without `extends`, a class extends `RefCounted`. See `gd++ man classes`.
+
+### `@tool` classes
+
+<a href="readme/svg/tool.gd++"><img src="readme/svg/tool.svg" alt="GD++ code: tool"></a>
+
+It spins in the editor too. Without `@tool`, the editor runs none of the class's code. See `gd++ man classes`.
+
+### `@game_only` classes
+
+<a href="readme/svg/game_only.gd++"><img src="readme/svg/game_only.svg" alt="GD++ code: game_only"></a>
+
+Its code only ever runs in the game, even if editor code, e.g. of a `@tool` class, creates one. See `gd++ man classes`.
+
+### `@icon`
+
+<a href="readme/svg/icon.gd++"><img src="readme/svg/icon.svg" alt="GD++ code: icon"></a>
+
+`pkg://` paths are relative to the package, and `res://` paths to the project. See `gd++ man classes`.
 
 ### Functions
 
-<a href="readme/functions.gd++"><img src="readme/functions.svg" alt="GD++ code: functions"></a>
+<a href="readme/svg/functions.gd++"><img src="readme/svg/functions.svg" alt="GD++ code: functions"></a>
 
-For GD++'s custom words in C++, see `gd++ man rewrites`. GD++ binds the function, so GDScript can call it too. `gd` is short for `UtilityFunctions`, Godot's global functions.
+The signature resembles GDScript, and the body is flavoured C++. GD++ binds the function, so GDScript can call it too. `gd` is short for `UtilityFunctions`, Godot's global functions. See `gd++ man functions`.
 
-### Variables and properties
+### Variables
 
-<a href="readme/variables.gd++"><img src="readme/variables.svg" alt="GD++ code: variables and properties"></a>
+<a href="readme/svg/variables.gd++"><img src="readme/svg/variables.svg" alt="GD++ code: variables"></a>
 
-### Signals, enums and casts
+An initial value is a C++ expression, or a block that returns it. C++ code uses the fields directly, e.g. `health -= 10;`, and GDScript through their getters and setters. See `gd++ man variables`.
 
-<a href="readme/signals.gd++"><img src="readme/signals.svg" alt="GD++ code: signals, enums and casts"></a>
+### Properties
 
-### Multithreading
+<a href="readme/svg/properties.gd++"><img src="readme/svg/properties.svg" alt="GD++ code: properties"></a>
 
-<a href="readme/threads.gd++"><img src="readme/threads.svg" alt="GD++ code: an @onthread function"></a>
+A `decl` block holds the property's storage. Without `set`, a property is read-only. See `gd++ man variables`.
 
-A call to an `@onthread` function returns right away, with an `Async` task. The task holds the result once it's ready. No frame waits for the search.
+### `@onready`
 
-### Multiplayer
+<a href="readme/svg/onready.gd++"><img src="readme/svg/onready.svg" alt="GD++ code: onready"></a>
 
-<a href="readme/rpc.gd++"><img src="readme/rpc.svg" alt="GD++ code: an @rpc function"></a>
+Like in GDScript, the value is set when the node is ready, so its children exist. See `gd++ man lifecycle`.
 
-`@rpc` takes the same arguments as in GDScript. `rpc` calls the function on other peers.
+### Typed arrays and dictionaries
 
-## All language features
+<a href="readme/svg/typed_collections.gd++"><img src="readme/svg/typed_collections.svg" alt="GD++ code: typed_collections"></a>
 
-Each feature has its page in the manual:
+In C++, they're `TypedArray<Item>` and `TypedDictionary<String, int64_t>`. See `gd++ man types`.
 
-- Classes: file-level with `class_name`, or inline with `class Name { ... }`. See `gd++ man classes`.
-- `@tool` classes: run the class's code in the editor too. See `gd++ man classes`.
-- `@game_only` classes: run the class's code only in the game. See `gd++ man classes`.
-- `@icon`: give a class its icon in the editor. See `gd++ man classes`.
-- Typed arrays and dictionaries: `Array[T]` and `Dictionary[K, V]`. See `gd++ man types`.
-- Casts: `value as T` converts between any two types, and checks downcasts. See `gd++ man cast`.
-- Properties: variables with their own `get` and `set` blocks. See `gd++ man variables`.
-- `@onready` variables: get their values when the node is ready. See `gd++ man lifecycle`.
-- Exports: `@export` and its family, e.g. `@export_range`, show variables in the inspector. See `gd++ man exports`.
-- Inspector sections: `@export_category`, `@export_group` and `@export_subgroup`. See `gd++ man exports`.
-- Signals: `signal name(params)`, sent with `emit name(args)`. See `gd++ man signals`.
-- `@override` functions: override an engine callback, e.g. `_ready`, or a `@virtual` function. See `gd++ man functions`.
-- `@virtual` functions: subclasses and GDScript can override them. `@final` stops that. See `gd++ man functions`.
-- `@const` and `@static` functions. See `gd++ man functions`.
-- Default values: any C++ expression, even a block of code. See `gd++ man functions`.
-- `@deferred` functions: every call runs later, through `call_deferred`. See `gd++ man functions`.
-- `@thread_safe` functions: calls from other threads run later, on the main thread. See `gd++ man functions`.
-- `@onthread` functions: run on a worker thread, and return an `Async` task. See `gd++ man async`.
-- `@rpc` functions: callable over the network, with `rpc name(args)`. See `gd++ man rpc`.
-- Enums and constants: `enum Name { A B C }` and `enum NAME = 42`. See `gd++ man enums`.
-- `@bitfield` enums: values are flags, 1, 2, 4 and so on. See `gd++ man enums`.
-- Extending enums: copy the values of another enum, e.g. `extends Node.ProcessMode`. See `gd++ man enums`.
-- Constructors and destructors: `ctor { ... }` and `dtor { ... }`. See `gd++ man lifecycle`.
-- Notification handlers: `notif(PREDELETE) { ... }`. See `gd++ man lifecycle`.
-- Externs: use classes of other packages, GDExtensions and scripts. See `gd++ man externs`.
-- `@trace`: print calls, variable changes and signals while the game runs. See `gd++ man debugging`.
-- `@profile`: time code, live in the editor's monitors. See `gd++ man debugging`.
-- `decl`, `impl` and `@global` blocks: put any C++ into the generated files. See `gd++ man code`.
-- `import` and `noimport`: adjust the automatic includes. See `gd++ man includes`.
-- Doc comments: `///` and `/** */` become the editor's help. See `gd++ man docs`.
-- `gd_assert`: like GDScript's `assert`, and gone in release builds. See `gd++ man runtime`.
-- `GDPP_STRING_NAME`: a `StringName` created once, for fast calls by name. See `gd++ man runtime`.
+### Casts
 
-`@trace` and `@profile` generate no code unless a build turns them on, e.g. `gd++ build --trace Player`. So you can leave them in your code for good.
+<a href="readme/svg/cast.gd++"><img src="readme/svg/cast.svg" alt="GD++ code: cast"></a>
+
+`as` converts between any two types, like GDScript's `as`. A downcast checks the object's class, and gives null if it doesn't match. See `gd++ man cast`.
+
+### Exports
+
+<a href="readme/svg/exports.gd++"><img src="readme/svg/exports.svg" alt="GD++ code: exports"></a>
+
+The inspector shows them, and scenes save them. GD++ has all of GDScript's export annotations. See `gd++ man exports`.
+
+### Inspector sections
+
+<a href="readme/svg/sections.gd++"><img src="readme/svg/sections.svg" alt="GD++ code: sections"></a>
+
+With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ man exports`.
+
+### Signals
+
+<a href="readme/svg/signals.gd++"><img src="readme/svg/signals.svg" alt="GD++ code: signals"></a>
+
+`emit` is one of GD++'s few rewrites in C++, so that sending a signal looks different from a call. See `gd++ man signals` and `gd++ man rewrites`.
+
+### `@override`
+
+<a href="readme/svg/override.gd++"><img src="readme/svg/override.svg" alt="GD++ code: override"></a>
+
+It overrides an engine callback, or a `@virtual` function. Overriding `_process` or `_physics_process` also turns it on. See `gd++ man functions`.
+
+### `@virtual` and `@final`
+
+<a href="readme/svg/virtual.gd++"><img src="readme/svg/virtual.svg" alt="GD++ code: virtual"></a>
+
+A script that extends `Weapon` can override `_damage`. `@final` stops that for `Sword`. See `gd++ man functions`.
+
+### `@const` and `@static`
+
+<a href="readme/svg/const_static.gd++"><img src="readme/svg/const_static.svg" alt="GD++ code: const_static"></a>
+
+GDScript calls a static function on the class, e.g. `Bomb.damage_at(3.0)`. See `gd++ man functions`.
+
+### Default values
+
+<a href="readme/svg/defaults.gd++"><img src="readme/svg/defaults.svg" alt="GD++ code: defaults"></a>
+
+A default value is a C++ expression, or a block that returns it. See `gd++ man functions`.
+
+### `@deferred`
+
+<a href="readme/svg/deferred.gd++"><img src="readme/svg/deferred.svg" alt="GD++ code: deferred"></a>
+
+Every call, from C++ or GDScript, runs at the end of the frame, through `call_deferred`. See `gd++ man functions`.
+
+### `@thread_safe`
+
+<a href="readme/svg/thread_safe.gd++"><img src="readme/svg/thread_safe.svg" alt="GD++ code: thread_safe"></a>
+
+A call from another thread runs later, on the main thread, where it can change the scene tree. See `gd++ man functions`.
+
+### `@onthread`
+
+<a href="readme/svg/onthread.gd++"><img src="readme/svg/onthread.svg" alt="GD++ code: onthread"></a>
+
+A call to an `@onthread` function runs it on a worker thread, and returns right away, with an `Async` task. `is_done` tells whether the task is done, and `claim` takes its result. No frame waits for the search. See `gd++ man async`.
+
+### `@rpc`
+
+<a href="readme/svg/rpc.gd++"><img src="readme/svg/rpc.svg" alt="GD++ code: rpc"></a>
+
+`@rpc` takes the same arguments as in GDScript. `rpc chat(...)` calls the function on every peer, and `rpc(id) chat(...)` on one. See `gd++ man rpc`.
+
+### Enums and constants
+
+<a href="readme/svg/enums.gd++"><img src="readme/svg/enums.svg" alt="GD++ code: enums"></a>
+
+An enum type belongs to the whole package. In C++, it's an enum class. `enum NAME = VALUE` is an integer constant of the class. See `gd++ man enums`.
+
+### `@bitfield` enums
+
+<a href="readme/svg/bitfield.gd++"><img src="readme/svg/bitfield.svg" alt="GD++ code: bitfield"></a>
+
+The flags count 1, 2, 4 and so on, and the inspector shows a checkbox for each. See `gd++ man enums`.
+
+### Extending enums
+
+<a href="readme/svg/enum_extends.gd++"><img src="readme/svg/enum_extends.svg" alt="GD++ code: enum_extends"></a>
+
+`Mode` copies the values of `Node.ProcessMode`, e.g. `INHERIT` and `ALWAYS`, and adds `EDITOR`. That's also how GD++ code uses an engine enum as a type. See `gd++ man enums`.
+
+### Constructors and destructors
+
+<a href="readme/svg/ctor_dtor.gd++"><img src="readme/svg/ctor_dtor.svg" alt="GD++ code: ctor_dtor"></a>
+
+Neither takes arguments, since Godot creates objects without any. See `gd++ man lifecycle`.
+
+### Notification handlers
+
+<a href="readme/svg/notif.gd++"><img src="readme/svg/notif.svg" alt="GD++ code: notif"></a>
+
+`WHAT` is the notification being handled. See `gd++ man lifecycle`.
+
+### Externs
+
+<a href="readme/svg/externs.gd++"><img src="readme/svg/externs.svg" alt="GD++ code: externs"></a>
+
+An extern declares a class that lives elsewhere: in another package, another GDExtension, or a script with a `class_name`. Its members are called by name, at runtime. See `gd++ man externs`.
+
+### `@trace`
+
+<a href="readme/svg/trace.gd++"><img src="readme/svg/trace.svg" alt="GD++ code: trace"></a>
+
+After `gd++ build --trace Player`, the game prints every call and every change:
+
+```out
+[f812] ▶ Player "Hero".take_damage(amount: 5)
+[f812]   Player "Hero".health: 100 → 95  (in take_damage)
+[f812] ◀ Player "Hero".take_damage → false  12.4 µs
+```
+
+See `gd++ man debugging`.
+
+### `@profile`
+
+<a href="readme/svg/profile.gd++"><img src="readme/svg/profile.svg" alt="GD++ code: profile"></a>
+
+After `gd++ build --profile ai`, the editor's monitors show its timings live. `@trace` and `@profile` generate no code unless a build turns them on, so you can leave them in your code for good. See `gd++ man debugging`.
+
+### C++ blocks
+
+<a href="readme/svg/code_blocks.gd++"><img src="readme/svg/code_blocks.svg" alt="GD++ code: code_blocks"></a>
+
+`decl` goes into the class's header, and `impl` into its source file. With `@global`, they go outside the class. `This` is the name of the class. See `gd++ man code`.
+
+### `import` and `noimport`
+
+<a href="readme/svg/import.gd++"><img src="readme/svg/import.svg" alt="GD++ code: import"></a>
+
+GD++ writes the `#include` lines for the names it sees. `import` adds one for a name it can't see, e.g. behind `auto`, and `noimport` removes one. See `gd++ man includes`.
+
+### Doc comments
+
+<a href="readme/svg/docs.gd++"><img src="readme/svg/docs.svg" alt="GD++ code: docs"></a>
+
+They become the editor's help, with Godot's BBCode tags. See `gd++ man docs`.
+
+### `gd_assert`
+
+<a href="readme/svg/assert.gd++"><img src="readme/svg/assert.svg" alt="GD++ code: assert"></a>
+
+Like GDScript's `assert`, it's gone in release builds. See `gd++ man runtime`.
+
+### `string_name`
+
+<a href="readme/svg/string_name.gd++"><img src="readme/svg/string_name.svg" alt="GD++ code: string_name"></a>
+
+`string_name "tick"` is short for `GDPP_STRING_NAME("tick")`: a `StringName` created once, and reused by every later call, which makes calls by name faster. See `gd++ man runtime`.
 
 ## The build tool
 

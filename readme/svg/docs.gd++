@@ -1,0 +1,14 @@
+/// A chest full of [member gold].
+///
+/// Opens when the player comes close.
+class_name Chest
+extends Area3D
+
+/// How many coins the chest holds.
+@export var gold: int = 10
+
+/** Gives the coins to [param player], and empties the chest. */
+func open(player: Player) -> void {
+  player->add_coins(gold);
+  gold = 0;
+}

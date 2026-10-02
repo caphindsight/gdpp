@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="369" height="189" viewBox="0 0 369 189">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> health: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">100</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> target: </tspan><tspan fill="#7ee787">Node3D</tspan></text>
+  <text x="16" y="70"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> spawn_points: </tspan><tspan fill="#7ee787">PackedVector3Array</tspan><tspan fill="#e6edf3"> = {</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">PackedVector3Array</tspan><tspan fill="#e6edf3"> points;</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  points.</tspan><tspan fill="#56d4dd">push_back</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">));</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">  points.</tspan><tspan fill="#56d4dd">push_back</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">10</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">5</tspan><tspan fill="#e6edf3">));</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> points;</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>

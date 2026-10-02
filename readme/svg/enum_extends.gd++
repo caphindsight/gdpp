@@ -1,0 +1,10 @@
+enum Mode {
+  extends Node.ProcessMode
+  EDITOR
+}
+
+func apply(mode: Mode) -> void {
+  if (mode != Mode::EDITOR) {
+    set_process_mode(mode as Node::ProcessMode);
+  }
+}

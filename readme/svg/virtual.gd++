@@ -1,0 +1,16 @@
+class_name Weapon
+extends Node3D
+
+@virtual
+func _damage() -> int {
+  return 10;
+}
+
+class Sword {
+  extends Weapon
+
+  @final @override
+  func _damage() -> int {
+    return 25;
+  }
+}

@@ -5,7 +5,7 @@ Introduction: what GD++ is, and how to read this manual
 GD++ lets you write Godot games in C++, without the boilerplate. It is one command line program, `gd++`, which does two jobs:
 
 - It is a small build system for Godot C++ code. It downloads the Godot C++ bindings (godot-cpp) and the Godot API specs that your code needs, keeps them in your project, and compiles your code into GDExtension libraries, which Godot loads like its own modules.
-- It is the compiler of the GD++ language. GD++ compiles to plain C++. Its declarations look like GDScript, and its function bodies are C++, with a few words of GD++'s own (see `gd++ man rewrites`). GD++ writes the glue code that Godot needs for you: headers, `_bind_methods`, getters and setters, `#include` lines and class registration.
+- It is the compiler of the GD++ language. GD++ compiles to plain C++. Its declarations look like GDScript, and its function bodies are C++, with a few rewrites (see `gd++ man rewrites`). GD++ writes the glue code that Godot needs for you: headers, `_bind_methods`, getters and setters, `#include` lines and class registration.
 
 Since GD++ compiles to C++, your own logic, like math and loops, runs 15 to 50 times faster than in GDScript, in release builds. Code that mostly works with Godot's types, like `Array` and `Dictionary`, or calls the engine, gains much less. See `gd++ man performance`.
 
@@ -77,3 +77,4 @@ The language pages describe one syntax version of GD++: in a package, the packag
 - GD++ file: a file with the extension `.gd++`, `.gdpp` or `.gg`.
 - Build cache: the `.gd++pkg` directory of a package, where builds happen. See `gd++ man build-cache`.
 - Transpile: turn GD++ code into C++ code.
+- Rewrite: one of GD++'s few additions to C++ code, e.g. `emit` or `as`, which GD++ rewrites into plain C++. See `gd++ man rewrites`.

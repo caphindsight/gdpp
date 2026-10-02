@@ -1,6 +1,6 @@
 RPC: networked functions with @rpc, and calling them with rpc
 
-Godot's high-level multiplayer calls functions on other peers of a network game: remote procedure calls, or RPCs. GD++ declares them like GDScript, with `@rpc`, and calls them with a word of its own, `rpc`.
+Godot's high-level multiplayer calls functions on other peers of a network game: remote procedure calls, or RPCs. GD++ declares them like GDScript, with `@rpc`, and calls them with a rewrite, `rpc`.
 
 # Declaring RPC functions
 

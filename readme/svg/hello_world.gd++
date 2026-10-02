@@ -1,0 +1,7 @@
+class_name HelloWorldNode
+extends Node
+
+@override
+func _ready() -> void {
+  gd::print("Hello from GD++!");
+}

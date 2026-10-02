@@ -1,0 +1,11 @@
+@onready
+var chat_log: RichTextLabel = get_node<RichTextLabel>("Log")
+
+@rpc("any_peer", "call_local", "reliable")
+func chat(message: String) -> void {
+  chat_log->append_text(message + "\n");
+}
+
+func send(message: String) -> void {
+  rpc chat(message);
+}

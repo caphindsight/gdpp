@@ -1,0 +1,17 @@
+var ammo: int {
+  decl {
+    int64_t ammo_ = 30;
+  }
+  get {
+    return ammo_;
+  }
+  set(value) {
+    ammo_ = value < 0 ? 0 : value;
+  }
+}
+
+var is_empty: bool {
+  get {
+    return ammo_ == 0;
+  }
+}

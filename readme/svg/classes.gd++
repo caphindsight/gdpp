@@ -1,0 +1,9 @@
+class_name Player
+extends CharacterBody3D
+
+var coins: int
+
+class Coin {
+  extends Area3D
+  var value: int = 1
+}

@@ -1,0 +1,14 @@
+@global decl {
+  #include <random>
+}
+
+decl {
+  std::mt19937 rng_{std::random_device{}()};
+  int64_t roll(int64_t sides);
+}
+
+impl {
+  int64_t This::roll(int64_t sides) {
+    return std::uniform_int_distribution<int64_t>(1, sides)(rng_);
+  }
+}

@@ -1,0 +1,8 @@
+@trace
+var health: int = 100
+
+@trace
+func take_damage(amount: int) -> bool {
+  health -= amount;
+  return health <= 0;
+}

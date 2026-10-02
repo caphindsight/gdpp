@@ -1,0 +1,7 @@
+var items: Array[Item]
+var prices: Dictionary[String, int]
+
+func add(item: Item) -> void {
+  items.push_back(item);
+  prices[item->get_title()] = item->get_price();
+}

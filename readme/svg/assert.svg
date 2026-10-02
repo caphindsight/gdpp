@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="570" height="109" viewBox="0 0 570 109">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">fire</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">gd_assert</tspan><tspan fill="#e6edf3">(target != </tspan><tspan fill="#e3b341">nullptr</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"Set the target before firing."</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">look_at</tspan><tspan fill="#e6edf3">(target-&gt;</tspan><tspan fill="#56d4dd">get_global_position</tspan><tspan fill="#e6edf3">());</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>

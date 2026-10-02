@@ -41,12 +41,12 @@ const (
 	cppWords  = "if else for while do return switch case break continue default new delete auto const static constexpr namespace using " +
 		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
 	gdscriptWords = "pass and or not in"
-	// GD++'s words in C++ code that are keywords wherever they appear.
+	// GD++'s rewrites in C++ code that are keywords wherever they appear.
 	rewriteWords = "emit rpc is_cancelled"
-	// GD++'s words in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
+	// GD++'s rewrites in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
 	// where a name follows them, which is where GD++ rewrites them.
 	rewriteOperatorWords = "is_done claim cancel as"
-	// GD++'s words in C++ code that are keywords only where a string follows them, which is where GD++ rewrites them.
+	// GD++'s rewrites in C++ code that are keywords only where a string follows them, which is where GD++ rewrites them.
 	rewriteStringWords = "string_name"
 	// The runtime's cast, which as becomes, and C++'s casts, which it replaces.
 	castWords    = "cast static_cast dynamic_cast const_cast reinterpret_cast"

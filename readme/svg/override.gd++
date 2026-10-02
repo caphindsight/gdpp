@@ -1,0 +1,5 @@
+@override
+func _physics_process(delta: float) -> void {
+  set_velocity(get_velocity() + get_gravity() * delta);
+  move_and_slide();
+}

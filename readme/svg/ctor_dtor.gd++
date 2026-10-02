@@ -1,0 +1,14 @@
+class_name Bullet
+extends Area3D
+
+decl {
+  static inline int64_t alive = 0;
+}
+
+ctor {
+  alive++;
+}
+
+dtor {
+  alive--;
+}

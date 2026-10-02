@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="537" height="249" viewBox="0 0 537 249">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#79c0ff">@onready</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> chat_log: </tspan><tspan fill="#7ee787">RichTextLabel</tspan><tspan fill="#e6edf3"> = get_node&lt;</tspan><tspan fill="#7ee787">RichTextLabel</tspan><tspan fill="#e6edf3">&gt;(</tspan><tspan fill="#d2a8ff">"Log"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="70"></text>
+  <text x="16" y="90"><tspan fill="#79c0ff">@rpc</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"any_peer"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"call_local"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"reliable"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="110"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">chat</tspan><tspan fill="#e6edf3">(message: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">  chat_log-&gt;</tspan><tspan fill="#56d4dd">append_text</tspan><tspan fill="#e6edf3">(message + </tspan><tspan fill="#d2a8ff">"\n"</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="170"></text>
+  <text x="16" y="190"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">send</tspan><tspan fill="#e6edf3">(message: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">rpc</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">chat</tspan><tspan fill="#e6edf3">(message);</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>

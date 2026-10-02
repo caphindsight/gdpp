@@ -1,0 +1,6 @@
+func _on_body_entered(body: Node3D) -> void {
+  Player *player = body as Player *;
+  if (player) {
+    player->hurt(10);
+  }
+}

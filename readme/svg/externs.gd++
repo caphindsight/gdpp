@@ -1,0 +1,16 @@
+class_name Car
+extends Node3D
+
+@export var terrain: Terrain
+
+@override
+func _physics_process(delta: float) -> void {
+  Vector3 pos = get_position();
+  pos.y = terrain->height_at(pos.x, pos.z);
+  set_position(pos);
+}
+
+extern Terrain {
+  extends Node3D
+  func height_at(x: float, z: float) -> float
+}

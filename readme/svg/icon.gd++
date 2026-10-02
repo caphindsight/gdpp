@@ -1,0 +1,3 @@
+@icon("pkg://icons/chest.svg")
+class_name Chest
+extends StaticBody3D

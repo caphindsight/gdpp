@@ -1,16 +1,18 @@
+var target: Vector2
 var pending: Async[PackedVector2Array]
 
 @onthread
 func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
   PackedVector2Array path;
-  // ... a long search, on a worker thread ...
+  // ... a long search, which stops early if is_cancelled ...
   return path;
 }
 
 @override
 func _process(delta: float) -> void {
-  if (is_done pending) {
-    follow(claim pending);
+  if (!pending) {
     pending = find_path(get_position(), target);
+  } else if (is_done pending) {
+    follow(claim pending);
   }
 }

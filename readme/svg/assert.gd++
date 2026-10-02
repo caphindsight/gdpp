@@ -1,0 +1,4 @@
+func fire() -> void {
+  gd_assert(target != nullptr, "Set the target before firing.");
+  look_at(target->get_global_position());
+}

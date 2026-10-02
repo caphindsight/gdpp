@@ -1,0 +1,9 @@
+import Material
+
+func tint(mesh: MeshInstance3D, color: Color) -> void {
+  auto material = mesh->get_active_material(0);
+  auto standard = material as Ref<StandardMaterial3D>;
+  if (standard.is_valid()) {
+    standard->set_albedo(color);
+  }
+}
