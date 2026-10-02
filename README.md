@@ -230,10 +230,7 @@ Neither takes arguments, since Godot creates objects without any. See `gd++ man 
 
 <a href="readme/svg/pool.gd++"><img src="readme/svg/pool.svg" alt="GD++ code: pool"></a>
 
-For a `@pool` class, `destroy` doesn't delete the node. Instead, it removes the node from the tree and keeps it in the pool, and `create` reuses it later. `ctor` and `dtor` run only when a bullet is actually created or deleted, while `@recycle ctor` and `@recycle dtor` run when a bullet is taken from the pool or returned to it. This pool can hold up to 100 bullets, counting both those in use and those waiting in the pool. Without a size, a pool has no limit. With `@pool(100, "strict")`, running out of bullets is also logged as an error. See `gd++ man pools`.
-
-> [!WARNING]
-> If a pool has a fixed size, `create` returns `nullptr` once all of its objects are in use. Always check the result before using the object, as `fire` does above. Only a pool without a size never returns `nullptr`.
+For a `@pool` class, `destroy` doesn't delete the node. Instead, it removes the node from the tree and keeps it in the pool, and `create` reuses it later. `ctor` and `dtor` run only when a bullet is actually created or deleted, while `@recycle ctor` and `@recycle dtor` run when a bullet is taken from the pool or returned to it. See `gd++ man pools`.
 
 ### Notification handlers
 

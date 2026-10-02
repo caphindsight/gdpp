@@ -1,4 +1,4 @@
-@pool(100)
+@pool
 class_name Bullet
 extends Area3D
 
@@ -20,10 +20,7 @@ class Gun {
   extends Node3D
 
   func fire() -> void {
-    auto bullet = create Bullet;
-    if (bullet) {
-      add_child(bullet);
-    }
+    add_child(create Bullet);
   }
 
   func _on_hit(bullet: Bullet) -> void {
