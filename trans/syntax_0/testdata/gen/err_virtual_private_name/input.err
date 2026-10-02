@@ -1,0 +1,4 @@
+input.gd++:4:1: The @virtual function knock must have a name that starts with "_", e.g. _knock.
+ 4 | func knock() -> void
+   | ^^^^
+Hint: Like Godot's virtual functions.

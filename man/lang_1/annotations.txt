@@ -44,9 +44,10 @@ A declaration's doc comment can come before its annotations or between them, but
 
 @override
 @override("final", "super", "engine")
-  Override a virtual function of the engine, e.g. `_input`, or a `@virtual` function of a GD++ base class. A script's function of the same name replaces it. The engine functions, `_ready`, `_process` and the like, run from `_notification` without it, and take it only with `"engine"`. Optional arguments, in double quotes: `"final"`, on an override of a GD++ `@virtual` function: subclasses and scripts can't override it any further. `"super"`: also bind the body as `_super_NAME` (or `super_NAME`, for a NAME without a leading `_`), which scripts call in place of `super`. `"engine"`, on an engine function: make it a plain override. See `gd++ man functions`.
+  Override a virtual function of the engine, e.g. `_input`, or a `@virtual` function of a GD++ base class. A script's function of the same name replaces it. The engine functions, `_ready`, `_process` and the like, run from `_notification` without it, and take it only with `"engine"`. Optional arguments, in double quotes: `"final"`, on an override of a GD++ `@virtual` function: subclasses and scripts can't override it any further. `"super"`: also bind the body as `_super_NAME`, which scripts call in place of `super`. `"engine"`, on an engine function: make it a plain override. See `gd++ man functions`.
 @virtual
-  Let subclasses and scripts override the function. See `gd++ man functions`.
+@virtual("private", "super")
+  Let subclasses and scripts override the function, whose name must start with `_`, e.g. `_think`. Scripts call it as `think`, which GD++ binds too. Optional arguments, in double quotes: `"private"`: don't bind `think`. `"super"`: also bind the body as `_super_think`, which scripts' overrides call in place of `super`. See `gd++ man functions`.
 
 @const
   Make the function a const method. See `gd++ man functions`.
@@ -72,7 +73,7 @@ A declaration's doc comment can come before its annotations or between them, but
 @profile(GROUPS...)
   Time each call, for the editor's monitors and the profile table. See "@trace and @profile" below.
 
-These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. Engine functions only take `@trace` and `@profile`. `@override("final")` only works on an override of a GD++ `@virtual` function. `@override` only works on engine functions with `"engine"`, and `"engine"` only works on engine functions.
+These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. Engine functions only take `@trace` and `@profile`. `@override("final")` only works on an override of a GD++ `@virtual` function. A `@virtual` function's name must start with `_`. `@override` only works on engine functions with `"engine"`, and `"engine"` only works on engine functions.
 
 # Functions of externs
 
@@ -199,7 +200,7 @@ Enum values, integer constants, `ctor`, `dtor`, `notif`, `import` and `noimport`
 - An unknown annotation is an error, with a suggestion if it looks like a typo: "Unknown annotation @exprot." with "Did you mean \"@export\"?".
 - An annotation in the wrong place is an error, e.g. "Annotation @tool can't be used on a func.".
 - An annotation can be used once per declaration: "Annotation @export is used twice.".
-- Annotations that take no arguments reject them: "Annotation @virtual takes no arguments.".
+- Annotations that take no arguments reject them: "Annotation @const takes no arguments.".
 - `@trace` and `@profile` take only names in double quotes: "Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").".
 - Some annotations need a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
 - An annotation that isn't followed by a declaration is an error: "Expected a declaration after the annotation, ...".

@@ -19,3 +19,12 @@ func _score() -> float {
 
 @virtual
 func _done() -> void {}
+
+// Scripts that override _react call _super_react in place of super._react().
+@virtual("super")
+func _react(to: String) -> bool {
+  return true;
+}
+
+@virtual("private")
+func _secret() -> int

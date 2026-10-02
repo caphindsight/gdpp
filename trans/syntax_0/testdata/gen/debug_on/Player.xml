@@ -7,6 +7,11 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_score" qualifiers="virtual">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="create" qualifiers="static">
 			<return type="Player" />
 			<description>
@@ -22,7 +27,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="score" qualifiers="virtual">
+		<method name="score">
 			<return type="int" />
 			<description>
 			</description>

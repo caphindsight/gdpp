@@ -1,0 +1,4 @@
+input.gd++:3:10: Annotation @virtual takes "private" or "super".
+ 3 | @virtual("final")
+   |          ^^^^^^^
+Hint: E.g. @virtual("private").

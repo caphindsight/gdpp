@@ -1,0 +1,6 @@
+class_name A
+
+@virtual
+func _jump() -> void
+
+func jump() -> void {}

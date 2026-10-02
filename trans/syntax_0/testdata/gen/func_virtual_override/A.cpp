@@ -8,7 +8,9 @@ namespace godot {
 
 void A::_bind_methods() {
 	GDVIRTUAL_BIND(_pick, "s");
+	ClassDB::bind_method(D_METHOD("pick", "s"), &A::_gdpp_pick);
 	GDVIRTUAL_BIND(_reset);
+	ClassDB::bind_method(D_METHOD("reset"), &A::reset);
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_HEARTS", static_cast<int64_t>(Suit::HEARTS));
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_SPADES", static_cast<int64_t>(Suit::SPADES));
 }
@@ -22,13 +24,25 @@ Suit A::_pick(Suit s) {
 
     return s;
 
-#line 26 "A.cpp"
+#line 28 "A.cpp"
+}
+
+Suit A::pick(Suit s) {
+	return _pick(s);
+}
+
+_gdpp_A_Suit A::_gdpp_pick(_gdpp_A_Suit s) {
+	return static_cast<_gdpp_A_Suit>(pick(static_cast<Suit>(s)));
 }
 
 void A::_reset() {
 	if (GDVIRTUAL_CALL(_reset)) {
 		return;
 	}
+}
+
+void A::reset() {
+	_reset();
 }
 
 #undef This

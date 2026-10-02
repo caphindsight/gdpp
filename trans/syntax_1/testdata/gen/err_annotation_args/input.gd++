@@ -1,4 +1,4 @@
 class_name A
 
-@virtual(1)
+@const(1)
 func f() -> void {}

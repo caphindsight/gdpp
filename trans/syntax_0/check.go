@@ -69,8 +69,8 @@ type funcModel struct {
 	params                             []*gtype
 	ret                                *gtype
 	virtual, override, isConst, static bool
-	final, super                       bool       // With @override("final") and @override("super").
-	callsSuper                         *funcModel // With @override("super"): the bound function that has the body.
+	final, super, private              bool       // With @override("final"), "super" on @override or @virtual, and @virtual("private").
+	calls                              *funcModel // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string     // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
 	hidden                             string     // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
 	trace, profile                     bool       // Whether its @trace or @profile, or its class's, is on.
@@ -776,7 +776,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "profile", "rpc", "trace"}, a.Name):
+			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "profile", "rpc", "trace", "virtual"}, a.Name):
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
@@ -844,6 +844,24 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		if name == "engine" {
 			engine = arg
 		}
+	}
+	for _, arg := range argsOf(a["virtual"]) {
+		name, _ := strconv.Unquote(arg.Value)
+		switch {
+		case name != "private" && name != "super":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @virtual takes \"private\" or \"super\".", "E.g. @virtual(\"private\").")
+		case name == "private" && m.private, name == "super" && m.super:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @virtual takes %s only once.", arg.Value), "")
+		}
+		m.private = m.private || name == "private"
+		m.super = m.super || name == "super"
+	}
+	if m.virtual && (!strings.HasPrefix(f.Name, "_") || f.Name == "_") {
+		hint := fmt.Sprintf("Like Godot's virtual functions. Scripts call it without the \"_\", e.g. _%s as %s.", f.Name, f.Name)
+		if m.private {
+			hint = "Like Godot's virtual functions."
+		}
+		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @virtual function %s must have a name that starts with \"_\", e.g. _%s.", f.Name, f.Name), hint)
 	}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
@@ -957,13 +975,10 @@ func engineNotif(f *funcModel) *notifModel {
 	return n
 }
 
-// superName returns the name of the function that @override("super") binds for the override name: _super_ready
-// for _ready, super_jump for jump.
+// superName returns the name of the function that "super" binds for the function name, e.g. _super_ready for
+// _ready.
 func superName(name string) string {
-	if rest, ok := strings.CutPrefix(name, "_"); ok {
-		return "_super_" + rest
-	}
-	return "super_" + name
+	return "_super" + name
 }
 
 // argsOf returns the arguments of a, or nil if a is nil.
@@ -1360,7 +1375,7 @@ func (u *unit) unique(names map[string]bool, pos lexer.Position, keyword string,
 		}
 		if names[name] {
 			return u.errorAt(pos, len(keyword), fmt.Sprintf("The name %q is already used by another member.", name),
-				"Members share one namespace. A var x also declares get_x and set_x, and a signal declares its emit function.")
+				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, and a @virtual func _x declares x.")
 		}
 		names[name] = true
 	}
@@ -1472,11 +1487,18 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				// The bound function has the body, so scripts can call it in place of super.
 				body := *f.f
 				body.Name, body.Annotations = superName(f.f.Name), nil
-				f.callsSuper = &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst}
-				m.funcs = append(m.funcs, f, f.callsSuper)
+				f.calls = &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst}
+				m.funcs = append(m.funcs, f, f.calls)
 				err = u.unique(names, f.f.Pos, "func", body.Name)
 			default:
 				m.funcs = append(m.funcs, f)
+			}
+			if err == nil && f.virtual && !f.private {
+				// GDVIRTUAL_BIND doesn't make the function callable, so scripts call it through this one.
+				caller := *f.f
+				caller.Name, caller.Annotations = f.f.Name[1:], nil
+				m.funcs = append(m.funcs, &funcModel{f: &caller, params: f.params, ret: f.ret, isConst: f.isConst, calls: f})
+				err = u.unique(names, f.f.Pos, "func", caller.Name)
 			}
 			if err == nil && f.deferral != "" {
 				// The deferred call runs the body, a separate method.

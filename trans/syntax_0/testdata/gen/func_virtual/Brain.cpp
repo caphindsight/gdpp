@@ -8,10 +8,19 @@ namespace godot {
 
 void Brain::_bind_methods() {
 	GDVIRTUAL_BIND(_think, "delta");
+	ClassDB::bind_method(D_METHOD("think", "delta"), &Brain::think);
 	GDVIRTUAL_BIND(_idle);
+	ClassDB::bind_method(D_METHOD("idle"), &Brain::idle);
 	GDVIRTUAL_BIND(_notify, "what");
+	ClassDB::bind_method(D_METHOD("notify", "what"), &Brain::notify);
 	GDVIRTUAL_BIND(_score);
+	ClassDB::bind_method(D_METHOD("score"), &Brain::score);
 	GDVIRTUAL_BIND(_done);
+	ClassDB::bind_method(D_METHOD("done"), &Brain::done);
+	GDVIRTUAL_BIND(_react, "to");
+	ClassDB::bind_method(D_METHOD("_super_react", "to"), &Brain::_super_react);
+	ClassDB::bind_method(D_METHOD("react", "to"), &Brain::react);
+	GDVIRTUAL_BIND(_secret);
 }
 
 int64_t Brain::_think(double delta) {
@@ -23,7 +32,11 @@ int64_t Brain::_think(double delta) {
 
   return 0;
 
-#line 27 "Brain.cpp"
+#line 36 "Brain.cpp"
+}
+
+int64_t Brain::think(double delta) {
+	return _think(delta);
 }
 
 String Brain::_idle() {
@@ -34,12 +47,20 @@ String Brain::_idle() {
 	return {};
 }
 
+String Brain::idle() {
+	return _idle();
+}
+
 Variant Brain::_notify(int64_t what) {
 	Variant _gdpp_ret;
 	if (GDVIRTUAL_CALL(_notify, what, _gdpp_ret)) {
 		return _gdpp_ret;
 	}
 	return {};
+}
+
+Variant Brain::notify(int64_t what) {
+	return _notify(what);
 }
 
 double Brain::_score() const {
@@ -51,7 +72,11 @@ double Brain::_score() const {
 
   return 1.0;
 
-#line 55 "Brain.cpp"
+#line 76 "Brain.cpp"
+}
+
+double Brain::score() const {
+	return _score();
 }
 
 void Brain::_done() {
@@ -60,7 +85,39 @@ void Brain::_done() {
 	}
 #line 21 "input.gd++"
 
-#line 64 "Brain.cpp"
+#line 89 "Brain.cpp"
+}
+
+void Brain::done() {
+	_done();
+}
+
+bool Brain::_react(const String &to) {
+	bool _gdpp_ret;
+	if (GDVIRTUAL_CALL(_react, to, _gdpp_ret)) {
+		return _gdpp_ret;
+	}
+	return _super_react(to);
+}
+
+bool Brain::_super_react(const String &to) {
+#line 25 "input.gd++"
+
+  return true;
+
+#line 109 "Brain.cpp"
+}
+
+bool Brain::react(const String &to) {
+	return _react(to);
+}
+
+int64_t Brain::_secret() {
+	int64_t _gdpp_ret;
+	if (GDVIRTUAL_CALL(_secret, _gdpp_ret)) {
+		return _gdpp_ret;
+	}
+	return {};
 }
 
 #undef This

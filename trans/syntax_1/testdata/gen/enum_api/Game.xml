@@ -18,6 +18,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="pick">
+			<return type="int" enum="Game.Mode" />
+			<param index="0" name="options" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="set_mode_to">
 			<return type="int" enum="Game.Mode" />
 			<param index="0" name="m" type="int" enum="Game.Mode" />

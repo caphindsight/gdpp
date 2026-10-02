@@ -152,7 +152,7 @@ It overrides any engine callback, or a `@virtual` function. A script's function 
 
 <a href="readme/svg/virtual.gd++"><img src="readme/svg/virtual.svg" alt="GD++ code: virtual"></a>
 
-A script that extends `Weapon` can override `_damage`. `"final"` stops that for `Sword`. See `gd++ man functions`.
+A script that extends `Weapon` can override `_damage`, and any script can call it as `damage()`. `"final"` stops overrides for `Sword`. See `gd++ man functions`.
 
 ### `@const` and `@static`
 

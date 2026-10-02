@@ -12,8 +12,8 @@ class LoudHatch : public Hatch {
 	GDCLASS(LoudHatch, Hatch)
 
 public:
-	String knock(int64_t times) override;
-	String super_knock(int64_t times);
+	String _knock(int64_t times) override;
+	String _super_knock(int64_t times);
 
 protected:
 	static void _bind_methods();

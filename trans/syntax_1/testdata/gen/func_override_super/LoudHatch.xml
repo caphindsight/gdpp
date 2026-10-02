@@ -7,7 +7,7 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="super_knock">
+		<method name="_super_knock">
 			<return type="String" />
 			<param index="0" name="times" type="int" />
 			<description>

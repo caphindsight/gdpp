@@ -159,128 +159,128 @@ File: @36:1
 
                 return _foo() + _bar();
 
-      - @213:1
-        Func: @213:1
+      - @216:1
+        Func: @216:1
           Name: _ready
-          Return: @213:18 void
-          Body: @213:23
-            TextPos: 213:24
+          Return: @216:18 void
+          Body: @216:23
+            TextPos: 216:24
             Text: |
 
                 gd::print("My node is ready.");
 
-      - @218:1
-        Func: @219:1
+      - @221:1
+        Func: @222:1
           Annotations:
-            - @218:1 override
+            - @221:1 override
           Name: _unhandled_input
           Params:
-            - @219:23
+            - @222:23
               Name: event
-              Type: @219:30 InputEvent
-          Return: @219:45 void
-          Body: @219:50
-            TextPos: 219:51
+              Type: @222:30 InputEvent
+          Return: @222:45 void
+          Body: @222:50
+            TextPos: 222:51
             Text: |
 
 
 
                 gd::print("Unhandled input.");
 
-      - @227:1
-        Code: @227:1
+      - @230:1
+        Code: @230:1
           Decl: true
-          Body: @227:6
-            TextPos: 227:7
+          Body: @230:6
+            TextPos: 230:7
             Text: |
 
                 int64_t my_value_;
 
-      - @231:1
-        Func: @232:1
+      - @234:1
+        Func: @235:1
           Annotations:
-            - @231:1 const
+            - @234:1 const
           Name: get_my_value
-          Return: @232:24 int
-          Body: @232:28
-            TextPos: 232:29
+          Return: @235:24 int
+          Body: @235:28
+            TextPos: 235:29
             Text: |
 
                 return my_value;
 
-      - @238:1
-        Func: @239:1
+      - @241:1
+        Func: @242:1
           Annotations:
-            - @238:1 static
+            - @241:1 static
           Name: my_static_func
-          Return: @239:26 void
-          Body: @239:31
-            TextPos: 239:32
+          Return: @242:26 void
+          Body: @242:31
+            TextPos: 242:32
             Text: |
 
                 gd::print("Hello!");
 
-      - @245:1
-        Func: @246:1
+      - @248:1
+        Func: @249:1
           Annotations:
-            - @245:1
+            - @248:1
               Name: rpc
               Args:
-                - @245:6 "any_peer"
-                - @245:18 "call_local"
-                - @245:32 "reliable"
+                - @248:6 "any_peer"
+                - @248:18 "call_local"
+                - @248:32 "reliable"
           Name: take_damage
           Params:
-            - @246:18
+            - @249:18
               Name: amount
-              Type: @246:26 int
-          Return: @246:34 void
-          Body: @246:39
-            TextPos: 246:40
+              Type: @249:26 int
+          Return: @249:34 void
+          Body: @249:39
+            TextPos: 249:40
             Text: |
 
                 gd::print("Took ", amount, " damage.");
 
-      - @254:1
-        Func: @254:1
+      - @257:1
+        Func: @257:1
           Name: hurt_everyone
           Params:
-            - @254:20
+            - @257:20
               Name: peer
-              Type: @254:26 int
-          Return: @254:34 void
-          Body: @254:39
-            TextPos: 254:40
+              Type: @257:26 int
+          Return: @257:34 void
+          Body: @257:39
+            TextPos: 257:40
             Text: |
 
                 rpc take_damage(10);
                 rpc(peer) take_damage(10);
                 take_damage(10);
 
-      - @265:1
-        Func: @266:1
+      - @268:1
+        Func: @269:1
           Annotations:
-            - @265:1 deferred
+            - @268:1 deferred
           Name: respawn
-          Return: @266:19 void
-          Body: @266:24
-            TextPos: 266:25
+          Return: @269:19 void
+          Body: @269:24
+            TextPos: 269:25
             Text: |
 
                 gd::print("Respawned.");
 
-      - @276:1
-        Func: @277:1
+      - @279:1
+        Func: @280:1
           Annotations:
-            - @276:1 onthread
+            - @279:1 onthread
           Name: count_primes
           Params:
-            - @277:19
+            - @280:19
               Name: limit
-              Type: @277:26 int
-          Return: @277:34 int
-          Body: @277:38
-            TextPos: 277:39
+              Type: @280:26 int
+          Return: @280:34 int
+          Body: @280:38
+            TextPos: 280:39
             Text: |
 
                 int64_t count = 0;
@@ -296,239 +296,239 @@ File: @36:1
                 }
                 return count;
 
-      - @294:1
-        Var: @294:1
+      - @297:1
+        Var: @297:1
           Name: primes
-          Type: @294:13
+          Type: @297:13
             Name: Async
             Args:
-              - @294:19 int
-      - @296:1
-        Func: @296:1
+              - @297:19 int
+      - @299:1
+        Func: @299:1
           Name: start_primes
-          Return: @296:24 void
-          Body: @296:29
-            TextPos: 296:30
+          Return: @299:24 void
+          Body: @299:29
+            TextPos: 299:30
             Text: |
 
                 primes = count_primes(100000);
 
-      - @305:1
-        Func: @305:1
+      - @308:1
+        Func: @308:1
           Name: poll_primes
-          Return: @305:23 void
-          Body: @305:28
-            TextPos: 305:29
+          Return: @308:23 void
+          Body: @308:28
+            TextPos: 308:29
             Text: |
 
                 if (is_done primes) {
                   gd::print("Primes: ", claim primes);
                 }
 
-      - @314:1
-        Func: @314:1
+      - @317:1
+        Func: @317:1
           Name: stop_primes
-          Return: @314:23 void
-          Body: @314:28
-            TextPos: 314:29
+          Return: @317:23 void
+          Body: @317:28
+            TextPos: 317:29
             Text: |
 
                 cancel primes;
 
-      - @326:1
-        Func: @328:1
+      - @329:1
+        Func: @331:1
           Annotations:
-            - @326:1
+            - @329:1
               Name: trace
               Args:
-                - @326:8 "combat"
-            - @327:1 profile
+                - @329:8 "combat"
+            - @330:1 profile
           Name: deal_damage
           Params:
-            - @328:18
+            - @331:18
               Name: amount
-              Type: @328:26 int
-          Return: @328:34 int
-          Body: @328:38
-            TextPos: 328:39
+              Type: @331:26 int
+          Return: @331:34 int
+          Body: @331:38
+            TextPos: 331:39
             Text: |
 
                 return amount * 2;
 
-      - @339:1
-        Ctor: @339:6
-          TextPos: 339:7
+      - @342:1
+        Ctor: @342:6
+          TextPos: 342:7
           Text: |
 
               gd::print("This message shows up every time a MyNode is created.");
 
-      - @343:1
-        Dtor: @343:6
-          TextPos: 343:7
+      - @346:1
+        Dtor: @346:6
+          TextPos: 346:7
           Text: |
 
               gd::print("This message shows up every time a MyNode is deleted.");
 
-      - @351:1
-        Signal: @351:1
+      - @354:1
+        Signal: @354:1
           Name: something_happened
           Params:
-            - @351:27
+            - @354:27
               Name: a
-              Type: @351:30 int
-      - @352:1
-        Signal: @352:1 something_else_happened
-      - @356:1
-        Func: @356:1
+              Type: @354:30 int
+      - @355:1
+        Signal: @355:1 something_else_happened
+      - @359:1
+        Func: @359:1
           Name: emit_both_signals
-          Return: @356:29 void
-          Body: @356:34
-            TextPos: 356:35
+          Return: @359:29 void
+          Body: @359:34
+            TextPos: 359:35
             Text: |
 
                 emit something_happened(42);
                 emit something_else_happened();
 
-      - @370:1
-        Var: @370:1
+      - @373:1
+        Var: @373:1
           Name: simple_var
-          Type: @370:17 int
-      - @371:1
-        Var: @371:1
+          Type: @373:17 int
+      - @374:1
+        Var: @374:1
           Name: another_simple_var
-          Type: @371:25 int
-          Init: @371:31 5
-      - @375:1
-        Var: @376:1
-          Annotations:
-            - @375:1 onready
-          Name: child_node_1
-          Type: @376:19 Node3D
-          Init: @376:28 get_node<Node3D>("MyNode1")
+          Type: @374:25 int
+          Init: @374:31 5
       - @378:1
         Var: @379:1
           Annotations:
             - @378:1 onready
-          Name: child_node_2
+          Name: child_node_1
           Type: @379:19 Node3D
-          Init: @379:28
-            Block: @379:28
-              TextPos: 379:29
+          Init: @379:28 get_node<Node3D>("MyNode1")
+      - @381:1
+        Var: @382:1
+          Annotations:
+            - @381:1 onready
+          Name: child_node_2
+          Type: @382:19 Node3D
+          Init: @382:28
+            Block: @382:28
+              TextPos: 382:29
               Text: |
 
                   Node3D* res = memnew(Node3D);
                   add_child(res);
                   return res;
 
-      - @395:1
-        Var: @395:1
+      - @398:1
+        Var: @398:1
           Name: my_property
-          Type: @395:18 int
-          Property: @395:22
+          Type: @398:18 int
+          Property: @398:22
             Accessors:
-              - @396:3
-                Decl: @396:8
-                  TextPos: 396:9
+              - @399:3
+                Decl: @399:8
+                  TextPos: 399:9
                   Text: |
 
 
                         int64_t my_property = 0;
 
-              - @400:3
-                Get: @400:7
-                  TextPos: 400:8
+              - @403:3
+                Get: @403:7
+                  TextPos: 403:8
                   Text: |
 
 
                         return my_property;
 
-              - @404:3
-                Set: @404:3
-                  Param: @404:7 val
-                  Body: @404:12
-                    TextPos: 404:13
+              - @407:3
+                Set: @407:3
+                  Param: @407:7 val
+                  Body: @407:12
+                    TextPos: 407:13
                     Text: |
 
 
                           if (val < 0) val = 0;
                           my_property = val;
 
-      - @423:1
-        Import: @423:8 MeshInstance3D
-      - @427:1
-        NoImport: @427:10 MeshInstance2D
-      - @438:1
-        Var: @439:1
+      - @426:1
+        Import: @426:8 MeshInstance3D
+      - @430:1
+        NoImport: @430:10 MeshInstance2D
+      - @441:1
+        Var: @442:1
           Annotations:
-            - @438:1
+            - @441:1
               Name: export_range
               Args:
-                - @438:15 0
-                - @438:18 100
-                - @438:23 1
+                - @441:15 0
+                - @441:18 100
+                - @441:23 1
           Name: my_range_var
-          Type: @439:19 int
-      - @444:1
-        Var: @445:1
-          Doc: @444:1 This is a variable.
-          Name: some_var
-          Type: @445:15 int
+          Type: @442:19 int
       - @447:1
-        Func: @452:1
-          Doc: @447:1
+        Var: @448:1
+          Doc: @447:1 This is a variable.
+          Name: some_var
+          Type: @448:15 int
+      - @450:1
+        Func: @455:1
+          Doc: @450:1
             Text: |
               This function has a
               long
               description.
-          Name: foo
-          Return: @452:15 void
-          Body: @452:20
-            TextPos: 452:21
-      - @474:1
-        Var: @474:9
+          Name: some_func
+          Return: @455:21 void
+          Body: @455:26
+            TextPos: 455:27
+      - @477:1
+        Var: @477:9
           Annotations:
-            - @474:1 export
+            - @477:1 export
           Name: my_extern
-          Type: @474:24 Terrain
+          Type: @477:24 Terrain
   InlineClasses:
     - @41:1
       Name: MyNode1
       Extends: @42:11 Node
     - @46:1 MyRefCounted1
   InlineExterns:
-    - @460:1
+    - @463:1
       Name: Terrain
-      Extends: @461:11 Node
+      Extends: @464:11 Node
       Members:
-        - @463:3
-          Func: @463:10
-            Annotations:
-              - @463:3 const
-            Name: foo
-            Return: @463:24 void
-        - @464:3
-          Func: @464:13
-            Annotations:
-              - @464:3 deferred
-            Name: bar
-            Return: @464:27 void
-        - @465:3
-          Func: @465:8
-            Annotations:
-              - @465:3 rpc
-            Name: qux
-            Return: @465:22 void
         - @466:3
-          Var: @466:3
-            Name: baz
-            Type: @466:12 int
+          Func: @466:10
+            Annotations:
+              - @466:3 const
+            Name: foo
+            Return: @466:24 void
         - @467:3
-          Signal: @467:3
+          Func: @467:13
+            Annotations:
+              - @467:3 deferred
+            Name: bar
+            Return: @467:27 void
+        - @468:3
+          Func: @468:8
+            Annotations:
+              - @468:3 rpc
+            Name: qux
+            Return: @468:22 void
+        - @469:3
+          Var: @469:3
+            Name: baz
+            Type: @469:12 int
+        - @470:3
+          Signal: @470:3
             Name: done
             Params:
-              - @467:15
+              - @470:15
                 Name: a
-                Type: @467:18 bool
-              - @467:24
+                Type: @470:18 bool
+              - @470:24
                 Name: b
-                Type: @467:27 int
+                Type: @470:27 int

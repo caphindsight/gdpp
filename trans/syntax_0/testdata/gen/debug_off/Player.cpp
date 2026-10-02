@@ -10,7 +10,8 @@ void Player::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("take_damage", "amount", "mood"), &Player::_gdpp_take_damage, DEFVAL(static_cast<int64_t>(_gdpp_default_take_damage_mood())));
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Player::create);
 	ClassDB::bind_method(D_METHOD("is_alive"), &Player::is_alive);
-	GDVIRTUAL_BIND(score);
+	GDVIRTUAL_BIND(_score);
+	ClassDB::bind_method(D_METHOD("score"), &Player::score);
 	ClassDB::bind_method(D_METHOD("respawn"), &Player::respawn);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_respawn"), &Player::_gdpp_body_respawn);
 	ClassDB::bind_method(D_METHOD("get_health"), &Player::get_health);
@@ -31,12 +32,12 @@ Player::Player() {
 	set_process(true);
 #line 8 "input.gd++"
 	health = 100;
-#line 35 "Player.cpp"
+#line 36 "Player.cpp"
 #line 20 "input.gd++"
 	{
   gd::print("created");
 }
-#line 40 "Player.cpp"
+#line 41 "Player.cpp"
 }
 
 bool Player::take_damage(int64_t amount, Mood mood) {
@@ -45,7 +46,7 @@ bool Player::take_damage(int64_t amount, Mood mood) {
   health -= amount;
   return health <= 0;
 
-#line 49 "Player.cpp"
+#line 50 "Player.cpp"
 }
 
 bool Player::_gdpp_take_damage(int64_t amount, _gdpp_Player_Mood mood) {
@@ -55,7 +56,7 @@ bool Player::_gdpp_take_damage(int64_t amount, _gdpp_Player_Mood mood) {
 Mood Player::_gdpp_default_take_damage_mood() {
 #line 24 "input.gd++"
 	return Mood::ANGRY;
-#line 59 "Player.cpp"
+#line 60 "Player.cpp"
 }
 
 Player *Player::create() {
@@ -63,7 +64,7 @@ Player *Player::create() {
 
   return memnew(Player);
 
-#line 67 "Player.cpp"
+#line 68 "Player.cpp"
 }
 
 bool Player::is_alive() const {
@@ -71,19 +72,23 @@ bool Player::is_alive() const {
 
   return health > 0;
 
-#line 75 "Player.cpp"
+#line 76 "Player.cpp"
 }
 
-int64_t Player::score() {
+int64_t Player::_score() {
 	int64_t _gdpp_ret;
-	if (GDVIRTUAL_CALL(score, _gdpp_ret)) {
+	if (GDVIRTUAL_CALL(_score, _gdpp_ret)) {
 		return _gdpp_ret;
 	}
 #line 40 "input.gd++"
 
   return health;
 
-#line 87 "Player.cpp"
+#line 88 "Player.cpp"
+}
+
+int64_t Player::score() {
+	return _score();
 }
 
 void Player::respawn() {
@@ -95,13 +100,13 @@ void Player::_gdpp_body_respawn() {
 
   health = 100;
 
-#line 99 "Player.cpp"
+#line 104 "Player.cpp"
 }
 
 void Player::_process(double delta) {
 #line 50 "input.gd++"
 
-#line 105 "Player.cpp"
+#line 110 "Player.cpp"
 }
 
 int64_t Player::get_health() const {
@@ -123,13 +128,13 @@ void Player::set_items(const Array &p_value) {
 int64_t Player::get_ammo() const {
 #line 14 "input.gd++"
  return ammo_;
-#line 127 "Player.cpp"
+#line 132 "Player.cpp"
 }
 
 void Player::set_ammo(int64_t value) {
 #line 15 "input.gd++"
  ammo_ = value;
-#line 133 "Player.cpp"
+#line 138 "Player.cpp"
 }
 
 gdpp::Emitted Player::died(Mood cause) {

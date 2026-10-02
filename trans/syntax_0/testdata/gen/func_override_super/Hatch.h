@@ -16,8 +16,8 @@ public:
 	void _super_ready();
 	bool _open() override final;
 	bool _super_open();
-	GDVIRTUAL1R(String, knock, int64_t)
-	virtual String knock(int64_t times);
+	GDVIRTUAL1R(String, _knock, int64_t)
+	virtual String _knock(int64_t times);
 
 protected:
 	static void _bind_methods();

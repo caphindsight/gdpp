@@ -44,7 +44,7 @@ A function without a body gets a generated one, which returns the type's default
 # What GD++ does with a function
 
 - It declares the function as a public method of the C++ class, and defines it in the class's source file, with your body.
-- It binds the function in `_bind_methods` with `ClassDB::bind_method`, with its parameter names and default values, so Godot can call it. `@static` functions are bound with `ClassDB::bind_static_method`, `@virtual` ones with `GDVIRTUAL_BIND`, and `@override` ones not at all, since the engine binds them.
+- It binds the function in `_bind_methods` with `ClassDB::bind_method`, with its parameter names and default values, so Godot can call it. `@static` functions are bound with `ClassDB::bind_static_method`, `@virtual` ones with `GDVIRTUAL_BIND`, next to a function that calls them, and `@override` ones not at all, since the engine binds them.
 - In a `@game_only` class, the body starts with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
 
 Functions are plain C++ methods, so C++ code calls them directly, e.g. `jump();` or `player->jump();`, at full speed.
@@ -113,7 +113,7 @@ func _unhandled_input(event: InputEvent) -> void {
 }
 ```
 
-With `"super"`, GD++ also binds the body as a function of its own, which a script calls in place of `super`: `_super_NAME` for a NAME that starts with `_`, else `super_NAME`. Here, a script calls `_super_unhandled_input(event)`:
+With `"super"`, GD++ also binds the body as a function of its own, which a script calls in place of `super`: `_super_NAME`. Here, a script calls `_super_unhandled_input(event)`:
 
 ```gdscript
 extends Player
@@ -123,7 +123,7 @@ func _unhandled_input(event):
     print("and more")
 ```
 
-It works on every `@override` function, of the engine or of a GD++ `@virtual` function. The name of the function that it binds, e.g. `_super_unhandled_input`, must be free.
+It works on every `@override` function, of the engine or of a GD++ `@virtual` function, and on `@virtual` functions too: see "@virtual(\"super\")" below. The name of the function that it binds, e.g. `_super_unhandled_input`, must be free.
 
 # Engine functions
 
@@ -162,7 +162,7 @@ func _can_pick(item: Item) -> bool {
 func _on_hit(damage: int) -> void
 ```
 
-`@virtual` declares a function that scripts can override, like the engine's own virtual functions. A GDScript that extends the class overrides it by defining a function of the same name:
+`@virtual` declares a function that scripts can override, like the engine's own virtual functions. Like theirs, its name must start with `_`. A GDScript that extends the class overrides it by defining a function of the same name:
 
 ```gdscript
 extends Player
@@ -171,7 +171,16 @@ func _can_pick(item):
     return item.price < 10
 ```
 
-When C++ code calls the function, the script's version runs if a script overrides it. Otherwise the body runs, as a fallback, or without a body, the type's default value is returned. By convention, the names of virtual functions start with an underscore.
+When C++ code calls the function, the script's version runs if a script overrides it. Otherwise the body runs, as a fallback, or without a body, the type's default value is returned.
+
+Scripts call it without the underscore: GD++ also binds `can_pick`, which calls `_can_pick`, so the script's version or the body runs, like from C++:
+
+```gdscript
+if player.can_pick(item):
+    print("Picked.")
+```
+
+Godot doesn't bind virtual functions, so calling `_can_pick` by name only works on objects whose script overrides it. `can_pick` is a function of the class like any other, so its name must be free. To leave it out, use `@virtual("private")`.
 
 `@virtual` generates a `GDVIRTUAL` declaration and binds it with `GDVIRTUAL_BIND`, and the editor's help marks the function "virtual". In C++, it's a virtual method.
 
@@ -187,7 +196,36 @@ func _can_pick(item: Item) -> bool {
 }
 ```
 
-When C++ code calls `_can_pick`, through a `Player` or a `Hero`, a script's version runs first, if a script overrides it. Otherwise, `Hero`'s body runs. The override doesn't redeclare the function for scripts: `Player`'s `GDVIRTUAL` does that.
+When C++ code calls `_can_pick`, through a `Player` or a `Hero`, a script's version runs first, if a script overrides it. Otherwise, `Hero`'s body runs. So does a script's call of `can_pick`. The override doesn't redeclare the function for scripts: `Player`'s `GDVIRTUAL` and `can_pick` do that.
+
+# @virtual("private")
+
+```gd++
+@virtual("private")
+func _on_hit(damage: int) -> void
+```
+
+With `"private"`, GD++ doesn't bind `on_hit`: scripts can override `_on_hit`, but only C++ code calls it. Use it for hooks that the class calls itself.
+
+# @virtual("super")
+
+```gd++
+@virtual("super")
+func _can_pick(item: Item) -> bool {
+  return item->get_weight() < 10;
+}
+```
+
+With `"super"`, GD++ also binds the body as `_super_can_pick`, which a script's override calls in place of `super`, like with `@override("super")`:
+
+```gdscript
+extends Player
+
+func _can_pick(item):
+    return item.price < 10 and _super_can_pick(item)
+```
+
+The override must not call `can_pick` instead: that calls the override again, forever. `"super"` combines with `"private"`: `@virtual("private", "super")`.
 
 # @override("final")
 
@@ -198,7 +236,7 @@ func _can_pick(item: Item) -> bool {
 }
 ```
 
-`"final"` on an `@override` of a GD++ `@virtual` function makes it the last version: subclasses can't override it (in C++, it's `override final`), and C++ calls never run a script's version. A script can still define a function of that name, but only calls by name, e.g. from GDScript, reach it.
+`"final"` on an `@override` of a GD++ `@virtual` function makes it the last version: subclasses can't override it (in C++, it's `override final`), and C++ calls never run a script's version. A script can still define a function of that name, but only calls of it by name, e.g. `player._can_pick(item)` from GDScript, reach it: `can_pick` runs the final version.
 
 `"final"` only works there: the engine runs scripts' overrides of its own virtual functions, e.g. `_input`, so GD++ can't stop that. It combines with `"super"`: `@override("final", "super")`.
 
@@ -267,7 +305,7 @@ func find_path(to: Vector3) -> PackedVector3Array {
 }
 ```
 
-These are for debugging. In builds with `--trace Player` (the class's name) or `--trace all`, `@trace` prints each call of `take_damage` when it starts, with its arguments, and when it returns, with its result and how long it took. In builds with `--profile ai`, `@profile` times each call of `find_path`, for the editor's monitors and a table of timings. In other builds, they generate nothing. Their arguments name groups, which the options choose. They work on every kind of function, including static, `@virtual`, `@override`, `@deferred` and `@onthread` ones. But calls by name of a `@virtual` function that a script overrides, e.g. from GDScript, go straight to the script, and aren't traced or timed. Calls from C++ are. See `gd++ man debugging`.
+These are for debugging. In builds with `--trace Player` (the class's name) or `--trace all`, `@trace` prints each call of `take_damage` when it starts, with its arguments, and when it returns, with its result and how long it took. In builds with `--profile ai`, `@profile` times each call of `find_path`, for the editor's monitors and a table of timings. In other builds, they generate nothing. Their arguments name groups, which the options choose. They work on every kind of function, including static, `@virtual`, `@override`, `@deferred` and `@onthread` ones. But calls by name of a `@virtual` function that a script overrides, e.g. `player._can_pick(item)` from GDScript, go straight to the script, and aren't traced or timed. Calls from C++ are, and so are calls of `can_pick`, which go through C++. See `gd++ man debugging`.
 
 # Combining annotations
 
@@ -277,6 +315,7 @@ Annotations can be combined where it makes sense, e.g. `@virtual @const`. These 
 @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe
 @virtual with @override, @rpc, @deferred, @thread_safe or @onthread
 @override("final") without a GD++ @virtual function to override
+@virtual on a function whose name doesn't start with _
 An engine function with an annotation other than @trace and @profile
 @override with @rpc, @deferred, @thread_safe or @onthread
 @rpc with @onthread
@@ -284,7 +323,7 @@ An engine function with an annotation other than @trace and @profile
 @thread_safe with @onthread
 ```
 
-`@trace` and `@profile` combine with all of them. Each annotation can be used once per function. They take no arguments, except `@rpc`, `@trace` and `@profile`.
+`@trace` and `@profile` combine with all of them. Each annotation can be used once per function. They take no arguments, except `@override`, `@virtual`, `@rpc`, `@trace` and `@profile`.
 
 # Enums in signatures
 

@@ -7,18 +7,18 @@ namespace godot {
 #define This LoudHatch
 
 void LoudHatch::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("super_knock", "times"), &LoudHatch::super_knock);
+	ClassDB::bind_method(D_METHOD("_super_knock", "times"), &LoudHatch::_super_knock);
 }
 
-String LoudHatch::knock(int64_t times) {
+String LoudHatch::_knock(int64_t times) {
 	String _gdpp_ret;
-	if (GDVIRTUAL_CALL(knock, times, _gdpp_ret)) {
+	if (GDVIRTUAL_CALL(_knock, times, _gdpp_ret)) {
 		return _gdpp_ret;
 	}
-	return super_knock(times);
+	return _super_knock(times);
 }
 
-String LoudHatch::super_knock(int64_t times) {
+String LoudHatch::_super_knock(int64_t times) {
 #line 24 "input.gd++"
 
     return "KNOCK";

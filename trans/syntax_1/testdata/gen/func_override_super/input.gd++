@@ -12,8 +12,8 @@ func _open() -> bool {
   return true;
 }
 
-@virtual
-func knock(times: int) -> String {
+@virtual("private")
+func _knock(times: int) -> String {
   return "knock";
 }
 
@@ -21,7 +21,7 @@ class LoudHatch {
   extends Hatch
 
   @override("super")
-  func knock(times: int) -> String {
+  func _knock(times: int) -> String {
     return "KNOCK";
   }
 }

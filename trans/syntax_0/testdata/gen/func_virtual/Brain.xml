@@ -23,12 +23,62 @@
 			<description>
 			</description>
 		</method>
+		<method name="_react" qualifiers="virtual">
+			<return type="bool" />
+			<param index="0" name="to" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="_score" qualifiers="virtual const">
 			<return type="float" />
 			<description>
 			</description>
 		</method>
+		<method name="_secret" qualifiers="virtual">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_super_react">
+			<return type="bool" />
+			<param index="0" name="to" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="_think" qualifiers="virtual">
+			<return type="int" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="done">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="idle">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="notify">
+			<return type="Variant" />
+			<param index="0" name="what" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="react">
+			<return type="bool" />
+			<param index="0" name="to" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="score" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="think">
 			<return type="int" />
 			<param index="0" name="delta" type="float" />
 			<description>

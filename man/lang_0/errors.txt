@@ -82,7 +82,7 @@ The name "x" is declared twice in this file.
 The name "Node" is already declared by a dependency.
   Names must differ from Godot's, and from those of the package's other classes, externs and enums.
 The name "get_x" is already used by another member.
-  A var x also declares get_x and set_x, and a signal declares its emit function.
+  A var x also declares get_x and set_x, a signal declares its emit function, and a @virtual func _x declares x.
 Class A extends itself through its bases.
 Parameter b needs a default value, since a parameter before it has one.
 Property x has no get block.
@@ -123,6 +123,7 @@ Annotation @tool can't be used on a func.
 Annotation @export is used twice.
 Annotation @onready can only be used in classes that extend Node, which A doesn't.
 Annotation @override takes "final", "super" or "engine".
+Annotation @virtual takes "private" or "super".
 Annotations @static and @virtual can't be used together.
 A variable can have only one export annotation.
 Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.
@@ -133,6 +134,8 @@ Annotation @profile can't be used on a signal.
 Annotations @virtual and @onthread can't be used together.
 Function _open is already @virtual in Gate.
   Use @override to override it.
+The @virtual function knock must have a name that starts with "_", e.g. _knock.
+  Like Godot's virtual functions. Scripts call it without the "_", e.g. _knock as knock.
 Annotation @override("final") only works on overrides of a GD++ @virtual function.
 The engine function _ready doesn't need @override.
   Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").

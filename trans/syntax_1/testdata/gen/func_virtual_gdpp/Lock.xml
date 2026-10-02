@@ -13,5 +13,11 @@
 			<description>
 			</description>
 		</method>
+		<method name="open">
+			<return type="Door" />
+			<param index="0" name="key" type="Key" />
+			<description>
+			</description>
+		</method>
 	</methods>
 </class>

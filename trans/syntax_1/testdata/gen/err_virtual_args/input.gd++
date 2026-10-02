@@ -1,0 +1,4 @@
+class_name A
+
+@virtual("final")
+func _knock() -> void

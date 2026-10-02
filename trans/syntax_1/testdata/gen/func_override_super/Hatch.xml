@@ -7,6 +7,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_knock" qualifiers="virtual">
+			<return type="String" />
+			<param index="0" name="times" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="_super_open">
 			<return type="bool" />
 			<description>
@@ -14,12 +20,6 @@
 		</method>
 		<method name="_super_ready">
 			<return type="void" />
-			<description>
-			</description>
-		</method>
-		<method name="knock" qualifiers="virtual">
-			<return type="String" />
-			<param index="0" name="times" type="int" />
 			<description>
 			</description>
 		</method>

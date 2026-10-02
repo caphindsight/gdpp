@@ -207,6 +207,9 @@ func foo_plus_bar() -> int {
 // A GDScript can then override them, e.g.
 // func _foo() -> int:
 //   return 42
+// Scripts call them without the underscore, e.g. my_node.foo(), which runs the script's override or the body.
+// The names of @virtual functions must start with an underscore. @virtual("private") doesn't bind foo,
+// and @virtual("super") also binds the body as _super_foo, which a script's override calls in place of super.
 
 // _ready, _enter_tree, _exit_tree, _process, _physics_process and _draw need no annotation.
 // The body runs from the notification, so a script's _ready doesn't replace it: both run.
@@ -449,7 +452,7 @@ var some_var: int
   long
   description.
 */
-func foo() -> void {}
+func some_func() -> void {}
 
 // Part XII. Externs.
 

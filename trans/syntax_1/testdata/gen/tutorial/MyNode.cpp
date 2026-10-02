@@ -14,7 +14,9 @@ void MyNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("greet_user", "name"), &MyNode::greet_user);
 	ClassDB::bind_method(D_METHOD("greet_users", "count", "greeting"), &MyNode::greet_users, DEFVAL(_gdpp_default_greet_users_count()), DEFVAL(_gdpp_default_greet_users_greeting()));
 	GDVIRTUAL_BIND(_foo);
+	ClassDB::bind_method(D_METHOD("foo"), &MyNode::foo);
 	GDVIRTUAL_BIND(_bar);
+	ClassDB::bind_method(D_METHOD("bar"), &MyNode::bar);
 	ClassDB::bind_method(D_METHOD("foo_plus_bar"), &MyNode::foo_plus_bar);
 	ClassDB::bind_method(D_METHOD("get_my_value"), &MyNode::get_my_value);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("my_static_func"), &MyNode::my_static_func);
@@ -28,7 +30,7 @@ void MyNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("stop_primes"), &MyNode::stop_primes);
 	ClassDB::bind_method(D_METHOD("deal_damage", "amount"), &MyNode::deal_damage);
 	ClassDB::bind_method(D_METHOD("emit_both_signals"), &MyNode::emit_both_signals);
-	ClassDB::bind_method(D_METHOD("foo"), &MyNode::foo);
+	ClassDB::bind_method(D_METHOD("some_func"), &MyNode::some_func);
 	ClassDB::bind_method(D_METHOD("get_primes"), &MyNode::get_primes);
 	ClassDB::bind_method(D_METHOD("set_primes", "value"), &MyNode::set_primes);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Async<int64_t>>("primes", PROPERTY_USAGE_NONE), "set_primes", "get_primes");
@@ -67,36 +69,36 @@ void MyNode::_bind_methods() {
 
 MyNode::MyNode() {
 	gdpp::rpc_config<This>(this, "take_damage", MultiplayerAPI::RPC_MODE_ANY_PEER, MultiplayerPeer::TRANSFER_MODE_RELIABLE, true, 0);
-#line 365 "input.gd++"
+#line 368 "input.gd++"
 	another_simple_var = 5;
-#line 73 "MyNode.cpp"
-#line 333 "input.gd++"
+#line 75 "MyNode.cpp"
+#line 336 "input.gd++"
 	{
   gd::print("This message shows up every time a MyNode is created.");
 }
-#line 78 "MyNode.cpp"
+#line 80 "MyNode.cpp"
 }
 
 MyNode::~MyNode() {
-#line 337 "input.gd++"
+#line 340 "input.gd++"
 	{
   gd::print("This message shows up every time a MyNode is deleted.");
 }
-#line 86 "MyNode.cpp"
+#line 88 "MyNode.cpp"
 }
 
 void MyNode::_notification(int WHAT) {
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
-#line 370 "input.gd++"
-		child_node_1 = get_node<Node3D>("MyNode1");
-#line 93 "MyNode.cpp"
 #line 373 "input.gd++"
+		child_node_1 = get_node<Node3D>("MyNode1");
+#line 95 "MyNode.cpp"
+#line 376 "input.gd++"
 		child_node_2 = [&]() -> Node3D * {
   Node3D* res = memnew(Node3D);
   add_child(res);
   return res;
 }();
-#line 100 "MyNode.cpp"
+#line 102 "MyNode.cpp"
 	}
 }
 
@@ -106,7 +108,7 @@ void MyNode::greet_user(const String &name) {
 
   gd::print("Hello ", name, "!");
 
-#line 110 "MyNode.cpp"
+#line 112 "MyNode.cpp"
 }
 
 void MyNode::greet_users(int64_t count, const String &greeting) {
@@ -116,13 +118,13 @@ void MyNode::greet_users(int64_t count, const String &greeting) {
     gd::print(greeting, "!");
   }
 
-#line 120 "MyNode.cpp"
+#line 122 "MyNode.cpp"
 }
 
 int64_t MyNode::_gdpp_default_greet_users_count() {
 #line 178 "input.gd++"
 	return 1;
-#line 126 "MyNode.cpp"
+#line 128 "MyNode.cpp"
 }
 
 String MyNode::_gdpp_default_greet_users_greeting() {
@@ -130,7 +132,7 @@ String MyNode::_gdpp_default_greet_users_greeting() {
 
   return String("Hello");
 
-#line 134 "MyNode.cpp"
+#line 136 "MyNode.cpp"
 }
 
 int64_t MyNode::_foo() {
@@ -142,7 +144,11 @@ int64_t MyNode::_foo() {
 
   return 0;
 
-#line 146 "MyNode.cpp"
+#line 148 "MyNode.cpp"
+}
+
+int64_t MyNode::foo() {
+	return _foo();
 }
 
 int64_t MyNode::_bar() {
@@ -153,46 +159,50 @@ int64_t MyNode::_bar() {
 	return {};
 }
 
+int64_t MyNode::bar() {
+	return _bar();
+}
+
 int64_t MyNode::foo_plus_bar() {
 #line 203 "input.gd++"
 
   return _foo() + _bar();
 
-#line 162 "MyNode.cpp"
+#line 172 "MyNode.cpp"
 }
 
 void MyNode::_ready() {
-#line 213 "input.gd++"
+#line 216 "input.gd++"
 
 
 
   gd::print("My node is ready.");
 
-#line 172 "MyNode.cpp"
+#line 182 "MyNode.cpp"
 }
 
 int64_t MyNode::get_my_value() const {
-#line 226 "input.gd++"
+#line 229 "input.gd++"
 
   return my_value;
 
-#line 180 "MyNode.cpp"
+#line 190 "MyNode.cpp"
 }
 
 void MyNode::my_static_func() {
-#line 233 "input.gd++"
+#line 236 "input.gd++"
 
   gd::print("Hello!");
 
-#line 188 "MyNode.cpp"
+#line 198 "MyNode.cpp"
 }
 
 void MyNode::take_damage(int64_t amount) {
-#line 240 "input.gd++"
+#line 243 "input.gd++"
 
   gd::print("Took ", amount, " damage.");
 
-#line 196 "MyNode.cpp"
+#line 206 "MyNode.cpp"
 }
 
 Error MyNode::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount) {
@@ -200,13 +210,13 @@ Error MyNode::_gdpp_rpc_take_damage(int64_t p_peer, int64_t amount) {
 }
 
 void MyNode::hurt_everyone(int64_t peer) {
-#line 248 "input.gd++"
+#line 251 "input.gd++"
 
   _gdpp_rpc_take_damage(0, 10);
   _gdpp_rpc_take_damage(peer, 10);
   take_damage(10);
 
-#line 210 "MyNode.cpp"
+#line 220 "MyNode.cpp"
 }
 
 void MyNode::respawn() {
@@ -214,11 +224,11 @@ void MyNode::respawn() {
 }
 
 void MyNode::_gdpp_body_respawn() {
-#line 260 "input.gd++"
+#line 263 "input.gd++"
 
   gd::print("Respawned.");
 
-#line 222 "MyNode.cpp"
+#line 232 "MyNode.cpp"
 }
 
 gdpp::Async<int64_t> MyNode::count_primes(int64_t limit) {
@@ -226,7 +236,7 @@ gdpp::Async<int64_t> MyNode::count_primes(int64_t limit) {
 }
 
 int64_t MyNode::_gdpp_body_count_primes(int64_t limit) {
-#line 271 "input.gd++"
+#line 274 "input.gd++"
 
   int64_t count = 0;
   for (int64_t n = 2; n < limit; n++) {
@@ -241,56 +251,56 @@ int64_t MyNode::_gdpp_body_count_primes(int64_t limit) {
   }
   return count;
 
-#line 245 "MyNode.cpp"
+#line 255 "MyNode.cpp"
 }
 
 void MyNode::start_primes() {
-#line 290 "input.gd++"
+#line 293 "input.gd++"
 
   primes = count_primes(100000);
 
-#line 253 "MyNode.cpp"
+#line 263 "MyNode.cpp"
 }
 
 void MyNode::poll_primes() {
-#line 299 "input.gd++"
+#line 302 "input.gd++"
 
   if (primes.is_done()) {
     gd::print("Primes: ", primes.claim());
   }
 
-#line 263 "MyNode.cpp"
+#line 273 "MyNode.cpp"
 }
 
 void MyNode::stop_primes() {
-#line 308 "input.gd++"
+#line 311 "input.gd++"
 
   primes.cancel();
 
-#line 271 "MyNode.cpp"
+#line 281 "MyNode.cpp"
 }
 
 int64_t MyNode::deal_damage(int64_t amount) {
-#line 322 "input.gd++"
+#line 325 "input.gd++"
 
   return amount * 2;
 
-#line 279 "MyNode.cpp"
+#line 289 "MyNode.cpp"
 }
 
 void MyNode::emit_both_signals() {
-#line 350 "input.gd++"
+#line 353 "input.gd++"
 
   (void) something_happened(42);
   (void) something_else_happened();
 
-#line 288 "MyNode.cpp"
+#line 298 "MyNode.cpp"
 }
 
-void MyNode::foo() {
-#line 446 "input.gd++"
+void MyNode::some_func() {
+#line 449 "input.gd++"
 
-#line 294 "MyNode.cpp"
+#line 304 "MyNode.cpp"
 }
 
 gdpp::Async<int64_t> MyNode::get_primes() const {
@@ -334,22 +344,22 @@ void MyNode::set_child_node_2(Node3D *p_value) {
 }
 
 int64_t MyNode::get_my_property() const {
-#line 394 "input.gd++"
+#line 397 "input.gd++"
 
 
     return my_property;
 
-#line 343 "MyNode.cpp"
+#line 353 "MyNode.cpp"
 }
 
 void MyNode::set_my_property(int64_t val) {
-#line 398 "input.gd++"
+#line 401 "input.gd++"
 
 
     if (val < 0) val = 0;
     my_property = val;
 
-#line 353 "MyNode.cpp"
+#line 363 "MyNode.cpp"
 }
 
 int64_t MyNode::get_my_range_var() const {
@@ -397,14 +407,14 @@ gdpp::Emitted MyNode::something_else_happened() {
     gd::print("Hello, world!");
   }
 
-#line 401 "MyNode.cpp"
+#line 411 "MyNode.cpp"
 
 #line 85 "input.gd++"
 
   #define FOO 42
 
 
-#line 408 "MyNode.cpp"
+#line 418 "MyNode.cpp"
 
 #undef This
 

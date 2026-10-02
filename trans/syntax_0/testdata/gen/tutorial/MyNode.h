@@ -50,7 +50,7 @@ private:
 #line 51 "MyNode.h"
 
 private:
-#line 227 "input.gd++"
+#line 230 "input.gd++"
 
   int64_t my_value_;
 
@@ -67,7 +67,7 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 396 "input.gd++"
+#line 399 "input.gd++"
 
 
     int64_t my_property = 0;
@@ -82,8 +82,10 @@ public:
 	void greet_users(int64_t count = _gdpp_default_greet_users_count(), const String &greeting = _gdpp_default_greet_users_greeting());
 	GDVIRTUAL0R(int64_t, _foo)
 	virtual int64_t _foo();
+	int64_t foo();
 	GDVIRTUAL0R(int64_t, _bar)
 	virtual int64_t _bar();
+	int64_t bar();
 	int64_t foo_plus_bar();
 	void _gdpp_body__ready();
 	void _unhandled_input(InputEvent *event) override;
@@ -101,7 +103,7 @@ public:
 	void stop_primes();
 	int64_t deal_damage(int64_t amount);
 	void emit_both_signals();
-	void foo();
+	void some_func();
 	gdpp::Async<int64_t> get_primes() const;
 	void set_primes(gdpp::Async<int64_t> p_value);
 	int64_t get_simple_var() const;

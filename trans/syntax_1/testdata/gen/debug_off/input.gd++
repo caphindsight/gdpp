@@ -37,7 +37,7 @@ func is_alive() -> bool {
 }
 
 @virtual
-func score() -> int {
+func _score() -> int {
   return health;
 }
 

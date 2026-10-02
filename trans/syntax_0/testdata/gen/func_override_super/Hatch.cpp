@@ -9,7 +9,7 @@ namespace godot {
 void Hatch::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_super_ready"), &Hatch::_super_ready);
 	ClassDB::bind_method(D_METHOD("_super_open"), &Hatch::_super_open);
-	GDVIRTUAL_BIND(knock, "times");
+	GDVIRTUAL_BIND(_knock, "times");
 }
 
 void Hatch::_ready() {
@@ -36,9 +36,9 @@ bool Hatch::_super_open() {
 #line 37 "Hatch.cpp"
 }
 
-String Hatch::knock(int64_t times) {
+String Hatch::_knock(int64_t times) {
 	String _gdpp_ret;
-	if (GDVIRTUAL_CALL(knock, times, _gdpp_ret)) {
+	if (GDVIRTUAL_CALL(_knock, times, _gdpp_ret)) {
 		return _gdpp_ret;
 	}
 #line 16 "input.gd++"

@@ -14,14 +14,25 @@ class Brain : public Node {
 public:
 	GDVIRTUAL1R(int64_t, _think, double)
 	virtual int64_t _think(double delta);
+	int64_t think(double delta);
 	GDVIRTUAL0R(String, _idle)
 	virtual String _idle();
+	String idle();
 	GDVIRTUAL1R(Variant, _notify, int64_t)
 	virtual Variant _notify(int64_t what);
+	Variant notify(int64_t what);
 	GDVIRTUAL0RC(double, _score)
 	virtual double _score() const;
+	double score() const;
 	GDVIRTUAL0(_done)
 	virtual void _done();
+	void done();
+	GDVIRTUAL1R(bool, _react, String)
+	virtual bool _react(const String &to);
+	bool _super_react(const String &to);
+	bool react(const String &to);
+	GDVIRTUAL0R(int64_t, _secret)
+	virtual int64_t _secret();
 
 protected:
 	static void _bind_methods();

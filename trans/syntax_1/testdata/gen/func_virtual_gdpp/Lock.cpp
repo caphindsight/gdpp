@@ -8,6 +8,7 @@ namespace godot {
 
 void Lock::_bind_methods() {
 	GDVIRTUAL_BIND(_open, "key");
+	ClassDB::bind_method(D_METHOD("open", "key"), &Lock::open);
 }
 
 Door *Lock::_open(const Ref<Key> &key) {
@@ -16,6 +17,10 @@ Door *Lock::_open(const Ref<Key> &key) {
 		return _gdpp_ret;
 	}
 	return {};
+}
+
+Door *Lock::open(const Ref<Key> &key) {
+	return _open(key);
 }
 
 #undef This

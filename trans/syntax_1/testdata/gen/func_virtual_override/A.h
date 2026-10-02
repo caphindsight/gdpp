@@ -18,11 +18,16 @@ class A : public Node {
 public:
 	GDVIRTUAL1R(_gdpp_A_Suit, _pick, _gdpp_A_Suit)
 	virtual Suit _pick(Suit s);
+	Suit pick(Suit s);
 	GDVIRTUAL0(_reset)
 	virtual void _reset();
+	void reset();
 
 protected:
 	static void _bind_methods();
+
+private:
+	_gdpp_A_Suit _gdpp_pick(_gdpp_A_Suit s);
 };
 #undef This
 

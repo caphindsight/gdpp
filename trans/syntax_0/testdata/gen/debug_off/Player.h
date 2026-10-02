@@ -32,8 +32,9 @@ public:
 	bool take_damage(int64_t amount, Mood mood = _gdpp_default_take_damage_mood());
 	static Player *create();
 	bool is_alive() const;
-	GDVIRTUAL0R(int64_t, score)
-	virtual int64_t score();
+	GDVIRTUAL0R(int64_t, _score)
+	virtual int64_t _score();
+	int64_t score();
 	void respawn();
 	void _gdpp_body_respawn();
 	void _process(double delta) override;

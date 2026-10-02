@@ -291,10 +291,10 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t}")
 	}
 	switch {
-	case f.callsSuper != nil && f.ret.void:
-		w.ln("\t%s(%s);", f.callsSuper.f.Name, strings.Join(paramNames(f.f.Params), ", "))
-	case f.callsSuper != nil:
-		w.ln("\treturn %s(%s);", f.callsSuper.f.Name, strings.Join(paramNames(f.f.Params), ", "))
+	case f.calls != nil && f.ret.void:
+		w.ln("\t%s(%s);", f.calls.f.Name, strings.Join(paramNames(f.f.Params), ", "))
+	case f.calls != nil:
+		w.ln("\treturn %s(%s);", f.calls.f.Name, strings.Join(paramNames(f.f.Params), ", "))
 	case f.deferral == "onthread":
 		self, capture := "this", "=, this"
 		if f.static {
