@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -312,15 +313,25 @@ func pagerFrame(lines []string, top, height int) (string, int) {
 	return frame.String(), top
 }
 
+// sourceQuote matches the source and caret lines of a GD++ error, e.g. " 12 | var x".
+var sourceQuote = regexp.MustCompile(`^ [0-9 ]+ \| `)
+
 // formatMsg returns msg with a "[icon] " prefix, wrapped to the terminal width
 // if stderr is a terminal, with continuation lines indented under the prefix.
+// Source and caret lines of GD++ errors are not wrapped, which would misalign the caret.
 func formatMsg(icon, msg string) string {
 	width := 0
 	if isTTY {
 		width, _, _ = term.GetSize(int(os.Stderr.Fd()))
 	}
 	indent := visibleLen(icon) + 3 // "[", icon, "] "
-	msg = WrapText(msg, width-indent)
+	lines := strings.Split(msg, "\n")
+	for i, line := range lines {
+		if !sourceQuote.MatchString(line) {
+			lines[i] = WrapText(line, width-indent)
+		}
+	}
+	msg = strings.Join(lines, "\n")
 	return "[" + icon + "] " + strings.ReplaceAll(msg, "\n", "\n"+strings.Repeat(" ", indent))
 }
 
@@ -379,12 +390,10 @@ func infoIcon() string { return Styled(unicodeOr("•", "-"), Green) }
 // errorIcon is the icon of errors and failed tasks.
 func errorIcon() string { return Styled(unicodeOr("×", "x"), Bold, Red) }
 
-// FailWithText prints err as an error without wrapping it, then exits the
-// program via Fail. Errors in GD++ code span several lines, with a caret under
-// the problem, which wrapping would misalign.
+// FailWithText prints err as an error, then exits the program via Fail. Unlike
+// LogFatal, it takes err's text as is, e.g. a GD++ error with a caret under the problem.
 func FailWithText(err error) {
-	failRunningTask()
-	fmt.Fprintln(os.Stderr, "["+errorIcon()+"] "+strings.ReplaceAll(err.Error(), "\n", "\n    "))
+	logMsg(errorIcon(), false, "%s", []any{err.Error()})
 	Fail()
 }
 
