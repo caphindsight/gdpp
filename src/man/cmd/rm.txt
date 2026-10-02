@@ -3,10 +3,10 @@ gd++ rm: remove dependencies, packages or classes
 # Synopsis
 
 ```sh
-gd++ rm [--bind NAME... | --bind-all | --bind-checked-in | --bind-ephemeral]
-        [--spec NAME... | --spec-all | --spec-checked-in | --spec-ephemeral]
-        [--engine NAME... | --engine-all | --engine-checked-in | --engine-ephemeral]
-gd++ rm --dep-all | --dep-checked-in | --dep-ephemeral
+gd++ rm [--bind NAME... | --bind-all | --bind-checked-in | --bind-ephemeral | --bind-unused]
+        [--spec NAME... | --spec-all | --spec-checked-in | --spec-ephemeral | --spec-unused]
+        [--engine NAME... | --engine-all | --engine-checked-in | --engine-ephemeral | --engine-unused]
+gd++ rm --dep-all | --dep-checked-in | --dep-ephemeral | --dep-unused
 gd++ rm (--pkg PATH... | --pkg-all) [--dir]
 gd++ rm PATH (--class NAME... | --class-all)
 ```
@@ -31,15 +31,18 @@ After removing dependencies or packages, it deletes the cache directories left e
 --bind-ephemeral
   Remove all ephemeral Godot C++ bindings, from `res://.gd++proj`.
 
+--bind-unused
+  Remove all Godot C++ bindings that no package of the project uses, from both caches. Confirmed once. Packages don't choose engines, so `--engine-unused` removes all engines.
+
 --spec..., --engine...
   The same, for Godot API specs and Godot engines.
 
---dep-all, --dep-checked-in, --dep-ephemeral
+--dep-all, --dep-checked-in, --dep-ephemeral, --dep-unused
   The same, for all dependencies of all kinds at once. Confirmed once. Can't be used with the options above.
 
 Only one option per kind can be used, e.g. not `--spec` and `--spec-all` together. Kinds can be combined, e.g. `gd++ rm --bind-ephemeral --spec 4.3-stable`. Every named dependency must exist: `gd++` checks them all before it asks anything.
 
-Removing a dependency that a package uses breaks the package's next build, until you fetch the dependency again, but it doesn't break the package's build cache, which has its own copy. `gd++ ls --deps` shows which dependencies are unused.
+Removing a dependency that a package uses breaks the package's next build, until you fetch the dependency again, but it doesn't break the package's build cache, which has its own copy. `gd++ ls --deps` shows which dependencies are unused, and `--dep-unused` removes only those.
 
 # Removing packages
 
@@ -74,6 +77,7 @@ Removes C++ classes from the `gd++pkg.toml` of the package at PATH, so the packa
 ```sh
 gd++ rm --spec 4.3-stable                  # an old spec
 gd++ rm --bind-ephemeral --spec-ephemeral  # everything that `fetch --missing` can download again
+gd++ rm --dep-unused                       # what no package uses, e.g. after an upgrade
 gd++ rm --dep-all -f                       # all dependencies, without asking
 gd++ rm --pkg tools                        # make res://tools a plain directory again
 gd++ rm --pkg old_stuff --dir              # delete res://old_stuff entirely

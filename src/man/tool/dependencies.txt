@@ -98,6 +98,7 @@ Dependencies:
 ```sh
 gd++ rm --spec 4.3-stable             # one dependency, from both caches
 gd++ rm --bind-ephemeral              # all ephemeral bindings
+gd++ rm --dep-unused                  # all that no package uses
 gd++ rm --dep-all                     # everything
 ```
 

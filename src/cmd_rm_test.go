@@ -62,6 +62,21 @@ func TestRmDeps(t *testing.T) {
 	}
 }
 
+func TestRmUnusedDeps(t *testing.T) {
+	m := withRmFS(t, map[string]string{
+		packageFileName:          testRmPackage,
+		"a/" + packageFileName:   "bind = \"4.4\"\nspec = \"4.3\"\n",
+		"_gd++proj/bind/4.3/a.h": "", ".gd++proj/bind/4.4/a.h": "", ".gd++proj/bind/4.5/a.h": "",
+		"_gd++proj/spec/4.2/a.h": "", ".gd++proj/spec/4.3/a.h": "",
+		".gd++proj/engine/4.3/a.h": "",
+	})
+	files := []string{packageFileName, "a/" + packageFileName, "_gd++proj/bind/4.3/a.h", ".gd++proj/bind/4.4/a.h", ".gd++proj/spec/4.3/a.h"}
+	(&CmdRm{BindUnused: true}).Run()
+	wantFiles(t, m, append(files, "_gd++proj/spec/4.2/a.h", ".gd++proj/engine/4.3/a.h")...)
+	(&CmdRm{DepUnused: true}).Run()
+	wantFiles(t, m, files...)
+}
+
 func TestRmPackages(t *testing.T) {
 	block := packageGitignore.marker + "\n" + packageGitignore.text + "\n"
 	m := withRmFS(t, map[string]string{
@@ -107,9 +122,9 @@ func TestRmFails(t *testing.T) {
 		"class_and_all":     {CmdRm{Path: "a", Class: []string{"A"}, ClassAll: true}, "Invalid arguments: --class and --class-all cannot be used together."},
 		"pkg_and_class_all": {CmdRm{Path: "a", ClassAll: true, Pkg: []string{"a"}}, "Invalid arguments: dependencies, packages and classes cannot be removed in the same run."},
 		"missing_class":     {CmdRm{Path: "a", Class: []string{"A", "B"}}, "There is no class B in res://a."},
-		"names_and_all":     {CmdRm{Engine: []string{"a"}, EngineAll: true}, "Invalid arguments: only one of --engine, --engine-all, --engine-checked-in and --engine-ephemeral can be used."},
-		"kind_both":         {CmdRm{SpecCheckedIn: true, SpecEphemeral: true}, "Invalid arguments: only one of --spec, --spec-all, --spec-checked-in and --spec-ephemeral can be used."},
-		"dep_both":          {CmdRm{DepAll: true, DepEphemeral: true}, "Invalid arguments: only one of --dep-all, --dep-checked-in and --dep-ephemeral can be used."},
+		"names_and_all":     {CmdRm{Engine: []string{"a"}, EngineAll: true}, "Invalid arguments: only one of --engine, --engine-all, --engine-checked-in, --engine-ephemeral and --engine-unused can be used."},
+		"kind_both":         {CmdRm{SpecCheckedIn: true, SpecEphemeral: true}, "Invalid arguments: only one of --spec, --spec-all, --spec-checked-in, --spec-ephemeral and --spec-unused can be used."},
+		"dep_both":          {CmdRm{DepAll: true, DepEphemeral: true}, "Invalid arguments: only one of --dep-all, --dep-checked-in, --dep-ephemeral and --dep-unused can be used."},
 		"dep_and_kind":      {CmdRm{DepAll: true, Bind: []string{"a"}}, "Invalid arguments: --dep options cannot be used with --bind, --spec or --engine options."},
 		"pkg_and_all":       {CmdRm{Pkg: []string{"a"}, PkgAll: true}, "Invalid arguments: --pkg and --pkg-all cannot be used together."},
 		"dir_alone":         {CmdRm{Dir: true, BindAll: true}, "Invalid arguments: --dir can only be used with --pkg or --pkg-all."},

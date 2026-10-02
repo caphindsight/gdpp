@@ -14,17 +14,21 @@ type CmdRm struct {
 	BindAll         bool     `arg:"--bind-all" help:"remove all Godot C++ bindings"`
 	BindCheckedIn   bool     `arg:"--bind-checked-in" help:"remove all checked in Godot C++ bindings"`
 	BindEphemeral   bool     `arg:"--bind-ephemeral" help:"remove all ephemeral Godot C++ bindings"`
+	BindUnused      bool     `arg:"--bind-unused" help:"remove all Godot C++ bindings that no package uses"`
 	Spec            []string `arg:"--spec" placeholder:"NAME" help:"remove these Godot API specs"`
 	SpecAll         bool     `arg:"--spec-all" help:"remove all Godot API specs"`
 	SpecCheckedIn   bool     `arg:"--spec-checked-in" help:"remove all checked in Godot API specs"`
 	SpecEphemeral   bool     `arg:"--spec-ephemeral" help:"remove all ephemeral Godot API specs"`
+	SpecUnused      bool     `arg:"--spec-unused" help:"remove all Godot API specs that no package uses"`
 	Engine          []string `arg:"--engine" placeholder:"NAME" help:"remove these Godot engines"`
 	EngineAll       bool     `arg:"--engine-all" help:"remove all Godot engines"`
 	EngineCheckedIn bool     `arg:"--engine-checked-in" help:"remove all checked in Godot engines"`
 	EngineEphemeral bool     `arg:"--engine-ephemeral" help:"remove all ephemeral Godot engines"`
+	EngineUnused    bool     `arg:"--engine-unused" help:"remove all Godot engines that no package uses"`
 	DepAll          bool     `arg:"--dep-all" help:"remove all dependencies of all kinds"`
 	DepCheckedIn    bool     `arg:"--dep-checked-in" help:"remove all checked in dependencies of all kinds"`
 	DepEphemeral    bool     `arg:"--dep-ephemeral" help:"remove all ephemeral dependencies of all kinds"`
+	DepUnused       bool     `arg:"--dep-unused" help:"remove all dependencies of all kinds that no package uses"`
 	Pkg             []string `arg:"--pkg" placeholder:"PATH" help:"remove the packages at these paths"`
 	PkgAll          bool     `arg:"--pkg-all" help:"remove all packages"`
 	Dir             bool     `arg:"--dir" help:"delete the package directories with everything inside, instead of just the GD++ files"`
@@ -33,15 +37,20 @@ type CmdRm struct {
 }
 
 // rmKind is what to remove of one kind of dep: the named deps, or with no
-// names, all deps; either way only their checked in and/or ephemeral copies.
+// names, all deps, or only those no package uses; either way only their
+// checked in and/or ephemeral copies.
 type rmKind struct {
-	names                []string
-	checkedIn, ephemeral bool
-	cache                ProjectDepCache
+	names                        []string
+	checkedIn, ephemeral, unused bool
+	cache                        ProjectDepCache
+	used                         []string // the deps packages use, with unused
 }
 
 // paths returns the copies of the dep that k removes.
 func (k rmKind) paths(name string) (paths []Path) {
+	if k.unused && slices.Contains(k.used, name) {
+		return nil
+	}
 	if k.checkedIn && k.cache.IsCheckedIn(name) {
 		paths = append(paths, k.cache.CheckedInDir.Cd(name))
 	}
@@ -52,11 +61,13 @@ func (k rmKind) paths(name string) (paths []Path) {
 }
 
 // rmGroup describes a group of deps in prompts, e.g. "ephemeral Godot engines".
-func rmGroup(checkedIn, ephemeral bool, plural string) string {
+func rmGroup(k rmKind, plural string) string {
 	switch {
-	case !ephemeral:
+	case k.unused:
+		return "unused " + plural
+	case !k.ephemeral:
 		return "checked in " + plural
-	case !checkedIn:
+	case !k.checkedIn:
 		return "ephemeral " + plural
 	}
 	return plural
@@ -69,9 +80,18 @@ func (c *CmdRm) Run() {
 		return
 	}
 	p := LoadProject(Cwd())
+	var pkgs []Package
+	if slices.ContainsFunc(kinds, func(k rmKind) bool { return k.unused }) {
+		pkgs = p.ListPackages()
+	}
 	for i := range kinds {
 		k := &kinds[i]
 		k.cache = p.Caches[i]
+		for _, pkg := range pkgs {
+			if name, ok := pkg.Config.Dep(k.cache.Name); ok {
+				k.used = append(k.used, name)
+			}
+		}
 		for _, name := range k.names {
 			k.cache.GetPath(name) // asserts it exists, before any prompt
 		}
@@ -80,7 +100,7 @@ func (c *CmdRm) Run() {
 
 	// Confirm everything before removing anything, so a "no" changes nothing.
 	// Deps chosen by a group option are confirmed once per group.
-	depGroup := c.DepAll || c.DepCheckedIn || c.DepEphemeral
+	depGroup := c.DepAll || c.DepCheckedIn || c.DepEphemeral || c.DepUnused
 	var deps []Path
 	for _, k := range kinds {
 		for _, name := range k.names {
@@ -93,7 +113,7 @@ func (c *CmdRm) Run() {
 				group = append(group, k.paths(name)...)
 			}
 			if len(group) > 0 && !depGroup {
-				Confirm("Remove all %s?", rmGroup(k.checkedIn, k.ephemeral, k.cache.Plural))
+				Confirm("Remove all %s?", rmGroup(k, k.cache.Plural))
 			}
 			deps = append(deps, group...)
 		}
@@ -103,7 +123,7 @@ func (c *CmdRm) Run() {
 		return
 	}
 	if depGroup && len(deps) > 0 {
-		Confirm("Remove all %s?", rmGroup(kinds[0].checkedIn, kinds[0].ephemeral, "dependencies"))
+		Confirm("Remove all %s?", rmGroup(kinds[0], "dependencies"))
 	}
 	if c.PkgAll && len(roots) > 0 {
 		var names []string
@@ -154,26 +174,27 @@ func (c *CmdRm) validate() []rmKind {
 	Assert(c.Path != "" || !classes, "Invalid arguments: --class and --class-all require a package path.")
 	Assert(len(c.Class) == 0 || !c.ClassAll, "Invalid arguments: --class and --class-all cannot be used together.")
 	kinds := []rmKind{ // in the order of depKinds
-		{names: c.Bind, checkedIn: c.BindAll || c.BindCheckedIn, ephemeral: c.BindAll || c.BindEphemeral},
-		{names: c.Spec, checkedIn: c.SpecAll || c.SpecCheckedIn, ephemeral: c.SpecAll || c.SpecEphemeral},
-		{names: c.Engine, checkedIn: c.EngineAll || c.EngineCheckedIn, ephemeral: c.EngineAll || c.EngineEphemeral},
+		{names: c.Bind, checkedIn: c.BindAll || c.BindCheckedIn, ephemeral: c.BindAll || c.BindEphemeral, unused: c.BindUnused},
+		{names: c.Spec, checkedIn: c.SpecAll || c.SpecCheckedIn, ephemeral: c.SpecAll || c.SpecEphemeral, unused: c.SpecUnused},
+		{names: c.Engine, checkedIn: c.EngineAll || c.EngineCheckedIn, ephemeral: c.EngineAll || c.EngineEphemeral, unused: c.EngineUnused},
 	}
 	counts := []int{
-		countTrue(len(c.Bind) > 0, c.BindAll, c.BindCheckedIn, c.BindEphemeral),
-		countTrue(len(c.Spec) > 0, c.SpecAll, c.SpecCheckedIn, c.SpecEphemeral),
-		countTrue(len(c.Engine) > 0, c.EngineAll, c.EngineCheckedIn, c.EngineEphemeral),
+		countTrue(len(c.Bind) > 0, c.BindAll, c.BindCheckedIn, c.BindEphemeral, c.BindUnused),
+		countTrue(len(c.Spec) > 0, c.SpecAll, c.SpecCheckedIn, c.SpecEphemeral, c.SpecUnused),
+		countTrue(len(c.Engine) > 0, c.EngineAll, c.EngineCheckedIn, c.EngineEphemeral, c.EngineUnused),
 	}
-	depFlags := countTrue(c.DepAll, c.DepCheckedIn, c.DepEphemeral)
-	Assert(depFlags <= 1, "Invalid arguments: only one of --dep-all, --dep-checked-in and --dep-ephemeral can be used.")
+	depFlags := countTrue(c.DepAll, c.DepCheckedIn, c.DepEphemeral, c.DepUnused)
+	Assert(depFlags <= 1, "Invalid arguments: only one of --dep-all, --dep-checked-in, --dep-ephemeral and --dep-unused can be used.")
 	Assert(depFlags == 0 || counts[0]+counts[1]+counts[2] == 0, "Invalid arguments: --dep options cannot be used with --bind, --spec or --engine options.")
 	for i := range kinds {
 		k, flag := &kinds[i], depKinds[i].Name
-		Assert(counts[i] <= 1, "Invalid arguments: only one of --%s, --%s-all, --%s-checked-in and --%s-ephemeral can be used.", flag, flag, flag, flag)
+		Assert(counts[i] <= 1, "Invalid arguments: only one of --%s, --%s-all, --%s-checked-in, --%s-ephemeral and --%s-unused can be used.", flag, flag, flag, flag, flag)
 		for _, name := range k.names {
 			assertDepName(name)
 		}
 		k.names = uniqueSorted(k.names, compareDepNames) // so each is confirmed once
-		if len(k.names) > 0 {
+		k.unused = k.unused || c.DepUnused
+		if len(k.names) > 0 || k.unused {
 			k.checkedIn, k.ephemeral = true, true
 		}
 		k.checkedIn = k.checkedIn || c.DepAll || c.DepCheckedIn

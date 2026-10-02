@@ -97,11 +97,10 @@ Old dependencies stay in the caches until you remove them:
 
 ```sh
 gd++ ls --deps
-gd++ rm --spec 4.7.2-stable
-gd++ rm --bind 10.0.0-stable
+gd++ rm --bind-unused --spec-unused
 ```
 
-`gd++ ls --deps` marks the ones that no package uses. If you checked dependencies in, check in the new ones too, with `gd++ checkin`, and commit the change. Teammates get the new versions with `gd++ fetch --missing`. See `gd++ man rm` and `gd++ man team-git`.
+`gd++ ls --deps` marks the ones that no package uses, and `gd++ rm` removes them, after asking. To remove one, name it, e.g. `gd++ rm --spec 4.7.2-stable`. If you checked dependencies in, check in the new ones too, with `gd++ checkin`, and commit the change. Teammates get the new versions with `gd++ fetch --missing`. See `gd++ man rm` and `gd++ man team-git`.
 
 # See also
 
