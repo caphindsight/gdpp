@@ -8,14 +8,6 @@ ctor {
   gd::print("Created.");
 }
 
-@recycle ctor {
-  gd::print("Reused.");
-}
-
-@recycle dtor {
-  gd::print("Kept for later.");
-}
-
 class Gun {
   extends Node3D
 

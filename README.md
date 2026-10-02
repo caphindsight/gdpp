@@ -236,7 +236,7 @@ A `Weak[Enemy]` remembers the enemy without keeping it alive, and knows when it'
 
 <a href="readme/svg/pools.gd++"><img src="readme/svg/pools.svg" alt="GD++ code: pools"></a>
 
-For a `@pool` class, `destroy` doesn't delete the node. Instead, it removes the node from the tree and keeps it in the pool, and `create` reuses it later. `ctor` and `dtor` run only when a bullet is actually created or deleted, while `@recycle ctor` and `@recycle dtor` run when a bullet is taken from the pool or returned to it. A `@recycle` variable, like `speed`, gets its initial value again each time a bullet is reused. See `gd++ man pools`.
+For a `@pool` class, `destroy` doesn't delete the node. Instead, it removes the node from the tree and keeps it in the pool, and `create` reuses it later. So `ctor` runs only when a bullet is actually created, not each time it's reused. A `@recycle` variable, like `speed`, gets its initial value again each time a bullet is reused. See `gd++ man pools`.
 
 ### Notification handlers
 
