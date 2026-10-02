@@ -83,7 +83,6 @@ Like in GDScript, the code of a class runs in the editor only if the class has `
 class_name Gizmo
 extends Node3D
 
-@override
 func _process(delta: float) -> void {
   rotate_y(delta);          // Spins in the editor too.
 }

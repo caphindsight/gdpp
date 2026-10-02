@@ -1,0 +1,27 @@
+class_name Hatch
+extends Gate
+
+// Scripts call _super_ready in place of super._ready().
+@override("super")
+func _ready() -> void {
+  gd::print("ready");
+}
+
+@override("final", "super")
+func _open() -> bool {
+  return true;
+}
+
+@virtual
+func knock(times: int) -> String {
+  return "knock";
+}
+
+class LoudHatch {
+  extends Hatch
+
+  @override("super")
+  func knock(times: int) -> String {
+    return "KNOCK";
+  }
+}

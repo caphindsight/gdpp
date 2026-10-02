@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Hatch" inherits="Gate" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_super_open">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="_super_ready">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="knock" qualifiers="virtual">
+			<return type="String" />
+			<param index="0" name="times" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

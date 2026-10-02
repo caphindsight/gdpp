@@ -1,0 +1,4 @@
+input.gd++:4:1: The engine function _ready can only take @trace and @profile.
+ 4 | @const
+   | ^^^^^^
+Hint: Use @override to override it like other engine functions.

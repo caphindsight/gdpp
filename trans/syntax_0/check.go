@@ -34,7 +34,7 @@ type classModel struct {
 	codes      []*Code // decl and impl blocks inside the class.
 	globals    []*Code // @global decl and impl blocks, outside the class and namespace godot.
 	ctor, dtor *Block
-	notifs     []*Notif
+	notifs     []*notifModel
 	funcs      []*funcModel
 	vars       []*varModel
 	signals    []*signalModel
@@ -42,6 +42,14 @@ type classModel struct {
 	enums      []*symbol // Enums the class exposes its own copy of.
 	imports    []*Type
 	noimports  []*Type
+}
+
+// notifModel is a handler in the class's _notification: a notif block, or the call of an engine function.
+type notifModel struct {
+	cond   string // The C++ condition on WHAT.
+	body   *Block // A notif block's body.
+	call   string // An engine function's call, e.g. "_gdpp_body__process(get_process_delta_time())".
+	setter string // For _process and _physics_process: the method that turns processing on.
 }
 
 type externModel struct {
@@ -61,11 +69,12 @@ type funcModel struct {
 	params                             []*gtype
 	ret                                *gtype
 	virtual, override, isConst, static bool
-	final                              bool      // With @final: subclasses and scripts can't override it.
-	deferral                           string    // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
-	hidden                             string    // For the generated body of a class's func with a deferral: that deferral.
-	trace, profile                     bool      // Whether its @trace or @profile, or its class's, is on.
-	rpc                                *rpcModel // Nil without @rpc.
+	final, super                       bool       // With @override("final") and @override("super").
+	callsSuper                         *funcModel // With @override("super"): the bound function that has the body.
+	deferral                           string     // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
+	hidden                             string     // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
+	trace, profile                     bool       // Whether its @trace or @profile, or its class's, is on.
+	rpc                                *rpcModel  // Nil without @rpc.
 	// The class whose GDVIRTUAL lets scripts override the function: its own for @virtual, a base's for an
 	// @override of a @virtual function. Empty for others.
 	virtualOf string
@@ -273,13 +282,11 @@ func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
 	case f.virtual && owner != "":
 		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "virtual" })]
 		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already @virtual in %s.", f.f.Name, owner), "Use @override to override it.")
-	case f.final && (!f.override || owner == ""):
-		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "final" })]
-		hint := ""
-		if f.override {
-			hint = "The engine lets scripts override its own virtual functions, so GD++ can't stop that."
-		}
-		return u.errorAt(a.Pos, len(a.Name)+1, "Annotation @final only works on @override functions that override a GD++ @virtual function.", hint)
+	case f.final && owner == "":
+		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "override" })]
+		arg := a.Args[slices.IndexFunc(a.Args, func(arg *Arg) bool { return arg.Value == `"final"` })]
+		return u.errorAt(arg.Pos, len(arg.Value), "Annotation @override(\"final\") only works on overrides of a GD++ @virtual function.",
+			"The engine lets scripts override its own virtual functions, so GD++ can't stop that.")
 	case f.virtual:
 		f.virtualOf = class
 	case f.override && !f.final: // Without a GDVIRTUAL_CALL, scripts' overrides never run.
@@ -747,7 +754,7 @@ func (u *unit) enumShorthand(t *gtype, init *Init) error {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "final", "game_only", "global", "icon", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "onready",
 	"onthread", "override", "profile", "rpc", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -769,7 +776,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "profile", "rpc", "trace"}, a.Name):
+			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "profile", "rpc", "trace"}, a.Name):
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
@@ -809,7 +816,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "final", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
+	allowed := []string{"const", "deferred", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "profile", "rpc", "thread_safe", "trace"}
 	}
@@ -821,8 +828,19 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil, final: a["final"] != nil,
+	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil,
 		isConst: a["const"] != nil, static: a["static"] != nil}
+	for _, arg := range argsOf(a["override"]) {
+		name, _ := strconv.Unquote(arg.Value)
+		switch {
+		case name != "final" && name != "super":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override takes \"final\" or \"super\".", "E.g. @override(\"final\").")
+		case name == "final" && m.final, name == "super" && m.super:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @override takes %s only once.", arg.Value), "")
+		}
+		m.final = m.final || name == "final"
+		m.super = m.super || name == "super"
+	}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
 	}
@@ -878,20 +896,90 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	if err := u.requireBase(a["rpc"], owner, "rpc and rpc_config are methods of Node.", "Node"); err != nil {
 		return nil, err
 	}
+	if ef, ok := engineFuncs[f.Name]; ok && !ext && !m.override && u.extends(owner, ef.base) {
+		m.hidden = "notif"
+		return m, u.checkEngine(m)
+	}
 	return m, nil
+}
+
+// engineFuncs are the engine functions: the virtual functions that a class that extends base runs from its
+// _notification, at notif, unless it has @override. delta is the getter of their parameter, if they have one.
+var engineFuncs = map[string]struct{ notif, delta, base string }{
+	"_ready": {"POST_ENTER_TREE", "", "Node"}, "_enter_tree": {"ENTER_TREE", "", "Node"}, "_exit_tree": {"EXIT_TREE", "", "Node"},
+	"_process": {"PROCESS", "get_process_delta_time", "Node"}, "_physics_process": {"PHYSICS_PROCESS", "get_physics_process_delta_time", "Node"},
+	"_draw": {"DRAW", "", "CanvasItem"}}
+
+// checkEngine checks f, an engine function.
+func (u *unit) checkEngine(f *funcModel) error {
+	name := f.f.Name
+	for _, a := range f.f.Annotations {
+		if a.Name != "" && a.Name != "trace" && a.Name != "profile" {
+			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take @trace and @profile.", name),
+				"Use @override to override it like other engine functions.")
+		}
+	}
+	sig, params := name+"() -> void", 0
+	if engineFuncs[name].delta != "" {
+		sig, params = name+"(delta: float) -> void", 1
+	}
+	if !f.ret.void || len(f.params) != params || params == 1 && f.params[0].cpp != "double" {
+		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("The engine function %s must be declared as \"func %s\".", name, sig), "")
+	}
+	return nil
+}
+
+// engineNotif returns the handler that calls f, an engine function, by its C++ name, bodyName(f).
+func engineNotif(f *funcModel) *notifModel {
+	ef := engineFuncs[f.f.Name]
+	n := &notifModel{cond: "WHAT == NOTIFICATION_" + ef.notif, call: bodyName(f) + "()"}
+	if f.f.Name == "_ready" {
+		n.cond += " && !is_node_ready()" // POST_ENTER_TREE comes right before each READY, but also on each later entry.
+	}
+	if ef.delta != "" {
+		n.call = fmt.Sprintf("%s(%s())", bodyName(f), ef.delta)
+		n.setter = processing[f.f.Name]
+	}
+	return n
+}
+
+// superName returns the name of the function that @override("super") binds for the override name: _super_ready
+// for _ready, super_jump for jump.
+func superName(name string) string {
+	if rest, ok := strings.CutPrefix(name, "_"); ok {
+		return "_super_" + rest
+	}
+	return "super_" + name
+}
+
+// argsOf returns the arguments of a, or nil if a is nil.
+func argsOf(a *Annotation) []*Arg {
+	if a == nil {
+		return nil
+	}
+	return a.Args
 }
 
 // requireBase returns an error at annotation a, if set, unless the class or extern named owner is one of bases or
 // extends one of them.
 func (u *unit) requireBase(a *Annotation, owner, hint string, bases ...string) error {
-	for name, seen := owner, 0; a != nil && seen < 100; seen++ {
+	if a != nil && !u.extends(owner, bases...) {
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can only be used in classes that extend %s, which %s doesn't.",
+			a.Name, strings.Join(bases, " or "), owner), hint)
+	}
+	return nil
+}
+
+// extends reports whether the class or extern named owner is one of bases or extends one of them. False if a base
+// along the way isn't known.
+func (u *unit) extends(owner string, bases ...string) bool {
+	for name, seen := owner, 0; seen < 100; seen++ {
 		s := u.symbols[name]
 		switch {
 		case slices.Contains(bases, name):
-			return nil
+			return true
 		case s == nil: // Also a dependency whose base isn't known.
-			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can only be used in classes that extend %s, which %s doesn't.",
-				a.Name, strings.Join(bases, " or "), owner), hint)
+			return false
 		case s.class != nil:
 			name = baseName(s.class.Extends)
 		case s.extern != nil:
@@ -900,7 +988,7 @@ func (u *unit) requireBase(a *Annotation, owner, hint string, bases ...string) e
 			name = s.base
 		}
 	}
-	return nil
+	return true // A cycle, which kindOf reports.
 }
 
 // bodyName is the name of the method that holds the body of a class's @deferred, @thread_safe or @onthread func f.
@@ -1337,7 +1425,11 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 						fmt.Sprintf("GD++ adds the prefix: \"notif(%s)\".", name))
 				}
 			}
-			m.notifs = append(m.notifs, member.Notif)
+			var conds []string
+			for _, name := range member.Notif.Names {
+				conds = append(conds, "WHAT == NOTIFICATION_"+name.Name)
+			}
+			m.notifs = append(m.notifs, &notifModel{cond: strings.Join(conds, " || "), body: member.Notif.Body})
 		case member.Func != nil && member.Func.Name == "_notification":
 			return nil, u.errorAt(member.Func.Pos, 4, "Classes can't declare _notification, since GD++ generates it.",
 				"Handle notifications with notif blocks, e.g. \"notif(READY) { ... }\".")
@@ -1347,8 +1439,30 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				err = u.setVirtualOf(f, c.Name, m.base)
 			}
 			if err == nil {
-				m.funcs = append(m.funcs, f)
 				err = u.unique(names, f.f.Pos, "func", f.f.Name)
+			}
+			switch {
+			case err != nil:
+			case f.hidden == "notif":
+				// It's a method with another name, since godot-cpp would make a method of its name an override.
+				if f.f.Name == "_ready" { // Runs first, right after the @onready initializers.
+					m.notifs = slices.Insert(m.notifs, 0, engineNotif(f))
+				} else {
+					m.notifs = append(m.notifs, engineNotif(f))
+				}
+				body := *f.f
+				body.Name = bodyName(f)
+				f.f = &body
+				m.funcs = append(m.funcs, f)
+			case f.super:
+				// The bound function has the body, so scripts can call it in place of super.
+				body := *f.f
+				body.Name, body.Annotations = superName(f.f.Name), nil
+				f.callsSuper = &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst}
+				m.funcs = append(m.funcs, f, f.callsSuper)
+				err = u.unique(names, f.f.Pos, "func", body.Name)
+			default:
+				m.funcs = append(m.funcs, f)
 			}
 			if err == nil && f.deferral != "" {
 				// The deferred call runs the body, a separate method.
@@ -1410,15 +1524,11 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			return nil, err
 		}
 	}
-	// @onready initializers run at the start of _ready, so declare it if the class doesn't.
-	if slices.ContainsFunc(m.vars, func(v *varModel) bool { return v.v.Init != nil && v.onready }) &&
-		!slices.ContainsFunc(m.funcs, func(f *funcModel) bool { return f.override && f.f.Name == "_ready" }) {
-		m.funcs = append(m.funcs, &funcModel{f: &Func{Name: "_ready"}, ret: &gtype{cpp: "void", doc: "void", void: true}, override: true})
-	}
 	// The class's @trace leaves out the functions called every frame, which would flood the output.
 	for _, f := range m.funcs {
 		if f.deferral == "" {
-			f.trace = f.trace || m.trace && !(f.override && processing[f.f.Name] != "")
+			perFrame := (f.override || f.hidden == "notif") && processing[strings.TrimPrefix(f.f.Name, "_gdpp_body_")] != ""
+			f.trace = f.trace || m.trace && !perFrame
 			f.profile = f.profile || m.profile
 		}
 	}

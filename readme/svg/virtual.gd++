@@ -9,7 +9,7 @@ func _damage() -> int {
 class Sword {
   extends Weapon
 
-  @final @override
+  @override("final")
   func _damage() -> int {
     return 25;
   }

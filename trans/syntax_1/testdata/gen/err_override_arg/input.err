@@ -1,0 +1,4 @@
+input.gd++:4:11: Annotation @override takes "final" or "super".
+ 4 | @override("finale")
+   |           ^^^^^^^^
+Hint: E.g. @override("final").

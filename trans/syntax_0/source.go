@@ -59,7 +59,12 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 				w.ln("\t%s(true);", setter)
 			}
 		}
-		u.initializers(w, c, false)
+		for _, n := range c.notifs {
+			if n.setter != "" {
+				w.ln("\t%s(true);", n.setter)
+			}
+		}
+		u.initializers(w, c, false, "\t")
 		if c.ctor != nil {
 			w.block(c.ctor, "\t{", "}")
 		}
@@ -77,17 +82,25 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		}
 		w.ln("}")
 	}
-	if len(c.notifs) > 0 {
-		// Each block runs in a lambda, so a return in one doesn't skip the later ones.
+	if c.needsNotification() {
 		w.ln("")
 		w.ln("void %s::_notification(int WHAT) {", c.name)
 		guard(w, c, "")
+		// POST_ENTER_TREE comes right before each READY, once the children are ready, but also on each later entry.
+		if c.hasOnready() {
+			w.ln("\tif (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {")
+			u.initializers(w, c, true, "\t\t")
+			w.ln("\t}")
+		}
+		// Each block runs in a lambda, so a return in one doesn't skip the later ones.
 		for _, n := range c.notifs {
-			var conds []string
-			for _, name := range n.Names {
-				conds = append(conds, "WHAT == NOTIFICATION_"+name.Name)
+			if n.body != nil {
+				w.block(n.body, "\tif ("+n.cond+") [&] {", "}();")
+			} else {
+				w.ln("\tif (%s) {", n.cond)
+				w.ln("\t\t%s;", n.call)
+				w.ln("\t}")
 			}
-			w.block(n.Body, "\tif ("+strings.Join(conds, " || ")+") [&] {", "}();")
 		}
 		w.ln("}")
 	}
@@ -126,16 +139,16 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 }
 
 // initializers writes the assignments of the initial values of the class's vars: the @onready ones, or the others.
-func (u *unit) initializers(w *writer, c *classModel, onready bool) {
+func (u *unit) initializers(w *writer, c *classModel, onready bool, indent string) {
 	for _, v := range c.vars {
 		init := v.v.Init
 		if init == nil || v.onready != onready {
 			continue
 		}
 		if init.Block != nil {
-			w.block(init.Block, fmt.Sprintf("\t%s = [&]() -> %s {", v.v.Name, v.t.cpp), "}();")
+			w.block(init.Block, fmt.Sprintf("%s%s = [&]() -> %s {", indent, v.v.Name, v.t.cpp), "}();")
 		} else {
-			w.user(init.Pos, "\t"+v.v.Name+" = ", init.Expr, ";")
+			w.user(init.Pos, indent+v.v.Name+" = ", init.Expr, ";")
 		}
 	}
 }
@@ -277,10 +290,11 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		}
 		w.ln("\t}")
 	}
-	if f.override && f.f.Name == "_ready" {
-		u.initializers(w, c, true)
-	}
 	switch {
+	case f.callsSuper != nil && f.ret.void:
+		w.ln("\t%s(%s);", f.callsSuper.f.Name, strings.Join(paramNames(f.f.Params), ", "))
+	case f.callsSuper != nil:
+		w.ln("\treturn %s(%s);", f.callsSuper.f.Name, strings.Join(paramNames(f.f.Params), ", "))
 	case f.deferral == "onthread":
 		self, capture := "this", "=, this"
 		if f.static {
@@ -418,8 +432,8 @@ func info(c *classModel, t *gtype, name, usage, hint, hintString string) string 
 // bindings writes the body of _bind_methods.
 func (u *unit) bindings(w *writer, c *classModel) {
 	for _, f := range c.funcs {
-		if f.hidden == "onthread" {
-			continue // Its func calls it directly.
+		if f.hidden == "onthread" || f.hidden == "notif" {
+			continue // Its func, or _notification, calls it directly.
 		}
 		// The method, followed by the default values of its parameters.
 		ref := fmt.Sprintf("&%s::%s", c.name, f.f.Name)
@@ -576,7 +590,7 @@ func (u *unit) sourceNames() []string {
 		code(c.ctor)
 		code(c.dtor)
 		for _, n := range c.notifs {
-			code(n.Body)
+			code(n.body)
 		}
 		for _, f := range c.funcs {
 			code(f.f.Body)

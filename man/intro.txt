@@ -15,7 +15,6 @@ A GD++ class, saved as `hello_world.gd++` anywhere in a Godot project:
 class_name HelloWorld
 extends Node
 
-@override
 func _ready() -> void {
   Label *label = memnew(Label);
   label->set_text("Hello, world!");

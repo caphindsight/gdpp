@@ -61,19 +61,20 @@ ctor {
 
 # @onready and _ready
 
-A node gets ready when it and all its children have entered the scene tree, which is when Godot calls `_ready`. Variables with `@onready` get their initial values then, at the start of `_ready`, in the order of their declarations, since their initial values often need the node's children:
+A node gets ready when it and all its children have entered the scene tree, which is when Godot calls `_ready`. Variables with `@onready` get their initial values right before that, in the order of their declarations, since their initial values often need the node's children:
 
 ```gd++
 @onready
 var label: Label = get_node<Label>("Label")
 
-@override
 func _ready() -> void {
   label->set_text("Ready.");    // label is set already
 }
 ```
 
-If the class doesn't override `_ready`, GD++ adds an override that assigns the `@onready` variables. If it does, their initializers run before its body. `@onready` only works in classes that extend `Node`, since only nodes get ready: elsewhere, it's an error.
+GD++ assigns them in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, once the children are ready. So they're set before any `_ready` runs, even a script's that replaces the class's. `@onready` only works in classes that extend `Node`, since only nodes get ready: elsewhere, it's an error.
+
+The class's `_ready` runs right after them, also before `NOTIFICATION_READY`, so it runs before a script's `_ready`. An `@override _ready` runs at `NOTIFICATION_READY` instead, unless a script replaces it. See `gd++ man functions`.
 
 # The order of everything
 
@@ -82,7 +83,7 @@ For a node created by a scene, Godot:
 1. creates the object: the constructor runs, with the initial values of variables, then `notif(POSTINITIALIZE)`,
 2. sets the properties saved in the scene, i.e. the exported variables, through their setters,
 3. adds it to the scene tree: `_enter_tree` runs,
-4. once its children are ready: `_ready` runs, starting with the `@onready` initial values,
+4. once its children are ready: the `@onready` initial values are set, then the class's `_ready` runs, then a script's,
 5. every frame: `_process` and `_physics_process` run,
 6. removes it from the tree: `_exit_tree` runs,
 7. deletes it: `notif(PREDELETE)` runs, then the destructor.
@@ -120,7 +121,27 @@ Two notifications are worth knowing:
 - `POSTINITIALIZE` comes right after the constructor, once the object is fully created.
 - `PREDELETE` comes when the object is about to be deleted, before the destructor. The object is still whole, e.g. a node is still in the tree, so it can still emit signals and call the engine.
 
-GD++ generates the class's `_notification` method from its `notif` blocks, so a class can't declare its own `_notification`. Godot calls the `_notification` of each class in the chain of bases itself, so a subclass's `notif` blocks don't replace its base's: both run.
+GD++ generates the class's `_notification` method from its `notif` blocks, its engine functions, e.g. `_process`, and its `@onready` variables, so a class can't declare its own `_notification`. Godot calls the `_notification` of each class in the chain of bases itself, so a subclass's `notif` blocks don't replace its base's: both run. A script's `_notification` doesn't replace them either: it runs after them.
+
+# notif and engine functions
+
+The engine functions, `_ready`, `_enter_tree`, `_exit_tree`, `_process`, `_physics_process` and `_draw`, are handlers of notifications too, written as functions: see `gd++ man functions`. In `_notification`, GD++ first sets the `@onready` variables, then runs `_ready`, and then the `notif` blocks and the other engine functions, in the order of the file:
+
+```gd++
+notif(PROCESS) {
+  gd::print("first");
+}
+
+func _process(delta: float) -> void {
+  gd::print("second");
+}
+
+notif(PROCESS) {
+  gd::print("third");
+}
+```
+
+Use the engine functions for their notifications, and `notif` blocks for every other notification, e.g. `PREDELETE`.
 
 # See also
 

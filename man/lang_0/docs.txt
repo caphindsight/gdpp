@@ -26,7 +26,7 @@ Doc comments can document:
 - functions, variables and signals,
 - integer constants, and the values of enums.
 
-Enums and externs can have doc comments too, but they aren't shown anywhere. `@override` functions aren't documented, since the engine documents them already. `decl` and `impl` blocks can't have doc comments.
+Enums and externs can have doc comments too, but they aren't shown anywhere. `@override` and engine functions, e.g. `_ready`, aren't documented, since the engine documents them already. The `_super_NAME` function of an `@override("super")` is, with the override's doc comment. `decl` and `impl` blocks can't have doc comments.
 
 A declaration has at most one doc comment, which can come before its annotations or between them. A doc comment that isn't followed by a declaration is an error:
 

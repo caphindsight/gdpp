@@ -1,0 +1,5 @@
+class_name Mob
+extends Node
+
+@const
+func _ready() -> void {}

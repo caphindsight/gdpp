@@ -1,10 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="495" height="129" viewBox="0 0 495 129">
+<svg xmlns="http://www.w3.org/2000/svg" width="453" height="149" viewBox="0 0 453 149">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#79c0ff">@override</tspan></text>
-  <text x="16" y="50"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_physics_process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">set_velocity</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#56d4dd">get_velocity</tspan><tspan fill="#e6edf3">() + </tspan><tspan fill="#56d4dd">get_gravity</tspan><tspan fill="#e6edf3">() * delta);</tspan></text>
-  <text x="16" y="90"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">move_and_slide</tspan><tspan fill="#e6edf3">();</tspan></text>
-  <text x="16" y="110"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="30"><tspan fill="#79c0ff">@override</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"super"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_unhandled_input</tspan><tspan fill="#e6edf3">(event: </tspan><tspan fill="#7ee787">InputEvent</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (event-&gt;</tspan><tspan fill="#56d4dd">is_action_pressed</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"jump"</tspan><tspan fill="#e6edf3">)) {</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">    </tspan><tspan fill="#56d4dd">jump</tspan><tspan fill="#e6edf3">();</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

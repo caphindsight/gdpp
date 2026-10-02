@@ -122,7 +122,7 @@ Annotations:
 Annotation @tool can't be used on a func.
 Annotation @export is used twice.
 Annotation @onready can only be used in classes that extend Node, which A doesn't.
-Annotation @override takes no arguments.
+Annotation @override takes "final" or "super".
 Annotations @static and @virtual can't be used together.
 A variable can have only one export annotation.
 Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.
@@ -133,7 +133,10 @@ Annotation @profile can't be used on a signal.
 Annotations @virtual and @onthread can't be used together.
 Function _open is already @virtual in Gate.
   Use @override to override it.
-Annotation @final only works on @override functions that override a GD++ @virtual function.
+Annotation @override("final") only works on overrides of a GD++ @virtual function.
+The engine function _ready can only take @trace and @profile.
+  Use @override to override it like other engine functions.
+The engine function _process must be declared as "func _process(delta: float) -> void".
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.
 Async variables can't be exported.
@@ -173,7 +176,7 @@ The path is relative to the build cache, where the compiler runs: `../` is the p
 Some compiler errors are about the generated code, but caused by the GD++ declarations. The usual ones:
 
 - "marked 'override', but does not override": an `@override` function's signature doesn't match the engine's. Check the return type, e.g. `-> void`, the parameter types, and `@const`. See `gd++ doc CLASS.FUNCTION`.
-- "overriding final function": an `@override` function overrides a `@final` one. See `gd++ man functions`.
+- "overriding final function": an `@override` function overrides an `@override("final")` one. See `gd++ man functions`.
 - "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
 - "ignoring return value ... declared with attribute 'nodiscard'": a signal's emit function was called without `emit`. Write `emit NAME(...)`.
 - "'claim' was not declared in this scope", or the same for `is_done` or `cancel`: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.

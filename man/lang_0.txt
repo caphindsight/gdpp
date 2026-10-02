@@ -40,7 +40,6 @@ func hurt(amount: int) -> void {
   }
 }
 
-@override
 func _physics_process(delta: float) -> void {
   Vector3 direction = Vector3(Input::get_singleton()->get_axis("ui_left", "ui_right"), 0, 0);
   set_velocity(direction * speed);

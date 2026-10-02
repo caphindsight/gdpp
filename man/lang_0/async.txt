@@ -18,12 +18,10 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
   return path;
 }
 
-@override
 func _ready() -> void {
   pending = find_path(get_position(), target);
 }
 
-@override
 func _process(delta: float) -> void {
   if (is_done pending) {
     follow(claim pending);
@@ -145,7 +143,6 @@ Godot requires waiting once for each task of the `WorkerThreadPool`, and `claim`
 A loop that keeps one search running, and follows each path it finds, as in the first example:
 
 ```gd++
-@override
 func _process(delta: float) -> void {
   if (!pending) {
     pending = find_path(get_position(), target);

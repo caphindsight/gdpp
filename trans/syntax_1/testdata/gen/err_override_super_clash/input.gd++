@@ -1,0 +1,7 @@
+class_name Mob
+extends Node
+
+func _super_ready() -> void {}
+
+@override("super")
+func _ready() -> void {}

@@ -1,0 +1,4 @@
+input.gd++:4:11: Annotation @override("final") only works on overrides of a GD++ @virtual function.
+ 4 | @override("final")
+   |           ^^^^^^^
+Hint: The engine lets scripts override its own virtual functions, so GD++ can't stop that.

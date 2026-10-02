@@ -35,25 +35,27 @@ Stage::Stage() {
 #line 36 "Stage.cpp"
 }
 
+void Stage::_notification(int WHAT) {
+	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
+#line 8 "input.gd++"
+		camera = get_node<Camera3D>("Camera");
+#line 43 "Stage.cpp"
+#line 11 "input.gd++"
+		mesh = [&]() -> MeshInstance3D * {
+  MeshInstance3D* mesh = memnew(MeshInstance3D);
+  add_child(mesh);
+  return mesh;
+}();
+#line 50 "Stage.cpp"
+	}
+}
+
 int64_t Stage::compute(int64_t a, int64_t b) {
 #line 22 "input.gd++"
 
   return a + b;
 
-#line 44 "Stage.cpp"
-}
-
-void Stage::_ready() {
-#line 8 "input.gd++"
-	camera = get_node<Camera3D>("Camera");
-#line 50 "Stage.cpp"
-#line 11 "input.gd++"
-	mesh = [&]() -> MeshInstance3D * {
-  MeshInstance3D* mesh = memnew(MeshInstance3D);
-  add_child(mesh);
-  return mesh;
-}();
-#line 57 "Stage.cpp"
+#line 59 "Stage.cpp"
 }
 
 int64_t Stage::get_count() const {

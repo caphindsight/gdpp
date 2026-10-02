@@ -43,13 +43,10 @@ A declaration's doc comment can come before its annotations or between them, but
 # Functions of classes
 
 @override
-  Override a virtual function of the engine, e.g. `_ready`, or a `@virtual` function of a GD++ base class. See `gd++ man functions`.
-
+@override("final", "super")
+  Override a virtual function of the engine, e.g. `_input`, or a `@virtual` function of a GD++ base class. A script's function of the same name replaces it. On the engine functions, `_ready`, `_process` and the like, which run from `_notification` without it, it makes a plain override instead. Optional arguments, in double quotes: `"final"`, on an override of a GD++ `@virtual` function: subclasses and scripts can't override it any further. `"super"`: also bind the body as `_super_NAME` (or `super_NAME`, for a NAME without a leading `_`), which scripts call in place of `super`. See `gd++ man functions`.
 @virtual
   Let subclasses and scripts override the function. See `gd++ man functions`.
-
-@final
-  With `@override` of a GD++ `@virtual` function: subclasses and scripts can't override it any further. See `gd++ man functions`.
 
 @const
   Make the function a const method. See `gd++ man functions`.
@@ -75,7 +72,7 @@ A declaration's doc comment can come before its annotations or between them, but
 @profile(GROUPS...)
   Time each call, for the editor's monitors and the profile table. See "@trace and @profile" below.
 
-These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. `@final` only works with `@override` of a GD++ `@virtual` function.
+These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. Engine functions only take `@trace` and `@profile`. `@override("final")` only works on an override of a GD++ `@virtual` function.
 
 # Functions of externs
 
@@ -102,7 +99,7 @@ See `gd++ man externs`.
 # Variables of classes
 
 @onready
-  Assign the initial value at the start of `_ready`, instead of in the constructor. Only in classes that extend `Node`. See `gd++ man lifecycle`.
+  Assign the initial value right before `_ready`, instead of in the constructor. Only in classes that extend `Node`. See `gd++ man lifecycle`.
 
 @export
   Show the variable in the inspector, and save it.
@@ -202,7 +199,7 @@ Enum values, integer constants, `ctor`, `dtor`, `notif`, `import` and `noimport`
 - An unknown annotation is an error, with a suggestion if it looks like a typo: "Unknown annotation @exprot." with "Did you mean \"@export\"?".
 - An annotation in the wrong place is an error, e.g. "Annotation @tool can't be used on a func.".
 - An annotation can be used once per declaration: "Annotation @export is used twice.".
-- Annotations that take no arguments reject them: "Annotation @override takes no arguments.".
+- Annotations that take no arguments reject them: "Annotation @virtual takes no arguments.".
 - `@trace` and `@profile` take only names in double quotes: "Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").".
 - Some annotations need a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
 - An annotation that isn't followed by a declaration is an error: "Expected a declaration after the annotation, ...".

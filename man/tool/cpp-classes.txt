@@ -146,7 +146,6 @@ extends Node
   #include "src/spinner.h"
 }
 
-@override
 func _ready() -> void {
   Spinner *spinner = memnew(Spinner);
   add_child(spinner);

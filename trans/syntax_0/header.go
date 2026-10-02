@@ -175,7 +175,17 @@ var processing = map[string]string{"_process": "set_process", "_physics_process"
 
 func (c *classModel) needsCtor() bool {
 	return c.ctor != nil || c.trace || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
-		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" })
+		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" }) ||
+		slices.ContainsFunc(c.notifs, func(n *notifModel) bool { return n.setter != "" })
+}
+
+// hasOnready reports whether the class has @onready vars with initial values, which its _notification assigns.
+func (c *classModel) hasOnready() bool {
+	return slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && v.onready })
+}
+
+func (c *classModel) needsNotification() bool {
+	return c.hasOnready() || len(c.notifs) > 0
 }
 
 func (c *classModel) needsDtor() bool {
@@ -294,7 +304,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("")
 	w.ln("protected:")
 	w.ln("\tstatic void _bind_methods();")
-	if len(c.notifs) > 0 {
+	if c.needsNotification() {
 		w.ln("\tvoid _notification(int WHAT);")
 	}
 	var helpers []string

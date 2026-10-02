@@ -1,5 +1,6 @@
-@override
-func _physics_process(delta: float) -> void {
-  set_velocity(get_velocity() + get_gravity() * delta);
-  move_and_slide();
+@override("super")
+func _unhandled_input(event: InputEvent) -> void {
+  if (event->is_action_pressed("jump")) {
+    jump();
+  }
 }

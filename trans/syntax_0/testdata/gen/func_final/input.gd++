@@ -1,8 +1,0 @@
-class_name SlidingGate
-extends Gate
-
-// Neither subclasses nor scripts can override it.
-@final @override
-func _open() -> bool {
-  return true;
-}

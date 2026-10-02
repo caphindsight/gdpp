@@ -2,7 +2,6 @@
 class_name Turntable
 extends Node3D
 
-@override
 func _process(delta: float) -> void {
   rotate_y(delta);
 }

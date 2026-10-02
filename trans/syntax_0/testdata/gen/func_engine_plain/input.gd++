@@ -1,0 +1,16 @@
+class_name Counter
+extends RefCounted
+
+// Not a node: an ordinary function.
+func _ready() -> void {
+  gd::print("ready");
+}
+
+class Marker {
+  extends Node
+
+  // Not a CanvasItem: an ordinary function.
+  func _draw() -> void {
+    gd::print("draw");
+  }
+}

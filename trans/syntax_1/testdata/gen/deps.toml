@@ -18,6 +18,18 @@ kind = "Object"
 base = "Node"
 
 [[dep]]
+name = "CanvasItem"
+include = "<godot_cpp/classes/canvas_item.hpp>"
+kind = "Object"
+base = "Node"
+
+[[dep]]
+name = "Node2D"
+include = "<godot_cpp/classes/node2d.hpp>"
+kind = "Object"
+base = "CanvasItem"
+
+[[dep]]
 name = "Engine"
 include = "<godot_cpp/classes/engine.hpp>"
 kind = "Object"
@@ -52,6 +64,12 @@ name = "Resource"
 include = "<godot_cpp/classes/resource.hpp>"
 kind = "RefCounted"
 base = "RefCounted"
+
+[[dep]]
+name = "InputEvent"
+include = "<godot_cpp/classes/input_event.hpp>"
+kind = "Object"
+base = "Resource"
 
 [[dep]]
 name = "Texture2D"

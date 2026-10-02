@@ -1,4 +1,3 @@
-@override
 func _process(delta: float) -> void {
   for (int64_t i = 0; i < get_child_count(); i++) {
     get_child(i)->call(string_name "tick", delta);

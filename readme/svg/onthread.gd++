@@ -8,7 +8,6 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
   return path;
 }
 
-@override
 func _process(delta: float) -> void {
   if (!pending) {
     pending = find_path(get_position(), target);

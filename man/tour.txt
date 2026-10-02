@@ -65,7 +65,6 @@ var speed: float = 300.0
 
 signal jumped
 
-@override
 func _physics_process(delta: float) -> void {
   Vector2 direction = Input::get_singleton()->get_vector("ui_left", "ui_right", "ui_up", "ui_down");
   set_velocity(direction * speed);

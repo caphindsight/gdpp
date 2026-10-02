@@ -104,7 +104,7 @@ A `decl` block holds the property's storage. Without `set`, a property is read-o
 
 <a href="readme/svg/onready.gd++"><img src="readme/svg/onready.svg" alt="GD++ code: onready"></a>
 
-Like in GDScript, the value is set when the node is ready, so its children exist. See `gd++ man lifecycle`.
+Like in GDScript, the value is set when the node gets ready, so its children exist. It's set before any `_ready` runs, even a script's. See `gd++ man lifecycle`.
 
 ### Typed arrays and dictionaries
 
@@ -136,17 +136,23 @@ With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ ma
 
 `emit` is one of GD++'s few rewrites in C++, so that sending a signal looks different from a call. See `gd++ man signals` and `gd++ man rewrites`.
 
+### Engine callbacks
+
+<a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
+
+`_ready`, `_process` and the like need no annotation: they run from the class's notification handler, so a script that extends the class can't replace them. `_process` and `_physics_process` also turn processing on. See `gd++ man functions`.
+
 ### `@override`
 
 <a href="readme/svg/override.gd++"><img src="readme/svg/override.svg" alt="GD++ code: override"></a>
 
-It overrides an engine callback, or a `@virtual` function. Overriding `_process` or `_physics_process` also turns it on. See `gd++ man functions`.
+It overrides any engine callback, or a `@virtual` function. A script's function of the same name replaces it, but with `"super"`, the script can still call it, as `_super_unhandled_input`. See `gd++ man functions`.
 
-### `@virtual` and `@final`
+### `@virtual` and `@override("final")`
 
 <a href="readme/svg/virtual.gd++"><img src="readme/svg/virtual.svg" alt="GD++ code: virtual"></a>
 
-A script that extends `Weapon` can override `_damage`. `@final` stops that for `Sword`. See `gd++ man functions`.
+A script that extends `Weapon` can override `_damage`. `"final"` stops that for `Sword`. See `gd++ man functions`.
 
 ### `@const` and `@static`
 

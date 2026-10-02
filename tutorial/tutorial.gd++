@@ -208,12 +208,18 @@ func foo_plus_bar() -> int {
 // func _foo() -> int:
 //   return 42
 
-// To override an engine virtual function, use @override instead:
-@override
+// _ready, _enter_tree, _exit_tree, _process, _physics_process and _draw need no annotation.
+// The body runs from the notification, so a script's _ready doesn't replace it: both run.
 func _ready() -> void {
-  // Caveat: the signature must match *exactly*.
-  // E.g. without `-> void` the return type would be Variant, which does not match _ready, so compilation fails.
   gd::print("My node is ready.");
+}
+
+// To override any other engine virtual function, use @override:
+@override
+func _unhandled_input(event: InputEvent) -> void {
+  // Caveat: the signature must match *exactly*.
+  // E.g. without `-> void` the return type would be Variant, which does not match _unhandled_input, so compilation fails.
+  gd::print("Unhandled input.");
 }
 
 // The @const attribute makes a function const:
@@ -376,7 +382,7 @@ var child_node_2: Node3D = {
   return res;
 }
 
-// @onready is optional. It runs the initialization at the start of _ready instead of in the constructor.
+// @onready is optional. It runs the initialization right before _ready instead of in the constructor.
 
 // In C++, a simple variable is a field with the same name and the canonical C++ type.
 // E.g. simple_var is an int64_t field of MyNode.
