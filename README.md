@@ -58,6 +58,10 @@ The full documentation is built into the tool, and matches the version you run. 
 
 Unlike GDScript, blocks use braces, and every value has a static type. Types are Godot's, e.g. `int`, `Vector3` or `Node3D`. Each one maps to a C++ type, e.g. `int64_t`, `Vector3` and `Node3D *`. Most examples below show a few members of a class, not whole files.
 
+### Includes are automatic
+
+You never write `#include` lines. GD++ knows which header declares each name of godot-cpp and of your package, finds the names your code uses, and includes their headers. To use a class, just use it, even in a cycle: `Player` can use `Enemy`, and `Enemy` can use `Player`. See `gd++ man includes`.
+
 ### Classes
 
 <a href="readme/svg/classes.gd++"><img src="readme/svg/classes.svg" alt="GD++ code: classes"></a>
@@ -256,7 +260,7 @@ After `gd++ build --profile ai`, the editor's monitors show its timings live. `@
 
 <a href="readme/svg/import.gd++"><img src="readme/svg/import.svg" alt="GD++ code: import"></a>
 
-GD++ writes the `#include` lines for the names it sees. `import` adds one for a name it can't see, e.g. behind `auto`, and `noimport` removes one. See `gd++ man includes`.
+Includes are automatic, but in very rare cases, GD++ can't see a name, e.g. behind `auto`. Then `import` adds its `#include` line, and `noimport` removes one. See `gd++ man includes`.
 
 ### Doc comments
 
