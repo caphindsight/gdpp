@@ -1509,6 +1509,10 @@ func (u *unit) exportHint(m *varModel) error {
 	if m.t.async != nil {
 		return u.errorAt(export.Pos, len(export.Name)+1, "Async variables can't be exported.", "Neither the inspector nor scene files can hold a task.")
 	}
+	if m.t.weak {
+		return u.errorAt(export.Pos, len(export.Name)+1, "Weak variables can't be exported.",
+			fmt.Sprintf("Export the class itself, e.g. \"@export var %s: %s\".", m.v.Name, m.t.doc))
+	}
 	m.usage = "PROPERTY_USAGE_DEFAULT"
 	var args []string
 	for _, arg := range export.Args {

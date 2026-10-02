@@ -81,7 +81,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 # Building blocks
 
 - Classes: file-level with `class_name`, or inline with `class Name { ... }`. See `gd++ man classes`.
-- Types: Godot's types, and how they map to C++. See `gd++ man types`.
+- Types: Godot's types, how they map to C++, and `Weak[T]`, a reference that knows when its object is gone. See `gd++ man types`.
 - Casts: `value as T` converts between any two types, and checks downcasts. See `gd++ man cast`.
 - Functions: `func name(params) -> type { C++ }`, with annotations like `@override`, `@virtual`, `@const` and `@static`. See `gd++ man functions`.
 - Variables: `var name: type = value`, node paths like `@onready var label: Label = $Hud/Score`, and properties with their own `get` and `set`. See `gd++ man variables`.
@@ -89,7 +89,8 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Signals: `signal name(params)`, sent with `emit`. See `gd++ man signals`.
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
 - Object lifecycle: `ctor { }`, `dtor { }`, `@onready` and `notif ... { }`. See `gd++ man lifecycle`.
-- Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `create` and `destroy`. See `gd++ man pools`.
+- Classes of scenes: `@scene` makes `create` instantiate a scene. See `gd++ man classes`.
+- Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `create`, `destroy` and `queue_destroy`. See `gd++ man pools`.
 - Networking: `@rpc` functions, and `rpc` calls. See `gd++ man rpc`.
 - Threads: `@onthread` runs a function on a worker thread, and returns an `Async` task with its result. See `gd++ man async`.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.

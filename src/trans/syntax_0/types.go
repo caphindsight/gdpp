@@ -54,6 +54,7 @@ type gtype struct {
 	byRef bool    // Whether parameters take it as const &.
 	enum  *symbol // Set for enums.
 	async *gtype  // For Async types: the type of the result.
+	weak  bool    // Whether it's a Weak type.
 	void  bool
 }
 
@@ -94,10 +95,13 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		}
 		return u.async(result), nil
 	}
+	if t.Name == "Weak" {
+		return u.weak(t)
+	}
 	if (t.Name == "Array" && len(t.Args) > 1) || (t.Name == "Dictionary" && len(t.Args) != 0 && len(t.Args) != 2) ||
 		(len(t.Args) > 0 && t.Name != "Array" && t.Name != "Dictionary") {
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Type %s doesn't take these type arguments.", t.Name),
-			"Only Array[T], Dictionary[K, V] and Async[T] take type arguments.")
+			"Only Array[T], Dictionary[K, V], Async[T] and Weak[T] take type arguments.")
 	}
 	if len(t.Args) > 0 {
 		var cpp, doc []string
@@ -142,6 +146,26 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		"Types are Godot's built-in types and classes, and the package's classes, externs and enums.")
 }
 
+// weak resolves t, a Weak type: a reference to an object of a class that isn't refcounted, which doesn't keep it alive.
+func (u *unit) weak(t *Type) (*gtype, error) {
+	if len(t.Args) != 1 {
+		return nil, u.errorAt(t.Pos, len(t.Name), "Type Weak takes one type argument, a class that isn't refcounted, e.g. Weak[Node3D].", "")
+	}
+	arg := t.Args[0]
+	if _, err := u.resolve(arg, false); err != nil {
+		return nil, err
+	}
+	switch s := u.symbols[arg.Name]; {
+	case s != nil && s.kind == meta.Object:
+		return &gtype{cpp: "gdpp::Weak<" + s.name + ">", doc: s.name, weak: true}, nil
+	case s != nil && s.kind == meta.RefCounted:
+		return nil, u.errorAt(arg.Pos, len(arg.Name), fmt.Sprintf("Weak needs a class that isn't refcounted, like a node, but %s is refcounted.", arg.Name),
+			fmt.Sprintf("A refcounted object lives while something references it: use %s itself.", arg.Name))
+	}
+	return nil, u.errorAt(arg.Pos, len(arg.Name), fmt.Sprintf("Weak needs a class that isn't refcounted, like a node, but %s isn't one.", arg.Name),
+		"E.g. Weak[Node3D], or Weak of a GD++ class that extends a node.")
+}
+
 // async returns the Async type whose result has type result.
 func (u *unit) async(result *gtype) *gtype {
 	return &gtype{cpp: "gdpp::Async<" + result.cpp + ">", doc: cmp.Or(u.opts.AsyncClass, "GdppAsync"), async: result}
@@ -157,8 +181,8 @@ func asyncArg(t *Type) *Type {
 
 // resolveElement resolves a type argument of Array or Dictionary.
 func (u *unit) resolveElement(t *Type) (*gtype, error) {
-	if t.Name == "Async" {
-		return nil, u.errorAt(t.Pos, len(t.Name), "Typed collections can't hold Async values.", "Use a plain Array or Dictionary.")
+	if t.Name == "Async" || t.Name == "Weak" {
+		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Typed collections can't hold %s values.", t.Name), "Use a plain Array or Dictionary.")
 	}
 	if len(t.Args) > 0 {
 		return nil, u.errorAt(t.Pos, len(t.Name), "Typed collections can't be nested.", "Use a plain Array or Dictionary inside.")
@@ -182,7 +206,7 @@ func (u *unit) unknownType(t *Type) error {
 
 // unknownName returns the error for t, an unknown type used as what, e.g. "base class".
 func (u *unit) unknownName(t *Type, what string) error {
-	names := []string{"Async"}
+	names := []string{"Async", "Weak"}
 	for name := range builtins {
 		names = append(names, name)
 	}

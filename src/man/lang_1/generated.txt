@@ -184,6 +184,10 @@ _gdpp_get_NAME, _gdpp_set_NAME   the wrappers that bind a variable of an enum ty
 _gdpp_CLASS_ENUM             a class's stand-in type for an enum
 _gdpp_ret                    a local variable in @virtual functions
 _gdpp_base                   an extern wrapper's object
+_gdpp_pool                   a @pool class's pool, a static gdpp::Pool<T>
+_gdpp_pool_slot              where an object of a @pool class is in its pool
+_gdpp_recycle_ctor, _gdpp_recycle_dtor   what a @pool class runs when its pool reuses and keeps an object
+_gdpp_scene                  a @scene class's scene path, a static constexpr gdpp::Scene<T>
 ```
 
 `This` is a macro, defined around each class's code. The setter's parameter is `p_value`, unless a property's `set` block names it.

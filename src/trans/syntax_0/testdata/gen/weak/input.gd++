@@ -1,0 +1,14 @@
+class_name Turret
+extends Node3D
+
+var target: Weak[Node3D]
+
+signal locked(on: Weak[Node3D])
+
+func aim(at: Weak[Node3D]) -> Weak[Node3D] {
+  target = at;
+  if (Node3D *t = claim target) {
+    look_at(t->get_global_position());
+  }
+  return target;
+}

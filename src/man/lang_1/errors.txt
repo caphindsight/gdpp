@@ -127,6 +127,8 @@ Type Suit can't be used in a typed collection.
 Typed collections can't hold Async values.
 An Async can't have an Async result.
 Type Async takes one type argument, the type of its result, e.g. Async[int].
+Weak needs a class that isn't refcounted, like a node, but Resource is refcounted.
+Typed collections can't hold Weak values.
 ```
 
 Annotations:
@@ -159,6 +161,14 @@ The engine function _process must be declared as "func _process(delta: float) ->
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.
 Async variables can't be exported.
+Weak variables can't be exported.
+Annotation @pool can only be used in classes that extend Node, which A doesn't.
+A pool's size must be a positive integer.
+Only a pool with a size can be full, so "strict" needs one.
+A @recycle ctor only works in a @pool class, whose objects are reused.
+A @recycle var needs an initial value, which property x doesn't have.
+Class A has two @recycle dtors.
+The scene's path must start with res:// or pkg://.
 ```
 
 Externs:
@@ -198,6 +208,8 @@ Some compiler errors are about the generated code, but caused by the GD++ declar
 - "overriding final function": an `@override` function overrides an `@override("final")` one. See `gd++ man functions`.
 - "invalid use of incomplete type": a class is used, but its header isn't included, since its name isn't written anywhere. Add `import CLASS`. See `gd++ man includes`.
 - "ignoring return value ... declared with attribute 'nodiscard'": a signal's emit function was called without `emit`. Write `emit NAME(...)`.
+- "Refcounted objects free themselves when their last reference goes away.": `destroy` or `queue_destroy` on a refcounted object, e.g. a `Ref<Mesh>`. Drop the reference instead, e.g. with `mesh.unref()`. See `gd++ man classes`.
+- "queue_destroy only works on nodes.": `queue_destroy` on an object that isn't a node. Use `destroy`.
 - "'claim' was not declared in this scope", or the same for `is_done` or `cancel`: the word is followed by something that doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
 - "expected unqualified-id before 'gdpp'", or a similar error at a declaration: a variable or field is named `is_cancelled`, which GD++ reserves and rewrites to `gdpp::is_cancelled()`. Rename it. See `gd++ man rewrites`.
 - Errors in a file `NAME.h` or `NAME.cpp` of the build cache point to generated code. Open the file, e.g. `res://.gd++pkg/gdpp/Player.cpp`, to see what GD++ generated, and which declaration it came from.

@@ -226,6 +226,12 @@ Neither takes arguments, since Godot creates objects without any. See `gd++ man 
 
 `create` and `destroy` create and delete objects of every kind: nodes and other objects, which code holds through pointers, refcounted objects, which it holds through references, externs, object pools and scene classes. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. `queue_destroy` destroys a node at the end of the frame, like Godot's `queue_free`, but works with pools too. See `gd++ man classes`.
 
+### Weak references
+
+<a href="readme/svg/weak.gd++"><img src="readme/svg/weak.svg" alt="GD++ code: weak"></a>
+
+A `Weak[Enemy]` remembers the enemy without keeping it alive, and knows when it's gone: `claim target` gives the enemy, or null once it's freed. A plain `Enemy *` would point to freed memory instead. See `gd++ man types`.
+
 ### Object pools
 
 <a href="readme/svg/pools.gd++"><img src="readme/svg/pools.svg" alt="GD++ code: pools"></a>

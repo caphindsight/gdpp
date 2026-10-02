@@ -1,0 +1,11 @@
+var target: Weak[Enemy]
+
+func lock_on(enemy: Enemy) -> void {
+  target = enemy;
+}
+
+func _process(delta: float) -> void {
+  if (Enemy *e = claim target) {    // null once the enemy is freed
+    look_at(e->get_global_position());
+  }
+}

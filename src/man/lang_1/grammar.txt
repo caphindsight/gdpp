@@ -108,7 +108,7 @@ EnumRef     = Ident ( '.' Ident )*
 Type        = Ident ( '[' Type ( ',' Type )* ']' )?
 ```
 
-Only `Array`, `Dictionary` and `Async` take type arguments: `Array` and `Async` take one, and `Dictionary` two.
+Only `Array`, `Dictionary`, `Async` and `Weak` take type arguments: `Array`, `Async` and `Weak` take one, and `Dictionary` two.
 
 # Annotations
 

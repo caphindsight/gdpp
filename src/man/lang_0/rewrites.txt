@@ -13,7 +13,7 @@ rpc(PEER) NAME(ARGS)           _gdpp_rpc_NAME(PEER, ARGS)         call an RPC on
 is_cancelled                   gdpp::is_cancelled()               test whether a task should stop, see `gd++ man async`
 string_name "NAME"             GDPP_STRING_NAME("NAME")           a StringName created once, see `gd++ man runtime`
 is_done TASK                   TASK.is_done()                     test whether an Async holds a task that's done
-claim TASK                     TASK.claim()                       take an Async's result
+claim TASK                     TASK.claim()                       take an Async's result, or a Weak's object
 cancel TASK                    TASK.cancel()                      ask an Async's task to stop
 create T                       gdpp::create<T>()                  create an object, see `gd++ man classes`
 destroy OBJECT                 gdpp::destroy(OBJECT)              delete an object, or give it back to its pool

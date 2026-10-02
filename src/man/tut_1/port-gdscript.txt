@@ -181,6 +181,8 @@ Input.is_action_pressed("jump")     Input::get_singleton()->is_action_pressed(st
 load("res://bullet.tscn")           ResourceLoader::get_singleton()->load("res://bullet.tscn")
 scene.instantiate()                 scene->instantiate() as Bullet *
 Bullet.new()                        create Bullet
+bullet.queue_free()                 bullet->queue_free(), or queue_destroy bullet
+is_instance_valid(enemy)            claim enemy, with enemy a Weak[Enemy]
 preload(PATH).instantiate()         create Bullet, with @scene(PATH) on Bullet
 assert(x > 0)                       assert x > 0;
 ```

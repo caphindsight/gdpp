@@ -1,0 +1,4 @@
+input.gd++:4:1: Weak variables can't be exported.
+ 4 | @export var r: Weak[Node]
+   | ^^^^^^^
+Hint: Export the class itself, e.g. "@export var r: Node".

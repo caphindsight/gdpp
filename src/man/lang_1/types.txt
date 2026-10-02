@@ -44,6 +44,7 @@ your GD++ classes             like their base: Player * or Ref<Stats>
 your GD++ enums               the C++ enum class             by value
 externs                       gdpp::ExtPtr<T> or ExtRef<T>   by value
 Async[T], Async               gdpp::Async<T>, Async<Variant> by value
+Weak[T]                       gdpp::Weak<T>                  by value
 ```
 
 "Passed as" is how function parameters and setters take the type. Return values and fields always use the plain C++ type.
@@ -97,8 +98,8 @@ var names: Dictionary[String, Node3D]      // TypedDictionary<String, Node3D>
 
 `Array[T]` is an array that only holds values of type `T`. `Dictionary[K, V]` is a dictionary with keys of type `K` and values of type `V`. In C++, they are godot-cpp's `TypedArray` and `TypedDictionary`, with the element types spelled by name: `TypedArray<Node>`, not `TypedArray<Node *>`.
 
-- Only `Array` and `Dictionary` take type arguments (and `Async`, see below): `Array` takes one, and `Dictionary` two.
-- Element types can be built-in types and classes, but not enums, externs or `Async` types.
+- Only `Array` and `Dictionary` take type arguments (and `Async` and `Weak`, see below): `Array` takes one, and `Dictionary` two.
+- Element types can be built-in types and classes, but not enums, externs, `Async` or `Weak` types.
 - Typed collections can't be nested: `Array[Array[int]]` is an error. Use `Array[Array]` instead.
 
 Typed dictionaries need Godot 4.4 or newer.
@@ -138,6 +139,28 @@ An extern declared in any GD++ file of the package is a type. In C++, it's a `gd
 
 `Async` types can't be exported, typed collections can't hold them, and a task's result can't be another task. See `gd++ man async`.
 
+# Weak references
+
+A plain pointer to a node, e.g. `Enemy *`, says nothing about whether the node still exists: once it's freed, the pointer points to freed memory, and using it crashes the game. `Weak[T]` is a reference to an object of the class `T` that knows when the object is gone:
+
+```gd++
+var target: Weak[Enemy]
+
+func aim(enemy: Enemy) -> void {
+  target = enemy;
+}
+
+func _process(delta: float) -> void {
+  if (Enemy *e = claim target) {
+    look_at(e->get_global_position());
+  }
+}
+```
+
+In C++, it's a `gdpp::Weak<T>`, which holds the object's ID, not the pointer. `claim target` looks the object up by its ID, and gives a `T *`, or `nullptr` once the object is freed. `if (target)` checks the same without claiming it. Unlike claiming an `Async`'s result, claiming a `Weak` leaves it as it is, so you can claim it again later. For a `@pool` class, `claim` also gives `nullptr` once the object is returned to its pool, even though the object still exists there, so a reference never points to a reused object. A `Weak` doesn't keep its object alive, and is safe to keep for as long as you like, and to share between threads, though only the main thread may use most nodes. See `gd++ man pools`.
+
+`T` must be a class that isn't refcounted, e.g. a node: a refcounted object lives as long as something references it, so use the class itself for those. Godot sees a `Weak[T]` as a `T`, which is `null` once the object is gone. `Weak` types can't be exported, and typed collections can't hold them.
+
 # Other names
 
 godot-cpp declares more names than classes, e.g. `TypedArray`, `Ref`, `UtilityFunctions` or `memnew`. Your C++ code can use them all, and GD++ includes their headers. But they aren't GD++ types:
@@ -164,7 +187,7 @@ A misspelled type is an error, with a suggestion if a known type is close:
 
 # In Godot's documentation
 
-The editor's help shows GD++ types like GDScript does: `int`, `float`, `Vector3`, `Node3D`, `int[]` for `Array[int]`, `Dictionary[String, Node3D]`, and the class of tasks, e.g. `FooAsync`, for `Async` types. Enums show as `int`, with the enum's name. See `gd++ man docs`.
+The editor's help shows GD++ types like GDScript does: `int`, `float`, `Vector3`, `Node3D`, `int[]` for `Array[int]`, `Dictionary[String, Node3D]`, and the class of tasks, e.g. `FooAsync`, for `Async` types, and `T` for `Weak[T]`. Enums show as `int`, with the enum's name. See `gd++ man docs`.
 
 # See also
 

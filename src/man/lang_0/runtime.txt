@@ -48,6 +48,9 @@ gdpp::Pool<T>
 ExtPtr<T>, ExtRef<T> and Ext<T>
   The C++ types of externs: a pointer or a reference to an object of an extern's class, whose members are called by name. `Ext<T>` is `ExtRef<T>` if `T`'s base is refcounted, and `ExtPtr<T>` otherwise. See `gd++ man externs`.
 
+Weak<T>
+  The C++ type of `Weak[T]`: a reference to an object of the class `T` that holds its ID, and doesn't keep it alive. `claim()` gives the object, or `nullptr` once it's freed, or for a `@pool` class, once it's returned to its pool, and leaves the `Weak` as it is. GD++ code writes it `claim WEAK`. In a condition, it's true while `claim()` isn't null. See "Weak references" in `gd++ man types`.
+
 Async<T>
   The C++ type of `Async[T]`: a task, e.g. a call of an `@onthread` function. It refers to an object of a class of tasks, whose methods it calls directly for the package's own tasks, and by name for those of other packages, so it works with the tasks of any package. Copies share the task, like references to the task object in scripts, and its methods do what the object's methods do:
 

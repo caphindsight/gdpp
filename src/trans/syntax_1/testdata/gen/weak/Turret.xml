@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Turret" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="aim">
+			<return type="Node3D" />
+			<param index="0" name="at" type="Node3D" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="target" type="Node3D" setter="set_target" getter="get_target">
+		</member>
+	</members>
+	<signals>
+		<signal name="locked">
+			<param index="0" name="on" type="Node3D" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

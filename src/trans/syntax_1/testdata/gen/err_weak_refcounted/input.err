@@ -1,0 +1,4 @@
+input.gd++:4:13: Weak needs a class that isn't refcounted, like a node, but Resource is refcounted.
+ 4 | var r: Weak[Resource]
+   |             ^^^^^^^^
+Hint: A refcounted object lives while something references it: use Resource itself.

@@ -116,6 +116,8 @@ template <typename T>
 class ExtRef;
 template <typename T>
 class Async;
+template <typename T>
+class Weak;
 
 // object_class<T>::type is the class of the object that T points to, for a pointer, Ref, extern or Async, and void
 // for other types.
@@ -143,6 +145,10 @@ template <typename T>
 struct object_class<Async<T>> {
 	using type = RefCounted;
 };
+template <typename T>
+struct object_class<Weak<T>> {
+	using type = T;
+};
 
 // object_ptr returns the raw pointer to the object that p_value points to.
 template <typename T>
@@ -155,11 +161,13 @@ template <typename T>
 auto object_ptr(const ExtRef<T> &p_value) { return p_value.base().ptr(); }
 template <typename T>
 RefCounted *object_ptr(const Async<T> &p_value) { return p_value.object().ptr(); }
+template <typename T>
+T *object_ptr(const Weak<T> &p_value) { return p_value.claim(); }
 
 // cast converts p_value to T, picking the conversion at compile time:
 //   - from a Variant, as Godot's bindings do, with enums as ints,
 //   - to a Variant, with enums as ints,
-//   - between pointers, Refs, externs and Asyncs: up casts are static, other casts check the object's class, and give
+//   - between pointers, Refs, externs, Asyncs and Weaks: up casts are static, other casts check the object's class, and give
 //     null if it doesn't match; externs only check their base class,
 //   - anything else with static_cast, e.g. numbers and enums.
 template <typename T, typename U>
@@ -447,6 +455,7 @@ struct PoolSlot {
 	bool owned = false;
 	bool given = false; // Whether destroy gave it back: it rests in the pool, or is on its way there.
 	T **cell = nullptr;
+	std::atomic<uint64_t> generation = 0; // How many times it was given back, so Weak<T> knows a reused object.
 };
 
 // Pool<T> keeps the objects of the @pool class T that destroy gave back, for create to reuse. It makes at most
@@ -507,6 +516,7 @@ public:
 				return;
 			}
 			p_object->_gdpp_pool_slot.given = true;
+			p_object->_gdpp_pool_slot.generation++;
 		}
 		p_object->_gdpp_recycle_dtor();
 		if (Node *parent = p_object->get_parent()) {
@@ -627,32 +637,84 @@ void destroy(T *p_object);
 template <typename T>
 void destroy(ExtPtr<T> p_object);
 
+// Weak<T> is the C++ type of Weak[T]: a reference to an object of the class T that doesn't keep it alive, and knows
+// when it's gone. It holds the object's ID, so it's safe to keep after the object is freed, and to share between
+// threads. claim() looks the object up, and gives null once it's freed, and for a @pool class, also once it's given
+// back to its pool, even though the object lives on there. Unlike an Async's claim(), it leaves the Weak as it is.
+template <typename T>
+class Weak {
+public:
+	Weak() = default;
+	Weak(std::nullptr_t) {}
+	Weak(T *p_object) {
+		if (p_object) {
+			id_ = p_object->get_instance_id();
+			if constexpr (has_pool<T>::value) {
+				generation_ = p_object->_gdpp_pool_slot.generation;
+			}
+		}
+	}
+	// Refers to the object of ID p_id, as it was in its pool's generation p_generation.
+	Weak(uint64_t p_id, uint64_t p_generation) :
+			id_(p_id), generation_(p_generation) {}
+
+	T *claim() const {
+		T *object = Object::cast_to<T>(ObjectDB::get_instance(id_));
+		if constexpr (has_pool<T>::value) {
+			if (object && object->_gdpp_pool_slot.generation != generation_) {
+				return nullptr;
+			}
+		}
+		return object;
+	}
+	uint64_t id() const { return id_; }
+	uint64_t generation() const { return generation_; }
+	explicit operator bool() const { return claim() != nullptr; }
+	bool operator==(const Weak &p_other) const { return id_ == p_other.id_ && generation_ == p_other.generation_; }
+	operator Variant() const { return Variant(claim()); }
+
+private:
+	uint64_t id_ = 0;
+	uint64_t generation_ = 0;
+};
+
 // on_main_thread reports whether the calling thread is the main thread, which owns the scene tree.
 inline bool on_main_thread() {
 	OS *os = OS::get_singleton();
 	return os->get_thread_caller_id() == os->get_main_thread_id();
 }
 
-// destroy_later destroys the object of id, unless it's gone, once the main thread gets to it. P is a pointer to it.
+// destroy_later destroys the object that a Weak of p_id and p_generation refers to, unless it's gone, once the main
+// thread gets to it. P is a pointer to it.
 template <typename P>
-void destroy_later(uint64_t p_id) {
-	Object *object = ObjectDB::get_instance(p_id);
+void destroy_later(uint64_t p_id, uint64_t p_generation) {
 	if constexpr (std::is_pointer_v<P>) {
-		destroy(Object::cast_to<std::remove_pointer_t<P>>(object));
+		destroy(Weak<std::remove_pointer_t<P>>(p_id, p_generation).claim());
 	} else {
-		destroy(P(Object::cast_to<std::remove_pointer_t<decltype(std::declval<P>().base())>>(object)));
+		destroy(P(Object::cast_to<std::remove_pointer_t<decltype(std::declval<P>().base())>>(ObjectDB::get_instance(p_id))));
+	}
+}
+
+// destroy_deferred schedules destroy_later for p_object, of type P.
+template <typename P>
+void destroy_deferred(P p_object) {
+	if constexpr (std::is_pointer_v<P>) {
+		Weak<std::remove_pointer_t<P>> weak(p_object);
+		callable_mp_static(&destroy_later<P>).call_deferred(weak.id(), weak.generation());
+	} else {
+		callable_mp_static(&destroy_later<P>).call_deferred(uint64_t(p_object.base()->get_instance_id()), uint64_t(0));
 	}
 }
 
 // defer_destroy reports whether destroy must leave p_object, of type P, to the main thread: it's a node in the scene
 // tree, which only the main thread may change, and this is another thread. Then it schedules destroy_later there.
 template <typename P>
-bool defer_destroy(Object *p_object) {
-	Node *node = Object::cast_to<Node>(p_object);
+bool defer_destroy(P p_object) {
+	Node *node = Object::cast_to<Node>(object_ptr(p_object));
 	if (!node || !node->is_inside_tree() || on_main_thread()) {
 		return false;
 	}
-	callable_mp_static(&destroy_later<P>).call_deferred(uint64_t(p_object->get_instance_id()));
+	destroy_deferred(p_object);
 	return true;
 }
 
@@ -666,7 +728,7 @@ void destroy(T *p_object) {
 		return;
 	}
 	if constexpr (std::is_base_of_v<Object, T>) {
-		if (defer_destroy<T *>(p_object)) {
+		if (defer_destroy(p_object)) {
 			return;
 		}
 	}
@@ -680,7 +742,7 @@ void destroy(T *p_object) {
 }
 template <typename T>
 void destroy(ExtPtr<T> p_object) {
-	if (p_object && !defer_destroy<ExtPtr<T>>(p_object.base())) {
+	if (p_object && !defer_destroy(p_object)) {
 		memdelete(p_object.base());
 	}
 }
@@ -692,14 +754,14 @@ template <typename T>
 void queue_destroy(T *p_object) {
 	static_assert(std::is_base_of_v<Node, T>, "queue_destroy only works on nodes. Use destroy for other objects.");
 	if (p_object) {
-		callable_mp_static(&destroy_later<T *>).call_deferred(uint64_t(p_object->get_instance_id()));
+		destroy_deferred(p_object);
 	}
 }
 template <typename T>
 void queue_destroy(ExtPtr<T> p_object) {
 	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
 	if (p_object) {
-		callable_mp_static(&destroy_later<ExtPtr<T>>).call_deferred(uint64_t(p_object.base()->get_instance_id()));
+		destroy_deferred(p_object);
 	}
 }
 template <typename T>
@@ -1045,6 +1107,7 @@ using gdpp::Emitted;
 using gdpp::Ext;
 using gdpp::ExtPtr;
 using gdpp::ExtRef;
+using gdpp::Weak;
 
 // GDPP_SIGNATURE is the signature of the function it's in, e.g. "int Player::fire(int)", on the compilers that have one.
 #if defined(__GNUC__) || defined(__clang__)
@@ -1139,6 +1202,35 @@ template <typename T>
 struct VariantCaster<gdpp::ExtRef<T>> {
 	static _FORCE_INLINE_ gdpp::ExtRef<T> cast(const Variant &p_variant) {
 		return Ref<typename T::Base>(p_variant);
+	}
+};
+
+// Bindings see a Weak<T> as a T *: the object, or null once it's gone.
+
+template <typename T>
+struct GetTypeInfo<gdpp::Weak<T>> {
+	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
+	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+	static inline PropertyInfo get_class_info() {
+		return GetTypeInfo<T *>::get_class_info();
+	}
+};
+
+template <typename T>
+struct PtrToArg<gdpp::Weak<T>> {
+	_FORCE_INLINE_ static gdpp::Weak<T> convert(const void *p_ptr) {
+		return PtrToArg<T *>::convert(p_ptr);
+	}
+	typedef Object *EncodeT;
+	_FORCE_INLINE_ static void encode(gdpp::Weak<T> p_val, void *p_ptr) {
+		PtrToArg<T *>::encode(p_val.claim(), p_ptr);
+	}
+};
+
+template <typename T>
+struct VariantCaster<gdpp::Weak<T>> {
+	static _FORCE_INLINE_ gdpp::Weak<T> cast(const Variant &p_variant) {
+		return Object::cast_to<T>(p_variant.operator Object *());
 	}
 };
 

@@ -1,0 +1,4 @@
+input.gd++:4:14: Typed collections can't hold Weak values.
+ 4 | var r: Array[Weak[Node]]
+   |              ^^^^
+Hint: Use a plain Array or Dictionary.
