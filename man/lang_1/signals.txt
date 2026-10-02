@@ -72,8 +72,8 @@ Connect in C++ like in godot-cpp, with `callable_mp` for the methods of your cla
 ```gd++
 func _ready() -> void {
   Button *button = get_node<Button>("Button");
-  button->connect("pressed", callable_mp(this, &This::on_pressed));
-  connect("died", callable_mp(this, &This::on_died));
+  button->connect(string_name "pressed", callable_mp(this, &This::on_pressed));
+  connect(string_name "died", callable_mp(this, &This::on_died));
 }
 
 func on_pressed() -> void {

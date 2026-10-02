@@ -66,10 +66,10 @@ var speed: float = 300.0
 signal jumped
 
 func _physics_process(delta: float) -> void {
-  Vector2 direction = Input::get_singleton()->get_vector("ui_left", "ui_right", "ui_up", "ui_down");
+  Vector2 direction = Input::get_singleton()->get_vector(string_name "ui_left", string_name "ui_right", string_name "ui_up", string_name "ui_down");
   set_velocity(direction * speed);
   move_and_slide();
-  if (Input::get_singleton()->is_action_just_pressed("ui_accept")) {
+  if (Input::get_singleton()->is_action_just_pressed(string_name "ui_accept")) {
     emit jumped();
   }
 }

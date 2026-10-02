@@ -1,6 +1,6 @@
 @override("super")
 func _unhandled_input(event: InputEvent) -> void {
-  if (event->is_action_pressed("jump")) {
+  if (event->is_action_pressed(string_name "jump")) {
     jump();
   }
 }

@@ -192,7 +192,7 @@ signal died(cause: DeathCause)
 [f1204]   ⚡ Player "Hero" emits died(cause: 2)
 ```
 
-Only emissions with `emit` show, since GD++ traces them in the signal's emit function. Code that calls `emit_signal("died")` by name, and GDScript that emits the signal, bypass it. See `gd++ man signals`.
+Only emissions with `emit` show, since GD++ traces them in the signal's emit function. Code that calls `emit_signal(string_name "died")` by name, and GDScript that emits the signal, bypass it. See `gd++ man signals`.
 
 # @trace on classes
 

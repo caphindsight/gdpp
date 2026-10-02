@@ -85,7 +85,7 @@ If a default value is an expression rather than a block, the editor's help shows
 ```gd++
 @override
 func _unhandled_input(event: InputEvent) -> void {
-  if (event->is_action_pressed("jump")) {
+  if (event->is_action_pressed(string_name "jump")) {
     jump();
   }
 }

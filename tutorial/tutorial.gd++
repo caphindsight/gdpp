@@ -481,7 +481,7 @@ extern Terrain {
 
 // GD++ generates wrappers, so you can use externs like regular types.
 // But each method call on an extern is resolved by name, as a string.
-// E.g. calling foo() on an ExtPtr<Terrain> is the same as calling call("foo") on the underlying Node*.
+// E.g. calling foo() on an ExtPtr<Terrain> is the same as calling call(string_name "foo") on the underlying Node*.
 
 // The @deferred attribute makes calls go through call_deferred instead of call. @thread_safe uses call_thread_safe.
 
