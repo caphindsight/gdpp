@@ -7,7 +7,7 @@ func _process(delta: float) -> void {
 }
 
 // Profiled through the implicit group physics_process.
-@override
+@override("engine")
 func _physics_process(delta: float) -> void {
   gd::print(delta);
 }

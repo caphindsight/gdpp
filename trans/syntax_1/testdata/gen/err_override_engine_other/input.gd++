@@ -1,5 +1,5 @@
 class_name Mob
 extends Node
 
-@override("final")
+@override("engine")
 func _input(event: InputEvent) -> void {}

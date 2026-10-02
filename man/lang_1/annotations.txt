@@ -43,8 +43,8 @@ A declaration's doc comment can come before its annotations or between them, but
 # Functions of classes
 
 @override
-@override("final", "super")
-  Override a virtual function of the engine, e.g. `_input`, or a `@virtual` function of a GD++ base class. A script's function of the same name replaces it. On the engine functions, `_ready`, `_process` and the like, which run from `_notification` without it, it makes a plain override instead. Optional arguments, in double quotes: `"final"`, on an override of a GD++ `@virtual` function: subclasses and scripts can't override it any further. `"super"`: also bind the body as `_super_NAME` (or `super_NAME`, for a NAME without a leading `_`), which scripts call in place of `super`. See `gd++ man functions`.
+@override("final", "super", "engine")
+  Override a virtual function of the engine, e.g. `_input`, or a `@virtual` function of a GD++ base class. A script's function of the same name replaces it. The engine functions, `_ready`, `_process` and the like, run from `_notification` without it, and take it only with `"engine"`. Optional arguments, in double quotes: `"final"`, on an override of a GD++ `@virtual` function: subclasses and scripts can't override it any further. `"super"`: also bind the body as `_super_NAME` (or `super_NAME`, for a NAME without a leading `_`), which scripts call in place of `super`. `"engine"`, on an engine function: make it a plain override. See `gd++ man functions`.
 @virtual
   Let subclasses and scripts override the function. See `gd++ man functions`.
 
@@ -72,7 +72,7 @@ A declaration's doc comment can come before its annotations or between them, but
 @profile(GROUPS...)
   Time each call, for the editor's monitors and the profile table. See "@trace and @profile" below.
 
-These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. Engine functions only take `@trace` and `@profile`. `@override("final")` only works on an override of a GD++ `@virtual` function.
+These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. Engine functions only take `@trace` and `@profile`. `@override("final")` only works on an override of a GD++ `@virtual` function. `@override` only works on engine functions with `"engine"`, and `"engine"` only works on engine functions.
 
 # Functions of externs
 

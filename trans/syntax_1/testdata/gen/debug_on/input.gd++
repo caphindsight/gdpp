@@ -46,5 +46,5 @@ func respawn() -> void {
   health = 100;
 }
 
-@override
+@override("engine")
 func _process(delta: float) -> void {}

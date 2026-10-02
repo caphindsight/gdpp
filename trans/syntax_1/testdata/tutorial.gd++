@@ -208,8 +208,8 @@ func foo_plus_bar() -> int {
 // func _foo() -> int:
 //   return 42
 
-// To override an engine virtual function, use @override instead:
-@override
+// To override an engine virtual function, use @override instead (_ready also needs "engine"):
+@override("engine")
 func _ready() -> void {
   // Caveat: the signature must match *exactly*.
   // E.g. without `-> void` the return type would be Variant, which does not match _ready, so compilation fails.

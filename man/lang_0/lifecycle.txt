@@ -74,7 +74,7 @@ func _ready() -> void {
 
 GD++ assigns them in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, once the children are ready. So they're set before any `_ready` runs, even a script's that replaces the class's. `@onready` only works in classes that extend `Node`, since only nodes get ready: elsewhere, it's an error.
 
-The class's `_ready` runs right after them, also before `NOTIFICATION_READY`, so it runs before a script's `_ready`. An `@override _ready` runs at `NOTIFICATION_READY` instead, unless a script replaces it. See `gd++ man functions`.
+The class's `_ready` runs right after them, also before `NOTIFICATION_READY`, so it runs before a script's `_ready`. An `@override("engine") _ready` runs at `NOTIFICATION_READY` instead, unless a script replaces it. See `gd++ man functions`.
 
 # The order of everything
 

@@ -1,0 +1,4 @@
+input.gd++:4:11: Annotation @override("engine") only works on engine functions, e.g. _ready.
+ 4 | @override("engine")
+   |           ^^^^^^^^
+Hint: Engine functions are _ready, _enter_tree, _exit_tree, _process and _physics_process in nodes, and _draw in canvas items.

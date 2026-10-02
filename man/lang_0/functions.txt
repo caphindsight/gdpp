@@ -137,7 +137,14 @@ func _process(delta: float) -> void {
 }
 ```
 
-The engine functions are the engine's virtual functions that have a notification: `_ready`, `_enter_tree`, `_exit_tree`, `_process` and `_physics_process` in classes that extend `Node`, and `_draw` in classes that extend `CanvasItem`. Written without `@override`, their bodies run in the class's `_notification`, not in an override, so a script that extends the class and defines a function of the same name doesn't replace them: both run. With `@override`, they're plain overrides, which a script replaces.
+The engine functions are the engine's virtual functions that have a notification: `_ready`, `_enter_tree`, `_exit_tree`, `_process` and `_physics_process` in classes that extend `Node`, and `_draw` in classes that extend `CanvasItem`. Written without `@override`, their bodies run in the class's `_notification`, not in an override, so a script that extends the class and defines a function of the same name doesn't replace them: both run. `@override` on them is an error, since a plain override is rarely what you want: drop it. Only if you're sure you need one, which a script replaces, write `@override("engine")`:
+
+```out
+[×] res://a.gd++:4:1: The engine function _ready doesn't need @override.
+     4 | @override
+       | ^^^^^^^^^
+    Hint: Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
+```
 
 Their signatures are `func NAME() -> void`, and `func _process(delta: float) -> void` and `func _physics_process(delta: float) -> void`, whose parameter can have any name. They take only `@trace` and `@profile`. They aren't functions of the class: C++ code and scripts can't call them. In other classes, e.g. a `_ready` in a class that extends `RefCounted`, or a `_draw` in one that extends `Node` but not `CanvasItem`, they're ordinary functions.
 

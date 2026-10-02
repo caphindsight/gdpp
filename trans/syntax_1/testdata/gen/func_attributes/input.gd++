@@ -11,7 +11,7 @@ func unit() -> float {
   return 1.0;
 }
 
-@override
+@override("engine")
 func _ready() -> void {
   gd::print("ready");
 }

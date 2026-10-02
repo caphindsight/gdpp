@@ -830,16 +830,20 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil,
 		isConst: a["const"] != nil, static: a["static"] != nil}
+	var engine *Arg // The "engine" argument of @override, if any.
 	for _, arg := range argsOf(a["override"]) {
 		name, _ := strconv.Unquote(arg.Value)
 		switch {
-		case name != "final" && name != "super":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override takes \"final\" or \"super\".", "E.g. @override(\"final\").")
-		case name == "final" && m.final, name == "super" && m.super:
+		case name != "final" && name != "super" && name != "engine":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override takes \"final\", \"super\" or \"engine\".", "E.g. @override(\"final\").")
+		case name == "final" && m.final, name == "super" && m.super, name == "engine" && engine != nil:
 			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @override takes %s only once.", arg.Value), "")
 		}
 		m.final = m.final || name == "final"
 		m.super = m.super || name == "super"
+		if name == "engine" {
+			engine = arg
+		}
 	}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
@@ -896,9 +900,19 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	if err := u.requireBase(a["rpc"], owner, "rpc and rpc_config are methods of Node.", "Node"); err != nil {
 		return nil, err
 	}
-	if ef, ok := engineFuncs[f.Name]; ok && !ext && !m.override && u.extends(owner, ef.base) {
+	ef, isEngine := engineFuncs[f.Name]
+	isEngine = isEngine && !ext && u.extends(owner, ef.base)
+	switch {
+	case isEngine && !m.override:
 		m.hidden = "notif"
 		return m, u.checkEngine(m)
+	case isEngine && engine == nil:
+		o := a["override"]
+		return nil, u.errorAt(o.Pos, len(o.Name)+1, fmt.Sprintf("The engine function %s doesn't need @override.", f.Name),
+			"Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override(\"engine\").")
+	case !isEngine && engine != nil:
+		return nil, u.errorAt(engine.Pos, len(engine.Value), "Annotation @override(\"engine\") only works on engine functions, e.g. _ready.",
+			"Engine functions are _ready, _enter_tree, _exit_tree, _process and _physics_process in nodes, and _draw in canvas items.")
 	}
 	return m, nil
 }
@@ -916,7 +930,7 @@ func (u *unit) checkEngine(f *funcModel) error {
 	for _, a := range f.f.Annotations {
 		if a.Name != "" && a.Name != "trace" && a.Name != "profile" {
 			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take @trace and @profile.", name),
-				"Use @override to override it like other engine functions.")
+				"Only a plain override, with @override(\"engine\"), takes others.")
 		}
 	}
 	sig, params := name+"() -> void", 0

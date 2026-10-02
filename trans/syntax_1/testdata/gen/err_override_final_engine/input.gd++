@@ -2,4 +2,4 @@ class_name Mob
 extends Node
 
 @override("final")
-func _ready() -> void {}
+func _input(event: InputEvent) -> void {}

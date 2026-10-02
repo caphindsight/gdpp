@@ -122,7 +122,7 @@ Annotations:
 Annotation @tool can't be used on a func.
 Annotation @export is used twice.
 Annotation @onready can only be used in classes that extend Node, which A doesn't.
-Annotation @override takes "final" or "super".
+Annotation @override takes "final", "super" or "engine".
 Annotations @static and @virtual can't be used together.
 A variable can have only one export annotation.
 Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.
@@ -134,8 +134,11 @@ Annotations @virtual and @onthread can't be used together.
 Function _open is already @virtual in Gate.
   Use @override to override it.
 Annotation @override("final") only works on overrides of a GD++ @virtual function.
+The engine function _ready doesn't need @override.
+  Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
+Annotation @override("engine") only works on engine functions, e.g. _ready.
 The engine function _ready can only take @trace and @profile.
-  Use @override to override it like other engine functions.
+  Only a plain override, with @override("engine"), takes others.
 The engine function _process must be declared as "func _process(delta: float) -> void".
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.
