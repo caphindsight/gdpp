@@ -10,6 +10,8 @@ sys.dont_write_bytecode = True
 AddOption("--gdpp-bindings", dest="gdpp_bindings", action="store_true", help="only generate godot-cpp's bindings")
 # Warnings in the package's sources, but not in godot-cpp's, are errors, or with --gdpp-nowarn, disabled.
 AddOption("--gdpp-nowarn", dest="gdpp_nowarn", action="store_true", help="disable warnings")
+# With --gdpp-sanitize, the package's sources, but not godot-cpp's, are compiled with these sanitizers, e.g. address,undefined.
+AddOption("--gdpp-sanitize", dest="gdpp_sanitize", type="string", default="", help="sanitizers to compile in")
 
 package_root = ".."
 project_root = {{printf "%q" .ProjectRoot}}
@@ -36,6 +38,15 @@ else:
         env.Append(CCFLAGS=["/w" if env.get("is_msvc", False) else "-w"])
     else:
         env.Append(CCFLAGS=["/WX" if env.get("is_msvc", False) else "-Werror"])
+    sanitizers = GetOption("gdpp_sanitize")
+    if sanitizers and env.get("is_msvc", False):
+        if sanitizers != "address":
+            print("MSVC only supports AddressSanitizer.")
+            Exit(1)
+        env.Append(CCFLAGS=["/fsanitize=address"])
+    elif sanitizers:
+        flags = ["-fsanitize=" + sanitizers, "-fno-omit-frame-pointer"]
+        env.Append(CCFLAGS=flags, LINKFLAGS=flags)
 {{- if .Color}}
     # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
     # the build signature, so it doesn't trigger rebuilds.

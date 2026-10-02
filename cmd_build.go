@@ -11,7 +11,8 @@ import (
 // registering its classes, and a generated SConstruct. After building, the
 // package root gets a generated <id>.gdextension file and its .uid file.
 // Debug builds are godot-cpp dev builds with debug symbols and hot reload;
-// release builds use link-time optimization. With --clean, packages are
+// release builds use link-time optimization. The build parameters are logged
+// once, before the packages are built. With --clean, packages are
 // cleaned first like `gd++ clean --bin` does.
 type CmdBuild struct {
 	Path     string   `arg:"positional" help:"build the package containing this path [default: the current directory]"`
@@ -42,6 +43,8 @@ func (c *CmdBuild) Run() {
 	} else {
 		pkgs = append(pkgs, LoadPackage(path))
 	}
+	gdpp := slices.ContainsFunc(pkgs, func(pkg Package) bool { return len(packageFiles(p, pkg, gdppExtensions...)) > 0 })
+	LogInfo("Build parameters: %s.", c.describe(targets, gdpp))
 	for _, pkg := range pkgs {
 		if c.Clean {
 			cleanPackage(pkg.Root, true)

@@ -11,8 +11,9 @@ gd++ build
 This builds the package that contains the current directory, for this machine, in debug mode. The first build of a package takes a while, since it compiles godot-cpp too. Later builds only compile what changed.
 
 ```out
+[•] Build parameters: linux.x86_64, debug, unoptimized, with docs.
 [•] Registering classes for res:// [my_game]...
-[•] Building res:// [my_game] for linux.x86_64, debug, unoptimized, with docs.
+[•] Building res:// [my_game].
 [•] Generating .gdextension for res:// [my_game]...
 ```
 
@@ -105,7 +106,27 @@ So can documentation:
 
 Compiler warnings are errors, so code that warns doesn't build. `--nowarn` disables them instead, e.g. while trying something out. This applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp. Changing it recompiles the package's sources, but not godot-cpp.
 
-The task name of each build says what it builds, e.g. "Building res:// [my_game] for windows.x86_64, release, optimized, no docs...", and whether warnings are disabled, and whether tracing or profiling is on. On a terminal, the values that differ from the defaults are highlighted.
+Before building, `gd++ build` says once what it builds, e.g. "Build parameters: windows.x86_64, release, optimized, no docs.", and whether warnings are disabled, which sanitizers are on, and whether tracing or profiling is on. On a terminal, the values that differ from the defaults are highlighted.
+
+# Sanitizers
+
+Sanitizers make the compiler add checks to the code, which find bugs while the game runs, and print where they happened:
+
+```
+--asan    AddressSanitizer: memory errors, e.g. use after free or out-of-bounds access
+--ubsan   UndefinedBehaviorSanitizer: undefined behavior, e.g. signed integer overflow
+--tsan    ThreadSanitizer: data races between threads
+```
+
+They can be combined, except `--asan` with `--tsan`. They apply to the package's C++ and the C++ that GD++ generates, but not to godot-cpp. Code with sanitizers is slower and uses more memory, so use them while testing, not in shipped games. MSVC only supports `--asan`.
+
+Godot itself is built without sanitizers, so AddressSanitizer and ThreadSanitizer need their runtime library loaded first, when Godot starts. On Linux:
+
+```sh
+LD_PRELOAD=$(gcc -print-file-name=libasan.so) godot     # or libtsan.so, with clang: clang -print-file-name=libclang_rt.asan-x86_64.so
+```
+
+On macOS, set `DYLD_INSERT_LIBRARIES` the same way. Since the rest of Godot isn't checked, sanitizers only see bugs in your package's code.
 
 # Editor and runtime code
 

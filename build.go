@@ -43,6 +43,9 @@ type BuildOptions struct {
 	Doc    bool `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
 	NoDoc  bool `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
 	NoWarn bool `arg:"--nowarn" help:"disable C++ warnings, which are errors by default, except in godot-cpp"`
+	Asan   bool `arg:"--asan" help:"detect memory errors with AddressSanitizer"`
+	Ubsan  bool `arg:"--ubsan" help:"detect undefined behavior with UndefinedBehaviorSanitizer"`
+	Tsan   bool `arg:"--tsan" help:"detect data races with ThreadSanitizer"`
 	DebugOptions
 }
 
@@ -94,6 +97,7 @@ var (
 func (o BuildOptions) validate() {
 	Assert(countTrue(o.Opt, o.Small, o.NoOpt) <= 1, "Invalid arguments: --opt, --small and --noopt cannot be used together.")
 	Assert(!o.Doc || !o.NoDoc, "Invalid arguments: --doc and --nodoc cannot be used together.")
+	Assert(!o.Asan || !o.Tsan, "Invalid arguments: --asan and --tsan cannot be used together.")
 	Assert(o.Jobs >= 0, "Invalid arguments: --jobs cannot be negative.")
 	o.DebugOptions.validate()
 }
@@ -145,6 +149,9 @@ func (o BuildOptions) sconsArgs(target string) []string {
 	if o.NoWarn {
 		args = append(args, "--gdpp-nowarn")
 	}
+	if s := o.sanitizers(); len(s) > 0 {
+		args = append(args, "--gdpp-sanitize="+strings.Join(s, ","))
+	}
 	if o.Jobs > 0 {
 		args = append(args, fmt.Sprintf("-j%d", o.Jobs))
 	}
@@ -155,6 +162,21 @@ func (o BuildOptions) sconsArgs(target string) []string {
 // default only into debug builds, since only the editor shows it.
 func (o BuildOptions) docs() bool {
 	return o.Doc || !o.NoDoc && !o.Ship
+}
+
+// sanitizers returns the names of the chosen sanitizers, as -fsanitize takes them.
+func (o BuildOptions) sanitizers() []string {
+	var s []string
+	if o.Asan {
+		s = append(s, "address")
+	}
+	if o.Ubsan {
+		s = append(s, "undefined")
+	}
+	if o.Tsan {
+		s = append(s, "thread")
+	}
+	return s
 }
 
 // optimize returns the SCons optimize option: the chosen one, or by default
@@ -171,14 +193,18 @@ func (o BuildOptions) optimize() string {
 	return "none"
 }
 
-// describe returns the build details for target shown in the task name, e.g.
-// "windows.x86_64, release, optimized", with non-default values in magenta. gdpp
-// adds whether docs are built, which only exist for GD++ classes.
-func (o BuildOptions) describe(target string, gdpp bool) string {
-	desc := target
-	if target != hostPlatform+"."+hostArch {
-		desc = Styled(target, Magenta)
+// describe returns the build parameters, e.g. "windows.x86_64, release,
+// optimized", with non-default values in magenta. gdpp adds whether docs are
+// built, which only exist for GD++ classes.
+func (o BuildOptions) describe(targets []string, gdpp bool) string {
+	var styled []string
+	for _, t := range targets {
+		if t != hostPlatform+"."+hostArch {
+			t = Styled(t, Magenta)
+		}
+		styled = append(styled, t)
 	}
+	desc := strings.Join(styled, " ")
 	if o.Ship {
 		desc += ", " + Styled("release", Magenta)
 	} else {
@@ -192,6 +218,14 @@ func (o BuildOptions) describe(target string, gdpp bool) string {
 	desc += ", " + opt
 	if o.NoWarn {
 		desc += ", " + Styled("no warnings", Magenta)
+	}
+	for _, s := range []struct {
+		on   bool
+		name string
+	}{{o.Asan, "asan"}, {o.Ubsan, "ubsan"}, {o.Tsan, "tsan"}} {
+		if s.on {
+			desc += ", " + Styled(s.name, Magenta)
+		}
 	}
 	if gdpp {
 		docs := map[bool]string{true: "with docs", false: "no docs"}[o.docs()]
@@ -225,10 +259,15 @@ func preparePackage(p Project, pkg Package, bindArgs []string, o BuildOptions) (
 // targets, and generates its .gdextension file.
 func buildExtension(p Project, pkg Package, o BuildOptions, targets []string) {
 	// The first build's arguments, so the full build finds the generated bindings up to date.
-	files, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o)
+	_, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o)
 	generateRegisterTypes(pkg, classes)
 	for _, target := range targets {
-		Exec("Building "+styledPackageName(pkg.Root)+" for "+o.describe(target, len(files) > 0)+"...", pkg.BuildCache, "scons", o.sconsArgs(target)...)
+		// With several targets, the task names the one it builds.
+		name := styledPackageName(pkg.Root)
+		if len(targets) > 1 {
+			name += " for " + target
+		}
+		Exec("Building "+name+"...", pkg.BuildCache, "scons", o.sconsArgs(target)...)
 	}
 	generateGdextension(pkg, classes)
 }

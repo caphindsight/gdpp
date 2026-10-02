@@ -5,6 +5,7 @@ gd++ build: compile a package into a GDExtension library
 ```sh
 gd++ build [PATH] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
            [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [-j N] [--clean]
+           [--asan] [--ubsan] [--tsan]
            [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 gd++ build --proj [options...]
 ```
@@ -71,23 +72,33 @@ PATH
 --fps FPS
   With `--print`, the frame rate that the table's budget column assumes. Default: 60.
 
+--asan
+  Detect memory errors, e.g. use after free or out-of-bounds access, with AddressSanitizer. See "Sanitizers" in `gd++ man building`.
+
+--ubsan
+  Detect undefined behavior, e.g. signed integer overflow, with UndefinedBehaviorSanitizer. Not supported by MSVC.
+
+--tsan
+  Detect data races between threads, with ThreadSanitizer. Not supported by MSVC.
+
 -j N, --jobs N
   Run N compile jobs at once. Default: one per CPU core, minus one.
 
 --clean
   Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files, so the build starts from scratch.
 
-Only one of `--opt`, `--small` and `--noopt`, and only one of `--doc` and `--nodoc`, can be used. Group names are made of letters, digits and underscores. `--print` needs `--profile`, and `--period` and `--fps` need `--print`.
+Only one of `--opt`, `--small` and `--noopt`, and only one of `--doc` and `--nodoc`, can be used. `--asan` and `--tsan` can't be used together. Group names are made of letters, digits and underscores. `--print` needs `--profile`, and `--period` and `--fps` need `--print`.
 
 # Output
 
-For each package and target, a task like:
+First, once, the build parameters, then for each package a task:
 
 ```out
-[•] Building res://gameplay for windows.x86_64, release, optimized, no docs.
+[•] Build parameters: windows.x86_64, release, optimized, no docs.
+[•] Building res://gameplay.
 ```
 
-It names the package, the target, debug or release, the optimization, and whether warnings are disabled. For packages with GD++ files, it also says whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
+The parameters are the targets, debug or release, the optimization, whether warnings are disabled, and the sanitizers. If a package has GD++ files, they also say whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. With several targets, each package has a task per target, e.g. "Building res://gameplay for windows.x86_64...". The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
 
 Files written into the package root:
 
@@ -149,6 +160,12 @@ Build code that has warnings, e.g. while trying something out:
 gd++ build --nowarn
 ```
 
+Look for memory errors and undefined behavior:
+
+```sh
+gd++ build --asan --ubsan
+```
+
 Start over after a strange build error:
 
 ```sh
@@ -164,6 +181,7 @@ gd++ build --clean
 - "Invalid arguments: \"a-b\" is not a valid group name." A `--trace` or `--profile` group isn't a valid name.
 - "Invalid arguments: --print needs --profile.", "--period needs --print." and "--fps needs --print." The option does nothing without the other one.
 - "Invalid arguments: --period must be positive."
+- "Invalid arguments: --asan and --tsan cannot be used together."
 - An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
 - "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
 - "Class X is declared in FILE and in gd++pkg.toml." A GD++ class and a C++ class have the same name.

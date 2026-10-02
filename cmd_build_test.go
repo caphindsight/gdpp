@@ -262,6 +262,8 @@ func TestBuildSconsArgs(t *testing.T) {
 		{BuildOptions{Small: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=size"}},
 		{BuildOptions{Jobs: 8}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "-j8"}},
 		{BuildOptions{NoWarn: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "--gdpp-nowarn"}},
+		{BuildOptions{Asan: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "--gdpp-sanitize=address"}},
+		{BuildOptions{Tsan: true, Ubsan: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "--gdpp-sanitize=undefined,thread"}},
 	}
 	for _, tc := range cases {
 		if got := tc.c.sconsArgs("linux.x86_64"); !reflect.DeepEqual(got, tc.want) {
@@ -289,12 +291,14 @@ func TestBuildDescribe(t *testing.T) {
 		{BuildOptions{NoWarn: true}, host, true, host + ", debug, unoptimized, \x1b[35mno warnings\x1b[0m, with docs"},
 		{BuildOptions{Ship: true, NoOpt: true}, host, false, host + ", \x1b[35mrelease\x1b[0m, \x1b[35munoptimized\x1b[0m"},
 		{BuildOptions{Small: true}, "windows.arm64", false, "\x1b[35mwindows.arm64\x1b[0m, debug, \x1b[35msize-optimized\x1b[0m"},
+		{BuildOptions{}, host + " windows.arm64", false, host + " \x1b[35mwindows.arm64\x1b[0m, debug, unoptimized"},
+		{BuildOptions{Asan: true, Ubsan: true}, host, true, host + ", debug, unoptimized, \x1b[35masan\x1b[0m, \x1b[35mubsan\x1b[0m, with docs"},
 		{BuildOptions{DebugOptions: DebugOptions{Trace: []string{"combat", "ai"}, Profile: []string{"all"}}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mtrace combat ai\x1b[0m, \x1b[35mprofiling\x1b[0m"},
 		{BuildOptions{DebugOptions: DebugOptions{Profile: []string{"Player"}, Print: true, Period: ptr(5), FPS: 144}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mprofiling\x1b[0m"},
 		{BuildOptions{DebugOptions: DebugOptions{Trace: []string{"all"}}}, host, false, host + ", debug, unoptimized"},
 	}
 	for _, tc := range cases {
-		if got := tc.c.describe(tc.target, tc.gdpp); got != tc.want {
+		if got := tc.c.describe(strings.Fields(tc.target), tc.gdpp); got != tc.want {
 			t.Errorf("%+v.describe(%q, %v) = %q, want %q", tc.c, tc.target, tc.gdpp, got, tc.want)
 		}
 	}
@@ -348,6 +352,7 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"arch":     {CmdBuild{Arch: "mips"}, "--arch must be one of x86_32, x86_64, arm64"},
 		"proj":     {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
 		"jobs":     {CmdBuild{BuildOptions: BuildOptions{Jobs: -1}}, "--jobs cannot be negative"},
+		"tsan":     {CmdBuild{BuildOptions: BuildOptions{Asan: true, Tsan: true}}, "--asan and --tsan cannot be used together"},
 		"doc":      {CmdBuild{BuildOptions: BuildOptions{Doc: true, NoDoc: true}}, "--doc and --nodoc cannot be used together"},
 		"group":    {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Trace: []string{"combat"}, Profile: []string{"a-b"}}}}, `"a-b" is not a valid group name`},
 		"print":    {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Print: true}}}, "--print needs --profile"},

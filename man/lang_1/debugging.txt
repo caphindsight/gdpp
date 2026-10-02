@@ -84,7 +84,7 @@ func think() -> void { ... }
 
 `--profile ai` profiles `steer` and `think`, through the class's annotation, and `--profile physics` only `steer`. `--profile Enemy` and `--profile all` profile both.
 
-The build's task name says when tracing or profiling is on, e.g. "Building res://game for linux.x86_64, debug, unoptimized, with docs, trace combat ai, profiling...". Changing the flags only recompiles the files whose generated code changes, and with hot reload, the editor picks up the new library without a restart. See `gd++ man building`.
+The build parameters, which the build logs first, say when tracing or profiling is on, e.g. "Build parameters: linux.x86_64, debug, unoptimized, with docs, trace combat ai, profiling.". Changing the flags only recompiles the files whose generated code changes, and with hot reload, the editor picks up the new library without a restart. See `gd++ man building`.
 
 To see the code that the annotations generate, pass the same flags to `gd++ trans`:
 
