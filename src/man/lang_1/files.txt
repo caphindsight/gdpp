@@ -1,4 +1,4 @@
-Files: what a GD++ file declares, and how it's laid out
+Files: the layout of a GD++ file
 
 A GD++ file declares classes, externs and enums. It can declare any number of them, and every other GD++ file of the package can use them. This page explains the layout of a file: file-level and inline declarations, and what goes where.
 

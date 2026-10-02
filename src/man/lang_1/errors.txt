@@ -1,4 +1,4 @@
-Errors: reading GD++ errors, common mistakes, and C++ compiler errors
+Errors: GD++ and C++ compiler errors
 
 When a GD++ file has a mistake, GD++ stops and explains it: where it is, what's wrong, and usually how to fix it. This page explains how to read these errors, lists the most common ones, and explains how errors of the C++ compiler relate to your GD++ files.
 

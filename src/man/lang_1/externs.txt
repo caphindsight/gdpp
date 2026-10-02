@@ -1,4 +1,4 @@
-Externs: using classes of other packages, GDExtensions and scripts at runtime
+Externs: other packages' classes at runtime
 
 Each package is compiled on its own, so its code can't use the classes of another package: the C++ compiler never sees them. An extern solves this at runtime: it declares a class that lives somewhere else, and GD++ lets your code use it like any other class, calling its members by name.
 

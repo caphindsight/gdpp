@@ -1,4 +1,4 @@
-Introduction: what GD++ is, and how to read this manual
+Introduction: what GD++ is
 
 # What GD++ is
 

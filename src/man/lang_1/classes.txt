@@ -1,4 +1,4 @@
-Classes: declaring Godot classes, bases, @tool, @game_only, @icon, @trace and @profile
+Classes: declaring Godot classes
 
 A GD++ class is a Godot class, like `Node3D` or `Resource`: once built, it shows up in the editor's "Create New Node" dialog (or in the list of resources), GDScript can use it, and scripts can extend it. This page explains how to declare classes, and what GD++ makes of them.
 

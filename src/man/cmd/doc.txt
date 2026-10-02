@@ -1,4 +1,4 @@
-gd++ doc: show what godot-cpp declares under a name
+gd++ doc: look up godot-cpp declarations
 
 # Synopsis
 

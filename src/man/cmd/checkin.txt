@@ -1,4 +1,4 @@
-gd++ checkin: move dependencies into the checked in cache, or back
+gd++ checkin: check dependencies in or out
 
 # Synopsis
 

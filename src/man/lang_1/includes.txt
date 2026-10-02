@@ -1,4 +1,4 @@
-Includes: how GD++ writes #include lines, and import and noimport
+Includes: automatic #include lines
 
 In GD++, you don't write `#include` lines. GD++ knows which header declares each name of godot-cpp and of your package, finds the names your code uses, and includes their headers. To use a class, just use it. This page explains how that works, and what to do in the rare cases where it doesn't.
 

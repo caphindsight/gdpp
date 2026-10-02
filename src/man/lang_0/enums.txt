@@ -1,4 +1,4 @@
-Enums and constants: enum types, bitfields, integer constants, and how Godot sees them
+Enums and constants: enum types, bitfields and constants
 
 GD++ declares two things with `enum`: enum types, i.e. sets of named integer values, and integer constants of a class. Enum types in GD++ work a bit differently from enums in C++, Godot and GDScript: they're global types of the package.
 

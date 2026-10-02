@@ -1,4 +1,4 @@
-gd++ vendor: copy a dependency into or out of the project's cache
+gd++ vendor: copy a dependency in or out
 
 # Synopsis
 

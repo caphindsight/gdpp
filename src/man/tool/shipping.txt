@@ -1,4 +1,4 @@
-Shipping: release builds, and exporting a game with GD++ libraries
+Shipping: exporting a game
 
 You export a game with GD++ code like any game with GDExtensions: build the libraries for every platform you ship to, in release mode, then export from Godot as usual.
 

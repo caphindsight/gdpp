@@ -1,4 +1,4 @@
-C++ code: function bodies, decl, impl and @global blocks, and GD++'s words in C++
+C++ code: function bodies and C++ blocks
 
 Wherever GD++ takes a block in braces, the block is C++: function bodies, `ctor`, `dtor` and `notif` blocks, `get` and `set` blocks, and initial and default values. `decl` and `impl` blocks go further: they put any C++ into the generated files, e.g. private helpers or `#include` lines. This page explains how GD++ treats C++ code, and where each block ends up.
 

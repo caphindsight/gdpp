@@ -1,4 +1,4 @@
-Signals: declaring signals, and sending them with emit
+Signals: declaring and emitting signals
 
 A signal is a message that an object sends, and that other objects can connect to, like a button's `pressed` signal. GD++ declares signals like GDScript, and sends them with a rewrite, `emit`.
 

@@ -1,4 +1,4 @@
-C++ classes: registering plain C++ classes, tool classes, and mixing them with GD++
+C++ classes: plain C++ in a package
 
 You don't have to write every class in GD++. A package can also have plain C++ classes, written the usual godot-cpp way, with `GDCLASS` and `_bind_methods`. GD++ compiles them into the package's library, and registers them with Godot if you list them. You miss out on what GD++ writes for you, but you get full control.
 

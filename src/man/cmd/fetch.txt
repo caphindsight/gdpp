@@ -1,4 +1,4 @@
-gd++ fetch: download dependencies from a repository, or list them
+gd++ fetch: download or list dependencies
 
 # Synopsis
 

@@ -1,4 +1,4 @@
-Paths: res://, pkg://, and how commands find projects and packages
+Paths: res://, pkg:// and finding packages
 
 Commands take paths as arguments, e.g. `gd++ build src/player` or `gd++ init . --class Foo --include pkg://foo.h`. This page explains how `gd++` reads them, and how it shows paths in messages.
 

@@ -1,4 +1,4 @@
-Rewrites: emit, rpc, is_cancelled, string_name, is_done, claim, cancel, as and assert, GD++'s words in C++ code
+Rewrites: GD++'s words in C++ code
 
 C++ code in a GD++ file is plain C++, with a handful of exceptions: words that GD++ adds to C++, and rewrites into plain C++ before the compiler sees the code. This page lists them, says why they exist, and where they apply.
 

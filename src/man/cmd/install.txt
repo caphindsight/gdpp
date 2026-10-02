@@ -1,4 +1,4 @@
-gd++ install: install the tools that GD++ needs to build
+gd++ install: install the build tools
 
 # Synopsis
 

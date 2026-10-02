@@ -1,4 +1,4 @@
-Tour: a first project, from nothing to a running game
+Tour: a first project
 
 This page walks through a small project, step by step. Each step links to the pages that explain it in full.
 

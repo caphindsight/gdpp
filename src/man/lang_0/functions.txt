@@ -1,4 +1,4 @@
-Functions: func, parameters, default values, engine functions, and @override, @virtual, @const, @static
+Functions: func, parameters and overrides
 
 A function is a method of its class that Godot knows: GDScript can call it, e.g. `player.jump()`, and so can `call()`, signals and the editor. Its signature is GD++, and its body is C++.
 

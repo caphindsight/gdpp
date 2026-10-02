@@ -1,4 +1,4 @@
-Syntax: tokens, comments, literals, keywords and scopes
+Syntax: tokens, comments and literals
 
 This page describes the lexical structure of GD++: how a file is split into words, what comments look like, and which scopes a file has. For the grammar of declarations, see `gd++ man grammar`.
 

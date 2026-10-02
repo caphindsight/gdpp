@@ -1,4 +1,4 @@
-Building: targets, debug and release builds, and what a build does
+Building: targets and kinds of builds
 
 `gd++ build` turns a package into GDExtension libraries, which Godot loads. This page explains builds in depth: what they do step by step, the targets you can build for, and the kinds of builds. For a short list of the command's options, see `gd++ man build`.
 

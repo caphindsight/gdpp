@@ -1,4 +1,4 @@
-Packages: gd++pkg.toml, source files, and what a package builds into
+Packages: gd++pkg.toml and source files
 
 A package is a directory in a project with a `gd++pkg.toml` file. Each package builds into one GDExtension library, with all the classes of its GD++ and C++ files. A project can have many packages, and the project root itself can be one.
 

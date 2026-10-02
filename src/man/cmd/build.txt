@@ -1,4 +1,4 @@
-gd++ build: compile a package into a GDExtension library
+gd++ build: compile a package
 
 # Synopsis
 

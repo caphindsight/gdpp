@@ -1,4 +1,4 @@
-gd++ init: set up the project, or create or update a package or a class
+gd++ init: set up projects, packages and classes
 
 # Synopsis
 

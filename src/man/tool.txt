@@ -1,4 +1,4 @@
-The build tool: an overview of projects, packages, dependencies and builds
+The build tool: an overview
 
 `gd++` is a small build system for Godot C++ code. This page gives an overview of how it works. Each part has its own page, listed at the end.
 

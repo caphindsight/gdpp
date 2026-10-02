@@ -1,4 +1,4 @@
-Async: running functions on other threads with @onthread, and Async tasks
+Async: @onthread and Async tasks
 
 Some work is too slow for one frame: finding a path, generating a chunk of terrain, loading and parsing a file. GD++ runs such a function on another thread when you mark it `@onthread`. A call then returns right away, with an `Async`: a task that tells when the work is done, and holds its result. This page explains both.
 

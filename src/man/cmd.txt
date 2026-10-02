@@ -1,4 +1,4 @@
-Commands: every gd++ command, with all its options
+Commands: every gd++ command
 
 `gd++` is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUMENTS]`. Each command has a page here, named after it, e.g. `gd++ man build`, with its synopsis, all its options, examples and common errors.
 

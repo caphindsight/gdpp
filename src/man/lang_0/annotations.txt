@@ -1,4 +1,4 @@
-Annotations: the complete list, and where each one goes
+Annotations: the complete list
 
 Annotations attach information to a declaration, like in GDScript: `@export` on a variable, `@override` on a function, `@tool` on a class. This page lists all of them. Each one is explained in full on the page of its topic.
 

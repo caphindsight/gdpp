@@ -1,4 +1,4 @@
-gd++ trans: print the C++ that GD++ generates from a file
+gd++ trans: print a file's generated C++
 
 # Synopsis
 

@@ -1,4 +1,4 @@
-Generated code: the C++ that GD++ writes, file by file
+Generated code: the C++ that GD++ writes
 
 GD++ turns each GD++ file into ordinary C++, which you can read, debug and include. This page describes that C++ in detail: which files there are, what's in them, and the names of the helpers GD++ adds. To see the C++ of a file, run `gd++ trans FILE`. In a build, it's in the package's build cache, in `.gd++pkg/gdpp`. See `gd++ man trans` and `gd++ man build-cache`.
 

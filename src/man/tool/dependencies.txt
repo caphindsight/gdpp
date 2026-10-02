@@ -1,4 +1,4 @@
-Dependencies: bindings, API specs and engines, the two caches, and the repository
+Dependencies: bindings, API specs and engines
 
 To build a package, GD++ needs some big, versioned downloads from Godot: its dependencies. GD++ downloads them for you and keeps them in the project. You can share them with your team, or keep them out of version control.
 

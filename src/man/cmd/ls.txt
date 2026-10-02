@@ -1,4 +1,4 @@
-gd++ ls: show an overview of the project
+gd++ ls: show a project overview
 
 # Synopsis
 

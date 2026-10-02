@@ -1,4 +1,4 @@
-Variables: var, initial values, @onready, node paths with $ and %, and properties with get and set
+Variables: var, node paths and properties
 
 A variable is a property of its class that Godot knows: GDScript can read and write it, e.g. `player.speed = 3.0`, and with an export annotation, the inspector shows it and scenes save it. There are two kinds: simple variables, which GD++ stores for you, and properties, with your own getter and setter. Under the hood, they're the same.
 

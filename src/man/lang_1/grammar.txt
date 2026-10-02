@@ -1,4 +1,4 @@
-Grammar: the complete syntax of GD++, in one place
+Grammar: the complete syntax
 
 This page is the formal summary of GD++'s syntax, for reference. Each part is explained on the page of its topic. For tokens, comments and literals, see `gd++ man syntax`.
 

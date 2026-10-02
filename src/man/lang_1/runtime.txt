@@ -1,4 +1,4 @@
-The runtime header: gd, float64_t, assertions, externs, tracing and other helpers
+The runtime header: GD++'s C++ helpers
 
 Every file that GD++ generates includes one header, the GD++ runtime: `gd++/syntax_1.hpp`, for syntax 1. It holds the helpers that generated code needs, and a few that your C++ code can use. It doesn't depend on your code: it's the same for every package. To read it:
 

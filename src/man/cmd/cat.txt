@@ -1,4 +1,4 @@
-gd++ cat: show files, with C++ and GD++ highlighted
+gd++ cat: show files, highlighted
 
 # Synopsis
 

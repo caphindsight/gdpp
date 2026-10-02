@@ -1,4 +1,4 @@
-Debugging: tracing calls and changes with @trace, and timing code with @profile
+Debugging: @trace and @profile
 
 Two annotations help you see what your code does while the game runs:
 

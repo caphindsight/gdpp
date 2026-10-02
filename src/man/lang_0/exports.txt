@@ -1,4 +1,4 @@
-Exports: showing variables in the inspector, with @export and its family
+Exports: variables in the inspector
 
 An exported variable shows up in the editor's inspector, where you can edit it, and is saved in scenes and resources. GD++ has the export annotations of GDScript. Each one exports the variable, and most also tell the inspector how to edit it.
 

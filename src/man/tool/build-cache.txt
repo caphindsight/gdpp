@@ -1,4 +1,4 @@
-Build caches: the .gd++pkg directory, and when builds start from scratch
+Build caches: the .gd++pkg directory
 
 Every package has a build cache: the directory `.gd++pkg` at its root. Builds happen there, and keep everything they can reuse there, so the next build only compiles what changed. You never need to look inside, but knowing what's there helps when something goes wrong.
 

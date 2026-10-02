@@ -1,4 +1,4 @@
-Version control: git, .gitignore, and what to commit
+Version control: what to commit
 
 GD++ projects work with any version control system. With git, GD++ can also keep your `.gitignore` files up to date, so generated files and caches stay out of your repository.
 

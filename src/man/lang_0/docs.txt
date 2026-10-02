@@ -1,4 +1,4 @@
-Doc comments: documenting classes for the editor's help
+Doc comments: help in the editor
 
 Doc comments become real Godot documentation: the editor's help shows your classes, with their descriptions, like it shows Godot's own classes. Press F1 in the editor, or Ctrl+click a class name in a script, to see it.
 

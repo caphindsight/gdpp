@@ -1,4 +1,4 @@
-gd++ clean: delete the build caches of packages
+gd++ clean: delete build caches
 
 # Synopsis
 

@@ -1,4 +1,4 @@
-Cast: converting any value to any type with as
+Cast: converting values with as
 
 C++ has many ways to convert a value, and godot-cpp adds more: `static_cast`, `Object::cast_to`, `Ref`'s constructors and `VariantCaster`. GD++ code needs just one: `VALUE as T` converts VALUE to the C++ type T, whatever the two types are, like GDScript's `as`.
 

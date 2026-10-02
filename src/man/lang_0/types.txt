@@ -1,4 +1,4 @@
-Types: Godot types, and the C++ types they become
+Types: Godot types in C++
 
 GD++ uses Godot's type system: the types you write in declarations are Godot's, e.g. `int`, `Vector3` or `Node`. Each one maps to exactly one C++ type, which the generated code uses, and which your C++ code works with. This page lists them all.
 

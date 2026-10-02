@@ -1,4 +1,4 @@
-Lifecycle: ctor, dtor, initial values, @onready, notif, and the order in which things run
+Lifecycle: what runs when
 
 This page explains what runs when an object of a GD++ class is created, gets ready, and is deleted: constructors, destructors, initial values of variables, `@onready`, and `notif` blocks.
 

@@ -1,4 +1,4 @@
-Projects: Godot projects, gd++proj.toml, and what GD++ keeps in them
+Projects: what GD++ adds to a Godot project
 
 A GD++ project is just a Godot project, i.e. a directory with a `project.godot` file. There is nothing to convert. GD++ adds a few files and directories to it, all described on this page.
 

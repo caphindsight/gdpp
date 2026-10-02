@@ -137,7 +137,7 @@ func TestMan(t *testing.T) {
 		}
 	}
 	out := captureStdout(t, (&CmdMan{}).Run)
-	for _, want := range []string{"\n  intro  ", "\n  lang   ", "\n    signals", "Signals: declaring signals", "an overview [syntax 1]\n"} {
+	for _, want := range []string{"\n  intro  ", "\n  lang   ", "\n    signals", "Signals: declaring and emitting signals", "an overview [syntax 1]\n"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("gd++ man = %q, want it to contain %q", out, want)
 		}
@@ -153,7 +153,7 @@ func TestMan(t *testing.T) {
 
 func TestManSyntax(t *testing.T) {
 	withTTY(t, false)
-	const nightly = "Signals: declaring signals, and sending them with emit [syntax 0 (nightly)]\n"
+	const nightly = "Signals: declaring and emitting signals [syntax 0 (nightly)]\n"
 	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\n"}
 	withMemFS(t, "/games/my_game", withPackages(pkgs))
 	for name, c := range map[string]CmdMan{"nightly": {Page: "signals", Nightly: true}, "syntax": {Page: "signals", Syntax: ptr(0)}} {

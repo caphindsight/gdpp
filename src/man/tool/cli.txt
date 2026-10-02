@@ -1,4 +1,4 @@
-The command line: options every command takes, output, prompts and errors
+The command line: what all commands share
 
 `gd++` is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUMENTS]`. This page explains what all commands have in common: the global options, where output goes, how prompts work, and what happens on errors.
 
