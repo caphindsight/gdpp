@@ -17,7 +17,7 @@ func _ready() -> void {
 
 func regenerate() -> void {
   for (int64_t i = get_child_count() - 1; i >= 0; i--) {
-    get_child(i)->queue_free();
+    queue_destroy get_child(i);
   }
   if (mesh.is_null()) {
     return;

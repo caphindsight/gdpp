@@ -81,7 +81,7 @@ func on_pressed() -> void {
 }
 
 func on_died() -> void {
-  queue_free();
+  queue_destroy this;
 }
 ```
 

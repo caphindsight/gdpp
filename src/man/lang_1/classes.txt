@@ -58,7 +58,7 @@ A class can't extend an extern, an enum, a C++ class of the package, or itself t
 Godot has two kinds of classes, and GD++ uses them differently in C++:
 
 - Refcounted classes: `RefCounted` and every class that extends it, e.g. `Resource`, `Texture2D` or the class `Stats` above. Godot deletes their objects when the last reference goes away. In C++, GD++ uses them through references, e.g. `Ref<Stats>`.
-- Other classes: `Object` and every class that extends it but not `RefCounted`, e.g. `Node` and all nodes. You delete their objects yourself, e.g. with `queue_free()` or `destroy`. In C++, GD++ uses them through pointers, e.g. `Player *`.
+- Other classes: `Object` and every class that extends it but not `RefCounted`, e.g. `Node` and all nodes. You delete their objects yourself, e.g. with `destroy` or `queue_destroy`. In C++, GD++ uses them through pointers, e.g. `Player *`.
 
 A GD++ class is refcounted if its base is. See `gd++ man types`.
 

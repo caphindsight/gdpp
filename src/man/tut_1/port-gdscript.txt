@@ -70,13 +70,14 @@ func _on_body_entered(body: Node2D) -> void {
   }
   player->score += value;
   emit collected(value);
-  queue_free();
+  queue_destroy this;
 }
 ```
 
 What changed:
 
 - Objects are pointers, so members are reached with `->`: `sprite->...`. Refcounted objects, e.g. resources, are `Ref<T>`, and use `->` too. See `gd++ man types`.
+- `queue_free()` becomes `queue_destroy this;`. It does the same, and keeps working if the class later becomes a `@pool`. See `gd++ man pools`.
 - Engine properties are getters and setters in C++: `sprite.rotation += x` becomes `sprite->set_rotation(sprite->get_rotation() + x)`. Your own GD++ variables are plain fields, so `player->score += value` works.
 - `as` casts like in GDScript, but names a C++ type: `body as Player *`. A failed downcast gives `nullptr`. See `gd++ man cast`.
 - Signals are sent with `emit NAME(ARGS);`. See `gd++ man signals`.
@@ -181,7 +182,7 @@ Input.is_action_pressed("jump")     Input::get_singleton()->is_action_pressed(st
 load("res://bullet.tscn")           ResourceLoader::get_singleton()->load("res://bullet.tscn")
 scene.instantiate()                 scene->instantiate() as Bullet *
 Bullet.new()                        create Bullet
-bullet.queue_free()                 bullet->queue_free(), or queue_destroy bullet
+bullet.queue_free()                 queue_destroy bullet
 is_instance_valid(enemy)            claim enemy, with enemy a Weak[Enemy]
 preload(PATH).instantiate()         create Bullet, with @scene(PATH) on Bullet
 assert(x > 0)                       assert x > 0;
