@@ -186,7 +186,7 @@ gd++ build --profile Player            # profiles take_damage
 gd++ build                             # neither: the annotations generate nothing
 ```
 
-Their arguments are names of groups, in double quotes: `@trace("combat")` is in the group `combat`. Every annotation is also in the group named after its class, e.g. `Player`, without an argument. `gd++ build --trace GROUP...` turns on the `@trace` annotations in those groups, `--profile GROUP...` the `@profile` ones, and `all` turns on all of them. A member is on if its own annotation is on, or its class's.
+Their arguments are names of groups, in double quotes: `@trace("combat")` is in the group `combat`. Every annotation is also in the group named after its class, e.g. `Player`, without an argument. The groups `process` and `physics_process` turn on all `_process` and `_physics_process` functions, even without annotations. `gd++ build --trace GROUP...` turns on the `@trace` annotations in those groups, `--profile GROUP...` the `@profile` ones, and `all` turns on all of them. A member is on if its own annotation is on, or its class's.
 
 They combine with every other annotation, and with each other. Externs can have them too, see "Externs" in `gd++ man debugging`. See `gd++ man debugging` for what they print, how to read it, and how to use them well.
 

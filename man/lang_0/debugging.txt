@@ -51,6 +51,8 @@ Every `@trace` and `@profile` annotation belongs to one or more groups:
 - the group named after its class, always, e.g. `Player`,
 - the groups that its arguments name: `@trace("combat")` is in the groups `Player` and `combat`, and `@trace("combat", "ai")` in `Player`, `combat` and `ai`.
 
+Two groups need no annotation: `process` holds every `_process` function, and `physics_process` every `_physics_process` function, of all classes. So `--profile process` times all the `_process` functions.
+
 Builds turn groups on with two flags, each followed by any number of group names:
 
 ```sh
@@ -59,6 +61,7 @@ gd++ build --trace combat ai               # in combat or ai
 gd++ build --trace Player                  # all @trace annotations in the class Player
 gd++ build --trace all                     # all @trace annotations
 gd++ build --profile all                   # all @profile annotations
+gd++ build --profile process               # all _process functions, without annotations
 gd++ build --trace ai --profile all        # both at once
 ```
 

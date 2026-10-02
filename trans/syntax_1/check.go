@@ -1524,12 +1524,14 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			return nil, err
 		}
 	}
-	// The class's @trace leaves out the functions called every frame, which would flood the output.
+	// The class's @trace leaves out the functions called every frame, which would flood the output. Those are
+	// always in the implicit group named after them without the underscore, process or physics_process.
 	for _, f := range m.funcs {
 		if f.deferral == "" {
-			perFrame := (f.override || f.hidden == "notif") && processing[strings.TrimPrefix(f.f.Name, "_gdpp_body_")] != ""
-			f.trace = f.trace || m.trace && !perFrame
-			f.profile = f.profile || m.profile
+			name := strings.TrimPrefix(f.f.Name, "_gdpp_body_")
+			perFrame := (f.override || f.hidden == "notif") && processing[name] != ""
+			f.trace = f.trace || m.trace && !perFrame || perFrame && slices.Contains(u.opts.Trace, name[1:])
+			f.profile = f.profile || m.profile || perFrame && slices.Contains(u.opts.Profile, name[1:])
 		}
 	}
 	// The enums the class exposes: those in its API, those it imports, and those declared in it (or, for the

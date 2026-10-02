@@ -136,7 +136,7 @@ class_name Chest
 extends Node3D
 ```
 
-These are for debugging. `@trace` on a class traces all its functions (except `_process` and `_physics_process`, which run every frame), variables and signals, and prints each creation and destruction of its objects. `@profile` times all its functions, and the getters and setters of its properties. They only generate code in builds that turn on one of their groups: here, `--trace loot`, `--trace Chest` or `--trace all` for `@trace`, and `--profile Chest` or `--profile all` for `@profile`. Like `@tool`, they're not inherited. See `gd++ man debugging`.
+These are for debugging. `@trace` on a class traces all its functions (except `_process` and `_physics_process`, which run every frame, and have their own groups `process` and `physics_process`), variables and signals, and prints each creation and destruction of its objects. `@profile` times all its functions, and the getters and setters of its properties. They only generate code in builds that turn on one of their groups: here, `--trace loot`, `--trace Chest` or `--trace all` for `@trace`, and `--profile Chest` or `--profile all` for `@profile`. Like `@tool`, they're not inherited. See `gd++ man debugging`.
 
 # Annotations and doc comments
 
