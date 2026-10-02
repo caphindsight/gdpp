@@ -65,6 +65,19 @@ arm64     a64
 
 `--for` takes any number of targets, and can't be used with `-w`, `--platform` or `--arch`. The build compiles the targets one after another. Steps 1 to 5 above happen only once, before the first target.
 
+# Compilers
+
+By default, godot-cpp picks the compiler for each target: GCC for Linux, Clang for macOS, and for Windows, MSVC on a Windows machine that has it, else MinGW-w64's GCC. `--cc` picks one instead, for all targets:
+
+```
+gcc        Linux, or Windows with MinGW-w64's GCC
+clang      Linux, macOS, or Windows with MinGW-w64's Clang (llvm-mingw), when cross-compiling
+msvc       Windows, on a Windows machine
+clang-cl   Windows, on a Windows machine, with MSVC's tools
+```
+
+E.g. `gd++ build --cc clang` builds with Clang on Linux. The compiler must be installed; `gd++ install` only sets up the default ones. Changing it recompiles everything, including godot-cpp.
+
 # Debug and release builds
 
 A debug build, the default, is for development:
@@ -107,7 +120,7 @@ So can documentation:
 
 Compiler warnings are errors, so code that warns doesn't build. `--nowarn` disables them instead, e.g. while trying something out. This applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp. Changing it recompiles the package's sources, but not godot-cpp.
 
-Before building, `gd++ build` says once what it builds, e.g. "Build parameters: windows.x86_64, release, optimized, no docs.", and whether warnings are disabled, which sanitizers are on, and whether tracing or profiling is on. On a terminal, the values that differ from the defaults are highlighted.
+Before building, `gd++ build` says once what it builds, e.g. "Build parameters: windows.x86_64, release, optimized, no docs.", and the compiler chosen with `--cc`, whether warnings are disabled, which sanitizers are on, and whether tracing or profiling is on. On a terminal, the values that differ from the defaults are highlighted.
 
 # Sanitizers
 

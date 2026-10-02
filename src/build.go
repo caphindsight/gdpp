@@ -35,17 +35,18 @@ var (
 
 // BuildOptions are the build options of the build command.
 type BuildOptions struct {
-	Opt    bool `arg:"--opt" help:"optimize for speed [default: with --ship]"`
-	Small  bool `arg:"--small" help:"optimize for binary size"`
-	NoOpt  bool `arg:"--noopt" help:"don't optimize [default: without --ship]"`
-	Ship   bool `arg:"--ship" help:"build for release instead of debugging"`
-	Jobs   int  `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
-	Doc    bool `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
-	NoDoc  bool `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
-	NoWarn bool `arg:"--nowarn" help:"disable C++ warnings, which are errors by default, except in godot-cpp"`
-	Asan   bool `arg:"--asan" help:"detect memory errors with AddressSanitizer"`
-	Ubsan  bool `arg:"--ubsan" help:"detect undefined behavior with UndefinedBehaviorSanitizer"`
-	Tsan   bool `arg:"--tsan" help:"detect data races with ThreadSanitizer"`
+	Opt    bool   `arg:"--opt" help:"optimize for speed [default: with --ship]"`
+	Small  bool   `arg:"--small" help:"optimize for binary size"`
+	NoOpt  bool   `arg:"--noopt" help:"don't optimize [default: without --ship]"`
+	Ship   bool   `arg:"--ship" help:"build for release instead of debugging"`
+	Jobs   int    `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
+	Doc    bool   `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
+	NoDoc  bool   `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
+	NoWarn bool   `arg:"--nowarn" help:"disable C++ warnings, which are errors by default, except in godot-cpp"`
+	Asan   bool   `arg:"--asan" help:"detect memory errors with AddressSanitizer"`
+	Ubsan  bool   `arg:"--ubsan" help:"detect undefined behavior with UndefinedBehaviorSanitizer"`
+	Tsan   bool   `arg:"--tsan" help:"detect data races with ThreadSanitizer"`
+	CC     string `arg:"--cc" placeholder:"gcc|clang|msvc|clang-cl" help:"compile with this C++ compiler; for Windows, gcc and clang are MinGW-w64's [default: godot-cpp's for the target]"`
 	DebugOptions
 }
 
@@ -99,6 +100,7 @@ func (o BuildOptions) validate() {
 	Assert(!o.Doc || !o.NoDoc, "Invalid arguments: --doc and --nodoc cannot be used together.")
 	Assert(!o.Asan || !o.Tsan, "Invalid arguments: --asan and --tsan cannot be used together.")
 	Assert(o.Jobs >= 0, "Invalid arguments: --jobs cannot be negative.")
+	Assert(o.CC == "" || compilers[o.CC] != nil, "Invalid arguments: --cc must be one of gcc, clang, msvc, clang-cl.")
 	o.DebugOptions.validate()
 }
 
@@ -130,6 +132,28 @@ func fullName(names [][]string, s string) string {
 	return ""
 }
 
+// compilers maps each --cc compiler to the platforms it builds for, and the
+// godot-cpp options that choose it there.
+var compilers = map[string]map[string][]string{
+	"gcc":      {"linux": {"use_llvm=no"}, "windows": {"use_mingw=yes", "use_llvm=no"}},
+	"clang":    {"linux": {"use_llvm=yes"}, "windows": {"use_mingw=yes", "use_llvm=yes"}, "macos": nil},
+	"msvc":     {"windows": {"use_mingw=no", "use_llvm=no"}},
+	"clang-cl": {"windows": {"use_mingw=no", "use_llvm=yes"}},
+}
+
+// assertCompiler asserts the --cc compiler, if any, can build for platform on this machine.
+func (o BuildOptions) assertCompiler(platform string) {
+	if o.CC == "" {
+		return
+	}
+	_, ok := compilers[o.CC][platform]
+	Assert(ok, "Invalid arguments: --cc %s cannot build for %s.", o.CC, platform)
+	// MSVC only runs on Windows, and there godot-cpp's MinGW-w64 is always GCC.
+	msvc := o.CC == "msvc" || o.CC == "clang-cl"
+	Assert(platform != "windows" || o.CC == "gcc" || msvc == (hostPlatform == "windows"),
+		"Invalid arguments: --cc %s cannot build for windows on this machine.", o.CC)
+}
+
 // assertScons asserts SCons is installed.
 func assertScons() {
 	_, err := exec.LookPath("scons")
@@ -146,6 +170,7 @@ func (o BuildOptions) sconsArgs(target string) []string {
 		args = append(args, "target=template_debug", "dev_build=yes", "use_hot_reload=yes")
 	}
 	args = append(args, "optimize="+o.optimize())
+	args = append(args, compilers[o.CC][platform]...)
 	if o.NoWarn {
 		args = append(args, "--gdpp-nowarn")
 	}
@@ -216,6 +241,9 @@ func (o BuildOptions) describe(targets []string, gdpp bool) string {
 		opt = Styled(opt, Magenta)
 	}
 	desc += ", " + opt
+	if o.CC != "" {
+		desc += ", " + Styled(o.CC, Magenta)
+	}
 	if o.NoWarn {
 		desc += ", " + Styled("no warnings", Magenta)
 	}

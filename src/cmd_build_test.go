@@ -280,11 +280,16 @@ func TestBuildSconsArgs(t *testing.T) {
 		{BuildOptions{NoWarn: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "--gdpp-nowarn"}},
 		{BuildOptions{Asan: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "--gdpp-sanitize=address"}},
 		{BuildOptions{Tsan: true, Ubsan: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "--gdpp-sanitize=undefined,thread"}},
+		{BuildOptions{CC: "clang"}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "use_llvm=yes"}},
 	}
 	for _, tc := range cases {
 		if got := tc.c.sconsArgs("linux.x86_64"); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("%+v.sconsArgs() = %q, want %q", tc.c, got, tc.want)
 		}
+	}
+	want := []string{"platform=windows", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "use_mingw=yes", "use_llvm=no"}
+	if got := (BuildOptions{CC: "gcc"}).sconsArgs("windows.x86_64"); !reflect.DeepEqual(got, want) {
+		t.Errorf("sconsArgs() with --cc gcc for windows = %q, want %q", got, want)
 	}
 }
 
@@ -308,6 +313,7 @@ func TestBuildDescribe(t *testing.T) {
 		{BuildOptions{Ship: true, NoOpt: true}, host, false, host + ", \x1b[35mrelease\x1b[0m, \x1b[35munoptimized\x1b[0m"},
 		{BuildOptions{Small: true}, "windows.arm64", false, "\x1b[35mwindows.arm64\x1b[0m, debug, \x1b[35msize-optimized\x1b[0m"},
 		{BuildOptions{}, host + " windows.arm64", false, host + " \x1b[35mwindows.arm64\x1b[0m, debug, unoptimized"},
+		{BuildOptions{CC: "clang", NoWarn: true}, host, false, host + ", debug, unoptimized, \x1b[35mclang\x1b[0m, \x1b[35mno warnings\x1b[0m"},
 		{BuildOptions{Asan: true, Ubsan: true}, host, true, host + ", debug, unoptimized, \x1b[35masan\x1b[0m, \x1b[35mubsan\x1b[0m, with docs"},
 		{BuildOptions{DebugOptions: DebugOptions{Trace: []string{"combat", "ai"}, Profile: []string{"all"}}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mtrace combat ai\x1b[0m, \x1b[35mprofiling\x1b[0m"},
 		{BuildOptions{DebugOptions: DebugOptions{Profile: []string{"Player"}, Print: true, Period: ptr(5), FPS: 144}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mprofiling\x1b[0m"},
@@ -354,6 +360,8 @@ func TestGenerateBuildCacheGdpp(t *testing.T) {
 }
 
 func TestBuildInvalidArgs(t *testing.T) {
+	// A compiler that can't build for windows on this machine.
+	hostCC := map[bool]string{true: "clang", false: "msvc"}[hostPlatform == "windows"]
 	cases := map[string]struct {
 		c    CmdBuild
 		want string
@@ -369,6 +377,10 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"proj":     {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
 		"jobs":     {CmdBuild{BuildOptions: BuildOptions{Jobs: -1}}, "--jobs cannot be negative"},
 		"tsan":     {CmdBuild{BuildOptions: BuildOptions{Asan: true, Tsan: true}}, "--asan and --tsan cannot be used together"},
+		"cc":       {CmdBuild{BuildOptions: BuildOptions{CC: "icc"}}, "--cc must be one of gcc, clang, msvc, clang-cl"},
+		"ccmac":    {CmdBuild{For: []string{"l.x64", "m.a64"}, BuildOptions: BuildOptions{CC: "gcc"}}, "--cc gcc cannot build for macos"},
+		"cclinux":  {CmdBuild{Platform: "linux", BuildOptions: BuildOptions{CC: "msvc"}}, "--cc msvc cannot build for linux"},
+		"cchost":   {CmdBuild{Windows: true, BuildOptions: BuildOptions{CC: hostCC}}, "--cc " + hostCC + " cannot build for windows on this machine"},
 		"doc":      {CmdBuild{BuildOptions: BuildOptions{Doc: true, NoDoc: true}}, "--doc and --nodoc cannot be used together"},
 		"group":    {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Trace: []string{"combat"}, Profile: []string{"a-b"}}}}, `"a-b" is not a valid group name`},
 		"print":    {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{Print: true}}}, "--print needs --profile"},

@@ -65,13 +65,16 @@ func (c *CmdBuild) targets() []string {
 		if c.Windows {
 			c.Platform = "windows"
 		}
-		return []string{buildOption("platform", c.Platform, hostPlatform, buildPlatforms) + "." + buildOption("arch", c.Arch, hostArch, buildArchs)}
+		platform := buildOption("platform", c.Platform, hostPlatform, buildPlatforms)
+		c.assertCompiler(platform)
+		return []string{platform + "." + buildOption("arch", c.Arch, hostArch, buildArchs)}
 	}
 	var targets []string
 	for _, s := range c.For {
 		platform, arch, _ := strings.Cut(s, ".")
 		platform, arch = fullName(buildPlatforms, platform), fullName(buildArchs, arch)
 		Assert(platform != "" && arch != "", "Invalid arguments: %q is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64.", s)
+		c.assertCompiler(platform)
 		if target := platform + "." + arch; !slices.Contains(targets, target) {
 			targets = append(targets, target)
 		}

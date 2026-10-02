@@ -5,7 +5,7 @@ gd++ build: compile a package into a GDExtension library
 ```sh
 gd++ build [PATH] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
            [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [-j N] [--clean]
-           [--asan] [--ubsan] [--tsan]
+           [--cc COMPILER] [--asan] [--ubsan] [--tsan]
            [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 gd++ build --proj [options...]
 ```
@@ -54,6 +54,9 @@ PATH
 --nodoc
   Don't compile the documentation. Default with `--ship`.
 
+--cc COMPILER
+  Compile with this C++ compiler: `gcc`, `clang`, `msvc` or `clang-cl`. For Windows, `gcc` and `clang` are MinGW-w64's. Default: godot-cpp's for the target. See "Compilers" in `gd++ man building`.
+
 --nowarn
   Disable C++ warnings: `-w`, or `/w` with MSVC. By default, warnings are errors: `-Werror`, or `/WX` with MSVC. Either way, this applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp.
 
@@ -87,7 +90,7 @@ PATH
 --clean
   Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files, so the build starts from scratch.
 
-Only one of `--opt`, `--small` and `--noopt`, and only one of `--doc` and `--nodoc`, can be used. `--asan` and `--tsan` can't be used together. Group names are made of letters, digits and underscores. `--print` needs `--profile`, and `--period` and `--fps` need `--print`.
+Only one of `--opt`, `--small` and `--noopt`, and only one of `--doc` and `--nodoc`, can be used. `--asan` and `--tsan` can't be used together. `--cc` must build for every target. Group names are made of letters, digits and underscores. `--print` needs `--profile`, and `--period` and `--fps` need `--print`.
 
 # Output
 
@@ -98,7 +101,7 @@ First, once, the build parameters, then for each package a task:
 [•] Building res://gameplay.
 ```
 
-The parameters are the targets, debug or release, the optimization, whether warnings are disabled, and the sanitizers. If a package has GD++ files, they also say whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. With several targets, each package has a task per target, e.g. "Building res://gameplay for windows.x86_64...". The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
+The parameters are the targets, debug or release, the optimization, the compiler if `--cc` chooses one, whether warnings are disabled, and the sanitizers. If a package has GD++ files, they also say whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. With several targets, each package has a task per target, e.g. "Building res://gameplay for windows.x86_64...". The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
 
 Files written into the package root:
 
@@ -166,6 +169,12 @@ Look for memory errors and undefined behavior:
 gd++ build --asan --ubsan
 ```
 
+Build with Clang:
+
+```sh
+gd++ build --cc clang
+```
+
 Start over after a strange build error:
 
 ```sh
@@ -182,6 +191,8 @@ gd++ build --clean
 - "Invalid arguments: --print needs --profile.", "--period needs --print." and "--fps needs --print." The option does nothing without the other one.
 - "Invalid arguments: --period must be positive."
 - "Invalid arguments: --asan and --tsan cannot be used together."
+- "Invalid arguments: --cc msvc cannot build for linux." The compiler doesn't support a target. See "Compilers" in `gd++ man building`.
+- "Invalid arguments: --cc clang cannot build for windows on this machine." MSVC and clang-cl only run on Windows, and on Windows, godot-cpp only supports MinGW-w64's GCC.
 - An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
 - "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
 - "Class X is declared in FILE and in gd++pkg.toml." A GD++ class and a C++ class have the same name.
