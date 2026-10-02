@@ -60,7 +60,7 @@ In debug builds, if the condition is false, the assertion prints an error and re
 
 ```
 Failed GD++ assertion: `target != nullptr`, at player.gd++:2.
-Failed GD++ assertions are undefined behavior and must be fixed.
+This is undefined behavior and must be fixed.
 ```
 
 A failed assertion is always undefined behavior, in debug builds too. GD++ tries hard to keep the game from crashing and to let it go on sensibly, so you can find the bug and fix it. But the code around the assertion was written for a true condition: the function stops halfway, and its caller gets a default value it may not expect. So nothing that happens after a failed assertion is promised.

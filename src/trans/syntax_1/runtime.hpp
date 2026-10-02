@@ -295,7 +295,7 @@ void memdelete_ext(ExtRef<T> p_object) = delete;
 
 // assert_message is the error printed by a failed assertion.
 inline String assert_message(const char *p_condition, const char *p_file, int p_line) {
-	return vformat("Failed GD++ assertion: `%s`, at %s:%d.\nFailed GD++ assertions are undefined behavior and must be fixed.",
+	return vformat("Failed GD++ assertion: `%s`, at %s:%d.\nThis is undefined behavior and must be fixed.",
 			p_condition, p_file, p_line);
 }
 
