@@ -295,7 +295,7 @@ void memdelete_ext(ExtRef<T> p_object) = delete;
 
 // assert_message is the error printed by a failed assertion.
 inline String assert_message(const char *p_condition, const char *p_file, int p_line) {
-	return vformat("Failed GD++ assertion: %s, at %s:%d.\nFailed GD++ assertions are undefined behavior and must be fixed.",
+	return vformat("Failed GD++ assertion: `%s`, at %s:%d.\nFailed GD++ assertions are undefined behavior and must be fixed.",
 			p_condition, p_file, p_line);
 }
 
@@ -728,11 +728,12 @@ using gdpp::ExtRef;
 // GDPP_ASSERT is what `assert condition;` becomes: in debug builds, a failed condition prints an error and returns from
 // the function, with T() in one that returns a T. It tells the two apart by GDPP_SIGNATURE, and without one, doesn't
 // return. GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE do the same in code where GD++ knows the function's return type.
-// Release builds don't evaluate the condition.
+// The error has no function name, since that of generated code, e.g. `_gdpp_body__ready` or a lambda's, would
+// confuse. Release builds don't evaluate the condition.
 #ifdef DEBUG_ENABLED
 #define GDPP_ASSERT_(m_text, m_exit, ...) \
 	if (!(__VA_ARGS__)) { \
-		ERR_PRINT(gdpp::assert_message(m_text, __FILE__, __LINE__)); \
+		::godot::_err_print_error("", __FILE__, __LINE__, gdpp::assert_message(m_text, __FILE__, __LINE__)); \
 		m_exit; \
 	} else \
 		((void)0)

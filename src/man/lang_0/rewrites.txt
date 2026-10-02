@@ -59,7 +59,7 @@ func fire() -> void {
 In debug builds, if the condition is false, the assertion prints an error and returns from the function. A function that returns a value returns the type's default, e.g. `0`, `nullptr` or an empty `String`. The error shows the condition and where the assertion is in the GD++ file, and a second line says what a failed assertion means:
 
 ```
-Failed GD++ assertion: target != nullptr, at player.gd++:2.
+Failed GD++ assertion: `target != nullptr`, at player.gd++:2.
 Failed GD++ assertions are undefined behavior and must be fixed.
 ```
 
