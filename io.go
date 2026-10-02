@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"golang.org/x/term"
@@ -236,8 +237,7 @@ func PrintResult(s string) {
 }
 
 // PageResult prints s like PrintResult, but in a pager if the terminal can't
-// show it all at once: up and down scroll by a line, page up and page down
-// (or space) by a page, and q, escape or Ctrl+C quit.
+// show it all at once, or with --pager. For the pager's keys, see pager.key.
 func PageResult(s string) {
 	stdin, stdout := int(os.Stdin.Fd()), int(os.Stdout.Fd())
 	if !isTTY || !isTerminal(os.Stdin) {
@@ -246,7 +246,7 @@ func PageResult(s string) {
 	}
 	s = expandTabs(s, Args.TabWidth)
 	width, height, err := term.GetSize(stdout)
-	if err != nil || strings.Count(WrapText(s, width), "\n") < height {
+	if err != nil || !Args.Pager && strings.Count(WrapText(s, width), "\n") < height {
 		PrintResult(s)
 		return
 	}
@@ -256,61 +256,196 @@ func PageResult(s string) {
 		return
 	}
 	defer term.Restore(stdin, state)
-	fmt.Fprint(os.Stdout, "\x1b[?1049h\x1b[?25l") // The alternate screen, without the cursor.
+	fmt.Fprint(os.Stdout, "\x1b[?1049h") // The alternate screen.
 	defer fmt.Fprint(os.Stdout, "\x1b[?25h\x1b[?1049l")
 	key := make([]byte, 16)
-	for top := 0; ; {
-		width, height, _ = term.GetSize(stdout) // Again, in case the terminal was resized.
-		lines := strings.Split(strings.TrimSuffix(WrapText(s, width), "\n"), "\n")
-		var frame string
-		frame, top = pagerFrame(lines, top, height)
-		fmt.Fprint(os.Stdout, frame)
+	for p := (pager{match: -1}); ; {
+		p.width, p.height, _ = term.GetSize(stdout) // Again, in case the terminal was resized.
+		p.lines = strings.Split(strings.TrimSuffix(WrapText(s, p.width), "\n"), "\n")
+		fmt.Fprint(os.Stdout, p.frame())
 		n, err := os.Stdin.Read(key)
-		quit := err != nil
-		if !quit {
-			top, quit = pagerKey(string(key[:n]), top, height-1)
-		}
-		if quit {
+		if err != nil || p.key(string(key[:n])) {
 			return
 		}
 	}
 }
 
-// pagerKey returns the pager's top line after the key press key, given the
-// page size, or whether to quit.
-func pagerKey(key string, top, page int) (int, bool) {
-	switch key {
-	case "\x1b[A", "\x1bOA":
-		return top - 1, false
-	case "\x1b[B", "\x1bOB":
-		return top + 1, false
-	case "\x1b[5~":
-		return top - page, false
-	case "\x1b[6~", " ":
-		return top + page, false
-	case "q", "Q", "\x1b", "\x03":
-		return top, true
-	}
-	return top, false
+// pager is the state of the pager of PageResult.
+type pager struct {
+	lines         []string // The text, wrapped to the terminal's width.
+	top           int      // The first line shown.
+	width, height int      // The terminal's size.
+	typing        bool     // Whether a search is being typed, after "/".
+	input         string   // The search being typed.
+	query         string   // The search whose matches are highlighted, or "" if none.
+	match         int      // The line of the current match, or -1 if none.
 }
 
-// pagerFrame returns the ANSI codes that draw lines from top, clamped so the
-// last page is full, on a terminal height lines high, with a status line at
-// the bottom. It also returns the clamped top.
-func pagerFrame(lines []string, top, height int) (string, int) {
-	page := max(height-1, 1)
-	top = max(min(top, len(lines)-page), 0)
+// key handles the key press key, and reports whether to quit: up and down
+// scroll by a line, page up and page down (or space) by a page, / starts a
+// search, n and N jump to the next and previous match, q ends the search,
+// and q, escape or Ctrl+C quit.
+func (p *pager) key(key string) bool {
+	if key == "\x03" {
+		return true
+	}
+	if p.typing {
+		switch {
+		case key == "\r" || key == "\n":
+			p.typing, p.query, p.match = false, p.input, -1
+			p.jump(1)
+		case key == "\x7f" || key == "\b":
+			if p.input == "" {
+				p.typing = false
+			}
+			_, size := utf8.DecodeLastRuneInString(p.input)
+			p.input = p.input[:len(p.input)-size]
+		case key == "\x1b":
+			p.typing, p.query = false, ""
+		case !strings.HasPrefix(key, "\x1b"):
+			for _, r := range key {
+				if unicode.IsPrint(r) {
+					p.input += string(r)
+				}
+			}
+		}
+		return false
+	}
+	page := p.height - 1
+	switch key {
+	case "\x1b[A", "\x1bOA":
+		p.top--
+	case "\x1b[B", "\x1bOB":
+		p.top++
+	case "\x1b[5~":
+		p.top -= page
+	case "\x1b[6~", " ":
+		p.top += page
+	case "/":
+		p.typing, p.input = true, ""
+	case "n":
+		p.jump(1)
+	case "N":
+		p.jump(-1)
+	case "q", "Q":
+		if p.query == "" {
+			return true
+		}
+		p.query = ""
+	case "\x1b":
+		return true
+	}
+	return false
+}
+
+// jump scrolls to the next line with a match of the search, in direction dir
+// (1 or -1), after the current match if it's shown, or else after the top line,
+// wrapping around at the end.
+func (p *pager) jump(dir int) {
+	if p.query == "" {
+		return
+	}
+	from := p.match
+	if from < p.top || from >= p.top+p.height-1 {
+		from = p.top - max(dir, 0)
+	}
+	for i := 1; i <= len(p.lines); i++ {
+		if line := (from + dir*i + 2*len(p.lines)) % len(p.lines); len(findAll(p.lines[line], p.query)) > 0 {
+			p.top, p.match = line, line
+			return
+		}
+	}
+}
+
+// frame returns the ANSI codes that draw the lines from the top line, clamped
+// so the last page is full, with the matches of the search highlighted, and a
+// status line at the bottom.
+func (p *pager) frame() string {
+	page := max(p.height-1, 1)
+	p.top = max(min(p.top, len(p.lines)-page), 0)
 	var frame strings.Builder
 	frame.WriteString("\x1b[H")
-	for i := top; i < top+page; i++ {
-		if i < len(lines) {
-			frame.WriteString(endStyles(lines[i]))
+	for i := p.top; i < p.top+page; i++ {
+		if i < len(p.lines) {
+			frame.WriteString(endStyles(highlightMatches(p.lines[i], p.query)))
 		}
 		frame.WriteString("\x1b[K\r\n")
 	}
-	status := fmt.Sprintf(" Lines %d-%d of %d, %s to scroll, PgUp/PgDn to page, Q to quit ", top+1, min(top+page, len(lines)), len(lines), unicodeOr("↑/↓", "Up/Down"))
-	frame.WriteString(Styled(status, Reverse) + "\x1b[K")
-	return frame.String(), top
+	status := fmt.Sprintf(" Lines %d-%d of %d, ", p.top+1, min(p.top+page, len(p.lines)), len(p.lines))
+	if p.query == "" {
+		status += fmt.Sprintf("%s to scroll, PgUp/PgDn to page, / to search, Q to quit ", unicodeOr("↑/↓", "Up/Down"))
+	} else {
+		matches := 0
+		for _, line := range p.lines {
+			matches += len(findAll(line, p.query))
+		}
+		plural := "es"
+		if matches == 1 {
+			plural = ""
+		}
+		status += fmt.Sprintf("%d match%s of %q, N/Shift+N for next/previous, Q to end search ", matches, plural, p.query)
+	}
+	if p.typing {
+		status = "/" + p.input
+	}
+	if r := []rune(status); p.width > 0 && len(r) > p.width {
+		status = string(r[:p.width])
+	}
+	if p.typing {
+		frame.WriteString(status + "\x1b[K\x1b[?25h") // With the cursor, after the search.
+	} else {
+		frame.WriteString(Styled(status, Reverse) + "\x1b[K\x1b[?25l")
+	}
+	return frame.String()
+}
+
+// findAll returns the positions, in visible characters, of the matches of
+// query in line, ignoring case and styles.
+func findAll(line, query string) []int {
+	if query == "" {
+		return nil
+	}
+	text, q := []rune(strings.ToLower(stripStyles(line))), []rune(strings.ToLower(query))
+	var starts []int
+	for i := 0; i+len(q) <= len(text); i++ {
+		if string(text[i:i+len(q)]) == string(q) {
+			starts = append(starts, i)
+			i += len(q) - 1
+		}
+	}
+	return starts
+}
+
+// highlightMatches returns line with the matches of query in reverse video.
+func highlightMatches(line, query string) string {
+	starts := findAll(line, query)
+	if len(starts) == 0 {
+		return line
+	}
+	var out strings.Builder
+	inEsc, col, end, n := false, 0, -1, utf8.RuneCountInString(query)
+	for _, r := range line {
+		if isEscape(r, &inEsc) {
+			out.WriteRune(r)
+			if !inEsc && col < end {
+				out.WriteString("\x1b[7m") // Again, in case the line's own style reset it.
+			}
+			continue
+		}
+		if col == end {
+			out.WriteString("\x1b[27m")
+		}
+		if len(starts) > 0 && col == starts[0] {
+			out.WriteString("\x1b[7m")
+			end, starts = col+n, starts[1:]
+		}
+		out.WriteRune(r)
+		col++
+	}
+	if col == end {
+		out.WriteString("\x1b[27m")
+	}
+	return out.String()
 }
 
 // sourceQuote matches the source and caret lines of a GD++ error, e.g. " 12 | var x".

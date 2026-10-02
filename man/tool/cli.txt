@@ -48,6 +48,9 @@ These options work with every command. They can go before or after the command n
 --notty
   Behave as if the output were not a terminal: plain text, without styles, spinners or a pager, and prompts assume no. Can't be used with `--tty`.
 
+--pager
+  Show long results, e.g. of `gd++ man` and `gd++ cat`, in the pager even when they fit the terminal. Has no effect when the output is not a terminal. Can't be used with `--notty`.
+
 -L N, --log-depth N
   Show the last N lines of a running subprocess's output under its task, e.g. of the compiler during a build. Default: 4.
 
@@ -91,7 +94,7 @@ Colors and icons are used only when both stdout and stderr are terminals. When e
 
 Paths in messages are shown relative to the project, e.g. `res://src/player.gd++`, or else relative to the current directory. `gd++` never prints your absolute paths, so logs are safe to share.
 
-Commands whose result can be long (`gd++ cat`, `gd++ doc`, `gd++ man` and `gd++ trans`) show it in a pager when it doesn't fit the terminal: the up and down keys scroll by a line, page up and page down (or space) by a page, and q, escape or Ctrl+C quit.
+Commands whose result can be long (`gd++ cat`, `gd++ doc`, `gd++ man` and `gd++ trans`) show it in a pager when it doesn't fit the terminal, or always with `--pager`: the up and down keys scroll by a line, page up and page down (or space) by a page, and q, escape or Ctrl+C quit. `/` searches: type a word and press Enter to highlight its matches, ignoring case, then n and Shift+N jump to the next and previous one, and q ends the search, so it takes a second q to quit.
 
 # Prompts
 

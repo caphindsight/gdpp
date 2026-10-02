@@ -31,6 +31,7 @@ type cliArgs struct {
 	Audit    bool        `arg:"--audit" help:"audit potentially dangerous operations"`
 	TTY      bool        `arg:"--tty" help:"use colors, spinners and the pager, as if the output were a terminal"`
 	NoTTY    bool        `arg:"--notty" help:"print plain output, as if the output were not a terminal"`
+	Pager    bool        `arg:"--pager" help:"use the pager even when the output fits the terminal"`
 	LogDepth int         `arg:"-L,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
 	TabWidth int         `arg:"-T,--tab-width" default:"2" placeholder:"N" help:"show tabs as this many columns in the pager and in gd++ cat --svg images, and indent gd++ doc output by this many spaces"`
 	Version  bool        `arg:"--version" help:"print the version of GD++ and exit"`
@@ -72,6 +73,9 @@ func main() {
 	}
 	if Args.TTY && Args.NoTTY {
 		LogFatal("Invalid arguments: --tty and --notty cannot be used together.")
+	}
+	if Args.Pager && Args.NoTTY {
+		LogFatal("Invalid arguments: --pager and --notty cannot be used together.")
 	}
 	if Args.TTY || Args.NoTTY {
 		isTTY = Args.TTY

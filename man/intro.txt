@@ -42,7 +42,7 @@ You don't need to download godot-cpp or anything else from Godot yourself: GD++ 
 
 # How to read this manual
 
-Run `gd++ man` to list all pages, and `gd++ man PAGE` to read one, e.g. `gd++ man classes`. Pages open in a pager when they don't fit the terminal: the up and down keys scroll by a line, page up and page down (or space) by a page, and q, escape or Ctrl+C quit. When the output is not a terminal, e.g. in `gd++ man classes > classes.txt`, pages are printed as they are.
+Run `gd++ man` to list all pages, and `gd++ man PAGE` to read one, e.g. `gd++ man classes`. Pages open in a pager when they don't fit the terminal: the up and down keys scroll by a line, page up and page down (or space) by a page, and q, escape or Ctrl+C quit. `/` searches: type a word and press Enter to highlight its matches, ignoring case, then n and Shift+N jump to the next and previous one, and q ends the search, so it takes a second q to quit. When the output is not a terminal, e.g. in `gd++ man classes > classes.txt`, pages are printed as they are.
 
 The manual is a tree of pages. At its top are this page, `tour` (a walk through a first project), and three sections:
 

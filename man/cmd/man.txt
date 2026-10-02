@@ -12,13 +12,16 @@ gd++ man SECTION/PAGE [--syntax N | --nightly]
 
 Shows a page of this manual, the reference manual of GD++: the build tool, its commands, and the GD++ language. Without a page, lists all pages as a tree, with their titles. The manual is built into `gd++`, so it always matches the version you run, and works offline.
 
-Pages open in a pager when they don't fit the terminal:
+Pages open in a pager when they don't fit the terminal, or with `--pager`:
 
 ```
 Up, Down                 scroll by a line
 Page Up, Page Down       scroll by a page
 Space                    scroll down by a page
-q, Escape, Ctrl+C        quit
+/                        search: type a word, then Enter
+n, Shift+N               jump to the next or previous match
+q                        end the search, or quit without one
+Escape, Ctrl+C           quit
 ```
 
 On a terminal, pages are wrapped to its width, and headings are bold. When the output is not a terminal, e.g. in `gd++ man classes > classes.txt` or `gd++ man classes | grep emit`, pages are printed as plain text, without the pager.

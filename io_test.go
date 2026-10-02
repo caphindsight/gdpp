@@ -752,9 +752,61 @@ func TestPagerKey(t *testing.T) {
 		"\x1b[A": {9, false}, "\x1bOB": {11, false}, "\x1b[5~": {5, false}, "\x1b[6~": {15, false}, " ": {15, false},
 		"q": {10, true}, "Q": {10, true}, "\x1b": {10, true}, "\x03": {10, true}, "x": {10, false},
 	} {
-		if top, quit := pagerKey(key, 10, 5); top != want.top || quit != want.quit {
-			t.Errorf("pagerKey(%q) = %d, %v, want %d, %v", key, top, quit, want.top, want.quit)
+		p := pager{top: 10, height: 6, match: -1}
+		if quit := p.key(key); p.top != want.top || quit != want.quit {
+			t.Errorf("key(%q) = %d, %v, want %d, %v", key, p.top, quit, want.top, want.quit)
 		}
+	}
+}
+
+func TestPagerSearch(t *testing.T) {
+	p := pager{lines: []string{"foo", "bar", "Foo foo", "baz", "foo"}, height: 3, match: -1}
+	keys := func(keys ...string) {
+		for _, k := range keys {
+			if p.key(k) {
+				t.Fatalf("key(%q) quit", k)
+			}
+			p.frame()
+		}
+	}
+	keys("/", "f", "x", "\x7f", "oé", "\b", "o", "\r")
+	if p.typing || p.query != "foo" || p.top != 0 || p.match != 0 {
+		t.Fatalf("after search: %+v", p)
+	}
+	keys("n")
+	if p.match != 2 || p.top != 2 {
+		t.Errorf("after n: match %d, top %d", p.match, p.top)
+	}
+	keys("n") // Line 4, on the last page, whose top stays 3.
+	if p.match != 4 || p.top != 3 {
+		t.Errorf("after n n: match %d, top %d", p.match, p.top)
+	}
+	keys("n") // Wraps around.
+	if p.match != 0 || p.top != 0 {
+		t.Errorf("after n n n: match %d, top %d", p.match, p.top)
+	}
+	keys("N")
+	if p.match != 4 {
+		t.Errorf("after N: match %d", p.match)
+	}
+	keys("q")
+	if p.query != "" {
+		t.Errorf("q didn't end the search")
+	}
+	if !p.key("q") {
+		t.Errorf("q without a search didn't quit")
+	}
+	p.query = "foo"
+	if !p.key("\x1b") {
+		t.Errorf("escape in a search didn't quit")
+	}
+	keys("/", "x", "\x1b")
+	if p.typing || p.query != "" {
+		t.Errorf("escape didn't cancel typing: %+v", p)
+	}
+	keys("/", "\x7f")
+	if p.typing {
+		t.Errorf("backspace on an empty search didn't cancel typing")
 	}
 }
 
@@ -785,13 +837,38 @@ func TestPagerFrame(t *testing.T) {
 		top, height, wantTop int
 		want                 string
 	}{
-		{0, 3, 0, "\x1b[Ha\x1b[K\r\nb\x1b[K\r\n Lines 1-2 of 5, Up/Down to scroll, PgUp/PgDn to page, Q to quit \x1b[K"},
-		{9, 3, 3, "\x1b[Hd\x1b[K\r\ne\x1b[K\r\n Lines 4-5 of 5, Up/Down to scroll, PgUp/PgDn to page, Q to quit \x1b[K"},
-		{-4, 4, 0, "\x1b[Ha\x1b[K\r\nb\x1b[K\r\nc\x1b[K\r\n Lines 1-3 of 5, Up/Down to scroll, PgUp/PgDn to page, Q to quit \x1b[K"},
+		{0, 3, 0, "\x1b[Ha\x1b[K\r\nb\x1b[K\r\n Lines 1-2 of 5, Up/Down to scroll, PgUp/PgDn to page, / to search, Q to quit \x1b[K\x1b[?25l"},
+		{9, 3, 3, "\x1b[Hd\x1b[K\r\ne\x1b[K\r\n Lines 4-5 of 5, Up/Down to scroll, PgUp/PgDn to page, / to search, Q to quit \x1b[K\x1b[?25l"},
+		{-4, 4, 0, "\x1b[Ha\x1b[K\r\nb\x1b[K\r\nc\x1b[K\r\n Lines 1-3 of 5, Up/Down to scroll, PgUp/PgDn to page, / to search, Q to quit \x1b[K\x1b[?25l"},
 	}
 	for _, tc := range cases {
-		if got, top := pagerFrame(lines, tc.top, tc.height); got != tc.want || top != tc.wantTop {
-			t.Errorf("pagerFrame(top %d, height %d) = %q, %d\nwant %q, %d", tc.top, tc.height, got, top, tc.want, tc.wantTop)
+		p := pager{lines: lines, top: tc.top, height: tc.height}
+		if got := p.frame(); got != tc.want || p.top != tc.wantTop {
+			t.Errorf("frame(top %d, height %d) = %q, %d\nwant %q, %d", tc.top, tc.height, got, p.top, tc.want, tc.wantTop)
+		}
+	}
+	p := pager{lines: []string{"ab", "b"}, height: 3, width: 20, query: "B"}
+	if got, want := p.frame(), "\x1b[Ha\x1b[7mb\x1b[27m\x1b[0m\x1b[K\r\n\x1b[7mb\x1b[27m\x1b[0m\x1b[K\r\n Lines 1-2 of 2, 2 m\x1b[K\x1b[?25l"; got != want {
+		t.Errorf("frame with search = %q, want %q", got, want)
+	}
+	p.typing, p.input = true, "xy"
+	if got, want := p.frame(), "/xy\x1b[K\x1b[?25h"; !strings.HasSuffix(got, want) {
+		t.Errorf("frame while typing = %q, want suffix %q", got, want)
+	}
+}
+
+func TestHighlightMatches(t *testing.T) {
+	cases := []struct{ line, query, want string }{
+		{"abc", "", "abc"},
+		{"abc", "x", "abc"},
+		{"aXa xa", "xA", "a\x1b[7mXa\x1b[27m \x1b[7mxa\x1b[27m"},
+		{"aaa", "aa", "\x1b[7maa\x1b[27ma"},
+		{"\x1b[1mab\x1b[0mc", "bc", "\x1b[1ma\x1b[7mb\x1b[0m\x1b[7mc\x1b[27m"},
+		{"héllo", "LL", "hé\x1b[7mll\x1b[27mo"},
+	}
+	for _, tc := range cases {
+		if got := highlightMatches(tc.line, tc.query); got != tc.want {
+			t.Errorf("highlightMatches(%q, %q) = %q, want %q", tc.line, tc.query, got, tc.want)
 		}
 	}
 }
