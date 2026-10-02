@@ -77,6 +77,7 @@ type funcModel struct {
 	deferral                           string     // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
 	hidden                             string     // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
 	trace, profile                     bool       // Whether its @trace or @profile, or its class's, is on.
+	gameOnly                           bool       // Whether its @game_only, or its class's, guards it against running in the editor.
 	rpc                                *rpcModel  // Nil without @rpc.
 	// The class whose GDVIRTUAL lets scripts override the function: its own for @virtual, a base's for an
 	// @override of a @virtual function. Empty for others.
@@ -102,6 +103,7 @@ type varModel struct {
 	onready          bool
 	trace            bool   // Whether its @trace, or its class's, is on: the class's funcs print its changes.
 	profile          bool   // Whether its @profile, or its class's, is on: it profiles its getter and setter.
+	gameOnly         bool   // Whether its @game_only, or its class's, guards its getter and setter against running in the editor.
 	usage            string // A PROPERTY_USAGE_* expression.
 	hint, hintString string // A PROPERTY_HINT_* name, and the hint string (not quoted).
 	getter, setter   string // Empty if there is none.
@@ -1012,7 +1014,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
+	allowed := []string{"const", "deferred", "game_only", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "profile", "rpc", "thread_safe", "trace"}
 	}
@@ -1025,7 +1027,7 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil,
-		isConst: a["const"] != nil, static: a["static"] != nil}
+		isConst: a["const"] != nil, static: a["static"] != nil, gameOnly: a["game_only"] != nil}
 	var engine *Arg // The "engine" argument of @override, if any.
 	for _, arg := range argsOf(a["override"]) {
 		name, _ := strconv.Unquote(arg.Value)
@@ -1142,8 +1144,8 @@ var engineFuncs = map[string]struct{ notif, delta, base string }{
 func (u *unit) checkEngine(f *funcModel) error {
 	name := f.f.Name
 	for _, a := range f.f.Annotations {
-		if a.Name != "" && a.Name != "trace" && a.Name != "profile" {
-			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take @trace and @profile.", name),
+		if a.Name != "" && a.Name != "trace" && a.Name != "profile" && a.Name != "game_only" {
+			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take @trace, @profile and @game_only.", name),
 				"Only a plain override, with @override(\"engine\"), takes others.")
 		}
 	}
@@ -1298,7 +1300,7 @@ func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage", "profile", "trace"}, sectionAnnotations...)
+		"export_multiline", "export_placeholder", "export_range", "export_storage", "game_only", "profile", "trace"}, sectionAnnotations...)
 	kind := "a var"
 	if ext {
 		allowed, kind = []string{"profile"}, "an extern var"
@@ -1307,7 +1309,7 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &varModel{v: v, onready: a["onready"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
+	m := &varModel{v: v, onready: a["onready"] != nil, gameOnly: a["game_only"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
 	}
@@ -1336,6 +1338,10 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 		return nil, err
 	}
 	for _, e := range v.Annotations {
+		if strings.HasPrefix(e.Name, "export") && !slices.Contains(sectionAnnotations, e.Name) && m.gameOnly {
+			return nil, u.errorAt(e.Pos, len(e.Name)+1, fmt.Sprintf("Annotations @game_only and @%s can't be used together.", e.Name),
+				"The editor would read and save the default value, since the getter and setter don't run there.")
+		}
 		if strings.HasPrefix(e.Name, "export") {
 			if err := u.requireBase(e, owner, "Only nodes and resources are edited in the inspector.", "Node", "Resource"); err != nil {
 				return nil, err
@@ -1686,7 +1692,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				// The bound function has the body, so scripts can call it in place of super.
 				body := *f.f
 				body.Name, body.Annotations = superName(f.f.Name), nil
-				f.calls = &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst}
+				f.calls = &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, gameOnly: f.gameOnly}
 				m.funcs = append(m.funcs, f, f.calls)
 				err = u.unique(names, f.f.Pos, "func", body.Name)
 			default:
@@ -1696,7 +1702,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				// GDVIRTUAL_BIND doesn't make the function callable, so scripts call it through this one.
 				caller := *f.f
 				caller.Name, caller.Annotations = f.f.Name[1:], nil
-				m.funcs = append(m.funcs, &funcModel{f: &caller, params: f.params, ret: f.ret, isConst: f.isConst, calls: f})
+				m.funcs = append(m.funcs, &funcModel{f: &caller, params: f.params, ret: f.ret, isConst: f.isConst, calls: f, gameOnly: f.gameOnly})
 				err = u.unique(names, f.f.Pos, "func", caller.Name)
 			}
 			if err == nil && f.deferral != "" {
@@ -1711,7 +1717,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				}
 				// The body does the work, so it's what @trace and @profile follow.
 				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static,
-					hidden: f.deferral, trace: f.trace || m.trace, profile: f.profile || m.profile})
+					hidden: f.deferral, trace: f.trace || m.trace, profile: f.profile || m.profile, gameOnly: f.gameOnly})
 				f.trace, f.profile = false, false
 				if f.deferral == "onthread" {
 					f.ret = u.async(f.ret) // Callers get an Async of the body's result.
@@ -1723,6 +1729,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			if v, err = u.buildVar(member.Var, c.Name, false); err == nil {
 				v.trace = v.trace || m.trace
 				v.profile = v.profile || m.profile && v.v.Property != nil
+				v.gameOnly = v.gameOnly || m.gameOnly
 				m.vars = append(m.vars, v)
 				err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
 				for _, s := range v.sections {
@@ -1762,6 +1769,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	// The class's @trace leaves out the functions called every frame, which would flood the output. Those are
 	// always in the implicit group named after them without the underscore, process or physics_process.
 	for _, f := range m.funcs {
+		f.gameOnly = f.gameOnly || m.gameOnly
 		if f.deferral == "" {
 			name := strings.TrimPrefix(f.f.Name, "_gdpp_body_")
 			perFrame := (f.override || f.hidden == "notif") && processing[name] != ""

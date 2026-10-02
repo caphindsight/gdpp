@@ -5,3 +5,8 @@ extends Node3D
 func _process(delta: float) -> void {
   rotate_y(delta);
 }
+
+@game_only
+func launch() -> void {
+  gd::print("Launched!");
+}

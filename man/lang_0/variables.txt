@@ -153,7 +153,7 @@ See `gd++ man exports`.
 
 # Annotations
 
-Variables take `@onready`, one export annotation, and the section annotations `@export_category`, `@export_group` and `@export_subgroup`. See `gd++ man exports` and `gd++ man annotations`. A doc comment before a variable becomes its description in the editor's help. See `gd++ man docs`.
+Variables take `@onready`, one export annotation, and the section annotations `@export_category`, `@export_group` and `@export_subgroup`. See `gd++ man exports` and `gd++ man annotations`. They also take `@game_only`, which keeps their getter and setter from running in the editor, but not with an export annotation. See `gd++ man classes`. A doc comment before a variable becomes its description in the editor's help. See `gd++ man docs`.
 
 For debugging, variables also take `@trace` and `@profile`:
 

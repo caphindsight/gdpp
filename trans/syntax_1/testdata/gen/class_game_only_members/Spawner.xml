@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Spawner" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_pick" qualifiers="virtual">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="load">
+			<return type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+		<method name="pick">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="preview">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="spawn">
+			<return type="int" />
+			<param index="0" name="kind" type="int" enum="Spawner.Kind" default="Kind::BIG" />
+			<description>
+			</description>
+		</method>
+		<method name="sync">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="total" qualifiers="static">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="count" type="int" setter="set_count" getter="get_count">
+		</member>
+		<member name="kind" type="int" enum="Spawner.Kind" setter="set_kind" getter="get_kind">
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius">
+		</member>
+	</members>
+	<constants>
+		<constant name="KIND_SMALL" value="0" enum="Kind">
+		</constant>
+		<constant name="KIND_BIG" value="1" enum="Kind">
+		</constant>
+	</constants>
+</class>

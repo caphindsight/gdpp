@@ -1,0 +1,6 @@
+@tool
+class_name Spawner
+extends Node
+
+@game_only
+@export var count: int

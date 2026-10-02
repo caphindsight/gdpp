@@ -6,6 +6,15 @@ func _damage() -> int {
   return 10;
 }
 
+class Axe {
+  extends Weapon
+
+  @override
+  func _damage() -> int {
+    return 15;
+  }
+}
+
 class Sword {
   extends Weapon
 

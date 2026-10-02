@@ -1,0 +1,42 @@
+@tool
+class_name Spawner
+extends Node
+
+enum Kind { SMALL, BIG }
+
+@game_only var kind: Kind = Kind::SMALL
+@game_only var count: int {
+  get { return 10; }
+  set(v) { gd::print(v); }
+}
+var radius: float = 1.0
+
+@game_only
+func _process(delta: float) -> void {
+  gd::print(delta);
+}
+
+@game_only
+func spawn(kind: Kind = Kind::BIG) -> int {
+  return 1;
+}
+
+@game_only @static
+func total() -> int {
+  return 0;
+}
+
+@game_only @virtual
+func _pick() -> int {
+  return 0;
+}
+
+@game_only @rpc
+func sync() -> void {}
+
+@game_only @onthread
+func load() -> int {
+  return 2;
+}
+
+func preview() -> void {}

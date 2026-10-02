@@ -108,6 +108,28 @@ A `@game_only` class is a runtime class. In debug builds, which the editor loads
 
 `@game_only` can't be used with `@tool`. Like `@tool`, it's not inherited.
 
+`@game_only` also works on single functions and variables, e.g. to keep a few functions of a `@tool` class out of the editor:
+
+```gd++
+@tool
+class_name Spawner
+extends Node3D
+
+func _process(delta: float) -> void {
+  rotate_y(delta);          // Spins in the editor too.
+}
+
+@game_only
+func spawn() -> void {
+  ...                       // Only spawns in the game.
+}
+
+@game_only
+var wave: int
+```
+
+The function gets the same check, and so do its helpers: its enum wrapper, default value functions and RPC helper, and for `@virtual`, `@deferred` and `@onthread`, the functions that GD++ adds for them. A variable's getter and setter get it. The variable's initial value is still assigned in the editor, and C++ code that uses the variable directly isn't checked. A variable with `@game_only` can't have an export annotation, since the editor would read and save the default value. In a `@game_only` class, every function and variable is already `@game_only`.
+
 # @icon
 
 ```gd++

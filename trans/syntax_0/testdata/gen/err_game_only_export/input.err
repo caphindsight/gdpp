@@ -1,0 +1,4 @@
+input.gd++:6:1: Annotations @game_only and @export can't be used together.
+ 6 | @export var count: int
+   | ^^^^^^^
+Hint: The editor would read and save the default value, since the getter and setter don't run there.

@@ -47,7 +47,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsCtor() {
 		w.ln("")
 		w.ln("%s::%s() {", c.name, c.name)
-		guard(w, c, "")
+		guard(w, c.gameOnly, "")
 		if c.trace {
 			w.ln("\tgdpp::trace_lifetime(%q, this, true);", c.name)
 		}
@@ -73,7 +73,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsDtor() {
 		w.ln("")
 		w.ln("%s::~%s() {", c.name, c.name)
-		guard(w, c, "")
+		guard(w, c.gameOnly, "")
 		if c.trace {
 			w.ln("\tgdpp::trace_lifetime(%q, this, false);", c.name)
 		}
@@ -85,7 +85,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsNotification() {
 		w.ln("")
 		w.ln("void %s::_notification(int WHAT) {", c.name)
-		guard(w, c, "")
+		guard(w, c.gameOnly, "")
 		// POST_ENTER_TREE comes right before each READY, once the children are ready, but also on each later entry.
 		if c.hasOnready() {
 			w.ln("\tif (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {")
@@ -110,7 +110,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		if f.rpc != nil {
 			w.ln("")
 			w.ln("Error %s::%s {", c.name, rpcDecl(f, params(nil, f.params, f.f.Params)))
-			guard(w, c, "Error")
+			guard(w, f.gameOnly, "Error")
 			w.ln("\treturn %s;", rpcCall(f))
 			w.ln("}")
 		}
@@ -121,7 +121,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	for _, s := range c.signals {
 		w.ln("")
 		w.ln("gdpp::Emitted %s::%s(%s) {", c.name, s.s.Name, params(nil, s.params, s.s.Params))
-		guard(w, c, "gdpp::Emitted")
+		guard(w, c.gameOnly, "gdpp::Emitted")
 		if s.trace {
 			w.ln("\tgdpp::trace_emit(this, %q%s);", s.s.Name, namedArgs(s.s.Params))
 		}
@@ -153,11 +153,11 @@ func (u *unit) initializers(w *writer, c *classModel, onready bool, indent strin
 	}
 }
 
-// guard writes the check of a @game_only class that returns right away, with a default value, when its code is
+// guard writes, if on, the check of @game_only code that returns right away, with a default value, when it's
 // called in the editor, which only loads debug builds. ret is the C++ return type, empty for constructors and
 // destructors.
-func guard(w *writer, c *classModel, ret string) {
-	if !c.gameOnly {
+func guard(w *writer, on bool, ret string) {
+	if !on {
 		return
 	}
 	w.ln("#ifdef DEBUG_ENABLED")
@@ -270,7 +270,7 @@ func cast(c *classModel, t *gtype, expr string, toTag bool) string {
 func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
 	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
-	guard(w, c, f.ret.cpp)
+	guard(w, f.gameOnly, f.ret.cpp)
 	u.debugHooks(w, c, f)
 	// A traced function that returns a value runs as a lambda, so the trace gets the value.
 	wrap := f.trace && !f.ret.void
@@ -320,7 +320,7 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	}
 	w.ln("")
 	w.ln("%s {", qualified(c, tagged(c, f.ret), "_gdpp_"+f.f.Name, params(c, f.params, f.f.Params), f.isConst))
-	guard(w, c, f.ret.cpp)
+	guard(w, f.gameOnly, f.ret.cpp)
 	call := fmt.Sprintf("%s(%s)", f.f.Name, castList(c, f.params, f.f.Params, false))
 	if f.ret.void {
 		w.ln("\t%s;", call)
@@ -339,7 +339,7 @@ func defaultDefs(w *writer, c *classModel, f *funcModel) {
 		}
 		w.ln("")
 		w.ln("%s {", qualified(c, f.params[i].cpp, defaultName(f, p), "", false))
-		guard(w, c, f.params[i].cpp)
+		guard(w, f.gameOnly, f.params[i].cpp)
 		if d.Block != nil {
 			w.block(d.Block, "", "")
 		} else {
@@ -354,7 +354,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, v.t.cpp, v.getter, "", true))
-		guard(w, c, v.t.cpp)
+		guard(w, v.gameOnly, v.t.cpp)
 		if v.profile {
 			u.profile(w, c.name+"."+v.getter)
 		}
@@ -368,7 +368,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.setter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", v.setter, withSpace(v.t.param())+v.setterParam(), false))
-		guard(w, c, "void")
+		guard(w, v.gameOnly, "void")
 		if v.profile {
 			u.profile(w, c.name+"."+v.setter)
 		}
@@ -387,14 +387,14 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, tag, "_gdpp_"+v.getter, "", true))
-		guard(w, c, tag)
+		guard(w, v.gameOnly, tag)
 		w.ln("\treturn static_cast<%s>(%s());", tag, v.getter)
 		w.ln("}")
 	}
 	if v.setter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", "_gdpp_"+v.setter, tag+" p_value", false))
-		guard(w, c, "void")
+		guard(w, v.gameOnly, "void")
 		w.ln("\t%s(static_cast<%s>(p_value));", v.setter, v.t.cpp)
 		w.ln("}")
 	}

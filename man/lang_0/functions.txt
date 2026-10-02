@@ -45,7 +45,7 @@ A function without a body gets a generated one, which returns the type's default
 
 - It declares the function as a public method of the C++ class, and defines it in the class's source file, with your body.
 - It binds the function in `_bind_methods` with `ClassDB::bind_method`, with its parameter names and default values, so Godot can call it. `@static` functions are bound with `ClassDB::bind_static_method`, `@virtual` ones with `GDVIRTUAL_BIND`, next to a function that calls them, and `@override` ones not at all, since the engine binds them.
-- In a `@game_only` class, the body starts with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
+- With `@game_only`, or in a `@game_only` class, the body starts with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
 
 Functions are plain C++ methods, so C++ code calls them directly, e.g. `jump();` or `player->jump();`, at full speed.
 
@@ -146,7 +146,7 @@ The engine functions are the engine's virtual functions that have a notification
     Hint: Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
 ```
 
-Their signatures are `func NAME() -> void`, and `func _process(delta: float) -> void` and `func _physics_process(delta: float) -> void`, whose parameter can have any name. They take only `@trace` and `@profile`. They aren't functions of the class: C++ code and scripts can't call them. In other classes, e.g. a `_ready` in a class that extends `RefCounted`, or a `_draw` in one that extends `Node` but not `CanvasItem`, they're ordinary functions.
+Their signatures are `func NAME() -> void`, and `func _process(delta: float) -> void` and `func _physics_process(delta: float) -> void`, whose parameter can have any name. They take only `@trace`, `@profile` and `@game_only`. They aren't functions of the class: C++ code and scripts can't call them. In other classes, e.g. a `_ready` in a class that extends `RefCounted`, or a `_draw` in one that extends `Node` but not `CanvasItem`, they're ordinary functions.
 
 Each one runs at its notification, e.g. `NOTIFICATION_PROCESS`, with the delta from `get_process_delta_time()` or `get_physics_process_delta_time()`. `_ready` runs at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, after the `@onready` initial values, so it runs before a script's `_ready`, once the node's children are ready. `_process` and `_physics_process` turn processing on in the constructor, like their overrides. Within the class's `_notification`, they run together with `notif` blocks, in the order of their declarations: see `gd++ man lifecycle`.
 
@@ -316,14 +316,14 @@ Annotations can be combined where it makes sense, e.g. `@virtual @const`. These 
 @virtual with @override, @rpc, @deferred, @thread_safe or @onthread
 @override("final") without a GD++ @virtual function to override
 @virtual on a function whose name doesn't start with _
-An engine function with an annotation other than @trace and @profile
+An engine function with an annotation other than @trace, @profile and @game_only
 @override with @rpc, @deferred, @thread_safe or @onthread
 @rpc with @onthread
 @deferred with @thread_safe or @onthread
 @thread_safe with @onthread
 ```
 
-`@trace` and `@profile` combine with all of them. Each annotation can be used once per function. They take no arguments, except `@override`, `@virtual`, `@rpc`, `@trace` and `@profile`.
+`@trace`, `@profile` and `@game_only` combine with all of them. Each annotation can be used once per function. They take no arguments, except `@override`, `@virtual`, `@rpc`, `@trace` and `@profile`.
 
 # Enums in signatures
 

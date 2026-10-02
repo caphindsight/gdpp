@@ -74,13 +74,7 @@ A file has at most one file-level class, with `class_name`, and any number of in
 
 <a href="readme/svg/tool.gd++"><img src="readme/svg/tool.svg" alt="GD++ code: tool"></a>
 
-It spins in the editor too. Without `@tool`, the editor runs none of the class's code. See `gd++ man classes`.
-
-### Game-only classes
-
-<a href="readme/svg/game_only.gd++"><img src="readme/svg/game_only.svg" alt="GD++ code: game_only"></a>
-
-Its code only ever runs in the game, even if editor code, e.g. of a `@tool` class, creates one. See `gd++ man classes`.
+It spins in the editor too, but `launch` only runs in the game. Without `@tool`, the editor runs none of the class's code. See `gd++ man classes`.
 
 ### Class icons
 
@@ -154,11 +148,11 @@ With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ ma
 
 It overrides any engine callback, or a `@virtual` function. A script's function of the same name replaces it, but with `"super"`, the script can still call it, as `_super_unhandled_input`. See `gd++ man functions`.
 
-### Virtual and final functions
+### Virtual functions
 
 <a href="readme/svg/virtual.gd++"><img src="readme/svg/virtual.svg" alt="GD++ code: virtual"></a>
 
-A script that extends `Weapon` can override `_damage`, and any script can call it as `damage()`. `"final"` stops overrides for `Sword`. See `gd++ man functions`.
+A script that extends `Weapon` can override `_damage`, and any script can call it as `damage()`. Scripts that extend `Axe` can override it further, but `"final"` stops overrides for `Sword`. See `gd++ man functions`.
 
 ### Const and static functions
 

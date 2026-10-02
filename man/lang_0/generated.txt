@@ -165,7 +165,7 @@ In order:
    - each signal's emit function,
    - the `impl` blocks.
 
-In a `@game_only` class, each of these functions except `_bind_methods` starts with an editor check, in debug builds. See `gd++ man classes`.
+In a `@game_only` class, each of these functions except `_bind_methods` starts with an editor check, in debug builds. Outside one, the functions of a `@game_only` function or variable do. See `gd++ man classes`.
 
 When `@trace` or `@profile` annotations are on, the functions they apply to start with their code, after the editor check: `gdpp::ProfileStats` and `gdpp::Profile` for `@profile`, `gdpp::Trace` for `@trace`, and `gdpp::Watch` in each function that checks the class's `@trace` variables. A traced function that returns a value runs its body in a lambda, `return _gdpp_trace.ret([&]() -> T { ... }());`, so the trace sees every result. The constructor and destructor of a traced class call `gdpp::trace_lifetime`, and the emit function of a traced signal `gdpp::trace_emit`. See `gd++ man debugging`, and `gd++ trans FILE --trace all --profile all` for your own files.
 
