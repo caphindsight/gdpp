@@ -290,6 +290,25 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
 
 With `@onthread`, every call of the function, from C++ or from scripts, runs its body on Godot's `WorkerThreadPool`, and returns right away, with an `Async` of the function's return type: here, an `Async[PackedVector2Array]`. The caller tests whether the task is done with `is_done`, takes the result with `claim`, and can ask the task to stop with `cancel`, which the body notices with `is_cancelled`. GD++ puts the body in a second method, `_gdpp_body_NAME`, which the task calls. See `gd++ man async`.
 
+# @game_only
+
+```gd++
+@tool
+class_name Turntable
+extends Node3D
+
+func _process(delta: float) -> void {
+  rotate_y(delta);          // Spins in the editor too.
+}
+
+@game_only
+func launch() -> void {
+  gd::print("Launched!");   // Only in the game.
+}
+```
+
+With `@game_only`, the function only runs in the game, never in the editor, e.g. to keep a few functions of a `@tool` class out of the editor. In debug builds, which the editor loads, its body starts with a check: in the editor, the function returns right away, with a default value, and an `@onthread` function returns an empty `Async`. Engine functions, e.g. `_process`, take it too. In a `@game_only` class, every function already has it. See `gd++ man classes`.
+
 # @trace and @profile
 
 ```gd++
