@@ -64,6 +64,8 @@ The size is optional:
 - `@pool(100)` makes at most 100: when all of them are in use, `create` returns null, so check for it. The kept objects count too.
 - `@pool(100, "strict")` also prints an error when `create` finds the pool full, for pools that should never fill.
 
+Warning: with a size, `create` returns `nullptr` when the pool is full, even without `"strict"`. Always check its result in code, like `fire` does above, before you use the object: using a null pointer crashes the game. Only a pool without a size never returns `nullptr`.
+
 # What the pool owns
 
 Only `create` uses the pool. Objects created otherwise, e.g. by a scene, by `Bullet.new()` in GDScript, or by `memnew`, don't count, and `destroy` deletes them for real. An object that's freed for real, e.g. with `queue_free()`, leaves its pool, which can then make a new one. `destroy` through a pointer to a base class, e.g. `Node *`, also deletes the object for real, and so does `destroy` on an object of a class that extends a `@pool` class, unless that class has its own `@pool`.

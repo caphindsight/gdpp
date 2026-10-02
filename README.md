@@ -76,6 +76,12 @@ A file has at most one file-level class, with `class_name`, and any number of in
 
 It spins in the editor too, but `launch` only runs in the game. Without `@tool`, the editor runs none of the class's code. See `gd++ man classes`.
 
+### Scene classes
+
+<a href="readme/svg/scene.gd++"><img src="readme/svg/scene.svg" alt="GD++ code: scene"></a>
+
+`create Enemy` (see "Creating and deleting objects") instantiates `enemy.tscn`, with its children, and gives its root as an `Enemy *`. The scene is loaded once, by the first `create`. If its root isn't an `Enemy`, `create` prints an error and returns null. Classes without `@scene` pay nothing for it. See `gd++ man classes`.
+
 ### Class icons
 
 <a href="readme/svg/icon.gd++"><img src="readme/svg/icon.svg" alt="GD++ code: icon"></a>
@@ -214,17 +220,20 @@ The flags count 1, 2, 4 and so on, and the inspector shows a checkbox for each. 
 
 Neither takes arguments, since Godot creates objects without any. See `gd++ man lifecycle`.
 
+### Creating and deleting objects
+
+<a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
+
+`create` and `destroy` create and delete objects of every kind: nodes and other objects, which code holds through pointers, refcounted objects, which it holds through references, externs, object pools and scene classes. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. See `gd++ man classes`.
+
 ### Object pools
 
 <a href="readme/svg/pool.gd++"><img src="readme/svg/pool.svg" alt="GD++ code: pool"></a>
 
-`create` creates an object of any class, and `destroy` deletes it. For a `@pool` class, `destroy` keeps the node instead, out of the tree, and `create` reuses it. `ctor` and `dtor` still run only when a bullet is really created and deleted, and `@recycle ctor` and `@recycle dtor` when it's reused and kept. The pool makes at most 100 bullets, and then `create` returns null. Without a size, a pool makes any number, and with `@pool(100, "strict")`, a full pool is an error. See `gd++ man pools`.
+For a `@pool` class, `destroy` keeps the node instead, out of the tree, and `create` reuses it. `ctor` and `dtor` still run only when a bullet is really created and deleted, and `@recycle ctor` and `@recycle dtor` when it's reused and kept. The pool makes at most 100 bullets, and then `create` returns null. Without a size, a pool makes any number, and with `@pool(100, "strict")`, a full pool is an error. See `gd++ man pools`.
 
-### Scene classes
-
-<a href="readme/svg/scene.gd++"><img src="readme/svg/scene.svg" alt="GD++ code: scene"></a>
-
-`create Enemy` instantiates `enemy.tscn`, with its children, and gives its root as an `Enemy *`. The scene is loaded once, by the first `create`. If its root isn't an `Enemy`, `create` prints an error and returns null. Classes without `@scene` pay nothing for it. See `gd++ man classes`.
+> [!WARNING]
+> With a size, `create` returns `nullptr` when the pool is full, so always check its result before you use the object, like `fire` does. Only a pool without a size never returns `nullptr`.
 
 ### Notification handlers
 

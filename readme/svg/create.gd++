@@ -1,0 +1,9 @@
+func spawn() -> void {
+  Node3D *marker = create Node3D;            // a node: a pointer
+  Ref<ArrayMesh> mesh = create ArrayMesh;    // a resource: a reference
+  Ext<Terrain> terrain = create Terrain;     // an extern
+  Bullet *bullet = create Bullet;            // taken from Bullet's pool
+
+  destroy marker;                            // deletes it
+  destroy bullet;                            // gives it back to the pool
+}
