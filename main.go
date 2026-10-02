@@ -32,7 +32,7 @@ type cliArgs struct {
 	TTY      bool        `arg:"--tty" help:"use colors, spinners and the pager, as if the output were a terminal"`
 	NoTTY    bool        `arg:"--notty" help:"print plain output, as if the output were not a terminal"`
 	LogDepth int         `arg:"-L,--log-depth" default:"4" help:"show this many lines of subprocess logs"`
-	TabWidth int         `arg:"-T,--tab-width" default:"2" placeholder:"N" help:"show tabs as this many columns in the pager, and indent gd++ doc output by this many spaces"`
+	TabWidth int         `arg:"-T,--tab-width" default:"2" placeholder:"N" help:"show tabs as this many columns in the pager and in gd++ cat --svg images, and indent gd++ doc output by this many spaces"`
 	Version  bool        `arg:"--version" help:"print the version of GD++ and exit"`
 }
 

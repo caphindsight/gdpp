@@ -4,6 +4,7 @@ gd++ cat: show files, with C++ and GD++ highlighted
 
 ```sh
 gd++ cat FILE...
+gd++ cat --svg FILE
 ```
 
 # Description
@@ -14,10 +15,15 @@ On a terminal, C++ and GD++ files are highlighted: keywords, types, functions, l
 
 A file is C++ if its extension is `.c`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.h`, `.hh`, `.hpp`, `.hxx`, `.h++` or `.inl`, and GD++ if it's `.gd++`, `.gdpp` or `.gg`. Other files are shown as they are. When the output is not a terminal, e.g. in `gd++ cat player.gd++ | grep func`, files are printed as plain text, without the pager.
 
-# Arguments
+With `--svg`, the file is printed as an SVG image instead: highlighted the same way, on a dark background, whether or not the output is a terminal. GitHub, for one, can't highlight GD++, but it shows SVG images in a README. The image shows tabs as `--tab-width` columns, and leaves out control characters and the trailing empty lines.
+
+# Arguments and options
 
 FILE...
-  The files to show, at least one.
+  The files to show, at least one. With `--svg`, exactly one.
+
+--svg
+  Print the file as a highlighted SVG image, rather than show it.
 
 # Examples
 
@@ -26,6 +32,7 @@ gd++ cat src/player.gd++                      # a GD++ file
 gd++ cat my_package/.gd++pkg/gdpp/Player.cpp  # the C++ that GD++ generated
 gd++ cat notes.txt                            # any other file, as it is
 gd++ cat src/*.gd++                           # all GD++ files in src
+gd++ cat --svg src/player.gd++ > player.svg   # an image of a GD++ file
 ```
 
 # See also

@@ -1,8 +1,11 @@
-// highlight.go: syntax highlighting of code, for the manual and trans.
+// highlight.go: syntax highlighting of code, for the manual, trans and cat.
 
 package main
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // styledLines is Styled, applied to each line of text on its own, so the
 // pager can end styles at the end of each line.
@@ -227,4 +230,60 @@ func highlightToml(line string) string {
 		return Styled(key, Cyan) + " = " + Styled(trimmed, CodeLiteral) + value[len(trimmed):] + comment
 	}
 	return line
+}
+
+// svgColors are the SVG colors of the highlighting styles, on a dark background.
+var svgColors = map[string]string{
+	"":                   "#e6edf3",
+	string(CodeKeyword):  "#e3b341",
+	string(CodeType):     "#7ee787",
+	string(CodeFunction): "#56d4dd",
+	string(CodeLiteral):  "#d2a8ff",
+	string(CodeComment):  "#8b949e",
+	string(CodePreProc):  "#79c0ff",
+}
+
+// codeSVG renders code, in the language lang, highlighted as an SVG image.
+func codeSVG(code, lang string) string {
+	// Control characters, e.g. \r or the file's own ANSI codes, are invalid in SVG and would be mistaken for styles.
+	code = strings.Map(func(r rune) rune {
+		if r < ' ' && r != '\n' && r != '\t' || r == 0x7f {
+			return -1
+		}
+		return r
+	}, strings.ToValidUTF8(code, ""))
+	tty := isTTY
+	isTTY = true // Styled styles only on terminals.
+	code = expandTabs(highlightCode(strings.TrimRight(code, "\n"), lang), Args.TabWidth)
+	isTTY = tty
+	const fontSize, lineHeight, pad = 14, 20, 16
+	lines, cols := strings.Split(code, "\n"), 0
+	var body strings.Builder
+	for i, line := range lines {
+		cols = max(cols, visibleLen(line))
+		fmt.Fprintf(&body, "  <text x=\"%d\" y=\"%d\">", pad, pad+fontSize+i*lineHeight)
+		for j, part := range strings.Split(line, "\x1b[") {
+			style, text := "", part
+			if j > 0 {
+				style, text, _ = strings.Cut(part, "m")
+				if style == "0" {
+					style = ""
+				}
+			}
+			// Runs flow one after another, so the font's own spacing applies, with no gaps between them.
+			// Spaces are non-breaking, since renderers collapse plain ones, e.g. the indentation.
+			if text != "" {
+				escaped := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", " ", "\u00a0").Replace(text)
+				fmt.Fprintf(&body, "<tspan fill=\"%s\">%s</tspan>", svgColors[style], escaped)
+			}
+		}
+		body.WriteString("</text>\n")
+	}
+	width, height := 2*pad+cols*fontSize*6/10+1, 2*pad+len(lines)*lineHeight-(lineHeight-fontSize)/2
+	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">
+  <rect width="100%%" height="100%%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="%d">
+%s  </g>
+</svg>
+`, width, height, width, height, fontSize, body.String())
 }
