@@ -6,4 +6,18 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="new_scene_pooled" qualifiers="static">
+			<return type="Spark" />
+			<description>
+				Takes an object from the class's pool, or creates a new one, an instance of the class's scene, if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a pool with a size are in use, or if the scene fails to load, or its root isn't an object of this class, so always check the result. Return the object with [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates the node alone, outside the pool and without the scene.
+			</description>
+		</method>
+		<method name="queue_free_pooled">
+			<return type="void" />
+			<description>
+				Returns the node to its pool at the end of the frame, like [code]queue_destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before then does nothing. A node that the pool didn't make is freed, like with [method Node.queue_free]. [b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.
+			</description>
+		</method>
+	</methods>
 </class>

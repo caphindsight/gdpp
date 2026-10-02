@@ -1,4 +1,4 @@
 input.gd++:6:1: The name "jump" is already used by another member.
  6 | func jump() -> void {}
    | ^^^^
-Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, and a @virtual func _x declares x.
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @pool and @scene classes declare methods for scripts, e.g. new_pooled.

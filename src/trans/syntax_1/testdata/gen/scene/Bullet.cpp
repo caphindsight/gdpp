@@ -8,6 +8,11 @@ namespace godot {
 
 void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire"), &Bullet::fire);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene"), &Bullet::new_scene);
+}
+
+Bullet *Bullet::new_scene() {
+	return gdpp::create<Bullet>();
 }
 
 void Bullet::fire() {
@@ -15,7 +20,7 @@ void Bullet::fire() {
 
   Bullet *b = gdpp::create<Bullet>();
 
-#line 19 "Bullet.cpp"
+#line 24 "Bullet.cpp"
 }
 
 #undef This

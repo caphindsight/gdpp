@@ -14,10 +14,12 @@ class Spark : public Node {
 public:
 	~Spark();
 	static constexpr gdpp::Scene<Spark> _gdpp_scene{ "res://spark.tscn" };
+	static Spark *new_scene_pooled();
 	static inline gdpp::Pool<Spark> _gdpp_pool{ 10, false };
 	gdpp::PoolSlot<Spark> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
+	void queue_free_pooled();
 
 protected:
 	static void _bind_methods();

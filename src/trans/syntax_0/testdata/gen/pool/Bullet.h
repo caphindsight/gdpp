@@ -20,10 +20,12 @@ public:
 public:
 	Bullet();
 	~Bullet();
+	static Bullet *new_pooled();
 	static inline gdpp::Pool<Bullet> _gdpp_pool{ 100, true };
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
+	void queue_free_pooled();
 	void fire();
 	double get_speed() const;
 	void set_speed(double p_value);

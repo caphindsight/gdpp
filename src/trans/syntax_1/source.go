@@ -90,6 +90,20 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.pool != nil {
 		recycler(w, c, "ctor", c.recycleCtor)
 		recycler(w, c, "dtor", c.recycleDtor)
+		// What scripts call for queue_destroy.
+		w.ln("")
+		w.ln("void %s::queue_free_pooled() {", c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\tgdpp::queue_destroy(this);")
+		w.ln("}")
+	}
+	// What scripts call for create.
+	if name := c.newName(); name != "" {
+		w.ln("")
+		w.ln("%s *%s::%s() {", c.name, c.name, name)
+		guard(w, c.gameOnly, c.name+" *")
+		w.ln("\treturn gdpp::create<%s>();", c.name)
+		w.ln("}")
 	}
 	if c.needsNotification() {
 		w.ln("")
@@ -499,6 +513,12 @@ func (u *unit) bindings(w *writer, c *classModel) {
 		default:
 			w.ln("\tClassDB::bind_method(%s, %s);", method(f.f.Name, names...), ref)
 		}
+	}
+	if name := c.newName(); name != "" {
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s);", method(name), c.name, name)
+	}
+	if c.pool != nil {
+		w.ln("\tClassDB::bind_method(%s, &%s::queue_free_pooled);", method("queue_free_pooled"), c.name)
 	}
 	for _, v := range c.vars {
 		for _, s := range v.sections {

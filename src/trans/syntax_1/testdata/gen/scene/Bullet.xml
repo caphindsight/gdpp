@@ -12,5 +12,11 @@
 			<description>
 			</description>
 		</method>
+		<method name="new_scene" qualifiers="static">
+			<return type="Bullet" />
+			<description>
+				Creates an instance of the class's scene, like [code]create[/code] in GD++ code, and returns its root. The scene is loaded once, by the first call. Returns [code]null[/code] if the scene fails to load, or if its root isn't an object of this class, so always check the result. [code]new()[/code] creates the node alone, without the scene.
+			</description>
+		</method>
 	</methods>
 </class>

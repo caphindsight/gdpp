@@ -176,6 +176,8 @@ GD++ names its helpers with the prefix `_gdpp_`, which is reserved: don't use it
 ```
 get_NAME, set_NAME           a variable's getter and setter
 NAME (of a signal)           a signal's emit function, returning gdpp::Emitted
+new_scene, new_pooled, new_scene_pooled   the method for scripts of a @scene class, a @pool class, or both, which calls create
+queue_free_pooled            a @pool class's method for scripts, which calls queue_destroy
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
 _gdpp_body_FUNC              the body of a @deferred, @thread_safe or @onthread function, which its deferred call or task runs

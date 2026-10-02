@@ -13,6 +13,7 @@ class Bullet : public Node3D {
 
 public:
 	static constexpr gdpp::Scene<Bullet> _gdpp_scene{ "res://addons/foo/scenes/bullet.tscn" };
+	static Bullet *new_scene();
 	void fire();
 
 protected:

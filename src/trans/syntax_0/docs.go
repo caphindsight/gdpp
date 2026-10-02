@@ -353,6 +353,13 @@ func (u *unit) document(c *classModel) string {
 		methods = append(methods, methodDoc{name: f.f.Name, qualifiers: strings.Join(qualifiers, " "), ret: f.ret,
 			params: f.params, list: f.f.Params, doc: parseDoc(docText(f.f.Doc), false)})
 	}
+	if name := c.newName(); name != "" {
+		methods = append(methods, methodDoc{name: name, qualifiers: "static", ret: &gtype{cpp: c.name + " *", doc: c.name},
+			doc: parseDoc(newDocs[name], false)})
+	}
+	if c.pool != nil {
+		methods = append(methods, methodDoc{name: "queue_free_pooled", ret: &gtype{cpp: "void", doc: "void", void: true}, doc: parseDoc(queueFreePooledDoc, false)})
+	}
 	x.methods(c, "method", methods)
 
 	if len(c.vars) > 0 {
@@ -411,6 +418,16 @@ func (u *unit) document(c *classModel) string {
 	x.ln(0, "</class>")
 	return x.sb.String()
 }
+
+// The documentation of the methods that @pool and @scene classes have for scripts, by name.
+var newDocs = map[string]string{
+	"new_scene":        `Creates an instance of the class's scene, like [code]create[/code] in GD++ code, and returns its root. The scene is loaded once, by the first call. Returns [code]null[/code] if the scene fails to load, or if its root isn't an object of this class, so always check the result. [code]new()[/code] creates the node alone, without the scene.`,
+	"new_pooled":       `Takes an object from the class's pool, or creates a new one if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a pool with a size are in use, so always check the result. Return the object with [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates an object outside the pool.`,
+	"new_scene_pooled": `Takes an object from the class's pool, or creates a new one, an instance of the class's scene, if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a pool with a size are in use, or if the scene fails to load, or its root isn't an object of this class, so always check the result. Return the object with [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates the node alone, outside the pool and without the scene.`,
+}
+
+const queueFreePooledDoc = `Returns the node to its pool at the end of the frame, like [code]queue_destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before then does nothing. A node that the pool didn't make is freed, like with [method Node.queue_free].
+[b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.`
 
 // documentAsyncClass returns the Godot XML documentation of the class of tasks named name.
 func documentAsyncClass(name string) string {

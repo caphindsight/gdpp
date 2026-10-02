@@ -1716,7 +1716,7 @@ func (u *unit) unique(names map[string]bool, pos lexer.Position, keyword string,
 		}
 		if names[name] {
 			return u.errorAt(pos, len(keyword), fmt.Sprintf("The name %q is already used by another member.", name),
-				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, and a @virtual func _x declares x.")
+				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @pool and @scene classes declare methods for scripts, e.g. new_pooled.")
 		}
 		names[name] = true
 	}
@@ -1774,7 +1774,8 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		return nil, err
 	}
 	names := map[string]bool{}
-	var declared []*symbol // Enums declared in the class.
+	names[m.newName()], names["queue_free_pooled"] = true, m.pool != nil // Methods for scripts.
+	var declared []*symbol                                               // Enums declared in the class.
 	for _, member := range c.Members {
 		if err := u.checkNoDebug(member, "class "+c.Name, a["trace"] != nil, a["profile"] != nil); err != nil {
 			return nil, err

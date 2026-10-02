@@ -191,6 +191,20 @@ func (c *classModel) needsNotification() bool {
 	return c.hasOnready() || len(c.notifs) > 0
 }
 
+// newName returns the name of the static method that scripts call for `create`: new_scene for a @scene class,
+// new_pooled for a @pool class, new_scene_pooled for both, and "" for other classes, which have new() for it.
+func (c *classModel) newName() string {
+	switch {
+	case c.scene != "" && c.pool != nil:
+		return "new_scene_pooled"
+	case c.scene != "":
+		return "new_scene"
+	case c.pool != nil:
+		return "new_pooled"
+	}
+	return ""
+}
+
 func (c *classModel) needsDtor() bool {
 	return c.dtor != nil || c.trace || c.pool != nil
 }
@@ -265,9 +279,13 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.scene != "" {
 		public = append(public, fmt.Sprintf("static constexpr gdpp::Scene<%s> _gdpp_scene{ %q };", c.name, c.scene))
 	}
+	if name := c.newName(); name != "" {
+		public = append(public, fmt.Sprintf("static %s *%s();", c.name, name))
+	}
 	if p := c.pool; p != nil {
 		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, %t };", c.name, p.capacity, p.strict),
-			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();")
+			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
+			"void queue_free_pooled();")
 	}
 	for _, f := range c.funcs {
 		if f.virtual {
