@@ -15,6 +15,8 @@ But it is neither GDScript nor C++:
 
 GD++ toolchain comes as one command line tool, `gd++`: the compiler, a build system that downloads required build dependencies for you, and a built-in manual.
 
+See the [GD++ sources of the Foliage3D addon](https://github.com/caphindsight/Foliage3D/blob/master/readme/index.md) for a real-life project written entirely in GD++.
+
 > [!NOTE]
 > **Disclaimer:** The code was mostly written by AI, but a senior engineer made all design decisions.
 
