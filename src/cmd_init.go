@@ -69,7 +69,6 @@ func (c *CmdInit) Run() {
 	}
 	root := ParsePath(c.Path)
 	p := LoadProject(root)
-	SyncExportPresets(p)
 	switch {
 	case c.Update:
 		c.updatePackage(p, root)
@@ -113,10 +112,7 @@ func (c *CmdInit) initProject() {
 		p.Config.VCS = c.Vcs
 		changes = append(changes, "the VCS to "+c.Vcs)
 	}
-	presetsChanged := (c.Presets || c.NoPresets) && c.Presets != p.Config.Presets
-	if !presetsChanged {
-		SyncExportPresets(p) // otherwise synced once the new setting is written
-	} else {
+	if (c.Presets || c.NoPresets) && c.Presets != p.Config.Presets {
 		p.Config.Presets = c.Presets
 		changes = append(changes, "the export preset filters to "+map[bool]string{true: "on", false: "off"}[c.Presets])
 	}
@@ -125,9 +121,6 @@ func (c *CmdInit) initProject() {
 	}
 	if vcsChanged {
 		SyncGitignores(p)
-	}
-	if presetsChanged {
-		SyncExportPresets(p)
 	}
 	LogInfo("Success!")
 }
@@ -171,7 +164,6 @@ func (c *CmdInit) initClass(root Path) {
 		Assert(p == "" || isClassPath(p), "Invalid arguments: %s must start with pkg:// or res://.", p)
 	}
 	assertNotGdppClass(root, c.Class)
-	SyncExportPresetsAt(root)
 	config := LoadPackageAt(root).Config
 	i := slices.IndexFunc(config.Classes, func(k PackageClass) bool { return k.Name == c.Class })
 	Assert(i >= 0 || !c.Update, "There is no class %s in %s.", c.Class, root.ToString())

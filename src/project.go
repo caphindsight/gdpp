@@ -93,15 +93,6 @@ func (p *Project) RemoveEmptyCacheDirs() bool {
 	return removed
 }
 
-// loadProjectConfig reads res://gd++proj.toml of the project at root.
-func loadProjectConfig(root Path) ProjectConfig {
-	config := DefaultProjectConfig()
-	if file := root.Cd(projectConfigFileName); file.Exists() {
-		decodeToml(file, &config)
-	}
-	return config
-}
-
 // LoadProject reads the project containing p. It doesn't create any
 // directories: those are created only when first needed.
 func LoadProject(p Path) Project {
@@ -116,6 +107,11 @@ func LoadProject(p Path) Project {
 	version := projectVersionPattern.FindStringSubmatch(app)
 	Assert(version != nil, "Failed to find the Godot version in %s.", file.ToString())
 
+	config := DefaultProjectConfig()
+	if configFile := root.Cd(projectConfigFileName); configFile.Exists() {
+		decodeToml(configFile, &config)
+	}
+
 	var caches []ProjectDepCache
 	for _, kind := range depKinds {
 		caches = append(caches, newProjectDepCache(root, kind))
@@ -125,7 +121,7 @@ func LoadProject(p Path) Project {
 		Id:           root.Name(),
 		Name:         godotStringUnescaper.Replace(name[1]),
 		GodotVersion: version[1],
-		Config:       loadProjectConfig(root),
+		Config:       config,
 		Caches:       caches,
 	}
 }

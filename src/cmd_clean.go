@@ -17,7 +17,6 @@ func (c *CmdClean) Run() {
 	var roots []Path
 	if c.Proj {
 		p := LoadProject(Cwd())
-		SyncExportPresets(p)
 		for _, pkg := range p.ListPackages() {
 			roots = append(roots, pkg.Root)
 		}
@@ -34,9 +33,6 @@ func (c *CmdClean) Run() {
 		if len(packageGarbage(root, c.Bin)) > 0 && !slices.Contains(dirty, root) {
 			dirty = append(dirty, root)
 		}
-	}
-	if !c.Proj {
-		SyncExportPresetsAt(roots...)
 	}
 	if len(dirty) == 0 {
 		LogInfo("Nothing to clean.")

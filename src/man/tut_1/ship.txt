@@ -34,7 +34,7 @@ A release build drops what's only there for development: assertions aren't check
 
 # 4. Check the export filters
 
-Your sources must stay out of the game. `gd++` takes care of it: it adds filters for them, e.g. `*.gd++` and `*.cpp`, to "Filters to exclude files/folders from project" of every export preset. Any command does it, e.g. `gd++ ls`, so run one after you create a preset. The caches never get in.
+Your sources must stay out of the game. `gd++` takes care of it: it adds filters for them, e.g. `*.gd++` and `*.cpp`, to "Filters to exclude files/folders from project" of every export preset. `gd++ build` does it, e.g. in step 3, and so does `gd++ fix`: run it if you create a preset after building. The caches never get in.
 
 See `gd++ man shipping`.
 

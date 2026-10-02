@@ -26,7 +26,7 @@ vcs
   The version control system that the project uses: `"none"` (the default) or `"git"`. With `"git"`, GD++ keeps its blocks of ignores in the `.gitignore` files of the project and its packages. See `gd++ man vcs`.
 
 presets
-  Whether GD++ keeps its sources and config files out of exported games: `true` (the default) or `false`. With `true`, every `gd++` command but `cat`, `doc`, `man` and `trans` adds GD++'s exclude filters to every preset in `res://export_presets.cfg`. With `false`, they are removed once, and GD++ doesn't touch the file again. Set it with `gd++ init --presets` or `--nopresets`. See `gd++ man shipping`.
+  Whether GD++ keeps its sources and config files out of exported games: `true` (the default) or `false`. With `true`, `gd++ build` and `gd++ fix` add GD++'s exclude filters to every preset in `res://export_presets.cfg`. With `false`, they remove them, and after that they don't touch the file. Set it with `gd++ init --presets` or `--nopresets`. See `gd++ man shipping`.
 
 Unknown keys are an error: "Unknown key ... in res://gd++proj.toml.". `gd++ fix` reformats the file to its canonical form.
 

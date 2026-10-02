@@ -68,12 +68,12 @@ func TestSyncExportPresets(t *testing.T) {
 		{false, "", false, `a\"b`},
 	} {
 		var changed bool
-		out := captureStderr(t, func() { changed = syncExportPresets(root, tc.want) })
+		out := captureStderr(t, func() { changed = SyncExportPresets(Project{Root: root, Config: ProjectConfig{Presets: tc.want}}) })
 		if out != tc.out || changed != tc.changed {
-			t.Errorf("syncExportPresets(%v): output = %q, changed = %v, want %q, %v", tc.want, out, changed, tc.out, tc.changed)
+			t.Errorf("SyncExportPresets(%v): output = %q, changed = %v, want %q, %v", tc.want, out, changed, tc.out, tc.changed)
 		}
 		if got, want := m.tree()[file], testExportPresets(tc.filter); got != want {
-			t.Errorf("syncExportPresets(%v): file = %q, want %q", tc.want, got, want)
+			t.Errorf("SyncExportPresets(%v): file = %q, want %q", tc.want, got, want)
 		}
 	}
 }
@@ -84,8 +84,8 @@ func TestSyncExportPresetsCRLF(t *testing.T) {
 	text := strings.ReplaceAll(testExportPresets(strings.Join(presetExcludes, ", ")), "\n", "\r\n")
 	tree["/games/my_game/"+exportPresetsFileName] = text
 	m := withMemFS(t, "/games/my_game", tree)
-	if syncExportPresets(NewPath("/games/my_game"), true) {
-		t.Errorf("syncExportPresets() = true, want false")
+	if SyncExportPresets(Project{Root: NewPath("/games/my_game"), Config: DefaultProjectConfig()}) {
+		t.Errorf("SyncExportPresets() = true, want false")
 	}
 	if got := m.tree()["/games/my_game/"+exportPresetsFileName]; got != text {
 		t.Errorf("file = %q, want %q", got, text)
@@ -95,29 +95,10 @@ func TestSyncExportPresetsCRLF(t *testing.T) {
 func TestSyncExportPresetsNoFile(t *testing.T) {
 	m := withMemFS(t, "/games/my_game", testProjectTree)
 	before := m.tree()
-	if syncExportPresets(NewPath("/games/my_game"), true) {
-		t.Errorf("syncExportPresets() = true, want false")
+	if SyncExportPresets(Project{Root: NewPath("/games/my_game"), Config: DefaultProjectConfig()}) {
+		t.Errorf("SyncExportPresets() = true, want false")
 	}
 	if !maps.Equal(m.tree(), before) {
 		t.Errorf("tree = %v, want it unchanged", m.tree())
-	}
-}
-
-func TestSyncExportPresetsAt(t *testing.T) {
-	tree := maps.Clone(testProjectTree)
-	tree["/games/my_game/"+exportPresetsFileName] = testExportPresets("")
-	tree["/games/my_game/"+projectConfigFileName] = "presets = true\n"
-	tree["/games/other/x"] = "x"
-	m := withMemFS(t, "/games", tree)
-	withQuiet(t, false)
-	withTTY(t, false)
-	out := captureStderr(t, func() {
-		SyncExportPresetsAt(NewPath("/games/other"), NewPath("/games/my_game/src"), NewPath("/games/my_game"))
-	})
-	if want := "[-] Updated res://export_presets.cfg.\n"; out != want {
-		t.Errorf("output = %q, want %q", out, want)
-	}
-	if got, want := m.tree()["/games/my_game/"+exportPresetsFileName], testExportPresets(strings.Join(presetExcludes, ", ")); got != want {
-		t.Errorf("file = %q, want %q", got, want)
 	}
 }

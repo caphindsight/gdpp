@@ -47,14 +47,9 @@ func editExcludeFilter(value string, want bool) string {
 
 // SyncExportPresets writes GD++'s exclude filters into every preset in the
 // project's res://export_presets.cfg if its config enables them, or removes
-// them otherwise. Every command but the doc ones (cat, doc, man, trans) calls
-// it on the projects it works in. Returns whether the file changed.
+// them otherwise. build and fix call it. Returns whether the file changed.
 func SyncExportPresets(p Project) bool {
-	return syncExportPresets(p.Root, p.Config.Presets)
-}
-
-func syncExportPresets(root Path, want bool) bool {
-	file := root.Cd(exportPresetsFileName)
+	file := p.Root.Cd(exportPresetsFileName)
 	if !file.IsFile() {
 		return false
 	}
@@ -62,7 +57,7 @@ func syncExportPresets(root Path, want bool) bool {
 	changed := false
 	for i, line := range lines {
 		if m := excludeFilterPattern.FindStringSubmatch(line); m != nil {
-			if value := editExcludeFilter(m[1], want); value != m[1] {
+			if value := editExcludeFilter(m[1], p.Config.Presets); value != m[1] {
 				lines[i] = `exclude_filter="` + value + `"`
 				changed = true
 			}
@@ -74,16 +69,4 @@ func syncExportPresets(root Path, want bool) bool {
 	file.WriteString(MergeLines(lines))
 	LogInfo("Updated %s.", file.ToString())
 	return true
-}
-
-// SyncExportPresetsAt runs SyncExportPresets once on each project containing
-// one of paths, for commands that don't load the project.
-func SyncExportPresetsAt(paths ...Path) {
-	var roots []Path
-	for _, path := range paths {
-		if root, ok := GetProjectRootMaybe(path); ok && !slices.Contains(roots, root) {
-			roots = append(roots, root)
-			syncExportPresets(root, loadProjectConfig(root).Presets)
-		}
-	}
 }

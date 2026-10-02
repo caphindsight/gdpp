@@ -28,11 +28,11 @@ GD++ keeps your GD++ and C++ sources, `gd++pkg.toml` and `gd++proj.toml` out of 
 *.gd++, *.gdpp, *.gg, *.c, *.cc, *.cpp, *.cxx, *.c++, *.h, *.hh, *.hpp, *.hxx, *.h++, *.inl, gd++proj.toml, gd++pkg.toml, */gd++pkg.toml
 ```
 
-Every `gd++` command that works on the project does it, except the ones that only show things: `cat`, `doc`, `man` and `trans`. It logs "Updated res://export_presets.cfg." when it changes the file. It only adds and removes its own filters: the rest of the list is yours. So after you create a preset in Godot, run any command, e.g. `gd++ ls`, before you export.
+`gd++ build` and `gd++ fix` do it, and log "Updated res://export_presets.cfg." when they change the file. They only add and remove GD++'s own filters: the rest of the list is yours. Since you build the release libraries before you export (step 1), new presets get the filters too. After you create a preset without building, run `gd++ fix`.
 
 The caches never get in: hidden directories, like `.gd++proj` and `.gd++pkg`, and directories with a `.gdignore` file, like `_gd++proj`, are invisible to Godot.
 
-To manage the filters yourself, run `gd++ init --nopresets`: it removes GD++'s filters from every preset, and GD++ stops touching `export_presets.cfg`. `gd++ init --presets` adds them again. See `gd++ man projects`.
+To manage the filters yourself, run `gd++ init --nopresets`. The next `gd++ build` or `gd++ fix` removes GD++'s filters from every preset, and after that GD++ doesn't touch `export_presets.cfg`. `gd++ init --presets` turns it back on. See `gd++ man projects`.
 
 # 3. Export
 

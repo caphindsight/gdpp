@@ -88,6 +88,7 @@ func TestInitProjectNoChanges(t *testing.T) {
 }
 
 func TestInitProjectPresets(t *testing.T) {
+	// init only sets the config: build and fix edit the presets.
 	tree := withPackages(nil)
 	tree["/games/my_game/"+exportPresetsFileName] = testExportPresets("*.txt")
 	m := withMemFS(t, "/games/my_game", tree)
@@ -96,16 +97,19 @@ func TestInitProjectPresets(t *testing.T) {
 	for _, tc := range []struct {
 		c      CmdInit
 		want   string
-		filter string
+		config string
 	}{
-		{CmdInit{NoPresets: true}, "[-] Created res://gd++proj.toml.\n[-] Set the export preset filters to off.\n[-] Success!\n", "*.txt"},
-		{CmdInit{Presets: true}, "[-] Set the export preset filters to on.\n[-] Updated res://export_presets.cfg.\n[-] Success!\n", "*.txt, " + strings.Join(presetExcludes, ", ")},
-		{CmdInit{NoPresets: true}, "[-] Set the export preset filters to off.\n[-] Updated res://export_presets.cfg.\n[-] Success!\n", "*.txt"},
+		{CmdInit{NoPresets: true}, "[-] Created res://gd++proj.toml.\n[-] Set the export preset filters to off.\n[-] Success!\n", "vcs = \"none\"\npresets = false\n"},
+		{CmdInit{Presets: true}, "[-] Set the export preset filters to on.\n[-] Success!\n", "vcs = \"none\"\npresets = true\n"},
 	} {
 		if out := captureStderr(t, tc.c.Run); out != tc.want {
 			t.Errorf("%+v: output = %q, want %q", tc.c, out, tc.want)
 		}
-		if got, want := m.tree()["/games/my_game/"+exportPresetsFileName], testExportPresets(tc.filter); got != want {
+		tree := m.tree()
+		if got := tree["/games/my_game/"+projectConfigFileName]; got != tc.config {
+			t.Errorf("%+v: config = %q, want %q", tc.c, got, tc.config)
+		}
+		if got, want := tree["/games/my_game/"+exportPresetsFileName], testExportPresets("*.txt"); got != want {
 			t.Errorf("%+v: export_presets.cfg = %q, want %q", tc.c, got, want)
 		}
 	}

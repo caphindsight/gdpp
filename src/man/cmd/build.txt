@@ -14,6 +14,8 @@ gd++ build --proj [options...]
 
 Builds the package that contains PATH, or the current directory, into GDExtension libraries, one per target, and writes them into the package root, along with the package's `.gdextension` file. Godot loads them from there. With `--proj`, builds every package in the project instead.
 
+It also keeps GD++'s exclude filters in the project's export presets up to date, as the `presets` setting in `gd++proj.toml` says. See `gd++ man shipping`.
+
 This page lists the options. For how builds work, and for targets and debug and release builds in depth, see `gd++ man building`.
 
 # Options

@@ -31,10 +31,10 @@ Writes `res://gd++proj.toml`, with the project's settings. See `gd++ man project
   The project's version control system. With `git`, GD++ writes its blocks of ignores into the `.gitignore` files of the project and every package, and with `none`, it removes them. See `gd++ man vcs`.
 
 --presets
-  Keep GD++'s sources and config files out of exported games: GD++ adds its exclude filters to every preset in `res://export_presets.cfg`, now and whenever a command runs. This is the default. See `gd++ man shipping`.
+  Keep GD++'s sources and config files out of exported games: GD++ adds its exclude filters to every preset in `res://export_presets.cfg`, whenever `gd++ build` or `gd++ fix` runs. This is the default. See `gd++ man shipping`.
 
 --nopresets
-  Remove GD++'s exclude filters from every preset, and stop touching `res://export_presets.cfg`.
+  Make the next `gd++ build` or `gd++ fix` remove GD++'s exclude filters from every preset. After that, GD++ doesn't touch `res://export_presets.cfg`.
 
 Without options, it creates `gd++proj.toml` with the defaults, or reformats it. The file is optional, so you only need this step to change a setting.
 
