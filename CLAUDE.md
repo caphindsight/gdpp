@@ -4,6 +4,8 @@ CLI for managing Godot projects written in C++: generates boilerplate, has a sma
 
 The tool itself is written in Go. C++ is only the language of the Godot projects it manages.
 
+The Go module lives in `src/`; the paths below are relative to it. `make test` runs `go vet` and all tests.
+
 ## Design principles
 
 1. Batteries included: like Godot's "all in one" approach, every feature ships in a single CLI tool.

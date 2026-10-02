@@ -44,9 +44,6 @@ func TestCompile(t *testing.T) {
 	files, _ := filepath.Glob("testdata/gen/*/*.[ch]*")
 	for _, file := range files {
 		dir := filepath.Dir(file)
-		if filepath.Base(dir) == "tutorial" {
-			continue // The tutorial's C++ is illustrative, e.g. it uses my_value, which it never declares.
-		}
 		t.Run(filepath.Base(dir)+"/"+filepath.Base(file), func(t *testing.T) {
 			args := []string{"-std=c++20", "-fsyntax-only", "-Wno-pragma-once-outside-header", "-I", dir, "-I", include,
 				"-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"), "-I", filepath.Join(root, "gdextension"), "-x", "c++", file}

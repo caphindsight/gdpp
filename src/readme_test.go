@@ -11,7 +11,7 @@ import (
 // since GitHub can't highlight GD++, is the image of readme/svg/NAME.gd++, as
 // readme/render.sh renders it with `gd++ cat --svg`.
 func TestReadmeImages(t *testing.T) {
-	files, _ := filepath.Glob("readme/svg/*.gd++")
+	files, _ := filepath.Glob("../readme/svg/*.gd++")
 	for _, file := range files {
 		code, err := os.ReadFile(file)
 		if err != nil {

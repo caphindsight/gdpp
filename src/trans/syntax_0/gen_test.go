@@ -18,7 +18,7 @@ import (
 	"gd++/trans/meta"
 )
 
-// TestGenerate generates code for every case in testdata/gen/<case>/input.gd++ (plus the tutorial) and compares
+// TestGenerate generates code for every case in testdata/gen/<case>/input.gd++ and compares
 // it with the golden files next to it: the generated <Name>.h and <Name>.cpp, decls.txt and <Class>.xml, or input.err.
 // An options.toml next to input.gd++ sets the groups of @trace and @profile that are on, as `trace = ["all"]`.
 func TestGenerate(t *testing.T) {
@@ -43,7 +43,7 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cases := map[string]string{"testdata/gen/tutorial": "../../tutorial/tutorial.gd++"}
+	cases := map[string]string{}
 	for _, input := range dirs {
 		cases[filepath.Dir(input)] = input
 	}

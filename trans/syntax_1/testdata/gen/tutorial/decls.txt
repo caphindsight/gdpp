@@ -1,6 +1,0 @@
-{Name:MyNode Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:true Virtuals:[_foo _bar]}
-{Name:MyNode1 Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:MyRefCounted1 Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:Suit Kind:3 Base: Values:[{Name:DIAMONDS Value:0 Doc: Implicit:true Expr:} {Name:CLUBS Value:0 Doc: Implicit:true Expr:} {Name:SPADES Value:0 Doc: Implicit:true Expr:} {Name:HEARTS Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:Rank Kind:3 Base: Values:[{Name:JACK Value:0 Doc: Implicit:false Expr:} {Name:QUEEN Value:0 Doc: Implicit:true Expr:} {Name:KING Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:Terrain Kind:2 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

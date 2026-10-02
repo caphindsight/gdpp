@@ -1,6 +1,6 @@
 # GD++
 <p align="right">
-  <img src="gdpp_logo.png" alt="GD++ logo" width="128" align="right">
+  <img src="readme/gdpp_logo.png" alt="GD++ logo" width="128" align="right">
 </p>
 
 GD++ is a programming language for Godot.

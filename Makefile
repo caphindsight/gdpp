@@ -2,10 +2,10 @@ BINARY_NAME=gd++
 PREFIX?=/usr/local
 BINDIR=$(PREFIX)/bin
 
-.PHONY: build install clean readme
+.PHONY: build install clean readme test
 
 build:
-	go build -o $(BINARY_NAME)
+	go -C src build -o ../$(BINARY_NAME)
 
 install: build
 	mkdir -p $(DESTDIR)$(BINDIR)
@@ -16,3 +16,8 @@ clean:
 
 readme: build
 	GDPP=$(CURDIR)/$(BINARY_NAME) readme/render.sh
+
+# TestCompile also runs when GDPP_GODOT_CPP names a godot-cpp checkout with generated bindings.
+test:
+	go -C src vet ./...
+	go -C src test ./...

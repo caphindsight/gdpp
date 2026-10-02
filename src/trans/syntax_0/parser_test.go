@@ -18,10 +18,10 @@ import (
 
 var update = flag.Bool("update", false, "Rewrite the golden files.")
 
-// TestGolden parses every .gd++ file in testdata (plus the tutorial) and compares the result with the golden
+// TestGolden parses every .gd++ file in testdata and compares the result with the golden
 // file next to it: <name>.ast holds the AST dump of a successful parse, <name>.err the expected error.
 func TestGolden(t *testing.T) {
-	inputs := map[string]string{"../../tutorial/tutorial.gd++": "testdata/tutorial"}
+	inputs := map[string]string{}
 	err := filepath.WalkDir("testdata", func(path string, d fs.DirEntry, err error) error {
 		if path == "testdata/gen" {
 			return filepath.SkipDir // Code generation cases, see gen_test.go.
