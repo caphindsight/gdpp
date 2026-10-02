@@ -293,11 +293,58 @@ void memdelete_ext(ExtPtr<T> p_object) {
 template <typename T>
 void memdelete_ext(ExtRef<T> p_object) = delete;
 
-// guard_message is the error printed by a failed guard.
-inline String guard_message(const char *p_condition, const String &p_message, const char *p_file, int p_line) {
-	String failed = vformat("Failed GD++ guard: %s, at %s:%d.\nFailed GD++ guards are undefined behavior and must be fixed.",
+// assert_message is the error printed by a failed assertion.
+inline String assert_message(const char *p_condition, const char *p_file, int p_line) {
+	return vformat("Failed GD++ assertion: %s, at %s:%d.\nFailed GD++ assertions are undefined behavior and must be fixed.",
 			p_condition, p_file, p_line);
-	return p_message.is_empty() ? failed : vformat("%s - %s", p_message, failed);
+}
+
+// returns_void reports whether p_signature, a function's GDPP_SIGNATURE, has the return type void, or none, like a
+// GCC lambda's. A deduced lambda's, `auto` on Clang, counts as void too.
+constexpr bool returns_void(const char *p_signature) {
+	auto starts = [](const char *s, const char *w) {
+		for (; *w; s++, w++) {
+			if (*s != *w) {
+				return false;
+			}
+		}
+		return true;
+	};
+	for (const char *w : { "static ", "virtual ", "inline ", "constexpr ", "__cdecl ", "__thiscall ", "__stdcall ", "__vectorcall " }) {
+		if (starts(p_signature, w)) {
+			while (*w++) {
+				p_signature++;
+			}
+			return returns_void(p_signature);
+		}
+	}
+	if (starts(p_signature, "auto ") || (starts(p_signature, "void ") && p_signature[5] != '*' && p_signature[5] != '&')) {
+		return true;
+	}
+	// A return type ends with a space before the name, outside of template arguments.
+	for (int depth = 0; *p_signature && (*p_signature != '(' || depth > 0); p_signature++) {
+		depth += *p_signature == '<' ? 1 : *p_signature == '>' ? -1 : 0;
+		if (*p_signature == ' ' && depth == 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// Default is what a failed assertion returns from a function that returns a value: it converts to any type T as T().
+struct Default {
+	template <typename T>
+	operator T() const { return T(); }
+};
+
+// assert_return is what a failed assertion returns, with V true in void functions.
+template <bool V>
+auto assert_return() {
+	if constexpr (V) {
+		return;
+	} else {
+		return Default{};
+	}
 }
 
 // GDPP_ASYNC_CLASS is the name of the package's class of tasks, e.g. FooAsync: its prefix and Async. The package
@@ -671,14 +718,38 @@ using gdpp::Ext;
 using gdpp::ExtPtr;
 using gdpp::ExtRef;
 
-// GDPP_GUARD is what `guard (condition; "message") { ... }` becomes: in debug builds, a failed condition prints an
-// error and runs the block; release builds don't evaluate the condition, and the block never runs.
-#ifdef DEBUG_ENABLED
-#define GDPP_GUARD(m_text, m_message, ...) \
-	if (!(__VA_ARGS__) && (ERR_PRINT(gdpp::guard_message(m_text, m_message, __FILE__, __LINE__)), true))
-#else
-#define GDPP_GUARD(m_text, m_message, ...) if constexpr (false)
+// GDPP_SIGNATURE is the signature of the function it's in, e.g. "int Player::fire(int)", on the compilers that have one.
+#if defined(__GNUC__) || defined(__clang__)
+#define GDPP_SIGNATURE __PRETTY_FUNCTION__
+#elif defined(_MSC_VER)
+#define GDPP_SIGNATURE __FUNCSIG__
 #endif
+
+// GDPP_ASSERT is what `assert condition;` becomes: in debug builds, a failed condition prints an error and returns from
+// the function, with T() in one that returns a T. It tells the two apart by GDPP_SIGNATURE, and without one, doesn't
+// return. GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE do the same in code where GD++ knows the function's return type.
+// Release builds don't evaluate the condition.
+#ifdef DEBUG_ENABLED
+#define GDPP_ASSERT_(m_text, m_exit, ...) \
+	if (!(__VA_ARGS__)) { \
+		ERR_PRINT(gdpp::assert_message(m_text, __FILE__, __LINE__)); \
+		m_exit; \
+	} else \
+		((void)0)
+#else
+#define GDPP_ASSERT_(m_text, m_exit, ...) \
+	if constexpr (false) { \
+		(void)(__VA_ARGS__); \
+	} else \
+		((void)0)
+#endif
+#ifdef GDPP_SIGNATURE
+#define GDPP_ASSERT(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::assert_return<gdpp::returns_void(GDPP_SIGNATURE)>(), __VA_ARGS__)
+#else
+#define GDPP_ASSERT(m_text, ...) GDPP_ASSERT_(m_text, (void)0, __VA_ARGS__)
+#endif
+#define GDPP_ASSERT_VOID(m_text, ...) GDPP_ASSERT_(m_text, return, __VA_ARGS__)
+#define GDPP_ASSERT_VALUE(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::Default{}, __VA_ARGS__)
 
 // memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for externs.
 #define memnew_ext(m_class) gdpp::memnew_ext<m_class>()

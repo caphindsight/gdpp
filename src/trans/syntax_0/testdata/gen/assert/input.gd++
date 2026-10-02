@@ -1,0 +1,27 @@
+class_name Asserted
+extends Node
+
+var target: Node3D
+
+func fire(count: int) -> int {
+  assert target != nullptr;
+  assert count > 0 &&
+      count < 10;
+  return count;
+}
+
+func aim() -> void {
+  assert target != nullptr;
+  target->look_at(Vector3());
+}
+
+decl {
+  void reset();
+}
+
+impl {
+  void This::reset() {
+    assert target != nullptr;
+    target = nullptr;
+  }
+}

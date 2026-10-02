@@ -66,7 +66,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		}
 		u.initializers(w, c, false, "\t")
 		if c.ctor != nil {
-			w.block(c.ctor, "\t{", "}")
+			w.block(c.ctor, "\t{", "}", assertVoid)
 		}
 		w.ln("}")
 	}
@@ -78,7 +78,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			w.ln("\tgdpp::trace_lifetime(%q, this, false);", c.name)
 		}
 		if c.dtor != nil {
-			w.block(c.dtor, "\t{", "}")
+			w.block(c.dtor, "\t{", "}", assertVoid)
 		}
 		w.ln("}")
 	}
@@ -95,7 +95,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		// Each block runs in a lambda, so a return in one doesn't skip the later ones.
 		for _, n := range c.notifs {
 			if n.body != nil {
-				w.block(n.body, "\tif ("+n.cond+") [&] {", "}();")
+				w.block(n.body, "\tif ("+n.cond+") [&] {", "}();", assertVoid)
 			} else {
 				w.ln("\tif (%s) {", n.cond)
 				w.ln("\t\t%s;", n.call)
@@ -131,7 +131,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	for _, code := range c.codes {
 		if code.Impl {
 			w.ln("")
-			w.block(code.Body, "", "")
+			w.block(code.Body, "", "", assertAny)
 		}
 	}
 	w.ln("")
@@ -146,9 +146,9 @@ func (u *unit) initializers(w *writer, c *classModel, onready bool, indent strin
 			continue
 		}
 		if init.Block != nil {
-			w.block(init.Block, fmt.Sprintf("%s%s = [&]() -> %s {", indent, v.v.Name, v.t.cpp), "}();")
+			w.block(init.Block, fmt.Sprintf("%s%s = [&]() -> %s {", indent, v.v.Name, v.t.cpp), "}();", assertValue)
 		} else {
-			w.user(init.Pos, indent+v.v.Name+" = ", init.Expr, ";")
+			w.user(init.Pos, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
 		}
 	}
 }
@@ -307,7 +307,7 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	case f.deferral != "":
 		w.ln("\t%s;", deferredCall(f, "this", bodyName(f)))
 	case f.f.Body != nil:
-		w.block(f.f.Body, "", "")
+		w.block(f.f.Body, "", "", assertFor(f.ret.void))
 	case !f.ret.void:
 		w.ln("\treturn {};")
 	}
@@ -341,9 +341,9 @@ func defaultDefs(w *writer, c *classModel, f *funcModel) {
 		w.ln("%s {", qualified(c, f.params[i].cpp, defaultName(f, p), "", false))
 		guard(w, f.gameOnly, f.params[i].cpp)
 		if d.Block != nil {
-			w.block(d.Block, "", "")
+			w.block(d.Block, "", "", assertValue)
 		} else {
-			w.user(d.Pos, "\treturn ", d.Expr, ";")
+			w.user(d.Pos, "\treturn ", d.Expr, ";", assertValue)
 		}
 		w.ln("}")
 	}
@@ -359,7 +359,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 			u.profile(w, c.name+"."+v.getter)
 		}
 		if v.get != nil {
-			w.block(v.get, "", "")
+			w.block(v.get, "", "", assertValue)
 		} else {
 			w.ln("\treturn %s;", v.v.Name)
 		}
@@ -374,7 +374,7 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 		}
 		watch(w, c, v.setter)
 		if v.set != nil {
-			w.block(v.set.Body, "", "")
+			w.block(v.set.Body, "", "", assertVoid)
 		} else {
 			w.ln("\t%s = p_value;", v.v.Name)
 		}

@@ -264,11 +264,11 @@ Includes are automatic, but in very rare cases, GD++ can't see a name, e.g. behi
 
 They become the editor's help, with Godot's BBCode tags. See `gd++ man docs`.
 
-### Guards
+### Assertions
 
-<a href="readme/svg/assert.gd++"><img src="readme/svg/assert.svg" alt="GD++ code: guard"></a>
+<a href="readme/svg/assert.gd++"><img src="readme/svg/assert.svg" alt="GD++ code: assert"></a>
 
-A guard checks what must always be true. In debug builds, a failed guard prints an error and runs its block, so the game goes on. Release builds drop guards entirely. See `gd++ man rewrites`.
+An assertion checks what must always be true. In debug builds, a failed assertion prints an error and returns from the function, with a default value if it returns one. GD++ tries hard to keep the game from crashing and to let it go on sensibly, but a failed assertion is always undefined behavior, in debug builds too: it's a bug to fix. To check a condition in a well-defined way, use a plain `if`; what an assertion adds is that release builds drop it entirely, so it costs nothing there. See `gd++ man rewrites`.
 
 ### Cached string names
 

@@ -112,7 +112,7 @@ func (u *unit) globals(w *writer, decl bool) {
 		for _, g := range c.globals {
 			if g.Decl && decl || g.Impl && !decl {
 				w.ln("")
-				w.block(g.Body, "", "")
+				w.block(g.Body, "", "", assertAny)
 			}
 		}
 	}
@@ -224,7 +224,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		if code.Decl {
 			w.ln("")
 			w.ln("private:")
-			w.block(code.Body, "", "")
+			w.block(code.Body, "", "", assertAny)
 		}
 	}
 	var fields []*varModel
@@ -246,7 +246,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		w.ln("")
 		w.ln("private:")
 		for _, d := range decls {
-			w.block(d, "", "")
+			w.block(d, "", "", assertAny)
 		}
 	}
 	var public []string

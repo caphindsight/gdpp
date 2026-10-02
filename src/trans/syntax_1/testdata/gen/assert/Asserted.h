@@ -8,15 +8,23 @@
 
 namespace godot {
 
-#define This Guarded
-class Guarded : public Node {
-	GDCLASS(Guarded, Node)
+#define This Asserted
+class Asserted : public Node {
+	GDCLASS(Asserted, Node)
+
+private:
+#line 18 "input.gd++"
+
+  void reset();
+
+#line 21 "Asserted.h"
 
 public:
 	Node3D *target{};
 
 public:
 	int64_t fire(int64_t count);
+	void aim();
 	Node3D *get_target() const;
 	void set_target(Node3D *p_value);
 

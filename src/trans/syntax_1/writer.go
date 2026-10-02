@@ -22,21 +22,37 @@ func (w *writer) ln(format string, args ...any) {
 	w.lines += strings.Count(s, "\n") + 1
 }
 
-// user writes prefix+code+suffix as one line, where code is user C++ starting at pos in the GD++ file.
-// #line directives around it make compilers report user code at its GD++ location.
-func (w *writer) user(pos lexer.Position, prefix, code, suffix string) {
+// user writes prefix+code+suffix as one line, where code is user C++ starting at pos in the GD++ file, and assertions
+// in it become the macro assert. #line directives around it make compilers report user code at its GD++ location.
+func (w *writer) user(pos lexer.Position, prefix, code, suffix, assert string) {
 	w.ln("#line %d %q", pos.Line, w.source)
-	w.ln("%s", prefix+cpp(code)+suffix)
+	w.ln("%s", prefix+cpp(code, assert)+suffix)
 	w.ln("#line %d %q", w.lines+2, w.self)
 }
 
-// block writes the text of b, a C++ block, between prefix and suffix.
-func (w *writer) block(b *Block, prefix, suffix string) {
-	w.user(b.TextPos, prefix, b.Text, suffix)
+// block writes the text of b, a C++ block, between prefix and suffix, like user.
+func (w *writer) block(b *Block, prefix, suffix, assert string) {
+	w.user(b.TextPos, prefix, b.Text, suffix, assert)
 }
 
 func (w *writer) String() string {
 	return w.sb.String()
+}
+
+// The runtime's macros that assertions become: assertVoid and assertValue return from a function whose return type is void
+// or not, and assertAny from any function, finding out which by its signature.
+const (
+	assertVoid  = "GDPP_ASSERT_VOID"
+	assertValue = "GDPP_ASSERT_VALUE"
+	assertAny   = "GDPP_ASSERT"
+)
+
+// assertFor returns the assert macro for code in a function that returns void or not.
+func assertFor(void bool) string {
+	if void {
+		return assertVoid
+	}
+	return assertValue
 }
 
 // cpp turns user C++ into plain C++:
@@ -46,9 +62,9 @@ func (w *writer) String() string {
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
 //   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`,
-//   - `guard (x; "m") {` and `guard (x) {` become `GDPP_GUARD("x", "m", x) {` and `GDPP_GUARD("x", "", x) {`,
+//   - `assert x;` becomes `GDPP_ASSERT("x", x);`, where assert names the macro, e.g. GDPP_ASSERT_VOID in a void function,
 //   - a `,` before `)` is dropped, so calls may end with a trailing comma.
-func cpp(code string) string {
+func cpp(code, assert string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
 		return code
@@ -90,25 +106,24 @@ func cpp(code string) string {
 				continue
 			}
 		}
-		if cond, semi, close, ok := guardTarget(ts, i); ok {
-			// Drop the '(', the message and the spaces around them, keeping their newlines so the lines still match.
-			msg, end := `""`, close
-			if semi >= 0 {
-				msg, end = ts[skipSpace(ts, semi+1)].Value, prevToken(ts, semi)+1
+		if cond, semi, ok := assertTarget(ts, i); ok {
+			// Drop the spaces after the keyword, keeping their newlines so the lines still match.
+			for k := i + 1; k < cond; k++ {
+				out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
 			}
-			for k := i + 1; k < close; k++ {
-				if k < cond || k >= end {
-					out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
-				}
+			// The text drops brackets around all of it, as in `assert(x);`.
+			first, last := cond, prevToken(ts, semi)
+			if isPunct(ts[first], "(") && closing(ts, first) == last {
+				first, last = first+1, last-1
 			}
 			var sb strings.Builder
-			for _, t := range ts[cond:end] {
+			for _, t := range ts[first : last+1] {
 				if !isComment(t) {
 					sb.WriteString(t.Value)
 				}
 			}
 			text := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(strings.Join(strings.Fields(sb.String()), " "))
-			out[i] = `GDPP_GUARD("` + text + `", ` + msg + ", "
+			out[i], out[semi] = assert+`("`+text+`", `, ");"
 			i = cond - 1 // The condition may hold more rewrites.
 			continue
 		}
@@ -272,7 +287,7 @@ func asCast(ts []lexer.Token, i int) (start, typeEnd int, ok bool) {
 // exprWords are the C++ words that an expression may follow, which `as` doesn't apply to.
 var exprWords = map[string]bool{"return": true, "if": true, "while": true, "for": true, "switch": true, "catch": true,
 	"throw": true, "case": true, "else": true, "do": true, "co_return": true, "co_yield": true, "co_await": true,
-	"new": true, "delete": true, "and": true, "or": true, "not": true}
+	"new": true, "delete": true, "and": true, "or": true, "not": true, "assert": true}
 
 // templateEnd returns the end of the template arguments that start with the '<' at ts[open], or open if they aren't
 // template arguments, e.g. in `n < limit && m > 0`.
@@ -331,43 +346,35 @@ func closing(ts []lexer.Token, open int) int {
 	return len(ts)
 }
 
-// guardTarget matches a guard at ts[i], `guard (cond; "message") {` or `guard (cond) {`. It returns the index where
-// cond starts, the index of the ';' (-1 without a message) and the index of the ')'.
-func guardTarget(ts []lexer.Token, i int) (cond, semi, close int, ok bool) {
-	if ts[i].Type != tokIdent || ts[i].Value != "guard" || isMember(ts, i) {
+// assertTarget matches an assertion at ts[i], `assert cond;`, where assert starts a statement and cond starts like an
+// expression, so `s.assert(x);` and `assert = 1;` aren't assertions. It returns the index where cond starts and
+// the index of the ';'.
+func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
+	if ts[i].Type != tokIdent || ts[i].Value != "assert" {
 		return
 	}
-	open := skipSpace(ts, i+1)
-	if open == len(ts) || !isPunct(ts[open], "(") {
+	p := prevToken(ts, i)
+	if p >= 0 && !isPunct(ts[p], ";") && !isPunct(ts[p], "{") && !isPunct(ts[p], "}") && !isPunct(ts[p], ")") &&
+		!(isPunct(ts[p], ":") && (p == 0 || !isPunct(ts[p-1], ":"))) && !(ts[p].Type == tokIdent && ts[p].Value == "else") {
 		return
 	}
-	if close = closing(ts, open); close == len(ts) {
+	cond = skipSpace(ts, i+1)
+	if cond == len(ts) || !isOneOf(ts[cond], "Ident", "Number", "String", "Char") && !isPunct(ts[cond], "(") &&
+		!((isPunct(ts[cond], "!") || isPunct(ts[cond], "*") || isPunct(ts[cond], "&")) && cond+1 < len(ts) && !isPunct(ts[cond+1], "=")) {
 		return
 	}
-	if j := skipSpace(ts, close+1); j == len(ts) || !isPunct(ts[j], "{") {
-		return
-	}
-	// The message follows the first ';' outside of brackets, e.g. not one in a lambda.
-	cond, semi = skipSpace(ts, open+1), -1
-	for j, depth := open+1, 0; j < close && semi < 0; j++ {
+	// The condition ends at the first ';' outside of brackets, e.g. not one in a lambda.
+	for j, depth := cond, 0; j < len(ts) && depth >= 0; j++ {
 		switch {
 		case isPunct(ts[j], "(") || isPunct(ts[j], "[") || isPunct(ts[j], "{"):
 			depth++
 		case isPunct(ts[j], ")") || isPunct(ts[j], "]") || isPunct(ts[j], "}"):
 			depth--
 		case depth == 0 && isPunct(ts[j], ";"):
-			semi = j
+			return cond, j, true
 		}
 	}
-	end := close
-	if semi >= 0 {
-		m := skipSpace(ts, semi+1)
-		if m == close || ts[m].Type != tokString || ts[m].Value[0] != '"' || skipSpace(ts, m+1) != close {
-			return
-		}
-		end = semi
-	}
-	return cond, semi, close, prevToken(ts, end) >= cond
+	return
 }
 
 // rpcTarget matches an RPC call at ts[i], `rpc x->f(` or `rpc(peer) x->f(`. It returns the peer's tokens (nil
