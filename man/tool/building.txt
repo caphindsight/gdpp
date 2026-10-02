@@ -103,7 +103,9 @@ So can documentation:
 --nodoc   don't (default with --ship)
 ```
 
-The task name of each build says what it builds, e.g. "Building res:// [my_game] for windows.x86_64, release, optimized, no docs...", and whether tracing or profiling is on. On a terminal, the values that differ from the defaults are highlighted.
+Compiler warnings are errors, so code that warns doesn't build. `--nowarn` disables them instead, e.g. while trying something out. This applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp. Changing it recompiles the package's sources, but not godot-cpp.
+
+The task name of each build says what it builds, e.g. "Building res:// [my_game] for windows.x86_64, release, optimized, no docs...", and whether warnings are disabled, and whether tracing or profiling is on. On a terminal, the values that differ from the defaults are highlighted.
 
 # Editor and runtime code
 

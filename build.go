@@ -35,13 +35,14 @@ var (
 
 // BuildOptions are the build options of the build command.
 type BuildOptions struct {
-	Opt   bool `arg:"--opt" help:"optimize for speed [default: with --ship]"`
-	Small bool `arg:"--small" help:"optimize for binary size"`
-	NoOpt bool `arg:"--noopt" help:"don't optimize [default: without --ship]"`
-	Ship  bool `arg:"--ship" help:"build for release instead of debugging"`
-	Jobs  int  `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
-	Doc   bool `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
-	NoDoc bool `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
+	Opt    bool `arg:"--opt" help:"optimize for speed [default: with --ship]"`
+	Small  bool `arg:"--small" help:"optimize for binary size"`
+	NoOpt  bool `arg:"--noopt" help:"don't optimize [default: without --ship]"`
+	Ship   bool `arg:"--ship" help:"build for release instead of debugging"`
+	Jobs   int  `arg:"-j,--jobs" placeholder:"N" help:"run this many compile jobs at once [default: one per CPU core but one]"`
+	Doc    bool `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
+	NoDoc  bool `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
+	NoWarn bool `arg:"--nowarn" help:"disable C++ warnings, which are errors by default, except in godot-cpp"`
 	DebugOptions
 }
 
@@ -141,6 +142,9 @@ func (o BuildOptions) sconsArgs(target string) []string {
 		args = append(args, "target=template_debug", "dev_build=yes", "use_hot_reload=yes")
 	}
 	args = append(args, "optimize="+o.optimize())
+	if o.NoWarn {
+		args = append(args, "--gdpp-nowarn")
+	}
 	if o.Jobs > 0 {
 		args = append(args, fmt.Sprintf("-j%d", o.Jobs))
 	}
@@ -186,6 +190,9 @@ func (o BuildOptions) describe(target string, gdpp bool) string {
 		opt = Styled(opt, Magenta)
 	}
 	desc += ", " + opt
+	if o.NoWarn {
+		desc += ", " + Styled("no warnings", Magenta)
+	}
 	if gdpp {
 		docs := map[bool]string{true: "with docs", false: "no docs"}[o.docs()]
 		if o.docs() != defaults.docs() {

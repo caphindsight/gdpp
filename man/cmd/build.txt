@@ -4,7 +4,7 @@ gd++ build: compile a package into a GDExtension library
 
 ```sh
 gd++ build [PATH] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
-           [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [-j N] [--clean]
+           [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [-j N] [--clean]
            [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 gd++ build --proj [options...]
 ```
@@ -53,6 +53,9 @@ PATH
 --nodoc
   Don't compile the documentation. Default with `--ship`.
 
+--nowarn
+  Disable C++ warnings: `-w`, or `/w` with MSVC. By default, warnings are errors: `-Werror`, or `/WX` with MSVC. Either way, this applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp.
+
 --trace GROUP...
   Compile in the `@trace` annotations of these groups, or with `all`, of all groups. An annotation is in the group named after its class, and in the groups that its arguments name. The groups `process` and `physics_process` also trace all `_process` and `_physics_process` functions, without annotations. Other `@trace` annotations generate nothing. See `gd++ man debugging`.
 
@@ -84,7 +87,7 @@ For each package and target, a task like:
 [•] Building res://gameplay for windows.x86_64, release, optimized, no docs.
 ```
 
-It names the package, the target, debug or release, and the optimization. For packages with GD++ files, it also says whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
+It names the package, the target, debug or release, the optimization, and whether warnings are disabled. For packages with GD++ files, it also says whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
 
 Files written into the package root:
 
@@ -138,6 +141,12 @@ Profile everything, in an optimized build, and print a table of timings every 10
 
 ```sh
 gd++ build --opt --profile all --print --fps 144
+```
+
+Build code that has warnings, e.g. while trying something out:
+
+```sh
+gd++ build --nowarn
 ```
 
 Start over after a strange build error:

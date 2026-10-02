@@ -261,6 +261,7 @@ func TestBuildSconsArgs(t *testing.T) {
 		{BuildOptions{NoOpt: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=none"}},
 		{BuildOptions{Small: true, Ship: true}, []string{"platform=linux", "arch=x86_64", "target=template_release", "lto=auto", "optimize=size"}},
 		{BuildOptions{Jobs: 8}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "-j8"}},
+		{BuildOptions{NoWarn: true}, []string{"platform=linux", "arch=x86_64", "target=template_debug", "dev_build=yes", "use_hot_reload=yes", "optimize=none", "--gdpp-nowarn"}},
 	}
 	for _, tc := range cases {
 		if got := tc.c.sconsArgs("linux.x86_64"); !reflect.DeepEqual(got, tc.want) {
@@ -285,6 +286,7 @@ func TestBuildDescribe(t *testing.T) {
 		{BuildOptions{Ship: true, Doc: true}, host, true, host + ", \x1b[35mrelease\x1b[0m, optimized, \x1b[35mwith docs\x1b[0m"},
 		{BuildOptions{Ship: true}, host, false, host + ", \x1b[35mrelease\x1b[0m, optimized"},
 		{BuildOptions{Opt: true}, host, false, host + ", debug, \x1b[35moptimized\x1b[0m"},
+		{BuildOptions{NoWarn: true}, host, true, host + ", debug, unoptimized, \x1b[35mno warnings\x1b[0m, with docs"},
 		{BuildOptions{Ship: true, NoOpt: true}, host, false, host + ", \x1b[35mrelease\x1b[0m, \x1b[35munoptimized\x1b[0m"},
 		{BuildOptions{Small: true}, "windows.arm64", false, "\x1b[35mwindows.arm64\x1b[0m, debug, \x1b[35msize-optimized\x1b[0m"},
 		{BuildOptions{DebugOptions: DebugOptions{Trace: []string{"combat", "ai"}, Profile: []string{"all"}}}, host, true, host + ", debug, unoptimized, with docs, \x1b[35mtrace combat ai\x1b[0m, \x1b[35mprofiling\x1b[0m"},

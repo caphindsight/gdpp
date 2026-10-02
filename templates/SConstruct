@@ -8,6 +8,8 @@ sys.dont_write_bytecode = True
 # With --gdpp-bindings, only godot-cpp's bindings are generated (not compiled), for GD++ to scan their headers.
 # An option, not a variable, so godot-cpp doesn't warn about an unknown variable.
 AddOption("--gdpp-bindings", dest="gdpp_bindings", action="store_true", help="only generate godot-cpp's bindings")
+# Warnings in the package's sources, but not in godot-cpp's, are errors, or with --gdpp-nowarn, disabled.
+AddOption("--gdpp-nowarn", dest="gdpp_nowarn", action="store_true", help="disable warnings")
 
 package_root = ".."
 project_root = {{printf "%q" .ProjectRoot}}
@@ -30,6 +32,10 @@ else:
     env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", {{printf "%q" .AsyncClass}})])
     # How long its tasks may still run after the game started quitting, from its quit_timeout setting.
     env.Append(CPPDEFINES=[("GDPP_QUIT_TIMEOUT_USEC", {{.QuitTimeout}})])
+    if GetOption("gdpp_nowarn"):
+        env.Append(CCFLAGS=["/w" if env.get("is_msvc", False) else "-w"])
+    else:
+        env.Append(CCFLAGS=["/WX" if env.get("is_msvc", False) else "-Werror"])
 {{- if .Color}}
     # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
     # the build signature, so it doesn't trigger rebuilds.
