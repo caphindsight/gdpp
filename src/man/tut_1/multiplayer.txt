@@ -16,6 +16,7 @@ enum PORT = 7777
 @export var spawner: MultiplayerSpawner
 
 func _ready() -> void {
+  assert spawner != nullptr;
   spawner->set_spawn_function(callable_mp(this, &This::create_player));
 }
 
@@ -36,11 +37,12 @@ func join(address: String) -> void {
 }
 
 func add_player(id: int) -> void {
+  assert spawner != nullptr;
   spawner->spawn(id);
 }
 ```
 
-Add the `MultiplayerSpawner` to the scene in the editor, set its spawn path, e.g. to a `Players` node, and pick it for the `spawner` property. Only the server calls `spawn`, with the new player's peer id. The spawner then calls the spawn function on every peer, with that id, and adds the node it returns. The server's id is always 1.
+Add the `MultiplayerSpawner` to the scene in the editor, set its spawn path, e.g. to a `Players` node, and pick it for the `spawner` property. If you forget, `spawner` is `nullptr`: in debug builds, the assertions print an error instead of crashing the game. See "Assertions" in `gd++ man rewrites`. Only the server calls `spawn`, with the new player's peer id. The spawner then calls the spawn function on every peer, with that id, and adds the node it returns. The server's id is always 1.
 
 # 2. Give each player to its peer
 
