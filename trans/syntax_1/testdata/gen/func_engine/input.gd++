@@ -8,7 +8,7 @@ func _ready() -> void {
   camera->set_current(true);
 }
 
-notif(PROCESS) {
+notif PROCESS {
   gd::print("before");
 }
 
@@ -21,7 +21,7 @@ func _process(dt: float) -> void {
   queue_redraw();
 }
 
-notif(PROCESS) {
+notif PROCESS {
   gd::print("after");
 }
 

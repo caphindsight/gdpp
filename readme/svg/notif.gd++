@@ -1,9 +1,9 @@
 signal vanishing
 
-notif(PREDELETE) {
+notif PREDELETE {
   emit vanishing();
 }
 
-notif(ENTER_TREE, EXIT_TREE) {
+notif ENTER_TREE, EXIT_TREE {
   gd::print(WHAT == NOTIFICATION_ENTER_TREE ? "Entered the tree." : "Left the tree.");
 }

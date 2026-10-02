@@ -401,9 +401,9 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 		}
 		return fmt.Sprintf("Expected \"{\" to start the %s block, but found %s.", p.Value, found), hint
 
-	case p.Type == tokIdent && p.Value == "notif" && !isPunct(u, "("):
-		return fmt.Sprintf("Expected \"(\" after \"notif\", but found %s.", found),
-			"List the notifications that the block handles, e.g. \"notif(READY) { ... }\"."
+	case p.Type == tokIdent && p.Value == "notif" && !isName && !isPunct(u, "("):
+		return fmt.Sprintf("Expected a notification name after \"notif\", but found %s.", found),
+			"List the notifications that the block handles, e.g. \"notif READY { ... }\"."
 
 	case p.Type == tokIdent && p.Value == "set" && !isPunct(u, "("):
 		return fmt.Sprintf("Expected \"(\" after \"set\", but found %s.", found),

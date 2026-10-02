@@ -80,13 +80,13 @@ The class's `_ready` runs right after them, also before `NOTIFICATION_READY`, so
 
 For a node created by a scene, Godot:
 
-1. creates the object: the constructor runs, with the initial values of variables, then `notif(POSTINITIALIZE)`,
+1. creates the object: the constructor runs, with the initial values of variables, then `notif POSTINITIALIZE`,
 2. sets the properties saved in the scene, i.e. the exported variables, through their setters,
 3. adds it to the scene tree: `_enter_tree` runs,
 4. once its children are ready: the `@onready` initial values are set, then the class's `_ready` runs, then a script's,
 5. every frame: `_process` and `_physics_process` run,
 6. removes it from the tree: `_exit_tree` runs,
-7. deletes it: `notif(PREDELETE)` runs, then the destructor.
+7. deletes it: `notif PREDELETE` runs, then the destructor.
 
 Note step 2: values from the scene overwrite the initial values, since they're set after the constructor runs.
 
@@ -103,16 +103,16 @@ With `@trace` on a class, in a build that turns it on, the constructor prints a 
 Godot tells an object about events with notifications, e.g. `NOTIFICATION_READY` or `NOTIFICATION_PREDELETE`. A `notif` block runs when the object gets one of the notifications it lists:
 
 ```gd++
-notif(PREDELETE) {
+notif PREDELETE {
   gd::print("About to be deleted.");
 }
 
-notif(ENTER_TREE, EXIT_TREE) {
+notif ENTER_TREE, EXIT_TREE {
   gd::print(WHAT == NOTIFICATION_ENTER_TREE ? "Entered the tree." : "Left the tree.");
 }
 ```
 
-Write the names without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. `Object`'s `POSTINITIALIZE` and `PREDELETE`, and `Node`'s `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `WHAT`, an `int`, is the notification that it's handling.
+The names can also go in parentheses, as in `notif(ENTER_TREE, EXIT_TREE) { ... }`. Write them without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. `Object`'s `POSTINITIALIZE` and `PREDELETE`, and `Node`'s `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `WHAT`, an `int`, is the notification that it's handling.
 
 A class can have any number of `notif` blocks, and a notification can be in more than one. When the object gets a notification, every block that lists it runs, in the order of the file. Each block runs on its own, so a `return` ends only that block.
 
@@ -128,7 +128,7 @@ GD++ generates the class's `_notification` method from its `notif` blocks, its e
 The engine functions, `_ready`, `_enter_tree`, `_exit_tree`, `_process`, `_physics_process` and `_draw`, are handlers of notifications too, written as functions: see `gd++ man functions`. In `_notification`, GD++ first sets the `@onready` variables, then runs `_ready`, and then the `notif` blocks and the other engine functions, in the order of the file:
 
 ```gd++
-notif(PROCESS) {
+notif PROCESS {
   gd::print("first");
 }
 
@@ -136,7 +136,7 @@ func _process(delta: float) -> void {
   gd::print("second");
 }
 
-notif(PROCESS) {
+notif PROCESS {
   gd::print("third");
 }
 ```

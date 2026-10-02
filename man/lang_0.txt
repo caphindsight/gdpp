@@ -88,7 +88,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Exports: `@export` and its family, to show variables in the inspector. See `gd++ man exports`.
 - Signals: `signal name(params)`, sent with `emit`. See `gd++ man signals`.
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
-- Object lifecycle: `ctor { }`, `dtor { }`, `@onready` and `notif(...) { }`. See `gd++ man lifecycle`.
+- Object lifecycle: `ctor { }`, `dtor { }`, `@onready` and `notif ... { }`. See `gd++ man lifecycle`.
 - Networking: `@rpc` functions, and `rpc` calls. See `gd++ man rpc`.
 - Threads: `@onthread` runs a function on a worker thread, and returns an `Async` task with its result. See `gd++ man async`.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.

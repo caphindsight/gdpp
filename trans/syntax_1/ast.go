@@ -36,7 +36,7 @@ type Member struct {
 // Notif is a notif block: Body runs when the object gets one of the notifications Names (without NOTIFICATION_).
 type Notif struct {
 	Pos   lexer.Position
-	Names []*NotifName `parser:"'notif' '(' @@ ( ',' @@ )* ','? ')'"`
+	Names []*NotifName `parser:"'notif' ( '(' @@ ( ',' @@ )* ','? ')' | @@ ( ',' @@ )* )"`
 	Body  *Block       `parser:"@@"`
 }
 

@@ -30,7 +30,7 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "as = x;", "as = x;"},
 		{"gd++", "call(string_name \"f\"); string_name = 1;", Styled("call", CodeFunction) + "(" + Styled("string_name", CodeKeyword) + " " +
 			Styled("\"f\"", CodeLiteral) + "); string_name = " + Styled("1", CodeLiteral) + ";"},
-		{"gd++", "notif(READY, PREDELETE) {}", Styled("notif", CodeKeyword) + "(READY, PREDELETE) {}"},
+		{"gd++", "notif READY, PREDELETE {}", Styled("notif", CodeKeyword) + " READY, PREDELETE {}"},
 		{"gd++", "var x: Node = $Hud/\"a b\" // c", Styled("var", CodeKeyword) + " x: " + Styled("Node", CodeType) + " = " +
 			Styled("$Hud/\"a b\"", CodeLiteral) + " " + Styled("// c", CodeComment)},
 		{"gd++", "x = %Health; y = a % b; y %= 2;", "x = " + Styled("%Health", CodeLiteral) + "; y = a % b; y %= " + Styled("2", CodeLiteral) + ";"},

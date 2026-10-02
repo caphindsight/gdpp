@@ -1,4 +1,4 @@
-errors/heads/notif_without_names.gd++:3:7: Expected "(" after "notif", but found "{".
+errors/heads/notif_without_names.gd++:3:7: Expected a notification name after "notif", but found "{".
  3 | notif {}
    |       ^
-Hint: List the notifications that the block handles, e.g. "notif(READY) { ... }".
+Hint: List the notifications that the block handles, e.g. "notif READY { ... }".

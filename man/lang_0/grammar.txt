@@ -40,7 +40,7 @@ Extern      = Doc? Annotation* 'extern' Ident '{' ( 'extends' Type )? Member* '}
 Member      = Code
             | 'ctor' Block
             | 'dtor' Block
-            | 'notif' '(' Ident ( ',' Ident )* ','? ')' Block
+            | 'notif' ( '(' Ident ( ',' Ident )* ','? ')' | Ident ( ',' Ident )* ) Block
             | Func
             | Signal
             | Var

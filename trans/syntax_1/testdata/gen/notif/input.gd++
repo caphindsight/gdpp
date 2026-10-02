@@ -2,10 +2,10 @@
 class_name Pool
 extends Node
 
-notif(POSTINITIALIZE, PREDELETE) {
+notif POSTINITIALIZE, PREDELETE {
   gd::print("lifecycle ", WHAT);
 }
 
-notif(PREDELETE) {
+notif PREDELETE {
   gd::print("deleted");
 }

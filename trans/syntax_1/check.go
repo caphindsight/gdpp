@@ -1656,7 +1656,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			for _, n := range member.Notif.Names {
 				if name, ok := strings.CutPrefix(n.Name, "NOTIFICATION_"); ok {
 					return nil, u.errorAt(n.Pos, len(n.Name), fmt.Sprintf("Write notification %s without NOTIFICATION_.", n.Name),
-						fmt.Sprintf("GD++ adds the prefix: \"notif(%s)\".", name))
+						fmt.Sprintf("GD++ adds the prefix: \"notif %s\".", name))
 				}
 			}
 			var conds []string
@@ -1666,7 +1666,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			m.notifs = append(m.notifs, &notifModel{cond: strings.Join(conds, " || "), body: member.Notif.Body})
 		case member.Func != nil && member.Func.Name == "_notification":
 			return nil, u.errorAt(member.Func.Pos, 4, "Classes can't declare _notification, since GD++ generates it.",
-				"Handle notifications with notif blocks, e.g. \"notif(READY) { ... }\".")
+				"Handle notifications with notif blocks, e.g. \"notif READY { ... }\".")
 		case member.Func != nil:
 			var f *funcModel
 			if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
