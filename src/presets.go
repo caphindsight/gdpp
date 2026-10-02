@@ -24,25 +24,31 @@ var presetExcludes = func() []string {
 var excludeFilterPattern = regexp.MustCompile(`^exclude_filter="((?:[^"\\]|\\.)*)"$`)
 
 // editExcludeFilter returns the comma-separated filter list value with GD++'s
-// filters appended if want, or removed otherwise. value is returned unchanged
-// if its filters are already right.
+// missing filters appended if want, or its filters cut out otherwise. Other
+// filters are kept as they are, and value is returned unchanged if its
+// filters are already right.
 func editExcludeFilter(value string, want bool) string {
-	var old, filters []string
-	for _, f := range strings.Split(value, ",") {
-		if f = strings.TrimSpace(f); f != "" {
-			old = append(old, f)
-			if !slices.Contains(presetExcludes, f) {
-				filters = append(filters, f)
-			}
+	isOurs := func(f string) bool { return slices.Contains(presetExcludes, strings.TrimSpace(f)) }
+	entries := strings.Split(value, ",")
+	if !want {
+		if kept := slices.DeleteFunc(slices.Clone(entries), isOurs); len(kept) < len(entries) {
+			return strings.TrimSpace(strings.Join(kept, ","))
 		}
-	}
-	if want {
-		filters = append(filters, presetExcludes...)
-	}
-	if slices.Equal(filters, old) {
 		return value
 	}
-	return strings.Join(filters, ", ")
+	var missing []string
+	for _, f := range presetExcludes {
+		if !slices.ContainsFunc(entries, func(e string) bool { return strings.TrimSpace(e) == f }) {
+			missing = append(missing, f)
+		}
+	}
+	if len(missing) == 0 {
+		return value
+	}
+	if value = strings.TrimRight(value, ", \t"); value != "" {
+		value += ", "
+	}
+	return value + strings.Join(missing, ", ")
 }
 
 // SyncExportPresets writes GD++'s exclude filters into every preset in the

@@ -33,12 +33,16 @@ func TestEditExcludeFilter(t *testing.T) {
 	}{
 		{"", true, all},
 		{"", false, ""},
-		{"*.txt,docs/*", true, "*.txt, docs/*, " + all},
-		{"*.txt,docs/*", false, "*.txt,docs/*"},                // unchanged, with its formatting
-		{"*.txt,  " + all + " ", true, "*.txt,  " + all + " "}, // unchanged, with its formatting
-		{"*.cpp, *.txt", true, "*.txt, " + all},
+		{"*.txt,docs/*", true, "*.txt,docs/*, " + all},
+		{"*.txt,docs/*, ", true, "*.txt,docs/*, " + all},
+		{"*.txt,docs/*", false, "*.txt,docs/*"},                                                                         // unchanged, with its formatting
+		{"*.txt,  " + all + " ", true, "*.txt,  " + all + " "},                                                          // unchanged, with its formatting
+		{presetExcludes[0] + ", *.txt", true, presetExcludes[0] + ", *.txt, " + strings.Join(presetExcludes[1:], ", ")}, // only the missing ones are appended
+		{all + ", *.txt", true, all + ", *.txt"},                                                                        // GD++'s filters stay where they are
 		{"*.txt, " + all, false, "*.txt"},
-		{"*.cpp,*.txt,, gd++pkg.toml", false, "*.txt"},
+		{"*.cpp, *.txt,docs/*", false, "*.txt,docs/*"},
+		{"*.txt,, *.cpp,  docs/* ", false, "*.txt,,  docs/*"}, // others keep their formatting
+		{"*.cpp,*.txt,, gd++pkg.toml", false, "*.txt,"},
 	}
 	for _, tc := range cases {
 		if got := editExcludeFilter(tc.value, tc.want); got != tc.out {
