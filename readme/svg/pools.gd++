@@ -2,14 +2,14 @@
 class_name Bullet
 extends Area3D
 
-var speed: float = 20.0
+@recycle var speed: float = 20.0
 
 ctor {
   gd::print("Created.");
 }
 
 @recycle ctor {
-  speed = 20.0;
+  gd::print("Reused.");
 }
 
 @recycle dtor {

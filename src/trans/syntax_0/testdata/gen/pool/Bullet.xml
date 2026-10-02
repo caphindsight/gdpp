@@ -14,7 +14,13 @@
 		</method>
 	</methods>
 	<members>
+		<member name="age" type="float" setter="set_age" getter="get_age">
+		</member>
+		<member name="hits" type="int" setter="set_hits" getter="get_hits">
+		</member>
 		<member name="speed" type="float" setter="set_speed" getter="get_speed">
+		</member>
+		<member name="target" type="Vector3" setter="set_target" getter="get_target">
 		</member>
 	</members>
 </class>

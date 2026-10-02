@@ -49,7 +49,7 @@ A declaration's doc comment can come before its annotations or between them, but
 # ctor and dtor blocks
 
 @recycle
-  In a `@pool` class, a `@recycle ctor` runs when the pool reuses an object, and a `@recycle dtor` runs when the pool keeps one. The plain `ctor` and `dtor` run only when an object is actually created or deleted. See `gd++ man pools`.
+  In a `@pool` class, a `@recycle ctor` runs when the pool reuses an object, and a `@recycle dtor` runs when the pool keeps one. For `@recycle` on variables, see "Variables of classes" below. The plain `ctor` and `dtor` run only when an object is actually created or deleted. See `gd++ man pools`.
 
 # Functions of classes
 
@@ -115,6 +115,9 @@ See `gd++ man externs`.
 
 @onready
   Assign the initial value right before `_ready`, instead of in the constructor. Only in classes that extend `Node`. See `gd++ man lifecycle`.
+
+@recycle
+  In a `@pool` class: reset the variable to its initial value, or to its type's default without one, each time the pool reuses an object. Can't be used with `@onready`. See "Resetting variables" in `gd++ man pools`.
 
 @export
   Show the variable in the inspector, and save it.

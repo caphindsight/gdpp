@@ -13,6 +13,9 @@ class Bullet : public Node3D {
 
 public:
 	double speed{};
+	double age{};
+	int64_t hits{};
+	Vector3 target{};
 
 public:
 	Bullet();
@@ -24,6 +27,12 @@ public:
 	void fire();
 	double get_speed() const;
 	void set_speed(double p_value);
+	double get_age() const;
+	void set_age(double p_value);
+	int64_t get_hits() const;
+	void set_hits(int64_t p_value);
+	Vector3 get_target() const;
+	void set_target(const Vector3 &p_value);
 
 protected:
 	static void _bind_methods();

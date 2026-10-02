@@ -1,0 +1,5 @@
+@pool
+class_name A
+extends Node
+
+@onready @recycle var x: int = 1

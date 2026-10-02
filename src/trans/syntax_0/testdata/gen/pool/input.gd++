@@ -4,6 +4,11 @@ class_name Bullet
 extends Node3D
 
 var speed: float = 20.0
+@recycle var age: float = 0.0
+@recycle var hits: int
+@recycle var target: Vector3 = {
+  return Vector3(0, 0, -1);
+}
 
 ctor {
   gd::print("created");

@@ -5,14 +5,14 @@
   <text x="16" y="50"><tspan fill="#e3b341">class_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Bullet</tspan></text>
   <text x="16" y="70"><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Area3D</tspan></text>
   <text x="16" y="90"></text>
-  <text x="16" y="110"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> speed: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">20.0</tspan></text>
+  <text x="16" y="110"><tspan fill="#79c0ff">@recycle</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> speed: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">20.0</tspan></text>
   <text x="16" y="130"></text>
   <text x="16" y="150"><tspan fill="#e3b341">ctor</tspan><tspan fill="#e6edf3"> {</tspan></text>
   <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">::</tspan><tspan fill="#56d4dd">print</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Created."</tspan><tspan fill="#e6edf3">);</tspan></text>
   <text x="16" y="190"><tspan fill="#e6edf3">}</tspan></text>
   <text x="16" y="210"></text>
   <text x="16" y="230"><tspan fill="#79c0ff">@recycle</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">ctor</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="250"><tspan fill="#e6edf3">  speed = </tspan><tspan fill="#d2a8ff">20.0</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">::</tspan><tspan fill="#56d4dd">print</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Reused."</tspan><tspan fill="#e6edf3">);</tspan></text>
   <text x="16" y="270"><tspan fill="#e6edf3">}</tspan></text>
   <text x="16" y="290"></text>
   <text x="16" y="310"><tspan fill="#79c0ff">@recycle</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">dtor</tspan><tspan fill="#e6edf3"> {</tspan></text>

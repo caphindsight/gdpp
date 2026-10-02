@@ -112,16 +112,14 @@ Nothing else changes: `create` and `destroy` already handle pools. Now `destroy`
 
 Run the game again, and fire a few times: the bullets of later shots disappear right away, or don't hit anything. That's because a reused bullet keeps its variables: `age` is still past its `lifetime`, and `active` is still `false`. Variables get their initial values only when an object is actually created, not when it's reused.
 
-A `@recycle ctor` runs each time the pool reuses an object. Reset the bullet there:
+Mark them with `@recycle`, which resets a variable to its initial value each time the pool reuses an object:
 
 ```gd++
-@recycle ctor {
-  age = 0.0;
-  active = true;
-}
+@recycle var age: float = 0.0
+@recycle var active: bool = true
 ```
 
-The plain `ctor` and `dtor` still run only when a bullet is actually created or deleted. A `@recycle dtor` runs when a bullet is returned to the pool, e.g. to stop a sound or a particle effect. See "Two kinds of ctor and dtor" in `gd++ man pools`.
+The exported variables don't need it: nothing changes them while a bullet flies, so a reused bullet still has the values from its scene. See "Resetting variables" in `gd++ man pools`.
 
 To see the pool at work, print a line in the plain `ctor`:
 

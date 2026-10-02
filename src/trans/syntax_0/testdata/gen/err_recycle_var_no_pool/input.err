@@ -1,0 +1,4 @@
+input.gd++:4:1: A @recycle var only works in a @pool class, whose objects are reused.
+ 4 | @recycle var x: int = 1
+   | ^^^^^^^^
+Hint: Add @pool to class A, or remove @recycle.

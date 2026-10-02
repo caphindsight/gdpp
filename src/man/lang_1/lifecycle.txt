@@ -145,7 +145,7 @@ Use the engine functions for their notifications, and `notif` blocks for every o
 
 # Pools
 
-A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run when an object is taken from the pool or returned to it. See `gd++ man pools`.
+A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run when an object is taken from the pool or returned to it. Its `@recycle` variables get their initial values again when an object is reused. See `gd++ man pools`.
 
 # See also
 

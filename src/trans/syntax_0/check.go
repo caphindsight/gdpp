@@ -114,12 +114,13 @@ type varModel struct {
 	v                *Var
 	t                *gtype
 	onready          bool
-	trace            bool   // Whether its @trace, or its class's, is on: the class's funcs print its changes.
-	profile          bool   // Whether its @profile, or its class's, is on: it profiles its getter and setter.
-	gameOnly         bool   // Whether its @game_only, or its class's, guards its getter and setter against running in the editor.
-	usage            string // A PROPERTY_USAGE_* expression.
-	hint, hintString string // A PROPERTY_HINT_* name, and the hint string (not quoted).
-	getter, setter   string // Empty if there is none.
+	recycle          *Annotation // Its @recycle, which resets it when its class's pool reuses an object, or nil.
+	trace            bool        // Whether its @trace, or its class's, is on: the class's funcs print its changes.
+	profile          bool        // Whether its @profile, or its class's, is on: it profiles its getter and setter.
+	gameOnly         bool        // Whether its @game_only, or its class's, guards its getter and setter against running in the editor.
+	usage            string      // A PROPERTY_USAGE_* expression.
+	hint, hintString string      // A PROPERTY_HINT_* name, and the hint string (not quoted).
+	getter, setter   string      // Empty if there is none.
 	get              *Block
 	set              *Setter
 	decls            []*Block
@@ -1001,7 +1002,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}, {"static", "deferred"}, {"virtual", "deferred"},
 		{"override", "deferred"}, {"static", "thread_safe"}, {"virtual", "thread_safe"}, {"override", "thread_safe"},
 		{"deferred", "thread_safe"}, {"virtual", "onthread"}, {"override", "onthread"}, {"rpc", "onthread"},
-		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}} {
+		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}, {"onready", "recycle"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -1395,7 +1396,7 @@ func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage", "game_only", "profile", "trace"}, sectionAnnotations...)
+		"export_multiline", "export_placeholder", "export_range", "export_storage", "game_only", "profile", "recycle", "trace"}, sectionAnnotations...)
 	kind := "a var"
 	if ext {
 		allowed, kind = []string{"profile"}, "an extern var"
@@ -1404,7 +1405,7 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &varModel{v: v, onready: a["onready"] != nil, gameOnly: a["game_only"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
+	m := &varModel{v: v, onready: a["onready"] != nil, recycle: a["recycle"], gameOnly: a["game_only"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
 	}
@@ -1442,6 +1443,10 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 				return nil, err
 			}
 		}
+	}
+	if r := m.recycle; r != nil && v.Property != nil && v.Init == nil {
+		return nil, u.errorAt(r.Pos, len(r.Name)+1, fmt.Sprintf("A @recycle var needs an initial value, which property %s doesn't have.", v.Name),
+			"Give it one, e.g. \"= 0\", or reset it in a @recycle ctor.")
 	}
 	if v.Property == nil {
 		m.getter, m.setter = "get_"+v.Name, "set_"+v.Name
@@ -1824,7 +1829,11 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			}
 		case member.Var != nil:
 			var v *varModel
-			if v, err = u.buildVar(member.Var, c.Name, false); err == nil {
+			if v, err = u.buildVar(member.Var, c.Name, false); err == nil && v.recycle != nil && m.pool == nil {
+				err = u.errorAt(v.recycle.Pos, len(v.recycle.Name)+1, "A @recycle var only works in a @pool class, whose objects are reused.",
+					fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
+			}
+			if err == nil {
 				v.trace = v.trace || m.trace
 				v.profile = v.profile || m.profile && v.v.Property != nil
 				v.gameOnly = v.gameOnly || m.gameOnly

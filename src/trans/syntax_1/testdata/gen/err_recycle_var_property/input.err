@@ -1,0 +1,4 @@
+input.gd++:5:1: A @recycle var needs an initial value, which property x doesn't have.
+ 5 | @recycle var x: int {
+   | ^^^^^^^^
+Hint: Give it one, e.g. "= 0", or reset it in a @recycle ctor.

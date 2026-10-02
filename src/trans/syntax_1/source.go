@@ -150,24 +150,35 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 // initializers writes the assignments of the initial values of the class's vars: the @onready ones, or the others.
 func (u *unit) initializers(w *writer, c *classModel, onready bool, indent string) {
 	for _, v := range c.vars {
-		init := v.v.Init
-		if init == nil || v.onready != onready {
-			continue
-		}
-		if init.Block != nil {
-			w.block(init.Block, fmt.Sprintf("%s%s = [&]() -> %s {", indent, v.v.Name, v.t.cpp), "}();", assertValue)
-		} else {
-			w.user(init.Pos, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
+		if v.v.Init != nil && v.onready == onready {
+			initializer(w, v, indent)
 		}
 	}
 }
 
+// initializer writes the assignment of var v's initial value, or of its type's default if it has none.
+func initializer(w *writer, v *varModel, indent string) {
+	switch init := v.v.Init; {
+	case init == nil:
+		w.ln("%s%s = {};", indent, v.v.Name)
+	case init.Block != nil:
+		w.block(init.Block, fmt.Sprintf("%s%s = [&]() -> %s {", indent, v.v.Name, v.t.cpp), "}();", assertValue)
+	default:
+		w.user(init.Pos, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
+	}
+}
+
 // recycler writes the method of @pool class c that its pool calls when it reuses an object, for the keyword ctor, or
-// keeps one, for dtor: it runs body, the @recycle block, if any.
+// keeps one, for dtor: it runs body, the @recycle block, if any, after resetting the @recycle vars for ctor.
 func recycler(w *writer, c *classModel, keyword string, body *Block) {
 	w.ln("")
 	w.ln("void %s::_gdpp_recycle_%s() {", c.name, keyword)
 	guard(w, c.gameOnly, "")
+	for _, v := range c.vars {
+		if v.recycle != nil && keyword == "ctor" {
+			initializer(w, v, "\t")
+		}
+	}
 	if body != nil {
 		w.block(body, "\t{", "}", assertVoid)
 	}

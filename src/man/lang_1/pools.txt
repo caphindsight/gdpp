@@ -9,7 +9,7 @@ A game that creates and deletes many nodes of the same class, e.g. bullets, spen
 class_name Bullet
 extends Area3D
 
-var speed: float = 20.0
+@recycle var speed: float = 20.0
 
 ctor {
   gd::print("A bullet was created.");
@@ -20,7 +20,7 @@ dtor {
 }
 
 @recycle ctor {
-  speed = 20.0;
+  gd::print("A bullet was reused.");
 }
 
 @recycle dtor {
@@ -41,7 +41,7 @@ func _on_hit(bullet: Bullet) -> void {
 }
 ```
 
-`destroy` returns the bullet to the pool: it runs the `@recycle dtor`, removes the node from its parent, and keeps it in the pool. `create` takes a bullet from the pool if there is one, and runs its `@recycle ctor`. Otherwise, it creates a new bullet. A reused node also gets ready again: the next time it enters the tree, its `@onready` values are set and `_ready` runs, just like for a new node.
+`destroy` returns the bullet to the pool: it runs the `@recycle dtor`, removes the node from its parent, and keeps it in the pool. `create` takes a bullet from the pool if there is one, resets its `@recycle` variables, and runs its `@recycle ctor`. Otherwise, it creates a new bullet. A reused node also gets ready again: the next time it enters the tree, its `@onready` values are set and `_ready` runs, just like for a new node.
 
 # Two kinds of ctor and dtor
 
@@ -50,7 +50,19 @@ A `@pool` class can have two kinds of constructors and destructors, at most one 
 - `ctor` and `dtor` run only when an object is actually created or deleted, like in any other class. Variables get their initial values only then, together with `ctor`.
 - `@recycle ctor` runs when the pool reuses an object instead of creating a new one, and `@recycle dtor` runs when the pool keeps an object instead of deleting it.
 
-So a bullet that's created, returned to the pool, reused and finally deleted runs `ctor`, `@recycle dtor`, `@recycle ctor` and `dtor`, in that order. Put expensive setup that a reused object can keep in `ctor`, and reset everything that a reused object must not keep in `@recycle ctor`, e.g. variables like `speed` above. Only `@pool` classes can have `@recycle` blocks.
+So a bullet that's created, returned to the pool, reused and finally deleted runs `ctor`, `@recycle dtor`, `@recycle ctor` and `dtor`, in that order. Put expensive setup that a reused object can keep in `ctor`, and reset everything that a reused object must not keep in `@recycle ctor`, or with `@recycle` variables. Only `@pool` classes can have `@recycle` blocks.
+
+# Resetting variables
+
+Variables get their initial values only when an object is actually created, so a reused object keeps the values it had. `@recycle` on a variable resets it each time the pool reuses an object:
+
+```gd++
+@recycle var speed: float = 20.0    // back to 20.0
+@recycle var hits: int              // back to 0, the type's default
+var mesh: Mesh = make_mesh()        // kept: made only once
+```
+
+A `@recycle` variable gets its initial value again, or its type's default if it has none, in the order of the declarations, right before the `@recycle ctor` runs. A property needs an initial value, since it has no storage of its own to reset. `@recycle` can't be used with `@onready`: a reused node gets ready again anyway, which sets its `@onready` values. Only `@pool` classes can have `@recycle` variables.
 
 # Out of the tree
 

@@ -12,57 +12,83 @@ void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_speed"), &Bullet::get_speed);
 	ClassDB::bind_method(D_METHOD("set_speed", "value"), &Bullet::set_speed);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("speed", PROPERTY_USAGE_NONE), "set_speed", "get_speed");
+	ClassDB::bind_method(D_METHOD("get_age"), &Bullet::get_age);
+	ClassDB::bind_method(D_METHOD("set_age", "value"), &Bullet::set_age);
+	ClassDB::add_property(get_class_static(), gdpp::info<double>("age", PROPERTY_USAGE_NONE), "set_age", "get_age");
+	ClassDB::bind_method(D_METHOD("get_hits"), &Bullet::get_hits);
+	ClassDB::bind_method(D_METHOD("set_hits", "value"), &Bullet::set_hits);
+	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("hits", PROPERTY_USAGE_NONE), "set_hits", "get_hits");
+	ClassDB::bind_method(D_METHOD("get_target"), &Bullet::get_target);
+	ClassDB::bind_method(D_METHOD("set_target", "value"), &Bullet::set_target);
+	ClassDB::add_property(get_class_static(), gdpp::info<Vector3>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
 }
 
 Bullet::Bullet() {
 	gdpp::trace_lifetime("Bullet", this, true);
 #line 6 "input.gd++"
 	speed = 20.0;
-#line 22 "Bullet.cpp"
-#line 8 "input.gd++"
+#line 31 "Bullet.cpp"
+#line 7 "input.gd++"
+	age = 0.0;
+#line 34 "Bullet.cpp"
+#line 9 "input.gd++"
+	target = [&]() -> Vector3 {
+  return Vector3(0, 0, -1);
+}();
+#line 39 "Bullet.cpp"
+#line 13 "input.gd++"
 	{
   gd::print("created");
 }
-#line 27 "Bullet.cpp"
+#line 44 "Bullet.cpp"
 }
 
 Bullet::~Bullet() {
 	gdpp::trace_lifetime("Bullet", this, false);
-#line 12 "input.gd++"
+#line 17 "input.gd++"
 	{
   gd::print("deleted");
 }
-#line 36 "Bullet.cpp"
+#line 53 "Bullet.cpp"
 	if (_gdpp_pool_slot.owned) {
 		_gdpp_pool.forget(this);
 	}
 }
 
 void Bullet::_gdpp_recycle_ctor() {
-#line 16 "input.gd++"
+#line 7 "input.gd++"
+	age = 0.0;
+#line 62 "Bullet.cpp"
+	hits = {};
+#line 9 "input.gd++"
+	target = [&]() -> Vector3 {
+  return Vector3(0, 0, -1);
+}();
+#line 68 "Bullet.cpp"
+#line 21 "input.gd++"
 	{
   speed = 20.0;
 }
-#line 47 "Bullet.cpp"
+#line 73 "Bullet.cpp"
 }
 
 void Bullet::_gdpp_recycle_dtor() {
-#line 21 "input.gd++"
+#line 26 "input.gd++"
 	{
   gd::print("kept");
 }
-#line 55 "Bullet.cpp"
+#line 81 "Bullet.cpp"
 }
 
 void Bullet::fire() {
 	gdpp::Trace _gdpp_trace("Bullet", this, "fire");
-	gdpp::Watch _gdpp_watch(this, "fire", "speed", [&] { return speed; });
-#line 25 "input.gd++"
+	gdpp::Watch _gdpp_watch(this, "fire", "speed", [&] { return speed; }, "age", [&] { return age; }, "hits", [&] { return hits; }, "target", [&] { return target; });
+#line 30 "input.gd++"
 
   auto other = gdpp::create<Bullet>();
   gdpp::destroy(other);
 
-#line 66 "Bullet.cpp"
+#line 92 "Bullet.cpp"
 }
 
 double Bullet::get_speed() const {
@@ -70,8 +96,35 @@ double Bullet::get_speed() const {
 }
 
 void Bullet::set_speed(double p_value) {
-	gdpp::Watch _gdpp_watch(this, "set_speed", "speed", [&] { return speed; });
+	gdpp::Watch _gdpp_watch(this, "set_speed", "speed", [&] { return speed; }, "age", [&] { return age; }, "hits", [&] { return hits; }, "target", [&] { return target; });
 	speed = p_value;
+}
+
+double Bullet::get_age() const {
+	return age;
+}
+
+void Bullet::set_age(double p_value) {
+	gdpp::Watch _gdpp_watch(this, "set_age", "speed", [&] { return speed; }, "age", [&] { return age; }, "hits", [&] { return hits; }, "target", [&] { return target; });
+	age = p_value;
+}
+
+int64_t Bullet::get_hits() const {
+	return hits;
+}
+
+void Bullet::set_hits(int64_t p_value) {
+	gdpp::Watch _gdpp_watch(this, "set_hits", "speed", [&] { return speed; }, "age", [&] { return age; }, "hits", [&] { return hits; }, "target", [&] { return target; });
+	hits = p_value;
+}
+
+Vector3 Bullet::get_target() const {
+	return target;
+}
+
+void Bullet::set_target(const Vector3 &p_value) {
+	gdpp::Watch _gdpp_watch(this, "set_target", "speed", [&] { return speed; }, "age", [&] { return age; }, "hits", [&] { return hits; }, "target", [&] { return target; });
+	target = p_value;
 }
 
 #undef This

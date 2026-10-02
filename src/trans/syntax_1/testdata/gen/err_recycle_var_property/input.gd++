@@ -1,0 +1,12 @@
+@pool
+class_name A
+extends Node
+
+@recycle var x: int {
+  decl {
+    int64_t x_ = 0;
+  }
+  get {
+    return x_;
+  }
+}
