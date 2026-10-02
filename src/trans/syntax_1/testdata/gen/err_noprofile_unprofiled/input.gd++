@@ -1,0 +1,6 @@
+@trace
+class_name A
+extends Node
+
+@noprofile
+var x: int

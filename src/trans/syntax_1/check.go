@@ -90,6 +90,7 @@ type funcModel struct {
 	deferral                           string     // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
 	hidden                             string     // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
 	trace, profile                     bool       // Whether its @trace or @profile, or its class's, is on.
+	notrace, noprofile                 bool       // Whether it has @notrace or @noprofile, which leave it out of its class's.
 	gameOnly                           bool       // Whether its @game_only, or its class's, guards it against running in the editor.
 	rpc                                *rpcModel  // Nil without @rpc.
 	// The class whose GDVIRTUAL lets scripts override the function: its own for @virtual, a base's for an
@@ -114,6 +115,8 @@ type varModel struct {
 	v                *Var
 	t                *gtype
 	onready          bool
+	notrace          bool        // Whether it has @notrace, which leaves it out of its class's @trace.
+	noprofile        bool        // Whether it has @noprofile, which leaves it out of its class's @profile.
 	recycle          *Annotation // Its @recycle, which resets it when its class's pool reuses an object, or nil.
 	trace            bool        // Whether its @trace, or its class's, is on: the class's funcs print its changes.
 	profile          bool        // Whether its @profile, or its class's, is on: it profiles its getter and setter.
@@ -134,9 +137,10 @@ type section struct {
 }
 
 type signalModel struct {
-	s      *Signal
-	params []*gtype
-	trace  bool // Whether its @trace, or its class's, is on: emitting it prints it.
+	s       *Signal
+	params  []*gtype
+	trace   bool // Whether its @trace, or its class's, is on: emitting it prints it.
+	notrace bool // Whether it has @notrace, which leaves it out of its class's @trace.
 }
 
 func (u *unit) errorAt(pos lexer.Position, n int, msg, hint string) *Error {
@@ -971,7 +975,7 @@ func cppString(s string) string {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "noprofile", "notrace", "onready",
 	"onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -1033,9 +1037,10 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "game_only", "onthread", "override", "profile", "rpc", "static", "thread_safe", "trace", "virtual"}
+	allowed := []string{"const", "deferred", "game_only", "noprofile", "notrace", "onthread", "override", "profile", "rpc", "static", "thread_safe",
+		"trace", "virtual"}
 	if ext {
-		allowed = []string{"const", "deferred", "profile", "rpc", "thread_safe", "trace"}
+		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "thread_safe", "trace"}
 	}
 	kind := "a func"
 	if ext {
@@ -1086,6 +1091,7 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	if m.profile, err = u.debugOn(a["profile"], owner); err != nil {
 		return nil, err
 	}
+	m.notrace, m.noprofile = a["notrace"] != nil, a["noprofile"] != nil
 	for _, name := range []string{"deferred", "thread_safe", "onthread"} {
 		if a[name] != nil {
 			m.deferral = name
@@ -1163,8 +1169,8 @@ var engineFuncs = map[string]struct{ notif, delta, base string }{
 func (u *unit) checkEngine(f *funcModel) error {
 	name := f.f.Name
 	for _, a := range f.f.Annotations {
-		if a.Name != "" && a.Name != "trace" && a.Name != "profile" && a.Name != "game_only" {
-			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take @trace, @profile and @game_only.", name),
+		if a.Name != "" && !slices.Contains([]string{"trace", "profile", "notrace", "noprofile", "game_only"}, a.Name) {
+			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take @trace, @profile, @notrace, @noprofile and @game_only.", name),
 				"Only a plain override, with @override(\"engine\"), takes others.")
 		}
 	}
@@ -1282,6 +1288,28 @@ func (u *unit) sceneOf(a *Annotation, owner string) (string, error) {
 	return path, err
 }
 
+// checkNoDebug returns an error for a @notrace or @noprofile of member, a func, var or signal of owner, e.g. "class
+// Player", if owner has no @trace or @profile to leave member out of. trace and profile tell whether it has them.
+func (u *unit) checkNoDebug(member *Member, owner string, trace, profile bool) error {
+	var list []*Annotation
+	switch {
+	case member.Func != nil:
+		list = member.Func.Annotations
+	case member.Var != nil:
+		list = member.Var.Annotations
+	case member.Signal != nil:
+		list = member.Signal.Annotations
+	}
+	for _, a := range list {
+		if a.Name == "notrace" && !trace || a.Name == "noprofile" && !profile {
+			debug := strings.TrimPrefix(a.Name, "no")
+			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s has no effect: %s has no @%s.", a.Name, owner, debug),
+				fmt.Sprintf("Remove @%s, or add @%s to %s.", a.Name, debug, owner))
+		}
+	}
+	return nil
+}
+
 // poolOf returns the pool that a, the @pool annotation of the class named owner, declares, or nil without one.
 func (u *unit) poolOf(a *Annotation, owner string) (*poolModel, error) {
 	if a == nil {
@@ -1372,11 +1400,11 @@ func (u *unit) rpcConfig(a *Annotation, ext bool) (*rpcModel, error) {
 
 // buildSignal checks s, a signal of the class or extern named owner.
 func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
-	a, err := u.annotations(s.Annotations, "a signal", "trace")
+	a, err := u.annotations(s.Annotations, "a signal", "notrace", "trace")
 	if err != nil {
 		return nil, err
 	}
-	m := &signalModel{s: s}
+	m := &signalModel{s: s, notrace: a["notrace"] != nil}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
 	}
@@ -1396,16 +1424,17 @@ func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage", "game_only", "profile", "recycle", "trace"}, sectionAnnotations...)
+		"export_multiline", "export_placeholder", "export_range", "export_storage", "game_only", "noprofile", "notrace", "profile", "recycle", "trace"},
+		sectionAnnotations...)
 	kind := "a var"
 	if ext {
-		allowed, kind = []string{"profile"}, "an extern var"
+		allowed, kind = []string{"noprofile", "profile"}, "an extern var"
 	}
 	a, err := u.annotations(v.Annotations, kind, allowed...)
 	if err != nil {
 		return nil, err
 	}
-	m := &varModel{v: v, onready: a["onready"] != nil, recycle: a["recycle"], gameOnly: a["game_only"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
+	m := &varModel{v: v, onready: a["onready"] != nil, recycle: a["recycle"], notrace: a["notrace"] != nil, noprofile: a["noprofile"] != nil, gameOnly: a["game_only"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
 	}
@@ -1637,27 +1666,30 @@ func (u *unit) buildExterns() error {
 		}
 		names := map[string]bool{}
 		for _, member := range e.Members {
+			if err := u.checkNoDebug(member, "extern "+e.Name, a["trace"] != nil, a["profile"] != nil); err != nil {
+				return err
+			}
 			var err error
 			switch {
 			case member.Func != nil:
 				var f *funcModel
 				if f, err = u.buildFunc(member.Func, e.Name, true); err == nil {
-					f.trace = f.trace || m.trace
-					f.profile = f.profile || m.profile && f.deferral == ""
+					f.trace = f.trace || m.trace && !f.notrace
+					f.profile = f.profile || m.profile && !f.noprofile && f.deferral == ""
 					m.funcs = append(m.funcs, f)
 					err = u.unique(names, f.f.Pos, "func", f.f.Name)
 				}
 			case member.Var != nil:
 				var v *varModel
 				if v, err = u.buildVar(member.Var, e.Name, true); err == nil {
-					v.profile = v.profile || m.profile
+					v.profile = v.profile || m.profile && !v.noprofile
 					m.vars = append(m.vars, v)
 					err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
 				}
 			case member.Signal != nil:
 				var sig *signalModel
 				if sig, err = u.buildSignal(member.Signal, e.Name); err == nil {
-					sig.trace = sig.trace || m.trace
+					sig.trace = sig.trace || m.trace && !sig.notrace
 					m.signals = append(m.signals, sig)
 					err = u.unique(names, sig.s.Pos, "signal", sig.s.Name)
 				}
@@ -1744,6 +1776,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	names := map[string]bool{}
 	var declared []*symbol // Enums declared in the class.
 	for _, member := range c.Members {
+		if err := u.checkNoDebug(member, "class "+c.Name, a["trace"] != nil, a["profile"] != nil); err != nil {
+			return nil, err
+		}
 		var err error
 		switch {
 		case member.Code != nil:
@@ -1824,7 +1859,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				}
 				// The body does the work, so it's what @trace and @profile follow.
 				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static,
-					hidden: f.deferral, trace: f.trace || m.trace, profile: f.profile || m.profile, gameOnly: f.gameOnly})
+					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, gameOnly: f.gameOnly})
 				f.trace, f.profile = false, false
 				if f.deferral == "onthread" {
 					f.ret = u.async(f.ret) // Callers get an Async of the body's result.
@@ -1838,8 +1873,8 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 					fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
 			}
 			if err == nil {
-				v.trace = v.trace || m.trace
-				v.profile = v.profile || m.profile && v.v.Property != nil
+				v.trace = v.trace || m.trace && !v.notrace
+				v.profile = v.profile || m.profile && !v.noprofile && v.v.Property != nil
 				v.gameOnly = v.gameOnly || m.gameOnly
 				m.vars = append(m.vars, v)
 				err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
@@ -1857,7 +1892,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		case member.Signal != nil:
 			var sig *signalModel
 			if sig, err = u.buildSignal(member.Signal, c.Name); err == nil {
-				sig.trace = sig.trace || m.trace
+				sig.trace = sig.trace || m.trace && !sig.notrace
 				m.signals = append(m.signals, sig)
 				err = u.unique(names, sig.s.Pos, "signal", sig.s.Name)
 			}
@@ -1884,8 +1919,8 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		if f.deferral == "" {
 			name := strings.TrimPrefix(f.f.Name, "_gdpp_body_")
 			perFrame := (f.override || f.hidden == "notif") && processing[name] != ""
-			f.trace = f.trace || m.trace && !perFrame || perFrame && slices.Contains(u.opts.Trace, name[1:])
-			f.profile = f.profile || m.profile || perFrame && slices.Contains(u.opts.Profile, name[1:])
+			f.trace = f.trace || !f.notrace && (m.trace && !perFrame || perFrame && slices.Contains(u.opts.Trace, name[1:]))
+			f.profile = f.profile || !f.noprofile && (m.profile || perFrame && slices.Contains(u.opts.Profile, name[1:]))
 		}
 	}
 	// The enums the class exposes: those in its API, those it imports, and those declared in it (or, for the

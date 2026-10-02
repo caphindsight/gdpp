@@ -147,6 +147,8 @@ The channel must be the last argument of @rpc.
 Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").
 Annotation @profile can't be used on a signal.
 Annotations @virtual and @onthread can't be used together.
+Annotation @notrace has no effect: class Player has no @trace.
+  Remove @notrace, or add @trace to class Player.
 Function _open is already @virtual in Gate.
   Use @override to override it.
 The @virtual function knock must have a name that starts with "_", e.g. _knock.
@@ -155,7 +157,7 @@ Annotation @override("final") only works on overrides of a GD++ @virtual functio
 The engine function _ready doesn't need @override.
   Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
 Annotation @override("engine") only works on engine functions, e.g. _ready.
-The engine function _ready can only take @trace and @profile.
+The engine function _ready can only take @trace, @profile, @notrace, @noprofile and @game_only.
   Only a plain override, with @override("engine"), takes others.
 The engine function _process must be declared as "func _process(delta: float) -> void".
 The @onthread function f already returns an Async: write -> int.

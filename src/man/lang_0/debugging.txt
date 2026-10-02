@@ -229,6 +229,17 @@ extends Node3D
 
 Creation and destruction lines name the object by its instance id: a node has no name yet when it's created, and can't be asked for it any more while it's destroyed. Match them to the other lines with the id, or with the frame numbers. A "created" line without a "freed" line, once the object should be gone, points to a leak.
 
+For a `@pool` class, the pool's reuse of an object and its return to the pool get lines too, marked `↻`:
+
+```out
+[f40] + Bullet#3001 created
+[f95] ↻ Bullet#3001 returned to its pool
+[f96] ↻ Bullet#3001 reused
+[f150] ↻ Bullet#3001 returned to its pool
+```
+
+They come right before the `@recycle dtor` and the `@recycle ctor` run. An object waiting in its pool is still alive, so it has no "freed" line until the pool deletes it, e.g. when the game quits. See `gd++ man pools`.
+
 A class's `@trace` leaves out `_process` and `_physics_process`, since they run every frame and would bury everything else. They still check the traced variables. To trace them anyway, put `@trace` on them too:
 
 ```gd++
@@ -245,6 +256,36 @@ func _physics_process(delta: float) -> void { ... }
 - On a class, it times all its functions, and the getters and setters of its properties with get and set blocks.
 
 The timings show in the editor's monitors, and with `--print`, in a table printed every few seconds.
+
+# Leaving members out: @notrace and @noprofile
+
+A class's `@trace` or `@profile` covers all of its members. To leave one out, e.g. a small function that's called all the time, mark it `@notrace` or `@noprofile`:
+
+```gd++
+@trace("combat")
+@profile
+class_name Player
+extends CharacterBody3D
+
+@notrace
+func distance_to_target() -> float { ... }      // never in the class's trace
+
+@noprofile
+var stamina: float { ... }                      // its getter and setter aren't timed
+
+@notrace @trace("frame")
+func update_aim() -> void { ... }               // traced with --trace frame, not --trace combat
+```
+
+`@notrace` works on functions, variables and signals:
+
+- On a function, it leaves the function out of every group that its class's `@trace` puts it in: the class's own group, e.g. `Player`, the groups that the class's `@trace` names, e.g. `combat`, and `all`. It also leaves it out of the groups `process` and `physics_process`, which otherwise trace every `_process` and `_physics_process` function. The function still reports changes to the traced variables that it makes.
+- On a variable, it stops the class's `@trace` from watching it, so its changes aren't printed.
+- On a signal, it stops the class's `@trace` from printing its emissions.
+
+`@noprofile` does the same for `@profile`, on functions and variables: a function isn't timed, and a property's getter and setter aren't timed. Signals aren't profiled, so they don't take it.
+
+A member's own `@trace` or `@profile` still applies, so `@notrace @trace("frame")` moves a function from the class's groups to the group `frame`. Like any `@trace`, the member's own annotation is also in the class's own group and in `all`, so `--trace Player` and `--trace all` still turn it on. `@notrace` needs a `@trace` on the member's class or extern, and `@noprofile` a `@profile`: without one, there's nothing to leave the member out of, so it's an error. The class only needs the annotation, not a build that turns it on.
 
 # Externs
 

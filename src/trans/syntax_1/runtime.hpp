@@ -1506,6 +1506,13 @@ inline void trace_lifetime(const char *p_class, const Object *p_self, bool p_cre
 	debug_print(String(p_created ? "+ " : "- ") + p_class + "#" + String::num_uint64(p_self->get_instance_id()) + (p_created ? " created" : " freed"));
 }
 
+// trace_recycle prints the reuse of an object of a @trace @pool class by its pool, or its return to the pool, like
+// trace_lifetime.
+inline void trace_recycle(const char *p_class, const Object *p_self, bool p_reused) {
+	Untimed untimed;
+	debug_print(String(U"↻ ") + p_class + "#" + String::num_uint64(p_self->get_instance_id()) + (p_reused ? " reused" : " returned to its pool"));
+}
+
 // trace_emit prints the emission of a signal of a @trace class. p_args alternate the names and values of its arguments.
 template <typename... Args>
 void trace_emit(const Object *p_self, const char *p_signal, const Args &...p_args) {

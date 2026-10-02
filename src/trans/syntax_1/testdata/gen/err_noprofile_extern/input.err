@@ -1,0 +1,4 @@
+input.gd++:5:1: Annotation @noprofile has no effect: extern Lobby has no @profile.
+ 5 | @noprofile
+   | ^^^^^^^^^^
+Hint: Remove @noprofile, or add @profile to extern Lobby.

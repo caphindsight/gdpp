@@ -1,0 +1,6 @@
+@trace
+extern_name Lobby
+extends Node
+
+@noprofile
+func join() -> void

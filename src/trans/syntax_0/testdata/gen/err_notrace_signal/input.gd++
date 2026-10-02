@@ -1,0 +1,6 @@
+@profile
+class_name A
+extends Node
+
+@notrace
+signal hit()

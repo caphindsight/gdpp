@@ -1,0 +1,44 @@
+@trace
+@profile
+class_name Turnstile
+extends Node
+
+var opened: int = 0
+
+signal passed(by: Node)
+
+@notrace
+signal ticked()
+
+@notrace
+var ticks: int = 0
+
+@noprofile
+var cost: int {
+  decl {
+    int64_t cost_ = 0;
+  }
+  get {
+    return cost_;
+  }
+}
+
+func open() -> void {
+
+}
+
+@notrace
+func tick() -> void {
+}
+
+@noprofile
+func cheap() -> void {
+}
+
+@notrace @trace("hot")
+func moved() -> void {
+}
+
+@notrace @noprofile
+func _process(delta: float) -> void {
+}

@@ -56,28 +56,30 @@ Bullet::~Bullet() {
 }
 
 void Bullet::_gdpp_recycle_ctor() {
+	gdpp::trace_recycle("Bullet", this, true);
 #line 7 "input.gd++"
 	age = 0.0;
-#line 62 "Bullet.cpp"
+#line 63 "Bullet.cpp"
 	hits = {};
 #line 9 "input.gd++"
 	target = [&]() -> Vector3 {
   return Vector3(0, 0, -1);
 }();
-#line 68 "Bullet.cpp"
+#line 69 "Bullet.cpp"
 #line 21 "input.gd++"
 	{
   speed = 20.0;
 }
-#line 73 "Bullet.cpp"
+#line 74 "Bullet.cpp"
 }
 
 void Bullet::_gdpp_recycle_dtor() {
+	gdpp::trace_recycle("Bullet", this, false);
 #line 26 "input.gd++"
 	{
   gd::print("kept");
 }
-#line 81 "Bullet.cpp"
+#line 83 "Bullet.cpp"
 }
 
 void Bullet::fire() {
@@ -88,7 +90,7 @@ void Bullet::fire() {
   auto other = gdpp::create<Bullet>();
   gdpp::destroy(other);
 
-#line 92 "Bullet.cpp"
+#line 94 "Bullet.cpp"
 }
 
 double Bullet::get_speed() const {

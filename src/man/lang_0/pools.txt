@@ -140,6 +140,10 @@ A reused object keeps its children, so reusing it doesn't touch the scene. If th
 
 When the library is unloaded, e.g. when the game quits, the pool deletes the objects it's holding, which runs their `dtor`.
 
+# Tracing
+
+With `@trace` on a `@pool` class, in a build that turns it on, the trace shows when the pool reuses an object, and when the object is returned to the pool, e.g. `↻ Bullet#3001 reused` and `↻ Bullet#3001 returned to its pool`, besides the usual "created" and "freed" lines. See `gd++ man debugging`.
+
 # In the generated code
 
 A `@pool` class gets a few members, which the runtime's `create` and `destroy` use: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Its destructor tells the pool when an object is deleted for good. See `gd++ man generated` and `gd++ man runtime`.

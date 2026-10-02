@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Turnstile" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cheap">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="moved">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="open">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="tick">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cost" type="int" setter="" getter="get_cost">
+		</member>
+		<member name="opened" type="int" setter="set_opened" getter="get_opened">
+		</member>
+		<member name="ticks" type="int" setter="set_ticks" getter="get_ticks">
+		</member>
+	</members>
+	<signals>
+		<signal name="passed">
+			<param index="0" name="by" type="Node" />
+			<description>
+			</description>
+		</signal>
+		<signal name="ticked">
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -96,7 +96,7 @@ In the editor, Godot doesn't create objects of classes without `@tool`: it creat
 
 # Tracing objects' lives
 
-With `@trace` on a class, in a build that turns it on, the constructor prints a line when an object is created, and the destructor when it's freed, e.g. `+ Bullet#28347 created` and `- Bullet#28347 freed`. They name the object by its instance id, since a node has no name yet in its constructor. An id without a "freed" line, once the object should be gone, points to a leak. For a `@pool` class, the lines only show objects that are actually created and deleted: an object waiting in its pool is still alive. See `gd++ man debugging`.
+With `@trace` on a class, in a build that turns it on, the constructor prints a line when an object is created, and the destructor when it's freed, e.g. `+ Bullet#28347 created` and `- Bullet#28347 freed`. They name the object by its instance id, since a node has no name yet in its constructor. An id without a "freed" line, once the object should be gone, points to a leak. For a `@pool` class, "created" and "freed" lines only show objects that are actually created and deleted: an object waiting in its pool is still alive. Its reuse and its return to the pool get lines of their own, marked `↻`. See `gd++ man debugging`.
 
 # Notifications
 

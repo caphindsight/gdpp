@@ -1,0 +1,4 @@
+input.gd++:5:1: Annotation @notrace has no effect: class A has no @trace.
+ 5 | @notrace
+   | ^^^^^^^^
+Hint: Remove @notrace, or add @trace to class A.

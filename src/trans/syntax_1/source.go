@@ -174,6 +174,9 @@ func recycler(w *writer, c *classModel, keyword string, body *Block) {
 	w.ln("")
 	w.ln("void %s::_gdpp_recycle_%s() {", c.name, keyword)
 	guard(w, c.gameOnly, "")
+	if c.trace {
+		w.ln("\tgdpp::trace_recycle(%q, this, %t);", c.name, keyword == "ctor")
+	}
 	for _, v := range c.vars {
 		if v.recycle != nil && keyword == "ctor" {
 			initializer(w, v, "\t")
