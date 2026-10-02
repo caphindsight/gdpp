@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"gd++/trans/meta"
 )
@@ -36,10 +37,17 @@ func Generate(filename, src string, opts meta.Options) ([]meta.File, error) {
 	var files []meta.File
 	for _, s := range u.sortedSymbols() {
 		d := u.only(s)
-		files = append(files, meta.File{Name: s.name + ".h", Text: d.header(s.name)})
-		if s.class != nil {
-			files = append(files, meta.File{Name: s.name + ".cpp", Text: d.source(s.name)})
+		if s.class == nil {
+			files = append(files, meta.File{Name: s.name + ".h", Text: d.header(s.name)})
+			continue
 		}
+		header, source := d.header(s.name), d.source(s.name)
+		// With --trace, a class with assertions prints them as trace lines, so its header turns tracing on.
+		if len(opts.Trace) > 0 && strings.Contains(header+source, assertAny) {
+			d.tracing = true
+			header = d.header(s.name)
+		}
+		files = append(files, meta.File{Name: s.name + ".h", Text: header}, meta.File{Name: s.name + ".cpp", Text: source})
 	}
 	return files, nil
 }

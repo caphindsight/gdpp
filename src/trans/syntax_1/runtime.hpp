@@ -293,10 +293,9 @@ void memdelete_ext(ExtPtr<T> p_object) {
 template <typename T>
 void memdelete_ext(ExtRef<T> p_object) = delete;
 
-// assert_message is the error printed by a failed assertion.
-inline String assert_message(const char *p_condition, const char *p_file, int p_line) {
-	return vformat("Failed GD++ assertion: `%s`, at %s:%d.\nThis is undefined behavior and must be fixed.",
-			p_condition, p_file, p_line);
+// assert_message is the error printed by a failed assertion. It has no location, since Godot shows that below it.
+inline String assert_message(const char *p_condition) {
+	return vformat("Failed GD++ assertion: `%s`.", p_condition);
 }
 
 // returns_void reports whether p_signature, a function's GDPP_SIGNATURE, has the return type void, or none, like a
@@ -729,11 +728,13 @@ using gdpp::ExtRef;
 // the function, with T() in one that returns a T. It tells the two apart by GDPP_SIGNATURE, and without one, doesn't
 // return. GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE do the same in code where GD++ knows the function's return type.
 // The error has no function name, since that of generated code, e.g. `_gdpp_body__ready` or a lambda's, would
-// confuse. Release builds don't evaluate the condition.
+// confuse. With GDPP_TRACING, the error is also a trace line, see below. Release builds don't evaluate the condition.
+#define GDPP_TRACE_ASSERT(m_text) ((void)0)
 #ifdef DEBUG_ENABLED
 #define GDPP_ASSERT_(m_text, m_exit, ...) \
 	if (!(__VA_ARGS__)) { \
-		::godot::_err_print_error("", __FILE__, __LINE__, gdpp::assert_message(m_text, __FILE__, __LINE__)); \
+		::godot::_err_print_error("", __FILE__, __LINE__, gdpp::assert_message(m_text)); \
+		GDPP_TRACE_ASSERT(m_text); \
 		m_exit; \
 	} else \
 		((void)0)
@@ -895,9 +896,10 @@ struct VariantCaster<gdpp::Async<T>> {
 #endif // GDPP_SYNTAX_1_HPP
 
 // The code that @trace and @profile generate, with gd++ build --trace or --profile. Only files that use it define
-// GDPP_DEBUGGING, so the others don't include its headers. It has its own guard, so the header of an extern with
-// debugging on gets it even if the runtime was included before without it.
-#if defined(GDPP_DEBUGGING) && !defined(GDPP_SYNTAX_1_DEBUGGING)
+// GDPP_DEBUGGING, so the others don't include its headers. With --trace, the headers of classes with assertions
+// define GDPP_TRACING, which also gets it, for failed assertions. It has its own guard, so the header of an extern
+// with debugging on gets it even if the runtime was included before without it.
+#if (defined(GDPP_DEBUGGING) || defined(GDPP_TRACING)) && !defined(GDPP_SYNTAX_1_DEBUGGING)
 #define GDPP_SYNTAX_1_DEBUGGING
 
 #include <algorithm>
@@ -1103,6 +1105,12 @@ void trace_emit(ViaExtern, const Object *p_self, const char *p_signal, const Arg
 	String line = String(U"⚡ extern ") + describe(p_self) + " emits " + p_signal + "(";
 	add_args(line, p_args...);
 	debug_print(line + ")");
+}
+
+// trace_assert prints a failed assertion as a trace line, with its location, which trace lines have nowhere else.
+inline void trace_assert(const char *p_condition, const char *p_file, int p_line) {
+	Untimed untimed;
+	debug_print(String(U"[color=red]✖ ") + escaped(vformat("Failed GD++ assertion: `%s`, at %s:%d.", p_condition, p_file, p_line)) + "[/color]");
 }
 
 // Watch prints the changes to the @trace vars of a class during a call of one of its functions.
@@ -1401,3 +1409,11 @@ inline ProfileStats::ProfileStats(const char *p_name, int64_t p_print_seconds, i
 } // namespace gdpp
 
 #endif // GDPP_SYNTAX_1_DEBUGGING
+
+// With GDPP_TRACING, failed assertions also print a trace line. It has its own guard, so a class's header gets it even
+// if the runtime and its debugging code were included before without it.
+#if defined(GDPP_TRACING) && !defined(GDPP_SYNTAX_1_TRACING)
+#define GDPP_SYNTAX_1_TRACING
+#undef GDPP_TRACE_ASSERT
+#define GDPP_TRACE_ASSERT(m_text) gdpp::trace_assert(m_text, __FILE__, __LINE__)
+#endif

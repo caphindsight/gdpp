@@ -1,0 +1,13 @@
+class_name Asserted
+extends Node
+
+var target: Node3D
+
+func aim() -> void {
+  assert target != nullptr;
+  target->look_at(Vector3());
+}
+
+class Plain {
+  func run() -> void {}
+}

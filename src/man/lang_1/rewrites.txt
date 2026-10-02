@@ -56,12 +56,13 @@ func fire() -> void {
 }
 ```
 
-In debug builds, if the condition is false, the assertion prints an error and returns from the function. A function that returns a value returns the type's default, e.g. `0`, `nullptr` or an empty `String`. The error shows the condition and where the assertion is in the GD++ file, and a second line says what a failed assertion means:
+In debug builds, if the condition is false, the assertion prints an error and returns from the function. A function that returns a value returns the type's default, e.g. `0`, `nullptr` or an empty `String`. The error shows the condition, and Godot shows where the assertion is in the GD++ file below it:
 
 ```
-Failed GD++ assertion: `target != nullptr`, at player.gd++:2.
-This is undefined behavior and must be fixed.
+Failed GD++ assertion: `target != nullptr`.
 ```
+
+With `gd++ build --trace`, the error is also a trace line, with the place, so it shows among the calls that led to it. See "Failed assertions" in `gd++ man debugging`.
 
 A failed assertion is always undefined behavior, in debug builds too. GD++ tries hard to keep the game from crashing and to let it go on sensibly, so you can find the bug and fix it. But the code around the assertion was written for a true condition: the function stops halfway, and its caller gets a default value it may not expect. So nothing that happens after a failed assertion is promised.
 

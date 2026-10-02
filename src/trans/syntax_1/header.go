@@ -19,6 +19,9 @@ func (u *unit) header(name string) string {
 	if slices.ContainsFunc(u.externs, (*externModel).debugging) {
 		w.ln("#define GDPP_DEBUGGING")
 	}
+	if u.tracing {
+		w.ln("#define GDPP_TRACING")
+	}
 	w.ln("#include <%s>", RuntimeHeaderName)
 	// Other GD++ headers may include this one in turn, and #pragma once cuts such a cycle short. So their classes,
 	// externs and enums are forward-declared, and included at the end, unless they must be complete.

@@ -24,6 +24,7 @@ type unit struct {
 	enums   []*symbol          // Enum types declared in the file.
 	classes []*classModel      // Bases first.
 	externs []*externModel
+	tracing bool // Whether the unit's header defines GDPP_TRACING, so that failed assertions print trace lines.
 }
 
 type classModel struct {

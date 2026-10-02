@@ -194,6 +194,18 @@ signal died(cause: DeathCause)
 
 Only emissions with `emit` show, since GD++ traces them in the signal's emit function. Code that calls `emit_signal(string_name "died")` by name, and GDScript that emits the signal, bypass it. See `gd++ man signals`.
 
+# Failed assertions
+
+With `--trace`, a failed `assert` also prints a trace line, in red, with the condition and its place in the GD++ file, since trace lines don't show where Godot's errors come from:
+
+```out
+[f1204] ▶ Player "Hero".aim()
+[f1204]   ✖ Failed GD++ assertion: `target != nullptr`, at player.gd++:2.
+[f1204] ◀ Player "Hero".aim  12.4 µs
+```
+
+This works in every class with assertions, with any groups, even where no annotation is on. See `gd++ man rewrites`.
+
 # @trace on classes
 
 `@trace` on a class works like `@trace` on all its functions, variables and signals, and also prints the creation and destruction of its objects:
@@ -454,7 +466,7 @@ bool Player::take_damage(int64_t amount) {
 - A traced signal's emit function calls `gdpp::trace_emit`, and the constructor and destructor of a traced class call `gdpp::trace_lifetime`.
 - The wrappers of externs use the same, with `gdpp::via_extern` for their traces, and names that start with "extern" for their profiles.
 
-A source file or an extern's header that uses any of these defines `GDPP_DEBUGGING` before its includes, which makes the runtime header include what they need. See `gd++ man runtime` and `gd++ man generated`.
+A source file or an extern's header that uses any of these defines `GDPP_DEBUGGING` before its includes, which makes the runtime header include what they need. With `--trace`, the headers of classes with assertions also define `GDPP_TRACING`, for failed assertions. See `gd++ man runtime` and `gd++ man generated`.
 
 # See also
 

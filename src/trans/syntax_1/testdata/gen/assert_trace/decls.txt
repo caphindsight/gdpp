@@ -1,0 +1,2 @@
+{Name:Asserted Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:Plain Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
