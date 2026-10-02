@@ -1,4 +1,4 @@
-The runtime header: gd, float64_t, gd_assert, externs, tracing and other helpers
+The runtime header: gd, float64_t, guards, externs, tracing and other helpers
 
 Every file that GD++ generates includes one header, the GD++ runtime: `gd++/syntax_1.hpp`, for syntax 1. It holds the helpers that generated code needs, and a few that your C++ code can use. It doesn't depend on your code: it's the same for every package. To read it:
 
@@ -31,12 +31,12 @@ gdpp::cast<T>(VALUE)
 Node3D *node = scene->instantiate() as Node3D *;
 ```
 
-gd_assert(CONDITION) and gd_assert(CONDITION, MESSAGE)
-  Like GDScript's `assert`: if CONDITION is false, it prints an error, "Assertion failed: CONDITION - MESSAGE.", and goes on. In release builds, it does nothing, and doesn't evaluate CONDITION. It's a macro, since C's `assert` is one already.
+GDPP_GUARD(TEXT, MESSAGE, CONDITION)
+  What a guard becomes: `guard (CONDITION; "MESSAGE") { ... }` checks CONDITION in debug builds, and if it's false, prints an error and runs the block. Release builds don't evaluate CONDITION, and never run the block. Your code writes it `guard`, which GD++ rewrites into this macro. See `gd++ man rewrites`.
 
 ```gd++
-gd_assert(health >= 0);
-gd_assert(target != nullptr, "The target must be set before calling fire().");
+guard (health >= 0) { health = 0; }
+guard (target != nullptr; "The target must be set before calling fire().") { return; }
 ```
 
 memnew_ext(T) and memdelete_ext(OBJECT)

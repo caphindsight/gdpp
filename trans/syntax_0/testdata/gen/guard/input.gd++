@@ -1,0 +1,13 @@
+class_name Guarded
+extends Node
+
+var target: Node3D
+
+func fire(count: int) -> int {
+  guard (target != nullptr; "Set the target before firing.") {
+    return 0;
+  }
+  guard (count > 0 &&
+      count < 10) { return -1; }
+  return count;
+}

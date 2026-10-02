@@ -46,6 +46,7 @@ func (w *writer) String() string {
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
 //   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`,
+//   - `guard (x; "m") {` and `guard (x) {` become `GDPP_GUARD("x", "m", x) {` and `GDPP_GUARD("x", "", x) {`,
 //   - a `,` before `)` is dropped, so calls may end with a trailing comma.
 func cpp(code string) string {
 	lex, err := gdppLexer.LexString("", code)
@@ -88,6 +89,28 @@ func cpp(code string) string {
 				i = j
 				continue
 			}
+		}
+		if cond, semi, close, ok := guardTarget(ts, i); ok {
+			// Drop the '(', the message and the spaces around them, keeping their newlines so the lines still match.
+			msg, end := `""`, close
+			if semi >= 0 {
+				msg, end = ts[skipSpace(ts, semi+1)].Value, prevToken(ts, semi)+1
+			}
+			for k := i + 1; k < close; k++ {
+				if k < cond || k >= end {
+					out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
+				}
+			}
+			var sb strings.Builder
+			for _, t := range ts[cond:end] {
+				if !isComment(t) {
+					sb.WriteString(t.Value)
+				}
+			}
+			text := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(strings.Join(strings.Fields(sb.String()), " "))
+			out[i] = `GDPP_GUARD("` + text + `", ` + msg + ", "
+			i = cond - 1 // The condition may hold more rewrites.
+			continue
 		}
 		if ts[i].Type == tokIdent && asyncWords[ts[i].Value] {
 			j := skipSpace(ts, i+1)
@@ -306,6 +329,45 @@ func closing(ts []lexer.Token, open int) int {
 		}
 	}
 	return len(ts)
+}
+
+// guardTarget matches a guard at ts[i], `guard (cond; "message") {` or `guard (cond) {`. It returns the index where
+// cond starts, the index of the ';' (-1 without a message) and the index of the ')'.
+func guardTarget(ts []lexer.Token, i int) (cond, semi, close int, ok bool) {
+	if ts[i].Type != tokIdent || ts[i].Value != "guard" || isMember(ts, i) {
+		return
+	}
+	open := skipSpace(ts, i+1)
+	if open == len(ts) || !isPunct(ts[open], "(") {
+		return
+	}
+	if close = closing(ts, open); close == len(ts) {
+		return
+	}
+	if j := skipSpace(ts, close+1); j == len(ts) || !isPunct(ts[j], "{") {
+		return
+	}
+	// The message follows the first ';' outside of brackets, e.g. not one in a lambda.
+	cond, semi = skipSpace(ts, open+1), -1
+	for j, depth := open+1, 0; j < close && semi < 0; j++ {
+		switch {
+		case isPunct(ts[j], "(") || isPunct(ts[j], "[") || isPunct(ts[j], "{"):
+			depth++
+		case isPunct(ts[j], ")") || isPunct(ts[j], "]") || isPunct(ts[j], "}"):
+			depth--
+		case depth == 0 && isPunct(ts[j], ";"):
+			semi = j
+		}
+	}
+	end := close
+	if semi >= 0 {
+		m := skipSpace(ts, semi+1)
+		if m == close || ts[m].Type != tokString || ts[m].Value[0] != '"' || skipSpace(ts, m+1) != close {
+			return
+		}
+		end = semi
+	}
+	return cond, semi, close, prevToken(ts, end) >= cond
 }
 
 // rpcTarget matches an RPC call at ts[i], `rpc x->f(` or `rpc(peer) x->f(`. It returns the peer's tokens (nil

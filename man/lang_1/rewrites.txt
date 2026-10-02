@@ -1,4 +1,4 @@
-Rewrites: emit, rpc, is_cancelled, string_name, is_done, claim, cancel and as, GD++'s words in C++ code
+Rewrites: emit, rpc, is_cancelled, string_name, is_done, claim, cancel, as and guard, GD++'s words in C++ code
 
 C++ code in a GD++ file is plain C++, with a handful of exceptions: words that GD++ adds to C++, and rewrites into plain C++ before the compiler sees the code. This page lists them, says why they exist, and where they apply.
 
@@ -16,11 +16,13 @@ is_done TASK                   TASK.is_done()                     test whether a
 claim TASK                     TASK.claim()                       take an Async's result
 cancel TASK                    TASK.cancel()                      ask an Async's task to stop
 VALUE as T                     gdpp::cast<T>(VALUE)               convert a value to the type T, see `gd++ man cast`
+guard (COND; "MSG") {...}      GDPP_GUARD(..., COND) {...}        check what must be true, see below
+guard (COND) {...}             GDPP_GUARD(..., COND) {...}        the same, without a message
 ```
 
 # Why
 
-They are rare on purpose, and mostly trivial: most just call a method. What they add is the look. Sending a signal, calling a remote function, and polling or stopping a task look different from a plain function call, `is_cancelled` reads like a flag, `string_name "NAME"` reads like a typed literal, and a conversion reads like GDScript's. So these places stand out when you read the code. The method calls work too, e.g. `task.is_done()`, if you prefer them.
+They are rare on purpose, and mostly trivial: most just call a method. What they add is the look. Sending a signal, calling a remote function, and polling or stopping a task look different from a plain function call, `is_cancelled` reads like a flag, `string_name "NAME"` reads like a typed literal, and a conversion reads like GDScript's. So these places stand out when you read the code. `guard` does more: it drops a check and its block from release builds, which plain C++ can only do with `#ifdef`. The method calls work too, e.g. `task.is_done()`, if you prefer them.
 
 # Where they apply
 
@@ -32,6 +34,7 @@ Rewrites only happen in C++ code, never in comments or strings. Each word applie
 - `string_name` is only rewritten when a string literal follows it, e.g. `string_name "update"`. Elsewhere it's left alone, e.g. a variable named `string_name`.
 - `is_done`, `claim` and `cancel` are only rewritten when a name follows them. Elsewhere they're left alone, e.g. a variable named `claim`, or the call `task.is_done()`.
 - `as` is only rewritten when a value comes before it and a type after it.
+- `guard` is only rewritten when a condition in parentheses and then a block in braces follow it, and the message after the `;`, if any, is a string literal. Elsewhere it's left alone, e.g. in `std::lock_guard<std::mutex> guard(mutex);`.
 
 Avoid all these words as names in your C++ code. Their operands:
 
@@ -43,6 +46,32 @@ A rewrite keeps the code's line breaks, so the line numbers in errors still matc
 
 `gd++ cat` and the code in this manual highlight these words as keywords: `is_done`, `claim`, `cancel` and `as` only where a name follows them, and `string_name` only where a string follows it.
 
+# Guards
+
+A guard checks something that must always be true, and says what to do if it isn't:
+
+```gd++
+func fire() -> void {
+  guard (target != nullptr; "Set the target before firing.") {
+    return;
+  }
+  look_at(target->get_global_position());
+}
+```
+
+In debug builds, if the condition is false, the guard prints an error and runs its block, here `return;`, so the game goes on instead of crashing. The error starts with the message, then shows the condition and where the guard is in the GD++ file, and a second line says what a failed guard means:
+
+```
+Set the target before firing. - Failed GD++ guard: target != nullptr, at player.gd++:2.
+Failed GD++ guards are undefined behavior and must be fixed.
+```
+
+The message is optional: `guard (target != nullptr) { return; }` prints the same error without it, starting at "Failed GD++ guard".
+
+A failed guard is always a bug. Its block only lets the game go on, so you can find the bug and fix it. In release builds, guards are gone: the condition isn't evaluated, and the block never runs. So the condition must not do anything that the code needs, e.g. call a function for its effect. The block must still compile, though.
+
+GD++ turns a guard into a call of the runtime's `GDPP_GUARD` macro, which gets the condition's text and the message too, e.g. `GDPP_GUARD("target != nullptr", "Set the target before firing.", target != nullptr) { return; }`.
+
 # Trailing commas
 
 In C++ code, a call's arguments may end with a comma, like in GDScript: `f(a, b,)` becomes `f(a, b)`. This helps when each argument is on its own line. GD++ drops any `,` right before `)`, so avoid macro calls with an empty last argument, e.g. `M(a,)`.
@@ -53,6 +82,7 @@ In C++ code, a call's arguments may end with a comma, like in GDScript: `f(a, b,
 
 ```gd++
 func poll() -> void {
+  guard (score >= 0) { return; }
   if (is_done pending && !is_cancelled) {
     emit found(claim pending, score as int32_t);
   }
@@ -65,6 +95,7 @@ becomes, apart from the `#line` directives:
 
 ```cpp
 void Pathfinder::poll() {
+  GDPP_GUARD("score >= 0", "", score >= 0) { return; }
   if (pending.is_done() && !gdpp::is_cancelled()) {
     (void) found(pending.claim(), gdpp::cast<int32_t>(score));
   }

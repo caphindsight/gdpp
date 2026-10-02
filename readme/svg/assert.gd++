@@ -1,4 +1,4 @@
 func fire() -> void {
-  gd_assert(target != nullptr, "Set the target before firing.");
+  guard (target != nullptr; "Set the target before firing.") { return; }
   look_at(target->get_global_position());
 }

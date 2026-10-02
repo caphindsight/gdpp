@@ -293,13 +293,11 @@ void memdelete_ext(ExtPtr<T> p_object) {
 template <typename T>
 void memdelete_ext(ExtRef<T> p_object) = delete;
 
-// assert_message is the error printed by a failed gd_assert.
-inline String assert_message(const char *p_condition, const String &p_message = "") {
-	String result = String("Assertion failed: ") + p_condition;
-	if (!p_message.is_empty()) {
-		result += " - " + p_message;
-	}
-	return result + ".";
+// guard_message is the error printed by a failed guard.
+inline String guard_message(const char *p_condition, const String &p_message, const char *p_file, int p_line) {
+	String failed = vformat("Failed GD++ guard: %s, at %s:%d.\nFailed GD++ guards are undefined behavior and must be fixed.",
+			p_condition, p_file, p_line);
+	return p_message.is_empty() ? failed : vformat("%s - %s", p_message, failed);
 }
 
 // GDPP_ASYNC_CLASS is the name of the package's class of tasks, e.g. FooAsync: its prefix and Async. The package
@@ -673,18 +671,13 @@ using gdpp::Ext;
 using gdpp::ExtPtr;
 using gdpp::ExtRef;
 
-// gd_assert(condition) and gd_assert(condition, "message") mirror GDScript's assert: a failed condition prints an error.
-// Like in GDScript, release builds skip the check and don't evaluate the condition. C's assert is a macro, so gd::assert
-// can't be a function.
+// GDPP_GUARD is what `guard (condition; "message") { ... }` becomes: in debug builds, a failed condition prints an
+// error and runs the block; release builds don't evaluate the condition, and the block never runs.
 #ifdef DEBUG_ENABLED
-#define gd_assert(m_condition, ...) \
-	do { \
-		if (!(m_condition)) { \
-			ERR_PRINT(gdpp::assert_message(#m_condition, ##__VA_ARGS__)); \
-		} \
-	} while (0)
+#define GDPP_GUARD(m_text, m_message, ...) \
+	if (!(__VA_ARGS__) && (ERR_PRINT(gdpp::guard_message(m_text, m_message, __FILE__, __LINE__)), true))
 #else
-#define gd_assert(m_condition, ...) ((void)0)
+#define GDPP_GUARD(m_text, m_message, ...) if constexpr (false)
 #endif
 
 // memnew_ext(MyExtern) and memdelete_ext(ptr) mirror memnew and memdelete for externs.
