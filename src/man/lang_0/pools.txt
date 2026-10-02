@@ -83,7 +83,7 @@ func _on_body_entered(body: Node3D) -> void {
 }
 ```
 
-Returning an object twice is fine: destroying a bullet that's already back in its pool does nothing, so a bullet that hits two enemies in the same frame can destroy itself twice. Objects that don't belong to a pool are different: destroying one that's already deleted is a bug, like deleting it twice in C++. `queue_destroy` is safe for those too, though: it does nothing if the node is gone by the end of the frame. See `gd++ man classes`.
+Returning an object twice is fine: destroying a bullet that's already back in its pool does nothing, so a bullet that hits two enemies in the same frame can destroy itself twice. Objects that don't belong to a pool are different: destroying one that's already deleted is a bug, like deleting it twice in C++. `queue_destroy` is safe for those too, though: for them it's `queue_free()`, which does nothing if the node is gone by the end of the frame. See `gd++ man classes`.
 
 # Remembering pooled objects
 

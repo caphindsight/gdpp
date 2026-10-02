@@ -19,7 +19,6 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/ref.hpp>
@@ -678,10 +677,33 @@ private:
 	uint64_t generation_ = 0;
 };
 
-// on_main_thread reports whether the calling thread is the main thread, which owns the scene tree.
+// main_thread is the main thread, which owns the scene tree, and loads the library.
+inline const std::thread::id main_thread = std::this_thread::get_id();
+
+// on_main_thread reports whether the calling thread is the main thread.
 inline bool on_main_thread() {
-	OS *os = OS::get_singleton();
-	return os->get_thread_caller_id() == os->get_main_thread_id();
+	return std::this_thread::get_id() == main_thread;
+}
+
+// destroy_now does what destroy does, on the calling thread, which must be allowed to change the scene tree.
+template <typename T>
+void destroy_now(T *p_object) {
+	if (!p_object) {
+		return;
+	}
+	if constexpr (has_pool<T>::value) {
+		if (p_object->_gdpp_pool_slot.owned) {
+			T::_gdpp_pool.give(p_object);
+			return;
+		}
+	}
+	memdelete(p_object);
+}
+template <typename T>
+void destroy_now(ExtPtr<T> p_object) {
+	if (p_object) {
+		memdelete(p_object.base());
+	}
 }
 
 // destroy_later destroys the object that a Weak of p_id and p_generation refers to, unless it's gone, once the main
@@ -689,9 +711,9 @@ inline bool on_main_thread() {
 template <typename P>
 void destroy_later(uint64_t p_id, uint64_t p_generation) {
 	if constexpr (std::is_pointer_v<P>) {
-		destroy(Weak<std::remove_pointer_t<P>>(p_id, p_generation).claim());
+		destroy_now(Weak<std::remove_pointer_t<P>>(p_id, p_generation).claim());
 	} else {
-		destroy(P(Object::cast_to<std::remove_pointer_t<decltype(std::declval<P>().base())>>(ObjectDB::get_instance(p_id))));
+		destroy_now(P(Object::cast_to<std::remove_pointer_t<decltype(std::declval<P>().base())>>(ObjectDB::get_instance(p_id))));
 	}
 }
 
@@ -706,12 +728,15 @@ void destroy_deferred(P p_object) {
 	}
 }
 
-// defer_destroy reports whether destroy must leave p_object, of type P, to the main thread: it's a node in the scene
-// tree, which only the main thread may change, and this is another thread. Then it schedules destroy_later there.
+// defer_destroy reports whether destroy must leave p_object, of type P, to the main thread: this is another thread,
+// and it's a node in the scene tree, which only the main thread may change. Then it schedules destroy_later there.
 template <typename P>
 bool defer_destroy(P p_object) {
+	if (on_main_thread()) {
+		return false;
+	}
 	Node *node = Object::cast_to<Node>(object_ptr(p_object));
-	if (!node || !node->is_inside_tree() || on_main_thread()) {
+	if (!node || !node->is_inside_tree()) {
 		return false;
 	}
 	destroy_deferred(p_object);
@@ -721,47 +746,44 @@ bool defer_destroy(P p_object) {
 // destroy deletes an object, which `destroy x` calls: it gives an object that a pool made back to the pool, and
 // deletes others. It does nothing for null. It's thread-safe: on other threads than the main one, it leaves nodes in
 // the scene tree to the main thread, which destroys them at the end of the frame. Refcounted objects free themselves,
-// so it doesn't take them.
+// so it doesn't take them. Destroying an object twice is a bug, except for an object that a pool made, which it keeps.
 template <typename T>
 void destroy(T *p_object) {
-	if (!p_object) {
-		return;
-	}
 	if constexpr (std::is_base_of_v<Object, T>) {
-		if (defer_destroy(p_object)) {
+		if (p_object && defer_destroy(p_object)) {
 			return;
 		}
 	}
-	if constexpr (has_pool<T>::value) {
-		if (p_object->_gdpp_pool_slot.owned) {
-			T::_gdpp_pool.give(p_object);
-			return;
-		}
-	}
-	memdelete(p_object);
+	destroy_now(p_object);
 }
 template <typename T>
 void destroy(ExtPtr<T> p_object) {
 	if (p_object && !defer_destroy(p_object)) {
-		memdelete(p_object.base());
+		destroy_now(p_object);
 	}
 }
 
-// queue_destroy destroys a node at the end of the frame, on the main thread, unless it's freed before, like
-// queue_free, which `queue_destroy x` calls. It works on everything that destroy does, pools included, but only on
-// nodes, and from any thread. It does nothing for null.
+// queue_destroy destroys a node at the end of the frame, on the main thread, like queue_free, which `queue_destroy x`
+// calls. For a @pool class, it returns the node to its pool then, unless it was returned or freed before, even if the
+// pool has reused it since. For other classes, it's queue_free, which also does nothing for a node freed before. It only
+// works on nodes, from any thread, and does nothing for null.
 template <typename T>
 void queue_destroy(T *p_object) {
 	static_assert(std::is_base_of_v<Node, T>, "queue_destroy only works on nodes. Use destroy for other objects.");
-	if (p_object) {
+	if (!p_object) {
+		return;
+	}
+	if constexpr (has_pool<T>::value) {
 		destroy_deferred(p_object);
+	} else {
+		p_object->queue_free();
 	}
 }
 template <typename T>
 void queue_destroy(ExtPtr<T> p_object) {
 	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
 	if (p_object) {
-		destroy_deferred(p_object);
+		p_object.base()->queue_free();
 	}
 }
 template <typename T>
