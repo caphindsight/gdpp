@@ -12,6 +12,7 @@ my_package/.gd++pkg/
   SConstruct                the build script
   __register_types__.cpp    registers the package's classes with Godot
   godot_names.toml          what godot-cpp declares, for GD++
+  package/                  copies of the package's GD++ and C/C++ files
   gdpp/                     the C++ that GD++ generates from the GD++ files
     gd++/syntax_N.hpp       the GD++ runtime header, for syntax N
     Player.h, Player.cpp    a header and a source per class
@@ -30,6 +31,7 @@ At the start of every build, and of `gd++ doc` and `gd++ trans` in a package, `g
 
 - It compares the package's id and settings (all of `gd++pkg.toml` but its classes) with `build.toml`. If they differ, or `build.toml` is missing, it cleans the package like `gd++ clean --bin` does, copies the bindings and the spec into the cache, and writes the new `build.toml`. So changing a package's settings, e.g. its bindings or spec, or moving or renaming its directory, makes the next build start from scratch.
 - It writes `SConstruct`, with the list of the package's C and C++ sources.
+- In builds, it copies the package's GD++ files and C/C++ sources and headers into `package/`, and deletes the copies of files that are gone. The build compiles the copies, not your files, so compiler errors and debuggers name the copies, e.g. `package/src/player.gd++`, and show the code that was compiled, even if you edit a file during the build. Only the files whose contents differ are copied.
 
 Thanks to the copies, builds don't depend on the dependency caches: many packages can share a dependency, and deleting a dependency doesn't break a package's build cache. When a dependency is synced again, only the files whose contents differ are copied.
 

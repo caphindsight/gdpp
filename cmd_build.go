@@ -7,6 +7,7 @@ import (
 
 // CmdBuild compiles a package, or with --proj every package in the project,
 // into a GDExtension library with SCons. Each package's build cache gets a
+// copy of its GD++ and C/C++ files, which the build compiles instead, a
 // copy of its bindings and API spec, a generated __register_types__.cpp
 // registering its classes, and a generated SConstruct. After building, the
 // package root gets a generated <id>.gdextension file and its .uid file.

@@ -92,14 +92,30 @@ func TestGenerateBuildCache(t *testing.T) {
 		`env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", "PkgAsync")])`,
 		`env.Append(CPPDEFINES=[("GDPP_QUIT_TIMEOUT_USEC", 1000000)])`,
 		`"-std=") + "c++20"`,
-		`objects + "package/" + "enemy/enemy.cc" + env["SHOBJSUFFIX"], package_root + "/" + "enemy/enemy.cc"))` + "\n" +
-			`    sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], package_root + "/" + "main.cpp"))` + "\n" +
-			`    sources.append(env.SharedObject(objects + "package/" + "util.c++" + env["SHOBJSUFFIX"], package_root + "/" + "util.c++"))` + "\n\n",
+		`objects + "package/" + "enemy/enemy.cc" + env["SHOBJSUFFIX"], sources_root + "/" + "enemy/enemy.cc"))` + "\n" +
+			`    sources.append(env.SharedObject(objects + "package/" + "main.cpp" + env["SHOBJSUFFIX"], sources_root + "/" + "main.cpp"))` + "\n" +
+			`    sources.append(env.SharedObject(objects + "package/" + "util.c++" + env["SHOBJSUFFIX"], sources_root + "/" + "util.c++"))` + "\n\n",
 		`name = ".".join(["lib" + "pkg", env["platform"], env["target"].replace("template_", ""), env["arch"]])`,
 	} {
 		if !strings.Contains(sconstruct, want) {
 			t.Errorf("SConstruct = %s\nwant it to contain %q", sconstruct, want)
 		}
+	}
+}
+
+func TestSyncSources(t *testing.T) {
+	m := withBuildFS(t)
+	NewPath("/games/my_game/src/pkg/main.cpp").WriteString("int main;")
+	stale := NewPath("/games/my_game/src/pkg/.gd++pkg/package/gone/gone.cpp")
+	stale.CreateParentDirectory()
+	stale.WriteString("stale")
+	// The GD++ file's copy is the text read for transpiling, not what's on disk.
+	NewPath("/games/my_game/src/pkg/player.gd++").WriteString("edited")
+	syncSources(LoadProject(Cwd()), LoadPackage(Cwd()), []gdppFile{{Rel: "player.gd++", Src: "read"}})
+	got := subtree(m.tree(), "/games/my_game/src/pkg/.gd++pkg/package/")
+	want := map[string]string{"main.cpp": "int main;", "util.c++": "", "enemy/": "", "enemy/enemy.cc": "", "enemy/enemy.h": "", "player.gd++": "read"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("package/ = %v, want %v", got, want)
 	}
 }
 
@@ -327,7 +343,7 @@ func TestGenerateBuildCacheGdpp(t *testing.T) {
 	for _, want := range []string{
 		`AddOption("--gdpp-bindings"`,
 		"if GetOption(\"gdpp_bindings\"):\n    Default(None)\n    Default(Dir(\"build/godot-cpp/gen\"))\nelse:",
-		`env.Append(CPPPATH=[package_root, project_root, "gdpp"])`,
+		`env.Append(CPPPATH=[sources_root, project_root, "gdpp"])`,
 		"    for source in Glob(\"gdpp/*.cpp\"):\n        sources.append(env.SharedObject(objects + \"gdpp/\" + source.name + env[\"SHOBJSUFFIX\"], source))\n",
 		`docs = Glob("gdpp/doc_classes/*.xml")`,
 	} {

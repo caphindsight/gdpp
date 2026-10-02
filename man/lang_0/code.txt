@@ -133,10 +133,10 @@ You don't write `#include` lines for Godot's classes, godot-cpp's names, or the 
 GD++ keeps the line numbers of C++ code: comments are replaced by their newlines, and `#line` directives around each piece of your code tell the compiler where it came from. So when the compiler finds an error in a function body, it names the GD++ file and line:
 
 ```
-../player.gd++:12:5: error: 'helth' was not declared in this scope
+package/player.gd++:12:5: error: 'helth' was not declared in this scope
 ```
 
-The compiler runs in the package's build cache, so the path is relative to it: `../` is the package root. Debuggers use the same information, so they show GD++ files and lines too, in debug builds.
+The compiler runs in the package's build cache, so the path is relative to it. Each build compiles copies of the package's files, which it keeps in the build cache's `package/` directory, so errors show the code that was compiled, even if you edit a file during the build. Debuggers use the same information, so they show GD++ files and lines too, in debug builds.
 
 # Examples
 

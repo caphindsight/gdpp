@@ -26,10 +26,11 @@ For each package, `gd++`:
 1. Checks that the package's bindings and spec are in the project's caches.
 2. Syncs its build cache, `.gd++pkg`: copies the bindings and the spec into it, if they changed. If the package's settings changed since the last build (its id, bindings, spec, syntax, C++ standard, prefix or quit timeout), it first cleans the package, so the build starts from scratch. See `gd++ man build-cache`.
 3. Writes the build script, `SConstruct`, into the build cache. It lists the package's C and C++ sources.
-4. If the package has GD++ files: finds out what godot-cpp declares, and transpiles each GD++ file into C++. The first time, this generates godot-cpp's bindings from the spec and scans their headers, and the result is cached. Transpiling stops at the first error in any GD++ file. See `gd++ man lang`.
-5. Writes `__register_types__.cpp`, the code that registers the package's classes with Godot when the library loads, including the package's class of tasks, if a GD++ class uses `Async`. See `gd++ man async`.
-6. Runs SCons for each target. It compiles godot-cpp, the generated C++ and your C++ sources, and links the library into the package root.
-7. Writes the `.gdextension` file and its `.uid` file.
+4. Copies the package's GD++ and C/C++ files into the build cache, which compiles the copies. So compiler errors show the code that was compiled, even if you edit a file during the build.
+5. If the package has GD++ files: finds out what godot-cpp declares, and transpiles each GD++ file into C++. The first time, this generates godot-cpp's bindings from the spec and scans their headers, and the result is cached. Transpiling stops at the first error in any GD++ file. See `gd++ man lang`.
+6. Writes `__register_types__.cpp`, the code that registers the package's classes with Godot when the library loads, including the package's class of tasks, if a GD++ class uses `Async`. See `gd++ man async`.
+7. Runs SCons for each target. It compiles godot-cpp, the generated C++ and the copies of your C++ sources, and links the library into the package root.
+8. Writes the `.gdextension` file and its `.uid` file.
 
 Each step only rewrites the files whose contents change, so SCons and the Godot editor don't see needless changes. The one exception is the `.gdextension` file, which is rewritten on every build: its new modification time makes the editor reload the library.
 

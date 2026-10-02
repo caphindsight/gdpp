@@ -190,7 +190,7 @@ _gdpp_base                   an extern wrapper's object
 
 # #line directives
 
-Every piece of your code, e.g. a function body or an initial value, is wrapped in `#line` directives: one before it, with its line in the GD++ file, and one after it, which switches back to the generated file. So compiler errors, warnings and debuggers point to the right line in the right file. In builds, the GD++ file is named relative to the build cache, e.g. `../src/player.gd++`.
+Every piece of your code, e.g. a function body or an initial value, is wrapped in `#line` directives: one before it, with its line in the GD++ file, and one after it, which switches back to the generated file. So compiler errors, warnings and debuggers point to the right line in the right file. In builds, the GD++ file is named by its copy in the build cache, relative to the build cache, e.g. `package/src/player.gd++`.
 
 Your code is copied with its line breaks, so a body's text starts on the line of its `{`.
 

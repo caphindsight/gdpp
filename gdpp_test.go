@@ -125,7 +125,7 @@ func TestTranspilePackage(t *testing.T) {
 	for file, wants := range map[string][]string{
 		"Player.h": {`#include "Weapon.h"`, `#include "Power.h"`, "#include <godot_cpp/classes/node3d.hpp>",
 			"Ref<Weapon> weapon{};", "void hit(Power power);", `GDPP_ENUM_TAG(_gdpp_Player_Power, "Player.Power")`},
-		"Player.cpp":               {`#include "Player.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "../player.gd++"`},
+		"Player.cpp":               {`#include "Player.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "package/player.gd++"`},
 		"Weapon.h":                 {`#include "Player.h"`, "Player *owner{};"},
 		"Power.h":                  {"enum class Power : int64_t {"},
 		"doc_classes/Player.xml":   {"A player."},

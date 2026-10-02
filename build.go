@@ -249,6 +249,7 @@ func (o BuildOptions) describe(targets []string, gdpp bool) string {
 func preparePackage(p Project, pkg Package, bindArgs []string, o BuildOptions) ([]gdppFile, []gdppClass) {
 	generateBuildCache(p, pkg)
 	files := listGdppFiles(p, pkg)
+	syncSources(p, pkg, files)
 	if len(files) == 0 {
 		return nil, nil
 	}
@@ -328,6 +329,31 @@ func relPath(from, to Path) string {
 // to its root.
 func cppSources(p Project, pkg Package) []string {
 	return packageFiles(p, pkg, ".c", ".cc", ".cpp", ".cxx", ".c++")
+}
+
+// sourcesDirName is the build cache directory that holds copies of the
+// package's GD++ and C/C++ files, which builds compile instead of the files
+// themselves, so compiler errors show the code that was compiled, even if the
+// files are edited during the build.
+const sourcesDirName = "package"
+
+// syncSources syncs the build cache's copies of the package's GD++ files
+// (their text as read for transpiling) and C/C++ sources and headers, and
+// deletes the copies of files that are gone.
+func syncSources(p Project, pkg Package, files []gdppFile) {
+	dir := pkg.BuildCache.Cd(sourcesDirName)
+	keep := map[string]bool{}
+	for _, f := range files {
+		keep[f.Rel] = true
+		dir.Cd(f.Rel).CreateParentDirectory()
+		writeIfChanged(dir.Cd(f.Rel), f.Src)
+	}
+	for _, rel := range slices.Concat(cppSources(p, pkg), packageFiles(p, pkg, ".h", ".hh", ".hpp", ".hxx", ".h++", ".inl")) {
+		keep[rel] = true
+		dir.Cd(rel).CreateParentDirectory()
+		pkg.Root.Cd(rel).Sync(dir.Cd(rel))
+	}
+	removeStale(dir, "", keep)
 }
 
 // generateRegisterTypes writes the build cache's __register_types__.cpp,

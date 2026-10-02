@@ -14,6 +14,8 @@ AddOption("--gdpp-nowarn", dest="gdpp_nowarn", action="store_true", help="disabl
 AddOption("--gdpp-sanitize", dest="gdpp_sanitize", type="string", default="", help="sanitizers to compile in")
 
 package_root = ".."
+# Copies of the package's GD++ and C/C++ files, which GD++ syncs before each build, so errors show the compiled code.
+sources_root = "package"
 project_root = {{printf "%q" .ProjectRoot}}
 
 # godot-cpp builds into build/godot-cpp, since GD++ overwrites godot-cpp/ on each build.
@@ -29,7 +31,7 @@ else:
     env["CXXFLAGS"] = [f for f in env["CXXFLAGS"] if not str(f).startswith(("-std=", "/std:"))]
     env.Append(CXXFLAGS=[("/std:" if env.get("is_msvc", False) else "-std=") + {{printf "%q" .CppStandard}}])
     # gdpp holds the C++ that GD++ generates from .gd++ files.
-    env.Append(CPPPATH=[package_root, project_root, "gdpp"])
+    env.Append(CPPPATH=[sources_root, project_root, "gdpp"])
     # The name of the package's class of tasks, which Async types name.
     env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", {{printf "%q" .AsyncClass}})])
     # How long its tasks may still run after the game started quitting, from its quit_timeout setting.
@@ -58,7 +60,7 @@ else:
     # Object names keep the source's extension, so foo.c and foo.cpp don't clash.
     sources = [env.SharedObject(objects + "__register_types__.cpp" + env["SHOBJSUFFIX"], "__register_types__.cpp")]
 {{- range .Sources}}
-    sources.append(env.SharedObject(objects + "package/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], package_root + "/" + {{printf "%q" .}}))
+    sources.append(env.SharedObject(objects + "package/" + {{printf "%q" .}} + env["SHOBJSUFFIX"], sources_root + "/" + {{printf "%q" .}}))
 {{- end}}
 
     # The C++ that GD++ generates, a source per class.

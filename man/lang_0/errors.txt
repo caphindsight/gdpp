@@ -187,10 +187,10 @@ Class MyGameAsync is declared in res://gd++pkg.toml, but GD++ adds a class of th
 GD++ checks the GD++ parts of a file, but not the C++ code in it: that's the C++ compiler's job, during `gd++ build`. When it fails, the build shows the compiler's output. Thanks to `#line` directives, errors in your C++ code point to the GD++ file and line:
 
 ```
-../player.gd++:12:5: error: 'helth' was not declared in this scope
+package/player.gd++:12:5: error: 'helth' was not declared in this scope
 ```
 
-The path is relative to the build cache, where the compiler runs: `../` is the package root. See `gd++ man code`.
+The path is relative to the build cache, where the compiler runs: `package/` holds the copies of the package's files that the build compiled, so the line shown is the compiled one, even if you edited the file since. See `gd++ man code`.
 
 Some compiler errors are about the generated code, but caused by the GD++ declarations. The usual ones:
 
