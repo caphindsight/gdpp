@@ -163,6 +163,9 @@ The engine function _ready can only take @trace, @profile, @notrace, @noprofile,
 The engine function _process must be declared as "func _process(delta: float) -> void".
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.
+Annotation @onthread takes "detached".
+The @onthread("detached") function f must return void.
+  Nothing waits for its task, so its calls can't return a value.
 Async variables can't be exported.
 Weak variables can't be exported.
 Annotation @pool can only be used in classes that extend Node, which A doesn't.

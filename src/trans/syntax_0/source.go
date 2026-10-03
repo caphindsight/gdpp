@@ -418,7 +418,11 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		if f.static {
 			self, capture = "nullptr", "="
 		}
-		w.ln("\treturn gdpp::run_task(%s, %q, [%s] { return %s(%s); });", self, c.name+"."+f.f.Name, capture,
+		run := "return gdpp::run_task"
+		if f.detached {
+			run = "gdpp::run_detached"
+		}
+		w.ln("\t%s(%s, %q, [%s] { return %s(%s); });", run, self, c.name+"."+f.f.Name, capture,
 			bodyName(f), strings.Join(paramNames(f.f.Params), ", "))
 	case f.deferral != "" && f.isConst:
 		w.ln("\t%s;", deferredCall(f.deferral, fmt.Sprintf("const_cast<%s *>(this)", c.name), bodyName(f), f.params, f.f.Params))

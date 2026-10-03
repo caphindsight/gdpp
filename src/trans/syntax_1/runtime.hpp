@@ -1075,12 +1075,14 @@ public:
 	// cancel asks the job to stop: gdpp::is_cancelled() is true in it from now on.
 	void cancel() { cancel_requested.store(true, std::memory_order_relaxed); }
 
-	// start runs p_job on the WorkerThreadPool, as the task named p_name.
-	void start(const Callable &p_job, const String &p_name) {
+	// start runs p_job on the WorkerThreadPool, as the task named p_name. If p_detached, nothing waits for the task:
+	// once the job is done, the main thread waits for it, so the task can be dropped while it runs, without blocking.
+	void start(const Callable &p_job, const String &p_name, bool p_detached = false) {
 #ifdef DEBUG_ENABLED
 		ERR_FAIL_COND_MSG(id >= 0, "The task has already started.");
 #endif
 		job = p_job;
+		detached = p_detached;
 		running = Ref<RefCounted>(this);
 		claimed.store(false, std::memory_order_relaxed); // Before the task starts, and before other threads see the object.
 		id = WorkerThreadPool::get_singleton()->add_task(callable_mp(this, &GDPP_ASYNC_CLASS::run), false, p_name);
@@ -1112,6 +1114,7 @@ private:
 	Variant result; // Set before done.
 	std::atomic<bool> done = false;
 	std::atomic<bool> cancel_requested = false;
+	bool detached = false; // Whether the task waits for itself, through the main thread, instead of its holders.
 	std::atomic<bool> claimed = true; // Whether claim took the result. Until started: an object that runs nothing, e.g. from new(), holds nothing.
 	std::mutex mutex;
 	bool waited = false; // Godot requires waiting for each task once.
@@ -1123,6 +1126,13 @@ private:
 		current_cancel() = nullptr;
 		job = Callable(); // Frees what the job holds, e.g. the object it was called on.
 		done.store(true, std::memory_order_release);
+		if (detached) {
+			// The main thread waits for the task, since nothing else does. Its id comes from the pool, since start may not
+			// have stored it yet. Before the last reference, maybe this one, is dropped, so the destructor doesn't wait.
+			std::lock_guard<std::mutex> lock(mutex);
+			waited = true;
+			callable_mp_static(&GDPP_ASYNC_CLASS::join_task).call_deferred(WorkerThreadPool::get_singleton()->get_caller_task_id());
+		}
 		Ref<RefCounted> self = running;
 		running.unref();
 		self.unref(); // May free this object, whose destructor then runs in this task.
@@ -1158,9 +1168,10 @@ private:
 // task object in scripts, and each method does what the object's method of the same name does: claiming through one
 // copy claims the task for all of them. A new Async is empty: it's false, like a claimed one, and destroying it does
 // nothing. When the last reference to a task is gone, the task object waits for the task to finish, unless it
-// already has.
+// already has. It's [[nodiscard]], so compilers warn about a call of an @onthread function whose task is dropped right
+// away, which would wait for it.
 template <typename T>
-class Async {
+class [[nodiscard]] Async {
 public:
 	Async() = default;
 	explicit Async(const Ref<RefCounted> &p_task) :
@@ -1225,9 +1236,10 @@ private:
 
 // run_task starts the call of an @onthread function on the WorkerThreadPool, as the task named p_name (e.g.
 // "Player.find_path"), and returns its Async. p_job calls the function's body. If p_self, the object the function is
-// called on, is refcounted, the task keeps it alive until the body has run.
+// called on, is refcounted, the task keeps it alive until the body has run. If p_detached, the caller can drop the
+// Async right away: once the body is done, the task schedules a deferred wait for itself.
 template <typename F>
-auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::invoke_result_t<F>> {
+auto run_task(const Object *p_self, const char *p_name, F p_job, bool p_detached = false) -> Async<std::invoke_result_t<F>> {
 	using R = std::invoke_result_t<F>;
 	if (!watching_quit.exchange(true)) {
 		callable_mp_static(&watch_quit).call_deferred(); // On the main thread, which owns the scene tree.
@@ -1247,8 +1259,15 @@ auto run_task(const Object *p_self, const char *p_name, F p_job) -> Async<std::i
 		}
 	};
 	Callable job(memnew(TaskCallable(std::move(run))));
-	task->start(job, p_name);
+	task->start(job, p_name, p_detached);
 	return Async<R>(Ref<RefCounted>(task.ptr()));
+}
+
+// run_detached starts the call of an @onthread("detached") function, like run_task, but returns nothing: nothing waits
+// for the task, which schedules a deferred wait for itself once the body is done.
+template <typename F>
+void run_detached(const Object *p_self, const char *p_name, F p_job) {
+	static_cast<void>(run_task(p_self, p_name, std::move(p_job), true));
 }
 
 // Masked is what & returns for a bitfield E: it converts to E, and tests as true if any flag is set, so

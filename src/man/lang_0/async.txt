@@ -64,7 +64,35 @@ The body is written for the plain type: it returns an `int`, a `Node`, nothing, 
     Hint: Its callers get an Async of the type its body returns.
 ```
 
-An `@onthread` function can be `@static` or `@const`, have default values, and use `@trace` and `@profile`, which follow its body, on its thread. It can't be `@virtual` or `@override`, since the engine or a script would replace the function that starts the task, nor `@rpc`, `@deferred` or `@thread_safe`. Only classes have `@onthread` functions; an extern declares that a function returns an `Async` instead, see "Across packages" below.
+An `@onthread` function can be `@static` or `@const`, have default values, and use `@trace` and `@profile`, which follow its body, on its thread. It can't be `@virtual` or `@override`, since the engine or a script would replace the function that starts the task, nor `@rpc`, `@deferred` or `@thread_safe`. Only classes have `@onthread` functions; an extern declares that a function returns an `Async` instead, see "Across packages" below. For work whose result nobody waits for, see `@onthread("detached")` below.
+
+# @onthread("detached")
+
+Some work has no result that anyone waits for: saving a game, writing a log, sending a report. `@onthread("detached")` runs it on a worker thread too, but its calls return nothing, so there's no task to keep, test or claim:
+
+```gd++
+@onthread("detached")
+func save_game(slot: int, data: Dictionary) -> void {
+  // ... write the file, on a worker thread ...
+}
+
+func _on_save_pressed() -> void {
+  save_game(1, collect_data());   // Returns right away.
+}
+```
+
+The function must return `void`, and so does each call, from C++ or from scripts. Once the body is done, the task schedules a deferred call, on the main thread, that does the wait that Godot requires for each task of the `WorkerThreadPool`. Since that wait comes after the body, it doesn't block.
+
+It's an `@onthread` function in all else: the same annotations combine with it, the body has the same limits (see "Writing the body" below), and a refcounted object it's called on stays alive until the body has run. Its body can check `is_cancelled`, which only becomes `true` when the game quits, since without an `Async` nothing can cancel it. When the game quits, it gets the same grace period as other tasks.
+
+A non-void return type is an error:
+
+```out
+[×] res://saver.gd++:2:1: The @onthread("detached") function save_game must return void.
+     2 | func save_game(slot: int) -> bool {
+       | ^^^^
+    Hint: Nothing waits for its task, so its calls can't return a value.
+```
 
 # Async types
 
@@ -205,7 +233,7 @@ func _on_cancel_pressed():
 
 Copies of an `Async` share its task, like references to the task object in scripts: what one copy does, all of them see. So claiming through one copy, or through a script that holds the task, makes the task Claimed for every copy and every script. An `Async` is thread-safe to test and `claim` from any thread, though like any variable, one `Async` shouldn't be changed by two threads at once.
 
-When the last reference to a task is gone, from C++ or from a script, it waits for the task to finish, unless that already happened. So dropping an `Async` whose task still runs blocks until the task is done, and dropping a claimed or finished one doesn't. Keep the `Async` until `is_done` is `true`, like `pending` in the first example. Its result doesn't have to be claimed: a task whose result nobody wants, e.g. a void one, can simply be dropped once it's done.
+When the last reference to a task is gone, from C++ or from a script, it waits for the task to finish, unless that already happened. So dropping an `Async` whose task still runs blocks until the task is done, and dropping a claimed or finished one doesn't. Keep the `Async` until `is_done` is `true`, like `pending` in the first example. `Async` is `[[nodiscard]]`, so the compiler warns about a call whose `Async` isn't kept, e.g. `find_path(a, b);`, which would wait for the task right away. For work whose result nobody wants, use `@onthread("detached")`. Its result doesn't have to be claimed: a task whose result nobody wants, e.g. a void one, can simply be dropped once it's done.
 
 # Stopping tasks
 
@@ -289,6 +317,8 @@ For an `@onthread` function `f`, GD++ generates:
 
 - `f` itself, which returns an `Async` of the function's type. It calls `gdpp::run_task`, which creates an object of the package's class of tasks, and starts the task on the `WorkerThreadPool` with `WorkerThreadPool::add_task`.
 - `_gdpp_body_f`, a method with the body, which the task calls. It isn't bound, so scripts can't call it.
+
+With `@onthread("detached")`, `f` returns `void`, and calls `gdpp::run_detached`, which starts the task like `gdpp::run_task`, but returns nothing. Once the body is done, the task schedules the wait with `call_deferred`, so it doesn't matter who drops the last reference to it.
 
 The object of the class of tasks stores the body's result as a `Variant`, and the `Async` converts it back to the function's type. Godot requires waiting once for each task of the `WorkerThreadPool`, with `wait_for_task_completion`: the object does so in `wait`, which `claim` calls, or else when it's freed. If a task frees the last reference to itself, e.g. by freeing the object that held it, it can't wait for itself, so the main thread waits for it instead, right after.
 

@@ -33,8 +33,20 @@
 			<description>
 			</description>
 		</method>
+		<method name="log_later" qualifiers="static">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
 		<method name="poll">
 			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="save">
+			<return type="void" />
+			<param index="0" name="slot" type="int" />
+			<param index="1" name="name" type="String" default="&quot;auto&quot;" />
 			<description>
 			</description>
 		</method>

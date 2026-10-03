@@ -171,6 +171,8 @@ extern Planner {
 
 An `@onthread` function of another package returns a task, so its extern declares an `Async` as the return type, without `@onthread`: the class already runs every call on a worker thread. A call returns an `Async<Array>`, which works like the tasks of your own package. See "Across packages" in `gd++ man async`.
 
+An `@onthread("detached")` function returns nothing, so its extern declares it as a plain `void` function: `func save(slot: int) -> void`.
+
 # @rpc
 
 ```gd++

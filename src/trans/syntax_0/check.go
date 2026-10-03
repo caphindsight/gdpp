@@ -95,6 +95,7 @@ type funcModel struct {
 	final, super, private              bool        // With @override("final"), "super" on @override or @virtual, and @virtual("private").
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string      // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
+	detached                           bool        // With @onthread("detached"): a call starts a task that nobody waits for, and returns nothing.
 	hidden                             string      // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
 	trace, profile                     bool        // Whether its @trace or @profile, or its class's, is on.
 	notrace, noprofile                 bool        // Whether it has @notrace or @noprofile, which leave it out of its class's.
@@ -1007,7 +1008,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "pool", "profile", "recycle", "rpc", "scene", "trace",
+			"export_placeholder", "export_range", "export_subgroup", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -1078,6 +1079,16 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 			engine = arg
 		}
 	}
+	for _, arg := range argsOf(a["onthread"]) {
+		name, _ := strconv.Unquote(arg.Value)
+		switch {
+		case name != "detached":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @onthread takes \"detached\".", "E.g. @onthread(\"detached\").")
+		case m.detached:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @onthread takes %s only once.", arg.Value), "")
+		}
+		m.detached = true
+	}
 	for _, arg := range argsOf(a["virtual"]) {
 		name, _ := strconv.Unquote(arg.Value)
 		switch {
@@ -1140,6 +1151,9 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	switch {
 	case ext && f.Body != nil:
 		return nil, u.errorAt(f.Body.Pos, 1, "Extern functions can't have a body.", "Externs only declare what another package defines.")
+	case m.detached && !m.ret.void:
+		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @onthread(\"detached\") function %s must return void.", f.Name),
+			"Nothing waits for its task, so its calls can't return a value.")
 	case m.deferral == "onthread" && m.ret.async != nil:
 		return nil, u.errorAt(f.Return.Pos, len(f.Return.Name), fmt.Sprintf("The @onthread function %s already returns an Async: write -> %s.", f.Name, typeString(asyncArg(f.Return))),
 			"Its callers get an Async of the type its body returns.")
@@ -1922,7 +1936,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static,
 					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, gameOnly: f.gameOnly})
 				f.trace, f.profile = false, false
-				if f.deferral == "onthread" {
+				if f.deferral == "onthread" && !f.detached {
 					f.ret = u.async(f.ret) // Callers get an Async of the body's result.
 				}
 				err = u.unique(names, f.f.Pos, "func", body.Name)

@@ -61,7 +61,7 @@ Async<T>
   - `wait()` waits for the task to finish, then returns the result, and keeps it, like `result()`.
   - `cancel()` asks the task to stop. It's always safe: for an empty `Async`, or a task that's done or claimed, it does nothing.
 
-  Claiming or reading the result before the task is done, or once it's claimed, and calling `claim()`, `result()` or `wait()` on an empty `Async`, prints an error in debug builds, and is undefined behavior in release builds. A default-constructed `Async` is empty, and destroying it does nothing. In GD++ code, `is_done TASK`, `claim TASK` and `cancel TASK` call these methods (see `gd++ man rewrites`). See `gd++ man async`.
+  Claiming or reading the result before the task is done, or once it's claimed, and calling `claim()`, `result()` or `wait()` on an empty `Async`, prints an error in debug builds, and is undefined behavior in release builds. A default-constructed `Async` is empty, and destroying it does nothing. It's `[[nodiscard]]`, so the compiler warns when a call's `Async` is dropped right away. In GD++ code, `is_done TASK`, `claim TASK` and `cancel TASK` call these methods (see `gd++ man rewrites`). See `gd++ man async`.
 
 is_cancelled
   Whether the task running on this thread should stop: its `Async` was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. It's a rewrite, which calls the runtime's `gdpp::is_cancelled()`. See `gd++ man rewrites` and `gd++ man async`.

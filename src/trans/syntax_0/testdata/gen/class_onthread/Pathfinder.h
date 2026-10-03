@@ -29,6 +29,10 @@ public:
 	static void _gdpp_body_warm_up();
 	gdpp::Async<int64_t> count() const;
 	int64_t _gdpp_body_count() const;
+	void save(int64_t slot, const String &name = _gdpp_default_save_name());
+	void _gdpp_body_save(int64_t slot, const String &name);
+	static void log_later();
+	static void _gdpp_body_log_later();
 	gdpp::Async<Variant> untyped();
 	Variant _gdpp_body_untyped();
 	gdpp::Async<String> follow(gdpp::Async<PackedVector2Array> path);
@@ -47,6 +51,7 @@ protected:
 
 private:
 	static int64_t _gdpp_default_find_path_steps();
+	static String _gdpp_default_save_name();
 };
 #undef This
 

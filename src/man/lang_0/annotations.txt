@@ -76,7 +76,7 @@ A declaration's doc comment can come before its annotations or between them, but
   Like `@deferred`, with `call_thread_safe`: calls from other threads run later, on the main thread. Only in classes that extend `Node`. See `gd++ man functions`.
 
 @onthread
-  Every call, from C++ or from Godot, runs the body on the `WorkerThreadPool`, and returns an `Async` of the function's type, through which the caller waits for the body and gets its result. See `gd++ man async`.
+  Every call, from C++ or from Godot, runs the body on the `WorkerThreadPool`, and returns an `Async` of the function's type, through which the caller waits for the body and gets its result. Argument: `"detached"`, for a function that returns `void`: then calls return nothing, and nothing waits for the task. See `gd++ man async`.
 
 @trace(GROUPS...)
   Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.

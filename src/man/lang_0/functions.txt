@@ -290,6 +290,8 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
 
 With `@onthread`, every call of the function, from C++ or from scripts, runs its body on Godot's `WorkerThreadPool`, and returns right away, with an `Async` of the function's return type: here, an `Async[PackedVector2Array]`. The caller tests whether the task is done with `is_done`, takes the result with `claim`, and can ask the task to stop with `cancel`, which the body notices with `is_cancelled`. GD++ puts the body in a second method, `_gdpp_body_NAME`, which the task calls. See `gd++ man async`.
 
+With `@onthread("detached")`, the function must return `void`, and its calls return nothing: they start the task, and forget it. Once the body is done, the task schedules a deferred call that finishes it. See `gd++ man async`.
+
 # @game_only
 
 ```gd++

@@ -29,6 +29,14 @@ func count() -> int {
   return 42;
 }
 
+@onthread("detached") @trace
+func save(slot: int, name: String = "auto") -> void {
+  gd::print(name);
+}
+
+@onthread("detached") @static
+func log_later() -> void {}
+
 @onthread
 func untyped() {
   return 1;
@@ -64,6 +72,8 @@ func poll() -> int {
   if (!none && !is_done none && !nothing && !nothing.is_done()) {
     return count().wait() + find_path(Vector2(), Vector2()).wait().size();
   }
+  save(1);
+  log_later();
   cancel pending;
   anything.cancel();
   gdpp::Async<Variant> tasks[2] = {anything, untyped()};

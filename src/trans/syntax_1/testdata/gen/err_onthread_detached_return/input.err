@@ -1,0 +1,4 @@
+input.gd++:4:1: The @onthread("detached") function f must return void.
+ 4 | func f() -> int {}
+   | ^^^^
+Hint: Nothing waits for its task, so its calls can't return a value.

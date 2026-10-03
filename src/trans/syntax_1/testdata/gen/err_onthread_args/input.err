@@ -1,3 +1,4 @@
-input.gd++:3:11: Annotation @onthread takes no arguments.
+input.gd++:3:11: Annotation @onthread takes "detached".
  3 | @onthread("Job")
    |           ^^^^^
+Hint: E.g. @onthread("detached").
