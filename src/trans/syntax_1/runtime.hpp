@@ -16,6 +16,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(MACOS_ENABLED) && defined(HOT_RELOAD_ENABLED)
+#include <pthread.h>
+#endif
+
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/node.hpp>
@@ -400,12 +404,58 @@ inline constexpr const char *async_class = GDPP_STRINGIFY(GDPP_ASYNC_CLASS);
 #define GDPP_QUIT_TIMEOUT_USEC 1000000
 #endif
 
+#if defined(MACOS_ENABLED) && defined(HOT_RELOAD_ENABLED)
+// ThreadSlot is a T per thread, made on first use. It uses a pthread key, since on macOS thread_local keeps the
+// library from being unloaded, which breaks hot reload. It frees the Ts when the library is unloaded, not when their
+// threads exit: Godot's threads outlive the library, so a key destructor would call unloaded code.
+template <typename T>
+class ThreadSlot {
+public:
+	ThreadSlot() { pthread_key_create(&key, nullptr); }
+	~ThreadSlot() {
+		pthread_key_delete(key);
+		for (T *value : values) {
+			delete value;
+		}
+	}
+
+	T &get() {
+		if (void *value = pthread_getspecific(key)) {
+			return *static_cast<T *>(value);
+		}
+		T *value = new T();
+		pthread_setspecific(key, value);
+		std::lock_guard<std::mutex> lock(mutex);
+		values.push_back(value);
+		return *value;
+	}
+
+private:
+	pthread_key_t key;
+	std::mutex mutex;
+	std::vector<T *> values;
+};
+
+// GDPP_THREAD_LOCAL defines m_name(), which returns this thread's m_type, value-initialized on first use.
+#define GDPP_THREAD_LOCAL(m_type, m_name)        \
+	inline ThreadSlot<m_type> m_name##_slot;     \
+	inline m_type &m_name() {                    \
+		return m_name##_slot.get();              \
+	}
+#else
+#define GDPP_THREAD_LOCAL(m_type, m_name)        \
+	inline m_type &m_name() {                    \
+		static thread_local m_type value{};      \
+		return value;                            \
+	}
+#endif
+
 // The state of the package's tasks.
 inline std::atomic<bool> quitting = false; // Whether the game has started quitting.
 inline std::atomic<bool> watching_quit = false; // Whether watch_quit was scheduled.
 inline std::atomic<int64_t> quit_deadline_usec = 0; // When the quit timeout runs out, in now_usec() time.
 inline std::atomic<int64_t> running_tasks = 0; // The package's tasks whose jobs are running.
-inline thread_local const std::atomic<bool> *current_cancel = nullptr; // The cancel flag of this thread's task.
+GDPP_THREAD_LOCAL(const std::atomic<bool> *, current_cancel) // The cancel flag of this thread's task.
 
 // The package's hooks into the engine that call its library's code, e.g. signal connections, which uninitialize
 // removes: after a hot reload, the engine would call the unloaded code.
@@ -896,7 +946,7 @@ inline int64_t now_usec() {
 // is_cancelled reports whether the task running on this thread should stop: its Async was cancelled, or the game is
 // quitting. Outside of tasks, it reports whether the game is quitting. It's cheap, so long bodies can check it often.
 inline bool is_cancelled() {
-	return quitting.load(std::memory_order_relaxed) || (current_cancel && current_cancel->load(std::memory_order_relaxed));
+	return quitting.load(std::memory_order_relaxed) || (current_cancel() && current_cancel()->load(std::memory_order_relaxed));
 }
 
 // begin_quit starts the quit timeout, once.
@@ -1067,9 +1117,9 @@ private:
 
 	void run() {
 		running_tasks.fetch_add(1);
-		current_cancel = &cancel_requested;
+		current_cancel() = &cancel_requested;
 		result = job.call();
-		current_cancel = nullptr;
+		current_cancel() = nullptr;
 		job = Callable(); // Frees what the job holds, e.g. the object it was called on.
 		done.store(true, std::memory_order_release);
 		Ref<RefCounted> self = running;
@@ -1462,7 +1512,7 @@ struct DebugThread {
 	Watch *watch = nullptr; // The innermost call that watches @trace vars.
 	int main = -1; // Whether this is the main thread: 1 or 0, or -1 if not known yet.
 };
-inline thread_local DebugThread debug_thread;
+GDPP_THREAD_LOCAL(DebugThread, debug_thread)
 
 // escaped escapes s for print_rich, which reads [ as the start of a BBCode tag.
 inline String escaped(const String &s) {
@@ -1534,13 +1584,13 @@ inline void debug_print(const String &p_line) {
 	if (os->get_thread_caller_id() != os->get_main_thread_id()) {
 		prefix += " [thread " + String::num_uint64(os->get_thread_caller_id()) + "]";
 	}
-	UtilityFunctions::print_rich(prefix + "[/color] " + String("  ").repeat(debug_thread.depth) + p_line);
+	UtilityFunctions::print_rich(prefix + "[/color] " + String("  ").repeat(debug_thread().depth) + p_line);
 }
 
 // Untimed adds the time until its end to the untimed time of its thread.
 struct Untimed {
 	int64_t start = now();
-	~Untimed() { debug_thread.untimed += now() - start; }
+	~Untimed() { debug_thread().untimed += now() - start; }
 };
 
 // ViaExtern tags the tracing of a call or an emission through an extern. Its lines say "extern", and calls show with
@@ -1578,10 +1628,10 @@ public:
 			stop();
 		}
 		int64_t took = end_ - start_ - (untimed_end_ - untimed_start_);
-		debug_thread.depth--;
+		debug_thread().depth--;
 		debug_print(String(extern_ ? U"◁ extern " : U"◀ ") + name_ + result_ + "  [color=gray]" + duration(took) + "[/color]");
 		// Everything since the end is untimed, including what the vars' Watch already counted.
-		debug_thread.untimed = untimed_end_ + (now() - end_);
+		debug_thread().untimed = untimed_end_ + (now() - end_);
 	}
 
 private:
@@ -1593,15 +1643,15 @@ private:
 		String line = String(extern_ ? U"▷ extern " : U"▶ ") + name_ + "(";
 		add_args(line, p_args...);
 		debug_print(line + ")");
-		debug_thread.depth++;
+		debug_thread().depth++;
 		start_ = now();
-		debug_thread.untimed += start_ - p_begin;
-		untimed_start_ = debug_thread.untimed;
+		debug_thread().untimed += start_ - p_begin;
+		untimed_start_ = debug_thread().untimed;
 	}
 
 	void stop() {
 		end_ = now();
-		untimed_end_ = debug_thread.untimed;
+		untimed_end_ = debug_thread().untimed;
 	}
 
 	String name_, result_;
@@ -1653,15 +1703,15 @@ public:
 	// p_vars alternate names and functions that return the var's value.
 	template <typename... Vars>
 	Watch(const Object *p_self, const char *p_func, const Vars &...p_vars) :
-			self_(p_self), func_(p_func), parent_(debug_thread.watch) {
+			self_(p_self), func_(p_func), parent_(debug_thread().watch) {
 		Untimed untimed;
 		add(p_vars...);
-		debug_thread.watch = this;
+		debug_thread().watch = this;
 	}
 
 	~Watch() {
 		Untimed untimed;
-		debug_thread.watch = parent_;
+		debug_thread().watch = parent_;
 		for (Var &v : vars_) {
 			Variant value = v.get();
 			if (value == v.before) {
@@ -1736,20 +1786,20 @@ inline Profiler &profiler() {
 class Profile {
 public:
 	explicit Profile(ProfileStats &p_stats) :
-			stats_(p_stats), parent_(debug_thread.profile) {
-		debug_thread.profile = this;
-		untimed_ = debug_thread.untimed;
+			stats_(p_stats), parent_(debug_thread().profile) {
+		debug_thread().profile = this;
+		untimed_ = debug_thread().untimed;
 		start_ = now();
 	}
 
 	~Profile() {
-		int64_t took = std::max<int64_t>(now() - start_ - (debug_thread.untimed - untimed_) - profiler().inner, 0);
-		debug_thread.profile = parent_;
+		int64_t took = std::max<int64_t>(now() - start_ - (debug_thread().untimed - untimed_) - profiler().inner, 0);
+		debug_thread().profile = parent_;
 		stats_.calls.fetch_add(1, std::memory_order_relaxed);
-		if (debug_thread.main < 0) {
-			debug_thread.main = OS::get_singleton()->get_thread_caller_id() == OS::get_singleton()->get_main_thread_id();
+		if (debug_thread().main < 0) {
+			debug_thread().main = OS::get_singleton()->get_thread_caller_id() == OS::get_singleton()->get_main_thread_id();
 		}
-		if (debug_thread.main) {
+		if (debug_thread().main) {
 			stats_.main_calls.fetch_add(1, std::memory_order_relaxed);
 		}
 		stats_.self.fetch_add(std::max<int64_t>(took - children_, 0), std::memory_order_relaxed);
@@ -1767,7 +1817,7 @@ public:
 		if (parent_) {
 			parent_->children_ += took;
 		}
-		debug_thread.untimed += profiler().outer;
+		debug_thread().untimed += profiler().outer;
 	}
 
 private:
@@ -1781,8 +1831,8 @@ inline void calibrate(Profiler &r_profiler) {
 	constexpr int count = 1000;
 	ProfileStats empty;
 	std::vector<int64_t> inner, outer;
-	Profile *profile = debug_thread.profile;
-	debug_thread.profile = nullptr;
+	Profile *profile = debug_thread().profile;
+	debug_thread().profile = nullptr;
 	for (int i = 0; i < count; i++) {
 		int64_t self = empty.self.load(), start = now();
 		{
@@ -1791,7 +1841,7 @@ inline void calibrate(Profiler &r_profiler) {
 		outer.push_back(now() - start);
 		inner.push_back(empty.self.load() - self);
 	}
-	debug_thread.profile = profile;
+	debug_thread().profile = profile;
 	std::nth_element(inner.begin(), inner.begin() + count / 2, inner.end());
 	std::nth_element(outer.begin(), outer.begin() + count / 2, outer.end());
 	r_profiler.inner = inner[count / 2];

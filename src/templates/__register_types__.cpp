@@ -25,15 +25,20 @@ constexpr bool gdpp_is_package_class = false{{range .Classes}} || std::is_same_v
 template <typename T>
 constexpr bool gdpp_is_runtime_class = false{{range .RuntimeClasses}} || std::is_same_v<T, {{.}}>{{end}};
 
+// Whether T is registered. gdpp_uninitialize resets it: if the library stays
+// loaded on hot reload, e.g. because of thread_local storage, it must register
+// its classes again.
+template <typename T>
+static bool gdpp_registered = false;
+
 // Registers T, after its parent if that's a class of this package too, since
 // Godot requires parents to be registered first.
 template <typename T>
 static void gdpp_register_class() {
-	static bool registered = false;
-	if (registered) {
+	if (gdpp_registered<T>) {
 		return;
 	}
-	registered = true;
+	gdpp_registered<T> = true;
 	if constexpr (gdpp_is_package_class<typename T::parent_type>) {
 		gdpp_register_class<typename T::parent_type>();
 	}
@@ -57,12 +62,16 @@ static void gdpp_initialize(ModuleInitializationLevel p_level) {
 }
 
 static void gdpp_uninitialize(ModuleInitializationLevel p_level) {
+	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+		return;
+	}
 {{- if .Runtime}}
 	// Waits for the package's tasks, and removes the engine's hooks into the package's code, which must not run once
 	// it's unloaded, e.g. by hot reload.
-	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		gdpp::uninitialize();
-	}
+	gdpp::uninitialize();
+{{- end}}
+{{- range .Classes}}
+	gdpp_registered<{{.}}> = false;
 {{- end}}
 }
 

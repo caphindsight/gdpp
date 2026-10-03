@@ -141,7 +141,7 @@ func TestTranspilePackage(t *testing.T) {
 	for _, want := range []string{`#include "Hitbox.h"`, `#include "Player.h"`, `#include "Weapon.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Hitbox>();",
 		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden> || std::is_same_v<T, Hitbox> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
 		"if constexpr (gdpp_is_runtime_class<T>) {\n\t\tGDREGISTER_RUNTIME_CLASS(T);\n\t} else {\n\t\tGDREGISTER_CLASS(T);\n\t}",
-		"#include <gd++/syntax_0.hpp>\n", "\tGDREGISTER_CLASS(gdpp::GDPP_ASYNC_CLASS);\n", "\t\tgdpp::uninitialize();\n"} {
+		"#include <gd++/syntax_0.hpp>\n", "\tGDREGISTER_CLASS(gdpp::GDPP_ASYNC_CLASS);\n", "\tgdpp::uninitialize();\n"} {
 		if !strings.Contains(register, want) {
 			t.Errorf("__register_types__.cpp = %s\nwant it to contain %q", register, want)
 		}
@@ -164,7 +164,7 @@ func TestTranspilePackage(t *testing.T) {
 	}
 	// Without Async, the package has no class of tasks, but still unloads its GD++ code.
 	register = m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
-	if strings.Contains(register, "GDPP_ASYNC_CLASS") || !strings.Contains(register, "\t\tgdpp::uninitialize();\n") {
+	if strings.Contains(register, "GDPP_ASYNC_CLASS") || !strings.Contains(register, "\tgdpp::uninitialize();\n") {
 		t.Errorf("__register_types__.cpp = %s\nwant gdpp::uninitialize() and no GDPP_ASYNC_CLASS", register)
 	}
 }
