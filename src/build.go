@@ -515,6 +515,7 @@ func generateGdextension(pkg Package, gdpp []gdppClass) {
 		"GodotVersion": fmt.Sprintf("%d.%d", major, minor),
 		"Libraries":    libs,
 		"Icons":        icons,
+		"Reloadable":   pkg.HotReload(),
 	}), "Failed to generate %s", file.ToString())
 	changed := !file.IsFile() || file.ReadString() != text.String()
 	// Written even if unchanged: its new modification time makes the Godot

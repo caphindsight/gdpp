@@ -45,6 +45,7 @@ Package: res://gameplay
   C++ standard:        c++20
   Class prefix:        Gameplay
   Quit timeout:        1 second
+  Hot reload:          on
 
   Classes
     res://gameplay/spinner.h  Spinner                              @tool

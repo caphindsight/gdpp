@@ -84,7 +84,7 @@ A debug build, the default, is for development:
 
 - Built with godot-cpp's `template_debug` target, as a dev build with debug symbols, so you can step through your code in a debugger.
 - Unoptimized by default, so it compiles fast and is easy to debug, but runs slower, sometimes even slower than GDScript. See `gd++ man performance`.
-- Hot reload: rebuild while the editor runs, and the editor reloads the library when its window gets focus, without a restart.
+- Hot reload: rebuild while the editor runs, and the editor reloads the library when its window gets focus, without a restart. A package can turn it off with its `hot_reload` setting: due to a Godot bug, hot reload crashes the editor when the package has a tool class that runs code on the worker thread pool. See `gd++ man packages`.
 - Loaded by the editor, and by games run from the editor or exported in debug mode.
 - Includes the documentation of GD++ classes, for the editor's help. See `gd++ man docs`.
 

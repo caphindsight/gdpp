@@ -25,6 +25,7 @@ syntax = 1
 std = "c++20"
 prefix = "Foo"
 quit_timeout = 2.5
+hot_reload = false
 
 [[class]]
 name = "Foo"
@@ -50,6 +51,9 @@ prefix (optional, default: the package's id in PascalCase)
 
 quit_timeout (optional, default 1)
   How many seconds the package's tasks may still run after the game started quitting, before the game exits anyway, e.g. `2.5`. With `0`, the game exits right away, even if tasks still run. It can't be negative. See "When the game quits" in `gd++ man async`.
+
+hot_reload (optional, default `true`)
+  Whether the editor reloads the package's library when a build changes it, without a restart. With `false`, the editor loads the library once, and you restart the editor to see a new build. Turn it off if hot reload crashes the editor: due to a Godot bug, it does so when the package has a tool class that runs code on the worker thread pool, e.g. an `@onthread` function. See "Debug and release builds" in `gd++ man building`.
 
 [[class]] (optional, any number)
   A plain C++ class that the package registers with Godot. Each one has a name, the header that declares it, an optional icon, and `tool = true` if its code runs in the editor too. Without `tool`, it is a runtime class, whose code runs only in the game. GD++ classes are not listed here: GD++ finds them in the GD++ files. See `gd++ man cpp-classes`.

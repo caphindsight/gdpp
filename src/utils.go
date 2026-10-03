@@ -52,6 +52,11 @@ func countTrue(bs ...bool) int {
 	return n
 }
 
+// onOff returns "on" or "off".
+func onOff(b bool) string {
+	return map[bool]string{true: "on", false: "off"}[b]
+}
+
 // assertDepName asserts name can be used as a dep's directory name.
 func assertDepName(name string) {
 	Assert(name == filepath.Base(name) && name != "." && name != "..", "Invalid arguments: %q is not a valid dependency name.", name)

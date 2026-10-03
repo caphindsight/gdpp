@@ -135,7 +135,7 @@ func TestGenerateGdextension(t *testing.T) {
 	tree := m.tree()
 	gdextension := tree["/games/my_game/src/pkg/pkg.gdextension"]
 	for _, want := range []string{
-		"entry_symbol = \"gdpp_library_init\"\ncompatibility_minimum = \"4.5\"\n",
+		"entry_symbol = \"gdpp_library_init\"\ncompatibility_minimum = \"4.5\"\nreloadable = true\n",
 		"\n\n[libraries]\n\nlinux.debug.arm64 = \"res://src/pkg/libpkg.linux.debug.arm64.so\"\n",
 		"macos.release.x86_64 = \"res://src/pkg/libpkg.macos.release.x86_64.dylib\"\n",
 		"windows.release.x86_64 = \"res://src/pkg/libpkg.windows.release.x86_64.dll\"\n\n[icons]\n\n" +

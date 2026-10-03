@@ -26,6 +26,7 @@ type PackageConfig struct {
 	CppStandard string         `toml:"std"`
 	Prefix      string         `toml:"prefix,omitempty"`       // default: the package ID in PascalCase
 	QuitTimeout *float64       `toml:"quit_timeout,omitempty"` // seconds; default: 1
+	HotReload   *bool          `toml:"hot_reload,omitempty"`   // default: true
 	Classes     []PackageClass `toml:"class,omitempty"`
 }
 
@@ -73,6 +74,12 @@ func (pkg Package) QuitTimeout() float64 {
 		return *pkg.Config.QuitTimeout
 	}
 	return 1
+}
+
+// HotReload reports whether the editor reloads the package's library when it
+// changes.
+func (pkg Package) HotReload() bool {
+	return pkg.Config.HotReload == nil || *pkg.Config.HotReload
 }
 
 // seconds renders a number of seconds, e.g. "2.5 seconds".

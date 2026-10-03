@@ -4,7 +4,7 @@
 
 entry_symbol = "gdpp_library_init"
 compatibility_minimum = {{printf "%q" .GodotVersion}}
-reloadable = true
+reloadable = {{.Reloadable}}
 
 [libraries]
 {{range $tags, $path := .Libraries}}

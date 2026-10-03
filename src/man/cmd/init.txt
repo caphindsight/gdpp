@@ -4,8 +4,8 @@ gd++ init: set up projects, packages and classes
 
 ```sh
 gd++ init [--vcs none|git] [--presets | --nopresets]
-gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
+gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--update]
 ```
 
@@ -41,7 +41,7 @@ Without options, it creates `gd++proj.toml` with the defaults, or reformats it. 
 # Creating a package
 
 ```sh
-gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
+gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
 ```
 
 Creates the directory PATH if it doesn't exist, and writes `PATH/gd++pkg.toml`. PATH must be inside a project. `.` makes the current directory a package, e.g. the project root. If the project uses git, it also writes the package-level block into `PATH/.gitignore`. If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`. See `gd++ man packages`.
@@ -67,12 +67,18 @@ Creates the directory PATH if it doesn't exist, and writes `PATH/gd++pkg.toml`. 
 --quit-timeout SECONDS
   How long the package's tasks may still run after the game started quitting, before the game exits anyway, e.g. `2.5`. Default: `1`. See "When the game quits" in `gd++ man async`.
 
+--hotreload
+  Make the editor reload the package's library when a build changes it. This is the default.
+
+--nohotreload
+  Make the editor load the package's library only once, e.g. because hot reload crashes the editor. See `hot_reload` in `gd++ man packages`.
+
 To see which bindings and specs exist, run `gd++ fetch --index`.
 
 # Updating a package
 
 ```sh
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
 ```
 
 Changes the given settings of the existing package at PATH, and keeps the others. Without `--update`, `gd++ init` asks "Package PATH already exists. Update it?" when PATH is a package already. Changing any setting makes the package's next build start from scratch.

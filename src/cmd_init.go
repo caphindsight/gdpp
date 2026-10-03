@@ -26,6 +26,8 @@ type CmdInit struct {
 	Std         string   `arg:"--std" placeholder:"STD" help:"the package's C++ standard, e.g. c++20"`
 	Prefix      string   `arg:"--prefix" placeholder:"NAME" help:"the prefix of the classes GD++ adds to the package, e.g. Foo for FooAsync [default: the package directory's name in PascalCase]"`
 	QuitTimeout *float64 `arg:"--quit-timeout" placeholder:"SECONDS" help:"how long the package's tasks may still run after the game started quitting, before it exits anyway [default: 1]"`
+	HotReload   bool     `arg:"--hotreload" help:"make the editor reload the package's library when it changes (default)"`
+	NoHotReload bool     `arg:"--nohotreload" help:"make the editor load the package's library only once, e.g. to work around Godot crashing on reload"`
 	Class       string   `arg:"--class" placeholder:"NAME" help:"the name of a class to add or update in the package"`
 	Include     string   `arg:"--include" placeholder:"PATH" help:"the class's header, e.g. pkg://my_node.h"`
 	NoInclude   bool     `arg:"--noinclude" help:"remove the class's header, or create the class without one"`
@@ -38,16 +40,16 @@ type CmdInit struct {
 func (c *CmdInit) Run() {
 	c.Syntax = chosenSyntax(c.Syntax, c.Nightly)
 	if c.Path == "" {
-		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && c.Class == "",
-			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path.")
+		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.Class == "",
+			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path.")
 		Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon && !c.Tool && !c.NoTool, "Invalid arguments: --include, --noinclude, --icon, --noicon, --tool and --notool require --class.")
 		c.initProject()
 		return
 	}
 	Assert(c.Vcs == "" && !c.Presets && !c.NoPresets, "Invalid arguments: --vcs, --presets and --nopresets cannot be used with a package path.")
 	if c.Class != "" {
-		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil,
-			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class.")
+		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload,
+			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload and --nohotreload cannot be used with --class.")
 		c.initClass(ParsePath(c.Path))
 		return
 	}
@@ -59,6 +61,7 @@ func (c *CmdInit) Run() {
 	}
 	Assert(c.Prefix == "" || classNameRegexp.MatchString(c.Prefix), "Invalid arguments: %q is not a valid class name prefix.", c.Prefix)
 	Assert(c.QuitTimeout == nil || *c.QuitTimeout >= 0, "Invalid arguments: --quit-timeout cannot be negative.")
+	Assert(!c.HotReload || !c.NoHotReload, "Invalid arguments: --hotreload and --nohotreload cannot be used together.")
 	if s := c.Syntax; s != nil {
 		Assert(*s >= 0, "Invalid arguments: --syntax cannot be negative.")
 		if *s == trans.NightlySyntax {
@@ -114,7 +117,7 @@ func (c *CmdInit) initProject() {
 	}
 	if (c.Presets || c.NoPresets) && c.Presets != p.Config.Presets {
 		p.Config.Presets = c.Presets
-		changes = append(changes, "the export preset filters to "+map[bool]string{true: "on", false: "off"}[c.Presets])
+		changes = append(changes, "the export preset filters to "+onOff(c.Presets))
 	}
 	if !writeConfig(p.Root.Cd(projectConfigFileName), p.Config.Encode(), changes) {
 		return
@@ -229,6 +232,13 @@ func (c *CmdInit) setPackageFlags(config *PackageConfig) (changes []string) {
 	if q := c.QuitTimeout; q != nil && (config.QuitTimeout == nil || *config.QuitTimeout != *q) {
 		config.QuitTimeout = q
 		changes = append(changes, "the quit timeout to "+seconds(*q))
+	}
+	if (c.HotReload || c.NoHotReload) && c.HotReload != (config.HotReload == nil || *config.HotReload) {
+		config.HotReload = nil // on, the default
+		if c.NoHotReload {
+			config.HotReload = &c.HotReload
+		}
+		changes = append(changes, "hot reload to "+onOff(c.HotReload))
 	}
 	return changes
 }

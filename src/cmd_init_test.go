@@ -211,6 +211,27 @@ func TestInitPackageQuitTimeout(t *testing.T) {
 	}
 }
 
+func TestInitPackageHotReload(t *testing.T) {
+	base := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
+	off := base + "hot_reload = false\n"
+	pkgs := map[string]string{"src/pkg": base}
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, NoHotReload: true}, pkgs)
+	if want := "[-] Set hot reload to off.\n"; !strings.HasPrefix(out, want) {
+		t.Errorf("output = %q, want it to start with %q", out, want)
+	}
+	if got := after["src/pkg/"+packageFileName]; got != off {
+		t.Errorf("config = %q, want %q", got, off)
+	}
+	// Back on: the default, so the key goes away.
+	out, after = runInit(t, CmdInit{Path: "src/pkg", Update: true, HotReload: true}, map[string]string{"src/pkg": off})
+	if want := "[-] Set hot reload to on.\n"; !strings.HasPrefix(out, want) {
+		t.Errorf("output = %q, want it to start with %q", out, want)
+	}
+	if got := after["src/pkg/"+packageFileName]; got != base {
+		t.Errorf("config = %q, want %q", got, base)
+	}
+}
+
 func TestInitPackageNightlySyntax(t *testing.T) {
 	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 1\n"}
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, Nightly: true}, pkgs)
@@ -263,18 +284,21 @@ func TestInitInvalidArgs(t *testing.T) {
 		c    CmdInit
 		want string
 	}{
-		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
-		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
-		"project_prefix":  {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
+		"project_bind":    {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path"},
+		"project_update":  {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path"},
+		"project_prefix":  {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path"},
 		"package_prefix":  {CmdInit{Path: "src/pkg", Prefix: "my pkg"}, `"my pkg" is not a valid class name prefix`},
 		"negative_quit":   {CmdInit{Path: "src/pkg", QuitTimeout: ptr(-1.0)}, "--quit-timeout cannot be negative"},
+		"hotreload_both":  {CmdInit{Path: "src/pkg", HotReload: true, NoHotReload: true}, "--hotreload and --nohotreload cannot be used together"},
+		"project_reload":  {CmdInit{NoHotReload: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path"},
+		"class_reload":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", HotReload: true}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload and --nohotreload cannot be used with --class"},
 		"negative_syntax": {CmdInit{Path: "src/pkg", Syntax: ptr(-1)}, "--syntax cannot be negative"},
 		"syntax_nightly":  {CmdInit{Path: "src/pkg", Syntax: ptr(1), Nightly: true}, "--syntax and --nightly cannot be used together"},
-		"project_quit":    {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout and --class require a package path"},
-		"class_prefix":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class"},
+		"project_quit":    {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path"},
+		"class_prefix":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload and --nohotreload cannot be used with --class"},
 		"project_icon":    {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
 		"package_icon":    {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool and --notool require --class"},
-		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std, --prefix and --quit-timeout cannot be used with --class"},
+		"class_bind":      {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload and --nohotreload cannot be used with --class"},
 		"class_name":      {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
 		"class_include":   {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
 		"class_noinclude": {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},
