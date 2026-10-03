@@ -1,5 +1,5 @@
 decl {
-  gdpp::Weak<ArrayMesh> cache_;
+  Weak<ArrayMesh> cache_;
 }
 
 func mesh() -> ArrayMesh {

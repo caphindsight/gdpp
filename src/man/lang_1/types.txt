@@ -135,7 +135,7 @@ An extern declared in any GD++ file of the package is a type. In C++, it's a `gd
 
 # Async
 
-`Async[T]` is a task whose result has type `T`, e.g. a call of an `@onthread` function, which runs on another thread. `Async[void]` has no result, and a plain `Async` has a `Variant` result. Godot sees the task as an object of the package's class of tasks, e.g. `FooAsync` for a package whose prefix is `Foo`. In C++, it's a `gdpp::Async<T>`, a reference to that object. Copies share the task, so it can be passed around, stored in variables, and sent in signals, like any refcounted object.
+`Async[T]` is a task whose result has type `T`, e.g. a call of an `@onthread` function, which runs on another thread. `Async[void]` has no result, and a plain `Async` has a `Variant` result. Godot sees the task as an object of the package's class of tasks, e.g. `FooAsync` for a package whose prefix is `Foo`. In C++, it's an `Async<T>`, a reference to that object. Copies share the task, so it can be passed around, stored in variables, and sent in signals, like any refcounted object.
 
 `Async` types can't be exported, typed collections can't hold them, and a task's result can't be another task. See `gd++ man async`.
 
@@ -157,7 +157,7 @@ func _process(delta: float) -> void {
 }
 ```
 
-In C++, it's a `gdpp::Weak<T>`, which holds the object's ID, not the object. It converts to the object wherever one is needed, like in `Enemy *e = target`: it looks the object up by its ID, and gives `nullptr` once the object is freed. `if (target)` checks the same. For a `@pool` class, it also gives `nullptr` once the object is returned to its pool, even though the object still exists there, so a reference never points to a reused object. See `gd++ man pools`.
+In C++, it's a `Weak<T>`, which holds the object's ID, not the object. It converts to the object wherever one is needed, like in `Enemy *e = target`: it looks the object up by its ID, and gives `nullptr` once the object is freed. `if (target)` checks the same. For a `@pool` class, it also gives `nullptr` once the object is returned to its pool, even though the object still exists there, so a reference never points to a reused object. See `gd++ man pools`.
 
 `T` can be any class. A `Weak` of a class that isn't refcounted, e.g. a node, converts to a `T *`, and a `Weak` of a refcounted class, e.g. a resource, to a `Ref<T>`:
 
