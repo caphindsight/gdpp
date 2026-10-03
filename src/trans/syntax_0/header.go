@@ -177,7 +177,7 @@ func withSpace(t string) string {
 var processing = map[string]string{"_process": "set_process", "_physics_process": "set_physics_process"}
 
 func (c *classModel) needsCtor() bool {
-	return c.ctor != nil || c.trace || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
+	return c.ctor != nil || c.recycleCtor != nil && !c.recycleCtorOnly || c.trace || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
 		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" }) ||
 		slices.ContainsFunc(c.notifs, func(n *notifModel) bool { return n.setter != "" })
 }

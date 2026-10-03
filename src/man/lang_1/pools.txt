@@ -20,11 +20,11 @@ dtor {
 }
 
 @recycle ctor {
-  gd::print("A bullet was reused.");
+  gd::print("A bullet was created or reused.");
 }
 
 @recycle dtor {
-  gd::print("A bullet was kept for later.");
+  gd::print("A bullet was kept for later or deleted.");
 }
 ```
 
@@ -44,7 +44,7 @@ func retire(bullet: Bullet) -> void {
 Code uses a pool with the same words as any other class: `create` and `destroy`. See `gd++ man classes`.
 
 - `destroy` returns the bullet to the pool: it runs the `@recycle dtor`, removes the node from its parent, and keeps it in the pool.
-- `create` takes a bullet from the pool if there is one, resets its `@recycle` variables, and runs its `@recycle ctor`. Otherwise, it creates a new bullet.
+- `create` takes a bullet from the pool if there is one, resets its `@recycle` variables, and runs its `@recycle ctor`. Otherwise, it creates a new bullet, which also runs its `@recycle ctor`, right after `ctor`.
 
 A reused node also gets ready again the next time it enters the tree, but only `@recycle` runs again: see "Getting ready again" below.
 
@@ -55,9 +55,19 @@ A reused node also gets ready again the next time it enters the tree, but only `
 A `@pool` class can have two kinds of constructors and destructors, at most one of each:
 
 - `ctor` and `dtor` run only when an object is actually created or deleted, like in any other class. Variables get their initial values only then, together with `ctor`.
-- `@recycle ctor` runs when the pool reuses an object instead of creating a new one, and `@recycle dtor` runs when the pool keeps an object instead of deleting it.
+- `@recycle ctor` runs each time an object is put to use: when it's created, right after `ctor`, and when the pool reuses it. `@recycle dtor` runs each time an object stops being used: when the pool keeps it, and when it's deleted, right before `dtor`. An object deleted while it waits in its pool, e.g. when the game quits, already ran its `@recycle dtor` when the pool kept it, so it doesn't run it again.
 
-So a bullet that's created, returned to the pool, reused and finally deleted runs `ctor`, `@recycle dtor`, `@recycle ctor` and `dtor`, in that order. Put expensive setup that a reused object can keep in `ctor`, and reset everything that a reused object must not keep with `@recycle` variables, or in `@recycle ctor`. Only `@pool` classes can have `@recycle` blocks.
+So a bullet that's created, returned to the pool, reused and finally deleted runs `ctor`, `@recycle ctor`, `@recycle dtor`, `@recycle ctor`, `@recycle dtor` and `dtor`, in that order: each use has its own pair. Put expensive setup that a reused object can keep in `ctor`, and set up each use in `@recycle ctor`, or with `@recycle` variables. Only `@pool` classes can have `@recycle` blocks.
+
+With `@recycle("only")`, a block runs only when the pool reuses or keeps an object, not when it's created or deleted:
+
+```gd++
+@recycle("only") ctor {
+  gd::print("A bullet was reused.");
+}
+```
+
+With `("only")` on both blocks, the same bullet runs `ctor`, `@recycle dtor`, `@recycle ctor` and `dtor`.
 
 # Resetting variables
 
@@ -193,7 +203,7 @@ With `@trace` on a `@pool` class, in a build that turns it on, the trace shows w
 
 # In the generated code
 
-A `@pool` class gets a few members, which the runtime's `create` and `destroy` use, besides `new_pooled` or `new_scene_pooled`, `free_pooled` and `queue_free_pooled`, for scripts: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, its generation, and whether it got ready once, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Its destructor tells the pool when an object is deleted for good. See `gd++ man generated` and `gd++ man runtime`.
+A `@pool` class gets a few members, which the runtime's `create` and `destroy` use, besides `new_pooled` or `new_scene_pooled`, `free_pooled` and `queue_free_pooled`, for scripts: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, its generation, and whether it got ready once, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Without `"only"`, the constructor also runs the `@recycle ctor`, and the destructor the `@recycle dtor`, unless the object rests in its pool. The destructor also tells the pool when an object is deleted for good. See `gd++ man generated` and `gd++ man runtime`.
 
 # See also
 

@@ -37,16 +37,17 @@ func with_health(hp: int) -> Enemy {
 }
 ```
 
-The constructor runs whenever an object is created: by `create` in C++, by `Enemy.new()` in GDScript, and when Godot loads a scene or resource that holds it. The destructor runs when the object is deleted: for nodes, when they're freed, e.g. with `queue_destroy` or `queue_free()`, and for refcounted objects, when the last reference goes away. A `@pool` class can also have `@recycle ctor` and `@recycle dtor` blocks, which run when an object is taken from the pool or returned to it. See `gd++ man pools`.
+The constructor runs whenever an object is created: by `create` in C++, by `Enemy.new()` in GDScript, and when Godot loads a scene or resource that holds it. The destructor runs when the object is deleted: for nodes, when they're freed, e.g. with `queue_destroy` or `queue_free()`, and for refcounted objects, when the last reference goes away. A `@pool` class can also have `@recycle ctor` and `@recycle dtor` blocks, which run each time an object is put to use and stops being used: when it's created or taken from the pool, and when it's returned to the pool or deleted. See `gd++ man pools`.
 
 # What the constructor does
 
-GD++ generates a constructor if the class needs one: if it has a `ctor`, a variable with an initial value that isn't `@onready`, an `@rpc` function, or an override of `_process` or `_physics_process`. The constructor does this, in order:
+GD++ generates a constructor if the class needs one: if it has a `ctor`, a `@recycle ctor`, a variable with an initial value that isn't `@onready`, an `@rpc` function, or an override of `_process` or `_physics_process`. The constructor does this, in order:
 
 1. For each `@rpc` function, set its RPC configuration. See `gd++ man rpc`.
 2. If the class overrides `_process` or `_physics_process`, turn it on with `set_process(true)` or `set_physics_process(true)`.
 3. Assign the initial values of the variables that aren't `@onready`, in the order of their declarations.
 4. Run the body of `ctor`, in a block of its own.
+5. In a `@pool` class, run the body of `@recycle ctor`, unless it has `@recycle("only")`. See `gd++ man pools`.
 
 So the body of `ctor` sees every variable with its initial value.
 
@@ -147,7 +148,7 @@ Use the engine functions for their notifications, and `notif` blocks for every o
 
 # Pools
 
-A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run when an object is taken from the pool or returned to it. Its `@recycle` variables get their initial values again when an object is reused. A reused node gets ready again, but its `@onready` values and `_ready` only run the first time, unless they have `@recycle`. See `gd++ man pools`.
+A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run each time an object is put to use and stops being used: when it's created or taken from the pool, and when it's returned to the pool or deleted, unless they have `@recycle("only")`. Its `@recycle` variables get their initial values again when an object is reused. A reused node gets ready again, but its `@onready` values and `_ready` only run the first time, unless they have `@recycle`. See `gd++ man pools`.
 
 # See also
 

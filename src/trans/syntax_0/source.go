@@ -73,6 +73,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		if c.ctor != nil {
 			w.block(c.ctor, "\t{", "}", assertVoid)
 		}
+		if c.recycleCtor != nil && !c.recycleCtorOnly {
+			w.block(c.recycleCtor, "\t{", "}", assertVoid)
+		}
 		w.ln("}")
 	}
 	if c.needsDtor() {
@@ -81,6 +84,10 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		guard(w, c.gameOnly, "")
 		if c.trace {
 			w.ln("\tgdpp::trace_lifetime(%q, this, false);", c.name)
+		}
+		// Unless the object rests in its pool, which already ran it.
+		if c.recycleDtor != nil && !c.recycleDtorOnly {
+			w.block(c.recycleDtor, "\tif (!_gdpp_pool_slot.given) {", "}", assertVoid)
 		}
 		if c.dtor != nil {
 			w.block(c.dtor, "\t{", "}", assertVoid)

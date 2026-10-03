@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Bullet" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="free_pooled">
+			<return type="void" />
+			<description>
+				Returns the node to its pool right away, like [code]destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before it's reused does nothing. Godot doesn't allow removing a collision object from the tree during a physics callback, e.g. in a handler of [signal Area3D.body_entered], so use [method queue_free_pooled] there. A node that the pool didn't make is freed at the end of the frame, like with [method Node.queue_free]. [b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.
+			</description>
+		</method>
+		<method name="new_pooled" qualifiers="static">
+			<return type="Bullet" />
+			<description>
+				Takes an object from the class's pool, or creates a new one if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a pool with a size are in use, so always check the result. Return the object with [method free_pooled] or [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates an object outside the pool.
+			</description>
+		</method>
+		<method name="queue_free_pooled">
+			<return type="void" />
+			<description>
+				Returns the node to its pool at the end of the frame, like [code]queue_destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before then does nothing. A node that the pool didn't make is freed, like with [method Node.queue_free]. [b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="age" type="float" setter="set_age" getter="get_age">
+		</member>
+	</members>
+</class>

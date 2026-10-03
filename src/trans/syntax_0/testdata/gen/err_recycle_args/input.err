@@ -1,3 +1,4 @@
-input.gd++:5:10: Annotation @recycle takes no arguments.
+input.gd++:5:10: Annotation @recycle takes "only".
  5 | @recycle(1) ctor {
    |          ^
+Hint: E.g. @recycle("only").

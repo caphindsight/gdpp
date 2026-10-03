@@ -50,8 +50,10 @@ type classModel struct {
 	imports    []*Type
 	noimports  []*Type
 
-	// A @pool class's @recycle ctor and dtor blocks, which run when its pool reuses and keeps an object.
-	recycleCtor, recycleDtor *Block
+	// A @pool class's @recycle ctor and dtor blocks, which run when its pool reuses and keeps an object, and also right
+	// after the constructor and before the destructor, unless they have @recycle("only").
+	recycleCtor, recycleDtor         *Block
+	recycleCtorOnly, recycleDtorOnly bool
 	// Whether a @pool class has @onready values or a _ready without @recycle, which only run the first time an
 	// object gets ready.
 	readyOnce bool
@@ -1005,7 +1007,8 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "pool", "profile", "rpc", "scene", "trace", "virtual"}, a.Name):
+			"export_placeholder", "export_range", "export_subgroup", "icon", "override", "pool", "profile", "recycle", "rpc", "scene", "trace",
+			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
 		found[a.Name] = a
@@ -1263,11 +1266,11 @@ func (u *unit) extends(owner string, bases ...string) bool {
 // @recycle, what its pool runs when it reuses or keeps an object.
 func (u *unit) lifecycle(m *classModel, member *Member) error {
 	keyword, pos := member.keyword()
-	list, body, slot, recycled := []*Annotation(nil), (*Block)(nil), &m.ctor, &m.recycleCtor
+	list, body, slot, recycled, only := []*Annotation(nil), (*Block)(nil), &m.ctor, &m.recycleCtor, &m.recycleCtorOnly
 	if member.Ctor != nil {
 		list, body = member.Ctor.Annotations, member.Ctor.Body
 	} else {
-		list, body, slot, recycled = member.Dtor.Annotations, member.Dtor.Body, &m.dtor, &m.recycleDtor
+		list, body, slot, recycled, only = member.Dtor.Annotations, member.Dtor.Body, &m.dtor, &m.recycleDtor, &m.recycleDtorOnly
 	}
 	a, err := u.annotations(list, "a "+keyword+" block", "recycle")
 	if err != nil {
@@ -1279,7 +1282,15 @@ func (u *unit) lifecycle(m *classModel, member *Member) error {
 			return u.errorAt(r.Pos, len(r.Name)+1, fmt.Sprintf("A @recycle %s only works in a @pool class, whose objects are reused.", keyword),
 				fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
 		}
-		slot, name, n = recycled, "@recycle "+keyword, len(r.Name)+1
+		for i, arg := range r.Args {
+			switch {
+			case arg.Value != `"only"`:
+				return u.errorAt(arg.Pos, len(arg.Value), "Annotation @recycle takes \"only\".", "E.g. @recycle(\"only\").")
+			case i > 0:
+				return u.errorAt(arg.Pos, len(arg.Value), "Annotation @recycle takes \"only\" only once.", "")
+			}
+		}
+		slot, name, n, *only = recycled, "@recycle "+keyword, len(r.Name)+1, len(r.Args) > 0
 	}
 	if *slot != nil {
 		return u.errorAt(pos, n, fmt.Sprintf("Class %s has two %ss.", m.name, name), "")

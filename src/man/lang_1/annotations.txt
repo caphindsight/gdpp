@@ -49,7 +49,7 @@ A declaration's doc comment can come before its annotations or between them, but
 # ctor and dtor blocks
 
 @recycle
-  In a `@pool` class, a `@recycle ctor` runs when the pool reuses an object, and a `@recycle dtor` runs when the pool keeps one. For `@recycle` on variables, see "Variables of classes" below. The plain `ctor` and `dtor` run only when an object is actually created or deleted. See `gd++ man pools`.
+  In a `@pool` class, a `@recycle ctor` runs when the pool reuses an object, and a `@recycle dtor` runs when the pool keeps one. They also run when an object is actually created, after `ctor`, and deleted, before `dtor`, so they run once for each use of an object, unless they have `@recycle("only")`. For `@recycle` on variables, see "Variables of classes" below. The plain `ctor` and `dtor` run only when an object is actually created or deleted. See `gd++ man pools`.
 
 # Functions of classes
 

@@ -33,14 +33,16 @@ type Member struct {
 	NoImport *Type   `parser:"| 'noimport' @@ )"`
 }
 
-// Ctor is a ctor block: the constructor's body, or with @recycle, what runs when a pool reuses an object.
+// Ctor is a ctor block: the constructor's body, or with @recycle, what runs when a pool reuses an object, and also
+// right after the constructor, unless it has @recycle("only").
 type Ctor struct {
 	Pos         lexer.Position
 	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
 	Body        *Block        `parser:"'ctor' @@"`
 }
 
-// Dtor is a dtor block: the destructor's body, or with @recycle, what runs when a pool keeps an object.
+// Dtor is a dtor block: the destructor's body, or with @recycle, what runs when a pool keeps an object, and also right
+// before the destructor, unless it has @recycle("only").
 type Dtor struct {
 	Pos         lexer.Position
 	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`

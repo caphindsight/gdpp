@@ -139,6 +139,7 @@ Annotation @export is used twice.
 Annotation @onready can only be used in classes that extend Node, which A doesn't.
 Annotation @override takes "final", "super" or "engine".
 Annotation @virtual takes "private" or "super".
+Annotation @recycle takes "only".
 Annotations @static and @virtual can't be used together.
 A variable can have only one export annotation.
 Annotation @export_range needs an int or float variable, and at least a minimum and a maximum.

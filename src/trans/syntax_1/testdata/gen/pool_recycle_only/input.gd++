@@ -1,0 +1,22 @@
+@pool
+class_name Bullet
+extends Node3D
+
+@recycle var age: float = 0.0
+
+ctor {
+  gd::print("created");
+}
+
+dtor {
+  gd::print("deleted");
+}
+
+@recycle("only") ctor {
+  gd::print("reused");
+}
+
+@recycle("only")
+dtor {
+  gd::print("kept");
+}
