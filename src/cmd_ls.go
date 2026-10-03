@@ -236,37 +236,41 @@ func lsSyntax(syntax int) string {
 	return strconv.Itoa(syntax)
 }
 
-// lsClassTable renders the classes, grouped by the file declaring them: first
-// the C++ classes, then those of each GD++ file, and last the GD++ files with
-// errors.
+// lsClassTable renders the classes as a table of file, name, base class and
+// tags. A file is shown only on its first class, so the classes without a
+// file come first, lest they look like part of the file above.
 func lsClassTable(classes []lsClass) string {
-	var out strings.Builder
-	var rows [][]string
-	group := ""
-	for _, class := range classes {
-		title, second := "C++ classes in the package", lsClassPath(class.File, "")
-		if class.Gdpp {
-			title, second = "Classes in "+class.FileText, "extends "+class.Base
+	if len(classes) == 0 {
+		return ""
+	}
+	var sorted []lsClass
+	for _, noFile := range []bool{true, false} {
+		for _, class := range classes {
+			if (class.File == Path{}) == noFile {
+				sorted = append(sorted, class)
+			}
 		}
-		if title != group || class.Name == "" {
-			out.WriteString(AlignColumns(rows, "    "))
-			rows, group = nil, title
-			if out.Len() == 0 {
-				out.WriteString("\n")
-			}
-			if class.Name == "" {
-				out.WriteString("  " + lsMissing(class.FileText+": has errors, see gd++ build") + "\n")
-				continue
-			}
-			out.WriteString("  " + Styled(title, Bold) + "\n")
+	}
+	classes = sorted
+	var rows [][]string
+	for i, class := range classes {
+		file, base := lsClassPath(class.File, ""), ""
+		if class.Gdpp {
+			file, base = class.FileText, "extends "+class.Base
+		}
+		if i > 0 && class.File == classes[i-1].File {
+			file = ""
 		}
 		name := class.Name
-		if class.Clash {
+		switch {
+		case name == "":
+			name, base = lsMissing("has errors"), "see gd++ build"
+		case class.Clash:
 			name = lsMissing(name + ": declared twice")
 		}
-		rows = append(rows, []string{name, second, lsTags(class)})
+		rows = append(rows, []string{file, name, base, lsTags(class)})
 	}
-	return out.String() + AlignColumns(rows, "    ")
+	return "\n  " + Styled("Classes", Bold) + "\n" + AlignColumns(rows, "    ")
 }
 
 // lsTags renders the annotations of a class that change what it is, e.g.

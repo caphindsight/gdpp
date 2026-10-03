@@ -174,9 +174,9 @@ func TestLsCmdOnePackage(t *testing.T) {
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := "\n" + lsFooOut +
 		"\n" +
-		"  C++ classes in the package\n" +
-		"    Tree  res://foo/tree.h  @icon\n" +
-		"    Bush                    @tool\n"
+		"  Classes\n" +
+		"                      Bush    @tool\n" +
+		"    res://foo/tree.h  Tree    @icon\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -198,17 +198,14 @@ func TestLsCmdGdppClasses(t *testing.T) {
 		"  Class prefix:        Foo\n" +
 		"  Quit timeout:        1 second\n" +
 		"\n" +
-		"  C++ classes in the package\n" +
-		"    Tree                    res://foo/tree.h  @icon\n" +
-		"    Player: declared twice\n" +
-		"  Classes in pkg://icons/helper.gg\n" +
-		"    Helper  extends RefCounted\n" +
-		"  Classes in pkg://player.gd++\n" +
-		"    Player: declared twice  extends Node  @tool @icon\n" +
-		"  Classes in pkg://spawner.gd++\n" +
-		"    Spawner  extends Node3D    @game_only\n" +
-		"    Wave     extends Resource  @icon (missing)\n" +
-		"  pkg://broken.gdpp: has errors, see gd++ build\n"
+		"  Classes\n" +
+		"                           Player: declared twice\n" +
+		"    res://foo/tree.h       Tree                                        @icon\n" +
+		"    pkg://icons/helper.gg  Helper                  extends RefCounted\n" +
+		"    pkg://player.gd++      Player: declared twice  extends Node        @tool @icon\n" +
+		"    pkg://spawner.gd++     Spawner                 extends Node3D      @game_only\n" +
+		"                           Wave                    extends Resource    @icon (missing)\n" +
+		"    pkg://broken.gdpp      has errors              see gd++ build\n"
 	if !strings.HasSuffix(out, want) {
 		t.Errorf("output = %q, want it to end with %q", out, want)
 	}
@@ -261,10 +258,10 @@ func TestLsPackages(t *testing.T) {
 		"  Class prefix:        Pk\n" +
 		"  Quit timeout:        2.5 seconds\n" +
 		"\n" +
-		"  C++ classes in the package\n" +
-		"    Tree        res://foo/tree.h            @icon\n" +
-		"    Bush        res://foo/bush.h (missing)  @icon (missing)\n" +
-		"    GrassPatch\n" +
+		"  Classes\n" +
+		"                                GrassPatch\n" +
+		"    res://foo/tree.h            Tree          @icon\n" +
+		"    res://foo/bush.h (missing)  Bush          @icon (missing)\n" +
 		"\n" +
 		"To fix: gd++ fetch --missing\n"
 	for _, c := range []struct {
