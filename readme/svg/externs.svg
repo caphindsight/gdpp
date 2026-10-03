@@ -6,7 +6,7 @@
   <text x="16" y="70"></text>
   <text x="16" y="90"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> terrain: </tspan><tspan fill="#7ee787">Terrain</tspan></text>
   <text x="16" y="110"></text>
-  <text x="16" y="130"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_physics_process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="130"><tspan fill="#e3b341">physics_process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) {</tspan></text>
   <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3"> pos = </tspan><tspan fill="#56d4dd">get_position</tspan><tspan fill="#e6edf3">();</tspan></text>
   <text x="16" y="170"><tspan fill="#e6edf3">  pos.y = terrain-&gt;</tspan><tspan fill="#56d4dd">height_at</tspan><tspan fill="#e6edf3">(pos.x, pos.z);</tspan></text>
   <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">set_position</tspan><tspan fill="#e6edf3">(pos);</tspan></text>

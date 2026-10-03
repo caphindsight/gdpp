@@ -11,7 +11,7 @@
   <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> path;</tspan></text>
   <text x="16" y="190"><tspan fill="#e6edf3">}</tspan></text>
   <text x="16" y="210"></text>
-  <text x="16" y="230"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="230"><tspan fill="#e3b341">process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) {</tspan></text>
   <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (!pending) {</tspan></text>
   <text x="16" y="270"><tspan fill="#e6edf3">    pending = </tspan><tspan fill="#56d4dd">find_path</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#56d4dd">get_position</tspan><tspan fill="#e6edf3">(), target);</tspan></text>
   <text x="16" y="290"><tspan fill="#e6edf3">  } </tspan><tspan fill="#e3b341">else</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (</tspan><tspan fill="#e3b341">is_done</tspan><tspan fill="#e6edf3"> pending) {</tspan></text>
