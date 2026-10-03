@@ -88,7 +88,7 @@ func _ready() -> void {
 
 With `@recycle func _ready()`, the message would print each time. The order of annotations doesn't matter: `@recycle @onready` is the same. `@override("engine") _ready` works the same way, and also takes `@recycle`. The values are still set in the order of the declarations, before `_ready`, and the first time, all of them are set. An object that the pool reuses before it ever got ready, e.g. one that was created and destroyed without entering the tree, still gets everything the first time it gets ready.
 
-`notif` blocks always run, e.g. `notif READY` at each ready. They can read `GENERATION`, an unsigned integer: how many times the pool took the object back, so `0` until it's first returned. It goes up when `destroy` returns the object, before the `@recycle dtor` and before the node leaves the tree, so `notif EXIT_TREE` already sees the new value then. In other classes, `GENERATION` is always `0`.
+`notif` blocks always run, e.g. `notif READY` at each ready. They and `@recycle _ready` can read `GENERATION`, an unsigned integer: how many times the pool took the object back, so `0` until it's first returned. It goes up when `destroy` returns the object, before the `@recycle dtor` and before the node leaves the tree, so `notif EXIT_TREE` already sees the new value then. In other classes, `GENERATION` is always `0`.
 
 ```gd++
 notif READY {
@@ -97,6 +97,8 @@ notif READY {
   }
 }
 ```
+
+Other functions can't read it, not even `_ready` without `@recycle`.
 
 Only `@pool` classes can have `@recycle _ready`, and `@recycle` works on no other function. Other classes pay nothing for any of this: they get no checks, and `GENERATION` is a constant there.
 

@@ -211,7 +211,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	w.ln("#undef This")
 }
 
-// generationRegexp matches the use of GENERATION, which notif blocks can read.
+// generationRegexp matches the use of GENERATION, which notif blocks and @recycle _ready can read.
 var generationRegexp = regexp.MustCompile(`\bGENERATION\b`)
 
 // initializer writes the assignment of var v's initial value, or of its type's default if it has none.
@@ -370,6 +370,9 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t}")
 	}
 	u.debugHooks(w, c, f)
+	if f.recycle != nil && f.f.Body != nil && generationRegexp.MatchString(f.f.Body.Text) {
+		w.ln("\tconst uint64_t GENERATION = _gdpp_pool_slot.generation;")
+	}
 	// A traced function that returns a value runs as a lambda, so the trace gets the value.
 	wrap := f.trace && !f.ret.void
 	if wrap {

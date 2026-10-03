@@ -55,11 +55,12 @@ void Bullet::_notification(int WHAT) {
 }
 
 void Bullet::_gdpp_body__ready() {
+	const uint64_t GENERATION = _gdpp_pool_slot.generation;
 #line 8 "input.gd++"
 
-  gd::print("each ready");
+  gd::print("each ready, in generation ", GENERATION);
 
-#line 63 "Bullet.cpp"
+#line 64 "Bullet.cpp"
 }
 
 Vector3 Bullet::get_start() const {

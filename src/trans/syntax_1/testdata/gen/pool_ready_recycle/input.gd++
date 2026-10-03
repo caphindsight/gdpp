@@ -6,7 +6,7 @@ extends Node3D
 
 @recycle
 func _ready() -> void {
-  gd::print("each ready");
+  gd::print("each ready, in generation ", GENERATION);
 }
 
 @pool
