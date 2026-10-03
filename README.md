@@ -60,21 +60,27 @@ The full documentation is built into the tool, and matches the version you run. 
 
 Unlike GDScript, blocks use braces, and every value has a static type. Types are Godot's, e.g. `int`, `Vector3` or `Node3D`. Each one maps to a C++ type, e.g. `int64_t`, `Vector3` and `Node3D *`. Most examples below show a few members of a class, not whole files.
 
-### Includes are automatic
-
-You never write `#include` lines. GD++ knows which header declares each name of godot-cpp and of your package, finds the names your code uses, and includes their headers. To use a class, just use it, even in a cycle: `Player` can use `Enemy`, and `Enemy` can use `Player`. See `gd++ man includes`.
-
 ### Classes
 
 <a href="readme/svg/classes.gd++"><img src="readme/svg/classes.svg" alt="GD++ code: classes"></a>
 
 A file has at most one file-level class, with `class_name`, and any number of inline ones. Without `extends`, a class extends `RefCounted`. See `gd++ man classes`.
 
+### Includes are automatic
+
+You never write `#include` lines. GD++ knows which header declares each name of godot-cpp and of your package, finds the names your code uses, and includes their headers. To use a class, just use it, even in a cycle: `Player` can use `Enemy`, and `Enemy` can use `Player`. See `gd++ man includes`.
+
 ### Creating and deleting objects
 
 <a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
 
 `create` and `destroy` are GD++ words, meant to create and delete objects of any class, and each kind of GD++ class gives them its own meaning. For example, for a pool class (see "Object pools"), `create` reuses a node from the pool, and `destroy` gives it back instead of deleting it. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. `queue_destroy` destroys a node at the end of the frame, like Godot's `queue_free`, but works with pools too. See `gd++ man classes`.
+
+### Engine callbacks
+
+<a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
+
+`ready` runs when the node gets ready, and `process` on every frame, with the seconds since the last one. The others are `enter_tree`, `exit_tree`, `physics_process(delta: float)` and `draw`. Under the hood, they run in the class's `_notification`, and aren't real functions, hence their own syntax instead of `func _ready()`: a script that extends the class can't replace them, and nothing can call them. `process` and `physics_process` also turn processing on. See `gd++ man engine`.
 
 ### Tool classes
 
@@ -147,12 +153,6 @@ With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ ma
 <a href="readme/svg/signals.gd++"><img src="readme/svg/signals.svg" alt="GD++ code: signals"></a>
 
 `emit` is one of GD++'s few rewrites in C++, so that sending a signal looks different from a call. See `gd++ man signals` and `gd++ man rewrites`.
-
-### Engine callbacks
-
-<a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
-
-Engine blocks, `ready`, `enter_tree`, `exit_tree`, `process(delta: float)`, `physics_process(delta: float)` and `draw`, run at the engine's `_ready`, `_process` and the like, from the class's notification handler, so a script that extends the class can't replace them. `process` and `physics_process` also turn processing on. See `gd++ man engine`.
 
 ### Overrides
 

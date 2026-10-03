@@ -1,4 +1,7 @@
-physics_process(delta: float) {
-  set_velocity(get_velocity() + get_gravity() * delta);
-  move_and_slide();
+ready {
+  gd::print("Ready.");
+}
+
+process(delta: float) {
+  rotate_y(delta);
 }
