@@ -1,10 +1,12 @@
-var cache: Weak[ArrayMesh]
+decl {
+  gdpp::Weak<ArrayMesh> cache_;
+}
 
 func mesh() -> ArrayMesh {
-  Ref<ArrayMesh> m = cache;    // null once the mesh is freed
+  Ref<ArrayMesh> m = cache_;   // null once the mesh is freed
   if (m.is_null()) {
     m = build_mesh();
-    cache = m;
+    cache_ = m;
   }
   return m;
 }
