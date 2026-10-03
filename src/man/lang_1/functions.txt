@@ -137,7 +137,7 @@ func _process(delta: float) -> void {
 }
 ```
 
-The engine functions are the engine's virtual functions that have a notification: `_ready`, `_enter_tree`, `_exit_tree`, `_process` and `_physics_process` in classes that extend `Node`, and `_draw` in classes that extend `CanvasItem`. Written without `@override`, their bodies run in the class's `_notification`, not in an override, so a script that extends the class and defines a function of the same name doesn't replace them: both run. `@override` on them is an error, since a plain override is rarely what you want: drop it. Only if you're sure you need one, which a script replaces, write `@override("engine")`:
+The engine functions are the engine's virtual functions that have a notification: `_ready`, `_enter_tree`, `_exit_tree`, `_process` and `_physics_process` in classes that extend `Node`, and `_draw` in classes that extend `CanvasItem`. Written without `@override`, they're just `notif` blocks with syntax sugar: `func _process(delta: float) -> void { ... }` is a `notif PROCESS { ... }` block whose `delta` is set. Their bodies run in the class's `_notification`, not in an override, so neither a subclass nor a script that extends the class and defines a function of the same name replaces them: both run, the base's first. `@override` on them is an error, since a plain override is rarely what you want: drop it. Only if you're sure you need one, which a script replaces, write `@override("engine")`:
 
 ```out
 [×] res://a.gd++:4:1: The engine function _ready doesn't need @override.

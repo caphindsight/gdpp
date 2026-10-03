@@ -64,17 +64,13 @@ When the scene loads, Godot sets the properties before the node enters the tree,
 A tool class runs all its code in the editor, including code meant for the game, e.g. rocks that roll away when the player comes close. Mark such functions and variables `@game_only`:
 
 ```gd++
-func _process(delta: float) -> void {
-  scare_rocks();
-}
-
 @game_only
-func scare_rocks() -> void {
+func _process(delta: float) -> void {
   // ... game logic, never run in the editor ...
 }
 ```
 
-In debug builds, which the editor loads, a `@game_only` function returns right away in the editor. Engine functions like `_process` can't be `@game_only`, so put the game's part in a function of its own, like here. Anywhere else, `Engine::get_singleton()->is_editor_hint()` tells whether the code runs in the editor. See "@game_only" in `gd++ man classes`.
+In debug builds, which the editor loads, a `@game_only` function returns right away in the editor. Anywhere else, `Engine::get_singleton()->is_editor_hint()` tells whether the code runs in the editor. See "@game_only" in `gd++ man classes`.
 
 The same goes for other classes: a tool class that creates objects of a runtime class, e.g. with `create`, runs their code in the editor. Mark such classes `@game_only` if their code must never run there.
 

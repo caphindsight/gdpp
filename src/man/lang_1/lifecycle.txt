@@ -124,11 +124,11 @@ Two notifications are worth knowing:
 - `POSTINITIALIZE` comes right after the constructor, once the object is fully created.
 - `PREDELETE` comes when the object is about to be deleted, before the destructor. The object is still whole, e.g. a node is still in the tree, so it can still emit signals and call the engine.
 
-GD++ generates the class's `_notification` method from its `notif` blocks, its engine functions, e.g. `_process`, and its `@onready` variables, so a class can't declare its own `_notification`. Godot calls the `_notification` of each class in the chain of bases itself, so a subclass's `notif` blocks don't replace its base's: both run. A script's `_notification` doesn't replace them either: it runs after them.
+GD++ generates the class's `_notification` method from its `notif` blocks, its engine functions, e.g. `_process`, and its `@onready` variables, so a class can't declare its own `_notification`. Godot calls the `_notification` of each class in the chain of bases itself, so a subclass's `notif` blocks and engine functions don't replace its base's: both run, the base's first, or last for notifications that Godot sends in reverse, e.g. `PREDELETE`. A script's `_notification` doesn't replace them either: it runs after them.
 
 # notif and engine functions
 
-The engine functions, `_ready`, `_enter_tree`, `_exit_tree`, `_process`, `_physics_process` and `_draw`, are handlers of notifications too, written as functions: see `gd++ man functions`. In `_notification`, GD++ first sets the `@onready` variables, then runs `_ready`, and then the `notif` blocks and the other engine functions, in the order of the file:
+The engine functions, `_ready`, `_enter_tree`, `_exit_tree`, `_process`, `_physics_process` and `_draw`, are just `notif` blocks with syntax sugar, written as functions: see `gd++ man functions`. In `_notification`, GD++ first sets the `@onready` variables, then runs `_ready`, and then the `notif` blocks and the other engine functions, in the order of the file:
 
 ```gd++
 notif PROCESS {
