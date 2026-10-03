@@ -2,7 +2,7 @@
 class_name Turntable
 extends Node3D
 
-func _process(delta: float) -> void {
+process(delta) {
   rotate_y(delta);
 }
 

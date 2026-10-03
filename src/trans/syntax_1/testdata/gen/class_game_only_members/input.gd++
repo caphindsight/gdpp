@@ -12,7 +12,7 @@ enum Kind { SMALL, BIG }
 var radius: float = 1.0
 
 @game_only
-func _process(delta: float) -> void {
+process(delta) {
   gd::print(delta);
 }
 

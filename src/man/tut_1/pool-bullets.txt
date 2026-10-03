@@ -21,7 +21,7 @@ extends Area3D
 
 var age: float = 0.0
 
-func _physics_process(delta: float) -> void {
+physics_process(delta) {
   translate(Vector3(0, 0, -speed * delta));
   age += delta;
   if (age >= lifetime) {

@@ -149,7 +149,7 @@ extends Node
   #include "src/spinner.h"
 }
 
-func _ready() -> void {
+ready {
   Spinner *spinner = memnew(Spinner);
   add_child(spinner);
 }
@@ -184,20 +184,20 @@ extends Node
 
 @export var spinner: Spinner
 
-func _ready() -> void {
+ready {
   spinner->set_speed(2.0);
 }
 
 class FastSpinner {
   extends Spinner
 
-  func _ready() -> void {
+  ready {
     set_speed(10.0);
   }
 }
 ```
 
-GD++ finds the class's base class in its header, if the header declares the class in namespace `godot`, as above. GD++ then knows that `FastSpinner` is a `Node`, so its `_ready` is Godot's `_ready`. If the class is declared elsewhere, e.g. at global scope, GD++ still knows the class, but not its base.
+GD++ finds the class's base class in its header, if the header declares the class in namespace `godot`, as above. GD++ then knows that `FastSpinner` is a `Node`, so it can have a `ready` block. If the class is declared elsewhere, e.g. at global scope, GD++ still knows the class, but not its base.
 
 Mind that GD++ doesn't check the kind: if a refcounted class is marked `[ptr]`, or the other way around, the generated C++ is wrong, e.g. it doesn't compile, or it leaks objects. `gd++ init --nogdpp` removes the mark.
 

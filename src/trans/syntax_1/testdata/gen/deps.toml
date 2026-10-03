@@ -10,6 +10,7 @@ name = "Node"
 include = "<godot_cpp/classes/node.hpp>"
 kind = "Object"
 base = "Object"
+virtuals = ["_process", "_physics_process", "_enter_tree", "_exit_tree", "_ready", "_get_configuration_warnings", "_input", "_shortcut_input", "_unhandled_input", "_unhandled_key_input"]
 
 [[dep]]
 name = "Node3D"
@@ -22,6 +23,7 @@ name = "CanvasItem"
 include = "<godot_cpp/classes/canvas_item.hpp>"
 kind = "Object"
 base = "Node"
+virtuals = ["_draw"]
 
 [[dep]]
 name = "Node2D"

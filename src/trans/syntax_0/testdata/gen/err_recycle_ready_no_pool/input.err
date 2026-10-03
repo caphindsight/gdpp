@@ -1,4 +1,4 @@
-input.gd++:4:1: A @recycle _ready only works in a @pool class, whose objects are reused.
+input.gd++:4:1: A @recycle ready block only works in a @pool class, whose objects are reused.
  4 | @recycle
    | ^^^^^^^^
 Hint: Add @pool to class A, or remove @recycle.

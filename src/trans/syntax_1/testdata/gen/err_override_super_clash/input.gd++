@@ -3,5 +3,5 @@ extends Node
 
 func _super_ready() -> void {}
 
-@override("engine", "super")
+@override("super")
 func _ready() -> void {}

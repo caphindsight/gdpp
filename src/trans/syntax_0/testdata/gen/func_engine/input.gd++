@@ -4,7 +4,7 @@ extends Node2D
 @onready var camera: Camera3D = get_node<Camera3D>("Camera")
 
 // Runs before NOTIFICATION_READY, so before a script's _ready.
-func _ready() -> void {
+ready {
   camera->set_current(true);
 }
 
@@ -14,7 +14,7 @@ notif PROCESS {
 
 // Runs even when a script overrides _process.
 @trace
-func _process(dt: float) -> void {
+process(dt) {
   if (dt > 0.1) {
     return;
   }
@@ -25,18 +25,18 @@ notif PROCESS {
   gd::print("after");
 }
 
-func _physics_process(delta: float) -> void {
+physics_process(delta) {
   gd::print(delta);
 }
 
-func _enter_tree() -> void {
+enter_tree {
   gd::print("enter");
 }
 
-func _exit_tree() -> void {
+exit_tree {
   gd::print("exit");
 }
 
-func _draw() -> void {
+draw {
   draw_circle(Vector2(), 10.0, Color(1, 0, 0));
 }

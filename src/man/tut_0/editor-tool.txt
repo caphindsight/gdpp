@@ -11,7 +11,7 @@ extends Node3D
 
 @export var mesh: Mesh
 
-func _ready() -> void {
+ready {
   regenerate();
 }
 
@@ -33,7 +33,7 @@ func regenerate() -> void {
 
 Without `@tool`, the editor runs none of a class's code: it shows a placeholder, which only keeps the values you set in the inspector. With `@tool`, the class runs in the editor too, like a GDScript `@tool` script. Build, add a `Scatter` to a scene, pick a mesh, and reopen the scene: the rocks show up. See "@tool" in `gd++ man classes`.
 
-The rocks have no owner, so the scene doesn't save them: `_ready` makes them again each time the scene opens. To save created nodes in the scene, set their owner to the edited scene's root, with `rock->set_owner(get_tree()->get_edited_scene_root())`.
+The rocks have no owner, so the scene doesn't save them: `ready` makes them again each time the scene opens. To save created nodes in the scene, set their owner to the edited scene's root, with `rock->set_owner(get_tree()->get_edited_scene_root())`.
 
 # 2. React to the inspector
 
@@ -57,7 +57,7 @@ var count: int {
 }
 ```
 
-When the scene loads, Godot sets the properties before the node enters the tree, so the setter only regenerates once the node is in it; `_ready` takes care of the first time. Use `count_` in `regenerate` instead of 20. See "Properties" in `gd++ man variables`.
+When the scene loads, Godot sets the properties before the node enters the tree, so the setter only regenerates once the node is in it; `ready` takes care of the first time. Use `count_` in `regenerate` instead of 20. See "Properties" in `gd++ man variables`.
 
 # 3. Keep game code out of the editor
 
@@ -65,7 +65,7 @@ A tool class runs all its code in the editor, including code meant for the game,
 
 ```gd++
 @game_only
-func _process(delta: float) -> void {
+process(delta) {
   // ... game logic, never run in the editor ...
 }
 ```

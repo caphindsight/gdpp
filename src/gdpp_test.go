@@ -240,7 +240,7 @@ func TestTranspilePackageExternBases(t *testing.T) {
 
 func TestTranspilePackageCppClasses(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
-		"boss.gd++":     "class_name Boss\nextends Enemy\nfunc _ready() -> void {}\n",
+		"boss.gd++":     "class_name Boss\nextends Enemy\nready {}\n",
 		"kid.gd++":      "class Kid {\n  extends Actor\n}\n",
 		"user.gd++":     "class_name User\nextends Node\nvar actor: Actor\nvar enemy: Enemy\nvar kid: Kid\n",
 		"enemy/enemy.h": "#pragma once\nnamespace godot {\nclass Enemy : public Node3D {\n  GDCLASS(Enemy, Node3D)\n};\n}\n",
@@ -253,7 +253,7 @@ func TestTranspilePackageCppClasses(t *testing.T) {
 	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
 	for file, want := range map[string]string{
 		"Boss.h":   "class Boss : public Enemy {",
-		"Boss.cpp": "_gdpp_body__ready();", // Enemy's base, from its header, makes _ready Godot's.
+		"Boss.cpp": "_gdpp_body__ready();", // Enemy's base, from its header, makes it a node.
 		"User.h":   "#include \"enemy/enemy.h\"\n#include <common/actor.h>\n",
 		"User.cpp": "Ref<Kid>",
 	} {

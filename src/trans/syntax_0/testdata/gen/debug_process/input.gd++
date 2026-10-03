@@ -2,12 +2,12 @@ class_name Mover
 extends Node
 
 // Traced through the implicit group process.
-func _process(delta: float) -> void {
+process(delta) {
   gd::print(delta);
 }
 
 // Profiled through the implicit group physics_process.
-@override("engine")
+@override
 func _physics_process(delta: float) -> void {
   gd::print(delta);
 }

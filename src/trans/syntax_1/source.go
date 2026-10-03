@@ -194,7 +194,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 				w.ln("\t}")
 			}
 		}
-		// After the engine's READY, which runs an @override("engine") _ready.
+		// After the engine's READY, which runs an @override _ready.
 		if c.readyOnce {
 			w.ln("\tif (WHAT == NOTIFICATION_READY) {")
 			w.ln("\t\t_gdpp_pool_slot.readied = true;")

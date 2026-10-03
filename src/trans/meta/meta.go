@@ -37,7 +37,7 @@ type Dependency struct {
 	Base     string      // For Kind Enum: the enum it extends, if any. Values then holds only its own values. For classes and externs: the base class, if known.
 	Gdpp     bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
 	Bitfield bool        // For Kind Enum and GodotEnum: whether it's a bitfield, whose values are flags.
-	Virtuals []string    // For GD++ classes: the names of its @virtual functions, which subclasses can override.
+	Virtuals []string    // For classes: the names of its virtual functions, which subclasses override with @override: a GD++ class's @virtual functions, or a Godot class's own virtual methods, e.g. Node's _input.
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.

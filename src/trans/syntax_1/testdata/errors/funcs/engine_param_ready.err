@@ -1,0 +1,4 @@
+errors/funcs/engine_param_ready.gd++:1:8: A ready block takes no parameters.
+ 1 | ready(x: int) {}
+   |        ^
+Hint: Write "ready { ... }".

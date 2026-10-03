@@ -1,4 +1,3 @@
-input.gd++:4:1: The engine function _ready can only take @trace, @profile, @notrace, @noprofile, @game_only and @recycle.
+input.gd++:4:1: Annotation @const can't be used on a ready block.
  4 | @const
    | ^^^^^^
-Hint: Only a plain override, with @override("engine"), takes others.

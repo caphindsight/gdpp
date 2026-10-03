@@ -3,4 +3,5 @@ class_name A
 extends Node
 
 @recycle
+@override
 func _process(delta: float) -> void {}

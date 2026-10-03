@@ -1,0 +1,4 @@
+class_name Mob
+extends Node
+
+func _input(event: InputEvent) -> void {}

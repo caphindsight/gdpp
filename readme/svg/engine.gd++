@@ -1,4 +1,4 @@
-func _physics_process(delta: float) -> void {
+physics_process(delta) {
   set_velocity(get_velocity() + get_gravity() * delta);
   move_and_slide();
 }

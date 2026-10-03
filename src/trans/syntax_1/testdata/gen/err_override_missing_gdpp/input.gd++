@@ -1,0 +1,14 @@
+class Portal {
+  extends Node
+
+  @virtual
+  func _open() -> bool
+}
+
+class Hatchway {
+  extends Portal
+
+  func _open() -> bool {
+    return true;
+  }
+}

@@ -1,0 +1,4 @@
+errors/funcs/engine_return.gd++:1:9: Expected "{" to start the ready block, but found "->".
+ 1 | ready() -> void {}
+   |         ^^
+Hint: Write "ready { ... }".

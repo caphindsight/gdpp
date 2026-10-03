@@ -1,4 +1,4 @@
-input.gd++:5:1: Of all functions, only _ready takes @recycle.
+input.gd++:5:1: Of all functions, only an @override _ready takes @recycle.
  5 | @recycle
    | ^^^^^^^^
-Hint: With @recycle, _ready runs each time a @pool class's object gets ready, not only the first time.
+Hint: With @recycle, a ready block, or an @override _ready, runs each time a @pool class's object gets ready, not only the first time.

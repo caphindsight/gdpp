@@ -1,0 +1,4 @@
+errors/docs/on_engine.gd++:2:1: Expected a declaration that can take a doc comment, but found name "ready".
+ 2 | ready {}
+   | ^^^^^
+Hint: Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values. Only @global belongs to decl and impl blocks.

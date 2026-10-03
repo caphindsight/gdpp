@@ -25,6 +25,7 @@ type Member struct {
 	Ctor     *Ctor   `parser:"| @@"`
 	Dtor     *Dtor   `parser:"| @@"`
 	Notif    *Notif  `parser:"| @@"`
+	Engine   *Engine `parser:"| @@"`
 	Func     *Func   `parser:"| @@"`
 	Signal   *Signal `parser:"| @@"`
 	Var      *Var    `parser:"| @@"`
@@ -52,11 +53,24 @@ type Dtor struct {
 // Notif is a notif block: Body runs when the object gets one of the notifications Names (without NOTIFICATION_).
 type Notif struct {
 	Pos   lexer.Position
-	Names []*NotifName `parser:"'notif' ( '(' @@ ( ',' @@ )* ','? ')' | @@ ( ',' @@ )* )"`
-	Body  *Block       `parser:"@@"`
+	Names []*Name `parser:"'notif' ( '(' @@ ( ',' @@ )* ','? ')' | @@ ( ',' @@ )* )"`
+	Body  *Block  `parser:"@@"`
 }
 
-type NotifName struct {
+// Engine is an engine block, e.g. ready { ... } or process(delta) { ... }: Body runs at the notification of the
+// engine function of the same name, e.g. _ready. Delta names the delta time of process and physics_process.
+// Parens is whether parentheses follow Name, even empty ones.
+type Engine struct {
+	Pos         lexer.Position
+	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
+	Name        string        `parser:"@( 'ready' | 'enter_tree' | 'exit_tree' | 'process' | 'physics_process' | 'draw' )"`
+	Parens      bool          `parser:"( @'('"`
+	Delta       *Name         `parser:"  @@? ')' )?"`
+	Body        *Block        `parser:"@@"`
+}
+
+// Name is a name on its own, e.g. a notification's in a notif block.
+type Name struct {
 	Pos  lexer.Position
 	Name string `parser:"@Ident"`
 }

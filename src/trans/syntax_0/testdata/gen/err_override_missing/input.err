@@ -1,0 +1,4 @@
+input.gd++:4:1: Function _input overrides a virtual function of Node, so it needs @override.
+ 4 | func _input(event: InputEvent) -> void {}
+   | ^^^^
+Hint: Add @override, or rename the function.

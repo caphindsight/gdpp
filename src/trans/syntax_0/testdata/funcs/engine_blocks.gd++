@@ -1,0 +1,17 @@
+class_name Mob
+extends Node2D
+
+@trace
+ready {
+  a();
+}
+enter_tree {}
+exit_tree {}
+process(delta) {}
+physics_process(dt) {}
+@game_only @notrace
+draw {}
+
+// Engine block words are still names elsewhere.
+var ready: int
+func process(draw: int) -> void {}

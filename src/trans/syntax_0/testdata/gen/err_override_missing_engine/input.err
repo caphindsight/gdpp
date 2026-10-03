@@ -1,0 +1,4 @@
+input.gd++:4:1: Function _ready overrides a virtual function of Node, so it needs @override.
+ 4 | func _ready() -> void {}
+   | ^^^^
+Hint: To run code at its notification, write a ready block instead: "ready { ... }". Only for a plain override, which a script replaces, add @override.

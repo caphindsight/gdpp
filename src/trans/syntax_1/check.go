@@ -59,11 +59,11 @@ type classModel struct {
 	readyOnce bool
 }
 
-// notifModel is a handler in the class's _notification: a notif block, or the call of an engine function.
+// notifModel is a handler in the class's _notification: a notif block, or the call of an engine block.
 type notifModel struct {
 	cond   string // The C++ condition on WHAT.
 	body   *Block // A notif block's body.
-	call   string // An engine function's call, e.g. "_gdpp_body__process(get_process_delta_time())".
+	call   string // An engine block's call, e.g. "_gdpp_body__process(get_process_delta_time())".
 	setter string // For _process and _physics_process: the method that turns processing on.
 }
 
@@ -96,7 +96,7 @@ type funcModel struct {
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string      // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
 	detached                           bool        // With @onthread("detached"): a call starts a task that nobody waits for, and returns nothing.
-	hidden                             string      // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
+	hidden                             string      // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine block.
 	trace, profile                     bool        // Whether its @trace or @profile, or its class's, is on.
 	notrace, noprofile                 bool        // Whether it has @notrace or @noprofile, which leave it out of its class's.
 	gameOnly                           bool        // Whether its @game_only, or its class's, guards it against running in the editor.
@@ -311,45 +311,55 @@ func classVirtuals(c *Class) []string {
 
 // setVirtualOf sets f.virtualOf for f, a function of the class named class with base base.
 func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
-	owner := u.virtualOwner(base, f.f.Name)
+	owner, gdpp := u.virtualOwner(base, f.f.Name)
+	ef, isEngine := engineFuncs[f.f.Name]
+	isEngine = isEngine && u.extends(class, ef.base)
 	switch {
 	case f.virtual && owner != "":
 		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "virtual" })]
-		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already @virtual in %s.", f.f.Name, owner), "Use @override to override it.")
-	case f.final && owner == "":
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already virtual in %s.", f.f.Name, owner), "Use @override to override it.")
+	case !f.virtual && !f.override && (owner != "" || isEngine):
+		hint := "Add @override, or rename the function."
+		if isEngine {
+			name := f.f.Name[1:]
+			hint = fmt.Sprintf("To run code at its notification, write a %s block instead: \"%s\". Only for a plain override, which a script replaces, add @override.", name, engineExample(name))
+		}
+		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s overrides a virtual function of %s, so it needs @override.", f.f.Name, cmp.Or(owner, ef.base)), hint)
+	case f.final && !gdpp:
 		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "override" })]
 		arg := a.Args[slices.IndexFunc(a.Args, func(arg *Arg) bool { return arg.Value == `"final"` })]
 		return u.errorAt(arg.Pos, len(arg.Value), "Annotation @override(\"final\") only works on overrides of a GD++ @virtual function.",
 			"The engine lets scripts override its own virtual functions, so GD++ can't stop that.")
 	case f.virtual:
 		f.virtualOf = class
-	case f.override && !f.final: // Without a GDVIRTUAL_CALL, scripts' overrides never run.
+	case f.override && !f.final && gdpp: // Without a GDVIRTUAL_CALL, scripts' overrides never run.
 		f.virtualOf = owner
 	}
 	return nil
 }
 
-// virtualOwner returns the GD++ class that declares @virtual func name: the class named class, or one of its
-// bases. Empty if there's none. Bases don't cycle: kindOf rejects that first.
-func (u *unit) virtualOwner(class, name string) string {
+// virtualOwner returns the class that declares the virtual function name, the class named class or one of its
+// bases, and whether it's a GD++ class, whose @virtual declares it, rather than an engine class. Empty if there's
+// none. Bases don't cycle: kindOf rejects that first.
+func (u *unit) virtualOwner(class, name string) (string, bool) {
 	for class != "" {
 		s := u.symbols[class]
 		switch {
 		case s == nil:
-			return ""
+			return "", false
 		case s.class != nil:
 			if slices.Contains(classVirtuals(s.class), name) {
-				return class
+				return class, true
 			}
 			class = baseName(s.class.Extends)
 		default:
 			if slices.Contains(s.virtuals, name) {
-				return class
+				return class, s.gdpp
 			}
 			class = s.base
 		}
 	}
-	return ""
+	return "", false
 }
 
 // classIcon returns the path from the @icon annotation of class c, or "" if it has none.
@@ -1064,20 +1074,19 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil,
 		isConst: a["const"] != nil, static: a["static"] != nil, gameOnly: a["game_only"] != nil, recycle: a["recycle"]}
-	var engine *Arg // The "engine" argument of @override, if any.
 	for _, arg := range argsOf(a["override"]) {
 		name, _ := strconv.Unquote(arg.Value)
 		switch {
-		case name != "final" && name != "super" && name != "engine":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override takes \"final\", \"super\" or \"engine\".", "E.g. @override(\"final\").")
-		case name == "final" && m.final, name == "super" && m.super, name == "engine" && engine != nil:
+		case name == "engine":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override no longer takes \"engine\".",
+				fmt.Sprintf("Drop it: a plain @override already makes %s a plain override.", f.Name))
+		case name != "final" && name != "super":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override takes \"final\" or \"super\".", "E.g. @override(\"final\").")
+		case name == "final" && m.final, name == "super" && m.super:
 			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @override takes %s only once.", arg.Value), "")
 		}
 		m.final = m.final || name == "final"
 		m.super = m.super || name == "super"
-		if name == "engine" {
-			engine = arg
-		}
 	}
 	for _, arg := range argsOf(a["onthread"]) {
 		name, _ := strconv.Unquote(arg.Value)
@@ -1166,58 +1175,57 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	if err := u.requireBase(a["rpc"], owner, "rpc and rpc_config are methods of Node.", "Node"); err != nil {
 		return nil, err
 	}
-	ef, isEngine := engineFuncs[f.Name]
-	isEngine = isEngine && !ext && u.extends(owner, ef.base)
-	if r := m.recycle; r != nil && (!isEngine || f.Name != "_ready") {
-		return nil, u.errorAt(r.Pos, len(r.Name)+1, "Of all functions, only _ready takes @recycle.",
-			"With @recycle, _ready runs each time a @pool class's object gets ready, not only the first time.")
-	}
-	switch {
-	case isEngine && !m.override:
-		m.hidden = "notif"
-		return m, u.checkEngine(m)
-	case isEngine && engine == nil:
-		o := a["override"]
-		return nil, u.errorAt(o.Pos, len(o.Name)+1, fmt.Sprintf("The engine function %s doesn't need @override.", f.Name),
-			"Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override(\"engine\").")
-	case !isEngine && engine != nil:
-		return nil, u.errorAt(engine.Pos, len(engine.Value), "Annotation @override(\"engine\") only works on engine functions, e.g. _ready.",
-			"Engine functions are _ready, _enter_tree, _exit_tree, _process and _physics_process in nodes, and _draw in canvas items.")
-	}
 	return m, nil
 }
 
-// engineFuncs are the engine functions: the virtual functions that a class that extends base runs from its
-// _notification, at notif, unless it has @override. delta is the getter of their parameter, if they have one.
+// engineFuncs are the engine functions, which a class that extends base runs from its _notification, at notif, as
+// engine blocks, e.g. ready { ... } for _ready. delta is the getter of their parameter, if they have one.
 var engineFuncs = map[string]struct{ notif, delta, base string }{
 	"_ready": {"POST_ENTER_TREE", "", "Node"}, "_enter_tree": {"ENTER_TREE", "", "Node"}, "_exit_tree": {"EXIT_TREE", "", "Node"},
 	"_process": {"PROCESS", "get_process_delta_time", "Node"}, "_physics_process": {"PHYSICS_PROCESS", "get_physics_process_delta_time", "Node"},
 	"_draw": {"DRAW", "", "CanvasItem"}}
 
-// checkEngine checks f, an engine function.
-func (u *unit) checkEngine(f *funcModel) error {
-	name := f.f.Name
-	for _, a := range f.f.Annotations {
-		if a.Name != "" && !slices.Contains([]string{"trace", "profile", "notrace", "noprofile", "game_only", "recycle"}, a.Name) {
-			list := "@trace, @profile, @notrace, @noprofile and @game_only"
-			if name == "_ready" {
-				list = "@trace, @profile, @notrace, @noprofile, @game_only and @recycle"
-			}
-			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take %s.", name, list),
-				"Only a plain override, with @override(\"engine\"), takes others.")
-		}
+// engineExample returns how the engine block called name is written, e.g. "process(delta) { ... }".
+func engineExample(name string) string {
+	if engineFuncs["_"+name].delta != "" {
+		return name + "(delta) { ... }"
 	}
-	sig, params := name+"() -> void", 0
-	if engineFuncs[name].delta != "" {
-		sig, params = name+"(delta: float) -> void", 1
-	}
-	if !f.ret.void || len(f.params) != params || params == 1 && f.params[0].cpp != "double" {
-		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("The engine function %s must be declared as \"func %s\".", name, sig), "")
-	}
-	return nil
+	return name + " { ... }"
 }
 
-// engineNotif returns the handler that calls f, an engine function, by its C++ name, bodyName(f).
+// buildEngine checks e, an engine block of the class named owner, and returns it as the engine function that its
+// notification calls, e.g. _ready for ready { ... }.
+func (u *unit) buildEngine(e *Engine, owner string) (*funcModel, error) {
+	allowed := []string{"game_only", "noprofile", "notrace", "profile", "trace"}
+	if e.Name == "ready" {
+		allowed = append(allowed, "recycle")
+	}
+	if _, err := u.annotations(e.Annotations, "a "+e.Name+" block", allowed...); err != nil {
+		return nil, err
+	}
+	ef := engineFuncs["_"+e.Name]
+	switch {
+	case !u.extends(owner, ef.base):
+		return nil, u.errorAt(e.Pos, len(e.Name), fmt.Sprintf("A %s block only works in classes that extend %s, which %s doesn't.", e.Name, ef.base, owner), "")
+	case ef.delta == "" && e.Parens:
+		return nil, u.errorAt(e.Pos, len(e.Name), fmt.Sprintf("A %s block takes no parameters.", e.Name), fmt.Sprintf("Write \"%s\".", engineExample(e.Name)))
+	case ef.delta != "" && e.Delta == nil:
+		return nil, u.errorAt(e.Pos, len(e.Name), fmt.Sprintf("A %s block takes the delta time as a parameter.", e.Name),
+			fmt.Sprintf("Name it, e.g. \"%s\". It's a float, in seconds.", engineExample(e.Name)))
+	}
+	f := &Func{Pos: e.Pos, Annotations: e.Annotations, Name: "_" + e.Name, Return: &Type{Pos: e.Pos, Name: "void"}, Body: e.Body}
+	if e.Delta != nil {
+		f.Params = []*Param{{Pos: e.Delta.Pos, Name: e.Delta.Name, Type: &Type{Pos: e.Delta.Pos, Name: "float"}}}
+	}
+	m, err := u.buildFunc(f, owner, false)
+	if err != nil {
+		return nil, err
+	}
+	m.hidden = "notif"
+	return m, nil
+}
+
+// engineNotif returns the handler that calls f, an engine block, by its C++ name, bodyName(f).
 func engineNotif(f *funcModel) *notifModel {
 	ef := engineFuncs[f.f.Name]
 	n := &notifModel{cond: "WHAT == NOTIFICATION_" + ef.notif, call: bodyName(f) + "()"}
@@ -1875,21 +1883,37 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		case member.Func != nil && member.Func.Name == "_notification":
 			return nil, u.errorAt(member.Func.Pos, 4, "Classes can't declare _notification, since GD++ generates it.",
 				"Handle notifications with notif blocks, e.g. \"notif READY { ... }\".")
-		case member.Func != nil:
+		case member.Func != nil || member.Engine != nil:
 			var f *funcModel
-			if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
+			if member.Engine != nil {
+				f, err = u.buildEngine(member.Engine, c.Name)
+			} else if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
 				err = u.setVirtualOf(f, c.Name, m.base)
 			}
-			if err == nil && f.recycle != nil && m.pool == nil {
-				err = u.errorAt(f.recycle.Pos, len(f.recycle.Name)+1, "A @recycle _ready only works in a @pool class, whose objects are reused.",
-					fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
+			if err == nil && f.recycle != nil {
+				r, what := f.recycle, "_ready"
+				if member.Engine != nil {
+					what = "ready block"
+				}
+				switch {
+				case member.Func != nil && (f.f.Name != "_ready" || !f.override || !u.extends(c.Name, "Node")):
+					err = u.errorAt(r.Pos, len(r.Name)+1, "Of all functions, only an @override _ready takes @recycle.",
+						"With @recycle, a ready block, or an @override _ready, runs each time a @pool class's object gets ready, not only the first time.")
+				case m.pool == nil:
+					err = u.errorAt(r.Pos, len(r.Name)+1, fmt.Sprintf("A @recycle %s only works in a @pool class, whose objects are reused.", what),
+						fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
+				}
 			}
 			if err == nil {
 				f.once = m.pool != nil && f.f.Name == "_ready" && (f.override || f.hidden == "notif") && f.recycle == nil
 				m.readyOnce = m.readyOnce || f.once
 			}
+			if err == nil && member.Engine != nil && slices.ContainsFunc(m.funcs, func(g *funcModel) bool { return g.f.Name == bodyName(f) }) {
+				err = u.errorAt(f.f.Pos, len(member.Engine.Name), fmt.Sprintf("Class %s has two %s blocks.", m.name, member.Engine.Name), "")
+			}
 			if err == nil {
-				err = u.unique(names, f.f.Pos, "func", f.f.Name)
+				keyword, _ := member.keyword()
+				err = u.unique(names, f.f.Pos, keyword, f.f.Name)
 			}
 			switch {
 			case err != nil:

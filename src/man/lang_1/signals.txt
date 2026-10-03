@@ -70,7 +70,7 @@ A signal declares a C++ method, so its name shares its class's namespace with fu
 Connect in C++ like in godot-cpp, with `callable_mp` for the methods of your class:
 
 ```gd++
-func _ready() -> void {
+ready {
   Button *button = get_node<Button>("Button");
   button->connect(string_name "pressed", callable_mp(this, &This::on_pressed));
   connect(string_name "died", callable_mp(this, &This::on_died));

@@ -18,11 +18,11 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
   return path;
 }
 
-func _ready() -> void {
+ready {
   pending = find_path(get_position(), target);
 }
 
-func _process(delta: float) -> void {
+process(delta) {
   if (is_done pending) {
     follow(claim pending);
     pending = find_path(get_position(), target);
@@ -32,7 +32,7 @@ func _process(delta: float) -> void {
 func follow(path: PackedVector2Array) -> void { ... }
 ```
 
-`_ready` starts the first search. Each frame, `_process` checks whether `pending` holds a search that's done. Then `claim` takes the path out of `pending`, and `_process` starts the next search, which runs while the game goes on. No frame waits for a search.
+`ready` starts the first search. Each frame, `process` checks whether `pending` holds a search that's done. Then `claim` takes the path out of `pending`, and `process` starts the next search, which runs while the game goes on. No frame waits for a search.
 
 Scripts call the function the same way, and get a task object, whose `done` property and `claim()` method work like `is_done` and `claim`:
 
@@ -171,7 +171,7 @@ Godot requires waiting once for each task of the `WorkerThreadPool`, and `claim`
 A loop that keeps one search running, and follows each path it finds, as in the first example:
 
 ```gd++
-func _process(delta: float) -> void {
+process(delta) {
   if (!pending) {
     pending = find_path(get_position(), target);
   } else if (is_done pending) {

@@ -1,4 +1,4 @@
 errors/typos/unknown.gd++:1:1: Expected a declaration, but found name "hello".
  1 | hello world
    | ^^^^^
-Hint: A declaration starts with one of: func, var, signal, enum, class, extern, decl, impl, ctor, dtor, notif, import, noimport.
+Hint: A declaration starts with one of: func, var, signal, enum, class, extern, decl, impl, ctor, dtor, notif, import, noimport, ready, enter_tree, exit_tree, process, physics_process, draw.

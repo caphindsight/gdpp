@@ -63,7 +63,7 @@ PATH
   Disable C++ warnings: `-w`, or `/w` with MSVC. By default, warnings are errors: `-Werror`, or `/WX` with MSVC. Either way, this applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp.
 
 --trace GROUP...
-  Compile in the `@trace` annotations of these groups, or with `all`, of all groups. An annotation is in the group named after its class, and in the groups that its arguments name. The groups `process` and `physics_process` also trace all `_process` and `_physics_process` functions, without annotations. Other `@trace` annotations generate nothing. See `gd++ man debugging`.
+  Compile in the `@trace` annotations of these groups, or with `all`, of all groups. An annotation is in the group named after its class, and in the groups that its arguments name. The groups `process` and `physics_process` also trace all `process` and `physics_process` blocks, and overrides of `_process` and `_physics_process`, without annotations. Other `@trace` annotations generate nothing. See `gd++ man debugging`.
 
 --profile GROUP...
   Compile in the `@profile` annotations of these groups, or with `all`, of all groups, like `--trace` does for `@trace`. Their timings show in the editor's Debugger > Monitors tab. See `gd++ man debugging`.

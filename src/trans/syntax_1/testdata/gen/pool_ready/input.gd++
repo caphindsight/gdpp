@@ -8,7 +8,7 @@ extends Node3D
 @onready var sound: Node = $Sound
 @recycle var hits: int
 
-func _ready() -> void {
+ready {
   gd::print("first ready");
 }
 

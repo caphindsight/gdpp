@@ -98,7 +98,7 @@ decl {
   std::vector<Vector3> positions;
 }
 
-func _physics_process(delta: float) -> void {
+physics_process(delta) {
   positions.clear();
   for (Node3D *member : members) {
     positions.push_back(member->get_global_position());
@@ -110,7 +110,7 @@ func _physics_process(delta: float) -> void {
 }
 ```
 
-`Enemy` gets the manager with `@export var horde: Horde`, adds itself to `horde->members` in `_ready`, and removes itself in `_exit_tree`. Then `nearest_ally` is a loop over a `std::vector` of `Vector3`, without a single engine call:
+`Enemy` gets the manager with `@export var horde: Horde`, adds itself to `horde->members` in its `ready` block, and removes itself in `exit_tree`. Then `nearest_ally` is a loop over a `std::vector` of `Vector3`, without a single engine call:
 
 ```gd++
 func nearest_ally() -> Node3D {

@@ -1,12 +1,12 @@
 class_name Player
 extends Node
 
-@override("engine")
+@override
 func _ready() -> void {
   gd::print("ready");
 }
 
-@override("engine")
+@override
 func _physics_process(delta: float) -> void {}
 
 @const
@@ -18,6 +18,6 @@ func _get_configuration_warnings() -> PackedStringArray {
 class Walker {
   extends Player
 
-  @override("engine")
+  @override
   func _process(delta: float) -> void {}
 }

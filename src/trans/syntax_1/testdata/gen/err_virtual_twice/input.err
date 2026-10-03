@@ -1,4 +1,4 @@
-input.gd++:4:1: Function _open is already @virtual in Gate.
+input.gd++:4:1: Function _open is already virtual in Gate.
  4 | @virtual
    | ^^^^^^^^
 Hint: Use @override to override it.

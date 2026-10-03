@@ -6,7 +6,7 @@ func size() -> float {
   return 1.0;
 }
 
-@override("engine")
+@override
 func _process(delta: float) -> void {}
 
 class Helper {

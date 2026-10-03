@@ -2,7 +2,7 @@ class_name Hatch
 extends Gate
 
 // Scripts call _super_ready in place of super._ready().
-@override("engine", "super")
+@override("super")
 func _ready() -> void {
   gd::print("ready");
 }

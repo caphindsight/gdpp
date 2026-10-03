@@ -116,7 +116,7 @@ A `decl` block holds the property's storage. Without `set`, a property is read-o
 
 <a href="readme/svg/onready.gd++"><img src="readme/svg/onready.svg" alt="GD++ code: onready"></a>
 
-Like in GDScript, the value is set when the node gets ready, so its children exist, and `$` and `%` get them by path or unique name. It's set before any `_ready` runs, even a script's. See `gd++ man variables` and `gd++ man lifecycle`.
+Like in GDScript, the value is set when the node gets ready, so its children exist, and `$` and `%` get them by path or unique name. It's set before the `ready` block runs, and before any `_ready`, even a script's. See `gd++ man variables` and `gd++ man lifecycle`.
 
 ### Typed arrays and dictionaries
 
@@ -152,13 +152,13 @@ With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ ma
 
 <a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
 
-`_ready`, `_process` and the like need no annotation: they run from the class's notification handler, so a script that extends the class can't replace them. `_process` and `_physics_process` also turn processing on. See `gd++ man functions`.
+Engine blocks, `ready`, `enter_tree`, `exit_tree`, `process(delta)`, `physics_process(delta)` and `draw`, run at the engine's `_ready`, `_process` and the like, from the class's notification handler, so a script that extends the class can't replace them. `process` and `physics_process` also turn processing on. See `gd++ man engine`.
 
 ### Overrides
 
 <a href="readme/svg/override.gd++"><img src="readme/svg/override.svg" alt="GD++ code: override"></a>
 
-It overrides any engine callback, or a `@virtual` function. A script's function of the same name replaces it, but with `"super"`, the script can still call it, as `_super_unhandled_input`. See `gd++ man functions`.
+It overrides any engine callback, or a `@virtual` function. A function with the name of one needs it, so nothing is overridden by accident. A script's function of the same name replaces it, but with `"super"`, the script can still call it, as `_super_unhandled_input`. See `gd++ man functions`.
 
 ### Virtual functions
 

@@ -1,0 +1,4 @@
+errors/funcs/engine_delta_return.gd++:1:16: Expected "{" to start the process block, but found "->".
+ 1 | process(delta) -> void {}
+   |                ^^
+Hint: Write "process(delta) { ... }".

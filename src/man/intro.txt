@@ -15,7 +15,7 @@ A GD++ class, saved as `hello_world.gd++` anywhere in a Godot project:
 class_name HelloWorld
 extends Node
 
-func _ready() -> void {
+ready {
   Label *label = create Label;
   label->set_text("Hello, world!");
   add_child(label);

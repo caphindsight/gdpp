@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -38,6 +39,9 @@ func highlightCode(code, lang string) string {
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
 	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport notif set signal var"
+	// GD++'s engine blocks, e.g. ready { ... }, whose words are also names elsewhere: they're keywords only where they
+	// start a block, at the start of a line or after annotations.
+	engineBlockWords = "ready enter_tree exit_tree process physics_process draw"
 	cppWords  = "if else for while do return switch case break continue default auto const static constexpr namespace using " +
 		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
 	gdscriptWords = "pass and or not in"
@@ -63,6 +67,7 @@ var (
 	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords, castWords)
 	codeOperators = wordSet(rewriteOperatorWords)
 	codeStringOps = wordSet(rewriteStringWords)
+	codeBlocks    = wordSet(engineBlockWords)
 	codeTypes     = wordSet(cppTypeWords, godotTypeWords)
 	codePlain     = wordSet(plainWords)
 )
@@ -124,7 +129,8 @@ func highlightGdpp(code string, gdscript bool) string {
 			word := rest[:n]
 			switch {
 			case codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,
-				codeStringOps[word] && strings.HasPrefix(strings.TrimLeft(rest[n:], " \t\n"), "\""):
+				codeStringOps[word] && strings.HasPrefix(strings.TrimLeft(rest[n:], " \t\n"), "\""),
+				codeBlocks[word] && startsEngineBlock(code[:i], rest[n:]):
 				style = []Style{CodeKeyword}
 			case codePlain[word]:
 			case codeTypes[word] || word[0] >= 'A' && word[0] <= 'Z' && strings.ToUpper(word) != word:
@@ -137,6 +143,16 @@ func highlightGdpp(code string, gdscript bool) string {
 		i += n
 	}
 	return out.String()
+}
+
+var (
+	annotationsRegexp = regexp.MustCompile(`^\s*(@\w+(\([^)]*\))?\s*)*$`)
+	engineHeadRegexp  = regexp.MustCompile(`^\s*(\(\s*\w+\s*\)\s*)?\{`)
+)
+
+// startsEngineBlock reports whether the word between before and after starts an engine block, e.g. "process(delta) {".
+func startsEngineBlock(before, after string) bool {
+	return annotationsRegexp.MatchString(before[strings.LastIndexByte(before, '\n')+1:]) && engineHeadRegexp.MatchString(after)
 }
 
 // lastWord returns the identifier at the end of s, before any spaces, e.g. signal in "signal ".

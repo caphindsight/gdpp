@@ -65,7 +65,7 @@ var speed: float = 300.0
 
 signal jumped
 
-func _physics_process(delta: float) -> void {
+physics_process(delta) {
   Vector2 direction = Input::get_singleton()->get_vector(string_name "ui_left", string_name "ui_right", string_name "ui_up", string_name "ui_down");
   set_velocity(direction * speed);
   move_and_slide();
@@ -75,7 +75,7 @@ func _physics_process(delta: float) -> void {
 }
 ```
 
-The lines at the top are GD++: they declare the class, a property that shows up in the inspector, and a signal. The body of `_physics_process` is plain C++, except for `emit`, which sends the signal. Note what you didn't write: no header, no `#include` lines, no `_bind_methods`, no getter and setter for `speed`, and no class registration. See `gd++ man lang`.
+The lines at the top are GD++: they declare the class, a property that shows up in the inspector, and a signal. The body of the `physics_process` block, which runs every physics frame, is plain C++, except for `emit`, which sends the signal. Note what you didn't write: no header, no `#include` lines, no `_bind_methods`, no getter and setter for `speed`, and no class registration. See `gd++ man lang`.
 
 # 6. Build
 

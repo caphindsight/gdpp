@@ -40,6 +40,9 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "signal died\nsignal hit(damage: int)", Styled("signal", CodeKeyword) + " " + Styled("died", CodeFunction) + "\n" +
 			Styled("signal", CodeKeyword) + " " + Styled("hit", CodeFunction) + "(damage: " + Styled("int", CodeType) + ")"},
 		{"gd++", "notif READY, PREDELETE {}", Styled("notif", CodeKeyword) + " READY, PREDELETE {}"},
+		{"gd++", "@trace process(dt) {\n  draw(dt);\n}\nready {}\nvar ready: int", Styled("@trace", CodePreProc) + " " + Styled("process", CodeKeyword) +
+			"(dt) {\n  " + Styled("draw", CodeFunction) + "(dt);\n}\n" + Styled("ready", CodeKeyword) + " {}\n" + Styled("var", CodeKeyword) + " ready: " +
+			Styled("int", CodeType)},
 		{"gd++", "var x: Node = $Hud/\"a b\" // c", Styled("var", CodeKeyword) + " x: " + Styled("Node", CodeType) + " = " +
 			Styled("$Hud/\"a b\"", CodeLiteral) + " " + Styled("// c", CodeComment)},
 		{"gd++", "x = %Health; y = a % b; y %= 2;", "x = " + Styled("%Health", CodeLiteral) + "; y = a % b; y %= " + Styled("2", CodeLiteral) + ";"},

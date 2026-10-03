@@ -51,7 +51,7 @@ Every `@trace` and `@profile` annotation belongs to one or more groups:
 - the group named after its class, always, e.g. `Player`,
 - the groups that its arguments name: `@trace("combat")` is in the groups `Player` and `combat`, and `@trace("combat", "ai")` in `Player`, `combat` and `ai`.
 
-Two groups need no annotation: `process` holds every `_process` function, and `physics_process` every `_physics_process` function, of all classes. So `--profile process` times all the `_process` functions.
+Two groups need no annotation: `process` holds every `process` block and `_process` override, and `physics_process` every `physics_process` block and `_physics_process` override, of all classes. So `--profile process` times all of them.
 
 Builds turn groups on with two flags, each followed by any number of group names:
 
@@ -167,7 +167,7 @@ var inventory: Array[Item]
 
 Every function of the class that could change the variable compares its value before and after the call, and prints the changes just before the call's end line. That makes it the fastest way to answer "who changes this value?": you don't need to trace any function, and only changes print.
 
-- The functions that check are the class's non-static, non-const functions, including the setters of its variables, engine functions like `_process`, `@override` functions, and the bodies of `@deferred` and `@onthread` functions. The body of an `@onthread` function runs on another thread, so changes that other threads make while it runs show as its changes too. So a change from GDScript, e.g. `player.health = 5`, shows as made in `set_health`.
+- The functions that check are the class's non-static, non-const functions, including the setters of its variables, engine blocks like `process`, `@override` functions, and the bodies of `@deferred` and `@onthread` functions. The body of an `@onthread` function runs on another thread, so changes that other threads make while it runs show as its changes too. So a change from GDScript, e.g. `player.health = 5`, shows as made in `set_health`.
 - A change made in a function that another function of the same object called shows once, in the innermost function.
 - Arrays and dictionaries are copied deeply and compared item by item, so a change of an item inside them shows too. Objects are compared by identity: which object the variable points to, not what's in it.
 - A property with a get block is read through its getter.
@@ -240,11 +240,11 @@ For a `@pool` class, the pool's reuse of an object and its return to the pool ge
 
 They come right before the `@recycle dtor` and the `@recycle ctor` run. An object waiting in its pool is still alive, so it has no "freed" line until the pool deletes it, e.g. when the game quits. See `gd++ man pools`.
 
-A class's `@trace` leaves out `_process` and `_physics_process`, since they run every frame and would bury everything else. They still check the traced variables. To trace them anyway, put `@trace` on them too:
+A class's `@trace` leaves out `process` and `physics_process`, and overrides of `_process` and `_physics_process`, since they run every frame and would bury everything else. They still check the traced variables. To trace them anyway, put `@trace` on them too:
 
 ```gd++
 @trace("frame")
-func _physics_process(delta: float) -> void { ... }
+physics_process(delta) { ... }
 ```
 
 # @profile on functions, variables and classes

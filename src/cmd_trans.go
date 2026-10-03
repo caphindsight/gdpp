@@ -54,7 +54,7 @@ func (c *CmdTrans) Run() {
 	Assert(file.IsFile(), "There is no file at %s.", file.ToString())
 	var files []gdppFile
 	var names []godotName
-	var enums []trans.Dependency
+	var spec apiSpec
 	var cppClasses []godotName
 	self, asyncClass, pkgPath := "", "", ""
 	if root, ok := GetPackageRootMaybe(file); ok {
@@ -66,14 +66,14 @@ func (c *CmdTrans) Run() {
 		}
 		if c.Spec == "" && !c.NoSpec {
 			names = packageGodotNames(p, pkg)
-			enums = specEnums(pkg.BuildCache.Cd("extension_api.json"))
+			spec = readSpec(pkg.BuildCache.Cd("extension_api.json"))
 		}
 	}
 	if c.Spec != "" {
-		names, enums = specNames(c.Spec)
+		names, spec = specNames(c.Spec)
 	}
 	// Flags come first, so they win over other dependencies of the same name.
-	deps := append(c.flagDependencies(), packageDeps(files, append(names, cppClasses...), enums, self)...)
+	deps := append(c.flagDependencies(), packageDeps(files, append(names, cppClasses...), spec, self)...)
 	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(trans.Options{Dependencies: deps, AsyncClass: asyncClass, PackagePath: pkgPath}), syntax)
 	if err != nil {
 		FailWithText(err)
@@ -114,9 +114,9 @@ func (c *CmdTrans) flagDependencies() []trans.Dependency {
 	return deps
 }
 
-// specNames returns Godot's classes and enums in the API spec named name in
-// the project's cache.
-func specNames(name string) ([]godotName, []trans.Dependency) {
+// specNames returns Godot's classes in the API spec named name in the
+// project's cache, and the spec itself.
+func specNames(name string) ([]godotName, apiSpec) {
 	cache := LoadProject(Cwd()).Caches[slices.IndexFunc(depKinds, func(k DepKind) bool { return k.Name == "spec" })]
 	Assert(cache.Has(name), "Missing %s %s, run `gd++ fetch --spec %s` to fetch it.", cache.Desc, name, name)
 	spec := cache.GetPath(name).Cd("extension_api.json")
@@ -137,7 +137,7 @@ func specNames(name string) ([]godotName, []trans.Dependency) {
 		}
 		names = append(names, godotName{Name: class.Name, Include: godotCppInclude(class.Name), Kind: kind, Base: class.Inherits})
 	}
-	return names, specEnums(spec)
+	return names, readSpec(spec)
 }
 
 // parseTransDep parses a dependency flag's value: NAME[=INCLUDE], plus

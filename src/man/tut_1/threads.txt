@@ -49,11 +49,11 @@ extends MeshInstance3D
 @export var coords: Vector2i
 var pending: Async[PackedFloat32Array]
 
-func _ready() -> void {
+ready {
   pending = compute_heights(coords, 64);
 }
 
-func _process(delta: float) -> void {
+process(delta) {
   if (is_done pending) {
     set_mesh(build_mesh(claim pending));
   }
@@ -62,7 +62,7 @@ func _process(delta: float) -> void {
 
 - `is_done pending` is true once the body has returned, and its result wasn't taken yet.
 - `claim pending` takes the result. After that, `pending` is empty, and `is_done` is false again, so the mesh is built once.
-- `build_mesh` runs on the main thread, in `_process`, since most of the scene tree isn't thread-safe. That's the usual split: compute on the thread, apply on the main thread.
+- `build_mesh` runs on the main thread, in `process`, since most of the scene tree isn't thread-safe. That's the usual split: compute on the thread, apply on the main thread.
 
 No frame waits for the work. `pending.wait()` would wait for it, but on the main thread, the game stops while it waits.
 
@@ -91,7 +91,7 @@ func compute_heights(coords: Vector2i, size: int) -> PackedFloat32Array {
 And the chunk cancels its task when it leaves:
 
 ```gd++
-func _exit_tree() -> void {
+exit_tree {
   cancel pending;
 }
 ```

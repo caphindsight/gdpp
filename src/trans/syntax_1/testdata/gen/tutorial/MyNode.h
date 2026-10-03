@@ -3,6 +3,7 @@
 #pragma once
 
 #include <gd++/syntax_1.hpp>
+#include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 
@@ -10,7 +11,7 @@
 
   #include <vector>
 
-#line 14 "MyNode.h"
+#line 15 "MyNode.h"
 
 namespace godot {
 
@@ -30,7 +31,7 @@ private:
 
   void private_function();
 
-#line 34 "MyNode.h"
+#line 35 "MyNode.h"
 
 private:
 #line 85 "input.gd++"
@@ -38,7 +39,7 @@ private:
   #define FOO 42
 
 
-#line 42 "MyNode.h"
+#line 43 "MyNode.h"
 
 private:
 #line 100 "input.gd++"
@@ -46,14 +47,14 @@ private:
  public:
   void public_function();
 
-#line 50 "MyNode.h"
+#line 51 "MyNode.h"
 
 private:
-#line 224 "input.gd++"
+#line 230 "input.gd++"
 
   int64_t my_value_;
 
-#line 57 "MyNode.h"
+#line 58 "MyNode.h"
 
 public:
 	gdpp::Async<int64_t> primes{};
@@ -66,12 +67,12 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 393 "input.gd++"
+#line 399 "input.gd++"
 
 
     int64_t my_property = 0;
 
-#line 75 "MyNode.h"
+#line 76 "MyNode.h"
 
 public:
 	static constexpr int64_t THE_ANSWER = 42;
@@ -86,7 +87,8 @@ public:
 	virtual int64_t _bar();
 	int64_t bar();
 	int64_t foo_plus_bar();
-	void _ready() override;
+	void _unhandled_input(InputEvent *event) override;
+	void _gdpp_body__ready();
 	int64_t get_my_value() const;
 	static void my_static_func();
 	void take_damage(int64_t amount);

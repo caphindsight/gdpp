@@ -2,4 +2,4 @@ class_name A
 extends Node
 
 @recycle
-func _ready() -> void {}
+ready {}

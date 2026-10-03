@@ -62,7 +62,7 @@ enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
 
 @export var casting: ShadowCastingSetting = ON
 
-func _ready() -> void {
+ready {
   mesh->set_cast_shadows_setting(casting as GeometryInstance3D::ShadowCastingSetting);
   gd::print(casting as int64_t);
 }

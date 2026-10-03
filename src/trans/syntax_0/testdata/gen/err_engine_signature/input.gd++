@@ -1,4 +1,4 @@
 class_name Mob
 extends Node
 
-func _process() -> void {}
+process {}

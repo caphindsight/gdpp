@@ -4,7 +4,7 @@ extends Node3D
 
 @onready @recycle var start: Vector3 = get_global_position()
 
-@override("engine")
+@override
 func _ready() -> void {
   gd::print("first ready");
 }

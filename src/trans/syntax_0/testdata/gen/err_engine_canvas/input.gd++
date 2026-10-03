@@ -1,0 +1,4 @@
+class_name Marker
+extends Node3D
+
+draw {}

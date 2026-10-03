@@ -1,0 +1,4 @@
+input.gd++:4:1: A ready block takes no parameters.
+ 4 | ready() {}
+   | ^^^^^
+Hint: Write "ready { ... }".

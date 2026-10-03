@@ -1,0 +1,4 @@
+input.gd++:11:3: Function _open overrides a virtual function of Portal, so it needs @override.
+ 11 |   func _open() -> bool {
+    |   ^^^^
+Hint: Add @override, or rename the function.

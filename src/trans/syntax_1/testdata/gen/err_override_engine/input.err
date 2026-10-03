@@ -1,4 +1,4 @@
-input.gd++:4:1: The engine function _ready doesn't need @override.
- 4 | @override
-   | ^^^^^^^^^
-Hint: Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
+input.gd++:4:11: Annotation @override no longer takes "engine".
+ 4 | @override("engine")
+   |           ^^^^^^^^
+Hint: Drop it: a plain @override already makes _ready a plain override.

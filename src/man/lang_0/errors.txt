@@ -31,6 +31,7 @@ GD++ looks like GDScript, so GDScript habits are the most common mistakes. GD++ 
 
 ```
 func greet() -> void:          Bodies use braces: func greet() -> void { ... }
+func _process(delta):          Engine blocks: process(delta) { ... }, see gd++ man engine
 var x := 5                     No type inference: var x: int = 5
 const X = 5                    No const: enum X = 5
 static func f()                Attributes are annotations: @static func f()
@@ -137,7 +138,7 @@ Annotations:
 Annotation @tool can't be used on a func.
 Annotation @export is used twice.
 Annotation @onready can only be used in classes that extend Node, which A doesn't.
-Annotation @override takes "final", "super" or "engine".
+Annotation @override takes "final" or "super".
 Annotation @virtual takes "private" or "super".
 Annotation @recycle takes "only".
 Annotations @static and @virtual can't be used together.
@@ -150,17 +151,24 @@ Annotation @profile can't be used on a signal.
 Annotations @virtual and @onthread can't be used together.
 Annotation @notrace has no effect: class Player has no @trace.
   Remove @notrace, or add @trace to class Player.
-Function _open is already @virtual in Gate.
+Function _open is already virtual in Gate.
   Use @override to override it.
 The @virtual function knock must have a name that starts with "_", e.g. _knock.
   Like Godot's virtual functions. Scripts call it without the "_", e.g. _knock as knock.
 Annotation @override("final") only works on overrides of a GD++ @virtual function.
-The engine function _ready doesn't need @override.
-  Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
-Annotation @override("engine") only works on engine functions, e.g. _ready.
-The engine function _ready can only take @trace, @profile, @notrace, @noprofile, @game_only and @recycle.
-  Only a plain override, with @override("engine"), takes others.
-The engine function _process must be declared as "func _process(delta: float) -> void".
+Function _input overrides a virtual function of Node, so it needs @override.
+  Add @override, or rename the function.
+Function _ready overrides a virtual function of Node, so it needs @override.
+  To run code at its notification, write a ready block instead: "ready { ... }". Only for a plain override, which a script replaces, add @override.
+Annotation @override no longer takes "engine".
+  Drop it: a plain @override already makes _ready a plain override.
+Annotation @const can't be used on a ready block.
+A ready block only works in classes that extend Node, which Counter doesn't.
+A ready block takes no parameters.
+  Write "ready { ... }".
+A process block takes the delta time as a parameter.
+  Name it, e.g. "process(delta) { ... }". It's a float, in seconds.
+Class Mob has two process blocks.
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.
 Annotation @onthread takes "detached".
@@ -173,8 +181,8 @@ A pool's size must be a positive integer.
 Only a pool with a size has a mode, so "grow" needs one.
 A @recycle ctor only works in a @pool class, whose objects are reused.
 A @recycle var needs an initial value, which property x doesn't have.
-A @recycle _ready only works in a @pool class, whose objects are reused.
-Of all functions, only _ready takes @recycle.
+A @recycle ready block only works in a @pool class, whose objects are reused.
+Of all functions, only an @override _ready takes @recycle.
 Class A has two @recycle dtors.
 The scene's path must start with res:// or pkg://.
 ```

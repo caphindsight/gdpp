@@ -5,7 +5,7 @@ extends Node3D
 @onready @recycle var start: Vector3 = get_global_position()
 
 @recycle
-func _ready() -> void {
+ready {
   gd::print("each ready, in generation ", GENERATION);
 }
 
@@ -13,7 +13,7 @@ func _ready() -> void {
 class Shell {
   extends Node3D
 
-  @recycle @override("engine")
+  @recycle @override
   func _ready() -> void {
     gd::print("each ready");
   }

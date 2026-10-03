@@ -1,5 +1,5 @@
 class_name Mob
 extends Node
 
-@override
+@override("engine")
 func _ready() -> void {}
