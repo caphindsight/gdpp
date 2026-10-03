@@ -98,7 +98,7 @@ var names: Dictionary[String, Node3D]      // TypedDictionary<String, Node3D>
 
 `Array[T]` is an array that only holds values of type `T`. `Dictionary[K, V]` is a dictionary with keys of type `K` and values of type `V`. In C++, they are godot-cpp's `TypedArray` and `TypedDictionary`, with the element types spelled by name: `TypedArray<Node>`, not `TypedArray<Node *>`.
 
-- Only `Array` and `Dictionary` take type arguments (and `Async` and `Weak`, see below): `Array` takes one, and `Dictionary` two.
+- Only `Array` and `Dictionary` take type arguments (and `Async` and `Weak`, see `gd++ man async` and `gd++ man weak`): `Array` takes one, and `Dictionary` two.
 - Element types can be built-in types and classes, but not enums, externs, `Async` or `Weak` types.
 - Typed collections can't be nested: `Array[Array[int]]` is an error. Use `Array[Array]` instead.
 
@@ -141,44 +141,7 @@ An extern declared in any GD++ file of the package is a type. In C++, it's a `gd
 
 # Weak references
 
-A plain pointer to a node, e.g. `Enemy *`, says nothing about whether the node still exists: once it's freed, the pointer points to freed memory, and using it crashes the game. A refcounted object, e.g. a `Mesh`, has the opposite problem: it lives as long as something references it, so a cache that holds it keeps it alive. `Weak[T]` is a reference to an object of the class `T` that doesn't keep it alive, and knows when it's gone:
-
-```gd++
-var target: Weak[Enemy]
-
-func aim(enemy: Enemy) -> void {
-  target = enemy;
-}
-
-func _process(delta: float) -> void {
-  if (Enemy *e = target) {
-    look_at(e->get_global_position());
-  }
-}
-```
-
-In C++, it's a `Weak<T>`, which holds the object's ID, not the object. It converts to the object wherever one is needed, like in `Enemy *e = target`: it looks the object up by its ID, and gives `nullptr` once the object is freed. `if (target)` checks the same. For a `@pool` class, it also gives `nullptr` once the object is returned to its pool, even though the object still exists there, so a reference never points to a reused object. See `gd++ man pools`.
-
-`T` can be any class. A `Weak` of a class that isn't refcounted, e.g. a node, converts to a `T *`, and a `Weak` of a refcounted class, e.g. a resource, to a `Ref<T>`:
-
-```gd++
-var cache: Weak[ArrayMesh]
-
-func mesh() -> ArrayMesh {
-  Ref<ArrayMesh> m = cache;
-  if (m.is_null()) {
-    m = create ArrayMesh;
-    cache = m;
-  }
-  return m;
-}
-```
-
-The `Ref<T>` keeps the object alive while you hold it, like any `Ref`. The `T *` doesn't: if something frees the object while you use the pointer, that's undefined behavior, which usually crashes the game. So use the pointer only on the main thread, where a node goes away only at the end of the frame or when your own code frees it, and don't keep it anywhere, e.g. in a variable of the class: keep the `Weak` instead, and convert it again the next time. On other threads, the main thread can free the object at any time.
-
-The conversion also gives what a `T *` or a `Ref<T>` converts to, e.g. a base class, as in `Node *n = target;`, and works with `as`, e.g. `cache as Ref<Mesh>`. Where C++ can't use it, e.g. `auto e = target;`, which keeps the `Weak`, `target.ptr()` gives the `T *`, and `cache.ref()` the `Ref<T>`, for a refcounted class only. `==` compares a `Weak` with another `Weak` of its class, a pointer or a `Ref`, and they're equal when they refer to the same object.
-
-A `Weak` itself is safe to keep for as long as you like, and to share between threads. Godot sees a `Weak[T]` as a `T`, which is `null` once the object is gone. `Weak` types can't be exported, and typed collections can't hold them.
+`Weak[T]` is a reference to an object of the class `T` that doesn't keep it alive, and knows when it's gone: once a node is freed, a refcounted object is freed, or a pooled object is returned to its pool. See `gd++ man weak`.
 
 # Other names
 
@@ -210,4 +173,4 @@ The editor's help shows GD++ types like GDScript does: `int`, `float`, `Vector3`
 
 # See also
 
-`gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man enums`, `gd++ man externs`, `gd++ man async`.
+`gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man enums`, `gd++ man externs`, `gd++ man async`, `gd++ man weak`.

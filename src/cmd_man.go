@@ -59,17 +59,18 @@ var tutManPages = map[int][]string{
 
 // langManPages lists the paths of the language's pages, in reading order,
 // for each syntax version N, like toolManPages. The page at lang/<path> is
-// man/lang_N/<path>.txt, and the page at lang is man/lang_N.txt. The lists of stable versions never change.
+// man/lang_N/<path>.txt, and the page at lang is man/lang_N.txt. The lists of
+// stable versions can change, but only in backward compatible ways.
 var langManPages = map[int][]string{
 	0: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
-		"lang/signals", "lang/enums", "lang/lifecycle", "lang/pools", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance", "lang/code",
-		"lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
+		"lang/signals", "lang/enums", "lang/lifecycle", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance",
+		"lang/code", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 	1: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
-		"lang/signals", "lang/enums", "lang/lifecycle", "lang/pools", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance", "lang/code",
-		"lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
+		"lang/signals", "lang/enums", "lang/lifecycle", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance",
+		"lang/code", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 }
 

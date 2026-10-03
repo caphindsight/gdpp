@@ -114,19 +114,7 @@ Returning an object twice is fine: destroying a bullet that's already back in it
 
 # Remembering pooled objects
 
-A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays valid after the bullet is returned to the pool, since the pool keeps the object. But the pool may reuse it for another shot, and then the pointer points to a different bullet. Use `Weak[Bullet]` instead:
-
-```gd++
-var target: Weak[Bullet]
-
-func _process(delta: float) -> void {
-  if (Bullet *b = target) {
-    look_at(b->get_global_position());
-  }
-}
-```
-
-`Bullet *b = target` gives the bullet, or `nullptr` once it's returned to its pool or deleted, even if the pool has reused it since. Each pooled object counts how many times it was returned, and a `Weak` remembers the count it saw. `queue_destroy` uses the same check, so a queued destroy never returns a bullet that was reused in the meantime. See "Weak references" in `gd++ man types`.
+A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays valid after the bullet is returned to the pool, but the pool may reuse it for another shot. Keep a `Weak[Bullet]` instead: it gives `nullptr` once the bullet is returned to its pool, even if the pool has reused it since. See "Objects of @pool classes" in `gd++ man weak`.
 
 # Out of the tree
 
@@ -187,7 +175,7 @@ bullet.queue_free_pooled()           # queue_destroy bullet
 
 Use them together. `Bullet.new()` and `queue_free()` still work, but bypass the pool: `new()` creates a bullet outside the pool, which `free_pooled()` and `queue_free_pooled()` simply free, and `queue_free()` frees a pooled bullet for good, so nothing is ever reused.
 
-Warning: a returned bullet stays a valid object, and `new_pooled()` may hand it out again at any time, e.g. for another shot. So when a script returns a bullet, it must drop every reference to it. `is_instance_valid(bullet)` can't help: it's `true` for a returned bullet, and for a reused one. GD++ code can use `Weak[Bullet]` instead, see "Remembering pooled objects" above.
+Warning: a returned bullet stays a valid object, and `new_pooled()` may hand it out again at any time, e.g. for another shot. So when a script returns a bullet, it must drop every reference to it. `is_instance_valid(bullet)` can't help: it's `true` for a returned bullet, and for a reused one. GD++ code can use `Weak[Bullet]` instead, and a script can read a GD++ class's `Weak[Bullet]` variable, which is `null` once the bullet is returned. See `gd++ man weak`.
 
 A reused bullet gets ready again when it next enters the tree, and its `@recycle` variables are reset, as for GD++ code. A script's own `_ready` runs each time, though, since GD++ doesn't control it. Only the GD++ class's variables are reset, though: a script's own variables, if a script extends the class, aren't. And `new_pooled()` and `new_scene_pooled()` make objects of the GD++ class itself: called on a script that extends the class, it still gives bullets without the script.
 
@@ -207,4 +195,4 @@ A `@pool` class gets a few members, which the runtime's `create` and `destroy` u
 
 # See also
 
-`gd++ man pool-bullets`, `gd++ man lifecycle`, `gd++ man classes`, `gd++ man types`, `gd++ man annotations`, `gd++ man runtime`, `gd++ man performance`.
+`gd++ man pool-bullets`, `gd++ man lifecycle`, `gd++ man classes`, `gd++ man types`, `gd++ man weak`, `gd++ man annotations`, `gd++ man runtime`, `gd++ man performance`.
