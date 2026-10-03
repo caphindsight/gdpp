@@ -70,6 +70,12 @@ You never write `#include` lines. GD++ knows which header declares each name of 
 
 A file has at most one file-level class, with `class_name`, and any number of inline ones. Without `extends`, a class extends `RefCounted`. See `gd++ man classes`.
 
+### Creating and deleting objects
+
+<a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
+
+`create` and `destroy` are GD++ words, meant to create and delete objects of any class, and each kind of GD++ class gives them its own meaning. For example, for a pool class (see "Object pools"), `create` reuses a node from the pool, and `destroy` gives it back instead of deleting it. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. `queue_destroy` destroys a node at the end of the frame, like Godot's `queue_free`, but works with pools too. See `gd++ man classes`.
+
 ### Tool classes
 
 <a href="readme/svg/tool.gd++"><img src="readme/svg/tool.svg" alt="GD++ code: tool"></a>
@@ -80,19 +86,13 @@ It spins in the editor too, but `launch` only runs in the game. Without `@tool`,
 
 <a href="readme/svg/scene.gd++"><img src="readme/svg/scene.svg" alt="GD++ code: scene"></a>
 
-`create Enemy` (see below) instantiates `enemy.tscn`, with its children, and gives its root as an `Enemy *`. The scene is loaded once, by the first `create`. If its root isn't an `Enemy`, `create` prints an error and returns null. Classes without `@scene` pay nothing for it. See `gd++ man classes`.
+`create Enemy` (see above) instantiates `enemy.tscn`, with its children, and gives its root as an `Enemy *`. The scene is loaded once, by the first `create`. If its root isn't an `Enemy`, `create` prints an error and returns null. Classes without `@scene` pay nothing for it. See `gd++ man classes`.
 
 ### Class icons
 
 <a href="readme/svg/icon.gd++"><img src="readme/svg/icon.svg" alt="GD++ code: icon"></a>
 
 `pkg://` paths are relative to the package, and `res://` paths to the project. See `gd++ man classes`.
-
-### Creating and deleting objects
-
-<a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
-
-`create` and `destroy` are GD++ words, meant to create and delete objects of any class, and each kind of GD++ class gives them its own meaning. For example, for a pool class (see "Object pools"), `create` reuses a node from the pool, and `destroy` gives it back instead of deleting it. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. `queue_destroy` destroys a node at the end of the frame, like Godot's `queue_free`, but works with pools too. See `gd++ man classes`.
 
 ### Functions
 
