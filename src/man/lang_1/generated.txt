@@ -192,7 +192,7 @@ _gdpp_recycle_ctor, _gdpp_recycle_dtor   what a @pool class runs when its pool r
 _gdpp_scene                  a @scene class's scene path, a static constexpr gdpp::Scene<T>
 ```
 
-`This` is a macro, defined around each class's code. `GENERATION` is a local constant of `_notification`, and of a `@recycle _ready` that uses it. The setter's parameter is `p_value`, unless a property's `set` block names it.
+`This` is a macro, defined around each class's code. `GENERATION` is a local constant of `_notification`, and of a `@recycle ctor`, `@recycle dtor` or `@recycle _ready` that uses it. The setter's parameter is `p_value`, unless a property's `set` block names it.
 
 # #line directives
 

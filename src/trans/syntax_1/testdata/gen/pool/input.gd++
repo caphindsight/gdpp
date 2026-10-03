@@ -19,12 +19,12 @@ dtor {
 }
 
 @recycle ctor {
-  speed = 20.0;
+  speed = 20.0 + GENERATION;
 }
 
 @recycle
 dtor {
-  gd::print("kept");
+  gd::print("kept in generation ", GENERATION);
 }
 
 func fire() -> void {

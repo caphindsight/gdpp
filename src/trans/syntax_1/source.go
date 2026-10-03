@@ -74,7 +74,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			w.block(c.ctor, "\t{", "}", assertVoid)
 		}
 		if c.recycleCtor != nil && !c.recycleCtorOnly {
-			w.block(c.recycleCtor, "\t{", "}", assertVoid)
+			recycleBlock(w, c.recycleCtor, "\t{")
 		}
 		w.ln("}")
 	}
@@ -87,7 +87,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		}
 		// Unless the object rests in its pool, which already ran it.
 		if c.recycleDtor != nil && !c.recycleDtorOnly {
-			w.block(c.recycleDtor, "\tif (!_gdpp_pool_slot.given) {", "}", assertVoid)
+			recycleBlock(w, c.recycleDtor, "\tif (!_gdpp_pool_slot.given) {")
 		}
 		if c.dtor != nil {
 			w.block(c.dtor, "\t{", "}", assertVoid)
@@ -218,7 +218,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	w.ln("#undef This")
 }
 
-// generationRegexp matches the use of GENERATION, which notif blocks and @recycle _ready can read.
+// generationRegexp matches the use of GENERATION, which notif blocks and @recycle ctor, dtor and _ready can read.
 var generationRegexp = regexp.MustCompile(`\bGENERATION\b`)
 
 // initializer writes the assignment of var v's initial value, or of its type's default if it has none.
@@ -248,9 +248,19 @@ func recycler(w *writer, c *classModel, keyword string, body *Block) {
 		}
 	}
 	if body != nil {
-		w.block(body, "\t{", "}", assertVoid)
+		recycleBlock(w, body, "\t{")
 	}
 	w.ln("}")
+}
+
+// recycleBlock writes body, a @recycle ctor or dtor block, after the line open, declaring GENERATION if it's used.
+func recycleBlock(w *writer, body *Block, open string) {
+	if generationRegexp.MatchString(body.Text) {
+		w.ln("%s", open)
+		w.ln("\t\tconst uint64_t GENERATION = _gdpp_pool_slot.generation;")
+		open = ""
+	}
+	w.block(body, open, "}", assertVoid)
 }
 
 // guard writes, if on, the check of @game_only code that returns right away, with a default value, when it's
