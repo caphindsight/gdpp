@@ -11,6 +11,8 @@ void Bullet::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_pooled"), &Bullet::new_pooled);
 	ClassDB::bind_method(D_METHOD("free_pooled"), &Bullet::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Bullet::queue_free_pooled);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Bullet::pool_reserve, DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Bullet::pool_clear, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_speed"), &Bullet::get_speed);
 	ClassDB::bind_method(D_METHOD("set_speed", "value"), &Bullet::set_speed);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("speed", PROPERTY_USAGE_NONE), "set_speed", "get_speed");
@@ -26,27 +28,32 @@ void Bullet::_bind_methods() {
 }
 
 Bullet::Bullet() {
+	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 #line 5 "input.gd++"
 	speed = 20.0;
-#line 32 "Bullet.cpp"
-#line 6 "input.gd++"
-	age = 0.0;
 #line 35 "Bullet.cpp"
+	if (!_gdpp_reserved) {
+#line 6 "input.gd++"
+		age = 0.0;
+#line 39 "Bullet.cpp"
+	}
+	if (!_gdpp_reserved) {
 #line 8 "input.gd++"
-	target = [&]() -> Vector3 {
+		target = [&]() -> Vector3 {
   return Vector3(0, 0, -1);
 }();
-#line 40 "Bullet.cpp"
+#line 46 "Bullet.cpp"
+	}
 #line 12 "input.gd++"
 	{
   gd::print("created");
 }
-#line 45 "Bullet.cpp"
+#line 52 "Bullet.cpp"
 #line 20 "input.gd++"
-	{
+	if (!_gdpp_reserved) {
   speed = 20.0;
 }
-#line 50 "Bullet.cpp"
+#line 57 "Bullet.cpp"
 }
 
 Bullet::~Bullet() {
@@ -54,32 +61,30 @@ Bullet::~Bullet() {
 	if (!_gdpp_pool_slot.given) {
   gd::print("kept");
 }
-#line 58 "Bullet.cpp"
+#line 65 "Bullet.cpp"
 #line 16 "input.gd++"
 	{
   gd::print("deleted");
 }
-#line 63 "Bullet.cpp"
-	if (_gdpp_pool_slot.owned) {
-		_gdpp_pool.forget(this);
-	}
+#line 70 "Bullet.cpp"
+	_gdpp_pool.forget(this);
 }
 
 void Bullet::_gdpp_recycle_ctor() {
 #line 6 "input.gd++"
 	age = 0.0;
-#line 72 "Bullet.cpp"
+#line 77 "Bullet.cpp"
 	hits = {};
 #line 8 "input.gd++"
 	target = [&]() -> Vector3 {
   return Vector3(0, 0, -1);
 }();
-#line 78 "Bullet.cpp"
+#line 83 "Bullet.cpp"
 #line 20 "input.gd++"
 	{
   speed = 20.0;
 }
-#line 83 "Bullet.cpp"
+#line 88 "Bullet.cpp"
 }
 
 void Bullet::_gdpp_recycle_dtor() {
@@ -87,7 +92,7 @@ void Bullet::_gdpp_recycle_dtor() {
 	{
   gd::print("kept");
 }
-#line 91 "Bullet.cpp"
+#line 96 "Bullet.cpp"
 }
 
 void Bullet::free_pooled() {
@@ -102,6 +107,14 @@ void Bullet::queue_free_pooled() {
 	gdpp::queue_destroy(this);
 }
 
+void Bullet::pool_reserve(int64_t p_count, const String &p_mode) {
+	_gdpp_pool.reserve(p_count, p_mode);
+}
+
+void Bullet::pool_clear(bool p_keep_in_use) {
+	_gdpp_pool.clear(p_keep_in_use);
+}
+
 Bullet *Bullet::new_pooled() {
 	return gdpp::create<Bullet>();
 }
@@ -112,7 +125,7 @@ void Bullet::fire() {
   auto other = gdpp::create<Bullet>();
   gdpp::destroy(other);
 
-#line 116 "Bullet.cpp"
+#line 129 "Bullet.cpp"
 }
 
 double Bullet::get_speed() const {

@@ -1,0 +1,4 @@
+input.gd++:1:7: Only a pool with a size has a mode, so "grow" needs one.
+ 1 | @pool("grow")
+   |       ^^^^^^
+Hint: E.g. "@pool(100, \"grow\")".

@@ -263,12 +263,12 @@ func lsClassTable(classes []lsClass) string {
 		if i > 0 && class.File == classes[i-1].File {
 			file = ""
 		}
-		name := class.Name
+		name := Styled(class.Name, Green)
 		switch {
-		case name == "":
+		case class.Name == "":
 			name, base = lsMissing("has errors"), "see gd++ build"
 		case class.Clash:
-			name = lsMissing(name + ": declared twice")
+			name = lsMissing(class.Name + ": declared twice")
 		}
 		rows = append(rows, []string{file, name, base, lsTags(class)})
 	}

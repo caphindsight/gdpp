@@ -10,12 +10,16 @@ void Spark::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene_pooled"), &Spark::new_scene_pooled);
 	ClassDB::bind_method(D_METHOD("free_pooled"), &Spark::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Spark::queue_free_pooled);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Spark::pool_reserve, DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Spark::pool_clear, DEFVAL(false));
+}
+
+Spark::Spark() {
+	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 }
 
 Spark::~Spark() {
-	if (_gdpp_pool_slot.owned) {
-		_gdpp_pool.forget(this);
-	}
+	_gdpp_pool.forget(this);
 }
 
 void Spark::_gdpp_recycle_ctor() {
@@ -34,6 +38,14 @@ void Spark::free_pooled() {
 
 void Spark::queue_free_pooled() {
 	gdpp::queue_destroy(this);
+}
+
+void Spark::pool_reserve(int64_t p_count, const String &p_mode) {
+	_gdpp_pool.reserve(p_count, p_mode);
+}
+
+void Spark::pool_clear(bool p_keep_in_use) {
+	_gdpp_pool.clear(p_keep_in_use);
 }
 
 Spark *Spark::new_scene_pooled() {

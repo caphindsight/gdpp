@@ -10,12 +10,16 @@ void Shell::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_pooled"), &Shell::new_pooled);
 	ClassDB::bind_method(D_METHOD("free_pooled"), &Shell::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Shell::queue_free_pooled);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Shell::pool_reserve, DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Shell::pool_clear, DEFVAL(false));
+}
+
+Shell::Shell() {
+	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 }
 
 Shell::~Shell() {
-	if (_gdpp_pool_slot.owned) {
-		_gdpp_pool.forget(this);
-	}
+	_gdpp_pool.forget(this);
 }
 
 void Shell::_gdpp_recycle_ctor() {
@@ -36,6 +40,14 @@ void Shell::queue_free_pooled() {
 	gdpp::queue_destroy(this);
 }
 
+void Shell::pool_reserve(int64_t p_count, const String &p_mode) {
+	_gdpp_pool.reserve(p_count, p_mode);
+}
+
+void Shell::pool_clear(bool p_keep_in_use) {
+	_gdpp_pool.clear(p_keep_in_use);
+}
+
 Shell *Shell::new_pooled() {
 	return gdpp::create<Shell>();
 }
@@ -45,7 +57,7 @@ void Shell::_ready() {
 
     gd::print("each ready");
 
-#line 49 "Shell.cpp"
+#line 61 "Shell.cpp"
 }
 
 #undef This

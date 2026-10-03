@@ -177,7 +177,7 @@ func withSpace(t string) string {
 var processing = map[string]string{"_process": "set_process", "_physics_process": "set_physics_process"}
 
 func (c *classModel) needsCtor() bool {
-	return c.ctor != nil || c.recycleCtor != nil && !c.recycleCtorOnly || c.trace || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
+	return c.ctor != nil || c.pool != nil || c.trace || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
 		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" }) ||
 		slices.ContainsFunc(c.notifs, func(n *notifModel) bool { return n.setter != "" })
 }
@@ -288,9 +288,10 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		public = append(public, fmt.Sprintf("static %s *%s();", c.name, name))
 	}
 	if p := c.pool; p != nil {
-		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, gdpp::PoolLimit::%s };", c.name, p.capacity, strings.ToUpper(p.limit)),
+		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, gdpp::PoolMode::%s };", c.name, p.size, strings.ToUpper(p.mode)),
 			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
-			"void free_pooled();", "void queue_free_pooled();")
+			"void free_pooled();", "void queue_free_pooled();", "static void pool_reserve(int64_t p_count, const String &p_mode = String());",
+			"static void pool_clear(bool p_keep_in_use = false);")
 	}
 	for _, f := range c.funcs {
 		if f.virtual {

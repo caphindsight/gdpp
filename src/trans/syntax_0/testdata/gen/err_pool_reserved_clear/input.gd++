@@ -1,0 +1,6 @@
+@pool
+class_name A
+extends Node
+
+func pool_clear() -> void {
+}

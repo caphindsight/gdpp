@@ -18,12 +18,14 @@ public:
 	Bullet();
 	~Bullet();
 	static Bullet *new_pooled();
-	static inline gdpp::Pool<Bullet> _gdpp_pool{ 0, gdpp::PoolLimit::QUIET };
+	static inline gdpp::Pool<Bullet> _gdpp_pool{ 0, gdpp::PoolMode::GROW };
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
 	void free_pooled();
 	void queue_free_pooled();
+	static void pool_reserve(int64_t p_count, const String &p_mode = String());
+	static void pool_clear(bool p_keep_in_use = false);
 	double get_age() const;
 	void set_age(double p_value);
 

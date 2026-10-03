@@ -338,6 +338,8 @@ While the game runs from the editor, open the Debugger panel, then its Monitors 
 
 Caveat: the editor reformats every monitor's name the way it does property names, so the category shows as "Gd++", and "Player.take_damage (ms)" as "Player. Take Damage (ms)". GD++ can't turn this off. The profile tables below show the names as they are.
 
+Pools have monitors too, in debug builds, see "Monitors" in `gd++ man pools`.
+
 The graphs show when a cost changes, e.g. when a fight starts, and how the functions compare to each other, and to Godot's own monitors, like the frame time.
 
 # Profile tables

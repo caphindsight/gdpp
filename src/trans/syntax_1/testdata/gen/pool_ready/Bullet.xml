@@ -16,7 +16,22 @@
 		<method name="new_pooled" qualifiers="static">
 			<return type="Bullet" />
 			<description>
-				Takes an object from the class's pool, or creates a new one if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a pool with a size are in use, so always check the result. Return the object with [method free_pooled] or [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates an object outside the pool.
+				Takes an object from the class's pool, or creates a new one if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a [code]"fixed"[/code] pool are in use, so always check the result. Return the object with [method free_pooled] or [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates an object outside the pool.
+			</description>
+		</method>
+		<method name="pool_clear" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="keep_in_use" type="bool" default="false" />
+			<description>
+				Drops all the objects of the class's pool for good: it frees the resting ones right away, and those in use at the end of the frame, like with [method Node.queue_free]. With [param keep_in_use], it leaves those in use alone instead: they no longer belong to the pool, so [method free_pooled] frees them. The pool's size and mode stay as they are. [b]Warning:[/b] the objects in use are freed, so drop every reference to them, unless [param keep_in_use] is [code]true[/code]. It isn't thread-safe, so call it from the main thread only.
+			</description>
+		</method>
+		<method name="pool_reserve" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<param index="1" name="mode" type="String" default="&quot;&quot;" />
+			<description>
+				Makes or frees resting objects, so that the class's pool has [param count] objects, counting both those in use and those resting, e.g. when a level loads. A new object runs its constructor, but waits unused until the pool hands it out. Objects in use are never freed. With [param mode], [code]"fixed"[/code] or [code]"grow"[/code], [param count] becomes the pool's size first, and [param mode] its mode: once all the objects of the size are in use, a [code]"fixed"[/code] pool makes no more, while a [code]"grow"[/code] pool makes more. Without it, the size and mode stay as they are, and a [code]"fixed"[/code] pool makes at most its size, with an error if [param count] is more. [code]pool_reserve(0)[/code] frees all the resting objects. [b]Warning:[/b] it isn't thread-safe, so call it from the main thread only.
 			</description>
 		</method>
 		<method name="queue_free_pooled">

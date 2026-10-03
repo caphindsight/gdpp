@@ -1,4 +1,4 @@
-@pool(100, "soft")
+@pool(100, "grow")
 class_name Bullet
 extends Node3D
 

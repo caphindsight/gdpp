@@ -1,0 +1,4 @@
+input.gd++:1:19: Annotation @pool takes a size, and "fixed" or "grow", all optional.
+ 1 | @pool(10, "grow", "fixed")
+   |                   ^^^^^^^
+Hint: E.g. "@pool", "@pool(100)" or "@pool(100, \"grow\")".

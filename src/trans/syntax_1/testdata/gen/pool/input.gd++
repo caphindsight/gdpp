@@ -1,4 +1,4 @@
-@pool(100, "strict")
+@pool(100, "fixed")
 @trace
 class_name Bullet
 extends Node3D

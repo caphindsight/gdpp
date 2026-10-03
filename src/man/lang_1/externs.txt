@@ -140,7 +140,7 @@ extern Bullet {
 
 Then `create`, `destroy` and `queue_destroy` call, by name, the methods that the class has for scripts, so they work like in the class's own package:
 
-- `create Bullet` calls the class's static method `new_pooled()`, `new_scene()` or `new_scene_pooled()`, for `@pool`, `@scene` or both. With a pool of a fixed size, it returns `nullptr` once all the objects are in use, so always check the result.
+- `create Bullet` calls the class's static method `new_pooled()`, `new_scene()` or `new_scene_pooled()`, for `@pool`, `@scene` or both. With a `"fixed"` pool, it returns `nullptr` once all the objects are in use, so always check the result.
 - With `@pool`, `destroy bullet` calls `free_pooled()`, which returns the bullet to its pool right away, and `queue_destroy bullet` calls `queue_free_pooled()`, which returns it at the end of the frame. A bullet that the pool didn't make, e.g. one from a scene, is freed at the end of the frame.
 
 Without these annotations, `create` makes a plain object, outside the pool and without the scene, and `destroy` deletes the object for good, so nothing is reused.

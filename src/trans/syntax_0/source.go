@@ -49,6 +49,10 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("")
 		w.ln("%s::%s() {", c.name, c.name)
 		guard(w, c.gameOnly, "")
+		if c.pool != nil {
+			// Whether the pool reserves this object, unused, so it skips its @recycle parts until the pool hands it out.
+			w.ln("\tconst bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);")
+		}
 		if c.trace {
 			w.ln("\tgdpp::trace_lifetime(%q, this, true);", c.name)
 		}
@@ -66,7 +70,13 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			}
 		}
 		for _, v := range c.vars {
-			if v.v.Init != nil && !v.onready {
+			switch {
+			case v.v.Init == nil || v.onready:
+			case v.recycle != nil:
+				w.ln("\tif (!_gdpp_reserved) {")
+				initializer(w, v, "\t\t")
+				w.ln("\t}")
+			default:
 				initializer(w, v, "\t")
 			}
 		}
@@ -74,7 +84,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			w.block(c.ctor, "\t{", "}", assertVoid)
 		}
 		if c.recycleCtor != nil && !c.recycleCtorOnly {
-			recycleBlock(w, c.recycleCtor, "\t{")
+			recycleBlock(w, c.recycleCtor, "\tif (!_gdpp_reserved) {")
 		}
 		w.ln("}")
 	}
@@ -93,9 +103,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			w.block(c.dtor, "\t{", "}", assertVoid)
 		}
 		if c.pool != nil {
-			w.ln("\tif (_gdpp_pool_slot.owned) {")
-			w.ln("\t\t_gdpp_pool.forget(this);")
-			w.ln("\t}")
+			w.ln("\t_gdpp_pool.forget(this);")
 		}
 		w.ln("}")
 	}
@@ -118,6 +126,16 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("void %s::queue_free_pooled() {", c.name)
 		guard(w, c.gameOnly, "")
 		w.ln("\tgdpp::queue_destroy(this);")
+		w.ln("}")
+		w.ln("")
+		w.ln("void %s::pool_reserve(int64_t p_count, const String &p_mode) {", c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\t_gdpp_pool.reserve(p_count, p_mode);")
+		w.ln("}")
+		w.ln("")
+		w.ln("void %s::pool_clear(bool p_keep_in_use) {", c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\t_gdpp_pool.clear(p_keep_in_use);")
 		w.ln("}")
 	}
 	// What scripts call for create.
@@ -598,6 +616,8 @@ func (u *unit) bindings(w *writer, c *classModel) {
 	if c.pool != nil {
 		w.ln("\tClassDB::bind_method(%s, &%s::free_pooled);", method("free_pooled"), c.name)
 		w.ln("\tClassDB::bind_method(%s, &%s::queue_free_pooled);", method("queue_free_pooled"), c.name)
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::pool_reserve, DEFVAL(String()));", method("pool_reserve", "count", "mode"), c.name)
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::pool_clear, DEFVAL(false));", method("pool_clear", "keep_in_use"), c.name)
 	}
 	for _, v := range c.vars {
 		for _, s := range v.sections {

@@ -10,20 +10,25 @@ void Bullet::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_pooled"), &Bullet::new_pooled);
 	ClassDB::bind_method(D_METHOD("free_pooled"), &Bullet::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Bullet::queue_free_pooled);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Bullet::pool_reserve, DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Bullet::pool_clear, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_age"), &Bullet::get_age);
 	ClassDB::bind_method(D_METHOD("set_age", "value"), &Bullet::set_age);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("age", PROPERTY_USAGE_NONE), "set_age", "get_age");
 }
 
 Bullet::Bullet() {
+	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
+	if (!_gdpp_reserved) {
 #line 5 "input.gd++"
-	age = 0.0;
-#line 22 "Bullet.cpp"
+		age = 0.0;
+#line 26 "Bullet.cpp"
+	}
 #line 7 "input.gd++"
 	{
   gd::print("created");
 }
-#line 27 "Bullet.cpp"
+#line 32 "Bullet.cpp"
 }
 
 Bullet::~Bullet() {
@@ -31,21 +36,19 @@ Bullet::~Bullet() {
 	{
   gd::print("deleted");
 }
-#line 35 "Bullet.cpp"
-	if (_gdpp_pool_slot.owned) {
-		_gdpp_pool.forget(this);
-	}
+#line 40 "Bullet.cpp"
+	_gdpp_pool.forget(this);
 }
 
 void Bullet::_gdpp_recycle_ctor() {
 #line 5 "input.gd++"
 	age = 0.0;
-#line 44 "Bullet.cpp"
+#line 47 "Bullet.cpp"
 #line 15 "input.gd++"
 	{
   gd::print("reused");
 }
-#line 49 "Bullet.cpp"
+#line 52 "Bullet.cpp"
 }
 
 void Bullet::_gdpp_recycle_dtor() {
@@ -53,7 +56,7 @@ void Bullet::_gdpp_recycle_dtor() {
 	{
   gd::print("kept");
 }
-#line 57 "Bullet.cpp"
+#line 60 "Bullet.cpp"
 }
 
 void Bullet::free_pooled() {
@@ -66,6 +69,14 @@ void Bullet::free_pooled() {
 
 void Bullet::queue_free_pooled() {
 	gdpp::queue_destroy(this);
+}
+
+void Bullet::pool_reserve(int64_t p_count, const String &p_mode) {
+	_gdpp_pool.reserve(p_count, p_mode);
+}
+
+void Bullet::pool_clear(bool p_keep_in_use) {
+	_gdpp_pool.clear(p_keep_in_use);
 }
 
 Bullet *Bullet::new_pooled() {

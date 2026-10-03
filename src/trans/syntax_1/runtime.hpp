@@ -42,6 +42,11 @@
 #include <godot_cpp/variant/typed_dictionary.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/variant.hpp>
+#ifdef DEBUG_ENABLED
+#include <algorithm>
+
+#include <godot_cpp/classes/performance.hpp>
+#endif
 
 // The C++ type of Godot's float.
 typedef double float64_t;
@@ -610,7 +615,7 @@ T *make() {
 // it rests in the pool, or null otherwise.
 template <typename T>
 struct PoolSlot {
-	// Whether the pool made it.
+	// Whether the pool made it, and hasn't dropped it since.
 	bool owned = false;
 	// Whether destroy gave it back: it rests in the pool, or is on its way there.
 	bool given = false;
@@ -618,32 +623,36 @@ struct PoolSlot {
 	bool readied = false;
 	// Where it rests in the pool, or null.
 	T **cell = nullptr;
+	// Where it is in the pool's list of the objects it made, if owned.
+	int64_t index = 0;
 	// How many times it was given back, so Weak<T> knows a reused object.
 	std::atomic<uint64_t> generation = 0;
 };
 
-// PoolLimit is what a Pool with a capacity does at it: QUIET and STRICT make no more objects, STRICT with an error,
-// and SOFT makes more, with an error in debug builds each time it grows past the capacity times a power of 2.
-enum class PoolLimit {
-	// Makes no more objects, silently: create gives null.
-	QUIET,
-	// Makes no more objects, and prints an error: create gives null.
-	STRICT,
-	// Makes more objects, with an error in debug builds each time it grows past the capacity times a power of 2.
-	SOFT,
+// PoolMode is what a Pool does when all the objects of its size are in use, and create needs another.
+enum class PoolMode {
+	// Makes no more objects: create gives null.
+	FIXED,
+	// Makes more objects, with an error in debug builds each time it grows past the size times a power of 2.
+	GROW,
 };
 
-// Pool<T> keeps the objects of the @pool class T that destroy gave back, for create to reuse. It makes at most
-// capacity objects, or any number with 0, unless its limit is SOFT. It's thread-safe, and each
-// operation is O(1). The resting objects are in a list of chunks of fixed size, so that a pool that grows never moves
-// them, and taking and giving back only touch the last chunk. Chunks are kept once made.
+// reserving() is whether this thread's Pool::reserve is making an object, whose constructor then skips its @recycle
+// parts, and clears it.
+GDPP_THREAD_LOCAL(bool, reserving)
+
+// Pool<T> keeps the objects of the @pool class T that destroy gave back, for create to reuse. It makes size objects,
+// and then more only with GROW. reserve makes objects ahead of time, and clear drops them all. take, give and forget
+// are thread-safe and O(1); reserve and clear must be called from the main thread. The resting objects are in a list
+// of chunks of fixed size, so that a pool that grows never moves them, and taking and giving back only touch the last
+// chunk. Chunks are kept once made.
 template <typename T>
 class Pool {
 public:
-	// A pool of at most p_capacity objects, or any number with 0, which does p_limit when full.
-	Pool(int64_t p_capacity, PoolLimit p_limit) :
-			capacity_(p_capacity), limit_(p_limit), warn_at_(p_capacity) {}
-	// Frees the pool's chunks, not the objects: clear frees those when the library is unloaded.
+	// A pool of p_size objects, which does p_mode when they're all in use.
+	Pool(int64_t p_size, PoolMode p_mode) :
+			size_(p_size), mode_(p_mode), warn_at_(p_size) {}
+	// Frees the pool's chunks, not the objects: trim frees those when the library is unloaded.
 	~Pool() {
 		for (Chunk *chunk = first_.next; chunk;) {
 			delete std::exchange(chunk, chunk->next);
@@ -655,38 +664,16 @@ public:
 		T *object = nullptr;
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
-			if (!hooked_) {
-				hooked_ = true;
-				on_unload([this] { clear(); });
-			}
-			object = pop();
-			if (!object && capacity_ > 0 && alive_ >= capacity_ && limit_ != PoolLimit::SOFT) {
-				if (limit_ == PoolLimit::STRICT) {
-					ERR_PRINT(vformat("GD++ object pool overflow for class `%s`, with %d objects.", T::get_class_static(), capacity_));
-				}
+			hook();
+			if (!(object = pop()) && !admit()) {
 				return nullptr;
 			}
-			if (!object) {
-				alive_++;
-#ifdef DEBUG_ENABLED
-				if (limit_ == PoolLimit::SOFT && alive_ > warn_at_) {
-					ERR_PRINT(vformat("GD++ object pool for class `%s` grew past %d objects.", T::get_class_static(), warn_at_));
-					warn_at_ *= 2;
-				}
-#endif
-			}
 		}
-		if (object) {
-			object->_gdpp_recycle_ctor();
-			object->request_ready(); // So that it gets ready again when it next enters the tree, like a new node.
-			return object;
+		if (!object) {
+			return adopt(false);
 		}
-		if (!(object = make<T>())) {
-			std::lock_guard<std::mutex> lock(mutex_);
-			alive_--;
-			return nullptr;
-		}
-		object->_gdpp_pool_slot.owned = true;
+		object->_gdpp_recycle_ctor();
+		object->request_ready(); // So that it gets ready again when it next enters the tree, like a new node.
 		return object;
 	}
 
@@ -705,18 +692,81 @@ public:
 		if (Node *parent = p_object->get_parent()) {
 			parent->remove_child(p_object);
 		}
-		std::lock_guard<std::mutex> lock(mutex_);
-		push(p_object);
+		{
+			std::lock_guard<std::mutex> lock(mutex_);
+			if (p_object->_gdpp_pool_slot.owned) {
+				push(p_object);
+				return;
+			}
+		}
+		p_object->queue_free(); // clear dropped it meanwhile, so it's deleted, like objects the pool didn't make.
 	}
 
-	// forget drops p_object, which is being freed. A resting one's cell gets the last resting object.
+	// forget drops p_object, which is being freed, if the pool owns it. A resting one's cell gets the last resting
+	// object.
 	void forget(T *p_object) {
 		std::lock_guard<std::mutex> lock(mutex_);
+		PoolSlot<T> &slot = p_object->_gdpp_pool_slot;
+		if (!slot.owned) {
+			return;
+		}
 		alive_--;
-		if (T **cell = p_object->_gdpp_pool_slot.cell) {
+		owned_[slot.index] = owned_.back();
+		owned_[slot.index]->_gdpp_pool_slot.index = slot.index;
+		owned_.pop_back();
+		if (T **cell = slot.cell) {
 			if (T *last = pop(); last != p_object) {
 				*cell = last;
 				last->_gdpp_pool_slot.cell = cell;
+			}
+		}
+	}
+
+	// reserve makes or frees resting objects, so that the pool has p_count objects, resting or in use. A new object
+	// rests unused: it skips its @recycle parts until take hands it out. With p_mode, "fixed" or "grow", it first
+	// makes p_count the size, and p_mode the mode. It never frees objects in use.
+	void reserve(int64_t p_count, const String &p_mode) {
+		ERR_FAIL_COND_MSG(p_count < 0, vformat("A GD++ object pool can't reserve %d objects.", p_count));
+		ERR_FAIL_COND_MSG(!p_mode.is_empty() && p_mode != "fixed" && p_mode != "grow", vformat("A GD++ object pool's mode is \"fixed\" or \"grow\", not \"%s\".", p_mode));
+		{
+			std::lock_guard<std::mutex> lock(mutex_);
+			hook();
+			if (!p_mode.is_empty()) {
+				size_ = warn_at_ = p_count;
+				mode_ = p_mode == "grow" ? PoolMode::GROW : PoolMode::FIXED;
+			}
+		}
+		while (room(p_count)) {
+			reserving() = true;
+			T *object = adopt(true);
+			reserving() = false; // If make failed before the constructor cleared it.
+			if (!object) {
+				break;
+			}
+		}
+		trim(p_count);
+	}
+
+	// clear drops all the objects the pool made: it frees the resting ones right away, and those in use at the end of
+	// the frame, or with p_keep_in_use, lets those in use leave the pool, and live on.
+	void clear(bool p_keep_in_use) {
+		std::vector<T *> objects;
+		{
+			std::lock_guard<std::mutex> lock(mutex_);
+			objects.swap(owned_);
+			alive_ -= int64_t(objects.size()); // Objects that take or reserve is making still count.
+			warn_at_ = size_;
+			last_ = &first_;
+			count_ = 0;
+			for (T *object : objects) {
+				object->_gdpp_pool_slot.owned = false;
+			}
+		}
+		for (T *object : objects) {
+			if (std::exchange(object->_gdpp_pool_slot.cell, nullptr)) {
+				memdelete(object);
+			} else if (!p_keep_in_use) {
+				object->queue_free();
 			}
 		}
 	}
@@ -728,6 +778,111 @@ private:
 		Chunk *prev = nullptr;
 		Chunk *next = nullptr;
 	};
+
+	// hook makes the library's unloading free the resting objects, and in debug builds adds the pool's monitors. The
+	// caller holds the lock.
+	void hook() {
+		if (!hooked_) {
+			hooked_ = true;
+			on_unload([this] { trim(0); });
+#ifdef DEBUG_ENABLED
+			callable_mp_static(&Pool::monitor).call_deferred(); // On the main thread, which owns the monitors.
+#endif
+		}
+	}
+
+#ifdef DEBUG_ENABLED
+	// monitor adds the pool's monitors to the debugger, until the library is unloaded: how many objects the pool made
+	// that aren't freed, how many of them are in the scene tree, and how many are orphan nodes, out of it. They count
+	// only when the debugger asks.
+	static void monitor() {
+		String name = String("GD++ Object Pools/") + T::get_class_static();
+		for (const auto &[id, count] : { std::pair{ name + " (total)", &Pool::total }, std::pair{ name + " (active)", &Pool::active },
+					 std::pair{ name + " (orphaned)", &Pool::orphaned } }) {
+			if (!Performance::get_singleton()->has_custom_monitor(id)) {
+				Performance::get_singleton()->add_custom_monitor(id, callable_mp_static(count));
+				on_unload([id] {
+					if (Performance::get_singleton()->has_custom_monitor(id)) {
+						Performance::get_singleton()->remove_custom_monitor(id);
+					}
+				});
+			}
+		}
+	}
+
+	// total returns how many objects the pool of T made that aren't freed, resting or in use.
+	static int64_t total() {
+		std::lock_guard<std::mutex> lock(T::_gdpp_pool.mutex_);
+		return T::_gdpp_pool.alive_;
+	}
+
+	// active returns how many objects the pool of T made are in the scene tree.
+	static int64_t active() {
+		std::lock_guard<std::mutex> lock(T::_gdpp_pool.mutex_);
+		return T::_gdpp_pool.in_tree();
+	}
+
+	// orphaned returns how many objects the pool of T made are orphan nodes, out of the scene tree: the resting ones,
+	// and those in use out of the tree.
+	static int64_t orphaned() {
+		std::lock_guard<std::mutex> lock(T::_gdpp_pool.mutex_);
+		return T::_gdpp_pool.alive_ - T::_gdpp_pool.in_tree();
+	}
+
+	// in_tree returns how many objects the pool made are in the scene tree. The caller holds the lock.
+	int64_t in_tree() const {
+		return std::count_if(owned_.begin(), owned_.end(), [](T *p_object) { return p_object->is_inside_tree(); });
+	}
+#endif
+
+	// admit reports whether the pool may make one more object, and counts it if so. The caller holds the lock.
+	bool admit() {
+		if (alive_ >= size_ && mode_ == PoolMode::FIXED) {
+			return false;
+		}
+		alive_++;
+#ifdef DEBUG_ENABLED
+		if (size_ > 0 && alive_ > warn_at_) {
+			ERR_PRINT(vformat("GD++ object pool for class `%s` grew past %d objects.", T::get_class_static(), warn_at_));
+			warn_at_ *= 2;
+		}
+#endif
+		return true;
+	}
+
+	// room reports whether reserve must make another object to reach p_count, and counts it if so. It prints an error
+	// when the pool's size stops it.
+	bool room(int64_t p_count) {
+		std::lock_guard<std::mutex> lock(mutex_);
+		if (alive_ >= p_count) {
+			return false;
+		}
+		if (!admit()) {
+			ERR_PRINT(vformat("GD++ object pool for class `%s` can't reserve %d objects, since its size is %d.", T::get_class_static(), p_count, size_));
+			return false;
+		}
+		return true;
+	}
+
+	// adopt makes a new object, which admit counted, and adds it to the objects the pool made, resting if p_rest. It
+	// returns null if the object can't be made.
+	T *adopt(bool p_rest) {
+		T *object = make<T>();
+		std::lock_guard<std::mutex> lock(mutex_);
+		if (!object) {
+			alive_--;
+			return nullptr;
+		}
+		PoolSlot<T> &slot = object->_gdpp_pool_slot;
+		slot.owned = true;
+		slot.index = int64_t(owned_.size());
+		owned_.push_back(object);
+		if (p_rest) {
+			slot.given = true;
+			push(object);
+		}
+		return object;
+	}
 
 	// pop removes the last resting object and returns it, or null if there's none.
 	T *pop() {
@@ -759,27 +914,34 @@ private:
 		p_object->_gdpp_pool_slot.cell = cell;
 	}
 
-	// clear frees the resting objects, before the library is unloaded. Each one's destructor forgets it.
-	void clear() {
-		while (T *object = peek()) {
+	// trim frees resting objects until the pool has p_count objects, or none rests. Each one's destructor forgets it.
+	void trim(int64_t p_count) {
+		while (T *object = excess(p_count)) {
 			memdelete(object);
 		}
 	}
 
-	T *peek() {
+	// excess takes the last resting object out of the pool, for trim to free, if the pool has more than p_count
+	// objects, or returns null.
+	T *excess(int64_t p_count) {
 		std::lock_guard<std::mutex> lock(mutex_);
-		if (count_ > 0) {
-			return last_->items[count_ - 1];
+		if (alive_ <= p_count) {
+			return nullptr;
 		}
-		return last_->prev ? last_->prev->items[CHUNK_SIZE - 1] : nullptr;
+		T *object = pop();
+		if (object) {
+			object->_gdpp_pool_slot.given = true; // So that its destructor skips the @recycle dtor, which already ran.
+		}
+		return object;
 	}
 
 	std::mutex mutex_;
-	int64_t capacity_;
-	PoolLimit limit_;
-	int64_t warn_at_; // With SOFT, the number of objects past which it next prints an error.
-	bool hooked_ = false; // Whether clear runs on unload.
+	int64_t size_;
+	PoolMode mode_;
+	int64_t warn_at_; // With GROW, the number of objects past which it next prints an error.
+	bool hooked_ = false; // Whether trim runs on unload.
 	int64_t alive_ = 0; // The objects it made that aren't freed, resting or in use.
+	std::vector<T *> owned_; // The objects it made that aren't freed, resting or in use.
 	Chunk first_;
 	Chunk *last_ = &first_; // The chunk of the last resting object, or the first chunk if there's none.
 	int64_t count_ = 0; // The resting objects in last_.

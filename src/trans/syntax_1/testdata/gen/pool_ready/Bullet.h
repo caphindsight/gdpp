@@ -21,14 +21,17 @@ public:
 	int64_t hits{};
 
 public:
+	Bullet();
 	~Bullet();
 	static Bullet *new_pooled();
-	static inline gdpp::Pool<Bullet> _gdpp_pool{ 0, gdpp::PoolLimit::QUIET };
+	static inline gdpp::Pool<Bullet> _gdpp_pool{ 0, gdpp::PoolMode::GROW };
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
 	void free_pooled();
 	void queue_free_pooled();
+	static void pool_reserve(int64_t p_count, const String &p_mode = String());
+	static void pool_clear(bool p_keep_in_use = false);
 	void _gdpp_body__ready();
 	MeshInstance3D *get_mesh() const;
 	void set_mesh(MeshInstance3D *p_value);

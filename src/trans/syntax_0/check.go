@@ -69,8 +69,8 @@ type notifModel struct {
 
 // poolModel is the pool of a @pool class.
 type poolModel struct {
-	capacity string // The most objects it makes, as C++, or "0" for any number.
-	limit    string // What it does at its capacity: "quiet", "strict" or "soft", like gdpp::PoolLimit.
+	size string // How many objects it expects, as C++, or "0" for none.
+	mode string // What it does when all of them are in use: "fixed" or "grow", like gdpp::PoolMode.
 }
 
 type externModel struct {
@@ -1359,26 +1359,26 @@ func (u *unit) poolOf(a *Annotation, owner string) (*poolModel, error) {
 	if err := u.requireBase(a, owner, "A pool takes its objects out of the scene tree, so they must be nodes.", "Node"); err != nil {
 		return nil, err
 	}
-	p, args := &poolModel{capacity: "0", limit: "quiet"}, a.Args
+	p, args := &poolModel{size: "0", mode: "grow"}, a.Args
 	if len(args) > 0 && !isString(args[0].Value) {
 		if n, err := strconv.ParseInt(args[0].Value, 10, 64); err != nil || n <= 0 {
 			return nil, u.errorAt(args[0].Pos, len(args[0].Value), "A pool's size must be a positive integer.", "E.g. \"@pool(100)\".")
 		}
-		p.capacity, args = args[0].Value, args[1:]
+		p.size, p.mode, args = args[0].Value, "fixed", args[1:]
 	}
-	for _, arg := range args {
+	for i, arg := range args {
 		v, err := u.argValue(arg)
 		switch {
 		case err != nil:
 			return nil, err
-		case !isString(arg.Value) || v != "strict" && v != "soft" || p.limit != "quiet":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @pool takes a size, and \"strict\" or \"soft\", all optional.",
-				"E.g. \"@pool\", \"@pool(100)\", \"@pool(100, \\\"strict\\\")\" or \"@pool(100, \\\"soft\\\")\".")
-		case p.capacity == "0":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Only a pool with a size has a limit, so %q needs one.", v),
+		case !isString(arg.Value) || v != "fixed" && v != "grow" || i > 0:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @pool takes a size, and \"fixed\" or \"grow\", all optional.",
+				"E.g. \"@pool\", \"@pool(100)\" or \"@pool(100, \\\"grow\\\")\".")
+		case p.size == "0":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Only a pool with a size has a mode, so %q needs one.", v),
 				fmt.Sprintf("E.g. \"@pool(100, \\\"%s\\\")\".", v))
 		}
-		p.limit = v
+		p.mode = v
 	}
 	return p, nil
 }
@@ -1835,7 +1835,10 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		return nil, err
 	}
 	names := map[string]bool{}
-	names[m.newName()], names["free_pooled"], names["queue_free_pooled"] = true, m.pool != nil, m.pool != nil // Methods for scripts.
+	names[m.newName()] = true // Methods for scripts.
+	for _, name := range []string{"free_pooled", "queue_free_pooled", "pool_reserve", "pool_clear"} {
+		names[name] = m.pool != nil
+	}
 	// Enums declared in the class.
 	var declared []*symbol
 	for _, member := range c.Members {
