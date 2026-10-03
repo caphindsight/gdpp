@@ -11,7 +11,7 @@ void Bullet::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_pooled"), &Bullet::new_pooled);
 	ClassDB::bind_method(D_METHOD("free_pooled"), &Bullet::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Bullet::queue_free_pooled);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Bullet::pool_reserve, DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Bullet::pool_reserve, DEFVAL(100), DEFVAL(String()));
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Bullet::pool_clear, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_speed"), &Bullet::get_speed);
 	ClassDB::bind_method(D_METHOD("set_speed", "value"), &Bullet::set_speed);

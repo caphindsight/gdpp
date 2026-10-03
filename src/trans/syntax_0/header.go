@@ -288,9 +288,13 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		public = append(public, fmt.Sprintf("static %s *%s();", c.name, name))
 	}
 	if p := c.pool; p != nil {
+		count := "int64_t p_count" // Defaults to the pool's size, if it has one.
+		if p.size != "0" {
+			count += " = " + p.size
+		}
 		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, gdpp::PoolMode::%s };", c.name, p.size, strings.ToUpper(p.mode)),
 			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
-			"void free_pooled();", "void queue_free_pooled();", "static void pool_reserve(int64_t p_count, const String &p_mode = String());",
+			"void free_pooled();", "void queue_free_pooled();", fmt.Sprintf("static void pool_reserve(%s, const String &p_mode = String());", count),
 			"static void pool_clear(bool p_keep_in_use = false);")
 	}
 	for _, f := range c.funcs {

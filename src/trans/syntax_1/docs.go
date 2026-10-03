@@ -359,10 +359,14 @@ func (u *unit) document(c *classModel) string {
 	}
 	if c.pool != nil {
 		void := &gtype{cpp: "void", doc: "void", void: true}
+		var count *Default // pool_reserve's count defaults to the pool's size, if it has one.
+		if c.pool.size != "0" {
+			count = &Default{Expr: c.pool.size}
+		}
 		methods = append(methods, methodDoc{name: "free_pooled", ret: void, doc: parseDoc(freePooledDoc, false)},
 			methodDoc{name: "queue_free_pooled", ret: void, doc: parseDoc(queueFreePooledDoc, false)},
 			methodDoc{name: "pool_reserve", qualifiers: "static", ret: void, params: []*gtype{{cpp: "int64_t", doc: "int"}, {cpp: "String", doc: "String", byRef: true}},
-				list: []*Param{{Name: "count"}, {Name: "mode", Default: &Default{Expr: `""`}}}, doc: parseDoc(poolReserveDoc, false)},
+				list: []*Param{{Name: "count", Default: count}, {Name: "mode", Default: &Default{Expr: `""`}}}, doc: parseDoc(poolReserveDoc, false)},
 			methodDoc{name: "pool_clear", qualifiers: "static", ret: void, params: []*gtype{{cpp: "bool", doc: "bool"}},
 				list: []*Param{{Name: "keep_in_use", Default: &Default{Expr: "false"}}}, doc: parseDoc(poolClearDoc, false)})
 	}
@@ -435,7 +439,7 @@ var newDocs = map[string]string{
 const freePooledDoc = `Returns the node to its pool right away, like [code]destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before it's reused does nothing. Godot doesn't allow removing a collision object from the tree during a physics callback, e.g. in a handler of [signal Area3D.body_entered], so use [method queue_free_pooled] there. A node that the pool didn't make is freed at the end of the frame, like with [method Node.queue_free].
 [b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.`
 
-const poolReserveDoc = `Makes or frees resting objects, so that the class's pool has [param count] objects, counting both those in use and those resting, e.g. when a level loads. A new object runs its constructor, but waits unused until the pool hands it out. Objects in use are never freed. With [param mode], [code]"fixed"[/code] or [code]"grow"[/code], [param count] becomes the pool's size first, and [param mode] its mode: once all the objects of the size are in use, a [code]"fixed"[/code] pool makes no more, while a [code]"grow"[/code] pool makes more. Without it, the size and mode stay as they are, and a [code]"fixed"[/code] pool makes at most its size, with an error if [param count] is more. [code]pool_reserve(0)[/code] frees all the resting objects.
+const poolReserveDoc = `Makes or frees resting objects, so that the class's pool has [param count] objects, counting both those in use and those resting, e.g. when a level loads. A new object runs its constructor, but waits unused until the pool hands it out. Objects in use are never freed. With [param mode], [code]"fixed"[/code] or [code]"grow"[/code], [param count] becomes the pool's size first, and [param mode] its mode: once all the objects of the size are in use, a [code]"fixed"[/code] pool makes no more, while a [code]"grow"[/code] pool makes more. Without it, the size and mode stay as they are, and a [code]"fixed"[/code] pool makes at most its size, with an error if [param count] is more. [code]pool_reserve(0)[/code] frees all the resting objects. If the class's [code]@pool[/code] annotation gives a size, [param count] defaults to it.
 [b]Warning:[/b] it isn't thread-safe, so call it from the main thread only.`
 
 const poolClearDoc = `Drops all the objects of the class's pool for good: it frees the resting ones right away, and those in use at the end of the frame, like with [method Node.queue_free]. With [param keep_in_use], it leaves those in use alone instead: they no longer belong to the pool, so [method free_pooled] frees them. The pool's size and mode stay as they are.

@@ -165,6 +165,8 @@ GD++ code calls it the same way: `Bullet::pool_reserve(200);`.
 - If the pool has fewer, it makes new objects, which wait in the pool unused. A new object runs only its `ctor` and the initial values of its plain variables. Its `@recycle ctor` and `@recycle` variables wait until `create` hands it out, as for a reused object, and its `GENERATION` is still `0` then.
 - If the pool has more, it frees resting objects, which runs their `dtor`, until it has `count`, or none rest. Objects in use are never freed.
 
+If the `@pool` annotation gives a size, `count` is optional, and defaults to that size: with `@pool(200)`, `pool_reserve()` is `pool_reserve(200)`. It's always the annotation's size, even after a call with a mode changed the pool's size. A pool without a size has no default count.
+
 A `"fixed"` pool makes no more objects than its size: `pool_reserve(200)` on a `@pool(100)` makes 100, and logs an error. In a `"grow"` pool, the usual errors are logged past its size.
 
 With a mode, `pool_reserve` also sets the size and the mode, until the next call that gives one:
@@ -264,7 +266,7 @@ In debug builds, each pool shows three graphs in the editor's Debugger panel, in
 
 - "Bullet (total)": how many objects the pool made that aren't freed, resting or in use.
 - "Bullet (active)": how many of them are in the scene tree.
-- "Bullet (orphaned)": how many of them are orphan nodes, i.e. out of the tree, like in Godot's own "Orphan Nodes" monitor: those resting in the pool, and those in use but out of the tree.
+- "Bullet (orphan)": how many of them are orphan nodes, i.e. out of the tree, like in Godot's own "Orphan Nodes" monitor: those resting in the pool, and those in use but out of the tree.
 
 A pool shows up once it's used for the first time, e.g. by `create` or `pool_reserve`. The editor reformats the names, as for profile monitors, see "Profile monitors" in `gd++ man debugging`. Release builds have no monitors, and pay nothing for them: they're counted only when the editor asks.
 

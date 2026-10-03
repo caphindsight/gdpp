@@ -798,7 +798,7 @@ private:
 	static void monitor() {
 		String name = String("GD++ Object Pools/") + T::get_class_static();
 		for (const auto &[id, count] : { std::pair{ name + " (total)", &Pool::total }, std::pair{ name + " (active)", &Pool::active },
-					 std::pair{ name + " (orphaned)", &Pool::orphaned } }) {
+					 std::pair{ name + " (orphan)", &Pool::orphan } }) {
 			if (!Performance::get_singleton()->has_custom_monitor(id)) {
 				Performance::get_singleton()->add_custom_monitor(id, callable_mp_static(count));
 				on_unload([id] {
@@ -822,9 +822,9 @@ private:
 		return T::_gdpp_pool.in_tree();
 	}
 
-	// orphaned returns how many objects the pool of T made are orphan nodes, out of the scene tree: the resting ones,
+	// orphan returns how many objects the pool of T made are orphan nodes, out of the scene tree: the resting ones,
 	// and those in use out of the tree.
-	static int64_t orphaned() {
+	static int64_t orphan() {
 		std::lock_guard<std::mutex> lock(T::_gdpp_pool.mutex_);
 		return T::_gdpp_pool.alive_ - T::_gdpp_pool.in_tree();
 	}

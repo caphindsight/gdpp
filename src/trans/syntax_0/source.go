@@ -616,7 +616,12 @@ func (u *unit) bindings(w *writer, c *classModel) {
 	if c.pool != nil {
 		w.ln("\tClassDB::bind_method(%s, &%s::free_pooled);", method("free_pooled"), c.name)
 		w.ln("\tClassDB::bind_method(%s, &%s::queue_free_pooled);", method("queue_free_pooled"), c.name)
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::pool_reserve, DEFVAL(String()));", method("pool_reserve", "count", "mode"), c.name)
+		// pool_reserve's count defaults to the pool's size, if it has one.
+		defaults := "DEFVAL(String())"
+		if c.pool.size != "0" {
+			defaults = "DEFVAL(" + c.pool.size + "), " + defaults
+		}
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::pool_reserve, %s);", method("pool_reserve", "count", "mode"), c.name, defaults)
 		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::pool_clear, DEFVAL(false));", method("pool_clear", "keep_in_use"), c.name)
 	}
 	for _, v := range c.vars {

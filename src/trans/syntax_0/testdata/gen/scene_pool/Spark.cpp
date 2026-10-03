@@ -10,7 +10,7 @@ void Spark::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene_pooled"), &Spark::new_scene_pooled);
 	ClassDB::bind_method(D_METHOD("free_pooled"), &Spark::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Spark::queue_free_pooled);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Spark::pool_reserve, DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Spark::pool_reserve, DEFVAL(10), DEFVAL(String()));
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Spark::pool_clear, DEFVAL(false));
 }
 
