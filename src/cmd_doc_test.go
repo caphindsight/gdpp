@@ -160,6 +160,17 @@ func TestHighlightCpp(t *testing.T) {
 	}
 }
 
+// TestDocCommentStyles checks that each line of a multi-line comment is styled on its own, so the pager, which ends
+// styles at the end of each line, shows them all as comments.
+func TestDocCommentStyles(t *testing.T) {
+	withDocFS(t)
+	withTTY(t, true)
+	out := captureStdout(t, (&CmdDoc{Args: []string{"Emitted"}}).Run)
+	if line := Styled("// `emit my_signal(42);`, which reads differently from a function call.", CodeComment); !strings.Contains(out, line+"\n") {
+		t.Errorf("output = %q, want the comment's second line styled on its own", out)
+	}
+}
+
 func TestDocTabWidth(t *testing.T) {
 	withDocFS(t)
 	Args.TabWidth = 4

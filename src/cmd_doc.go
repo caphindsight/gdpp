@@ -72,7 +72,7 @@ func (c *CmdDoc) Run() {
 			for _, d := range t.docs {
 				for _, m := range d.members {
 					if m.name == member {
-						text += Styled(m.comments, CodeComment) + highlightCpp(m.text, types) + d.terminator() + "\n"
+						text += styledLines(m.comments, CodeComment) + highlightCpp(m.text, types) + d.terminator() + "\n"
 					}
 				}
 			}
@@ -274,7 +274,7 @@ func docText(t docType, types map[string]bool, inherited string, last bool) stri
 		if last && i == len(t.docs)-1 {
 			body += inherited
 		}
-		text += Styled(d.comments, CodeComment) + highlightCpp(d.head, types)
+		text += styledLines(d.comments, CodeComment) + highlightCpp(d.head, types)
 		switch {
 		case body == "":
 			text += ";\n"
@@ -309,7 +309,7 @@ func memberText(d cppDoc, types map[string]bool) string {
 		if m.comments != "" {
 			text.WriteString("\n")
 		}
-		text.WriteString(indent(Styled(m.comments, CodeComment) + highlightCpp(m.text, types) + d.terminator()))
+		text.WriteString(indent(styledLines(m.comments, CodeComment) + highlightCpp(m.text, types) + d.terminator()))
 	}
 	return text.String()
 }
