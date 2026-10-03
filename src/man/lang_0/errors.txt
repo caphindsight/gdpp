@@ -157,7 +157,7 @@ Annotation @override("final") only works on overrides of a GD++ @virtual functio
 The engine function _ready doesn't need @override.
   Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
 Annotation @override("engine") only works on engine functions, e.g. _ready.
-The engine function _ready can only take @trace, @profile, @notrace, @noprofile and @game_only.
+The engine function _ready can only take @trace, @profile, @notrace, @noprofile, @game_only and @recycle.
   Only a plain override, with @override("engine"), takes others.
 The engine function _process must be declared as "func _process(delta: float) -> void".
 The @onthread function f already returns an Async: write -> int.
@@ -169,6 +169,8 @@ A pool's size must be a positive integer.
 Only a pool with a size has a limit, so "strict" needs one.
 A @recycle ctor only works in a @pool class, whose objects are reused.
 A @recycle var needs an initial value, which property x doesn't have.
+A @recycle _ready only works in a @pool class, whose objects are reused.
+Of all functions, only _ready takes @recycle.
 Class A has two @recycle dtors.
 The scene's path must start with res:// or pkg://.
 ```

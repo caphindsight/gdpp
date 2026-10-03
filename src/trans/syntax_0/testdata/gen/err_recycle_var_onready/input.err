@@ -1,3 +1,0 @@
-input.gd++:5:10: Annotations @onready and @recycle can't be used together.
- 5 | @onready @recycle var x: int = 1
-   |          ^^^^^^^^

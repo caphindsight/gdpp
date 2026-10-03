@@ -2,6 +2,7 @@ package syntax_1
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -64,7 +65,11 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 				w.ln("\t%s(true);", n.setter)
 			}
 		}
-		u.initializers(w, c, false, "\t")
+		for _, v := range c.vars {
+			if v.v.Init != nil && !v.onready {
+				initializer(w, v, "\t")
+			}
+		}
 		if c.ctor != nil {
 			w.block(c.ctor, "\t{", "}", assertVoid)
 		}
@@ -120,10 +125,38 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("")
 		w.ln("void %s::_notification(int WHAT) {", c.name)
 		guard(w, c.gameOnly, "")
+		if slices.ContainsFunc(c.notifs, func(n *notifModel) bool { return n.body != nil && generationRegexp.MatchString(n.body.Text) }) {
+			if c.pool != nil {
+				w.ln("\tconst uint64_t GENERATION = _gdpp_pool_slot.generation;")
+			} else {
+				w.ln("\tconstexpr uint64_t GENERATION = 0;")
+			}
+		}
 		// POST_ENTER_TREE comes right before each READY, once the children are ready, but also on each later entry.
 		if c.hasOnready() {
 			w.ln("\tif (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {")
-			u.initializers(w, c, true, "\t\t")
+			once := false // Whether the values are in a block that only runs the first time an object gets ready.
+			for _, v := range c.vars {
+				if v.v.Init == nil || !v.onready {
+					continue
+				}
+				if o := c.pool != nil && v.recycle == nil; o != once {
+					if once {
+						w.ln("\t\t}")
+					} else {
+						w.ln("\t\tif (!_gdpp_pool_slot.readied) {")
+					}
+					once = o
+				}
+				if once {
+					initializer(w, v, "\t\t\t")
+				} else {
+					initializer(w, v, "\t\t")
+				}
+			}
+			if once {
+				w.ln("\t\t}")
+			}
 			w.ln("\t}")
 		}
 		// Each block runs in a lambda, so a return in one doesn't skip the later ones.
@@ -135,6 +168,12 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 				w.ln("\t\t%s;", n.call)
 				w.ln("\t}")
 			}
+		}
+		// After the engine's READY, which runs an @override("engine") _ready.
+		if c.readyOnce {
+			w.ln("\tif (WHAT == NOTIFICATION_READY) {")
+			w.ln("\t\t_gdpp_pool_slot.readied = true;")
+			w.ln("\t}")
 		}
 		w.ln("}")
 	}
@@ -172,14 +211,8 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	w.ln("#undef This")
 }
 
-// initializers writes the assignments of the initial values of the class's vars: the @onready ones, or the others.
-func (u *unit) initializers(w *writer, c *classModel, onready bool, indent string) {
-	for _, v := range c.vars {
-		if v.v.Init != nil && v.onready == onready {
-			initializer(w, v, indent)
-		}
-	}
-}
+// generationRegexp matches the use of GENERATION, which notif blocks can read.
+var generationRegexp = regexp.MustCompile(`\bGENERATION\b`)
 
 // initializer writes the assignment of var v's initial value, or of its type's default if it has none.
 func initializer(w *writer, v *varModel, indent string) {
@@ -203,7 +236,7 @@ func recycler(w *writer, c *classModel, keyword string, body *Block) {
 		w.ln("\tgdpp::trace_recycle(%q, this, %t);", c.name, keyword == "ctor")
 	}
 	for _, v := range c.vars {
-		if v.recycle != nil && keyword == "ctor" {
+		if v.recycle != nil && !v.onready && keyword == "ctor" {
 			initializer(w, v, "\t")
 		}
 	}
@@ -331,6 +364,11 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
 	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
 	guard(w, f.gameOnly, f.ret.cpp)
+	if f.once && f.override {
+		w.ln("\tif (_gdpp_pool_slot.readied) {")
+		w.ln("\t\treturn;")
+		w.ln("\t}")
+	}
 	u.debugHooks(w, c, f)
 	// A traced function that returns a value runs as a lambda, so the trace gets the value.
 	wrap := f.trace && !f.ret.void

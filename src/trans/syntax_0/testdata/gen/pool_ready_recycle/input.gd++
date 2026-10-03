@@ -1,0 +1,20 @@
+@pool
+class_name Bullet
+extends Node3D
+
+@onready @recycle var start: Vector3 = get_global_position()
+
+@recycle
+func _ready() -> void {
+  gd::print("each ready");
+}
+
+@pool
+class Shell {
+  extends Node3D
+
+  @recycle @override("engine")
+  func _ready() -> void {
+    gd::print("each ready");
+  }
+}

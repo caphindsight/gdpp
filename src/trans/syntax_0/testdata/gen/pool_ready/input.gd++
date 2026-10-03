@@ -1,0 +1,17 @@
+@pool
+class_name Bullet
+extends Node3D
+
+@onready var mesh: MeshInstance3D = $Mesh
+@onready var trail: Node3D = $Trail
+@recycle @onready var start: Vector3 = get_global_position()
+@onready var sound: Node = $Sound
+@recycle var hits: int
+
+func _ready() -> void {
+  gd::print("first ready");
+}
+
+notif READY {
+  gd::print("ready in generation ", GENERATION);
+}

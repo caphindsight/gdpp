@@ -76,6 +76,8 @@ GD++ assigns them in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TR
 
 The class's `_ready` runs right after them, also before `NOTIFICATION_READY`, so it runs before a script's `_ready`. An `@override("engine") _ready` runs at `NOTIFICATION_READY` instead, unless a script replaces it. See `gd++ man functions`.
 
+In a `@pool` class, a reused node gets ready again, but its `@onready` values and `_ready` only run the first time, unless they have `@recycle`. See "Getting ready again" in `gd++ man pools`.
+
 # The order of everything
 
 For a node created by a scene, Godot:
@@ -112,7 +114,7 @@ notif ENTER_TREE, EXIT_TREE {
 }
 ```
 
-The names can also go in parentheses, as in `notif(ENTER_TREE, EXIT_TREE) { ... }`. Write them without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. `Object`'s `POSTINITIALIZE` and `PREDELETE`, and `Node`'s `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `WHAT`, an `int`, is the notification that it's handling.
+The names can also go in parentheses, as in `notif(ENTER_TREE, EXIT_TREE) { ... }`. Write them without `NOTIFICATION_`: GD++ adds it. They're the notifications of the class and its bases, e.g. `Object`'s `POSTINITIALIZE` and `PREDELETE`, and `Node`'s `ENTER_TREE`, `READY` and `PROCESS`, or the class's own constants named `NOTIFICATION_...`, e.g. `enum NOTIFICATION_HIT = 2000`. The body is C++, and `WHAT`, an `int`, is the notification that it's handling. `GENERATION`, an unsigned integer, is how many times a `@pool` class's pool took the object back, and always `0` in other classes. See "Getting ready again" in `gd++ man pools`.
 
 A class can have any number of `notif` blocks, and a notification can be in more than one. When the object gets a notification, every block that lists it runs, in the order of the file. Each block runs on its own, so a `return` ends only that block.
 
@@ -145,7 +147,7 @@ Use the engine functions for their notifications, and `notif` blocks for every o
 
 # Pools
 
-A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run when an object is taken from the pool or returned to it. Its `@recycle` variables get their initial values again when an object is reused. See `gd++ man pools`.
+A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run when an object is taken from the pool or returned to it. Its `@recycle` variables get their initial values again when an object is reused. A reused node gets ready again, but its `@onready` values and `_ready` only run the first time, unless they have `@recycle`. See `gd++ man pools`.
 
 # See also
 

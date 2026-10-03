@@ -52,6 +52,9 @@ type classModel struct {
 
 	// A @pool class's @recycle ctor and dtor blocks, which run when its pool reuses and keeps an object.
 	recycleCtor, recycleDtor *Block
+	// Whether a @pool class has @onready values or a _ready without @recycle, which only run the first time an
+	// object gets ready.
+	readyOnce bool
 }
 
 // notifModel is a handler in the class's _notification: a notif block, or the call of an engine function.
@@ -87,14 +90,16 @@ type funcModel struct {
 	params                             []*gtype
 	ret                                *gtype
 	virtual, override, isConst, static bool
-	final, super, private              bool       // With @override("final"), "super" on @override or @virtual, and @virtual("private").
-	calls                              *funcModel // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
-	deferral                           string     // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
-	hidden                             string     // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
-	trace, profile                     bool       // Whether its @trace or @profile, or its class's, is on.
-	notrace, noprofile                 bool       // Whether it has @notrace or @noprofile, which leave it out of its class's.
-	gameOnly                           bool       // Whether its @game_only, or its class's, guards it against running in the editor.
-	rpc                                *rpcModel  // Nil without @rpc.
+	final, super, private              bool        // With @override("final"), "super" on @override or @virtual, and @virtual("private").
+	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
+	deferral                           string      // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
+	hidden                             string      // For the generated body of a class's func with a deferral: that deferral. "notif" for an engine function.
+	trace, profile                     bool        // Whether its @trace or @profile, or its class's, is on.
+	notrace, noprofile                 bool        // Whether it has @notrace or @noprofile, which leave it out of its class's.
+	gameOnly                           bool        // Whether its @game_only, or its class's, guards it against running in the editor.
+	rpc                                *rpcModel   // Nil without @rpc.
+	recycle                            *Annotation // On _ready, its @recycle, or nil.
+	once                               bool        // Whether it's a _ready of a @pool class without @recycle, which only runs the first time an object gets ready.
 	// The class whose GDVIRTUAL lets scripts override the function: its own for @virtual, a base's for an
 	// @override of a @virtual function. Empty for others.
 	virtualOf string
@@ -1009,7 +1014,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}, {"static", "deferred"}, {"virtual", "deferred"},
 		{"override", "deferred"}, {"static", "thread_safe"}, {"virtual", "thread_safe"}, {"override", "thread_safe"},
 		{"deferred", "thread_safe"}, {"virtual", "onthread"}, {"override", "onthread"}, {"rpc", "onthread"},
-		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}, {"onready", "recycle"}} {
+		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -1040,8 +1045,8 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "game_only", "noprofile", "notrace", "onthread", "override", "profile", "rpc", "static", "thread_safe",
-		"trace", "virtual"}
+	allowed := []string{"const", "deferred", "game_only", "noprofile", "notrace", "onthread", "override", "profile", "recycle", "rpc", "static",
+		"thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "thread_safe", "trace"}
 	}
@@ -1054,7 +1059,7 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil,
-		isConst: a["const"] != nil, static: a["static"] != nil, gameOnly: a["game_only"] != nil}
+		isConst: a["const"] != nil, static: a["static"] != nil, gameOnly: a["game_only"] != nil, recycle: a["recycle"]}
 	var engine *Arg // The "engine" argument of @override, if any.
 	for _, arg := range argsOf(a["override"]) {
 		name, _ := strconv.Unquote(arg.Value)
@@ -1146,6 +1151,10 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	}
 	ef, isEngine := engineFuncs[f.Name]
 	isEngine = isEngine && !ext && u.extends(owner, ef.base)
+	if r := m.recycle; r != nil && (!isEngine || f.Name != "_ready") {
+		return nil, u.errorAt(r.Pos, len(r.Name)+1, "Of all functions, only _ready takes @recycle.",
+			"With @recycle, _ready runs each time a @pool class's object gets ready, not only the first time.")
+	}
 	switch {
 	case isEngine && !m.override:
 		m.hidden = "notif"
@@ -1172,8 +1181,12 @@ var engineFuncs = map[string]struct{ notif, delta, base string }{
 func (u *unit) checkEngine(f *funcModel) error {
 	name := f.f.Name
 	for _, a := range f.f.Annotations {
-		if a.Name != "" && !slices.Contains([]string{"trace", "profile", "notrace", "noprofile", "game_only"}, a.Name) {
-			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take @trace, @profile, @notrace, @noprofile and @game_only.", name),
+		if a.Name != "" && !slices.Contains([]string{"trace", "profile", "notrace", "noprofile", "game_only", "recycle"}, a.Name) {
+			list := "@trace, @profile, @notrace, @noprofile and @game_only"
+			if name == "_ready" {
+				list = "@trace, @profile, @notrace, @noprofile, @game_only and @recycle"
+			}
+			return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("The engine function %s can only take %s.", name, list),
 				"Only a plain override, with @override(\"engine\"), takes others.")
 		}
 	}
@@ -1798,7 +1811,8 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	}
 	names := map[string]bool{}
 	names[m.newName()], names["free_pooled"], names["queue_free_pooled"] = true, m.pool != nil, m.pool != nil // Methods for scripts.
-	var declared []*symbol // Enums declared in the class.
+	// Enums declared in the class.
+	var declared []*symbol
 	for _, member := range c.Members {
 		if err := u.checkNoDebug(member, "class "+c.Name, a["trace"] != nil, a["profile"] != nil); err != nil {
 			return nil, err
@@ -1838,6 +1852,14 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
 				err = u.setVirtualOf(f, c.Name, m.base)
 			}
+			if err == nil && f.recycle != nil && m.pool == nil {
+				err = u.errorAt(f.recycle.Pos, len(f.recycle.Name)+1, "A @recycle _ready only works in a @pool class, whose objects are reused.",
+					fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
+			}
+			if err == nil {
+				f.once = m.pool != nil && f.f.Name == "_ready" && (f.override || f.hidden == "notif") && f.recycle == nil
+				m.readyOnce = m.readyOnce || f.once
+			}
 			if err == nil {
 				err = u.unique(names, f.f.Pos, "func", f.f.Name)
 			}
@@ -1846,7 +1868,11 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			case f.hidden == "notif":
 				// It's a method with another name, since godot-cpp would make a method of its name an override.
 				if f.f.Name == "_ready" { // Runs first, right after the @onready initializers.
-					m.notifs = slices.Insert(m.notifs, 0, engineNotif(f))
+					n := engineNotif(f)
+					if f.once {
+						n.cond += " && !_gdpp_pool_slot.readied"
+					}
+					m.notifs = slices.Insert(m.notifs, 0, n)
 				} else {
 					m.notifs = append(m.notifs, engineNotif(f))
 				}
@@ -1897,6 +1923,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 					fmt.Sprintf("Add @pool to class %s, or remove @recycle.", m.name))
 			}
 			if err == nil {
+				m.readyOnce = m.readyOnce || m.pool != nil && v.onready && v.v.Init != nil && v.recycle == nil
 				v.trace = v.trace || m.trace && !v.notrace
 				v.profile = v.profile || m.profile && !v.noprofile && v.v.Property != nil
 				v.gameOnly = v.gameOnly || m.gameOnly

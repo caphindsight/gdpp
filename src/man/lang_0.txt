@@ -90,7 +90,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
 - Object lifecycle: `ctor { }`, `dtor { }`, `@onready` and `notif ... { }`. See `gd++ man lifecycle`.
 - Classes of scenes: `@scene` makes `create` instantiate a scene. See `gd++ man classes`.
-- Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `create`, `destroy` and `queue_destroy`. See `gd++ man pools`.
+- Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `@recycle _ready`, `GENERATION`, `create`, `destroy` and `queue_destroy`. See `gd++ man pools`.
 - Networking: `@rpc` functions, and `rpc` calls. See `gd++ man rpc`.
 - Threads: `@onthread` runs a function on a worker thread, and returns an `Async` task with its result. See `gd++ man async`.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.

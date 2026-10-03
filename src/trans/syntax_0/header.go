@@ -188,7 +188,7 @@ func (c *classModel) hasOnready() bool {
 }
 
 func (c *classModel) needsNotification() bool {
-	return c.hasOnready() || len(c.notifs) > 0
+	return c.hasOnready() || len(c.notifs) > 0 || c.readyOnce
 }
 
 // newName returns the name of the static method that scripts call for `create`: new_scene for a @scene class,

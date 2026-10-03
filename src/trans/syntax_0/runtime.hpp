@@ -540,6 +540,7 @@ template <typename T>
 struct PoolSlot {
 	bool owned = false;
 	bool given = false; // Whether destroy gave it back: it rests in the pool, or is on its way there.
+	bool readied = false; // Whether it got ready once: its @onready values and _ready without @recycle don't run again.
 	T **cell = nullptr;
 	std::atomic<uint64_t> generation = 0; // How many times it was given back, so Weak<T> knows a reused object.
 };

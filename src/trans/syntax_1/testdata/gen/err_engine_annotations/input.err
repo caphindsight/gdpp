@@ -1,4 +1,4 @@
-input.gd++:4:1: The engine function _ready can only take @trace, @profile, @notrace, @noprofile and @game_only.
+input.gd++:4:1: The engine function _ready can only take @trace, @profile, @notrace, @noprofile, @game_only and @recycle.
  4 | @const
    | ^^^^^^
 Hint: Only a plain override, with @override("engine"), takes others.

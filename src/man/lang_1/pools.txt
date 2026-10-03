@@ -46,7 +46,7 @@ Code uses a pool with the same words as any other class: `create` and `destroy`.
 - `destroy` returns the bullet to the pool: it runs the `@recycle dtor`, removes the node from its parent, and keeps it in the pool.
 - `create` takes a bullet from the pool if there is one, resets its `@recycle` variables, and runs its `@recycle ctor`. Otherwise, it creates a new bullet.
 
-A reused node also gets ready again: the next time it enters the tree, its `@onready` values are set and `_ready` runs, just like for a new node.
+A reused node also gets ready again the next time it enters the tree, but only `@recycle` runs again: see "Getting ready again" below.
 
 `@pool` only works on classes that extend `Node`, since the pool removes its objects from the scene tree.
 
@@ -69,9 +69,36 @@ Variables get their initial values only when an object is actually created, so a
 var mesh: Mesh = make_mesh()        // kept: made only once
 ```
 
-A `@recycle` variable gets its initial value again, or its type's default if it has none, in the order of the declarations, right before the `@recycle ctor` runs. A property needs an initial value, since it has no storage of its own to reset. `@recycle` can't be used with `@onready`: a reused node gets ready again anyway, which sets its `@onready` values. Only `@pool` classes can have `@recycle` variables.
+A `@recycle` variable gets its initial value again, or its type's default if it has none, in the order of the declarations, right before the `@recycle ctor` runs. A property needs an initial value, since it has no storage of its own to reset. An `@onready @recycle` variable is different: it gets its initial value again when the node gets ready, see below. Only `@pool` classes can have `@recycle` variables.
 
 Exported variables usually don't need `@recycle`: if nothing changes them while the object is in use, a reused object still has the values from its scene or the inspector.
+
+# Getting ready again
+
+A reused node gets ready again the next time it enters the tree, like a new node. But in a `@pool` class, `@onready` values and `_ready` only run the first time an object gets ready, since a reused node usually keeps its children, so e.g. `@onready var mesh = $Mesh` is still right. With `@recycle`, they run each time:
+
+```gd++
+@onready var mesh: MeshInstance3D = $Mesh                         // set once
+@onready @recycle var start: Vector3 = get_global_position()      // set each time
+
+func _ready() -> void {
+  gd::print("A new bullet is ready.");                            // runs once
+}
+```
+
+With `@recycle func _ready()`, the message would print each time. The order of annotations doesn't matter: `@recycle @onready` is the same. `@override("engine") _ready` works the same way, and also takes `@recycle`. The values are still set in the order of the declarations, before `_ready`, and the first time, all of them are set. An object that the pool reuses before it ever got ready, e.g. one that was created and destroyed without entering the tree, still gets everything the first time it gets ready.
+
+`notif` blocks always run, e.g. `notif READY` at each ready. They can read `GENERATION`, an unsigned integer: how many times the pool took the object back, so `0` until it's first returned. It goes up when `destroy` returns the object, before the `@recycle dtor` and before the node leaves the tree, so `notif EXIT_TREE` already sees the new value then. In other classes, `GENERATION` is always `0`.
+
+```gd++
+notif READY {
+  if (GENERATION > 0) {
+    gd::print("Returned to the pool ", GENERATION, " times before.");
+  }
+}
+```
+
+Only `@pool` classes can have `@recycle _ready`, and `@recycle` works on no other function. Other classes pay nothing for any of this: they get no checks, and `GENERATION` is a constant there.
 
 # Returning objects at the end of the frame
 
@@ -162,7 +189,7 @@ Use them together. `Bullet.new()` and `queue_free()` still work, but bypass the 
 
 Warning: a returned bullet stays a valid object, and `new_pooled()` may hand it out again at any time, e.g. for another shot. So when a script returns a bullet, it must drop every reference to it. `is_instance_valid(bullet)` can't help: it's `true` for a returned bullet, and for a reused one. GD++ code can use `Weak[Bullet]` instead, see "Remembering pooled objects" above.
 
-A reused bullet gets ready again when it next enters the tree, and its `@recycle` variables are reset, as for GD++ code. Only the GD++ class's variables are reset, though: a script's own variables, if a script extends the class, aren't. And `new_pooled()` and `new_scene_pooled()` make objects of the GD++ class itself: called on a script that extends the class, it still gives bullets without the script.
+A reused bullet gets ready again when it next enters the tree, and its `@recycle` variables are reset, as for GD++ code. A script's own `_ready` runs each time, though, since GD++ doesn't control it. Only the GD++ class's variables are reset, though: a script's own variables, if a script extends the class, aren't. And `new_pooled()` and `new_scene_pooled()` make objects of the GD++ class itself: called on a script that extends the class, it still gives bullets without the script.
 
 A `@pool` class can't have members named like these methods.
 
@@ -176,7 +203,7 @@ With `@trace` on a `@pool` class, in a build that turns it on, the trace shows w
 
 # In the generated code
 
-A `@pool` class gets a few members, which the runtime's `create` and `destroy` use, besides `new_pooled` or `new_scene_pooled`, `free_pooled` and `queue_free_pooled`, for scripts: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Its destructor tells the pool when an object is deleted for good. See `gd++ man generated` and `gd++ man runtime`.
+A `@pool` class gets a few members, which the runtime's `create` and `destroy` use, besides `new_pooled` or `new_scene_pooled`, `free_pooled` and `queue_free_pooled`, for scripts: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, its generation, and whether it got ready once, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Its destructor tells the pool when an object is deleted for good. See `gd++ man generated` and `gd++ man runtime`.
 
 # See also
 

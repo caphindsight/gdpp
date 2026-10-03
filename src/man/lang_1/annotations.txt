@@ -90,7 +90,10 @@ A declaration's doc comment can come before its annotations or between them, but
 @game_only
   Run the function only in the game, never in the editor, e.g. in a `@tool` class. See `gd++ man classes`.
 
-These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. Engine functions only take `@trace`, `@profile`, `@notrace`, `@noprofile` and `@game_only`. `@override("final")` only works on an override of a GD++ `@virtual` function. A `@virtual` function's name must start with `_`. `@override` only works on engine functions with `"engine"`, and `"engine"` only works on engine functions.
+@recycle
+  Only on `_ready`, also with `@override("engine")`, in a `@pool` class: run it each time an object gets ready, not only the first time. See "Getting ready again" in `gd++ man pools`.
+
+These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. Engine functions only take `@trace`, `@profile`, `@notrace`, `@noprofile` and `@game_only`, and `_ready` also `@recycle`. `@override("final")` only works on an override of a GD++ `@virtual` function. A `@virtual` function's name must start with `_`. `@override` only works on engine functions with `"engine"`, and `"engine"` only works on engine functions.
 
 # Externs
 
@@ -130,10 +133,10 @@ See `gd++ man externs`.
 # Variables of classes
 
 @onready
-  Assign the initial value right before `_ready`, instead of in the constructor. Only in classes that extend `Node`. See `gd++ man lifecycle`.
+  Assign the initial value right before `_ready`, instead of in the constructor. Only in classes that extend `Node`. In a `@pool` class, only the first time an object gets ready, unless it also has `@recycle`. See `gd++ man lifecycle`.
 
 @recycle
-  In a `@pool` class: reset the variable to its initial value, or to its type's default without one, each time the pool reuses an object. Can't be used with `@onready`. See "Resetting variables" in `gd++ man pools`.
+  In a `@pool` class: reset the variable to its initial value, or to its type's default without one, each time the pool reuses an object. With `@onready`: assign the initial value each time an object gets ready, not only the first time. See "Resetting variables" and "Getting ready again" in `gd++ man pools`.
 
 @export
   Show the variable in the inspector, and save it.

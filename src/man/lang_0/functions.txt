@@ -146,9 +146,9 @@ The engine functions are the engine's virtual functions that have a notification
     Hint: Drop @override: GD++ runs it from _notification, so scripts can't replace it. Only if you're sure you need a plain override, use @override("engine").
 ```
 
-Their signatures are `func NAME() -> void`, and `func _process(delta: float) -> void` and `func _physics_process(delta: float) -> void`, whose parameter can have any name. They take only `@trace`, `@profile` and `@game_only`. They aren't functions of the class: C++ code and scripts can't call them. In other classes, e.g. a `_ready` in a class that extends `RefCounted`, or a `_draw` in one that extends `Node` but not `CanvasItem`, they're ordinary functions.
+Their signatures are `func NAME() -> void`, and `func _process(delta: float) -> void` and `func _physics_process(delta: float) -> void`, whose parameter can have any name. They take only `@trace`, `@profile`, `@notrace`, `@noprofile` and `@game_only`, and `_ready` in a `@pool` class also `@recycle`. They aren't functions of the class: C++ code and scripts can't call them. In other classes, e.g. a `_ready` in a class that extends `RefCounted`, or a `_draw` in one that extends `Node` but not `CanvasItem`, they're ordinary functions.
 
-Each one runs at its notification, e.g. `NOTIFICATION_PROCESS`, with the delta from `get_process_delta_time()` or `get_physics_process_delta_time()`. `_ready` runs at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, after the `@onready` initial values, so it runs before a script's `_ready`, once the node's children are ready. `_process` and `_physics_process` turn processing on in the constructor, like their overrides. Within the class's `_notification`, they run together with `notif` blocks, in the order of their declarations: see `gd++ man lifecycle`.
+Each one runs at its notification, e.g. `NOTIFICATION_PROCESS`, with the delta from `get_process_delta_time()` or `get_physics_process_delta_time()`. `_ready` runs at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, after the `@onready` initial values, so it runs before a script's `_ready`, once the node's children are ready. In a `@pool` class, `_ready` only runs the first time an object gets ready, unless it has `@recycle`: see "Getting ready again" in `gd++ man pools`. `_process` and `_physics_process` turn processing on in the constructor, like their overrides. Within the class's `_notification`, they run together with `notif` blocks, in the order of their declarations: see `gd++ man lifecycle`.
 
 # @virtual
 
@@ -335,7 +335,8 @@ Annotations can be combined where it makes sense, e.g. `@virtual @const`. These 
 @virtual with @override, @rpc, @deferred, @thread_safe or @onthread
 @override("final") without a GD++ @virtual function to override
 @virtual on a function whose name doesn't start with _
-An engine function with an annotation other than @trace, @profile and @game_only
+An engine function with an annotation other than @trace, @profile, @notrace, @noprofile and @game_only, or @recycle for _ready
+@recycle on a function other than _ready
 @override with @rpc, @deferred, @thread_safe or @onthread
 @rpc with @onthread
 @deferred with @thread_safe or @onthread
