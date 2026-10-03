@@ -1,12 +1,10 @@
-decl {
-  Weak<ArrayMesh> cache_;
-}
+var cache: Weak[ArrayMesh]
 
 func mesh() -> ArrayMesh {
-  Ref<ArrayMesh> m = cache_;   // null once the mesh is freed
+  Ref<ArrayMesh> m = cache;   // null once the mesh is freed
   if (m.is_null()) {
     m = build_mesh();
-    cache_ = m;
+    cache = m;
   }
   return m;
 }

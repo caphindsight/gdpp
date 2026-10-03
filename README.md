@@ -230,7 +230,7 @@ Neither takes arguments, since Godot creates objects without any. See `gd++ man 
 
 <a href="readme/svg/weak.gd++"><img src="readme/svg/weak.svg" alt="GD++ code: weak"></a>
 
-A `Weak[ArrayMesh]`, `Weak<ArrayMesh>` in C++, remembers the mesh without keeping it alive. Here it's a private C++ variable, since only `mesh()` uses it. The cache shares the mesh while something uses it, and lets it go once nothing does. It converts to a `Ref<ArrayMesh>`, or to null once the mesh is freed. It works for nodes too: a `Weak[Enemy]` converts to an `Enemy *`, or to null once the enemy is freed, where a plain `Enemy *` would point to freed memory. See `gd++ man types`.
+A `Weak[ArrayMesh]`, `Weak<ArrayMesh>` in C++, remembers the mesh without keeping it alive. The cache shares the mesh while something uses it, and lets it go once nothing does. It converts to a `Ref<ArrayMesh>`, or to null once the mesh is freed. It works for nodes too: a `Weak[Enemy]` converts to an `Enemy *`, or to null once the enemy is freed, where a plain `Enemy *` would point to freed memory. See `gd++ man types`.
 
 ### Object pools
 
