@@ -1,1 +1,1 @@
-process(delta: float) {}
+process(delta float) {}

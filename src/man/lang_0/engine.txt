@@ -9,30 +9,30 @@ ready {
   gd::print("Ready.");
 }
 
-process(delta) {
+process(delta: float) {
   rotate_y(delta);
 }
 ```
 
-An engine block is its word, then its body, C++ in braces. `process` and `physics_process` take the delta time, the seconds since the last frame, as a `float`: name it in parentheses, without a type, e.g. `process(delta)` or `process(dt)`. The others take nothing, and have no parentheses: `ready { ... }`. Engine blocks have no return type.
+An engine block is its word, then its body, C++ in braces. `process` and `physics_process` take the delta time, the seconds since the last frame: a parameter of type `float`, in parentheses, whose name you choose, e.g. `process(delta: float)` or `process(dt: float)`. The type must be written, and must be `float`. The others take nothing, and have no parentheses: `ready { ... }`. Engine blocks have no return type.
 
 These are the blocks, with the engine's virtual function that each one stands for, and the classes they work in:
 
 ```
-BLOCK                    FUNCTION            CLASSES
-enter_tree { }           _enter_tree         Node
-ready { }                _ready              Node
-process(delta) { }       _process            Node
-physics_process(delta)   _physics_process    Node
-exit_tree { }            _exit_tree          Node
-draw { }                 _draw               CanvasItem
+BLOCK                                FUNCTION            CLASSES
+enter_tree { }                       _enter_tree         Node
+ready { }                            _ready              Node
+process(delta: float) { }            _process            Node
+physics_process(delta: float) { }    _physics_process    Node
+exit_tree { }                        _exit_tree          Node
+draw { }                             _draw               CanvasItem
 ```
 
 In other classes, they're an error. A class has at most one block of each kind. Their words are still free to use as names elsewhere, e.g. `var ready: bool`.
 
 # How they work
 
-Engine blocks are `notif` blocks with syntax sugar: `process(delta) { ... }` is a `notif PROCESS { ... }` block whose `delta` is set, from `get_process_delta_time()`. Their bodies run in the class's `_notification`, not in an override of the engine's function, so neither a subclass nor a script that extends the class and defines a function of the same name replaces them: both run, the base's first. They aren't functions of the class: C++ code and scripts can't call them.
+Engine blocks are `notif` blocks with syntax sugar: `process(delta: float) { ... }` is a `notif PROCESS { ... }` block whose `delta` is set, from `get_process_delta_time()`. Their bodies run in the class's `_notification`, not in an override of the engine's function, so neither a subclass nor a script that extends the class and defines a function of the same name replaces them: both run, the base's first. They aren't functions of the class: C++ code and scripts can't call them.
 
 Each one runs at its notification, e.g. `NOTIFICATION_PROCESS`. `ready` runs at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, once the node's children are ready, right after the `@onready` initial values. So it runs before a script's `_ready`. `process` and `physics_process` turn processing on in the constructor, with `set_process(true)` or `set_physics_process(true)`. Within the class's `_notification`, they run together with `notif` blocks, in the order of their declarations: see `gd++ man lifecycle`.
 
@@ -42,7 +42,7 @@ Engine blocks take only `@trace`, `@profile`, `@notrace`, `@noprofile` and `@gam
 
 ```gd++
 @trace
-physics_process(delta) {
+physics_process(delta: float) {
   move_and_slide();
 }
 ```

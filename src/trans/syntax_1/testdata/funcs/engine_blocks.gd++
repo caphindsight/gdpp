@@ -7,8 +7,8 @@ ready {
 }
 enter_tree {}
 exit_tree {}
-process(delta) {}
-physics_process(dt) {}
+process(delta: float) {}
+physics_process(dt: float) {}
 @game_only @notrace
 draw {}
 

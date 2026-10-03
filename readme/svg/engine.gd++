@@ -1,4 +1,4 @@
-physics_process(delta) {
+physics_process(delta: float) {
   set_velocity(get_velocity() + get_gravity() * delta);
   move_and_slide();
 }

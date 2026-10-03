@@ -98,7 +98,7 @@ decl {
   std::vector<Vector3> positions;
 }
 
-physics_process(delta) {
+physics_process(delta: float) {
   positions.clear();
   for (Node3D *member : members) {
     positions.push_back(member->get_global_position());

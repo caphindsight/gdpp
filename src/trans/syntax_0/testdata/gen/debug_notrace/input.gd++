@@ -40,5 +40,5 @@ func moved() -> void {
 }
 
 @notrace @noprofile
-process(delta) {
+process(delta: float) {
 }

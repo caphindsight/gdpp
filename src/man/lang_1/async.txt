@@ -22,7 +22,7 @@ ready {
   pending = find_path(get_position(), target);
 }
 
-process(delta) {
+process(delta: float) {
   if (is_done pending) {
     follow(claim pending);
     pending = find_path(get_position(), target);
@@ -171,7 +171,7 @@ Godot requires waiting once for each task of the `WorkerThreadPool`, and `claim`
 A loop that keeps one search running, and follows each path it finds, as in the first example:
 
 ```gd++
-process(delta) {
+process(delta: float) {
   if (!pending) {
     pending = find_path(get_position(), target);
   } else if (is_done pending) {

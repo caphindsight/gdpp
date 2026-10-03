@@ -3,4 +3,4 @@ class_name A
 extends Node
 
 @recycle
-process(delta) {}
+process(delta: float) {}

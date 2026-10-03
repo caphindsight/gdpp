@@ -31,7 +31,7 @@ GD++ looks like GDScript, so GDScript habits are the most common mistakes. GD++ 
 
 ```
 func greet() -> void:          Bodies use braces: func greet() -> void { ... }
-func _process(delta):          Engine blocks: process(delta) { ... }, see gd++ man engine
+func _process(delta):          Engine blocks: process(delta: float) { ... }, see gd++ man engine
 var x := 5                     No type inference: var x: int = 5
 const X = 5                    No const: enum X = 5
 static func f()                Attributes are annotations: @static func f()
@@ -167,7 +167,9 @@ A ready block only works in classes that extend Node, which Counter doesn't.
 A ready block takes no parameters.
   Write "ready { ... }".
 A process block takes the delta time as a parameter.
-  Name it, e.g. "process(delta) { ... }". It's a float, in seconds.
+  Name it, e.g. "process(delta: float) { ... }". It's a float, in seconds.
+The delta time delta needs its type, float.
+  Write "process(delta: float) { ... }".
 Class Mob has two process blocks.
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.

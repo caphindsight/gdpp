@@ -135,7 +135,7 @@ notif PROCESS {
   gd::print("first");
 }
 
-process(delta) {
+process(delta: float) {
   gd::print("second");
 }
 

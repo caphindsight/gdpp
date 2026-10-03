@@ -220,7 +220,7 @@ func _unhandled_input(event: InputEvent) -> void {
 }
 
 // To run code when the node gets ready, use a ready block. Unlike an override of _ready, a script can't replace it.
-// Likewise: enter_tree { ... }, exit_tree { ... }, process(delta) { ... }, physics_process(delta) { ... } and draw { ... }.
+// Likewise: enter_tree { ... }, exit_tree { ... }, process(delta: float) { ... }, physics_process(delta: float) { ... } and draw { ... }.
 ready {
   gd::print("My node is ready.");
 }

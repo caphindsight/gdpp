@@ -244,7 +244,7 @@ A class's `@trace` leaves out `process` and `physics_process`, and overrides of 
 
 ```gd++
 @trace("frame")
-physics_process(delta) { ... }
+physics_process(delta: float) { ... }
 ```
 
 # @profile on functions, variables and classes

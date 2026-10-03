@@ -1185,10 +1185,10 @@ var engineFuncs = map[string]struct{ notif, delta, base string }{
 	"_process": {"PROCESS", "get_process_delta_time", "Node"}, "_physics_process": {"PHYSICS_PROCESS", "get_physics_process_delta_time", "Node"},
 	"_draw": {"DRAW", "", "CanvasItem"}}
 
-// engineExample returns how the engine block called name is written, e.g. "process(delta) { ... }".
+// engineExample returns how the engine block called name is written, e.g. "process(delta: float) { ... }".
 func engineExample(name string) string {
 	if engineFuncs["_"+name].delta != "" {
-		return name + "(delta) { ... }"
+		return name + "(delta: float) { ... }"
 	}
 	return name + " { ... }"
 }
@@ -1212,10 +1212,17 @@ func (u *unit) buildEngine(e *Engine, owner string) (*funcModel, error) {
 	case ef.delta != "" && e.Delta == nil:
 		return nil, u.errorAt(e.Pos, len(e.Name), fmt.Sprintf("A %s block takes the delta time as a parameter.", e.Name),
 			fmt.Sprintf("Name it, e.g. \"%s\". It's a float, in seconds.", engineExample(e.Name)))
+	case e.Delta != nil && e.DeltaType == nil:
+		return nil, u.errorAt(e.Delta.Pos, len(e.Delta.Name), fmt.Sprintf("The delta time %s needs its type, float.", e.Delta.Name),
+			fmt.Sprintf("Write \"%s(%s: float) { ... }\".", e.Name, e.Delta.Name))
+	case e.DeltaType != nil && (e.DeltaType.Name != "float" || len(e.DeltaType.Args) > 0):
+		t := e.DeltaType
+		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("The delta time of a %s block is a float, but found %s.", e.Name, typeString(t)),
+			fmt.Sprintf("Write \"%s(%s: float) { ... }\".", e.Name, e.Delta.Name))
 	}
 	f := &Func{Pos: e.Pos, Annotations: e.Annotations, Name: "_" + e.Name, Return: &Type{Pos: e.Pos, Name: "void"}, Body: e.Body}
 	if e.Delta != nil {
-		f.Params = []*Param{{Pos: e.Delta.Pos, Name: e.Delta.Name, Type: &Type{Pos: e.Delta.Pos, Name: "float"}}}
+		f.Params = []*Param{{Pos: e.Delta.Pos, Name: e.Delta.Name, Type: e.DeltaType}}
 	}
 	m, err := u.buildFunc(f, owner, false)
 	if err != nil {

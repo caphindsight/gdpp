@@ -1,1 +1,1 @@
-ready(x: int) {}
+ready(x, y) {}

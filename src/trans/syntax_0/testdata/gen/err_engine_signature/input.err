@@ -1,4 +1,4 @@
 input.gd++:4:1: A process block takes the delta time as a parameter.
  4 | process {}
    | ^^^^^^^
-Hint: Name it, e.g. "process(delta) { ... }". It's a float, in seconds.
+Hint: Name it, e.g. "process(delta: float) { ... }". It's a float, in seconds.

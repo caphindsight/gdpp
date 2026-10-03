@@ -147,10 +147,10 @@ func highlightGdpp(code string, gdscript bool) string {
 
 var (
 	annotationsRegexp = regexp.MustCompile(`^\s*(@\w+(\([^)]*\))?\s*)*$`)
-	engineHeadRegexp  = regexp.MustCompile(`^\s*(\(\s*\w+\s*\)\s*)?\{`)
+	engineHeadRegexp  = regexp.MustCompile(`^\s*(\(\s*\w+\s*:\s*\w+\s*\)\s*)?\{`)
 )
 
-// startsEngineBlock reports whether the word between before and after starts an engine block, e.g. "process(delta) {".
+// startsEngineBlock reports whether the word between before and after starts an engine block, e.g. "process(delta: float) {".
 func startsEngineBlock(before, after string) bool {
 	return annotationsRegexp.MatchString(before[strings.LastIndexByte(before, '\n')+1:]) && engineHeadRegexp.MatchString(after)
 }

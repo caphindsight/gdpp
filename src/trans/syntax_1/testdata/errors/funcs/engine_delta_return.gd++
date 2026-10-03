@@ -1,1 +1,1 @@
-process(delta) -> void {}
+physics_process(dt: float) -> void {}

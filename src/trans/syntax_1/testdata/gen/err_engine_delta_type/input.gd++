@@ -1,0 +1,4 @@
+class_name Mob
+extends Node
+
+physics_process(dt: int) {}

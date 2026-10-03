@@ -1,6 +1,6 @@
 class_name Mob
 extends Node
 
-process(delta) {}
+process(delta: float) {}
 
-process(dt) {}
+process(dt: float) {}

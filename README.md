@@ -152,7 +152,7 @@ With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ ma
 
 <a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
 
-Engine blocks, `ready`, `enter_tree`, `exit_tree`, `process(delta)`, `physics_process(delta)` and `draw`, run at the engine's `_ready`, `_process` and the like, from the class's notification handler, so a script that extends the class can't replace them. `process` and `physics_process` also turn processing on. See `gd++ man engine`.
+Engine blocks, `ready`, `enter_tree`, `exit_tree`, `process(delta: float)`, `physics_process(delta: float)` and `draw`, run at the engine's `_ready`, `_process` and the like, from the class's notification handler, so a script that extends the class can't replace them. `process` and `physics_process` also turn processing on. See `gd++ man engine`.
 
 ### Overrides
 

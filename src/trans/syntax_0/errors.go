@@ -421,8 +421,8 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 		if engineFuncs["_"+name].delta == "" {
 			return fmt.Sprintf("A %s block takes no parameters.", name), fmt.Sprintf("Write \"%s\".", engineExample(name))
 		}
-		return fmt.Sprintf("Expected the name of the delta time and \")\", but found %s.", found),
-			fmt.Sprintf("It's always a float, so it has no type: \"%s\".", engineExample(name))
+		return fmt.Sprintf("Expected the delta time's name, then \": float)\", but found %s.", found),
+			fmt.Sprintf("Write \"%s\".", engineExample(name))
 
 	case (isPunct(p, ":") || isPunct(p, "->") || isPunct(p, "[") || isPunct(p, ",") && enclosing(sig, j, "[") >= 0) && !isName:
 		if isPunct(p, ":") && isPunct(u, "=") {
@@ -492,7 +492,7 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 	return fmt.Sprintf("Expected a declaration, but found %s.", found), declarationHint(u)
 }
 
-// engineHead returns the name of the engine block whose head ends at sig[i], e.g. "process" for "process(delta)",
+// engineHead returns the name of the engine block whose head ends at sig[i], e.g. "process" for "process(delta: float)",
 // or "" if there's none.
 func engineHead(sig []lexer.Token, i int) string {
 	switch {
@@ -500,6 +500,8 @@ func engineHead(sig []lexer.Token, i int) string {
 		i -= 2
 	case isPunct(at(sig, i), ")") && isPunct(at(sig, i-2), "(") && at(sig, i-1).Type == tokIdent:
 		i -= 3
+	case isPunct(at(sig, i), ")") && isPunct(at(sig, i-4), "(") && isPunct(at(sig, i-2), ":"):
+		i -= 5
 	}
 	t, prev := at(sig, i), at(sig, i-1)
 	if t.Type != tokIdent || !slices.Contains(engineBlocks, t.Value) || prev.Type == tokIdent && keywords[prev.Value] ||

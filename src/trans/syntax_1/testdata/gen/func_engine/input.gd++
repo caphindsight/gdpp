@@ -14,7 +14,7 @@ notif PROCESS {
 
 // Runs even when a script overrides _process.
 @trace
-process(dt) {
+process(dt: float) {
   if (dt > 0.1) {
     return;
   }
@@ -25,7 +25,7 @@ notif PROCESS {
   gd::print("after");
 }
 
-physics_process(delta) {
+physics_process(delta: float) {
   gd::print(delta);
 }
 

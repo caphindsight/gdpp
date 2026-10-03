@@ -1,0 +1,4 @@
+input.gd++:4:21: The delta time of a physics_process block is a float, but found int.
+ 4 | physics_process(dt: int) {}
+   |                     ^^^
+Hint: Write "physics_process(dt: float) { ... }".

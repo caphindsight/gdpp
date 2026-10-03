@@ -42,7 +42,7 @@ Member      = Code
             | Annotation* 'dtor' Block
             | 'notif' ( '(' Ident ( ',' Ident )* ','? ')' | Ident ( ',' Ident )* ) Block
             | Annotation* ( 'ready' | 'enter_tree' | 'exit_tree' | 'draw' ) Block
-            | Annotation* ( 'process' | 'physics_process' ) '(' Ident ')' Block
+            | Annotation* ( 'process' | 'physics_process' ) '(' Ident ':' Type ')' Block
             | Func
             | Signal
             | Var

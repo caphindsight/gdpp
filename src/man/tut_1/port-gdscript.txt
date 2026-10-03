@@ -56,10 +56,10 @@ Things to check in this part:
 
 # 2. Rewrite the function bodies in C++
 
-Signatures stay the same, except for `_process` and the like, which become engine blocks, e.g. `process(delta) { ... }`. Bodies go in braces, and are C++:
+Signatures stay the same, except for `_process` and the like, which become engine blocks, e.g. `process(delta: float) { ... }`. Bodies go in braces, and are C++:
 
 ```gd++
-process(delta) {
+process(delta: float) {
   sprite->set_rotation(sprite->get_rotation() + spin_speed * delta);
 }
 
@@ -81,7 +81,7 @@ What changed:
 - Engine properties are getters and setters in C++: `sprite.rotation += x` becomes `sprite->set_rotation(sprite->get_rotation() + x)`. Your own GD++ variables are plain fields, so `player->score += value` works.
 - `as` casts like in GDScript, but names a C++ type: `body as Player *`. A failed downcast gives `nullptr`. See `gd++ man cast`.
 - Signals are sent with `emit NAME(ARGS);`. See `gd++ man signals`.
-- `func _process(delta)` becomes `process(delta)`, and `func _ready()` becomes `ready`, and the like: engine blocks, which scripts can't replace. See `gd++ man engine`. Other virtual functions of the engine, e.g. `_unhandled_input`, need `@override`. See `gd++ man functions`.
+- `func _process(delta)` becomes `process(delta: float)`, and `func _ready()` becomes `ready`, and the like: engine blocks, which scripts can't replace. See `gd++ man engine`. Other virtual functions of the engine, e.g. `_unhandled_input`, need `@override`. See `gd++ man functions`.
 
 # 3. Look up the API
 

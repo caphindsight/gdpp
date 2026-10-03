@@ -69,7 +69,7 @@ func sync_position(pos: Vector3) -> void {
   set_position(pos);
 }
 
-physics_process(delta) {
+physics_process(delta: float) {
   if (!is_multiplayer_authority()) {
     return;
   }

@@ -136,7 +136,7 @@ It works on every `@override` function, of the engine or of a GD++ `@virtual` fu
 
 # Engine blocks
 
-To run code at `_ready`, `_process` and the like, write engine blocks, e.g. `ready { ... }` and `process(delta) { ... }`, rather than overrides, which scripts replace. See `gd++ man engine`.
+To run code at `_ready`, `_process` and the like, write engine blocks, e.g. `ready { ... }` and `process(delta: float) { ... }`, rather than overrides, which scripts replace. See `gd++ man engine`.
 
 # @virtual
 
@@ -287,7 +287,7 @@ With `@onthread("detached")`, the function must return `void`, and its calls ret
 class_name Turntable
 extends Node3D
 
-process(delta) {
+process(delta: float) {
   rotate_y(delta);          // Spins in the editor too.
 }
 
@@ -297,7 +297,7 @@ func launch() -> void {
 }
 ```
 
-With `@game_only`, the function only runs in the game, never in the editor, e.g. to keep a few functions of a `@tool` class out of the editor. In debug builds, which the editor loads, its body starts with a check: in the editor, the function returns right away, with a default value, and an `@onthread` function returns an empty `Async`. Engine blocks, e.g. `process(delta) { ... }`, take it too. In a `@game_only` class, every function already has it. See `gd++ man classes`.
+With `@game_only`, the function only runs in the game, never in the editor, e.g. to keep a few functions of a `@tool` class out of the editor. In debug builds, which the editor loads, its body starts with a check: in the editor, the function returns right away, with a default value, and an `@onthread` function returns an empty `Async`. Engine blocks, e.g. `process(delta: float) { ... }`, take it too. In a `@game_only` class, every function already has it. See `gd++ man classes`.
 
 # @trace and @profile
 

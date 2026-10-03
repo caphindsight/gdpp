@@ -88,7 +88,7 @@ Like in GDScript, the code of a class runs in the editor only if the class has `
 class_name Gizmo
 extends Node3D
 
-process(delta) {
+process(delta: float) {
   rotate_y(delta);          // Spins in the editor too.
 }
 ```
@@ -120,7 +120,7 @@ A `@game_only` class is a runtime class. In debug builds, which the editor loads
 class_name Spawner
 extends Node3D
 
-process(delta) {
+process(delta: float) {
   rotate_y(delta);          // Spins in the editor too.
 }
 

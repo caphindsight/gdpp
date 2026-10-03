@@ -57,15 +57,16 @@ type Notif struct {
 	Body  *Block  `parser:"@@"`
 }
 
-// Engine is an engine block, e.g. ready { ... } or process(delta) { ... }: Body runs at the notification of the
-// engine function of the same name, e.g. _ready. Delta names the delta time of process and physics_process.
-// Parens is whether parentheses follow Name, even empty ones.
+// Engine is an engine block, e.g. ready { ... } or process(delta: float) { ... }: Body runs at the notification of the
+// engine function of the same name, e.g. _ready. Delta names the delta time of process and physics_process, and
+// DeltaType is its type, which must be float. Parens is whether parentheses follow Name, even empty ones.
 type Engine struct {
 	Pos         lexer.Position
 	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
 	Name        string        `parser:"@( 'ready' | 'enter_tree' | 'exit_tree' | 'process' | 'physics_process' | 'draw' )"`
 	Parens      bool          `parser:"( @'('"`
-	Delta       *Name         `parser:"  @@? ')' )?"`
+	Delta       *Name         `parser:"  ( @@"`
+	DeltaType   *Type         `parser:"    ( ':' @@ )? )? ')' )?"`
 	Body        *Block        `parser:"@@"`
 }
 

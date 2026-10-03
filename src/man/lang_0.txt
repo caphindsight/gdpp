@@ -40,7 +40,7 @@ func hurt(amount: int) -> void {
   }
 }
 
-physics_process(delta) {
+physics_process(delta: float) {
   Vector3 direction = Vector3(Input::get_singleton()->get_axis(string_name "ui_left", string_name "ui_right"), 0, 0);
   set_velocity(direction * speed);
   move_and_slide();
@@ -89,7 +89,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Signals: `signal name(params)`, sent with `emit`. See `gd++ man signals`.
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
 - Object lifecycle: `ctor { }`, `dtor { }`, `@onready` and `notif ... { }`. See `gd++ man lifecycle`.
-- Engine blocks: `ready { }`, `process(delta) { }` and the like run code at the engine's notifications. See `gd++ man engine`.
+- Engine blocks: `ready { }`, `process(delta: float) { }` and the like run code at the engine's notifications. See `gd++ man engine`.
 - Classes of scenes: `@scene` makes `create` instantiate a scene. See `gd++ man classes`.
 - Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `@recycle ready`, `GENERATION`, `create`, `destroy` and `queue_destroy`. See `gd++ man pools`.
 - Weak references: `Weak[T]`, a reference that knows when its object is gone. See `gd++ man weak`.
