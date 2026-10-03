@@ -63,7 +63,7 @@ The tutorials and the language pages describe one syntax version of GD++: in a p
 
 - `gd++ --help` and `gd++ COMMAND --help` list the options of each command, in short.
 - `gd++ trans FILE` prints the C++ that GD++ generates from a GD++ file. It is the best way to learn what the language does. See `gd++ man trans`.
-- `gd++ doc NAME` shows what godot-cpp declares under a name, e.g. a class and its methods. See `gd++ man doc`.
+- `gd++ doc NAME` shows what godot-cpp or the GD++ runtime declares under a name, e.g. a class and its methods. See `gd++ man doc`.
 - Godot's own help, in the editor, describes the engine's classes. Your GD++ classes show up there too, with their doc comments. See `gd++ man docs`.
 
 # Words used in this manual

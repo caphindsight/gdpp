@@ -97,7 +97,7 @@ typedef struct { int x; } CStruct;
 `
 	var got []string
 	bases := map[string]string{}
-	for _, d := range scanCppDecls(src) {
+	for _, d := range scanCppDecls(src, "godot") {
 		got = append(got, d.name)
 		if d.base != "" {
 			bases[d.name] = d.base
@@ -224,7 +224,7 @@ public:
 		"Other":    nil,
 	}
 	for name, want := range cases {
-		if got := scanCppDocs(src, name); !reflect.DeepEqual(got, want) {
+		if got := scanCppDocs(src, "godot", name); !reflect.DeepEqual(got, want) {
 			t.Errorf("scanCppDocs(%s) = %q\nwant %q", name, got, want)
 		}
 	}

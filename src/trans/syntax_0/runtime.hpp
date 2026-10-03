@@ -61,6 +61,7 @@ using namespace godot;
 // Emitted is the result of a signal's emit function. It's [[nodiscard]], so emitting a signal must be spelled
 // `emit my_signal(42);`, which reads differently from a function call.
 struct [[nodiscard]] Emitted {
+	// The result of emit_signal: OK, or why the emission failed.
 	Error error;
 };
 
@@ -130,6 +131,7 @@ using strong_t = std::conditional_t<std::is_base_of_v<RefCounted, T>, Ref<T>, T 
 // for other types.
 template <typename T>
 struct object_class {
+	// The class, or void.
 	using type = void;
 };
 template <typename T>
@@ -157,15 +159,19 @@ struct object_class<Weak<T>> {
 	using type = T;
 };
 
-// object_ptr returns the raw pointer to the object that p_value points to.
+// object_ptr returns the raw pointer to the object that p_value points to: here, the pointer itself.
 template <typename T>
 T *object_ptr(T *p_value) { return p_value; }
+// object_ptr of a Ref: the object it references.
 template <typename T>
 T *object_ptr(const Ref<T> &p_value) { return p_value.ptr(); }
+// object_ptr of an ExtPtr: its object, as the extern's base class.
 template <typename T>
 auto object_ptr(const ExtPtr<T> &p_value) { return p_value.base(); }
+// object_ptr of an ExtRef: its object, as the extern's base class.
 template <typename T>
 auto object_ptr(const ExtRef<T> &p_value) { return p_value.base().ptr(); }
+// object_ptr of an Async: its task object.
 template <typename T>
 RefCounted *object_ptr(const Async<T> &p_value) { return p_value.object().ptr(); }
 
@@ -204,6 +210,7 @@ T cast(const U &p_value) {
 		return static_cast<T>(p_value);
 	}
 }
+// cast of a Weak converts what it converts to, i.e. its object, or null once it's gone.
 template <typename T, typename U>
 T cast(const Weak<U> &p_value) { return cast<T>(strong_t<U>(p_value.ptr())); }
 
@@ -213,8 +220,11 @@ T cast(const Weak<U> &p_value) { return cast<T>(strong_t<U>(p_value.ptr())); }
 template <typename T>
 class ExtPtr {
 public:
+	// A null ExtPtr.
 	ExtPtr() = default;
+	// A null ExtPtr, from nullptr.
 	ExtPtr(std::nullptr_t) {}
+	// Points to p_object, which must be an object of the extern: it isn't checked.
 	template <typename U = T>
 	ExtPtr(typename U::Base *p_object) :
 			object_(p_object) {}
@@ -223,15 +233,21 @@ public:
 	ExtPtr(const ExtPtr<U> &p_other) :
 			object_(p_other.object_) {}
 
+	// base returns the object as a pointer to the extern's base class.
 	auto base() const { return static_cast<typename T::Base *>(object_); }
+	// True if it isn't null.
 	explicit operator bool() const { return object_ != nullptr; }
+	// True if both point to the same object.
 	bool operator==(const ExtPtr &p_other) const { return object_ == p_other.object_; }
+	// The object, as a Variant.
 	operator Variant() const { return Variant(object_); }
 
+	// Arrow is what -> returns: it holds the T that calls the object's members by name.
 	struct Arrow {
 		T wrapper;
 		T *operator->() { return &wrapper; }
 	};
+	// ptr->foo() calls foo on the object, by name.
 	Arrow operator->() const { return Arrow{ T(base()) }; }
 
 private:
@@ -245,11 +261,16 @@ private:
 template <typename T>
 class ExtRef {
 public:
+	// A null ExtRef.
 	ExtRef() = default;
+	// A null ExtRef, from nullptr.
 	ExtRef(std::nullptr_t) {}
+
+	// References p_object, which must be an object of the extern: it isn't checked.
 	template <typename U = T>
 	ExtRef(const Ref<typename U::Base> &p_object) :
 			object_(p_object.ptr()) {}
+	// References p_object, like the Ref, keeping it alive.
 	template <typename U = T>
 	ExtRef(typename U::Base *p_object) :
 			object_(p_object) {}
@@ -258,16 +279,23 @@ public:
 	ExtRef(const ExtRef<U> &p_other) :
 			object_(p_other.object_) {}
 
+	// base returns the object as a Ref of the extern's base class.
 	auto base() const { return Ref<typename T::Base>(static_cast<typename T::Base *>(object_.ptr())); }
+	// True if it isn't null.
 	explicit operator bool() const { return object_.is_valid(); }
+	// True if both reference the same object.
 	bool operator==(const ExtRef &p_other) const { return object_ == p_other.object_; }
+	// The object, as a Variant.
 	operator Variant() const { return Variant(object_); }
 
+	// Arrow is what -> returns: it holds the T that calls the object's members by name.
 	struct Arrow {
 		T wrapper;
 		T *operator->() { return &wrapper; }
 	};
+	// ref->foo() calls foo on the object, by name.
 	Arrow operator->() const { return Arrow{ T(static_cast<typename T::Base *>(object_.ptr())) }; }
+
 
 private:
 	template <typename>
@@ -284,7 +312,9 @@ using Ext = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, 
 // pool, destroy and queue_destroy call the object's free_pooled and queue_free_pooled.
 template <typename T>
 struct ExtCreate {
+	// The name of the static method that creates an object, e.g. "new_pooled".
 	const char *new_method;
+	// Whether the extern has @pool: destroy and queue_destroy return its objects to their pool.
 	bool pool;
 };
 
@@ -388,6 +418,7 @@ constexpr bool returns_reference(const char *p_signature) {
 
 // Default is what a failed assertion returns from a function that returns a value: it converts to any type T as T().
 struct Default {
+	// Converts to T().
 	template <typename T>
 	operator T() const { return T(); }
 };
@@ -395,7 +426,9 @@ struct Default {
 // DefaultRef is what a failed assertion returns from a function that returns a reference: it converts to any T & as
 // a T() that lives on, since the caller may still use it. Default can't do both, since its conversions would be ambiguous.
 struct DefaultRef {
+	// Converts to a T() that lives on.
 	template <typename T>
+
 	operator T &() const {
 		static T fallback{};
 		return fallback;
@@ -422,6 +455,7 @@ auto assert_return() {
 #endif
 #define GDPP_STRINGIFY(m_name) GDPP_STRINGIFY_(m_name)
 #define GDPP_STRINGIFY_(m_name) #m_name
+// async_class is the name of the package's class of tasks, as a string, e.g. "FooAsync".
 inline constexpr const char *async_class = GDPP_STRINGIFY(GDPP_ASYNC_CLASS);
 
 // GDPP_QUIT_TIMEOUT_USEC is how long the package's tasks may still run after the game started quitting, before
@@ -437,7 +471,9 @@ inline constexpr const char *async_class = GDPP_STRINGIFY(GDPP_ASYNC_CLASS);
 template <typename T>
 class ThreadSlot {
 public:
+	// Makes the pthread key.
 	ThreadSlot() { pthread_key_create(&key, nullptr); }
+	// Deletes the key, and frees the Ts of all threads.
 	~ThreadSlot() {
 		pthread_key_delete(key);
 		for (T *value : values) {
@@ -445,6 +481,7 @@ public:
 		}
 	}
 
+	// get returns this thread's T, which it makes, value-initialized, on first use.
 	T &get() {
 		if (void *value = pthread_getspecific(key)) {
 			return *static_cast<T *>(value);
@@ -477,15 +514,22 @@ private:
 #endif
 
 // The state of the package's tasks.
-inline std::atomic<bool> quitting = false; // Whether the game has started quitting.
-inline std::atomic<bool> watching_quit = false; // Whether watch_quit was scheduled.
-inline std::atomic<int64_t> quit_deadline_usec = 0; // When the quit timeout runs out, in now_usec() time.
-inline std::atomic<int64_t> running_tasks = 0; // The package's tasks whose jobs are running.
-GDPP_THREAD_LOCAL(const std::atomic<bool> *, current_cancel) // The cancel flag of this thread's task.
+// quitting is whether the game has started quitting.
+inline std::atomic<bool> quitting = false;
+// watching_quit is whether watch_quit was scheduled.
+inline std::atomic<bool> watching_quit = false;
+// quit_deadline_usec is when the quit timeout runs out, in now_usec() time.
+inline std::atomic<int64_t> quit_deadline_usec = 0;
+// running_tasks counts the package's tasks whose jobs are running.
+inline std::atomic<int64_t> running_tasks = 0;
+// current_cancel() is the cancel flag of this thread's task.
+GDPP_THREAD_LOCAL(const std::atomic<bool> *, current_cancel)
 
 // The package's hooks into the engine that call its library's code, e.g. signal connections, which uninitialize
 // removes: after a hot reload, the engine would call the unloaded code.
+// unhooks_mutex guards unhooks.
 inline std::mutex unhooks_mutex;
+// unhooks are the functions that remove the hooks, which on_unload adds.
 inline std::vector<std::function<void()>> unhooks;
 
 // on_unload makes uninitialize call p_unhook.
@@ -508,8 +552,10 @@ inline void connect_until_unload(Object *p_object, const StringName &p_signal, c
 // Scene<T> is the type of the @scene class T's _gdpp_scene: the res:// path of its scene.
 template <typename T>
 struct Scene {
+	// The res:// path of the scene.
 	const char *path;
 };
+
 
 // has_scene<T> is true for the @scene class T, but not for classes that extend it.
 template <typename T, typename = void>
@@ -564,18 +610,26 @@ T *make() {
 // it rests in the pool, or null otherwise.
 template <typename T>
 struct PoolSlot {
+	// Whether the pool made it.
 	bool owned = false;
-	bool given = false; // Whether destroy gave it back: it rests in the pool, or is on its way there.
-	bool readied = false; // Whether it got ready once: its @onready values and _ready without @recycle don't run again.
+	// Whether destroy gave it back: it rests in the pool, or is on its way there.
+	bool given = false;
+	// Whether it got ready once: its @onready values and _ready without @recycle don't run again.
+	bool readied = false;
+	// Where it rests in the pool, or null.
 	T **cell = nullptr;
-	std::atomic<uint64_t> generation = 0; // How many times it was given back, so Weak<T> knows a reused object.
+	// How many times it was given back, so Weak<T> knows a reused object.
+	std::atomic<uint64_t> generation = 0;
 };
 
 // PoolLimit is what a Pool with a capacity does at it: QUIET and STRICT make no more objects, STRICT with an error,
 // and SOFT makes more, with an error in debug builds each time it grows past the capacity times a power of 2.
 enum class PoolLimit {
+	// Makes no more objects, silently: create gives null.
 	QUIET,
+	// Makes no more objects, and prints an error: create gives null.
 	STRICT,
+	// Makes more objects, with an error in debug builds each time it grows past the capacity times a power of 2.
 	SOFT,
 };
 
@@ -586,8 +640,10 @@ enum class PoolLimit {
 template <typename T>
 class Pool {
 public:
+	// A pool of at most p_capacity objects, or any number with 0, which does p_limit when full.
 	Pool(int64_t p_capacity, PoolLimit p_limit) :
 			capacity_(p_capacity), limit_(p_limit), warn_at_(p_capacity) {}
+	// Frees the pool's chunks, not the objects: clear frees those when the library is unloaded.
 	~Pool() {
 		for (Chunk *chunk = first_.next; chunk;) {
 			delete std::exchange(chunk, chunk->next);
@@ -741,6 +797,7 @@ struct is_extern : std::false_type {};
 template <typename T>
 struct is_extern<T, std::void_t<decltype(T::gdpp_name)>> : std::true_type {};
 
+// always_false<T> is false for any T, for a static_assert that only fails when a template is used.
 template <typename>
 inline constexpr bool always_false = false;
 
@@ -760,8 +817,10 @@ auto create() {
 	}
 }
 
+// destroy deletes an object, see below.
 template <typename T>
 void destroy(T *p_object);
+// destroy deletes an object of an extern, see below.
 template <typename T>
 void destroy(ExtPtr<T> p_object);
 
@@ -774,7 +833,9 @@ void destroy(ExtPtr<T> p_object);
 template <typename T>
 class Weak {
 public:
+	// A null Weak.
 	Weak() = default;
+	// Refers to p_object, or is null if it's null.
 	Weak(const T *p_object) {
 		if (p_object) {
 			id_ = p_object->get_instance_id();
@@ -783,6 +844,7 @@ public:
 			}
 		}
 	}
+	// Refers to the object of p_object, or is null if it's null.
 	template <typename U>
 	Weak(const Ref<U> &p_object) :
 			Weak(p_object.ptr()) {}
@@ -806,6 +868,7 @@ public:
 	// The template parameter U delays strong_t<T> until T is complete, so that a class can hold a Weak of itself.
 	template <typename R, typename U = T, std::enable_if_t<!std::is_same_v<R, bool> && std::is_convertible_v<strong_t<U>, R>, int> = 0>
 	operator R() const { return strong_t<U>(ptr()); }
+	// True while the object is there.
 	explicit operator bool() const { return object_ptr(strong_t<T>(ptr())) != nullptr; }
 
 	// Templates, so that comparing with a pointer or a Ref matches them exactly, rather than the built-in ==.
@@ -814,6 +877,7 @@ public:
 		Weak b(p_b);
 		return p_a.id_ == b.id_ && p_a.generation_ == b.generation_;
 	}
+	// The same, with the Weak on the right.
 	template <typename P, std::enable_if_t<!std::is_same_v<P, Weak>, int> = 0>
 	friend bool operator==(const P &p_a, const Weak &p_b) { return p_b == p_a; }
 
@@ -844,6 +908,7 @@ void destroy_now(T *p_object) {
 	}
 	memdelete(p_object);
 }
+// destroy_now of an extern deletes its object.
 template <typename T>
 void destroy_now(ExtPtr<T> p_object) {
 	if (p_object) {
@@ -909,6 +974,7 @@ void destroy(T *p_object) {
 	}
 	destroy_now(p_object);
 }
+// destroy of an extern: for one with @pool, it calls the object's free_pooled, else it deletes the object like above.
 template <typename T>
 void destroy(ExtPtr<T> p_object) {
 	if constexpr (has_ext_pool<T>()) {
@@ -937,6 +1003,7 @@ void queue_destroy(T *p_object) {
 		p_object->queue_free();
 	}
 }
+// queue_destroy of an extern: for one with @pool, it calls the object's queue_free_pooled, else queue_free.
 template <typename T>
 void queue_destroy(ExtPtr<T> p_object) {
 	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
@@ -949,24 +1016,30 @@ void queue_destroy(ExtPtr<T> p_object) {
 		p_object.base()->queue_free();
 	}
 }
+// queue_destroy of a Ref doesn't compile: refcounted objects free themselves.
 template <typename T>
 void queue_destroy(const Ref<T> &) {
 	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
+// queue_destroy of an ExtRef doesn't compile: refcounted objects free themselves.
 template <typename T>
 void queue_destroy(const ExtRef<T> &) {
 	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
+// destroy of a Ref doesn't compile: refcounted objects free themselves.
 template <typename T>
 void destroy(const Ref<T> &) {
 	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
+// destroy of an ExtRef doesn't compile: refcounted objects free themselves.
 template <typename T>
 void destroy(const ExtRef<T> &) {
 	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
 
+// now_usec returns the steady clock's time in microseconds.
 inline int64_t now_usec() {
+
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
@@ -1028,19 +1101,27 @@ inline void uninitialize() {
 // TaskCallable is a Callable that runs a function once, returns its result, and then frees it.
 class TaskCallable : public CallableCustom {
 public:
+	// A Callable that runs p_run.
 	explicit TaskCallable(std::function<Variant()> p_run) :
 			run(std::move(p_run)) {}
 
+	// The address: each TaskCallable is only equal to itself.
 	uint32_t hash() const override { return uint32_t(uintptr_t(this)); }
+	// "gdpp::TaskCallable".
 	String get_as_text() const override { return "gdpp::TaskCallable"; }
+	// Compares addresses.
 	CompareEqualFunc get_compare_equal_func() const override {
 		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a == p_b; };
 	}
+	// Orders by address.
 	CompareLessFunc get_compare_less_func() const override {
 		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a < p_b; };
 	}
+	// Always true.
 	bool is_valid() const override { return true; }
+	// None: it isn't bound to an object.
 	ObjectID get_object() const override { return ObjectID(); }
+	// call runs the body, once, and returns its result. It takes no arguments.
 	void call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, GDExtensionCallError &r_call_error) const override {
 		r_return_value = run();
 		run = nullptr;
@@ -1114,6 +1195,7 @@ public:
 		id = WorkerThreadPool::get_singleton()->add_task(callable_mp(this, &GDPP_ASYNC_CLASS::run), false, p_name);
 	}
 
+	// Waits for the job to finish, if nothing else does.
 	~GDPP_ASYNC_CLASS() { join(); }
 
 protected:
@@ -1199,7 +1281,9 @@ private:
 template <typename T>
 class [[nodiscard]] Async {
 public:
+	// An empty Async.
 	Async() = default;
+	// An Async of p_task, an object of a class of tasks, of this package or another one.
 	explicit Async(const Ref<RefCounted> &p_task) :
 			task(p_task), own(Object::cast_to<GDPP_ASYNC_CLASS>(p_task.ptr())) {}
 
@@ -1236,6 +1320,7 @@ public:
 
 	// task is the object of the class of tasks, or null for an empty Async.
 	const Ref<RefCounted> &object() const { return task; }
+	// The object of the class of tasks, as a Variant.
 	operator Variant() const { return task; }
 
 private:
@@ -1300,9 +1385,13 @@ void run_detached(const Object *p_self, const char *p_name, F p_job) {
 // if (mask & Layer::ENEMY) works.
 template <typename E>
 struct Masked {
+	// The flags that are set in both.
 	E value;
+	// The flags, as the enum.
 	constexpr operator E() const { return value; }
+	// True if any flag is set.
 	constexpr explicit operator bool() const { return static_cast<int64_t>(value) != 0; }
+
 };
 
 } // namespace gdpp
@@ -1557,11 +1646,16 @@ inline int64_t now() {
 
 // DebugThread is the state of tracing and profiling on one thread.
 struct DebugThread {
-	int depth = 0; // How deep trace lines are indented.
-	int64_t untimed = 0; // Nanoseconds spent tracing and profiling, which timings subtract.
-	Profile *profile = nullptr; // The innermost profiled call.
-	Watch *watch = nullptr; // The innermost call that watches @trace vars.
-	int main = -1; // Whether this is the main thread: 1 or 0, or -1 if not known yet.
+	// How deep trace lines are indented.
+	int depth = 0;
+	// Nanoseconds spent tracing and profiling, which timings subtract.
+	int64_t untimed = 0;
+	// The innermost profiled call.
+	Profile *profile = nullptr;
+	// The innermost call that watches @trace vars.
+	Watch *watch = nullptr;
+	// Whether this is the main thread: 1 or 0, or -1 if not known yet.
+	int main = -1;
 };
 GDPP_THREAD_LOCAL(DebugThread, debug_thread)
 
@@ -1619,6 +1713,7 @@ inline String duration(int64_t p_ns) {
 
 // add_args appends the name: value pairs of p_args, alternating names and values, to r_line.
 inline void add_args(String &) {}
+// add_args appends the first pair, then the rest.
 template <typename T, typename... Rest>
 void add_args(String &r_line, const char *p_name, const T &p_value, const Rest &...p_rest) {
 	if (!r_line.ends_with("(")) {
@@ -1640,13 +1735,16 @@ inline void debug_print(const String &p_line) {
 
 // Untimed adds the time until its end to the untimed time of its thread.
 struct Untimed {
+	// When it was made, in now() time.
 	int64_t start = now();
+	// Adds the time since start to the thread's untimed time.
 	~Untimed() { debug_thread().untimed += now() - start; }
 };
 
 // ViaExtern tags the tracing of a call or an emission through an extern. Its lines say "extern", and calls show with
 // ▷ and ◁, since they only include what goes through this package's extern, not every call of the class.
 struct ViaExtern {};
+// via_extern is the ViaExtern that Trace and trace_emit take first.
 inline constexpr ViaExtern via_extern;
 
 // Trace prints a call of a @trace function: its arguments when it starts, and its result and duration when it
@@ -1660,6 +1758,7 @@ public:
 		start(begin, false, (p_self ? describe(p_self) : String(p_class)) + "." + p_func, p_args...);
 	}
 
+	// The same for a call through an extern, which needs p_self.
 	template <typename... Args>
 	Trace(ViaExtern, const Object *p_self, const char *p_func, const Args &...p_args) {
 		int64_t begin = now();
@@ -1674,6 +1773,7 @@ public:
 		return p_value;
 	}
 
+	// Prints the end of the call, with its result, if ret recorded one, and its duration.
 	~Trace() {
 		if (!end_) {
 			stop();
@@ -1760,6 +1860,7 @@ public:
 		debug_thread().watch = this;
 	}
 
+	// Prints the vars that changed during the call, with their values before and after.
 	~Watch() {
 		Untimed untimed;
 		debug_thread().watch = parent_;
@@ -1802,11 +1903,17 @@ private:
 
 // ProfileStats are the timings of one @profile function, from all threads, in nanoseconds.
 struct ProfileStats {
+	// The function's name, e.g. "Player.fire".
 	const char *name;
+	// The number of calls, and those on the main thread, the time of the outermost calls, the time of all calls
+	// without the profiled calls inside them, and the longest outermost call.
 	std::atomic<int64_t> calls{ 0 }, main_calls{ 0 }, total{ 0 }, self{ 0 }, max{ 0 };
-	int64_t shown_total = 0; // What the live monitor showed last, at frame shown_frame.
+	// What the live monitor showed last, at frame shown_frame.
+	int64_t shown_total = 0;
+	// The frame of shown_total.
 	uint64_t shown_frame = 0;
-	int64_t printed_calls = 0, printed_total = 0, printed_self = 0; // The totals when the last table was printed.
+	// The totals when the last table was printed.
+	int64_t printed_calls = 0, printed_total = 0, printed_self = 0;
 
 	// An unnamed ProfileStats isn't registered, e.g. to calibrate.
 	ProfileStats() = default;
@@ -1817,16 +1924,25 @@ struct ProfileStats {
 
 // Profiler holds the registered ProfileStats, and the cost of profiling a call.
 struct Profiler {
+	// Guards stats.
 	std::mutex mutex;
+	// The registered ProfileStats, in order of registration.
 	std::vector<ProfileStats *> stats;
-	int64_t inner = 0; // The time a profiled call measures that is really the profiling's.
-	int64_t outer = 0; // The time a profiled call adds to the call it's inside, beyond its own.
-	int64_t print_every = 0; // Nanoseconds between tables, or 0 if the table isn't printed.
-	int64_t printed_at = 0; // When the last table was printed, or printing started.
+	// The time a profiled call measures that is really the profiling's.
+	int64_t inner = 0;
+	// The time a profiled call adds to the call it's inside, beyond its own.
+	int64_t outer = 0;
+	// Nanoseconds between tables, or 0 if the table isn't printed.
+	int64_t print_every = 0;
+	// When the last table was printed, or printing started.
+	int64_t printed_at = 0;
+	// The frame when the last table was printed.
 	uint64_t printed_frame = 0;
-	int64_t fps = 60; // The frame rate whose frame the table's budget column is a share of.
+	// The frame rate whose frame the table's budget column is a share of.
+	int64_t fps = 60;
 };
 
+// profiler returns the package's one Profiler.
 inline Profiler &profiler() {
 	static Profiler p;
 	return p;
@@ -1836,6 +1952,7 @@ inline Profiler &profiler() {
 // of timing the profiled calls inside it, doesn't count.
 class Profile {
 public:
+	// Starts timing a call of the function of p_stats.
 	explicit Profile(ProfileStats &p_stats) :
 			stats_(p_stats), parent_(debug_thread().profile) {
 		debug_thread().profile = this;
@@ -1843,8 +1960,10 @@ public:
 		start_ = now();
 	}
 
+	// Adds the call's time to p_stats.
 	~Profile() {
-		int64_t took = std::max<int64_t>(now() - start_ - (debug_thread().untimed - untimed_) - profiler().inner, 0);
+		int64_t took
+ = std::max<int64_t>(now() - start_ - (debug_thread().untimed - untimed_) - profiler().inner, 0);
 		debug_thread().profile = parent_;
 		stats_.calls.fetch_add(1, std::memory_order_relaxed);
 		if (debug_thread().main < 0) {

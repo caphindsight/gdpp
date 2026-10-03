@@ -16,6 +16,8 @@ A source file that defines `GDPP_DEBUGGING` before its includes also gets the co
 
 # For your code
 
+`gd++ doc NAME` shows the declaration of any of these, with its comments, e.g. `gd++ doc Ext` or `gd++ doc Async.claim`.
+
 Your code writes these without a prefix. Generated code spells most of them with `gdpp::`, e.g. `gdpp::Async`, the namespace where the runtime defines them, so a name of yours can't hide them there.
 
 gd

@@ -6,6 +6,7 @@ package main
 import (
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"gd++/trans"
@@ -47,21 +48,24 @@ func TestDoc(t *testing.T) {
 		args []string
 		want string
 	}{
-		"class": {[]string{"TypedArray"}, "#include <godot_cpp/variant/typed_array.hpp>\n\n// An array of T.\ntemplate <typename T>\nclass TypedArray : public Array {\n" +
+		"class": {[]string{"TypedArray"}, "#include <godot_cpp/variant/typed_array.hpp> // From godot-cpp.\n\n// An array of T.\ntemplate <typename T>\nclass TypedArray : public Array {\n" +
 			"  // Makes one.\n  TypedArray();\n  void assign(const Array &p_array);\n" +
 			"\n  // Inherited from Array:\n  void push_back(const Variant &p_value);\n  void push_back(int p_value);\n" +
 			"\n  // Inherited from Object:\n\n  // Frees it.\n  void free();\n};\n"},
-		"generated class": {[]string{"Array"}, "#include <godot_cpp/variant/array.hpp>\n\nclass Array : public Object {\n" +
+		"generated class": {[]string{"Array"}, "#include <godot_cpp/variant/array.hpp> // From the Godot API.\n\nclass Array : public Object {\n" +
 			"  void push_back(const Variant &p_value);\n  void push_back(int p_value);\n" +
 			"\n  // Inherited from Object:\n\n  // Frees it.\n  void free();\n};\n\nSee Godot's help for a description of Array.\n"},
-		"enum":                    {[]string{"Error"}, "#include <godot_cpp/classes/object.hpp>\n\nenum Error {\n  OK,\n  FAILED = 1,\n};\n\nSee Godot's help for a description of Error.\n"},
-		"enum value":              {[]string{"Error.FAILED"}, "#include <godot_cpp/classes/object.hpp>\n\nFAILED = 1,\n"},
-		"member of a base's base": {[]string{"TypedArray.free"}, "#include <godot_cpp/classes/object.hpp>\n\n// Frees it.\nvoid free();\n"},
-		"alias": {[]string{"CharString"}, "#include <godot_cpp/variant/char_string.hpp>\n\n// A string of chars.\nusing CharString = CharStringT<char>;\n" +
+		"enum":                    {[]string{"Error"}, "#include <godot_cpp/classes/object.hpp> // From the Godot API.\n\nenum Error {\n  OK,\n  FAILED = 1,\n};\n\nSee Godot's help for a description of Error.\n"},
+		"enum value":              {[]string{"Error.FAILED"}, "#include <godot_cpp/classes/object.hpp> // From the Godot API.\n\nFAILED = 1,\n"},
+		"member of a base's base": {[]string{"TypedArray.free"}, "#include <godot_cpp/classes/object.hpp> // From the Godot API.\n\n// Frees it.\nvoid free();\n"},
+		"alias": {[]string{"CharString"}, "#include <godot_cpp/variant/char_string.hpp> // From godot-cpp.\n\n// A string of chars.\nusing CharString = CharStringT<char>;\n" +
 			"\ntemplate <typename T>\nclass CharStringT {\n  const T *get_data() const;\n};\n"},
-		"alias member":     {[]string{"CharString.get_data"}, "#include <godot_cpp/variant/char_string.hpp>\n\nconst T *get_data() const;\n"},
-		"member":           {[]string{"TypedArray.assign"}, "#include <godot_cpp/variant/typed_array.hpp>\n\nvoid assign(const Array &p_array);\n"},
-		"inherited member": {[]string{"TypedArray.push_back"}, "#include <godot_cpp/variant/array.hpp>\n\nvoid push_back(const Variant &p_value);\nvoid push_back(int p_value);\n"},
+		"alias member": {[]string{"CharString.get_data"}, "#include <godot_cpp/variant/char_string.hpp> // From godot-cpp.\n\nconst T *get_data() const;\n"},
+		"member":       {[]string{"TypedArray.assign"}, "#include <godot_cpp/variant/typed_array.hpp> // From godot-cpp.\n\nvoid assign(const Array &p_array);\n"},
+		"runtime": {[]string{"Emitted"}, "#include <gd++/syntax_0.hpp> // From the GD++ runtime.\n\n// Emitted is the result of a signal's emit function. It's [[nodiscard]], so emitting a signal must be spelled\n" +
+			"// `emit my_signal(42);`, which reads differently from a function call.\nstruct [[nodiscard]] Emitted {\n  // The result of emit_signal: OK, or why the emission failed.\n  Error error;\n};\n"},
+		"runtime member":   {[]string{"Emitted.error"}, "#include <gd++/syntax_0.hpp> // From the GD++ runtime.\n\n// The result of emit_signal: OK, or why the emission failed.\nError error;\n"},
+		"inherited member": {[]string{"TypedArray.push_back"}, "#include <godot_cpp/variant/array.hpp> // From the Godot API.\n\nvoid push_back(const Variant &p_value);\nvoid push_back(int p_value);\n"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -76,28 +80,40 @@ func TestDoc(t *testing.T) {
 func TestDocPackagePath(t *testing.T) {
 	m := withDocFS(t)
 	m.cwd = "/games/my_game"
-	want := "#include <godot_cpp/variant/typed_array.hpp>\n\nvoid assign(const Array &p_array);\n"
+	want := "#include <godot_cpp/variant/typed_array.hpp> // From godot-cpp.\n\nvoid assign(const Array &p_array);\n"
 	if out := captureStdout(t, (&CmdDoc{Args: []string{"src/pkg", "TypedArray.assign"}}).Run); out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 }
 
 func TestDocIndex(t *testing.T) {
+	// The runtime's types come between godot-cpp's, sorted by name.
 	want := "class Array: Object\n" +
+		"template class Async\n" +
 		"alias CharString = CharStringT<char>\n" +
 		"template class CharStringT\n" +
+		"struct Emitted\n" +
 		"enum Error\n" +
+		"template alias Ext = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, ExtRef<T>, ExtPtr<T>>\n" +
 		"class Object\n" +
 		"template class TypedArray: Array\n" +
-		"template class TypedDictionary: private Dictionary\n"
+		"template class TypedDictionary: private Dictionary\n" +
+		"template class Weak\n"
+	check := func(out string) {
+		var got []string
+		for _, line := range strings.SplitAfter(out, "\n") {
+			if strings.Contains(want, line) {
+				got = append(got, line)
+			}
+		}
+		if strings.Join(got, "") != want {
+			t.Errorf("output = %q, want these lines in order: %q", out, want)
+		}
+	}
 	m := withDocFS(t)
-	if out := captureStdout(t, (&CmdDoc{}).Run); out != want {
-		t.Errorf("output = %q, want %q", out, want)
-	}
+	check(captureStdout(t, (&CmdDoc{}).Run))
 	m.cwd = "/games/my_game"
-	if out := captureStdout(t, (&CmdDoc{Args: []string{"src/pkg"}, Index: true}).Run); out != want {
-		t.Errorf("output with a package path = %q, want %q", out, want)
-	}
+	check(captureStdout(t, (&CmdDoc{Args: []string{"src/pkg"}, Index: true}).Run))
 }
 
 func TestDocFails(t *testing.T) {
@@ -109,8 +125,8 @@ func TestDocFails(t *testing.T) {
 		"index and name": {[]string{"src/pkg", "Array"}, "[x] Invalid arguments: --index cannot be used with a name.\n", true},
 		"too many":       {[]string{"a", "b", "c"}, "[x] Invalid arguments: expected a name, optionally after a package path.\n", false},
 		"not in package": {[]string{"..", "Array"}, "[x] Path res://src is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`.\n", false},
-		"similar names":  {[]string{"typed"}, "[x] There is no name typed in godot-cpp. Similar names: TypedArray, TypedDictionary.\n", false},
-		"unknown name":   {[]string{"Nothing"}, "[x] There is no name Nothing in godot-cpp.\n", false},
+		"similar names":  {[]string{"typed"}, "[x] There is no name typed in godot-cpp or the GD++ runtime. Similar names: TypedArray, TypedDictionary.\n", false},
+		"unknown name":   {[]string{"Nothing"}, "[x] There is no name Nothing in godot-cpp or the GD++ runtime.\n", false},
 		"unknown member": {[]string{"TypedArray.nothing"}, "[x] Name TypedArray has no public member nothing.\n", false},
 		"missing header": {[]string{"TypedDictionary"}, "[x] Failed to find the header <godot_cpp/variant/typed_dictionary.hpp>, run `gd++ clean` to fix this.\n", false},
 	}
@@ -148,8 +164,31 @@ func TestDocTabWidth(t *testing.T) {
 	withDocFS(t)
 	Args.TabWidth = 4
 	t.Cleanup(func() { Args.TabWidth = 2 })
-	want := "#include <godot_cpp/variant/char_string.hpp>\n\ntemplate <typename T>\nclass CharStringT {\n    const T *get_data() const;\n};\n"
+	want := "#include <godot_cpp/variant/char_string.hpp> // From godot-cpp.\n\ntemplate <typename T>\nclass CharStringT {\n    const T *get_data() const;\n};\n"
 	if out := captureStdout(t, (&CmdDoc{Args: []string{"CharStringT"}}).Run); out != want {
 		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+// TestRuntimeComments checks that gd++ doc shows a comment for everything that the runtime headers declare in
+// namespace gdpp, and for their public members.
+func TestRuntimeComments(t *testing.T) {
+	for syntax := 0; syntax <= trans.LatestSyntax; syntax++ {
+		_, src, err := trans.RuntimeHeader(syntax)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, d := range scanCppDecls(src, "gdpp") {
+			for _, doc := range scanCppDocs(src, "gdpp", d.name) {
+				if doc.comments == "" {
+					t.Errorf("syntax %d: %s has no comment", syntax, doc.head)
+				}
+				for _, m := range doc.members {
+					if m.comments == "" {
+						t.Errorf("syntax %d: %s.%s has no comment", syntax, d.name, m.name)
+					}
+				}
+			}
+		}
 	}
 }

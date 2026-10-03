@@ -154,7 +154,7 @@ func cppClassNames(pkg Package) []godotName {
 		}
 		base := ""
 		if header := pkg.ClassPath(class.Include); header.IsFile() {
-			for _, d := range scanCppDecls(header.ReadString()) {
+			for _, d := range scanCppDecls(header.ReadString(), "godot") {
 				if d.name == class.Name && d.baseAccess == "public" {
 					base = d.base
 				}

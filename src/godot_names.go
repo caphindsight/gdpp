@@ -13,7 +13,8 @@ import (
 	"gd++/trans"
 )
 
-// godotName is a name declared directly in namespace godot, e.g. "Node3D".
+// godotName is a name declared directly in namespace godot, e.g. "Node3D", or
+// in namespace gdpp of the GD++ runtime, for gd++ doc, e.g. "Ext".
 type godotName struct {
 	Name    string     `toml:"name"`
 	Include string     `toml:"include"`        // E.g. "<godot_cpp/classes/node3d.hpp>".
@@ -182,16 +183,16 @@ type cppDecl struct {
 	kind string
 }
 
-// scanCppDecls returns the names declared directly in namespace godot in the
-// header src: class, struct, union and enum
+// scanCppDecls returns the names declared directly in namespace ns, e.g.
+// godot, in the header src: class, struct, union and enum
 // definitions (not forward declarations or specializations), aliases, nested
 // namespaces, functions and variables. Macro invocations and anything in
 // nested scopes are skipped.
-func scanCppDecls(src string) []cppDecl {
+func scanCppDecls(src, ns string) []cppDecl {
 	tokens, spans := tokenizeCpp(src)
 	h := cppSource{src, tokens, spans}
 	var decls []cppDecl
-	walkCppDecls(tokens, func(d cppDecl, start, end int) {
+	walkCppDecls(tokens, ns, func(d cppDecl, start, end int) {
 		if strings.HasSuffix(d.kind, "alias") {
 			d.target = h.aliasTarget(d.name, start, end)
 		}
@@ -229,9 +230,9 @@ func (ts cppTokens) skip(j int, open, close cppToken) int {
 // walkCppDecls calls visit with each declaration that scanCppDecls finds,
 // the index of its first token, and the index after its head: of the "{" of
 // its body, or after its ";".
-func walkCppDecls(tokens cppTokens, visit func(d cppDecl, start, end int)) {
+func walkCppDecls(tokens cppTokens, ns string, visit func(d cppDecl, start, end int)) {
 	var scopes []string // "namespace:NAME" for namespaces (NAME may be a::b), "" for other braces.
-	inGodot := func() bool { return len(scopes) == 1 && scopes[0] == "namespace:godot" }
+	inNs := func() bool { return len(scopes) == 1 && scopes[0] == "namespace:"+ns }
 	for i := 0; i < len(tokens); {
 		switch t := tokens[i]; {
 		case t == "namespace":
@@ -247,7 +248,7 @@ func walkCppDecls(tokens cppTokens, visit func(d cppDecl, start, end int)) {
 				i = j // An alias, e.g. namespace fs = std::filesystem;
 				continue
 			}
-			if inGodot() && len(name) == 1 {
+			if inNs() && len(name) == 1 {
 				visit(cppDecl{name: name[0], kind: "namespace"}, i, j)
 			}
 			scopes = append(scopes, "namespace:"+strings.Join(name, "::"))
@@ -260,7 +261,7 @@ func walkCppDecls(tokens cppTokens, visit func(d cppDecl, start, end int)) {
 				scopes = scopes[:len(scopes)-1]
 			}
 			i++
-		case !inGodot():
+		case !inNs():
 			i++
 		default:
 			start := i
@@ -462,13 +463,13 @@ type cppSource struct {
 	spans  [][2]int
 }
 
-// scanCppDocs returns the declarations of name directly in namespace godot
-// in the header src, as scanCppDecls finds them.
-func scanCppDocs(src, name string) []cppDoc {
+// scanCppDocs returns the declarations of name directly in namespace ns in
+// the header src, as scanCppDecls finds them.
+func scanCppDocs(src, ns, name string) []cppDoc {
 	tokens, spans := tokenizeCpp(src)
 	h := cppSource{src, tokens, spans}
 	var docs []cppDoc
-	walkCppDecls(tokens, func(d cppDecl, start, end int) {
+	walkCppDecls(tokens, ns, func(d cppDecl, start, end int) {
 		if d.name != name {
 			return
 		}
@@ -763,7 +764,7 @@ func scanGodotNames(roots []Path) []godotName {
 			if strings.HasSuffix(rel, ".inc.hpp") {
 				return // A fragment, included from inside other headers.
 			}
-			for _, d := range scanCppDecls(src) {
+			for _, d := range scanCppDecls(src, "godot") {
 				if _, ok := bases[d.name]; !ok {
 					bases[d.name] = d.base
 					names = append(names, godotName{Name: d.name, Include: "<" + rel + ">", Decl: d.kind, Base: cmp.Or(d.base, d.target)})

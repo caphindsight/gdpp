@@ -4,29 +4,39 @@ import (
 	"cmp"
 	"slices"
 	"strings"
+
+	"gd++/trans"
 )
 
-// CmdDoc prints what godot-cpp declares under a name, like `go doc`: the
+// CmdDoc prints what godot-cpp or the GD++ runtime declares under a name,
+// like `go doc`: the
 // declaration, the header to include, and the public members of a class or
 // the values of an enum, then the members it inherits, by base class. An
 // alias is shown with the type it names. With NAME.MEMBER, it prints the
 // members of that name, looking through aliases and base classes too. Names
-// come from the bindings of a package. godot-cpp's own helpers, e.g.
-// TypedArray, are documented nowhere else, while Godot's help describes the
+// come from the bindings and the runtime header of a package. godot-cpp's own
+// helpers, e.g. TypedArray, are documented nowhere else, while Godot's help describes the
 // engine's classes. Without a name, or with --index, it lists the types
 // instead, with what declares them and their bases.
 type CmdDoc struct {
-	Args  []string `arg:"positional" placeholder:"[PKG] [NAME]" help:"the name to show, e.g. TypedArray or Array.push_back, after a path in the package whose bindings to use [default package: the current directory's]"`
-	Index bool     `arg:"-i,--index" help:"list the types that godot-cpp declares, with their kinds and bases [default: without a name]"`
+	Args  []string `arg:"positional" placeholder:"[PKG] [NAME]" help:"the name to show, e.g. TypedArray, Array.push_back or Ext, after a path in the package whose bindings to use [default package: the current directory's]"`
+	Index bool     `arg:"-i,--index" help:"list the types that godot-cpp and the GD++ runtime declare, with their kinds and bases [default: without a name]"`
 }
 
-// docType is a name that godot-cpp declares, with its declarations, and
-// whether its header was generated from Godot's API spec.
+// docType is a name that godot-cpp or the runtime declares, with its
+// declarations, and where its header comes from: fromGodotCpp, fromRuntime or
+// fromGodotAPI.
 type docType struct {
 	godotName
-	docs      []cppDoc
-	generated bool
+	docs []cppDoc
+	from string
 }
+
+const (
+	fromGodotCpp = "godot-cpp"
+	fromRuntime  = "the GD++ runtime"
+	fromGodotAPI = "the Godot API" // Generated from Godot's API spec.
+)
 
 // isAlias reports whether t is an alias, with no members of its own.
 func (t docType) isAlias() bool {
@@ -44,7 +54,7 @@ func (c *CmdDoc) Run() {
 	root, ok := GetPackageRootMaybe(path)
 	Assert(ok, "Path %s is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`.", path.ToString())
 	pkg := LoadPackage(root)
-	names := packageGodotNames(LoadProject(root), pkg)
+	names := docNames(LoadProject(root), pkg)
 	if index {
 		PageResult(indexText(names))
 		return
@@ -52,8 +62,8 @@ func (c *CmdDoc) Run() {
 	name, member, _ := strings.Cut(c.Args[len(c.Args)-1], ".")
 	if !slices.ContainsFunc(names, func(n godotName) bool { return n.Name == name }) {
 		similar := similarGodotNames(names, name)
-		Assert(len(similar) == 0, "There is no name %s in godot-cpp. Similar names: %s.", name, strings.Join(similar, ", "))
-		LogFatal("There is no name %s in godot-cpp.", name)
+		Assert(len(similar) == 0, "There is no name %s in godot-cpp or the GD++ runtime. Similar names: %s.", name, strings.Join(similar, ", "))
+		LogFatal("There is no name %s in godot-cpp or the GD++ runtime.", name)
 	}
 	chain, types := docChain(pkg, names, name), cppTypes(names)
 	if member != "" {
@@ -95,7 +105,7 @@ func (c *CmdDoc) Run() {
 			result += docInclude(t)
 		}
 		result += "\n" + docText(t, types, inherited, i == k)
-		if t.generated {
+		if t.from == fromGodotAPI {
 			described = t.Name
 		}
 	}
@@ -178,7 +188,7 @@ func highlightCpp(text string, types map[string]bool) string {
 }
 
 // docChain returns the type called name, then the type it aliases or its
-// base class, and so on, as far as godot-cpp declares them.
+// base class, and so on, as far as godot-cpp and the runtime declare them.
 func docChain(pkg Package, names []godotName, name string) []docType {
 	var chain []docType
 	for name != "" && len(chain) < 100 {
@@ -186,10 +196,10 @@ func docChain(pkg Package, names []godotName, name string) []docType {
 		if i < 0 {
 			break
 		}
-		header, generated := godotHeader(pkg, names[i])
-		docs := scanCppDocs(header.ReadString(), name)
-		Assert(len(docs) > 0, "Failed to find the declaration of %s in %s.", name, header.ToString())
-		chain = append(chain, docType{names[i], docs, generated})
+		src, ns, from := docSource(pkg, names[i])
+		docs := scanCppDocs(src, ns, name)
+		Assert(len(docs) > 0, "Failed to find the declaration of %s in %s.", name, names[i].Include)
+		chain = append(chain, docType{names[i], docs, from})
 		next := ""
 		for _, d := range docs {
 			next = cmp.Or(next, d.alias, d.base)
@@ -214,17 +224,44 @@ func similarGodotNames(names []godotName, name string) []string {
 	return similar
 }
 
-// godotHeader returns the header in the package's build cache that declares
-// n, and whether it was generated from Godot's API spec.
-func godotHeader(pkg Package, n godotName) (Path, bool) {
+// docNames returns the names that the package's godot-cpp declares, then
+// those that its runtime header declares in namespace gdpp but godot-cpp
+// doesn't, sorted.
+func docNames(p Project, pkg Package) []godotName {
+	names := packageGodotNames(p, pkg)
+	include, src := runtimeHeader(pkg)
+	for _, d := range scanCppDecls(src, "gdpp") {
+		if !slices.ContainsFunc(names, func(n godotName) bool { return n.Name == d.name }) {
+			names = append(names, godotName{Name: d.name, Include: include, Decl: d.kind, Base: cmp.Or(d.base, d.target)})
+		}
+	}
+	slices.SortStableFunc(names, func(a, b godotName) int { return strings.Compare(a.Name, b.Name) })
+	return names
+}
+
+// runtimeHeader returns the include of the package's runtime header, e.g.
+// "<gd++/syntax_0.hpp>", and its contents.
+func runtimeHeader(pkg Package) (string, string) {
+	name, src, err := trans.RuntimeHeader(pkg.Config.Syntax)
+	Check(err, "Failed to find the GD++ runtime header")
+	return "<" + name + ">", src
+}
+
+// docSource returns the source of the header that declares n, its namespace,
+// and where it comes from: the runtime header, or one in the package's build
+// cache.
+func docSource(pkg Package, n godotName) (string, string, string) {
+	if include, src := runtimeHeader(pkg); n.Include == include {
+		return src, "gdpp", fromRuntime
+	}
 	roots := bindingRoots(pkg)
 	for i, root := range roots {
 		if header := root.Cd(strings.Trim(n.Include, "<>")); header.IsFile() {
-			return header, i == len(roots)-1
+			return header.ReadString(), "godot", map[bool]string{true: fromGodotAPI, false: fromGodotCpp}[i == len(roots)-1]
 		}
 	}
 	LogFatal("Failed to find the header %s, run `gd++ clean` to fix this.", n.Include)
-	return Path{}, false
+	return "", "", ""
 }
 
 // docText returns the declarations of t, each with its comments and public
@@ -250,9 +287,9 @@ func docText(t docType, types map[string]bool, inherited string, last bool) stri
 	return text
 }
 
-// docInclude returns the include line of t.
+// docInclude returns the include line of t, with where it comes from.
 func docInclude(t docType) string {
-	return Styled("#include", CodePreProc) + " " + t.Include + "\n"
+	return Styled("#include", CodePreProc) + " " + t.Include + " " + Styled("// From "+t.from+".", CodeComment) + "\n"
 }
 
 // terminator returns what ends a member of d: "," for an enum's values, ";"
