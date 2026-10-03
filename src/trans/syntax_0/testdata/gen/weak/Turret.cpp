@@ -11,19 +11,24 @@ void Turret::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_target"), &Turret::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Turret::set_target);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Weak<Node3D>>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
+	ClassDB::bind_method(D_METHOD("get_ammo"), &Turret::get_ammo);
+	ClassDB::bind_method(D_METHOD("set_ammo", "value"), &Turret::set_ammo);
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Weak<Resource>>("ammo", PROPERTY_USAGE_NONE), "set_ammo", "get_ammo");
 	ClassDB::add_signal(get_class_static(), MethodInfo("locked", gdpp::info<gdpp::Weak<Node3D>>("on")));
 }
 
 gdpp::Weak<Node3D> Turret::aim(gdpp::Weak<Node3D> at) {
-#line 8 "input.gd++"
+#line 9 "input.gd++"
 
   target = at;
-  if (Node3D *t = target.claim()) {
+  if (Node3D *t = target) {
     look_at(t->get_global_position());
   }
+  Ref<Resource> a = ammo;
+  auto b = gdpp::cast<Ref<Resource>>(ammo);
   return target;
 
-#line 27 "Turret.cpp"
+#line 32 "Turret.cpp"
 }
 
 gdpp::Weak<Node3D> Turret::get_target() const {
@@ -32,6 +37,14 @@ gdpp::Weak<Node3D> Turret::get_target() const {
 
 void Turret::set_target(gdpp::Weak<Node3D> p_value) {
 	target = p_value;
+}
+
+gdpp::Weak<Resource> Turret::get_ammo() const {
+	return ammo;
+}
+
+void Turret::set_ammo(gdpp::Weak<Resource> p_value) {
+	ammo = p_value;
 }
 
 gdpp::Emitted Turret::locked(gdpp::Weak<Node3D> on) {

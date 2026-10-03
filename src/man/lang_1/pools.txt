@@ -93,13 +93,13 @@ A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays va
 var target: Weak[Bullet]
 
 func _process(delta: float) -> void {
-  if (Bullet *b = claim target) {
+  if (Bullet *b = target) {
     look_at(b->get_global_position());
   }
 }
 ```
 
-`claim target` gives the bullet, or `nullptr` once it's returned to its pool or deleted, even if the pool has reused it since. Each pooled object counts how many times it was returned, and a `Weak` remembers the count it saw. `queue_destroy` uses the same check, so a queued destroy never returns a bullet that was reused in the meantime. See "Weak references" in `gd++ man types`.
+`Bullet *b = target` gives the bullet, or `nullptr` once it's returned to its pool or deleted, even if the pool has reused it since. Each pooled object counts how many times it was returned, and a `Weak` remembers the count it saw. `queue_destroy` uses the same check, so a queued destroy never returns a bullet that was reused in the meantime. See "Weak references" in `gd++ man types`.
 
 # Out of the tree
 

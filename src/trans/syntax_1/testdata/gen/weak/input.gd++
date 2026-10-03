@@ -2,13 +2,16 @@ class_name Turret
 extends Node3D
 
 var target: Weak[Node3D]
+var ammo: Weak[Resource]
 
 signal locked(on: Weak[Node3D])
 
 func aim(at: Weak[Node3D]) -> Weak[Node3D] {
   target = at;
-  if (Node3D *t = claim target) {
+  if (Node3D *t = target) {
     look_at(t->get_global_position());
   }
+  Ref<Resource> a = ammo;
+  auto b = ammo as Ref<Resource>;
   return target;
 }

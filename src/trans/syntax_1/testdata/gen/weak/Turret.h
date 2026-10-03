@@ -4,6 +4,7 @@
 
 #include <gd++/syntax_1.hpp>
 #include <godot_cpp/classes/node3d.hpp>
+#include <godot_cpp/classes/resource.hpp>
 
 namespace godot {
 
@@ -13,11 +14,14 @@ class Turret : public Node3D {
 
 public:
 	gdpp::Weak<Node3D> target{};
+	gdpp::Weak<Resource> ammo{};
 
 public:
 	gdpp::Weak<Node3D> aim(gdpp::Weak<Node3D> at);
 	gdpp::Weak<Node3D> get_target() const;
 	void set_target(gdpp::Weak<Node3D> p_value);
+	gdpp::Weak<Resource> get_ammo() const;
+	void set_ammo(gdpp::Weak<Resource> p_value);
 	gdpp::Emitted locked(gdpp::Weak<Node3D> on);
 
 protected:

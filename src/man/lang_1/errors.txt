@@ -127,7 +127,7 @@ Type Suit can't be used in a typed collection.
 Typed collections can't hold Async values.
 An Async can't have an Async result.
 Type Async takes one type argument, the type of its result, e.g. Async[int].
-Weak needs a class that isn't refcounted, like a node, but Resource is refcounted.
+Weak needs a class, but int isn't one.
 Typed collections can't hold Weak values.
 ```
 

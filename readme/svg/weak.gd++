@@ -5,7 +5,7 @@ func lock_on(enemy: Enemy) -> void {
 }
 
 func _process(delta: float) -> void {
-  if (Enemy *e = claim target) {    // null once the enemy is freed
+  if (Enemy *e = target) {    // null once the enemy is freed
     look_at(e->get_global_position());
   }
 }

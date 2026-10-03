@@ -58,8 +58,7 @@ func assertFor(void bool) string {
 // cpp turns user C++ into plain C++:
 //   - `emit f(x);` becomes `(void) f(x);`, which uses the [[nodiscard]] result,
 //   - `rpc x->f(a)` and `rpc(peer) x->f(a)` become `x->_gdpp_rpc_f(0, a)` and `x->_gdpp_rpc_f(peer, a)`,
-//   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x, and
-//     `claim x` also for a Weak x,
+//   - `claim x`, `is_done x` and `cancel x` become `x.claim()`, `x.is_done()` and `x.cancel()`, for an Async x,
 //   - `create T`, `destroy x` and `queue_destroy x` become `gdpp::create<T>()`, `gdpp::destroy(x)` and
 //     `gdpp::queue_destroy(x)`,
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,

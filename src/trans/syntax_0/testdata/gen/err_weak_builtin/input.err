@@ -1,4 +1,4 @@
-input.gd++:4:13: Weak needs a class that isn't refcounted, like a node, but int isn't one.
+input.gd++:4:13: Weak needs a class, but int isn't one.
  4 | var r: Weak[int]
    |             ^^^
-Hint: E.g. Weak[Node3D], or Weak of a GD++ class that extends a node.
+Hint: E.g. Weak[Node3D], Weak[Resource], or Weak of a GD++ class.

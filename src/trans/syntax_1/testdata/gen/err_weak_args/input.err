@@ -1,3 +1,3 @@
-input.gd++:4:8: Type Weak takes one type argument, a class that isn't refcounted, e.g. Weak[Node3D].
+input.gd++:4:8: Type Weak takes one type argument, a class, e.g. Weak[Node3D].
  4 | var r: Weak
    |        ^^^^

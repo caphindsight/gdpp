@@ -1,4 +1,0 @@
-class_name A
-extends Node
-
-var r: Weak[Resource]

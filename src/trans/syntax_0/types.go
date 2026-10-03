@@ -146,24 +146,20 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		"Types are Godot's built-in types and classes, and the package's classes, externs and enums.")
 }
 
-// weak resolves t, a Weak type: a reference to an object of a class that isn't refcounted, which doesn't keep it alive.
+// weak resolves t, a Weak type: a reference to an object of a class, which doesn't keep it alive.
 func (u *unit) weak(t *Type) (*gtype, error) {
 	if len(t.Args) != 1 {
-		return nil, u.errorAt(t.Pos, len(t.Name), "Type Weak takes one type argument, a class that isn't refcounted, e.g. Weak[Node3D].", "")
+		return nil, u.errorAt(t.Pos, len(t.Name), "Type Weak takes one type argument, a class, e.g. Weak[Node3D].", "")
 	}
 	arg := t.Args[0]
 	if _, err := u.resolve(arg, false); err != nil {
 		return nil, err
 	}
-	switch s := u.symbols[arg.Name]; {
-	case s != nil && s.kind == meta.Object:
+	if s := u.symbols[arg.Name]; s != nil && (s.kind == meta.Object || s.kind == meta.RefCounted) {
 		return &gtype{cpp: "gdpp::Weak<" + s.name + ">", doc: s.name, weak: true}, nil
-	case s != nil && s.kind == meta.RefCounted:
-		return nil, u.errorAt(arg.Pos, len(arg.Name), fmt.Sprintf("Weak needs a class that isn't refcounted, like a node, but %s is refcounted.", arg.Name),
-			fmt.Sprintf("A refcounted object lives while something references it: use %s itself.", arg.Name))
 	}
-	return nil, u.errorAt(arg.Pos, len(arg.Name), fmt.Sprintf("Weak needs a class that isn't refcounted, like a node, but %s isn't one.", arg.Name),
-		"E.g. Weak[Node3D], or Weak of a GD++ class that extends a node.")
+	return nil, u.errorAt(arg.Pos, len(arg.Name), fmt.Sprintf("Weak needs a class, but %s isn't one.", arg.Name),
+		"E.g. Weak[Node3D], Weak[Resource], or Weak of a GD++ class.")
 }
 
 // async returns the Async type whose result has type result.

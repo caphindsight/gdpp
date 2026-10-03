@@ -183,7 +183,7 @@ load("res://bullet.tscn")           ResourceLoader::get_singleton()->load("res:/
 scene.instantiate()                 scene->instantiate() as Bullet *
 Bullet.new()                        create Bullet
 bullet.queue_free()                 queue_destroy bullet
-is_instance_valid(enemy)            claim enemy, with enemy a Weak[Enemy]
+is_instance_valid(enemy)            Enemy *e = enemy, with enemy a Weak[Enemy]
 preload(PATH).instantiate()         create Bullet, with @scene(PATH) on Bullet
                                     (and scripts call Bullet.new_scene())
 assert(x > 0)                       assert x > 0;
