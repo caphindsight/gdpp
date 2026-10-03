@@ -373,17 +373,43 @@ constexpr bool returns_void(const char *p_signature) {
 	return true;
 }
 
+// returns_reference reports whether p_signature, a function's GDPP_SIGNATURE, has a return type that's an lvalue
+// reference: the last space before the name has a single '&' next to it.
+constexpr bool returns_reference(const char *p_signature) {
+	const char *space = nullptr;
+	for (int depth = 0; *p_signature && (*p_signature != '(' || depth > 0); p_signature++) {
+		depth += *p_signature == '<' ? 1 : *p_signature == '>' ? -1 : 0;
+		if (*p_signature == ' ' && depth == 0) {
+			space = p_signature;
+		}
+	}
+	return space && ((space[-1] == '&' && space[-2] != '&') || (space[1] == '&' && space[2] != '&'));
+}
+
 // Default is what a failed assertion returns from a function that returns a value: it converts to any type T as T().
 struct Default {
 	template <typename T>
 	operator T() const { return T(); }
 };
 
-// assert_return is what a failed assertion returns, with V true in void functions.
-template <bool V>
+// DefaultRef is what a failed assertion returns from a function that returns a reference: it converts to any T & as
+// a T() that lives on, since the caller may still use it. Default can't do both, since its conversions would be ambiguous.
+struct DefaultRef {
+	template <typename T>
+	operator T &() const {
+		static T fallback{};
+		return fallback;
+	}
+};
+
+// assert_return is what a failed assertion returns, with V true in void functions, and R in those that return a
+// reference.
+template <bool V, bool R>
 auto assert_return() {
 	if constexpr (V) {
 		return;
+	} else if constexpr (R) {
+		return DefaultRef{};
 	} else {
 		return Default{};
 	}
@@ -1297,8 +1323,10 @@ using gdpp::Weak;
 #endif
 
 // GDPP_ASSERT is what `assert condition;` becomes: in debug builds, a failed condition prints an error and returns from
-// the function, with T() in one that returns a T. It tells the two apart by GDPP_SIGNATURE, and without one, doesn't
-// return. GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE do the same in code where GD++ knows the function's return type.
+// the function, with T() in one that returns a T, and a lasting T() in one that returns a T &. It tells them apart by
+// GDPP_SIGNATURE, and without one, doesn't compile. GDPP_ASSERT_VOID, GDPP_ASSERT_VALUE and GDPP_ASSERT_REFERENCE do
+// the same in code where GD++ knows the function's return type, and
+// GDPP_ASSERT_DEDUCED doesn't compile, since no return does in a function whose return type C++ deduces from its value.
 // The error has no function name, since that of generated code, e.g. `_gdpp_body__ready` or a lambda's, would
 // confuse. With GDPP_TRACING, the error is also a trace line, see below. Release builds don't evaluate the condition.
 #define GDPP_TRACE_ASSERT(m_text) ((void)0)
@@ -1318,12 +1346,15 @@ using gdpp::Weak;
 		((void)0)
 #endif
 #ifdef GDPP_SIGNATURE
-#define GDPP_ASSERT(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::assert_return<gdpp::returns_void(GDPP_SIGNATURE)>(), __VA_ARGS__)
+// The parentheses keep the comma from splitting GDPP_ASSERT_'s arguments.
+#define GDPP_ASSERT(m_text, ...) GDPP_ASSERT_(m_text, return (gdpp::assert_return<gdpp::returns_void(GDPP_SIGNATURE), gdpp::returns_reference(GDPP_SIGNATURE)>()), __VA_ARGS__)
 #else
-#define GDPP_ASSERT(m_text, ...) GDPP_ASSERT_(m_text, (void)0, __VA_ARGS__)
+#define GDPP_ASSERT(m_text, ...) static_assert(false, "GD++ can't tell what this function returns on this compiler, so assert can't return from it. Write assert_void or assert_val instead.")
 #endif
 #define GDPP_ASSERT_VOID(m_text, ...) GDPP_ASSERT_(m_text, return, __VA_ARGS__)
 #define GDPP_ASSERT_VALUE(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::Default{}, __VA_ARGS__)
+#define GDPP_ASSERT_REFERENCE(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::DefaultRef{}, __VA_ARGS__)
+#define GDPP_ASSERT_DEDUCED(m_text, ...) static_assert(false, "C++ deduces this function's return type from its returns, so assert can't return from it. Write the return type, e.g. `-> int` for a lambda.")
 
 namespace godot {
 

@@ -1,0 +1,38 @@
+// Definitions outside of a class: constructors, a destructor, methods, and functions with trailing return types.
+namespace {
+struct Grid {
+	Grid(int w);
+	~Grid();
+	int at(int i) const;
+	std::vector<int> cells;
+};
+}
+
+Grid::Grid(int w) : cells(w) {
+	GDPP_ASSERT_VOID("w > 0", w > 0);
+}
+
+Grid::~Grid() {
+	GDPP_ASSERT_VOID("!cells.empty()", !cells.empty());
+}
+
+int Grid::at(int i) const {
+	GDPP_ASSERT("i < int(cells.size())", i < int(cells.size()));
+	return cells[i];
+}
+
+static void fill(Grid &g, int v) {
+	GDPP_ASSERT("v != 0", v != 0);
+	for (auto &c : g.cells) c = v;
+}
+
+auto area(const Grid &g) -> int {
+	GDPP_ASSERT("!g.cells.empty()", !g.cells.empty());
+	return int(g.cells.size());
+}
+
+const auto table = [] {
+	std::array<int, 3> t{};
+	for (int i = 0; i < 3; i++) t[i] = i;
+	return t;
+}();

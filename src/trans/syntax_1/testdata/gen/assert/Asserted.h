@@ -13,7 +13,7 @@ class Asserted : public Node {
 	GDCLASS(Asserted, Node)
 
 private:
-#line 18 "input.gd++"
+#line 21 "input.gd++"
 
   void reset();
 

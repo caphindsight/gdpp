@@ -1,0 +1,11 @@
+// Lambdas right after a macro call, and after an object-like macro.
+#define FIRST(x) (void)(x),
+#define DECAY +
+auto g = (FIRST(1) [&]() -> int {
+	GDPP_ASSERT_VALUE("true", true);
+	return 1;
+});
+auto h = DECAY [](int x) -> int { GDPP_ASSERT_VALUE("x", x); return x; };
+GDPP_ASSERT_VOID("g() == h(1)", g() == h(1));
+#undef FIRST
+#undef DECAY

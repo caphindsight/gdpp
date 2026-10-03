@@ -1,0 +1,16 @@
+// Void lambdas in a function that returns a value.
+int total = 0;
+std::vector<std::function<void(int)>> handlers;
+handlers.push_back([&](int x) { GDPP_ASSERT_VOID("x >= 0", x >= 0); total += x; });
+handlers.push_back([&](int x) -> void {
+	if (x > 10) {
+		GDPP_ASSERT_VOID("total < 100", total < 100);
+		return;
+	}
+	total -= x;
+});
+for (auto &h : handlers) {
+	h(1);
+}
+GDPP_ASSERT_VALUE("total == 0", total == 0);
+return total;

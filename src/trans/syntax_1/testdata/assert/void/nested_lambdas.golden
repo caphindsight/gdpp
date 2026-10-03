@@ -1,0 +1,16 @@
+// A lambda that returns a lambda, which holds a void lambda.
+auto make = [](int base) -> std::function<int(int)> {
+	GDPP_ASSERT_VALUE("base >= 0", base >= 0);
+	return [base](int x) -> int {
+		GDPP_ASSERT_VALUE("x != base", x != base);
+		auto check = [&] {
+			GDPP_ASSERT_VOID("x > 0", x > 0);
+			if (x > 100) {
+				return;
+			}
+		};
+		check();
+		return x + base;
+	};
+};
+GDPP_ASSERT_VOID("make(1)(2) == 3", make(1)(2) == 3);

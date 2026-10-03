@@ -1,0 +1,6 @@
+// Lambdas in ternaries and in assertions' conditions, next to subscripts.
+std::map<int, int> m{{1, 2}};
+auto pick = true ? +[](int x) -> int { GDPP_ASSERT_VALUE("x", x); return x; } : +[](int x) -> int { GDPP_ASSERT_VALUE("!x", !x); return 0; };
+GDPP_ASSERT_VALUE("std::all_of(m.begin(), m.end(), [](auto &kv) { return kv.second > kv.first; })", std::all_of(m.begin(), m.end(), [](auto &kv) { return kv.second > kv.first; }));
+GDPP_ASSERT_VALUE("([&] { return m[1] == 2; })()", ([&] { return m[1] == 2; })());
+return pick(m[1]) + m.at(1);

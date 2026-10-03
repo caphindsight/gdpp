@@ -2,6 +2,7 @@ package syntax_0
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/alecthomas/participle/v2/lexer"
@@ -39,12 +40,15 @@ func (w *writer) String() string {
 	return w.sb.String()
 }
 
-// The runtime's macros that assertions become: assertVoid and assertValue return from a function whose return type is void
-// or not, and assertAny from any function, finding out which by its signature.
+// The runtime's macros that assertions become: assertVoid, assertValue and assertReference return from a function whose
+// return type is void, a value or a reference, and assertAny from any function, finding out which by its signature.
+// assertDeduced fails to compile, with an explanation, since no return compiles where it's used.
 const (
-	assertVoid  = "GDPP_ASSERT_VOID"
-	assertValue = "GDPP_ASSERT_VALUE"
-	assertAny   = "GDPP_ASSERT"
+	assertVoid      = "GDPP_ASSERT_VOID"
+	assertValue     = "GDPP_ASSERT_VALUE"
+	assertReference = "GDPP_ASSERT_REFERENCE"
+	assertAny       = "GDPP_ASSERT"
+	assertDeduced   = "GDPP_ASSERT_DEDUCED"
 )
 
 // assertFor returns the assert macro for code in a function that returns void or not.
@@ -65,6 +69,8 @@ func assertFor(void bool) string {
 //   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`,
 //   - `assert x;` becomes `GDPP_ASSERT("x", x);`, where assert names the macro, e.g. GDPP_ASSERT_VOID in a void function,
+//     and a lambda's own return type picks it in the lambda (see assertMacros), while the fallbacks `assert_void x;`
+//     and `assert_val x;` always become GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE,
 //   - a `,` before `)` is dropped, so calls may end with a trailing comma.
 func cpp(code, assert string) string {
 	lex, err := gdppLexer.LexString("", code)
@@ -83,6 +89,7 @@ func cpp(code, assert string) string {
 	for _, t := range ts {
 		out = append(out, t.Value)
 	}
+	macros := assertMacros(ts, assert)
 	for i := 0; i < len(ts); i++ {
 		if isPunct(ts[i], ",") {
 			if j := skipSpace(ts, i+1); j < len(ts) && isPunct(ts[j], ")") {
@@ -125,7 +132,11 @@ func cpp(code, assert string) string {
 				}
 			}
 			text := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(strings.Join(strings.Fields(sb.String()), " "))
-			out[i], out[semi] = assert+`("`+text+`", `, ");"
+			macro := macros[i]
+			if m := assertKeywords[ts[i].Value]; m != "" {
+				macro = m
+			}
+			out[i], out[semi] = macro+`("`+text+`", `, ");"
 			i = cond - 1 // The condition may hold more rewrites.
 			continue
 		}
@@ -315,7 +326,7 @@ func asCast(ts []lexer.Token, i int) (start, typeEnd int, ok bool) {
 // exprWords are the C++ words that an expression may follow, which `as` doesn't apply to.
 var exprWords = map[string]bool{"return": true, "if": true, "while": true, "for": true, "switch": true, "catch": true,
 	"throw": true, "case": true, "else": true, "do": true, "co_return": true, "co_yield": true, "co_await": true,
-	"new": true, "delete": true, "and": true, "or": true, "not": true, "assert": true}
+	"new": true, "delete": true, "and": true, "or": true, "not": true, "assert": true, "assert_void": true, "assert_val": true}
 
 // templateEnd returns the end of the template arguments that start with the '<' at ts[open], or open if they aren't
 // template arguments, e.g. in `n < limit && m > 0`.
@@ -378,7 +389,7 @@ func closing(ts []lexer.Token, open int) int {
 // expression, so `s.assert(x);` and `assert = 1;` aren't assertions. It returns the index where cond starts and
 // the index of the ';'.
 func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
-	if ts[i].Type != tokIdent || ts[i].Value != "assert" {
+	if _, found := assertKeywords[ts[i].Value]; ts[i].Type != tokIdent || !found {
 		return
 	}
 	p := prevToken(ts, i)
@@ -403,6 +414,257 @@ func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
 		}
 	}
 	return
+}
+
+// assertKeywords are the words that start an assertion, and the macros that the fallbacks always become.
+var assertKeywords = map[string]string{"assert": "", "assert_void": assertVoid, "assert_val": assertValue}
+
+// assertMacros returns the assert macro for each token of ts, in code where assert is the macro. Compilers' signatures
+// of lambdas lack the return type, so in a lambda, it's GDPP_ASSERT_REFERENCE if the lambda returns a reference,
+// GDPP_ASSERT_VALUE if it returns another type than void, else GDPP_ASSERT_VOID. Among declarations, i.e. where assert
+// is GDPP_ASSERT, and in local classes, a function's body gets GDPP_ASSERT, which reads the signature, but a
+// constructor's or destructor's gets GDPP_ASSERT_VOID, since C++ forbids GDPP_ASSERT's `return EXPRESSION;` there. In
+// a lambda or function whose return type C++ deduces and that returns a value, no return compiles, so it's
+// GDPP_ASSERT_DEDUCED, which explains that.
+func assertMacros(ts []lexer.Token, assert string) []string {
+	macros := make([]string, len(ts))
+	decls := make([]bool, len(ts)) // Whether the token is among declarations, rather than statements.
+	owners := make([]int, len(ts)) // The '{' of the innermost lambda's or function's body around the token, or -1.
+	for i := range ts {
+		macros[i], decls[i], owners[i] = assert, assert == assertAny, -1
+	}
+	type lambda struct {
+		macro   string
+		deduced bool
+	}
+	lambdas := map[int]lambda{} // The '{' of each lambda's body, and its return type.
+	for i := range ts {
+		if open, macro, deduced, ok := lambdaBody(ts, i); ok {
+			lambdas[open] = lambda{macro, deduced}
+		}
+	}
+	deduced := map[int]bool{} // The '{' of each body of a lambda or function whose return type C++ deduces.
+	// Outer blocks come first, so inner ones overwrite them.
+	for open := range ts {
+		if !isPunct(ts[open], "{") {
+			continue
+		}
+		macro, inDecls, owner := macros[open], false, open
+		kind := blockKind(ts, open)
+		switch l, isLambda := lambdas[open]; {
+		case isLambda:
+			macro, deduced[open] = l.macro, l.deduced
+		case kind == "class":
+			inDecls, owner = true, owners[open]
+		case kind == "ctor" && decls[open]:
+			macro = assertVoid
+		case (kind == "func" || kind == "deduced") && decls[open]:
+			macro, deduced[open] = assertAny, kind == "deduced"
+		default: // A block of statements, or an initializer.
+			continue
+		}
+		for j, end := open+1, groupEnd(ts, open); j < end; j++ {
+			macros[j], decls[j], owners[j] = macro, inDecls, owner
+		}
+	}
+	valued := map[int]bool{} // The '{' of each body of a lambda or function that returns a value.
+	for j, t := range ts {
+		if k := skipSpace(ts, j+1); t.Type == tokIdent && t.Value == "return" && k < len(ts) && !isPunct(ts[k], ";") {
+			valued[owners[j]] = true
+		}
+	}
+	for j, owner := range owners {
+		if deduced[owner] && valued[owner] {
+			macros[j] = assertDeduced
+		}
+	}
+	return macros
+}
+
+// lambdaBody matches a lambda at ts[i], `[captures]<template>(params) specifiers -> T {body}` where all but the
+// captures and body are optional. It returns the index of the body's '{', the assert macro for T, and whether C++
+// deduces T, without T or with `auto`. Subscripts, e.g. `a[i]` or `FOO(x)[i]`, don't match, since no body follows them.
+func lambdaBody(ts []lexer.Token, i int) (open int, macro string, deduced, ok bool) {
+	if !isPunct(ts[i], "[") {
+		return
+	}
+	// Not an attribute, `[[nodiscard]]`, nor `operator[]`, `new[]` or `delete[]`.
+	if p := prevToken(ts, i); p >= 0 && (isPunct(ts[p], "[") || ts[p].Type == tokIdent &&
+		(ts[p].Value == "operator" || ts[p].Value == "new" || ts[p].Value == "delete")) {
+		return
+	}
+	if n := skipSpace(ts, i+1); n < len(ts) && isPunct(ts[n], "[") {
+		return
+	}
+	j := closing(ts, i) + 1
+	if k := skipSpace(ts, j); k < len(ts) && isPunct(ts[k], "<") {
+		j = groupEnd(ts, k)
+	}
+	ret := -1 // Where T starts.
+	for ; j < len(ts); j++ {
+		switch {
+		case isPunct(ts[j], "{"):
+			var words []string // T's.
+			for k := ret; ret >= 0 && k < j; k++ {
+				if ts[k].Type != tokWhitespace && ts[k].Type != tokNewline && !isComment(ts[k]) {
+					words = append(words, ts[k].Value)
+				}
+			}
+			n := len(words)
+			switch {
+			case n == 0 || slices.Contains(words, "auto"):
+				return j, assertVoid, true, true
+			case n == 1 && words[0] == "void":
+				return j, assertVoid, false, true
+			case words[n-1] == "&" && (n == 1 || words[n-2] != "&"):
+				return j, assertReference, false, true
+			}
+			return j, assertValue, false, true
+		case isPunct(ts[j], "(") || isPunct(ts[j], "["):
+			j = closing(ts, j)
+		case isPunct(ts[j], ";") || isPunct(ts[j], "}") || isPunct(ts[j], ")") || isPunct(ts[j], "]"):
+			return
+		case ret >= 0:
+		case isPunct(ts[j], "->"):
+			ret = j + 1
+		case !isOneOf(ts[j], "Ident", "Whitespace", "Newline") && !isComment(ts[j]):
+			return
+		}
+	}
+	return
+}
+
+// blockKind tells what the block that starts with the '{' at ts[open] is, from its header, the code before it:
+// "class" for the body of a class, struct, union, enum or namespace, "ctor" for that of a constructor or destructor,
+// "deduced" for that of a function whose return type C++ deduces, "func" for that of another function, and "" for
+// anything else, e.g. a block of statements or an initializer.
+func blockKind(ts []lexer.Token, open int) string {
+	// The header starts after the previous statement or access specifier. It may hold the brace initializers of a
+	// constructor's initializer list, e.g. `b{2}` in `X() : a(1), b{2} {`.
+	start := 0
+	for j := prevToken(ts, open); j >= 0; j = prevToken(ts, j) {
+		if isPunct(ts[j], ")") || isPunct(ts[j], "]") {
+			if j = opening(ts, j); j < 0 {
+				break
+			}
+			continue
+		}
+		if isPunct(ts[j], "}") {
+			if o := braceOpening(ts, j); o >= 0 {
+				if p := prevToken(ts, o); p >= 0 && ts[p].Type == tokIdent {
+					if q := prevToken(ts, p); q >= 0 && (isPunct(ts[q], ",") || isPunct(ts[q], ":")) {
+						j = o
+						continue
+					}
+				}
+			}
+		}
+		access := isPunct(ts[j], ":") && j > 0 && ts[j-1].Type == tokIdent &&
+			(ts[j-1].Value == "public" || ts[j-1].Value == "protected" || ts[j-1].Value == "private")
+		if isPunct(ts[j], ";") || isPunct(ts[j], "{") || isPunct(ts[j], "}") || access {
+			start = j + 1
+			break
+		}
+	}
+	var ws []lexer.Token // The header's words.
+	for _, t := range ts[start:open] {
+		if t.Type != tokWhitespace && t.Type != tokNewline && !isComment(t) {
+			ws = append(ws, t)
+		}
+	}
+	// Drop `template <...>` and attributes, `[[...]]`.
+	for len(ws) > 1 && (ws[0].Value == "template" && isPunct(ws[1], "<") || isPunct(ws[0], "[") && isPunct(ws[1], "[")) {
+		ws = ws[groupEnd(ws, 1):]
+	}
+	if len(ws) == 0 {
+		return ""
+	}
+	switch ws[0].Value {
+	case "class", "struct", "union", "enum", "namespace", "typedef":
+		return "class"
+	case "extern":
+		if len(ws) > 1 && ws[1].Type == tokString {
+			return "class"
+		}
+	}
+	// The function's parameters are the last brackets before its initializer list or trailing return type, that
+	// follow a name, e.g. not noexcept's.
+	paren, trailing := -1, false
+	for k := 0; k < len(ws); k++ {
+		init := paren >= 0 && isPunct(ws[k], ":") && !isPunct(ws[k-1], ":") && (k+1 == len(ws) || !isPunct(ws[k+1], ":"))
+		if trailing = isPunct(ws[k], "->"); trailing || init {
+			break
+		}
+		if ws[k].Type == tokIdent && ws[k].Value == "operator" {
+			return "func"
+		}
+		if isPunct(ws[k], "(") {
+			if k > 0 && ws[k-1].Type == tokIdent && !specifierWords[ws[k-1].Value] {
+				paren = k
+			}
+			k = groupEnd(ws, k) - 1
+		}
+	}
+	if paren < 0 {
+		return ""
+	}
+	name := ws[paren-1].Value
+	if paren >= 2 && isPunct(ws[paren-2], "~") ||
+		paren >= 4 && isPunct(ws[paren-2], ":") && isPunct(ws[paren-3], ":") && ws[paren-4].Value == name {
+		return "ctor"
+	}
+	var ret []string // The return type, without specifiers.
+	for _, t := range ws[:paren-1] {
+		if !specifierWords[t.Value] || t.Value == "decltype" {
+			ret = append(ret, t.Value)
+		}
+	}
+	switch strings.Join(ret, "") {
+	case "":
+		return "ctor"
+	case "auto", "decltype(auto)":
+		if !trailing {
+			return "deduced"
+		}
+	}
+	return "func"
+}
+
+// specifierWords are the words that may come before a constructor's name, or a bracket after a function's parameters.
+var specifierWords = map[string]bool{"inline": true, "explicit": true, "constexpr": true, "consteval": true,
+	"virtual": true, "static": true, "friend": true, "noexcept": true, "throw": true, "requires": true,
+	"alignas": true, "decltype": true, "__attribute__": true, "__declspec": true}
+
+// groupEnd returns the index after the bracket that closes the one at ts[open], counting only that kind of bracket,
+// or len(ts) if there's none.
+func groupEnd(ts []lexer.Token, open int) int {
+	closer := map[string]string{"(": ")", "[": "]", "{": "}", "<": ">"}[ts[open].Value]
+	depth := 0
+	for j := open; j < len(ts); j++ {
+		if isPunct(ts[j], ts[open].Value) {
+			depth++
+		} else if isPunct(ts[j], closer) {
+			if depth--; depth == 0 {
+				return j + 1
+			}
+		}
+	}
+	return len(ts)
+}
+
+// braceOpening returns the index of the '{' that the '}' at ts[close] closes, or -1 if there's none.
+func braceOpening(ts []lexer.Token, close int) int {
+	depth := 0
+	for j := close; j >= 0; j-- {
+		if isPunct(ts[j], "}") {
+			depth++
+		} else if isPunct(ts[j], "{") {
+			if depth--; depth == 0 {
+				return j
+			}
+		}
+	}
+	return -1
 }
 
 // rpcTarget matches an RPC call at ts[i], `rpc x->f(` or `rpc(peer) x->f(`. It returns the peer's tokens (nil

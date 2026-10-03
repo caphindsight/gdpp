@@ -20,6 +20,8 @@ destroy OBJECT                 gdpp::destroy(OBJECT)              delete an obje
 queue_destroy NODE             gdpp::queue_destroy(NODE)          destroy a node at the end of the frame
 VALUE as T                     gdpp::cast<T>(VALUE)               convert a value to the type T, see `gd++ man cast`
 assert COND;                   GDPP_ASSERT("COND", COND);         check what must be true, see below
+assert_void COND;              GDPP_ASSERT_VOID("COND", COND);    the fallbacks of assert, see below
+assert_val COND;               GDPP_ASSERT_VALUE("COND", COND);
 ```
 
 # Why
@@ -37,7 +39,7 @@ Rewrites only happen in C++ code, never in comments or strings. Each rewrite app
 - `is_done`, `claim` and `cancel` are only rewritten when a name follows them. Elsewhere they're left alone, e.g. a variable named `claim`, or the call `task.is_done()`.
 - `create`, `destroy` and `queue_destroy` are only rewritten when a name follows them, and aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
 - `as` is only rewritten when a value comes before it and a type after it.
-- `assert` is only rewritten where it starts a statement, and a condition and then a `;` follow it. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere it's left alone, e.g. in `s.assert(x);` or `assert = 1;`.
+- `assert`, `assert_void` and `assert_val` are only rewritten where they start a statement, and a condition and then a `;` follow it. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere they're left alone, e.g. in `s.assert(x);` or `assert = 1;`.
 
 Avoid the names of all rewrites as names in your C++ code. Their operands:
 
@@ -77,7 +79,27 @@ In release builds, assertions are gone: the condition isn't evaluated, and the c
 
 C++'s own `assert(x);` is an assertion too: GD++ rewrites it like `assert x;`. So GD++ code never uses the `assert` macro of `<cassert>`.
 
-GD++ turns an assertion into a call of one of the runtime's macros, which gets the condition's text too. In functions, getters, setters and other code that GD++ wraps in a function, GD++ knows what the code returns, and picks `GDPP_ASSERT_VOID` or `GDPP_ASSERT_VALUE`, e.g. `GDPP_ASSERT_VOID("target != nullptr", target != nullptr);`. In `decl` and `impl` blocks, it doesn't, so it uses `GDPP_ASSERT`, which finds out from the function's signature at compile time. There, an assertion doesn't compile in a constructor or destructor, or in a lambda that returns a value. With a compiler other than GCC, Clang or MSVC, `GDPP_ASSERT` only prints the error, and doesn't return.
+GD++ turns an assertion into a call of one of the runtime's macros, which gets the condition's text too, e.g. `GDPP_ASSERT_VOID("target != nullptr", target != nullptr);`. The macro depends on what the code around the assertion returns, since its `return` must match: `return;` in a function that returns `void`, a value in one that returns a value. GD++ tries hard to work this out, so that `assert` just works:
+
+- In functions, getters, setters and other code that GD++ wraps in a function, GD++ knows what the code returns.
+- In a lambda, GD++ reads the lambda's return type, e.g. `-> int`, `-> int &` or `-> void`. A lambda without one returns `void`.
+- In a constructor or destructor, in `decl` and `impl` blocks or in a class within a function, GD++ knows that it returns nothing.
+- In other functions in `decl` and `impl` blocks or in a class within a function, the runtime's `GDPP_ASSERT` finds out from the function's signature at compile time.
+
+# Where C++ gets in the way
+
+A few cases are impossible to get right, because of how C++ works:
+
+- A lambda or function without a return type, e.g. `[](int x) { return x * 2; }` or `auto twice(int x) { ... }`, gets its type from its `return` statements. An assertion's `return` would need a value of that type, and the code can't name it. So an assertion there doesn't compile, and the error says to write the return type, e.g. `[](int x) -> int { ... }`. This is only a problem if it returns a value: a lambda without a return type that returns nothing is fine.
+- GD++ reads C++ code before the preprocessor does, so it can't see a lambda that a macro writes, e.g. `CALLBACK(int x) { ... }` with `#define CALLBACK(...) [&](__VA_ARGS__)`. An assertion there returns like the code around the lambda, which may not compile.
+- `GDPP_ASSERT` needs a compiler that tells it the function's signature: GCC, Clang or MSVC. With another one, an assertion where `GDPP_ASSERT` is used doesn't compile, and the error says what to do.
+
+As a last resort for the last two cases, `assert_void COND;` and `assert_val COND;` are like `assert COND;`, but always return as from a function that returns `void` or a value. Use them only where `assert` doesn't work:
+
+```gd++
+#define CALLBACK(...) [&](__VA_ARGS__)
+auto print = CALLBACK(int x) { assert_void x != 0; };
+```
 
 # Trailing commas
 

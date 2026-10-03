@@ -1,0 +1,10 @@
+// Captures with brackets, braces and calls in them.
+std::vector<int> items{1, 2, 3};
+auto first = [v = std::vector<int>{items[0], items[1]}, &items, n = items.size()]() mutable -> int {
+	GDPP_ASSERT_VALUE("n == items.size()", n == items.size());
+	GDPP_ASSERT_VALUE("v[0] == 1", v[0] == 1);
+	return v[1];
+};
+auto none = [x = std::map<int, int>{{1, 2}}] { GDPP_ASSERT_VOID("x.at(1) == 2", x.at(1) == 2); };
+none();
+GDPP_ASSERT_VOID("first() == 2", first() == 2);

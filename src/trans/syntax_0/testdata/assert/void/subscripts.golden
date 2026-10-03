@@ -1,0 +1,16 @@
+// Subscripts, which look like lambdas' captures, before blocks, braces, macros and structured bindings.
+#define IDENTITY(x) (x)
+int grid[3][3] = {};
+std::map<std::string, std::vector<int>> m{{"a", {1, 2}}};
+GDPP_ASSERT_VOID("grid[1][2] == 0", grid[1][2] == 0);
+if (m["a"][0]) {
+	GDPP_ASSERT_VOID("m[\"a\"][1] == 2", m["a"][1] == 2);
+}
+int arr[2] {grid[0][0], grid[2][2]};
+for (auto &[key, values] : m) {
+	GDPP_ASSERT_VOID("!values.empty() && key[0] == 'a'", !values.empty() && key[0] == 'a');
+}
+GDPP_ASSERT_VOID("IDENTITY(arr)[1] == 0", IDENTITY(arr)[1] == 0);
+int *heap = new int[2]{arr[0], arr[1]};
+delete[] heap;
+#undef IDENTITY

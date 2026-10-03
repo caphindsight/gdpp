@@ -1,0 +1,11 @@
+// Return types that are hard to read: templates, pointers, references, and specifiers before them.
+auto pair = [](int a) -> std::pair<int, std::vector<int>> { GDPP_ASSERT_VALUE("a", a); return {a, {}}; };
+auto ptr = [](int *p) -> int * { GDPP_ASSERT_VALUE("p", p); return p; };
+auto ref = [](int &r) -> int & { GDPP_ASSERT_REFERENCE("r", r); return r; };
+auto vp = [](void *p) -> void * { GDPP_ASSERT_VALUE("p", p); return p; };
+auto vv = [](int x) -> void { GDPP_ASSERT_VOID("x", x); };
+auto qual = [](int x) mutable noexcept -> std::size_t { GDPP_ASSERT_VALUE("x", x); return 0; };
+auto tmpl = []<typename A, typename B>(A a, B b) -> bool { GDPP_ASSERT_VALUE("a == b", a == b); return true; };
+int one = 1;
+GDPP_ASSERT_VOID("pair(1).first == *ptr(&one) && ref(one) == 1 && vp(&one) && qual(1) == 0 && tmpl(1, 1)", pair(1).first == *ptr(&one) && ref(one) == 1 && vp(&one) && qual(1) == 0 && tmpl(1, 1));
+vv(1);

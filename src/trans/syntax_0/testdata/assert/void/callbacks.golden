@@ -1,0 +1,10 @@
+// Lambdas that return values, passed to algorithms from a function that returns void.
+std::vector<int> v = {3, 1, 2};
+GDPP_ASSERT_VOID("!v.empty()", !v.empty());
+std::sort(v.begin(), v.end(), [](int a, int b) -> bool {
+	GDPP_ASSERT_VALUE("a != b", a != b);
+	return a < b;
+});
+auto sum = std::accumulate(v.begin(), v.end(), 0, [&](int acc, int x) -> int { GDPP_ASSERT_VALUE("x > 0", (x > 0)); return acc + x; });
+std::for_each(v.begin(), v.end(), [&](int x) { GDPP_ASSERT_VOID("x <= sum", x <= sum); });
+GDPP_ASSERT_VOID("sum == 6", sum == 6);

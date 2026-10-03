@@ -98,7 +98,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Debugging: `@trace` prints calls and changes, and `@profile` times code. See `gd++ man debugging`.
 - Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: `decl`, `impl` and `@global` blocks. See `gd++ man code`.
-- Rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, GD++'s few additions to C++ code. See `gd++ man rewrites`.
+- Rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`, GD++'s few additions to C++ code. See `gd++ man rewrites`.
 - Includes: automatic, with `import` and `noimport` to adjust them. See `gd++ man includes`.
 - Doc comments: `///` and `/** */`, which become the editor's help. See `gd++ man docs`.
 

@@ -1,6 +1,11 @@
 package syntax_1
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestCpp(t *testing.T) {
 	for code, want := range map[string]string{
@@ -37,15 +42,17 @@ func TestCpp(t *testing.T) {
 		"destroy this->items[i]; destroy\n  b;":                     "gdpp::destroy(this->items[i]); gdpp::destroy(\n  b);",
 		"queue_destroy this; queue_destroy b->c; p->queue_destroy x; queue_destroy(x);": "gdpp::queue_destroy(this); gdpp::queue_destroy(b->c); p->queue_destroy x; queue_destroy(x);",
 		"destroy(x); s.destroy x; destroy = 1; destroy f(create A);":                    "destroy(x); s.destroy x; destroy = 1; gdpp::destroy(f(gdpp::create<A>()));",
-		"assert child != nullptr;":                                   `GDPP_ASSERT("child != nullptr", child != nullptr);`,
-		"if (a) assert x; else { assert y; }":                        `if (a) GDPP_ASSERT("x", x); else { GDPP_ASSERT("y", y); }`,
-		"assert a &&\n  b;":                                          "GDPP_ASSERT(\"a && b\", a &&\n  b);",
-		"assert x as int > 0;":                                       `GDPP_ASSERT("x as int > 0", gdpp::cast<int>(x) > 0);`,
-		`assert f<A, B>(s) == "\\";`:                                 `GDPP_ASSERT("f<A, B>(s) == \"\\\\\"", f<A, B>(s) == "\\");`,
-		"assert all([](int x) { return x; });":                       `GDPP_ASSERT("all([](int x) { return x; })", all([](int x) { return x; }));`,
-		"assert !done; assert *p; assert(a || b);":                   `GDPP_ASSERT("!done", !done); GDPP_ASSERT("*p", *p); GDPP_ASSERT("a || b", (a || b));`,
-		"assert (a)(b); assert (a) || (b);":                          `GDPP_ASSERT("(a)(b)", (a)(b)); GDPP_ASSERT("(a) || (b)", (a) || (b));`,
-		"s.assert(x); assert = 1; assert; assert *= 2; f(assert x);": "s.assert(x); assert = 1; assert; assert *= 2; f(assert x);",
+		"assert child != nullptr;":                                                         `GDPP_ASSERT("child != nullptr", child != nullptr);`,
+		"if (a) assert x; else { assert y; }":                                              `if (a) GDPP_ASSERT("x", x); else { GDPP_ASSERT("y", y); }`,
+		"assert a &&\n  b;":                                                                "GDPP_ASSERT(\"a && b\", a &&\n  b);",
+		"assert x as int > 0;":                                                             `GDPP_ASSERT("x as int > 0", gdpp::cast<int>(x) > 0);`,
+		`assert f<A, B>(s) == "\\";`:                                                       `GDPP_ASSERT("f<A, B>(s) == \"\\\\\"", f<A, B>(s) == "\\");`,
+		"assert all([](int x) { return x; });":                                             `GDPP_ASSERT("all([](int x) { return x; })", all([](int x) { return x; }));`,
+		"assert !done; assert *p; assert(a || b);":                                         `GDPP_ASSERT("!done", !done); GDPP_ASSERT("*p", *p); GDPP_ASSERT("a || b", (a || b));`,
+		"assert (a)(b); assert (a) || (b);":                                                `GDPP_ASSERT("(a)(b)", (a)(b)); GDPP_ASSERT("(a) || (b)", (a) || (b));`,
+		"s.assert(x); assert = 1; assert; assert *= 2; f(assert x);":                       "s.assert(x); assert = 1; assert; assert *= 2; f(assert x);",
+		"assert_void x; assert_val(y); [] { assert_val z; };":                              `GDPP_ASSERT_VOID("x", x); GDPP_ASSERT_VALUE("y", (y)); [] { GDPP_ASSERT_VALUE("z", z); };`,
+		"s.assert_void(x); assert_val = 1; f(assert_void x);":                              "s.assert_void(x); assert_val = 1; f(assert_void x);",
 		"x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;": "x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;",
 	} {
 		if got := cpp(code, assertAny); got != want {
@@ -54,5 +61,51 @@ func TestCpp(t *testing.T) {
 	}
 	if got, want := cpp("assert x;", assertVoid), `GDPP_ASSERT_VOID("x", x);`; got != want {
 		t.Errorf("cpp with GDPP_ASSERT_VOID = %q, want %q", got, want)
+	}
+	// In a lambda, its own return type picks the macro.
+	for code, want := range map[string]string{
+		"f([&] { assert x; }); assert y;":                          `f([&] { GDPP_ASSERT_VOID("x", x); }); GDPP_ASSERT_VALUE("y", y);`,
+		"auto g = [](int a) mutable -> int { assert a; };":         `auto g = [](int a) mutable -> int { GDPP_ASSERT_VALUE("a", a); };`,
+		"return [=]() -> void { assert a; };":                      `return [=]() -> void { GDPP_ASSERT_VOID("a", a); };`,
+		"[]() -> std::pair<A, B> { [] { assert a; }; assert b; };": `[]() -> std::pair<A, B> { [] { GDPP_ASSERT_VOID("a", a); }; GDPP_ASSERT_VALUE("b", b); };`,
+		"a[i]; delete[] p; [[nodiscard]] int f() { assert a; }":    `a[i]; delete[] p; [[nodiscard]] int f() { GDPP_ASSERT_VALUE("a", a); }`,
+	} {
+		if got := cpp(code, assertValue); got != want {
+			t.Errorf("cpp(%q) = %q, want %q", code, got, want)
+		}
+	}
+	if got, want := cpp("f([&]() -> int { assert x; return 1; });", assertVoid), `f([&]() -> int { GDPP_ASSERT_VALUE("x", x); return 1; });`; got != want {
+		t.Errorf("cpp with GDPP_ASSERT_VOID = %q, want %q", got, want)
+	}
+}
+
+// TestAssertMacros rewrites the C++ code in each testdata/assert/<context>/<case>.cpp as code in its context: the body
+// of a function that returns void or a value, or a decl or impl block. It compares the result with <case>.golden.
+func TestAssertMacros(t *testing.T) {
+	contexts := map[string]string{"void": assertVoid, "value": assertValue, "decl": assertAny, "impl": assertAny}
+	inputs, _ := filepath.Glob("testdata/assert/*/*.cpp")
+	if len(inputs) == 0 {
+		t.Fatal("No cases in testdata/assert.")
+	}
+	for _, input := range inputs {
+		t.Run(strings.TrimPrefix(input, "testdata/assert/"), func(t *testing.T) {
+			data, err := os.ReadFile(input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := cpp(string(data), contexts[filepath.Base(filepath.Dir(input))])
+			golden := strings.TrimSuffix(input, ".cpp") + ".golden"
+			if *update {
+				if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if want, err := os.ReadFile(golden); err != nil {
+				t.Errorf("Missing golden %s:\n%s", golden, got)
+			} else if string(want) != got {
+				t.Errorf("%s mismatch.\n--- got:\n%s\n--- want:\n%s", golden, got, want)
+			}
+		})
 	}
 }

@@ -1,0 +1,14 @@
+// Functions whose return type C++ deduces: those that return a value fail with an explanation.
+auto twice(int x) {
+	GDPP_ASSERT_DEDUCED("x > 0", x > 0);
+	return x * 2;
+}
+
+decltype(auto) first(std::vector<int> &v) {
+	GDPP_ASSERT_DEDUCED("!v.empty()", !v.empty());
+	return v[0];
+}
+
+auto nothing(int x) {
+	GDPP_ASSERT("x", x);
+}

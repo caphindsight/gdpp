@@ -1,0 +1,12 @@
+// Brackets in strings and comments, and comments in a lambda's header.
+const char *s = "[&] { assert x; }";
+char open = '[';
+auto f = [&]() -> /* the type */ void { GDPP_ASSERT_VOID("s[0] == open", s[0] == open); };
+auto g = [&]() // returns a value
+	-> int {
+	GDPP_ASSERT_VALUE("*s", *s); // [] { }
+	return 1;
+};
+/* [&] { assert false; } */
+f();
+GDPP_ASSERT_VOID("g() == 1", g() == 1);

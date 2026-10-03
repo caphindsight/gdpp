@@ -20,18 +20,21 @@ int64_t Asserted::fire(int64_t count) {
   GDPP_ASSERT_VALUE("target != nullptr", target != nullptr);
   GDPP_ASSERT_VALUE("count > 0 && count < 10", count > 0 &&
       count < 10);
+  auto check = [&] { GDPP_ASSERT_VOID("count != 5", count != 5); };
+  check();
   return count;
 
-#line 26 "Asserted.cpp"
+#line 28 "Asserted.cpp"
 }
 
 void Asserted::aim() {
-#line 13 "input.gd++"
+#line 15 "input.gd++"
 
   GDPP_ASSERT_VOID("target != nullptr", target != nullptr);
-  target->look_at(Vector3());
+  auto height = [&]() -> float { GDPP_ASSERT_VALUE("target->is_inside_tree()", target->is_inside_tree()); return 1.0f; };
+  target->look_at(Vector3(0, height(), 0));
 
-#line 35 "Asserted.cpp"
+#line 38 "Asserted.cpp"
 }
 
 Node3D *Asserted::get_target() const {
@@ -42,14 +45,14 @@ void Asserted::set_target(Node3D *p_value) {
 	target = p_value;
 }
 
-#line 22 "input.gd++"
+#line 25 "input.gd++"
 
   void This::reset() {
     GDPP_ASSERT("target != nullptr", target != nullptr);
     target = nullptr;
   }
 
-#line 53 "Asserted.cpp"
+#line 56 "Asserted.cpp"
 
 #undef This
 

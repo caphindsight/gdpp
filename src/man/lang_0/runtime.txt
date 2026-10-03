@@ -31,8 +31,8 @@ gdpp::cast<T>(VALUE)
 Node3D *node = scene->instantiate() as Node3D *;
 ```
 
-GDPP_ASSERT(TEXT, CONDITION), GDPP_ASSERT_VOID(TEXT, CONDITION) and GDPP_ASSERT_VALUE(TEXT, CONDITION)
-  What an assertion becomes: `assert CONDITION;` checks CONDITION in debug builds, and if it's false, prints an error and returns from the function, with the type's default value if it returns one. A failed assertion is always undefined behavior, even though the game usually goes on. With `GDPP_TRACING`, the error is also a trace line. Release builds don't evaluate CONDITION. `GDPP_ASSERT_VOID` is for functions that return `void`, `GDPP_ASSERT_VALUE` for the others, and `GDPP_ASSERT` finds out from the function's signature. Your code writes it `assert`, which GD++ rewrites into one of these macros. See `gd++ man rewrites`.
+GDPP_ASSERT(TEXT, CONDITION), GDPP_ASSERT_VOID(TEXT, CONDITION), GDPP_ASSERT_VALUE(TEXT, CONDITION) and GDPP_ASSERT_REFERENCE(TEXT, CONDITION)
+  What an assertion becomes: `assert CONDITION;` checks CONDITION in debug builds, and if it's false, prints an error and returns from the function, with the type's default value if it returns one. A failed assertion is always undefined behavior, even though the game usually goes on. With `GDPP_TRACING`, the error is also a trace line. Release builds don't evaluate CONDITION. `GDPP_ASSERT_VOID` is for functions that return `void`, `GDPP_ASSERT_VALUE` for those that return a value, `GDPP_ASSERT_REFERENCE` for those that return a reference, which get one to a default value that lives on, and `GDPP_ASSERT` finds out from the function's signature. `GDPP_ASSERT_DEDUCED(TEXT, CONDITION)` is for functions whose return type C++ deduces from a value they return: it doesn't compile, and says why. Your code writes it `assert`, which GD++ rewrites into one of these macros. See `gd++ man rewrites`.
 
 ```gd++
 assert health >= 0;

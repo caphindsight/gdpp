@@ -1,0 +1,29 @@
+// A class's members: functions, a nested class with constructors and a destructor, and lambdas in initializers.
+struct Helper {
+	int value;
+	explicit Helper(int v) : value(v) { GDPP_ASSERT_VOID("v >= 0", v >= 0); }
+	Helper(const Helper &other) : value{other.value} {
+		GDPP_ASSERT_VOID("other.value >= 0", other.value >= 0);
+	}
+	~Helper() { GDPP_ASSERT_VOID("value >= 0", value >= 0); }
+	int get() const { GDPP_ASSERT("value", value); return value; }
+};
+int cached = 0;
+std::function<int(int)> scale = [](int x) -> int { GDPP_ASSERT_VALUE("x", x); return x * 2; };
+std::function<void()> ping = [] { GDPP_ASSERT_VOID("true", true); };
+
+public:
+Asserted() : cached{1} {
+	GDPP_ASSERT_VOID("cached == 1", cached == 1);
+}
+~Asserted() noexcept {
+	GDPP_ASSERT_VOID("cached >= 0", cached >= 0);
+}
+int compute(int x) {
+	GDPP_ASSERT("x > 0", x > 0);
+	return x * Helper(x).get();
+}
+void clear() noexcept {
+	GDPP_ASSERT("cached >= 0", cached >= 0);
+	cached = 0;
+}

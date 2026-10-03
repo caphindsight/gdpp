@@ -1,0 +1,14 @@
+// A lambda without a return type that returns a value: no assertion compiles there, so it fails with an explanation.
+// One that only returns void, and one whose returns are in a lambda within it, are fine.
+auto twice = [](int x) {
+	GDPP_ASSERT_DEDUCED("x > 0", x > 0);
+	return x * 2;
+};
+auto skip = [](int x) { GDPP_ASSERT_VOID("x", x); if (x > 1) { return; } };
+auto outer = [&] {
+	GDPP_ASSERT_VOID("true", true);
+	auto inner = [](int y) -> int { return y; };
+	(void)inner(twice(1));
+};
+skip(1);
+outer();

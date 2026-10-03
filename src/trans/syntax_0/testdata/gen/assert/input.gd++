@@ -7,12 +7,15 @@ func fire(count: int) -> int {
   assert target != nullptr;
   assert count > 0 &&
       count < 10;
+  auto check = [&] { assert count != 5; };
+  check();
   return count;
 }
 
 func aim() -> void {
   assert target != nullptr;
-  target->look_at(Vector3());
+  auto height = [&]() -> float { assert target->is_inside_tree(); return 1.0f; };
+  target->look_at(Vector3(0, height(), 0));
 }
 
 decl {

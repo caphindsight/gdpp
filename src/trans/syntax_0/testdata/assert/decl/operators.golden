@@ -1,0 +1,13 @@
+// Operators, which look like neither functions nor lambdas.
+int data[4] = {};
+int &operator[](int i) {
+	GDPP_ASSERT("i >= 0 && i < 4", i >= 0 && i < 4);
+	return data[i];
+}
+explicit operator bool() const {
+	GDPP_ASSERT("data[0] >= 0", data[0] >= 0);
+	return data[0] != 0;
+}
+bool operator()(int a, int b) const { GDPP_ASSERT("a != b", a != b); return a < b; }
+void *operator new[](std::size_t n) { GDPP_ASSERT("n > 0", n > 0); return ::operator new(n); }
+void operator delete[](void *p) { GDPP_ASSERT("p", p); ::operator delete(p); }

@@ -1,0 +1,8 @@
+// Lambdas called right away, to initialize values.
+const int limit = [&]() -> int {
+	GDPP_ASSERT_VALUE("true", true);
+	return 5;
+}();
+[&] { GDPP_ASSERT_VOID("limit == 5", limit == 5); }();
+const auto msg = std::string([&]() -> const char * { GDPP_ASSERT_VALUE("limit", limit); return "ok"; }());
+GDPP_ASSERT_VOID("msg.size() == 2", msg.size() == 2);

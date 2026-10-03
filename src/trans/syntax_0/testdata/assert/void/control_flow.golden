@@ -1,0 +1,20 @@
+// Assertions in every kind of statement.
+int n = 3;
+switch (n) {
+case 1: GDPP_ASSERT_VOID("n == 1", n == 1); break;
+case 3: {
+	GDPP_ASSERT_VOID("n > 2", n > 2);
+	break;
+}
+default:
+	GDPP_ASSERT_VOID("false", (false));
+}
+do {
+	GDPP_ASSERT_VOID("n >= 0", n >= 0);
+} while (--n > 0);
+if (n) GDPP_ASSERT_VOID("n", n); else GDPP_ASSERT_VOID("!n", !n);
+for (int i = 0; i < 2; i++)
+	GDPP_ASSERT_VOID("i < 2", i < 2);
+while (n < 1) {
+	if (++n) { GDPP_ASSERT_VOID("n == 1", n == 1); continue; }
+}
