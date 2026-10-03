@@ -13,8 +13,9 @@ import (
 
 // CmdTrans transpiles a GD++ file and prints the C++ files it generates, each
 // after a line naming it. It's for trying out GD++, not for builds. In a
-// package, the file's dependencies are the package's other GD++ files and
-// Godot's classes from the package's spec and bindings, like in a build.
+// package, the file's dependencies are the package's other GD++ files, its C++
+// classes with a kind, and Godot's classes from the package's spec and
+// bindings, like in a build.
 // Outside of one, they come from flags only. Either way, flags add
 // dependencies, and --spec takes Godot's classes from a spec in the project's
 // cache instead.
@@ -54,10 +55,12 @@ func (c *CmdTrans) Run() {
 	var files []gdppFile
 	var names []godotName
 	var enums []trans.Dependency
+	var cppClasses []godotName
 	self, asyncClass, pkgPath := "", "", ""
 	if root, ok := GetPackageRootMaybe(file); ok {
 		p, pkg := LoadProject(root), LoadPackage(root)
 		files, self, asyncClass, pkgPath = listGdppFiles(p, pkg), relPath(root, file), pkg.AsyncClass(), pkg.ResPath()
+		cppClasses = cppClassNames(pkg)
 		if c.Syntax == nil {
 			syntax = pkg.Config.Syntax
 		}
@@ -70,7 +73,7 @@ func (c *CmdTrans) Run() {
 		names, enums = specNames(c.Spec)
 	}
 	// Flags come first, so they win over other dependencies of the same name.
-	deps := append(c.flagDependencies(), packageDeps(files, names, enums, self)...)
+	deps := append(c.flagDependencies(), packageDeps(files, append(names, cppClasses...), enums, self)...)
 	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(trans.Options{Dependencies: deps, AsyncClass: asyncClass, PackagePath: pkgPath}), syntax)
 	if err != nil {
 		FailWithText(err)

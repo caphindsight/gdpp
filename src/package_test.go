@@ -98,6 +98,8 @@ func TestLoadPackageFails(t *testing.T) {
 		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[x] Duplicate class A in res://pkg/gd++pkg.toml.\n"},
 		{"QuitTimeout", "bind = \"a\"\nspec = \"b\"\nquit_timeout = -1.5\n", "[x] Invalid quit_timeout -1.5 in res://pkg/gd++pkg.toml: it can't be negative.\n"},
 		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[x] Path a.svg of class A in res://pkg/gd++pkg.toml must start with pkg:// or res://.\n"},
+		{"ClassKind", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nkind = \"val\""), "[x] Invalid kind \"val\" of class A in res://pkg/gd++pkg.toml: it must be ptr or ref.\n"},
+		{"ClassKindInclude", classes(`name = "A"` + "\nkind = \"ptr\""), "[x] Class A in res://pkg/gd++pkg.toml has kind ptr, which requires an include.\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

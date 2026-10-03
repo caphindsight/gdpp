@@ -35,6 +35,9 @@ type CmdInit struct {
 	NoIcon      bool     `arg:"--noicon" help:"remove the class's icon"`
 	Tool        bool     `arg:"--tool" help:"make the class run in the editor too"`
 	NoTool      bool     `arg:"--notool" help:"make the class run only in the game"`
+	Ptr         bool     `arg:"--ptr" help:"let GD++ code use the class by name, as a pointer; for classes that aren't refcounted"`
+	Ref         bool     `arg:"--ref" help:"let GD++ code use the class by name, as a Ref; for refcounted classes"`
+	NoGdpp      bool     `arg:"--nogdpp" help:"stop GD++ code from using the class by name"`
 }
 
 func (c *CmdInit) Run() {
@@ -42,7 +45,7 @@ func (c *CmdInit) Run() {
 	if c.Path == "" {
 		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.Class == "",
 			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path.")
-		Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon && !c.Tool && !c.NoTool, "Invalid arguments: --include, --noinclude, --icon, --noicon, --tool and --notool require --class.")
+		c.assertNoClassFlags()
 		c.initProject()
 		return
 	}
@@ -53,7 +56,7 @@ func (c *CmdInit) Run() {
 		c.initClass(ParsePath(c.Path))
 		return
 	}
-	Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon && !c.Tool && !c.NoTool, "Invalid arguments: --include, --noinclude, --icon, --noicon, --tool and --notool require --class.")
+	c.assertNoClassFlags()
 	for _, name := range []string{c.Bind, c.Spec} {
 		if name != "" {
 			assertDepName(name)
@@ -81,6 +84,11 @@ func (c *CmdInit) Run() {
 	default:
 		c.newPackage(p, root)
 	}
+}
+
+func (c *CmdInit) assertNoClassFlags() {
+	Assert(c.Include == "" && !c.NoInclude && c.Icon == "" && !c.NoIcon && !c.Tool && !c.NoTool && !c.Ptr && !c.Ref && !c.NoGdpp,
+		"Invalid arguments: --include, --noinclude, --icon, --noicon, --tool, --notool, --ptr, --ref and --nogdpp require --class.")
 }
 
 // writeConfig writes text to the config file and logs what changed, which
@@ -163,6 +171,7 @@ func (c *CmdInit) initClass(root Path) {
 	Assert(c.Include == "" || !c.NoInclude, "Invalid arguments: --include and --noinclude cannot be used together.")
 	Assert(c.Icon == "" || !c.NoIcon, "Invalid arguments: --icon and --noicon cannot be used together.")
 	Assert(!c.Tool || !c.NoTool, "Invalid arguments: --tool and --notool cannot be used together.")
+	Assert(!(c.Ptr && c.Ref || c.Ptr && c.NoGdpp || c.Ref && c.NoGdpp), "Invalid arguments: --ptr, --ref and --nogdpp cannot be used together.")
 	for _, p := range []string{c.Include, c.Icon} {
 		Assert(p == "" || isClassPath(p), "Invalid arguments: %s must start with pkg:// or res://.", p)
 	}
@@ -195,7 +204,16 @@ func (c *CmdInit) initClass(root Path) {
 		return old
 	}
 	class := PackageClass{Name: c.Class, Include: pick(old.Include, c.Include, c.NoInclude), Icon: pick(old.Icon, c.Icon, c.NoIcon),
-		Tool: c.Tool || old.Tool && !c.NoTool}
+		Tool: c.Tool || old.Tool && !c.NoTool, Kind: old.Kind}
+	switch {
+	case c.Ptr:
+		class.Kind = "ptr"
+	case c.Ref:
+		class.Kind = "ref"
+	case c.NoGdpp:
+		class.Kind = ""
+	}
+	Assert(class.Kind == "" || class.Include != "", "Invalid arguments: GD++ code can only use class %s if it has an include.", c.Class)
 	config.Classes[i] = class
 	config.SortClasses()
 	var changes []string
@@ -206,6 +224,9 @@ func (c *CmdInit) initClass(root Path) {
 	}
 	if isNew || class.Tool != old.Tool {
 		changes = append(changes, "class "+c.Class+" to "+map[bool]string{true: "a tool class", false: "a runtime class"}[class.Tool])
+	}
+	if class.Kind != old.Kind {
+		changes = append(changes, "class "+c.Class+" to "+map[string]string{"ptr": "[ptr], usable from GD++ as a pointer", "ref": "[ref], usable from GD++ as a Ref", "": "not usable from GD++"}[class.Kind])
 	}
 	if writeConfig(root.Cd(packageFileName), config.Encode(), changes) {
 		LogInfo("Success!")

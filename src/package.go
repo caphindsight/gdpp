@@ -37,6 +37,7 @@ type PackageClass struct {
 	Include string `toml:"include,omitempty"` // the header declaring the class
 	Icon    string `toml:"icon,omitempty"`
 	Tool    bool   `toml:"tool,omitempty"` // whether its code runs in the editor too, like @tool
+	Kind    string `toml:"kind,omitempty"` // how GD++ code uses it: "ptr" (T*) or "ref" (Ref<T>); if empty, it can't
 }
 
 var (
@@ -111,6 +112,16 @@ func isClassPath(s string) bool {
 	return strings.HasPrefix(s, "pkg://") || strings.HasPrefix(s, "res://")
 }
 
+// classInclude returns what follows #include for a class's pkg:// or res://
+// path s: "src/foo.h" for pkg://src/foo.h, relative to the package root, or
+// <src/foo.h> for res://src/foo.h, relative to the project root.
+func classInclude(s string) string {
+	if rest, ok := strings.CutPrefix(s, "res://"); ok {
+		return "<" + rest + ">"
+	}
+	return `"` + strings.TrimPrefix(s, "pkg://") + `"`
+}
+
 // ClassPath resolves a class's pkg:// or res:// path s. An empty s gives a
 // zero Path.
 func (pkg Package) ClassPath(s string) Path {
@@ -174,6 +185,8 @@ func LoadPackage(p Path) Package {
 		for _, path := range []string{class.Include, class.Icon} {
 			Assert(path == "" || isClassPath(path), "Path %s of class %s in %s must start with pkg:// or res://.", path, class.Name, file.ToString())
 		}
+		Assert(class.Kind == "" || class.Kind == "ptr" || class.Kind == "ref", "Invalid kind %q of class %s in %s: it must be ptr or ref.", class.Kind, class.Name, file.ToString())
+		Assert(class.Kind == "" || class.Include != "", "Class %s in %s has kind %s, which requires an include.", class.Name, file.ToString(), class.Kind)
 	}
 
 	return Package{

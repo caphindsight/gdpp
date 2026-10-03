@@ -56,7 +56,7 @@ hot_reload (optional, default `true`)
   Whether the editor reloads the package's library when a build changes it, without a restart. With `false`, the editor loads the library once, and you restart the editor to see a new build. Turn it off if hot reload crashes the editor: due to a Godot bug, it does so when the package has a tool class that runs code on the worker thread pool, e.g. an `@onthread` function. See "Debug and release builds" in `gd++ man building`.
 
 [[class]] (optional, any number)
-  A plain C++ class that the package registers with Godot. Each one has a name, the header that declares it, an optional icon, and `tool = true` if its code runs in the editor too. Without `tool`, it is a runtime class, whose code runs only in the game. GD++ classes are not listed here: GD++ finds them in the GD++ files. See `gd++ man cpp-classes`.
+  A plain C++ class that the package registers with Godot. Each one has a name, the header that declares it, an optional icon, `tool = true` if its code runs in the editor too, and `kind = "ptr"` or `kind = "ref"` if GD++ code can use it. Without `tool`, it is a runtime class, whose code runs only in the game. GD++ classes are not listed here: GD++ finds them in the GD++ files. See `gd++ man cpp-classes`.
 
 Missing required keys and unknown keys are errors, e.g. "Missing key spec in res://my_package/gd++pkg.toml.". Change the file with `gd++ init PATH --update`, or by hand. `gd++ fix` reformats it and sorts its classes by name.
 

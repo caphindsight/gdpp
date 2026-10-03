@@ -238,6 +238,36 @@ func TestTranspilePackageExternBases(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageCppClasses(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"boss.gd++":     "class_name Boss\nextends Enemy\nfunc _ready() -> void {}\n",
+		"kid.gd++":      "class Kid {\n  extends Actor\n}\n",
+		"user.gd++":     "class_name User\nextends Node\nvar actor: Actor\nvar enemy: Enemy\nvar kid: Kid\n",
+		"enemy/enemy.h": "#pragma once\nnamespace godot {\nclass Enemy : public Node3D {\n  GDCLASS(Enemy, Node3D)\n};\n}\n",
+	})
+	config := strings.Replace(buildPkgConfig, `icon = "pkg://enemy/enemy.svg"`, `icon = "pkg://enemy/enemy.svg"`+"\n  kind = \"ptr\"", 1)
+	m.nodes[pkgDir+packageFileName].data = []byte(strings.Replace(config, "tool = true", "tool = true\n  kind = \"ref\"", 1))
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	for file, want := range map[string]string{
+		"Boss.h":   "class Boss : public Enemy {",
+		"Boss.cpp": "_gdpp_body__ready();", // Enemy's base, from its header, makes _ready Godot's.
+		"User.h":   "#include \"enemy/enemy.h\"\n#include <common/actor.h>\n",
+		"User.cpp": "Ref<Kid>",
+	} {
+		if !strings.Contains(gen[file], want) {
+			t.Errorf("%s = %s\nwant it to contain %q", file, gen[file], want)
+		}
+	}
+	for _, want := range []string{"Ref<Actor> actor", "Enemy *enemy"} {
+		if !strings.Contains(gen["User.h"], want) {
+			t.Errorf("User.h = %s\nwant it to contain %q", gen["User.h"], want)
+		}
+	}
+}
+
 func TestLoadGodotNamesOutdated(t *testing.T) {
 	m := withBuildFS(t)
 	pkg := LoadPackage(Cwd())

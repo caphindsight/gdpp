@@ -44,7 +44,7 @@ class Boss {
 class Stats {}          // extends RefCounted
 ```
 
-A class can't extend an extern, an enum, a C++ class of the package, or itself through its bases:
+A class can't extend an extern, an enum, a C++ class of the package that isn't marked `[ptr]` or `[ref]` (see `gd++ man cpp-classes`), or itself through its bases:
 
 ```out
 [×] res://a.gd++:2:9: A can't extend Terrain, which is an extern.

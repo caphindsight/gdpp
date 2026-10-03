@@ -143,6 +143,29 @@ func packageGodotNames(p Project, pkg Package) []godotName {
 	return bindingNames(pkg, BuildOptions{}.sconsArgs(hostPlatform+"."+hostArch))
 }
 
+// cppClassNames returns the package's C++ classes that GD++ code may use: those
+// with a kind, each with its include like __register_types__.cpp has it, and
+// its base if its header declares it in namespace godot.
+func cppClassNames(pkg Package) []godotName {
+	var names []godotName
+	for _, class := range pkg.Config.Classes {
+		if class.Kind == "" {
+			continue
+		}
+		base := ""
+		if header := pkg.ClassPath(class.Include); header.IsFile() {
+			for _, d := range scanCppDecls(header.ReadString()) {
+				if d.name == class.Name && d.baseAccess == "public" {
+					base = d.base
+				}
+			}
+		}
+		kind := map[string]trans.Kind{"ptr": trans.Object, "ref": trans.RefCounted}[class.Kind]
+		names = append(names, godotName{Name: class.Name, Include: classInclude(class.Include), Kind: kind, Decl: "class", Base: base})
+	}
+	return names
+}
+
 // specEnums returns the enums of the API spec file, which GD++ enums may
 // extend: those of classes, e.g. Node.ProcessMode, and global ones, e.g.
 // Error. Returns nil if there is no file.
@@ -177,7 +200,7 @@ func specEnums(file Path) []trans.Dependency {
 
 // packageDeps returns the dependencies of the package's GD++ file whose path
 // relative to the package root is self: the spec's enums, names, e.g.
-// godot-cpp's, then what the package's other GD++ files declare. The spec's
+// godot-cpp's and the package's C++ classes', then what the package's other GD++ files declare. The spec's
 // enums come first, so e.g. Error is an enum, not just a name.
 func packageDeps(files []gdppFile, names []godotName, enums []trans.Dependency, self string) []trans.Dependency {
 	godot := map[string]godotName{}
@@ -244,7 +267,8 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 }
 
 // transpilePackage transpiles the package's GD++ files into the build cache's
-// gdpp directory: a header per class, extern and enum, a source per class, the
+// gdpp directory, with names, e.g. godot-cpp's, and the package's C++ classes
+// as dependencies: a header per class, extern and enum, a source per class, the
 // runtime header, and with docs, each class's XML documentation. Files that
 // nothing generates any more are deleted. Returns the classes the files declare.
 func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildOptions) []gdppClass {
@@ -271,6 +295,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	}
 	syntax := pkg.Config.Syntax
 	enums := specEnums(pkg.BuildCache.Cd("extension_api.json"))
+	names = append(slices.Clip(names), cppClassNames(pkg)...)
 	check := func(text string, err error) string {
 		if err != nil {
 			FailWithText(err)

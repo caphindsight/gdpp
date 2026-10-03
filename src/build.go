@@ -397,10 +397,8 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		if !class.Tool {
 			runtime = append(runtime, class.Name)
 		}
-		if rest, ok := strings.CutPrefix(class.Include, "pkg://"); ok {
-			includes = append(includes, `"`+rest+`"`)
-		} else if rest, ok := strings.CutPrefix(class.Include, "res://"); ok {
-			includes = append(includes, "<"+rest+">")
+		if class.Include != "" {
+			includes = append(includes, classInclude(class.Include))
 		}
 	}
 	// Packages with GD++ classes include the runtime, which unloads their code;

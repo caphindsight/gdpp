@@ -187,7 +187,7 @@ func TestLsCmdGdppClasses(t *testing.T) {
 	withLsProject(t)
 	foo := NewPath("/games/my_game/foo")
 	foo.Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\nsyntax = 1\n\n" +
-		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\nicon = \"pkg://icons/tree.svg\"\n\n[[class]]\nname = \"Player\"\n")
+		"[[class]]\nname = \"Tree\"\ninclude = \"pkg://tree.h\"\nicon = \"pkg://icons/tree.svg\"\nkind = \"ref\"\n\n[[class]]\nname = \"Player\"\n")
 	foo.Cd("player.gd++").WriteString("@icon(\"pkg://icons/tree.svg\")\n@tool\nclass_name Player\nextends Node\n")
 	foo.Cd("icons", "helper.gg").WriteString("class Helper {}\nenum Mood { HAPPY }\n")
 	foo.Cd("broken.gdpp").WriteString("fun f() {}\n")
@@ -202,7 +202,7 @@ func TestLsCmdGdppClasses(t *testing.T) {
 		"\n" +
 		"  Classes\n" +
 		"                           Player: declared twice\n" +
-		"    res://foo/tree.h       Tree                                        @icon\n" +
+		"    res://foo/tree.h       Tree                                        [ref] @icon\n" +
 		"    pkg://icons/helper.gg  Helper                  extends RefCounted\n" +
 		"    pkg://player.gd++      Player: declared twice  extends Node        @tool @icon\n" +
 		"    pkg://spawner.gd++     Spawner                 extends Node3D      @game_only\n" +

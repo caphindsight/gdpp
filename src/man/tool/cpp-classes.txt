@@ -80,7 +80,10 @@ icon (optional)
 tool (optional, default false)
   Whether the class's code runs in the editor too, like `@tool` on a GD++ class. See "Editor and runtime code" below. `gd++ init --tool` sets it, and `gd++ init --notool` removes it.
 
-A new class needs `--include`, or `--noinclude` if a header that's already included declares it. See `gd++ man init` for how to change the include, the icon and the tool setting later, and `gd++ man rm` for how to remove the class. The file lists classes sorted by name.
+kind (optional)
+  How GD++ code uses the class: `"ptr"`, as a pointer, or `"ref"`, as a `Ref`. Without it, GD++ code can't use the class by name. `gd++ ls` shows it as `[ptr]` or `[ref]`. See "Using a C++ class from GD++" below.
+
+A new class needs `--include`, or `--noinclude` if a header that's already included declares it. See `gd++ man init` for how to change the include, the icon, the tool setting and the kind later, and `gd++ man rm` for how to remove the class. The file lists classes sorted by name.
 
 # Editor and runtime code
 
@@ -133,10 +136,10 @@ The library's entry symbol is `gdpp_library_init`, which the `.gdextension` file
 
 C++ classes and GD++ classes live side by side in one package, and are registered together. Their names must differ, or the build fails with "Class Spinner is declared in ... and in ...gd++pkg.toml.". A GD++ class can't be added to `gd++pkg.toml`: it's declared in its GD++ file, and `gd++ init --class` refuses it.
 
-GD++ code knows Godot's classes and the package's GD++ classes, but not your C++ classes. So:
+GD++ code knows Godot's classes and the package's GD++ classes. It knows a C++ class only if it's marked `[ptr]` or `[ref]`, see "Using a C++ class from GD++" below. An unmarked C++ class:
 
-- A GD++ class can't use a C++ class as a type in its API, e.g. as the type of a `var` or a parameter. Use the C++ class's Godot base class instead, e.g. `Node3D`, and convert in code with `node as Spinner *`. See `gd++ man cast`.
-- To use a C++ class in the code of a GD++ class, include its header yourself, with a `@global` block:
+- can't be a type in a GD++ class's API, e.g. the type of a `var` or a parameter. Use the C++ class's Godot base class instead, e.g. `Node3D`, and convert in code with `node as Spinner *`. See `gd++ man cast`.
+- can be used in the code of a GD++ class if you include its header yourself, with a `@global` block:
 
 ```gd++
 class_name Game
@@ -154,15 +157,57 @@ func _ready() -> void {
 
 - A C++ class can use a GD++ class: include its generated header, which is named after the class, e.g. `#include "Player.h"`. Mind that the generated classes are in namespace `godot`, and that the fields of simple GD++ variables are public, while their getters and setters are the functions that Godot calls. See `gd++ man generated`.
 
-A C++ class can also extend a GD++ class of the same package, e.g. `class FastPlayer : public Player`. It's registered after its base. The other way around doesn't work: a GD++ class can't extend a C++ class, since GD++ doesn't know it.
+A C++ class can also extend a GD++ class of the same package, e.g. `class FastPlayer : public Player`. It's registered after its base. A GD++ class can only extend a C++ class that's marked `[ptr]` or `[ref]`.
+
+# Using a C++ class from GD++
+
+GD++ code uses Godot's classes in two ways: refcounted classes through references, e.g. `Ref<Resource>`, and the others through pointers, e.g. `Node3D *`. See "Objects and references" in `gd++ man classes`. GD++ can't tell which way a C++ class takes, so you say it with `gd++ init`:
+
+```sh
+gd++ init . --class Spinner --update --ptr
+```
+
+`--ptr` is for classes that aren't refcounted, like `Spinner`, which extends `Node3D`, and `--ref` for refcounted ones, e.g. those that extend `Resource`. Either needs the class to have an include. This adds `kind = "ptr"` or `kind = "ref"` to its `[[class]]` table:
+
+```toml
+[[class]]
+name = "Spinner"
+include = "pkg://src/spinner.h"
+kind = "ptr"
+```
+
+Now GD++ code uses `Spinner` by name, like a Godot class: as the type of a `var` or a parameter, in casts, and as a base class. GD++ includes its header where needed:
+
+```gd++
+class_name Game
+extends Node
+
+@export var spinner: Spinner
+
+func _ready() -> void {
+  spinner->set_speed(2.0);
+}
+
+class FastSpinner {
+  extends Spinner
+
+  func _ready() -> void {
+    set_speed(10.0);
+  }
+}
+```
+
+GD++ finds the class's base class in its header, if the header declares the class in namespace `godot`, as above. GD++ then knows that `FastSpinner` is a `Node`, so its `_ready` is Godot's `_ready`. If the class is declared elsewhere, e.g. at global scope, GD++ still knows the class, but not its base.
+
+Mind that GD++ doesn't check the kind: if a refcounted class is marked `[ptr]`, or the other way around, the generated C++ is wrong, e.g. it doesn't compile, or it leaks objects. `gd++ init --nogdpp` removes the mark.
 
 # In gd++ ls
 
-`gd++ ls` lists a package's C++ classes with their headers, and the tags `@tool` for tool classes and `@icon` for classes with an icon. A missing header or icon is marked "(missing)", in red.
+`gd++ ls` lists a package's C++ classes with their headers, and the tags `[ptr]` or `[ref]` for classes that GD++ code can use, `@tool` for tool classes and `@icon` for classes with an icon. A missing header or icon is marked "(missing)", in red.
 
 ```
   Classes
-    res://src/spinner.h  Spinner                           @tool @icon
+    res://src/spinner.h  Spinner                           [ptr] @tool @icon
     res://src/wobbler.h  Wobbler
     pkg://player.gd++    Player   extends CharacterBody3D
 ```

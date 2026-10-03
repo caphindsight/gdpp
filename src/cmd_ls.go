@@ -35,6 +35,7 @@ type lsClass struct {
 	File, Icon     Path   // The header of a C++ class, or the GD++ file of a GD++ class.
 	FileText       string // For GD++ classes, the file's pkg:// path; if empty, File's.
 	Base           string // For GD++ classes.
+	Kind           string // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
 	Gdpp           bool
 	Tool, GameOnly bool
 	Clash          bool // Another class has the same name.
@@ -67,7 +68,7 @@ func (c *CmdLs) Run() {
 func lsClasses(p Project, pkg Package) []lsClass {
 	var classes, broken []lsClass
 	for _, class := range pkg.Config.Classes {
-		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), Tool: class.Tool})
+		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), Tool: class.Tool, Kind: class.Kind})
 	}
 	for _, f := range listGdppFiles(p, pkg) {
 		file := lsClass{File: f.File, FileText: "pkg://" + f.Rel, Gdpp: true}
@@ -275,9 +276,12 @@ func lsClassTable(classes []lsClass) string {
 }
 
 // lsTags renders the annotations of a class that change what it is, e.g.
-// "@tool @icon", but not those for debugging, like @trace.
+// "[ptr] @tool @icon", but not those for debugging, like @trace.
 func lsTags(class lsClass) string {
 	var tags []string
+	if class.Kind != "" {
+		tags = append(tags, "["+class.Kind+"]")
+	}
 	for _, t := range []struct {
 		on   bool
 		name string

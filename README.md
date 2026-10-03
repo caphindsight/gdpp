@@ -330,7 +330,7 @@ gd++ fix                      # tidy up the project
 
 The build writes the libraries and a `.gdextension` file into the package root, so Godot loads them right away.
 
-A package can also hold plain C++ classes, written the usual godot-cpp way. `gd++ init . --class Foo --include pkg://foo.h` registers them with Godot.
+A package can also hold plain C++ classes, written the usual godot-cpp way. `gd++ init . --class Foo --include pkg://foo.h` registers them with Godot. Add `--ptr`, or `--ref` for refcounted classes, to let GD++ code use them by name.
 
 ## Status
 

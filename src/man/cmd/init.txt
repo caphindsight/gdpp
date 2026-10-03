@@ -6,7 +6,7 @@ gd++ init: set up projects, packages and classes
 gd++ init [--vcs none|git] [--presets | --nopresets]
 gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
 gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
-gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--update]
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--ptr | --ref | --nogdpp] [--update]
 ```
 
 # Description
@@ -89,7 +89,7 @@ Changes the given settings of the existing package at PATH, and keeps the others
 # Adding or updating a C++ class
 
 ```sh
-gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--update]
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--ptr | --ref | --nogdpp] [--update]
 ```
 
 Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so the package registers it with Godot, or updates the class if it's there already. GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here. See `gd++ man cpp-classes`.
@@ -115,18 +115,28 @@ Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so t
 --notool
   Make the class a runtime class: in the editor, Godot shows placeholders for its objects, which run none of its code. Removes `tool = true` from its `[[class]]` table.
 
-When you update a class, `--include` and `--icon` change the path, `--noinclude` and `--noicon` clear it, and without either, the path stays. In the same way, `--tool` and `--notool` change the class's kind, and without either, it stays. A new class is a runtime class, unless you pass `--tool`. Without `--update`, `gd++ init` asks "Class NAME already exists in PATH. Update it?".
+--ptr
+  Let GD++ code use the class by name, as a pointer, e.g. `Spinner *`: for classes that aren't refcounted. Sets `kind = "ptr"` in its `[[class]]` table, shown as `[ptr]` by `gd++ ls`. The class needs an include.
+
+--ref
+  Let GD++ code use the class by name, as a reference, e.g. `Ref<Spinner>`: for refcounted classes. Sets `kind = "ref"`, shown as `[ref]`. The class needs an include.
+
+--nogdpp
+  Stop GD++ code from using the class by name. Removes `kind` from its `[[class]]` table.
+
+When you update a class, `--include` and `--icon` change the path, `--noinclude` and `--noicon` clear it, and without either, the path stays. In the same way, `--tool` and `--notool` make it a tool or runtime class, and `--ptr`, `--ref` and `--nogdpp` change how GD++ code uses it, and without any of them, that stays. A new class is a runtime class, unless you pass `--tool`, and GD++ code can't use it, unless you pass `--ptr` or `--ref`. Without `--update`, `gd++ init` asks "Class NAME already exists in PATH. Update it?".
 
 # Rules
 
 - `--vcs`, `--presets` and `--nopresets` work only without PATH.
 - `--presets` and `--nopresets` can't be used together.
 - `--update`, `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout` and `--class` need PATH.
-- `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool` and `--notool` need `--class`.
+- `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool`, `--notool`, `--ptr`, `--ref` and `--nogdpp` need `--class`.
 - `--bind`, `--spec`, `--syntax`, `--std`, `--prefix` and `--quit-timeout` can't be used with `--class`.
 - `--quit-timeout` and `--syntax` can't be negative.
 - `--syntax` and `--nightly` can't be used together.
-- `--include` and `--noinclude`, `--icon` and `--noicon`, and `--tool` and `--notool` can't be used together.
+- `--include` and `--noinclude`, `--icon` and `--noicon`, `--tool` and `--notool`, and `--ptr`, `--ref` and `--nogdpp` can't be used together.
+- `--ptr` and `--ref` need a class with an include.
 
 # Examples
 
@@ -166,10 +176,18 @@ gd++ init . --class Gizmo --include pkg://src/gizmo.h --tool
 gd++ init . --class Gizmo --update --notool
 ```
 
+Let GD++ code use a C++ class that extends `Node3D`, then stop it:
+
+```sh
+gd++ init . --class Spinner --update --ptr
+gd++ init . --class Spinner --update --nogdpp
+```
+
 # Errors
 
 - "Invalid arguments: --bind and --spec are required for a new package."
 - "Invalid arguments: a new class requires --include or --noinclude."
+- "Invalid arguments: GD++ code can only use class NAME if it has an include." `--ptr` or `--ref` on a class without one.
 - "Class NAME is declared in FILE, so it can only be changed there." It's a GD++ class.
 - "There is no class NAME in PATH." With `--update`, the class must exist.
 - "Path ... is not contained in a Godot project." Run it inside a project.
