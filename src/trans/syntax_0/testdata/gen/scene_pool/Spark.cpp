@@ -8,6 +8,7 @@ namespace godot {
 
 void Spark::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene_pooled"), &Spark::new_scene_pooled);
+	ClassDB::bind_method(D_METHOD("free_pooled"), &Spark::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Spark::queue_free_pooled);
 }
 
@@ -21,6 +22,14 @@ void Spark::_gdpp_recycle_ctor() {
 }
 
 void Spark::_gdpp_recycle_dtor() {
+}
+
+void Spark::free_pooled() {
+	if (_gdpp_pool_slot.owned) {
+		gdpp::destroy(this);
+	} else {
+		queue_free();
+	}
 }
 
 void Spark::queue_free_pooled() {

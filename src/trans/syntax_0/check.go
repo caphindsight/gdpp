@@ -75,6 +75,8 @@ type externModel struct {
 	refCounted bool
 	trace      bool // Whether its @trace is on: it traces all its funcs and signals.
 	profile    bool // Whether its @profile is on: it profiles all its funcs, except deferred ones, and vars.
+	scene      bool // Whether it has @scene: its class has a scene, which create instantiates.
+	pool       bool // Whether it has @pool: its class has a pool, which create, destroy and queue_destroy use.
 	funcs      []*funcModel
 	vars       []*varModel
 	signals    []*signalModel
@@ -1654,10 +1656,18 @@ func (u *unit) buildExterns() error {
 	for _, e := range externs {
 		s := u.symbols[e.Name]
 		m := &externModel{name: e.Name, ext: e, base: baseName(e.Extends), refCounted: s.kind == meta.RefCountedExtern}
-		a, err := u.annotations(e.Annotations, "an extern", "profile", "trace")
+		a, err := u.annotations(e.Annotations, "an extern", "pool", "profile", "scene", "trace")
 		if err != nil {
 			return err
 		}
+		for _, n := range [][2]string{{"pool", "A pool takes its objects out of the scene tree, so they must be nodes."}, {"scene", "A scene's root is a node."}} {
+			if b := a[n[0]]; b != nil && len(b.Args) > 0 {
+				return u.errorAt(b.Args[0].Pos, len(b.Args[0].Value), fmt.Sprintf("In externs, @%s takes no arguments: the class configures it.", n[0]), "")
+			} else if err := u.requireBase(b, e.Name, n[1], "Node"); err != nil {
+				return err
+			}
+		}
+		m.pool, m.scene = a["pool"] != nil, a["scene"] != nil
 		if m.trace, err = u.debugOn(a["trace"], e.Name); err != nil {
 			return err
 		}
@@ -1774,8 +1784,8 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		return nil, err
 	}
 	names := map[string]bool{}
-	names[m.newName()], names["queue_free_pooled"] = true, m.pool != nil // Methods for scripts.
-	var declared []*symbol                                               // Enums declared in the class.
+	names[m.newName()], names["free_pooled"], names["queue_free_pooled"] = true, m.pool != nil, m.pool != nil // Methods for scripts.
+	var declared []*symbol // Enums declared in the class.
 	for _, member := range c.Members {
 		if err := u.checkNoDebug(member, "class "+c.Name, a["trace"] != nil, a["profile"] != nil); err != nil {
 			return nil, err

@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotation @scene can only be used in classes that extend Node, which B doesn't.
+ 4 | @scene
+   | ^^^^^^
+Hint: A scene's root is a node.

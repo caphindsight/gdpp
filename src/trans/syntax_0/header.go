@@ -194,12 +194,17 @@ func (c *classModel) needsNotification() bool {
 // newName returns the name of the static method that scripts call for `create`: new_scene for a @scene class,
 // new_pooled for a @pool class, new_scene_pooled for both, and "" for other classes, which have new() for it.
 func (c *classModel) newName() string {
+	return newName(c.scene != "", c.pool != nil)
+}
+
+// newName returns the name of the static method that scripts call for `create` on a class with @scene, @pool, or both.
+func newName(scene, pool bool) string {
 	switch {
-	case c.scene != "" && c.pool != nil:
+	case scene && pool:
 		return "new_scene_pooled"
-	case c.scene != "":
+	case scene:
 		return "new_scene"
-	case c.pool != nil:
+	case pool:
 		return "new_pooled"
 	}
 	return ""
@@ -285,7 +290,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if p := c.pool; p != nil {
 		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, %t };", c.name, p.capacity, p.strict),
 			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
-			"void queue_free_pooled();")
+			"void free_pooled();", "void queue_free_pooled();")
 	}
 	for _, f := range c.funcs {
 		if f.virtual {
@@ -417,6 +422,9 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 		w.ln("\tusing Base = %s;", e.base)
 	}
 	w.ln("\tstatic constexpr const char *gdpp_name = %q;", e.name)
+	if name := newName(e.scene, e.pool); name != "" {
+		w.ln("\tstatic constexpr gdpp::ExtCreate<%s> gdpp_create{ %q, %t };", e.name, name, e.pool)
+	}
 	w.ln("")
 	w.ln("\texplicit %s(Base *p_object) :", e.name)
 	if derived {

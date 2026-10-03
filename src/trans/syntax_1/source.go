@@ -90,6 +90,17 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.pool != nil {
 		recycler(w, c, "ctor", c.recycleCtor)
 		recycler(w, c, "dtor", c.recycleDtor)
+		// What scripts call for destroy. A node that the pool didn't make is queued, since freeing itself in a call by
+		// name would leave Godot's call with a deleted object.
+		w.ln("")
+		w.ln("void %s::free_pooled() {", c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\tif (_gdpp_pool_slot.owned) {")
+		w.ln("\t\tgdpp::destroy(this);")
+		w.ln("\t} else {")
+		w.ln("\t\tqueue_free();")
+		w.ln("\t}")
+		w.ln("}")
 		// What scripts call for queue_destroy.
 		w.ln("")
 		w.ln("void %s::queue_free_pooled() {", c.name)
@@ -518,6 +529,7 @@ func (u *unit) bindings(w *writer, c *classModel) {
 		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s);", method(name), c.name, name)
 	}
 	if c.pool != nil {
+		w.ln("\tClassDB::bind_method(%s, &%s::free_pooled);", method("free_pooled"), c.name)
 		w.ln("\tClassDB::bind_method(%s, &%s::queue_free_pooled);", method("queue_free_pooled"), c.name)
 	}
 	for _, v := range c.vars {

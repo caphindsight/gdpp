@@ -1,0 +1,7 @@
+class_name A
+extends Node
+
+@scene
+extern B {
+  extends Resource
+}

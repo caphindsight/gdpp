@@ -177,7 +177,7 @@ GD++ names its helpers with the prefix `_gdpp_`, which is reserved: don't use it
 get_NAME, set_NAME           a variable's getter and setter
 NAME (of a signal)           a signal's emit function, returning gdpp::Emitted
 new_scene, new_pooled, new_scene_pooled   the method for scripts of a @scene class, a @pool class, or both, which calls create
-queue_free_pooled            a @pool class's method for scripts, which calls queue_destroy
+free_pooled, queue_free_pooled   a @pool class's methods for scripts, which call destroy and queue_destroy
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
 _gdpp_body_FUNC              the body of a @deferred, @thread_safe or @onthread function, which its deferred call or task runs
@@ -218,6 +218,8 @@ protected:
   Base *_gdpp_base;
 };
 ```
+
+An extern with `@pool` or `@scene` also has `static constexpr gdpp::ExtCreate<Bullet> gdpp_create{ "new_pooled", true };`, e.g. for a `@pool` extern `Bullet`: the class's method that `create` calls, and whether `destroy` and `queue_destroy` call `free_pooled` and `queue_free_pooled`.
 
 Its methods are defined inline, after the classes they may use, and call `_gdpp_base->call`, `call_deferred`, `get`, `set` or `emit_signal` with the member's name. See `gd++ man externs`.
 

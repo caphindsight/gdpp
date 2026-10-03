@@ -64,7 +64,7 @@ var
 signal
   Signals, to send them on the object, with `emit`. They can have `@trace`.
 
-The extern itself can have `@trace` and `@profile`, for all its members. See "Externs" in `gd++ man debugging`.
+The extern itself can have `@pool` and `@scene`, see "Pools and scenes" below, and `@trace` and `@profile`, for all its members. See "Externs" in `gd++ man debugging`.
 
 Everything else, e.g. `ctor`, `dtor`, `notif` blocks, enums, `decl` and `impl` blocks, is an error: "Externs can't contain ...". You only need to declare the members that your code uses.
 
@@ -124,7 +124,28 @@ add_child(terrain.base());
 destroy some_terrain;             // only for ExtPtr; refcounted objects delete themselves
 ```
 
-`create T` creates an object of the class named like the extern: a class that Godot's `ClassDB` knows, e.g. of a GDExtension, or else a global script class, i.e. a script with a `class_name`, which it loads and calls `new()` on. If there's no such class, it prints an error and returns null. `destroy` deletes an `ExtPtr`'s object; refcounted objects delete themselves when their last `ExtRef` goes away, so `destroy` doesn't compile for an `ExtRef`. They're the same `create` and `destroy` as for any class, see `gd++ man classes`.
+`create T` creates an object of the class named like the extern: a class that Godot's `ClassDB` knows, e.g. of a GDExtension, or else a global script class, i.e. a script with a `class_name`, which it loads and calls `new()` on. If there's no such class, it prints an error and returns null. `destroy` deletes an `ExtPtr`'s object; refcounted objects delete themselves when their last `ExtRef` goes away, so `destroy` doesn't compile for an `ExtRef`. They're the same `create` and `destroy` as for any class, see `gd++ man classes`. For a class with `@pool` or `@scene`, see the next section.
+
+# Pools and scenes
+
+If the class is a GD++ class with `@pool` or `@scene`, give its extern the same annotations, without arguments:
+
+```gd++
+@scene
+@pool
+extern Bullet {
+  extends Area3D
+}
+```
+
+Then `create`, `destroy` and `queue_destroy` call, by name, the methods that the class has for scripts, so they work like in the class's own package:
+
+- `create Bullet` calls the class's static method `new_pooled()`, `new_scene()` or `new_scene_pooled()`, for `@pool`, `@scene` or both. With a pool of a fixed size, it returns `nullptr` once all the objects are in use, so always check the result.
+- With `@pool`, `destroy bullet` calls `free_pooled()`, which returns the bullet to its pool right away, and `queue_destroy bullet` calls `queue_free_pooled()`, which returns it at the end of the frame. A bullet that the pool didn't make, e.g. one from a scene, is freed at the end of the frame.
+
+Without these annotations, `create` makes a plain object, outside the pool and without the scene, and `destroy` deletes the object for good, so nothing is reused.
+
+The class configures its pool and names its scene, so the extern's annotations take no arguments. They need an extern that extends `Node`, and a GD++ class, which has these methods. An extern that extends a `@pool` or `@scene` extern doesn't use the pool or the scene, unless it has the annotations itself, like a class that extends a `@pool` or `@scene` class. See `gd++ man pools`.
 
 # @deferred
 
@@ -169,7 +190,7 @@ Every call on an extern goes through Godot's `call` by name: the arguments are p
 
 # How it works
 
-For each extern, GD++ generates a header, e.g. `Terrain.h`, with a small wrapper class in namespace `godot`. It holds a pointer to the object, and has a method for each declared member, which calls the object's `call`, `call_deferred`, `get`, `set` or `emit_signal` with the member's name. `ExtPtr<T>` and `ExtRef<T>` hold the object, and their `operator->` returns such a wrapper. Externs aren't registered with Godot: they're only names for classes that are registered elsewhere. See `gd++ man runtime` and `gd++ man generated`.
+For each extern, GD++ generates a header, e.g. `Terrain.h`, with a small wrapper class in namespace `godot`. It holds a pointer to the object, and has a method for each declared member, which calls the object's `call`, `call_deferred`, `get`, `set` or `emit_signal` with the member's name. `ExtPtr<T>` and `ExtRef<T>` hold the object, and their `operator->` returns such a wrapper. An extern with `@pool` or `@scene` also has `gdpp_create`, which names the class's method that `create` calls, and tells whether `destroy` and `queue_destroy` call `free_pooled` and `queue_free_pooled`. Externs aren't registered with Godot: they're only names for classes that are registered elsewhere. See `gd++ man runtime` and `gd++ man generated`.
 
 # Example
 

@@ -19,6 +19,7 @@ public:
 	gdpp::PoolSlot<Spark> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
+	void free_pooled();
 	void queue_free_pooled();
 
 protected:

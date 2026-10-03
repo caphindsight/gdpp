@@ -25,6 +25,7 @@ public:
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
+	void free_pooled();
 	void queue_free_pooled();
 	void fire();
 	double get_speed() const;

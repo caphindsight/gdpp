@@ -10,6 +10,7 @@ namespace godot {
 void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire"), &Bullet::fire);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_pooled"), &Bullet::new_pooled);
+	ClassDB::bind_method(D_METHOD("free_pooled"), &Bullet::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Bullet::queue_free_pooled);
 	ClassDB::bind_method(D_METHOD("get_speed"), &Bullet::get_speed);
 	ClassDB::bind_method(D_METHOD("set_speed", "value"), &Bullet::set_speed);
@@ -29,20 +30,20 @@ Bullet::Bullet() {
 	gdpp::trace_lifetime("Bullet", this, true);
 #line 6 "input.gd++"
 	speed = 20.0;
-#line 33 "Bullet.cpp"
+#line 34 "Bullet.cpp"
 #line 7 "input.gd++"
 	age = 0.0;
-#line 36 "Bullet.cpp"
+#line 37 "Bullet.cpp"
 #line 9 "input.gd++"
 	target = [&]() -> Vector3 {
   return Vector3(0, 0, -1);
 }();
-#line 41 "Bullet.cpp"
+#line 42 "Bullet.cpp"
 #line 13 "input.gd++"
 	{
   gd::print("created");
 }
-#line 46 "Bullet.cpp"
+#line 47 "Bullet.cpp"
 }
 
 Bullet::~Bullet() {
@@ -51,7 +52,7 @@ Bullet::~Bullet() {
 	{
   gd::print("deleted");
 }
-#line 55 "Bullet.cpp"
+#line 56 "Bullet.cpp"
 	if (_gdpp_pool_slot.owned) {
 		_gdpp_pool.forget(this);
 	}
@@ -61,18 +62,18 @@ void Bullet::_gdpp_recycle_ctor() {
 	gdpp::trace_recycle("Bullet", this, true);
 #line 7 "input.gd++"
 	age = 0.0;
-#line 65 "Bullet.cpp"
+#line 66 "Bullet.cpp"
 	hits = {};
 #line 9 "input.gd++"
 	target = [&]() -> Vector3 {
   return Vector3(0, 0, -1);
 }();
-#line 71 "Bullet.cpp"
+#line 72 "Bullet.cpp"
 #line 21 "input.gd++"
 	{
   speed = 20.0;
 }
-#line 76 "Bullet.cpp"
+#line 77 "Bullet.cpp"
 }
 
 void Bullet::_gdpp_recycle_dtor() {
@@ -81,7 +82,15 @@ void Bullet::_gdpp_recycle_dtor() {
 	{
   gd::print("kept");
 }
-#line 85 "Bullet.cpp"
+#line 86 "Bullet.cpp"
+}
+
+void Bullet::free_pooled() {
+	if (_gdpp_pool_slot.owned) {
+		gdpp::destroy(this);
+	} else {
+		queue_free();
+	}
 }
 
 void Bullet::queue_free_pooled() {
@@ -100,7 +109,7 @@ void Bullet::fire() {
   auto other = gdpp::create<Bullet>();
   gdpp::destroy(other);
 
-#line 104 "Bullet.cpp"
+#line 113 "Bullet.cpp"
 }
 
 double Bullet::get_speed() const {

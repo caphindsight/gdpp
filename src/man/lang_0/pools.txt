@@ -142,20 +142,22 @@ When the library is unloaded, e.g. when the game quits, the pool deletes the obj
 
 # In scripts
 
-Scripts can't write `create` and `queue_destroy`, so a `@pool` class has two methods for them, which do the same:
+Scripts can't write `create`, `destroy` and `queue_destroy`, so a `@pool` class has three methods for them, which do the same:
 
 ```gdscript
 var bullet := Bullet.new_pooled()   # create Bullet
 if bullet:
     add_child(bullet)
 
+bullet.free_pooled()                 # destroy bullet
 bullet.queue_free_pooled()           # queue_destroy bullet
 ```
 
 - `Bullet.new_pooled()` takes a bullet from the pool, or creates a new one. With a size, it returns `null` once all the bullets are in use, so always check the result, like in C++. For a class with both `@pool` and `@scene`, it's named `new_scene_pooled()`, and a new bullet is an instance of the class's scene.
-- `bullet.queue_free_pooled()` returns the bullet to its pool at the end of the frame, like `queue_destroy`. That's safe in any signal handler, also during physics callbacks. Calling it again before the end of the frame does nothing. There's no method that returns a bullet right away.
+- `bullet.free_pooled()` returns the bullet to its pool right away, like `destroy`. Calling it again before the bullet is reused does nothing. Like `destroy`, it can't be used during physics callbacks, e.g. in a handler of `body_entered`: use `queue_free_pooled()` there. A bullet that the pool didn't make is freed at the end of the frame, since it can't free itself in the middle of a call.
+- `bullet.queue_free_pooled()` returns the bullet to its pool at the end of the frame, like `queue_destroy`. That's safe in any signal handler, also during physics callbacks. Calling it again before the end of the frame does nothing.
 
-Use the two together. `Bullet.new()` and `queue_free()` still work, but bypass the pool: `new()` creates a bullet outside the pool, which `queue_free_pooled()` simply frees, and `queue_free()` frees a pooled bullet for good, so nothing is ever reused.
+Use them together. `Bullet.new()` and `queue_free()` still work, but bypass the pool: `new()` creates a bullet outside the pool, which `free_pooled()` and `queue_free_pooled()` simply free, and `queue_free()` frees a pooled bullet for good, so nothing is ever reused.
 
 Warning: a returned bullet stays a valid object, and `new_pooled()` may hand it out again at any time, e.g. for another shot. So when a script returns a bullet, it must drop every reference to it. `is_instance_valid(bullet)` can't help: it's `true` for a returned bullet, and for a reused one. GD++ code can use `Weak[Bullet]` instead, see "Remembering pooled objects" above.
 
@@ -163,13 +165,17 @@ A reused bullet gets ready again when it next enters the tree, and its `@recycle
 
 A `@pool` class can't have members named like these methods.
 
+# Across packages
+
+Code of other packages uses the class through an extern. With `@pool` on the extern, also `@scene` if the class has it, its `create`, `destroy` and `queue_destroy` use the class's pool, through the methods for scripts. See "Pools and scenes" in `gd++ man externs`.
+
 # Tracing
 
 With `@trace` on a `@pool` class, in a build that turns it on, the trace shows when the pool reuses an object, and when the object is returned to the pool, e.g. `↻ Bullet#3001 reused` and `↻ Bullet#3001 returned to its pool`, besides the usual "created" and "freed" lines. See `gd++ man debugging`.
 
 # In the generated code
 
-A `@pool` class gets a few members, which the runtime's `create` and `destroy` use, besides `new_pooled` or `new_scene_pooled`, and `queue_free_pooled`, for scripts: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Its destructor tells the pool when an object is deleted for good. See `gd++ man generated` and `gd++ man runtime`.
+A `@pool` class gets a few members, which the runtime's `create` and `destroy` use, besides `new_pooled` or `new_scene_pooled`, `free_pooled` and `queue_free_pooled`, for scripts: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Its destructor tells the pool when an object is deleted for good. See `gd++ man generated` and `gd++ man runtime`.
 
 # See also
 
