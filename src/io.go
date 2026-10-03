@@ -111,7 +111,9 @@ func endStyles(line string) string {
 
 // WrapText splits each line of text into lines of at most width visible
 // characters, breaking at spaces where possible and inside words otherwise.
-// ANSI escape codes count as zero width. Returns text unchanged if width < 1.
+// ANSI escape codes count as zero width, and styles open at a break are ended
+// before it and reopened after it, so each line stands on its own, e.g. in the
+// pager. Returns text unchanged if width < 1.
 func WrapText(text string, width int) string {
 	if width < 1 {
 		return text
@@ -121,23 +123,38 @@ func WrapText(text string, width int) string {
 		if i > 0 {
 			out.WriteByte('\n')
 		}
-		col := 0
+		col, active, esc := 0, "", ""
+		breakLine := func() {
+			if active != "" {
+				out.WriteString("\x1b[0m\n" + active)
+			} else {
+				out.WriteByte('\n')
+			}
+			col = 0
+		}
 		for j, word := range strings.Split(line, " ") {
 			if j > 0 {
 				if col+1+visibleLen(word) <= width {
 					out.WriteByte(' ')
 					col++
 				} else {
-					out.WriteByte('\n')
-					col = 0
+					breakLine()
 				}
 			}
 			inEsc := false
 			for _, r := range word {
-				if !isEscape(r, &inEsc) {
+				if isEscape(r, &inEsc) {
+					if esc += string(r); !inEsc { // The escape code is complete.
+						if esc == "\x1b[0m" || esc == "\x1b[m" {
+							active = ""
+						} else {
+							active += esc
+						}
+						esc = ""
+					}
+				} else {
 					if col == width {
-						out.WriteByte('\n')
-						col = 0
+						breakLine()
 					}
 					col++
 				}

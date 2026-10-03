@@ -394,6 +394,9 @@ func TestWrapText(t *testing.T) {
 		{"long word after short one", "hi abcdefgh", 4, "hi\nabcd\nefgh"},
 		{"keeps existing newlines", "aaa bbb\nccc", 4, "aaa\nbbb\nccc"},
 		{"ansi codes are zero width", "\x1b[1;32mhello\x1b[0m world", 11, "\x1b[1;32mhello\x1b[0m world"},
+		{"styles continue after a break at a space", "\x1b[90m// a long comment\x1b[0m x", 10,
+			"\x1b[90m// a long\x1b[0m\n\x1b[90mcomment\x1b[0m x"},
+		{"styles continue after a break in a word", "\x1b[1mabcdef\x1b[0m", 4, "\x1b[1mabcd\x1b[0m\n\x1b[1mef\x1b[0m"},
 		{"zero width disables wrapping", "hello world", 0, "hello world"},
 		{"negative width disables wrapping", "hello world", -4, "hello world"},
 	}
