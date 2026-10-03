@@ -1,0 +1,3 @@
+@pool("soft")
+class_name A
+extends Node

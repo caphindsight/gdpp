@@ -1,0 +1,32 @@
+@pool(100, "soft")
+class_name Bullet
+extends Node3D
+
+var speed: float = 20.0
+@recycle var age: float = 0.0
+@recycle var hits: int
+@recycle var target: Vector3 = {
+  return Vector3(0, 0, -1);
+}
+
+ctor {
+  gd::print("created");
+}
+
+dtor {
+  gd::print("deleted");
+}
+
+@recycle ctor {
+  speed = 20.0;
+}
+
+@recycle
+dtor {
+  gd::print("kept");
+}
+
+func fire() -> void {
+  auto other = create Bullet;
+  destroy other;
+}

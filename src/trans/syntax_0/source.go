@@ -363,9 +363,9 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\treturn gdpp::run_task(%s, %q, [%s] { return %s(%s); });", self, c.name+"."+f.f.Name, capture,
 			bodyName(f), strings.Join(paramNames(f.f.Params), ", "))
 	case f.deferral != "" && f.isConst:
-		w.ln("\t%s;", deferredCall(f, fmt.Sprintf("const_cast<%s *>(this)", c.name), bodyName(f)))
+		w.ln("\t%s;", deferredCall(f.deferral, fmt.Sprintf("const_cast<%s *>(this)", c.name), bodyName(f), f.params, f.f.Params))
 	case f.deferral != "":
-		w.ln("\t%s;", deferredCall(f, "this", bodyName(f)))
+		w.ln("\t%s;", deferredCall(f.deferral, "this", bodyName(f), f.params, f.f.Params))
 	case f.f.Body != nil:
 		w.block(f.f.Body, "", "", assertFor(f.ret.void))
 	case !f.ret.void:
@@ -429,13 +429,18 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", v.setter, withSpace(v.t.param())+v.setterParam(), false))
 		guard(w, v.gameOnly, "void")
-		if v.profile {
-			u.profile(w, c.name+"."+v.setter)
+		if v.deferral == "" { // Else the set block's method, which the call runs, profiles and watches.
+			if v.profile {
+				u.profile(w, c.name+"."+v.setter)
+			}
+			watch(w, c, v.setter)
 		}
-		watch(w, c, v.setter)
-		if v.set != nil {
+		switch {
+		case v.deferral != "":
+			w.ln("\t%s;", deferredCall(v.deferral, "this", "_gdpp_body_"+v.setter, []*gtype{v.t}, []*Param{v.set.Param}))
+		case v.set != nil:
 			w.block(v.set.Body, "", "", assertVoid)
-		} else {
+		default:
 			w.ln("\t%s = p_value;", v.v.Name)
 		}
 		w.ln("}")

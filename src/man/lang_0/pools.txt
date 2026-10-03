@@ -112,8 +112,9 @@ The size is optional:
 - `@pool` has no limit.
 - `@pool(100)` can hold up to 100 objects, counting both those in use and those waiting in the pool. Once all of them are in use, `create` returns `nullptr`.
 - `@pool(100, "strict")` also logs an error when `create` finds the pool full, e.g. "GD++ object pool overflow for class `Bullet`, with 100 objects.". Use it for pools that should never run out.
+- `@pool(100, "soft")` has no limit either, but 100 is the most objects it expects. In debug builds, it logs an error when it grows past 100 objects, e.g. "GD++ object pool for class `Bullet` grew past 100 objects.", and again past 200, 400, 800 and so on, so the log doesn't fill up. Use it while you find out how many objects a game needs.
 
-Warning: if a pool has a fixed size, `create` returns `nullptr` once all of its objects are in use, even without `"strict"`. Always check the result before using the object, as `fire` does above: using a null pointer crashes the game. Only a pool without a size never returns `nullptr`.
+Warning: if a pool has a fixed size, `create` returns `nullptr` once all of its objects are in use, even without `"strict"`. Always check the result before using the object, as `fire` does above: using a null pointer crashes the game. Only a pool without a size, or with `"soft"`, never returns `nullptr`.
 
 # Which objects belong to the pool
 
@@ -153,7 +154,7 @@ bullet.free_pooled()                 # destroy bullet
 bullet.queue_free_pooled()           # queue_destroy bullet
 ```
 
-- `Bullet.new_pooled()` takes a bullet from the pool, or creates a new one. With a size, it returns `null` once all the bullets are in use, so always check the result, like in C++. For a class with both `@pool` and `@scene`, it's named `new_scene_pooled()`, and a new bullet is an instance of the class's scene.
+- `Bullet.new_pooled()` takes a bullet from the pool, or creates a new one. With a size, unless it's `"soft"`, it returns `null` once all the bullets are in use, so always check the result, like in C++. For a class with both `@pool` and `@scene`, it's named `new_scene_pooled()`, and a new bullet is an instance of the class's scene.
 - `bullet.free_pooled()` returns the bullet to its pool right away, like `destroy`. Calling it again before the bullet is reused does nothing. Like `destroy`, it can't be used during physics callbacks, e.g. in a handler of `body_entered`: use `queue_free_pooled()` there. A bullet that the pool didn't make is freed at the end of the frame, since it can't free itself in the middle of a call.
 - `bullet.queue_free_pooled()` returns the bullet to its pool at the end of the frame, like `queue_destroy`. That's safe in any signal handler, also during physics callbacks. Calling it again before the end of the frame does nothing.
 

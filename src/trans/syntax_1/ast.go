@@ -148,9 +148,10 @@ type Accessor struct {
 }
 
 type Setter struct {
-	Pos   lexer.Position
-	Param *Param `parser:"'set' '(' @@ ')'"`
-	Body  *Block `parser:"@@"`
+	Pos         lexer.Position
+	Annotations []*Annotation `parser:"@@*"`
+	Param       *Param        `parser:"'set' '(' @@ ')'"`
+	Body        *Block        `parser:"@@"`
 }
 
 // Enum is an integer constant (enum NAME = 42, Value set) or an enum type (Entries, after the values of Extends),

@@ -1,0 +1,7 @@
+class_name A
+extends Resource
+
+var x: int {
+  get { return 0; }
+  @thread_safe set(value) {}
+}

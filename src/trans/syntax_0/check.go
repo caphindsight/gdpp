@@ -65,7 +65,7 @@ type notifModel struct {
 // poolModel is the pool of a @pool class.
 type poolModel struct {
 	capacity string // The most objects it makes, as C++, or "0" for any number.
-	strict   bool   // Whether it prints an error when it's full.
+	limit    string // What it does at its capacity: "quiet", "strict" or "soft", like gdpp::PoolLimit.
 }
 
 type externModel struct {
@@ -128,6 +128,7 @@ type varModel struct {
 	getter, setter   string      // Empty if there is none.
 	get              *Block
 	set              *Setter
+	deferral         string // "deferred" or "thread_safe" with that annotation on its set block, else empty.
 	decls            []*Block
 	sections         []section // In source order.
 }
@@ -1320,7 +1321,7 @@ func (u *unit) poolOf(a *Annotation, owner string) (*poolModel, error) {
 	if err := u.requireBase(a, owner, "A pool takes its objects out of the scene tree, so they must be nodes.", "Node"); err != nil {
 		return nil, err
 	}
-	p, args := &poolModel{capacity: "0"}, a.Args
+	p, args := &poolModel{capacity: "0", limit: "quiet"}, a.Args
 	if len(args) > 0 && !isString(args[0].Value) {
 		if n, err := strconv.ParseInt(args[0].Value, 10, 64); err != nil || n <= 0 {
 			return nil, u.errorAt(args[0].Pos, len(args[0].Value), "A pool's size must be a positive integer.", "E.g. \"@pool(100)\".")
@@ -1332,14 +1333,14 @@ func (u *unit) poolOf(a *Annotation, owner string) (*poolModel, error) {
 		switch {
 		case err != nil:
 			return nil, err
-		case !isString(arg.Value) || v != "strict" || p.strict:
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @pool takes a size and \"strict\", both optional.",
-				"E.g. \"@pool\", \"@pool(100)\" or \"@pool(100, \\\"strict\\\")\".")
+		case !isString(arg.Value) || v != "strict" && v != "soft" || p.limit != "quiet":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @pool takes a size, and \"strict\" or \"soft\", all optional.",
+				"E.g. \"@pool\", \"@pool(100)\", \"@pool(100, \\\"strict\\\")\" or \"@pool(100, \\\"soft\\\")\".")
 		case p.capacity == "0":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Only a pool with a size can be full, so \"strict\" needs one.",
-				"E.g. \"@pool(100, \\\"strict\\\")\".")
+			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Only a pool with a size has a limit, so %q needs one.", v),
+				fmt.Sprintf("E.g. \"@pool(100, \\\"%s\\\")\".", v))
 		}
-		p.strict = true
+		p.limit = v
 	}
 	return p, nil
 }
@@ -1493,6 +1494,18 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 			m.get, m.getter = acc.Get, "get_"+v.Name
 		default:
 			m.set, m.setter = acc.Set, "set_"+v.Name
+			a, err := u.annotations(acc.Set.Annotations, "a set block", "deferred", "thread_safe")
+			if err != nil {
+				return nil, err
+			}
+			if err := u.requireBase(a["thread_safe"], owner, "call_thread_safe is a method of Node.", "Node"); err != nil {
+				return nil, err
+			}
+			for _, name := range []string{"deferred", "thread_safe"} {
+				if a[name] != nil {
+					m.deferral = name
+				}
+			}
 			if d := acc.Set.Param.Default; d != nil {
 				return nil, u.errorAt(d.Pos, 1, "The setter's parameter can't have a default value.", "")
 			}
@@ -1889,6 +1902,15 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				v.gameOnly = v.gameOnly || m.gameOnly
 				m.vars = append(m.vars, v)
 				err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
+				if err == nil && v.deferral != "" {
+					// The deferred call runs the set block, a separate method, which @profile and @trace's watch follow.
+					p := *v.set.Param
+					p.Type = v.v.Type
+					body := &Func{Pos: v.set.Pos, Name: "_gdpp_body_" + v.setter, Params: []*Param{&p}, Body: v.set.Body}
+					m.funcs = append(m.funcs, &funcModel{f: body, params: []*gtype{v.t}, ret: &gtype{cpp: "void", doc: "void", void: true},
+						hidden: v.deferral, notrace: true, noprofile: true, profile: v.profile, gameOnly: v.gameOnly})
+					err = u.unique(names, v.v.Pos, "var", body.Name)
+				}
 				for _, s := range v.sections {
 					if err != nil || s.ann.Name != "export_category" {
 						continue

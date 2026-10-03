@@ -1,0 +1,23 @@
+class_name Hatch
+extends Node
+
+enum State { OPEN, CLOSED }
+
+@trace
+var state: State {
+  decl { State state_ = State::OPEN; }
+  get { return state_; }
+  @deferred set(value) {
+    state_ = value;
+  }
+}
+
+@profile
+var label: String {
+  decl { String label_; }
+  get { return label_; }
+  @thread_safe
+  set(text: String) {
+    label_ = text;
+  }
+}

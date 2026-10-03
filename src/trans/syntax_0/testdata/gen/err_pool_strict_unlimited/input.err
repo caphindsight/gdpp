@@ -1,4 +1,4 @@
-input.gd++:1:7: Only a pool with a size can be full, so "strict" needs one.
+input.gd++:1:7: Only a pool with a size has a limit, so "strict" needs one.
  1 | @pool("strict")
    |       ^^^^^^^^
 Hint: E.g. "@pool(100, \"strict\")".

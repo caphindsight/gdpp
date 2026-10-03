@@ -1,4 +1,4 @@
-input.gd++:1:11: Annotation @pool takes a size and "strict", both optional.
+input.gd++:1:11: Annotation @pool takes a size, and "strict" or "soft", all optional.
  1 | @pool(10, "silent")
    |           ^^^^^^^^
-Hint: E.g. "@pool", "@pool(100)" or "@pool(100, \"strict\")".
+Hint: E.g. "@pool", "@pool(100)", "@pool(100, \"strict\")" or "@pool(100, \"soft\")".

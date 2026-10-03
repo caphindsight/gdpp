@@ -1,10 +1,10 @@
-Rewrites: GD++'s words in C++ code
+Rewrites: GD++'s additions to C++ code
 
-C++ code in a GD++ file is plain C++, with a handful of exceptions: words that GD++ adds to C++, and rewrites into plain C++ before the compiler sees the code. This page lists them, says why they exist, and where they apply.
+C++ code in a GD++ file is plain C++, with a handful of exceptions: rewrites, which GD++ adds to C++, and turns into plain C++ before the compiler sees the code. This page lists them, says why they exist, and where they apply.
 
 # The rewrites
 
-GD++ extends C++ with a few words, which it rewrites into plain C++:
+GD++ extends C++ with a few rewrites, which it turns into plain C++:
 
 ```
 emit NAME(ARGS)                (void) NAME(ARGS)                  send a signal, see `gd++ man signals`
@@ -28,7 +28,7 @@ They are rare on purpose, and mostly trivial: most just call a method. What they
 
 # Where they apply
 
-Rewrites only happen in C++ code, never in comments or strings. Each word applies in its own places:
+Rewrites only happen in C++ code, never in comments or strings. Each rewrite applies in its own places:
 
 - `emit` is rewritten wherever it stands as a word, so it's reserved: don't use `emit` as a name in your C++ code, and don't call methods named `emit`, e.g. `Signal::emit`.
 - `is_cancelled` is rewritten wherever it isn't a member, e.g. `state.is_cancelled`, a name in a scope, e.g. `gdpp::is_cancelled`, or a call, e.g. `is_cancelled()`. So it's reserved too: a variable or field named `is_cancelled` doesn't compile.
@@ -39,16 +39,16 @@ Rewrites only happen in C++ code, never in comments or strings. Each word applie
 - `as` is only rewritten when a value comes before it and a type after it.
 - `assert` is only rewritten where it starts a statement, and a condition and then a `;` follow it. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere it's left alone, e.g. in `s.assert(x);` or `assert = 1;`.
 
-Avoid all these words as names in your C++ code. Their operands:
+Avoid the names of all rewrites as names in your C++ code. Their operands:
 
 - NAME may be written with objects before it, joined by `->` or `.`, e.g. `rpc other->take_damage(5)`. The objects must be named by variables, not by function calls.
-- TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending`, `this->tasks[i]` or `find_path(a, b)`. Like C++'s own prefix operators, the word applies to all of it: `claim find(a).size()` claims the result of `find(a).size()`, so write `(claim find(a)).size()` to call `size` on the result. TASK must start with a name: `claim (a ? x : y)` isn't rewritten, so write `(a ? x : y).claim()` then.
+- TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending`, `this->tasks[i]` or `find_path(a, b)`. Like C++'s own prefix operators, the rewrite applies to all of it: `claim find(a).size()` claims the result of `find(a).size()`, so write `(claim find(a)).size()` to call `size` on the result. TASK must start with a name: `claim (a ? x : y)` isn't rewritten, so write `(a ? x : y).claim()` then.
 - T is the name of a class, maybe in a scope, e.g. `Bullet`, `This` or `godot::Mesh`. OBJECT and NODE are like TASK, e.g. `bullet` or `this->bullets[i]`.
 - VALUE is like TASK, but may also be in parentheses, e.g. `body`, `get_node("Mesh")` or `(a + b)`. `as` binds it like a C++ postfix operator, so `a + b as float` converts `b` only. T is a type, e.g. `int`, `Node3D *` or `Ref<Mesh>`. `as` is only rewritten where both are clear: in `x as int * y` or `(int) x as float`, it stays, so the code doesn't compile, and parentheses fix it, e.g. `(x as int) * y`. See `gd++ man cast`.
 
 A rewrite keeps the code's line breaks, so the line numbers in errors still match the GD++ file.
 
-`gd++ cat` and the code in this manual highlight these words as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
+`gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
 
 # Assertions
 

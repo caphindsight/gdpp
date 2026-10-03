@@ -277,7 +277,7 @@ func respawn(at: Vector3) -> void {
 
 With `@deferred`, every call of the function goes through `call_deferred`: from C++, from scripts, and over the network. The body runs later, at the end of the frame. `@thread_safe` is the same with `call_thread_safe`: a call from another thread runs later on the main thread, and a call from the main thread runs right away. Only classes that extend `Node` can use `@thread_safe`.
 
-Since the body runs later, the function must return `void`. GD++ puts the body in a second method, `_gdpp_body_NAME`, which the call runs by name. See `gd++ man generated`.
+Since the body runs later, the function must return `void`. GD++ puts the body in a second method, `_gdpp_body_NAME`, which the call runs by name. See `gd++ man generated`. A property's `set` block takes them too. See "Properties" in `gd++ man variables`.
 
 # @onthread
 

@@ -138,7 +138,7 @@ func fire() -> void {
 }
 ```
 
-Using the null pointer instead would crash the game. If running out of bullets is a bug, write `@pool(200, "strict")`: then a full pool also logs an error.
+Using the null pointer instead would crash the game. If running out of bullets is a bug, write `@pool(200, "strict")`: then a full pool also logs an error. And if you'd rather have more bullets than skip a shot, write `@pool(200, "soft")`: the pool then grows past 200 bullets, and only logs an error about it in debug builds, so you can raise the number.
 
 # 7. Measure
 

@@ -14,7 +14,7 @@ class Spark : public Node {
 public:
 	~Spark();
 	static Spark *new_pooled();
-	static inline gdpp::Pool<Spark> _gdpp_pool{ 0, false };
+	static inline gdpp::Pool<Spark> _gdpp_pool{ 0, gdpp::PoolLimit::QUIET };
 	gdpp::PoolSlot<Spark> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();

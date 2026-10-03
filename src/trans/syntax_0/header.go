@@ -288,7 +288,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		public = append(public, fmt.Sprintf("static %s *%s();", c.name, name))
 	}
 	if p := c.pool; p != nil {
-		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, %t };", c.name, p.capacity, p.strict),
+		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, gdpp::PoolLimit::%s };", c.name, p.capacity, strings.ToUpper(p.limit)),
 			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
 			"void free_pooled();", "void queue_free_pooled();")
 	}
@@ -469,12 +469,13 @@ func args(types []*gtype, list []*Param) string {
 	return strings.Join(as, "")
 }
 
-// deferredCall returns the call through which the @deferred or @thread_safe func f calls the method name of target.
-func deferredCall(f *funcModel, target, name string) string {
-	if f.deferral == "thread_safe" {
-		return fmt.Sprintf("gdpp::call_thread_safe(%s, GDPP_STRING_NAME(%q)%s)", target, name, args(f.params, f.f.Params))
+// deferredCall returns the call through which a @deferred or @thread_safe func or setter, as deferral says, calls the
+// method name of target with the parameters list of the given types.
+func deferredCall(deferral, target, name string, types []*gtype, list []*Param) string {
+	if deferral == "thread_safe" {
+		return fmt.Sprintf("gdpp::call_thread_safe(%s, GDPP_STRING_NAME(%q)%s)", target, name, args(types, list))
 	}
-	return fmt.Sprintf("%s->call_deferred(GDPP_STRING_NAME(%q)%s)", target, name, args(f.params, f.f.Params))
+	return fmt.Sprintf("%s->call_deferred(GDPP_STRING_NAME(%q)%s)", target, name, args(types, list))
 }
 
 // debugging reports whether the extern's header uses the runtime's code for @trace and @profile.
@@ -499,7 +500,7 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		call := fmt.Sprintf("_gdpp_base->call(GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params))
 		switch {
 		case f.deferral != "":
-			w.ln("\t%s;", deferredCall(f, "_gdpp_base", f.f.Name))
+			w.ln("\t%s;", deferredCall(f.deferral, "_gdpp_base", f.f.Name, f.params, f.f.Params))
 		case f.ret.void:
 			w.ln("\t%s;", call)
 		case f.trace:

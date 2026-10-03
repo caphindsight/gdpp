@@ -116,6 +116,21 @@ get { ... }
 set(NAME) { ... }
   The body of the setter, `void set_ammo(int64_t value)`, whose parameter is called NAME. It's optional: without it, the property is read-only, and Godot can't set it. The parameter's type can be left out, since it's the property's type. If you write it, it must be the same type.
 
+The `set` block takes `@deferred` or `@thread_safe`, like a function:
+
+```gd++
+var target: Vector3 {
+  decl { Vector3 target_; }
+  get { return target_; }
+  @deferred set(value) {
+    target_ = value;
+    rebuild_path();
+  }
+}
+```
+
+With `@deferred`, every call of the setter goes through `call_deferred`: from C++, from scripts, and from the inspector or a scene file. The block runs later, at the end of the frame, so until then, the getter still returns the old value. `@thread_safe` is the same with `call_thread_safe`: a call from another thread runs later on the main thread, and a call from the main thread runs right away. Only classes that extend `Node` can use `@thread_safe`. GD++ puts the block in a second method, `_gdpp_body_set_NAME`, which the call runs by name. See "@deferred and @thread_safe" in `gd++ man functions`.
+
 A property can't have an initial value: initialize its storage in its `decl` block, or in the `ctor`.
 
 A read-only, computed property:

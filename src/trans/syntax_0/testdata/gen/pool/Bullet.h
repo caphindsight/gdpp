@@ -21,7 +21,7 @@ public:
 	Bullet();
 	~Bullet();
 	static Bullet *new_pooled();
-	static inline gdpp::Pool<Bullet> _gdpp_pool{ 100, true };
+	static inline gdpp::Pool<Bullet> _gdpp_pool{ 100, gdpp::PoolLimit::STRICT };
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();

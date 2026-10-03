@@ -494,15 +494,23 @@ struct PoolSlot {
 	std::atomic<uint64_t> generation = 0; // How many times it was given back, so Weak<T> knows a reused object.
 };
 
+// PoolLimit is what a Pool with a capacity does at it: QUIET and STRICT make no more objects, STRICT with an error,
+// and SOFT makes more, with an error in debug builds each time it grows past the capacity times a power of 2.
+enum class PoolLimit {
+	QUIET,
+	STRICT,
+	SOFT,
+};
+
 // Pool<T> keeps the objects of the @pool class T that destroy gave back, for create to reuse. It makes at most
-// capacity objects, or any number with 0, and with strict, prints an error when it's full. It's thread-safe, and each
+// capacity objects, or any number with 0, unless its limit is SOFT. It's thread-safe, and each
 // operation is O(1). The resting objects are in a list of chunks of fixed size, so that a pool that grows never moves
 // them, and taking and giving back only touch the last chunk. Chunks are kept once made.
 template <typename T>
 class Pool {
 public:
-	Pool(int64_t p_capacity, bool p_strict) :
-			capacity_(p_capacity), strict_(p_strict) {}
+	Pool(int64_t p_capacity, PoolLimit p_limit) :
+			capacity_(p_capacity), limit_(p_limit), warn_at_(p_capacity) {}
 	~Pool() {
 		for (Chunk *chunk = first_.next; chunk;) {
 			delete std::exchange(chunk, chunk->next);
@@ -519,14 +527,20 @@ public:
 				on_unload([this] { clear(); });
 			}
 			object = pop();
-			if (!object && capacity_ > 0 && alive_ >= capacity_) {
-				if (strict_) {
+			if (!object && capacity_ > 0 && alive_ >= capacity_ && limit_ != PoolLimit::SOFT) {
+				if (limit_ == PoolLimit::STRICT) {
 					ERR_PRINT(vformat("GD++ object pool overflow for class `%s`, with %d objects.", T::get_class_static(), capacity_));
 				}
 				return nullptr;
 			}
 			if (!object) {
 				alive_++;
+#ifdef DEBUG_ENABLED
+				if (limit_ == PoolLimit::SOFT && alive_ > warn_at_) {
+					ERR_PRINT(vformat("GD++ object pool for class `%s` grew past %d objects.", T::get_class_static(), warn_at_));
+					warn_at_ *= 2;
+				}
+#endif
 			}
 		}
 		if (object) {
@@ -629,7 +643,8 @@ private:
 
 	std::mutex mutex_;
 	int64_t capacity_;
-	bool strict_;
+	PoolLimit limit_;
+	int64_t warn_at_; // With SOFT, the number of objects past which it next prints an error.
 	bool hooked_ = false; // Whether clear runs on unload.
 	int64_t alive_ = 0; // The objects it made that aren't freed, resting or in use.
 	Chunk first_;

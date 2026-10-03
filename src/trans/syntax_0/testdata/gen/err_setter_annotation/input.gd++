@@ -1,0 +1,7 @@
+class_name A
+extends Node
+
+var x: int {
+  get { return 0; }
+  @onthread set(value) {}
+}

@@ -1,0 +1,6 @@
+class_name Test
+var x: int {
+  get { return 0; }
+  @deferred @thread_safe
+  set(val) {}
+}

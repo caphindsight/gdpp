@@ -1,0 +1,2 @@
+{Name:Hatch Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:State Kind:3 Base: Values:[{Name:OPEN Value:0 Doc: Implicit:true Expr:} {Name:CLOSED Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}

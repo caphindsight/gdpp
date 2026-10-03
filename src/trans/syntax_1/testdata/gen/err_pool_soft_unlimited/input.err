@@ -1,0 +1,4 @@
+input.gd++:1:7: Only a pool with a size has a limit, so "soft" needs one.
+ 1 | @pool("soft")
+   |       ^^^^^^
+Hint: E.g. "@pool(100, \"soft\")".

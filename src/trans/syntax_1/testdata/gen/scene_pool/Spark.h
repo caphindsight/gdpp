@@ -15,7 +15,7 @@ public:
 	~Spark();
 	static constexpr gdpp::Scene<Spark> _gdpp_scene{ "res://spark.tscn" };
 	static Spark *new_scene_pooled();
-	static inline gdpp::Pool<Spark> _gdpp_pool{ 10, false };
+	static inline gdpp::Pool<Spark> _gdpp_pool{ 10, gdpp::PoolLimit::QUIET };
 	gdpp::PoolSlot<Spark> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();

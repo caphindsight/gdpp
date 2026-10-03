@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Hatch" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="label" type="String" setter="set_label" getter="get_label">
+		</member>
+		<member name="state" type="int" enum="Hatch.State" setter="set_state" getter="get_state">
+		</member>
+	</members>
+	<constants>
+		<constant name="STATE_OPEN" value="0" enum="State">
+		</constant>
+		<constant name="STATE_CLOSED" value="1" enum="State">
+		</constant>
+	</constants>
+</class>

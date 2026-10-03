@@ -166,7 +166,7 @@ Async variables can't be exported.
 Weak variables can't be exported.
 Annotation @pool can only be used in classes that extend Node, which A doesn't.
 A pool's size must be a positive integer.
-Only a pool with a size can be full, so "strict" needs one.
+Only a pool with a size has a limit, so "strict" needs one.
 A @recycle ctor only works in a @pool class, whose objects are reused.
 A @recycle var needs an initial value, which property x doesn't have.
 Class A has two @recycle dtors.
