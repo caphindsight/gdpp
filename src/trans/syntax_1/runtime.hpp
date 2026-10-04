@@ -568,29 +568,58 @@ struct has_scene : std::false_type {};
 template <typename T>
 struct has_scene<T, std::void_t<decltype(T::_gdpp_scene)>> : std::is_same<std::remove_cv_t<decltype(T::_gdpp_scene)>, Scene<T>> {};
 
-// scene returns the scene of the @scene class T, which it loads once and keeps until the library is unloaded, or null
-// if it fails to load. It's thread-safe.
+// SceneCache<T> keeps the scene of the @scene class T, once loaded.
 template <typename T>
-PackedScene *scene() {
-	static std::atomic<PackedScene *> loaded = nullptr;
-	if (PackedScene *s = loaded.load(std::memory_order_acquire)) {
-		return s;
+struct SceneCache {
+	// Guards scene and hooked.
+	static inline std::mutex mutex;
+	// The scene, or null until it's loaded.
+	static inline Ref<PackedScene> scene;
+	// Whether on_unload evicts the scene.
+	static inline bool hooked = false;
+};
+
+// evict_scene drops the scene of the @scene class T, so that scene<T> loads it again. It's thread-safe.
+template <typename T>
+void evict_scene() {
+	Ref<PackedScene> evicted; // Freed outside the lock.
+	std::lock_guard<std::mutex> lock(SceneCache<T>::mutex);
+	evicted = SceneCache<T>::scene;
+	SceneCache<T>::scene.unref();
+}
+
+// scene returns the scene of the @scene class T, which it loads once and keeps until evict_scene<T> or the library is
+// unloaded, or null if it fails to load. It's thread-safe.
+template <typename T>
+Ref<PackedScene> scene() {
+	using C = SceneCache<T>;
+	{
+		std::lock_guard<std::mutex> lock(C::mutex);
+		if (C::scene.is_valid()) {
+			return C::scene;
+		}
 	}
 	Ref<PackedScene> s = ResourceLoader::get_singleton()->load(T::_gdpp_scene.path);
 	ERR_FAIL_COND_V_MSG(s.is_null(), nullptr, vformat("Failed to load the scene %s of %s.", T::_gdpp_scene.path, T::get_class_static()));
-	// loaded holds a reference of its own. Of threads that load it at once, the first keeps its scene.
-	s->reference();
-	PackedScene *first = nullptr;
-	if (!loaded.compare_exchange_strong(first, s.ptr(), std::memory_order_acq_rel)) {
-		s->unreference();
-		return first;
-	}
-	on_unload([] {
-		if (PackedScene *s = loaded.exchange(nullptr); s && s->unreference()) {
-			memdelete(s);
+	bool hook = false;
+	{
+		// Of threads that load it at once, the first keeps its scene.
+		std::lock_guard<std::mutex> lock(C::mutex);
+		if (C::scene.is_null()) {
+			C::scene = s;
 		}
-	});
-	return s.ptr();
+		s = C::scene;
+		hook = !std::exchange(C::hooked, true);
+	}
+	// Outside the lock: uninitialize runs the hook, which takes it, while it holds the lock that on_unload takes.
+	if (hook) {
+		on_unload([] {
+			evict_scene<T>();
+			std::lock_guard<std::mutex> lock(C::mutex);
+			C::hooked = false;
+		});
+	}
+	return s;
 }
 
 // make creates an object of the class T: for a @scene class, an instance of its scene, whose root must be a T, or
@@ -598,8 +627,8 @@ PackedScene *scene() {
 template <typename T>
 T *make() {
 	if constexpr (has_scene<T>::value) {
-		PackedScene *s = scene<T>();
-		Node *root = s ? s->instantiate() : nullptr;
+		Ref<PackedScene> s = scene<T>();
+		Node *root = s.is_valid() ? s->instantiate() : nullptr;
 		T *object = Object::cast_to<T>(root);
 		if (root && !object) {
 			ERR_PRINT(vformat("The root of the scene %s is a %s, not a %s.", T::_gdpp_scene.path, root->get_class(), T::get_class_static()));

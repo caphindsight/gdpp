@@ -237,6 +237,7 @@ NAME (of a signal)           a signal's emit function, returning gdpp::Emitted
 new_scene, new_pooled, new_scene_pooled   the method for scripts of a @scene class, a @pool class, or both, which calls create
 free_pooled, queue_free_pooled   a @pool class's methods for scripts, which call destroy and queue_destroy
 pool_reserve, pool_clear     a @pool class's static methods, which fill and empty its pool
+scene_cache, scene_evict     a @scene class's static methods, which load and drop its scene
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
 _gdpp_body_FUNC              the body of a @deferred, @thread_safe or @onthread function, or set block, which its deferred call or task runs

@@ -18,5 +18,17 @@
 				Creates an instance of the class's scene, like [code]create[/code] in GD++ code, and returns its root. The scene is loaded once, by the first call. Returns [code]null[/code] if the scene fails to load, or if its root isn't an object of this class, so always check the result. [code]new()[/code] creates the node alone, without the scene.
 			</description>
 		</method>
+		<method name="scene_cache" qualifiers="static">
+			<return type="void" />
+			<description>
+				Loads the class's scene and keeps it, so that [method new_scene] doesn't load it later, e.g. when a level loads. Does nothing if the scene is kept already. Prints an error if it fails to load. It's thread-safe.
+			</description>
+		</method>
+		<method name="scene_evict" qualifiers="static">
+			<return type="void" />
+			<description>
+				Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next [method new_scene] or [method scene_cache] loads it again. Objects created from it stay as they are. It's thread-safe.
+			</description>
+		</method>
 	</methods>
 </class>

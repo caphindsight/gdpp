@@ -146,6 +146,18 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("\treturn gdpp::create<%s>();", c.name)
 		w.ln("}")
 	}
+	if c.scene != "" {
+		w.ln("")
+		w.ln("void %s::scene_cache() {", c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\tgdpp::scene<%s>();", c.name)
+		w.ln("}")
+		w.ln("")
+		w.ln("void %s::scene_evict() {", c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\tgdpp::evict_scene<%s>();", c.name)
+		w.ln("}")
+	}
 	if c.needsNotification() {
 		w.ln("")
 		w.ln("void %s::_notification(int WHAT) {", c.name)
@@ -608,6 +620,10 @@ func (u *unit) bindings(w *writer, c *classModel) {
 	}
 	if name := c.newName(); name != "" {
 		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s);", method(name), c.name, name)
+	}
+	if c.scene != "" {
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::scene_cache);", method("scene_cache"), c.name)
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::scene_evict);", method("scene_evict"), c.name)
 	}
 	if c.pool != nil {
 		w.ln("\tClassDB::bind_method(%s, &%s::free_pooled);", method("free_pooled"), c.name)

@@ -8,6 +8,8 @@ namespace godot {
 
 void Spark::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene_pooled"), &Spark::new_scene_pooled);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_cache"), &Spark::scene_cache);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_evict"), &Spark::scene_evict);
 	ClassDB::bind_method(D_METHOD("free_pooled"), &Spark::free_pooled);
 	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Spark::queue_free_pooled);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Spark::pool_reserve, DEFVAL(10), DEFVAL(String()));
@@ -50,6 +52,14 @@ void Spark::pool_clear(bool p_keep_in_use) {
 
 Spark *Spark::new_scene_pooled() {
 	return gdpp::create<Spark>();
+}
+
+void Spark::scene_cache() {
+	gdpp::scene<Spark>();
+}
+
+void Spark::scene_evict() {
+	gdpp::evict_scene<Spark>();
 }
 
 #undef This

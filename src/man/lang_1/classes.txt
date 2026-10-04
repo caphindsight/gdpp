@@ -233,11 +233,28 @@ The path:
 
 `create`:
 
-- The first `create` loads the scene, and keeps it until the library is unloaded. Later ones only instantiate it.
+- The first `create` loads the scene, and keeps it. Later ones only instantiate it. See "Loading the scene" below.
 - The scene's root must be a `Bullet`. If it isn't, or the scene fails to load, `create` prints an error and returns null.
 - Thread-safe: worker threads may create scenes too, though only the main thread may add them to the tree.
 - Only `create` uses the scene. `memnew(Bullet)`, `Bullet.new()` in GDScript, and scenes that hold a `Bullet` give the node alone.
 - Classes without `@scene` pay nothing for it: `create` decides at compile time.
+
+Loading the scene:
+
+- The scene stays kept until `scene_evict()`, or until the library is unloaded.
+- `scene_cache()` loads and keeps it ahead of time, e.g. when a level loads, so the first `create` doesn't pay for it. It does nothing if the scene is kept already.
+- `scene_evict()` drops it, e.g. when the level is unloaded. The next `create` or `scene_cache()` loads it again. Bullets created from it stay as they are.
+- Both are thread-safe.
+
+```gdscript
+func _ready():
+    Bullet.scene_cache()    # loads bullet.tscn now
+
+func _exit_tree():
+    Bullet.scene_evict()    # drops it
+```
+
+GD++ code calls them the same way: `Bullet::scene_cache();`.
 
 Other facts:
 
@@ -246,7 +263,7 @@ Other facts:
 - With `@pool`, the pool instantiates the scene for each new object, and reuses objects without it.
 - Scripts can't write `create`, so a `@scene` class has a static method for them, which does the same: `Bullet.new_scene()`. It returns the root of a new instance of the scene, or `null`, so check it.
 - A class with both `@scene` and `@pool` has `new_scene_pooled()` instead. See `gd++ man pools`.
-- A `@scene` class can't have a member named like its method.
+- A `@scene` class can't have a member named like its methods.
 
 # @trace and @profile
 

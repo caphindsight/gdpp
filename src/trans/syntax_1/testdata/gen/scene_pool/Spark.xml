@@ -40,5 +40,17 @@
 				Returns the node to its pool at the end of the frame, like [code]queue_destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before then does nothing. A node that the pool didn't make is freed, like with [method Node.queue_free]. [b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.
 			</description>
 		</method>
+		<method name="scene_cache" qualifiers="static">
+			<return type="void" />
+			<description>
+				Loads the class's scene and keeps it, so that [method new_scene_pooled] doesn't load it later, e.g. when a level loads. Does nothing if the scene is kept already. Prints an error if it fails to load. It's thread-safe.
+			</description>
+		</method>
+		<method name="scene_evict" qualifiers="static">
+			<return type="void" />
+			<description>
+				Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next [method new_scene_pooled] or [method scene_cache] loads it again. Objects created from it stay as they are. It's thread-safe.
+			</description>
+		</method>
 	</methods>
 </class>

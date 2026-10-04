@@ -1,0 +1,6 @@
+@scene("res://a.tscn")
+class_name A
+extends Node
+
+func scene_evict() -> void {
+}

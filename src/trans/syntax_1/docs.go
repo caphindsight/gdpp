@@ -357,8 +357,12 @@ func (u *unit) document(c *classModel) string {
 		methods = append(methods, methodDoc{name: name, qualifiers: "static", ret: &gtype{cpp: c.name + " *", doc: c.name},
 			doc: parseDoc(newDocs[name], false)})
 	}
+	void := &gtype{cpp: "void", doc: "void", void: true}
+	if c.scene != "" {
+		methods = append(methods, methodDoc{name: "scene_cache", qualifiers: "static", ret: void, doc: parseDoc(fmt.Sprintf(sceneCacheDoc, c.newName()), false)},
+			methodDoc{name: "scene_evict", qualifiers: "static", ret: void, doc: parseDoc(fmt.Sprintf(sceneEvictDoc, c.newName()), false)})
+	}
 	if c.pool != nil {
-		void := &gtype{cpp: "void", doc: "void", void: true}
 		var count *Default // pool_reserve's count defaults to the pool's size, if it has one.
 		if c.pool.size != "0" {
 			count = &Default{Expr: c.pool.size}
@@ -444,6 +448,11 @@ const poolReserveDoc = `Makes or frees resting objects, so that the class's pool
 
 const poolClearDoc = `Drops all the objects of the class's pool for good: it frees the resting ones right away, and those in use at the end of the frame, like with [method Node.queue_free]. With [param keep_in_use], it leaves those in use alone instead: they no longer belong to the pool, so [method free_pooled] frees them. The pool's size and mode stay as they are.
 [b]Warning:[/b] the objects in use are freed, so drop every reference to them, unless [param keep_in_use] is [code]true[/code]. It isn't thread-safe, so call it from the main thread only.`
+
+// The documentation of scene_cache and scene_evict: %[1]s is the class's method for create.
+const sceneCacheDoc = `Loads the class's scene and keeps it, so that [method %[1]s] doesn't load it later, e.g. when a level loads. Does nothing if the scene is kept already. Prints an error if it fails to load. It's thread-safe.`
+
+const sceneEvictDoc = `Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next [method %[1]s] or [method scene_cache] loads it again. Objects created from it stay as they are. It's thread-safe.`
 
 const queueFreePooledDoc = `Returns the node to its pool at the end of the frame, like [code]queue_destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before then does nothing. A node that the pool didn't make is freed, like with [method Node.queue_free].
 [b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.`

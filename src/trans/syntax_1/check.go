@@ -1931,6 +1931,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	for _, name := range []string{"free_pooled", "queue_free_pooled", "pool_reserve", "pool_clear"} {
 		names[name] = m.pool != nil
 	}
+	for _, name := range []string{"scene_cache", "scene_evict"} {
+		names[name] = m.scene != ""
+	}
 	// Enums declared in the class.
 	var declared []*symbol
 	for _, member := range c.Members {

@@ -9,10 +9,20 @@ namespace godot {
 void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire"), &Bullet::fire);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene"), &Bullet::new_scene);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_cache"), &Bullet::scene_cache);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_evict"), &Bullet::scene_evict);
 }
 
 Bullet *Bullet::new_scene() {
 	return gdpp::create<Bullet>();
+}
+
+void Bullet::scene_cache() {
+	gdpp::scene<Bullet>();
+}
+
+void Bullet::scene_evict() {
+	gdpp::evict_scene<Bullet>();
 }
 
 void Bullet::fire() {
@@ -20,7 +30,7 @@ void Bullet::fire() {
 
   Bullet *b = gdpp::create<Bullet>();
 
-#line 24 "Bullet.cpp"
+#line 34 "Bullet.cpp"
 }
 
 #undef This

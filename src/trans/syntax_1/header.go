@@ -289,6 +289,9 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if name := c.newName(); name != "" {
 		public = append(public, fmt.Sprintf("static %s *%s();", c.name, name))
 	}
+	if c.scene != "" {
+		public = append(public, "static void scene_cache();", "static void scene_evict();")
+	}
 	if p := c.pool; p != nil {
 		count := "int64_t p_count" // Defaults to the pool's size, if it has one.
 		if p.size != "0" {
