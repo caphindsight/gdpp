@@ -1,0 +1,5 @@
+class Stat {
+}
+
+macro Stat(name) {
+}

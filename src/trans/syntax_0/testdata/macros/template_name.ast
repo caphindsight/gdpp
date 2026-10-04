@@ -1,0 +1,20 @@
+File: @1:1
+  FileMacro: @1:1
+    Template: true
+    Name: pool_of
+    Params:
+      - @1:23 T
+      - @1:26
+        Name: size
+        Default: @1:33 64
+    Body: @1:36
+      Block: @1:36
+        TextPos: 1:36
+        Text: |
+
+
+          @pool(${size}, "grow")
+          class ${T}Pool {
+            extends Node
+          }
+

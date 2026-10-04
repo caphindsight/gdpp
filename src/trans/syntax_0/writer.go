@@ -31,9 +31,17 @@ func (w *writer) user(pos lexer.Position, prefix, code, suffix, assert string) {
 	w.ln("#line %d %q", w.lines+2, w.self)
 }
 
-// block writes the text of b, a C++ block, between prefix and suffix, like user.
+// block writes the text of b, a C++ block, between prefix and suffix, like user. Generated code all comes from
+// its invocation, so each of its lines gets a #line naming the invocation's line.
 func (w *writer) block(b *Block, prefix, suffix, assert string) {
-	w.user(b.TextPos, prefix, b.Text, suffix, assert)
+	if !b.Generated {
+		w.user(b.TextPos, prefix, b.Text, suffix, assert)
+		return
+	}
+	at := fmt.Sprintf("#line %d %q", b.TextPos.Line, w.source)
+	w.ln("%s", at)
+	w.ln("%s", strings.ReplaceAll(prefix+cpp(b.Text, assert)+suffix, "\n", "\n"+at+"\n"))
+	w.ln("#line %d %q", w.lines+2, w.self)
 }
 
 func (w *writer) String() string {

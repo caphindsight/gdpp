@@ -52,3 +52,13 @@ field Dependency.Notifications []string
 field Declaration.Notifications []string
 field Declaration.Abstract bool
 field Dependency.NonRuntime bool
+const Macro Kind = 8
+const Template Kind = 9
+field Dependency.Source string
+field Dependency.File string
+const MacroDecl DeclKind = 4
+const TemplateDecl DeclKind = 5
+field Options.PackageID string
+field Options.PackagePrefix string
+field Options.CppStandard string
+field Options.MacroTimeout int

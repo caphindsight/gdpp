@@ -52,6 +52,25 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "x = %Health; y = a % b; y %= 2;", "x = " + Styled("%Health", CodeLiteral) + "; y = a % b; y %= " + Styled("2", CodeLiteral) + ";"},
 		{"gdscript", "$Ünit.hide()", Styled("$Ünit", CodeLiteral) + "." + Styled("hide", CodeFunction) + "()"},
 		{"", "var x", "var x"},
+		{"lua", "local t = {} -- c\nif gd.pascal(x) then return [[s]] end --[[ a\nb ]]", Styled("local", CodeKeyword) + " t = {} " + Styled("-- c", CodeComment) +
+			"\n" + Styled("if", CodeKeyword) + " " + Styled("gd", CodeType) + "." + Styled("pascal", CodeFunction) + "(x) " + Styled("then", CodeKeyword) + " " +
+			Styled("return", CodeKeyword) + " " + Styled("[[s]]", CodeLiteral) + " " + Styled("end", CodeKeyword) + " " + Styled("--[[ a", CodeComment) + "\n" +
+			Styled("b ]]", CodeComment)},
+		{"lua", "x = ctx.scope .. 'a' // 2", "x = " + Styled("ctx", CodeType) + ".scope .. " + Styled("'a'", CodeLiteral) + " // " + Styled("2", CodeLiteral)},
+		{"gd++", "macro stat(n, m = 1) {\n  local end_ = n // c\n}", Styled("macro", CodeKeyword) + " " + Styled("stat", CodeFunction) + "(n, m = " +
+			Styled("1", CodeLiteral) + ") {\n  " + Styled("local", CodeKeyword) + " end_ = n " + Styled("// c", CodeComment) + "\n}"},
+		{"gd++", "macro_name m(a)\nif a then end", Styled("macro_name", CodeKeyword) + " " + Styled("m", CodeFunction) + "(a)\n" + Styled("if", CodeKeyword) +
+			" a " + Styled("then", CodeKeyword) + " " + Styled("end", CodeKeyword)},
+		{"gd++", "template t(a) {\n  var ${a}: int\n}", Styled("template", CodeKeyword) + " " + Styled("t", CodeFunction) + "(a) {\n  " +
+			Styled("var", CodeKeyword) + " " + Styled("${", CodePreProc) + "a" + Styled("}", CodePreProc) + ": " + Styled("int", CodeType) + "\n}"},
+		{"gd++", "invoke stat(hp, body = code { x++; }); invoke s { n = 1 }", Styled("invoke", CodeKeyword) + " " + Styled("stat", CodeFunction) +
+			"(hp, body = " + Styled("code", CodeKeyword) + " { x++; }); " + Styled("invoke", CodeKeyword) + " " + Styled("s", CodeFunction) + " { n = " +
+			Styled("1", CodeLiteral) + " }"},
+		{"gd++", "std::invoke(f); invoke(f, 1); int invoke = 2;", "std::" + Styled("invoke", CodeFunction) + "(f); " + Styled("invoke", CodeFunction) +
+			"(f, " + Styled("1", CodeLiteral) + "); " + Styled("int", CodeType) + " invoke = " + Styled("2", CodeLiteral) + ";"},
+		{"gd++", "int end = local; code = 1;", Styled("int", CodeType) + " end = local; code = " + Styled("1", CodeLiteral) + ";"},
+		{"gd++", "template <typename T> void f();", Styled("template", CodeKeyword) + " <" + Styled("typename", CodeKeyword) + " T> " +
+			Styled("void", CodeType) + " " + Styled("f", CodeFunction) + "();"},
 	}
 	for _, tc := range cases {
 		if got := highlightCode(tc.code, tc.lang); got != tc.want {

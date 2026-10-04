@@ -71,7 +71,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), Tool: class.Tool,
 			Abstract: class.Abstract, Kind: class.Kind})
 	}
-	for _, f := range listGdppFiles(p, pkg) {
+	for _, f := range listGdppFiles(p, pkg, 0) {
 		file := lsClass{File: f.File, FileText: "pkg://" + f.Rel, Gdpp: true}
 		if f.Err != nil {
 			broken = append(broken, file)

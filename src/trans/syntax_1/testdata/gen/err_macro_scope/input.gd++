@@ -1,0 +1,5 @@
+invoke helper()
+
+macro helper() {
+  gd.func { name = "f", ret = "void", body = "" }
+}

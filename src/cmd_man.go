@@ -65,12 +65,12 @@ var langManPages = map[int][]string{
 	0: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
 		"lang/signals", "lang/enums", "lang/lifecycle", "lang/notifications", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance",
-		"lang/code", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
+		"lang/code", "lang/macros", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 	1: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
 		"lang/signals", "lang/enums", "lang/lifecycle", "lang/notifications", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance",
-		"lang/code", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
+		"lang/code", "lang/macros", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 }
 
@@ -197,8 +197,8 @@ func (m manual) contents(parent string) string {
 //     is not a term: the indented items are nested in it.
 //   - `...` is inline code.
 //   - A line "```LANG" starts a code block, and a line "```" ends it. LANG is
-//     gd++, cpp, gdscript, sh, toml, out (gd++'s output), or empty for plain
-//     text.
+//     gd++, cpp, gdscript, lua, sh, toml, out (gd++'s output), or empty for
+//     plain text.
 
 var manItemRegexp = regexp.MustCompile(`^(-|[0-9]+\.) `)
 

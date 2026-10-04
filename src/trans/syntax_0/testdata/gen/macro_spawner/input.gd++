@@ -1,0 +1,21 @@
+class_name Spawner
+extends Node
+
+invoke spawner { enemy = "Slime", waves = 4, count = function(w) return 3 + w * w end }
+
+// Wave sizes computed in Lua: a constant per wave, and a function that looks them up.
+macro spawner(enemy, waves, count) {
+  if type(count) ~= "function" then
+    gd.error_at("count", "count must be a function of the wave number", "E.g. count = function(w) return w * 2 end.")
+  end
+  for w = 1, waves do
+    gd.enum { name = "WAVE_" .. w .. "_" .. gd.upper_snake(enemy) .. "S", value = count(w) }
+  end
+  gd.func { name = "wave_size", params = { "wave: int" }, ret = "int", body = function()
+    gd.text("switch (wave) {\n")
+    for w = 1, waves do
+      gd.text("case " .. w .. ": return WAVE_" .. w .. "_" .. gd.upper_snake(enemy) .. "S;\n")
+    end
+    gd.text("}\nreturn 0;")
+  end }
+}

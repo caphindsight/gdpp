@@ -271,3 +271,13 @@ gdpp = true
 base = "Node"
 virtuals = ["_open"]
 notifications = ["OPENED"]
+
+[[dep]]
+name = "counter"
+kind = "Macro"
+file = "macros.gd++"
+
+[[dep]]
+name = "getter"
+kind = "Template"
+file = "macros.gd++"

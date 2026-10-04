@@ -1,0 +1,3 @@
+class Foo {
+  invoke stat({"max hp": 1})
+}

@@ -1,0 +1,8 @@
+class_name A
+extends Node
+
+invoke stta(health)
+
+macro stat(name) {
+  gd.var { name = name, type = "int" }
+}

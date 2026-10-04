@@ -1,0 +1,4 @@
+macros/positional_after_named.gd++:2:24: Positional arguments must come before named ones.
+ 2 |   invoke stat(max = 1, x == 2)
+   |                        ^
+Hint: Name this argument too, or move it.

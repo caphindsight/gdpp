@@ -32,13 +32,16 @@ func highlightCode(code, lang string) string {
 		return strings.Join(lines, "\n")
 	case lang == "gd++" || lang == "cpp" || lang == "gdscript":
 		return highlightGdpp(code, lang == "gdscript")
+	case lang == "lua":
+		return highlightLua(code, false)
 	}
 	return code
 }
 
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
-	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport set signal var"
+	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import macro macro_name noimport " +
+		"set signal template_name var"
 	// GD++'s on blocks, e.g. on ready { ... }, whose keyword is also a name elsewhere: it's a keyword, with the
 	// notification's name, where it starts a block, at the start of a line or after annotations, and alone where
 	// another identifier follows it, e.g. in a list of keywords, since a name never has one right after it.
@@ -46,6 +49,10 @@ const (
 	cppWords = "if else for while do return switch case break continue default auto const static constexpr namespace using " +
 		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
 	gdscriptWords = "pass and or not in"
+	// Lua's keywords, in the Lua code of GD++ macros.
+	luaWords = "and break do else elseif end false for function goto if in local nil not or repeat return then true until while"
+	// What macros see in Lua, besides their parameters.
+	luaGlobalWords = "gd ctx"
 	// GD++'s rewrites in C++ code that are keywords wherever they appear.
 	rewriteWords = "emit rpc is_cancelled assert assert_void assert_val"
 	// GD++'s rewrites in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
@@ -70,6 +77,8 @@ var (
 	codeStringOps = wordSet(rewriteStringWords)
 	codeTypes     = wordSet(cppTypeWords, godotTypeWords)
 	codePlain     = wordSet(plainWords)
+	luaKeywords   = wordSet(luaWords)
+	luaGlobals    = wordSet(luaGlobalWords)
 )
 
 // wordSet returns the set of the words in lists, which are separated by spaces.
@@ -117,6 +126,14 @@ func highlightGdpp(code string, gdscript bool) string {
 			n, style = min(n+1, lineEnd(rest)), []Style{CodeLiteral}
 		case c == '@' && identLen(rest[1:]) > 0:
 			n, style = 1+identLen(rest[1:]), []Style{CodePreProc}
+		case !gdscript && strings.HasPrefix(rest, "${"): // A template's hole, which holds Lua.
+			end := closingBrace(rest, 1)
+			out.WriteString(Styled("${", CodePreProc) + highlightLua(rest[2:end], true) + styledLines(rest[end:min(end+1, len(rest))], CodePreProc))
+			i += min(end+1, len(rest))
+			continue
+		case !gdscript && macroHeadRegexp.MatchString(rest):
+			out.WriteString(highlightMacro(rest, &i))
+			continue
 		case c == '$' || c == '%' && strings.HasSuffix(strings.TrimRight(code[:i], " \t"), "="):
 			n, style = nodePathLen(rest), []Style{CodeLiteral}
 		case c >= '0' && c <= '9':
@@ -137,7 +154,21 @@ func highlightGdpp(code string, gdscript bool) string {
 				after := strings.TrimLeft(rest[n:], " \t")
 				isOn = len(after) < len(rest[n:]) && identLen(after) > 0
 			}
+			after := strings.TrimLeft(rest[n:], " \t\n")
+			if m := invokeRegexp.FindStringSubmatch(rest); !gdscript && m != nil && strings.ContainsAny(rest[len(m[0]):min(len(m[0])+1, len(rest))], "({") {
+				// A macro invocation, maybe with a Lua table.
+				out.WriteString(Styled(m[1], CodeKeyword) + m[2] + Styled(m[3], CodeFunction) + m[4])
+				i += len(m[0])
+				if strings.HasPrefix(rest[len(m[0]):], "{") {
+					end := closingBrace(rest, len(m[0]))
+					out.WriteString("{" + highlightLua(rest[len(m[0])+1:end], true) + rest[end:min(end+1, len(rest))])
+					i += min(end+1, len(rest)) - len(m[0])
+				}
+				continue
+			}
 			switch {
+			case !gdscript && word == "code" && strings.HasPrefix(after, "{"):
+				style = []Style{CodeKeyword}
 			case isOn, codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,
 				codeStringOps[word] && strings.HasPrefix(strings.TrimLeft(rest[n:], " \t\n"), "\""):
 				style = []Style{CodeKeyword}
@@ -152,6 +183,149 @@ func highlightGdpp(code string, gdscript bool) string {
 		i += n
 	}
 	return out.String()
+}
+
+// invokeRegexp matches the start of a macro invocation: "invoke" and a name, which "(" or "{" follows.
+var invokeRegexp = regexp.MustCompile(`^(invoke)(\s+)(\w+)(\s*)`)
+
+// macroHeadRegexp matches the start of a macro or template: its keyword and name, up to "(".
+var macroHeadRegexp = regexp.MustCompile(`^(macro|template|macro_name|template_name)(\s+)(\w+)(\s*)\(`)
+
+// highlightMacro highlights the macro or template that starts code[*i:], and moves *i past it: its head, and its
+// body, which is Lua for macros and GD++ for templates. A file-level one's body is the rest of the file.
+func highlightMacro(rest string, i *int) string {
+	m := macroHeadRegexp.FindStringSubmatch(rest)
+	open := len(m[0]) - 1
+	end := closingBrace(rest, open)
+	var out strings.Builder
+	out.WriteString(Styled(m[1], CodeKeyword) + m[2] + Styled(m[3], CodeFunction) + m[4] + "(" + highlightLua(rest[open+1:end], true))
+	n := min(end+1, len(rest))
+	out.WriteString(rest[end:n])
+	lua := strings.HasPrefix(m[1], "macro")
+	if strings.HasSuffix(m[1], "_name") {
+		if lua {
+			out.WriteString(highlightLua(rest[n:], true))
+		} else {
+			out.WriteString(highlightGdpp(rest[n:], false))
+		}
+		*i += len(rest)
+		return out.String()
+	}
+	gap := len(rest[n:]) - len(strings.TrimLeft(rest[n:], " \t\n"))
+	if !strings.HasPrefix(rest[n+gap:], "{") {
+		*i += n
+		return out.String()
+	}
+	open = n + gap
+	end = closingBrace(rest, open)
+	body := rest[open+1 : end]
+	if lua {
+		body = highlightLua(body, true)
+	} else {
+		body = highlightGdpp(body, false)
+	}
+	out.WriteString(rest[n:open+1] + body + rest[end:min(end+1, len(rest))])
+	*i += min(end+1, len(rest))
+	return out.String()
+}
+
+// closingBrace returns the index in s of the bracket that closes the one at open, skipping strings, or len(s).
+func closingBrace(s string, open int) int {
+	closer := map[byte]byte{'(': ')', '{': '}', '[': ']'}[s[open]]
+	for i, depth := open, 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case c == '"' || c == '\'':
+			for i++; i < len(s) && s[i] != c && s[i] != '\n'; i++ {
+				if s[i] == '\\' {
+					i++
+				}
+			}
+		case c == s[open]:
+			depth++
+		case c == closer:
+			if depth--; depth == 0 {
+				return i
+			}
+		}
+	}
+	return len(s)
+}
+
+// highlightLua highlights Lua code: keywords, gd and ctx, function names, literals and comments. With embedded, it's
+// in a GD++ file, where GD++'s comments work too, and templates can be declared inside.
+func highlightLua(code string, embedded bool) string {
+	var out strings.Builder
+	for i := 0; i < len(code); {
+		c, rest := code[i], code[i:]
+		n, style := 1, []Style(nil)
+		switch {
+		case strings.HasPrefix(rest, "--") && longBracket(rest[2:]) > 0:
+			n, style = 2+longBracketEnd(rest[2:]), []Style{CodeComment}
+		case strings.HasPrefix(rest, "--") || embedded && strings.HasPrefix(rest, "//"):
+			n, style = lineEnd(rest), []Style{CodeComment}
+		case embedded && strings.HasPrefix(rest, "/*"):
+			end := strings.Index(rest, "*/")
+			if end < 0 {
+				end = len(rest) - 2
+			}
+			n, style = end+2, []Style{CodeComment}
+		case longBracket(rest) > 0:
+			n, style = longBracketEnd(rest), []Style{CodeLiteral}
+		case c == '"' || c == '\'':
+			for n < lineEnd(rest) && rest[n] != c {
+				if rest[n] == '\\' {
+					n++
+				}
+				n++
+			}
+			n, style = min(n+1, lineEnd(rest)), []Style{CodeLiteral}
+		case c >= '0' && c <= '9':
+			for n < len(rest) && (isIdentByte(rest[n]) || rest[n] == '.') {
+				n++
+			}
+			style = []Style{CodeLiteral}
+		case embedded && macroHeadRegexp.MatchString(rest) && strings.HasPrefix(rest, "template "):
+			out.WriteString(highlightMacro(rest, &i))
+			continue
+		case identLen(rest) > 0:
+			n = identLen(rest)
+			word, before := rest[:n], strings.TrimRight(code[:i], " \t")
+			switch {
+			case luaKeywords[word]:
+				style = []Style{CodeKeyword}
+			case luaGlobals[word] && !strings.HasSuffix(before, "."):
+				style = []Style{CodeType}
+			case strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "(") || strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "{") ||
+				strings.HasSuffix(before, ".") && lastWord(before[:len(before)-1]) == "gd":
+				style = []Style{CodeFunction}
+			}
+		}
+		out.WriteString(styledLines(rest[:n], style...))
+		i += n
+	}
+	return out.String()
+}
+
+// longBracket returns the length of the Lua long bracket that opens s, e.g. 2 for "[[" or 4 for "[==[", or 0.
+func longBracket(s string) int {
+	n := 1
+	for n < len(s) && s[n] == '=' {
+		n++
+	}
+	if len(s) > n && s[0] == '[' && s[n] == '[' {
+		return n + 1
+	}
+	return 0
+}
+
+// longBracketEnd returns the length of the Lua long string or comment body that opens s, up to its closing bracket.
+func longBracketEnd(s string) int {
+	open := longBracket(s)
+	closer := "]" + strings.Repeat("=", open-2) + "]"
+	if end := strings.Index(s[open:], closer); end >= 0 {
+		return open + end + len(closer)
+	}
+	return len(s)
 }
 
 var (

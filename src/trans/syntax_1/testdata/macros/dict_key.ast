@@ -1,0 +1,16 @@
+File: @1:1
+  InlineClasses:
+    - @1:1
+      Name: Foo
+      Members:
+        - @2:3
+          Invoke: @2:3
+            Name: stat
+            Args: @2:14
+              Args:
+                - @2:15
+                  Value: @2:15
+                    Kind: expr
+                    Code: @2:15
+                      TextPos: 2:15
+                      Text: {"max hp": 1}

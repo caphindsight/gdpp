@@ -1,0 +1,502 @@
+package syntax_0
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"slices"
+	"strings"
+
+	"github.com/alecthomas/participle/v2"
+	"github.com/alecthomas/participle/v2/lexer"
+	lua "github.com/yuin/gopher-lua"
+
+	"gd++/trans/meta"
+)
+
+// maxDepth is how deeply invocations may nest: in what other invocations generate.
+const maxDepth = 32
+
+// macroDef is a macro or template that code can invoke, declared in this file or another one of the package.
+type macroDef struct {
+	m    *Macro
+	file string // The name of the file that declares it.
+	src  string // That file's source.
+}
+
+// expander expands the invocations of a file.
+type expander struct {
+	filename, src string
+	opts          meta.Options
+	defs          map[string]*macroDef
+	generated     map[int]string   // The offsets of invocations, with what each one invokes, e.g. "macro stat".
+	done          map[*Class]bool  // Classes whose members are expanded already.
+	doneExterns   map[*Extern]bool // The same for externs.
+	uniques       int              // How many names gd.unique made.
+}
+
+// cppKeywords are C++'s keywords, which macros can't be named after.
+var cppKeywords = strings.Fields("alignas alignof and and_eq asm auto bitand bitor bool break case catch char char8_t char16_t char32_t " +
+	"class compl concept const consteval constexpr constinit const_cast continue co_await co_return co_yield decltype default delete do " +
+	"double dynamic_cast else enum explicit export extern false float for friend goto if inline int long mutable namespace new noexcept " +
+	"not not_eq nullptr operator or or_eq private protected public register reinterpret_cast requires return short signed sizeof static " +
+	"static_assert static_cast struct switch template this thread_local throw true try typedef typeid typename union unsigned using " +
+	"virtual void volatile wchar_t while xor xor_eq")
+
+// newExpander returns an expander for file, with its macros and templates and those of the dependencies in opts.
+func newExpander(filename, src string, file *File, opts meta.Options) (*expander, error) {
+	x := &expander{filename: filename, src: src, opts: opts, defs: map[string]*macroDef{}, generated: map[int]string{},
+		done: map[*Class]bool{}, doneExterns: map[*Extern]bool{}}
+	local := file.InlineMacros
+	if file.FileMacro != nil {
+		local = append([]*Macro{file.FileMacro}, local...)
+	}
+	for _, m := range local {
+		if x.defs[m.Name] != nil {
+			return nil, (&Error{Pos: m.Pos, Len: len(m.what()), Msg: fmt.Sprintf("The name %q is declared twice in this file.", m.Name),
+				Hint: "Macro and template names must be unique in the package, like class, extern and enum names."}).withSource(src)
+		}
+		for _, p := range m.Params {
+			if luaKeywords[p.Name] {
+				return nil, (&Error{Pos: p.Pos, Len: len(p.Name), Msg: fmt.Sprintf("Parameter %q is a Lua keyword, so Lua code can't use it.", p.Name),
+					Hint: "Rename it."}).withSource(src)
+			}
+		}
+		if keywords[m.Name] || slices.Contains(cppKeywords, m.Name) {
+			return nil, (&Error{Pos: m.Pos, Len: len(m.what()), Msg: fmt.Sprintf("%ss can't be named %q, since it's a keyword.", capitalize(m.what()), m.Name),
+				Hint: "Choose another name."}).withSource(src)
+		}
+		x.defs[m.Name] = &macroDef{m: m, file: filename, src: src}
+	}
+	parsed := map[string]*File{}
+	for _, d := range opts.Dependencies {
+		if d.Kind != meta.Macro && d.Kind != meta.Template || x.defs[d.Name] != nil {
+			continue
+		}
+		f := parsed[d.File]
+		if f == nil {
+			var err error
+			if f, err = Parse(d.File, d.Source); err != nil {
+				return nil, err
+			}
+			parsed[d.File] = f
+		}
+		for _, m := range append([]*Macro{f.FileMacro}, f.InlineMacros...) {
+			if m != nil && m.Name == d.Name {
+				x.defs[d.Name] = &macroDef{m: m, file: d.File, src: d.Source}
+			}
+		}
+	}
+	return x, nil
+}
+
+// errorAt returns an error at pos in the expanded file.
+func (x *expander) errorAt(pos lexer.Position, n int, msg, hint string) *Error {
+	return (&Error{Pos: pos, Len: max(n, 1), Msg: msg, Hint: hint}).withSource(x.src)
+}
+
+// expandFile replaces every invocation in f with what it generates, in declarations and in C++ code.
+func (x *expander) expandFile(f *File) error {
+	for _, inv := range f.Invokes {
+		items, err := x.invoke(inv, &scope{kind: "file"}, 0)
+		if err != nil {
+			return err
+		}
+		for _, item := range items {
+			switch {
+			case item.Class != nil:
+				f.InlineClasses = append(f.InlineClasses, item.Class)
+			case item.Extern != nil:
+				f.InlineExterns = append(f.InlineExterns, item.Extern)
+			case item.Member.Enum != nil && item.Member.Enum.Value == nil:
+				f.InlineEnums = append(f.InlineEnums, item.Member.Enum)
+			default:
+				keyword, _ := item.Member.keyword()
+				return x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("%s generated a %s outside of any class.", x.what(inv), keyword),
+					"Invoke it inside a class, or have it generate a class.")
+			}
+		}
+	}
+	f.Invokes = nil
+	var err error
+	if c := f.FileClass; c != nil {
+		if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name, fileLevel: true}, f, 0); err != nil {
+			return err
+		}
+		x.done[c] = true
+	}
+	if e := f.FileExtern; e != nil {
+		if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name, fileLevel: true}, f, 0); err != nil {
+			return err
+		}
+		x.doneExterns[e] = true
+	}
+	for i := 0; i < len(f.InlineClasses); i++ {
+		if c := f.InlineClasses[i]; !x.done[c] {
+			if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name}, nil, 0); err != nil {
+				return err
+			}
+			x.done[c] = true
+		}
+	}
+	for i := 0; i < len(f.InlineExterns); i++ {
+		if e := f.InlineExterns[i]; !x.doneExterns[e] {
+			if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name}, nil, 0); err != nil {
+				return err
+			}
+			x.doneExterns[e] = true
+		}
+	}
+	// Then invocations in C++ code, which only generate C++.
+	expandIn := func(owner string, node any) error {
+		var err error
+		forEachNode(node, func(n any) {
+			if err != nil {
+				return
+			}
+			switch n := n.(type) {
+			case *Block:
+				n.Text, err = x.expandCode(n.Text, n.TextPos, owner, 0)
+			case *Init:
+				if n.Expr != "" {
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0)
+				}
+			case *Default:
+				if n.Expr != "" {
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0)
+				}
+			}
+		})
+		return err
+	}
+	classes, externs := f.InlineClasses, f.InlineExterns
+	if f.FileClass != nil {
+		classes = append([]*Class{f.FileClass}, classes...)
+	}
+	if f.FileExtern != nil {
+		externs = append([]*Extern{f.FileExtern}, externs...)
+	}
+	for _, c := range classes {
+		if err := expandIn(c.Name, c); err != nil {
+			return err
+		}
+	}
+	for _, e := range externs {
+		if err := expandIn(e.Name, e); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// what names what inv invokes, e.g. "Macro stat".
+func (x *expander) what(inv *Invoke) string {
+	if d := x.defs[inv.Name]; d != nil {
+		return capitalize(d.m.what()) + " " + inv.Name
+	}
+	return "Macro " + inv.Name
+}
+
+// expandMembers replaces the invocations among members with what they generate. Inline classes and externs that
+// they generate go into f, if sc is the body of the file-level class or extern.
+func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth int) ([]*Member, error) {
+	var out []*Member
+	for _, m := range members {
+		if m.Invoke == nil {
+			out = append(out, m)
+			continue
+		}
+		items, err := x.invoke(m.Invoke, sc, depth)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range items {
+			switch {
+			case item.Member != nil:
+				out = append(out, item.Member)
+			case f != nil && item.Class != nil:
+				f.InlineClasses = append(f.InlineClasses, item.Class)
+			case f != nil && item.Extern != nil:
+				f.InlineExterns = append(f.InlineExterns, item.Extern)
+			default:
+				return nil, x.errorAt(m.Invoke.Pos, m.Invoke.span(), fmt.Sprintf("%s generated a class or extern inside %s %s, but they can't be nested.",
+					x.what(m.Invoke), sc.kind, sc.owner), "Invoke it at the top level of the file.")
+			}
+		}
+	}
+	return out, nil
+}
+
+// invoke runs the macro or template that inv invokes, in scope sc, and returns what it generates, expanded.
+func (x *expander) invoke(inv *Invoke, sc *scope, depth int) ([]*topItem, error) {
+	def := x.defs[inv.Name]
+	n := len(inv.Name) + 1
+	switch {
+	case depth >= maxDepth:
+		return nil, x.errorAt(inv.Pos, n, fmt.Sprintf("Invocations are nested more than %d levels deep here.", maxDepth),
+			"A macro or template probably invokes itself, directly or through others.")
+	case def == nil:
+		return nil, x.unknown(inv)
+	case len(inv.Annotations) > 0:
+		a := inv.Annotations[0]
+		return nil, x.errorAt(a.Pos, len(a.Name)+1, "Invocations take no annotations.", "Have the macro add them to what it generates.")
+	}
+	if _, ok := x.generated[inv.Pos.Offset]; !ok {
+		x.generated[inv.Pos.Offset] = def.m.what() + " " + inv.Name
+	}
+	sc = &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel} // Without what other invocations emitted.
+	r, free := x.newRun(def, inv, sc, depth)
+	defer free()
+	values, err := r.args(def.m.Params)
+	if err != nil {
+		return nil, err
+	}
+	var items []*topItem
+	if def.m.Template {
+		items, err = r.instantiate(def, values)
+	} else {
+		var fn *lua.LFunction
+		if fn, err = r.load(def.m.Body.Text, def.m.Body.TextPos, def.file, def.m.Params); err == nil {
+			if err = r.call(fn, values...); err == nil {
+				items, err = r.collect(sc)
+			}
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	// Expand the invocations in what it generated.
+	var out []*topItem
+	for _, item := range items {
+		switch {
+		case item.Member != nil && item.Member.Invoke != nil:
+			nested, err := x.invoke(item.Member.Invoke, sc, depth+1)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, nested...)
+			continue
+		case item.Class != nil:
+			if item.Class.Members, err = x.expandMembers(item.Class.Members, &scope{kind: "class", owner: item.Class.Name}, nil, depth+1); err != nil {
+				return nil, err
+			}
+			x.done[item.Class] = true
+		case item.Extern != nil:
+			if item.Extern.Members, err = x.expandMembers(item.Extern.Members, &scope{kind: "extern", owner: item.Extern.Name}, nil, depth+1); err != nil {
+				return nil, err
+			}
+			x.doneExterns[item.Extern] = true
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+// span returns how many characters an error about the invocation underlines: "invoke NAME".
+func (inv *Invoke) span() int {
+	return len("invoke ") + len(inv.Name)
+}
+
+// unknown returns the error for an invocation of a macro that doesn't exist.
+func (x *expander) unknown(inv *Invoke) *Error {
+	var names []string
+	for name := range x.defs {
+		names = append(names, name)
+	}
+	hint := fmt.Sprintf("Declare it with \"macro %s(...) { ... }\", in any file of the package.", inv.Name)
+	if s := suggest(inv.Name, names...); s != "" {
+		hint = fmt.Sprintf("Did you mean %q?", s)
+	}
+	return x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("There is no macro or template %s.", inv.Name), hint)
+}
+
+// expandCode replaces the invocations in C++ code, which starts at pos, with the C++ that their macros generate.
+// The generated C++ goes on the invocation's line, so the lines after it stay where they are.
+func (x *expander) expandCode(code string, pos lexer.Position, owner string, depth int) (string, error) {
+	if !strings.Contains(code, "invoke") {
+		return code, nil
+	}
+	l, err := gdppLexer.LexString(x.filename, code)
+	if err != nil {
+		return code, nil // The C++ compiler reports it.
+	}
+	tokens, err := lexer.ConsumeAll(l)
+	if err != nil {
+		return code, nil
+	}
+	tokens = significant(tokens)
+	var out strings.Builder
+	last := 0 // The end of what's copied to out.
+	for i := 0; i+2 < len(tokens); i++ {
+		// invoke NAME( or invoke NAME {, but not a member or a scope's name, e.g. std::invoke.
+		t, name, open := tokens[i], tokens[i+1], tokens[i+2]
+		if t.Type != tokIdent || t.Value != "invoke" || t.Pos.Offset < last || name.Type != tokIdent || x.defs[name.Value] == nil ||
+			!isPunct(open, "(") && !isPunct(open, "{") || i > 0 && (isPunct(tokens[i-1], ".") || isPunct(tokens[i-1], ">") || isPunct(tokens[i-1], ":")) {
+			continue
+		}
+		start := open.Pos.Offset
+		inv := &Invoke{Pos: shift(t.Pos, pos, x.src), Name: name.Value}
+		sub, err := gdppLexer.LexString(x.filename, code[start:])
+		if err != nil {
+			return "", err
+		}
+		lex, err := lexer.Upgrade(sub, elidedTypes()...)
+		if err != nil {
+			return "", err
+		}
+		inv.Args = &ArgList{}
+		if err := inv.Args.Parse(lex); err != nil {
+			var e *Error
+			if errors.As(err, &e) {
+				e.Pos = shift(shift(e.Pos, open.Pos, ""), pos, x.src)
+				return "", e.withSource(x.src)
+			}
+			return "", err
+		}
+		end := start + lex.RawPeek().Pos.Offset
+		if lex.RawPeek().EOF() {
+			end = len(code)
+		}
+		forEachNode(inv.Args, func(n any) {
+			if p := reflectPos(n); p != nil {
+				*p = shift(shift(*p, open.Pos, ""), pos, x.src)
+			}
+			if b, ok := n.(*Block); ok {
+				b.TextPos = shift(shift(b.TextPos, open.Pos, ""), pos, x.src)
+			}
+		})
+		text, err := x.invokeCode(inv, owner, depth)
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(code[last:t.Pos.Offset])
+		out.WriteString(text)
+		out.WriteString(strings.Repeat("\n", strings.Count(code[t.Pos.Offset:end], "\n")))
+		last = end
+	}
+	out.WriteString(code[last:])
+	return out.String(), nil
+}
+
+// invokeCode runs the macro that inv invokes in C++ code, and returns the C++ it generates, on one line.
+func (x *expander) invokeCode(inv *Invoke, owner string, depth int) (string, error) {
+	def := x.defs[inv.Name]
+	switch {
+	case depth >= maxDepth:
+		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Invocations are nested more than %d levels deep here.", maxDepth),
+			"A macro probably invokes itself, directly or through others.")
+	case def.m.Template:
+		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Template %s can't be used in C++ code, since templates generate declarations.", inv.Name),
+			"Invoke it where declarations go, or use a macro that generates C++ with gd.text.")
+	}
+	sc := &scope{kind: "cpp", owner: owner}
+	r, free := x.newRun(def, inv, sc, depth)
+	defer free()
+	values, err := r.args(def.m.Params)
+	if err != nil {
+		return "", err
+	}
+	fn, err := r.load(def.m.Body.Text, def.m.Body.TextPos, def.file, def.m.Params)
+	if err != nil {
+		return "", err
+	}
+	if err := r.call(fn, values...); err != nil {
+		return "", err
+	}
+	var sb strings.Builder
+	for _, c := range sc.chunks {
+		sb.WriteString(c.text)
+	}
+	text, err := x.expandCode(sb.String(), inv.Pos, owner, depth+1)
+	if err != nil {
+		return "", err
+	}
+	return oneLine(text), nil
+}
+
+// oneLine returns C++ code on a single line, without comments.
+func oneLine(code string) string {
+	l, err := gdppLexer.LexString("", code)
+	if err != nil {
+		return strings.ReplaceAll(code, "\n", " ")
+	}
+	tokens, _ := lexer.ConsumeAll(l)
+	var sb strings.Builder
+	for _, t := range tokens {
+		switch {
+		case t.EOF():
+		case isComment(t) || isDoc(t) || t.Type == tokNewline:
+			sb.WriteByte(' ')
+		default:
+			sb.WriteString(t.Value)
+		}
+	}
+	return strings.TrimSpace(sb.String())
+}
+
+// shift turns p, a position in a text that starts at base, into a position in base's file. With src, it also sets
+// the offset in src.
+func shift(p, base lexer.Position, src string) lexer.Position {
+	out := lexer.Position{Filename: base.Filename, Line: base.Line + p.Line - 1, Column: p.Column}
+	if p.Line == 1 {
+		out.Column = base.Column + p.Column - 1
+	}
+	if src != "" {
+		out.Offset = offsetOf(src, out)
+	} else {
+		out.Offset = base.Offset + p.Offset
+	}
+	return out
+}
+
+// reflectPos returns a pointer to the Pos field of node, a pointer to an AST struct, or nil.
+func reflectPos(node any) *lexer.Position {
+	v := reflect.ValueOf(node).Elem()
+	if f := v.FieldByName("Pos"); f.IsValid() && f.Type() == reflect.TypeOf(lexer.Position{}) {
+		return f.Addr().Interface().(*lexer.Position)
+	}
+	return nil
+}
+
+// docField returns a pointer to the Doc field of item's declaration, or nil if it has none.
+func docField(item *topItem) **Doc {
+	var node any = item.Class
+	switch {
+	case item.Extern != nil:
+		node = item.Extern
+	case item.Member != nil:
+		m := item.Member
+		for _, n := range []any{m.Func, m.Var, m.Signal, m.Enum} {
+			if !reflect.ValueOf(n).IsNil() {
+				node = n
+			}
+		}
+	}
+	if node == nil || reflect.ValueOf(node).IsNil() {
+		return nil
+	}
+	if f := reflect.ValueOf(node).Elem().FieldByName("Doc"); f.IsValid() {
+		return f.Addr().Interface().(**Doc)
+	}
+	return nil
+}
+
+func elidedTypes() []lexer.TokenType {
+	var types []lexer.TokenType
+	for _, name := range elided {
+		types = append(types, sym[name])
+	}
+	return types
+}
+
+// parsedItems is GD++ that a macro or template generates: classes, externs and members.
+type parsedItems struct {
+	Pos   lexer.Position
+	Items []*topItem `parser:"@@*"`
+}
+
+var itemsParser = participle.MustBuild[parsedItems](
+	participle.Lexer(gdppLexer),
+	participle.Elide(elided...),
+	participle.UseLookahead(participle.MaxLookahead),
+)

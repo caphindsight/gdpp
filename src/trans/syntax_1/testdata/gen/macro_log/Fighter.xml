@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Fighter" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Fighter" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="hurt">
+			<return type="void" />
+			<param index="0" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="health" type="int" setter="set_health" getter="get_health">
+		</member>
+		<member name="label" type="String" setter="set_label" getter="get_label">
+		</member>
+	</members>
+</class>

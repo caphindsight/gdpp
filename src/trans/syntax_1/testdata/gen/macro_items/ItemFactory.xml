@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ItemFactory" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="ItemFactory" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="make" qualifiers="static">
+			<return type="Item" />
+			<param index="0" name="kind" type="int" enum="ItemFactory.ItemKind" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="ITEM_KIND_SWORD" value="0" enum="ItemKind">
+		</constant>
+		<constant name="ITEM_KIND_BOW" value="1" enum="ItemKind">
+		</constant>
+	</constants>
+</class>

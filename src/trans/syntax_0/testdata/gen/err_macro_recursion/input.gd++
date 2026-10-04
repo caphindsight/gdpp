@@ -1,0 +1,8 @@
+class_name A
+extends Node
+
+invoke forever()
+
+macro forever() {
+  gd.text("invoke forever()")
+}

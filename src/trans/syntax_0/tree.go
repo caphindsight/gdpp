@@ -14,7 +14,8 @@ type parsedFile struct {
 	Code   []*Code     `parser:"@@*"` // Only parsed to report it: code must be in a class.
 	Class  *classHead  `parser:"( @@"`
 	Extern *externHead `parser:"| @@"`
-	Enum   *enumHead   `parser:"| @@ )?"`
+	Enum   *enumHead   `parser:"| @@"`
+	Macro  *macroHead  `parser:"| @@ )?"`
 	Items  []*topItem  `parser:"@@*"`
 }
 
@@ -44,10 +45,25 @@ type enumHead struct {
 	Entries     []*EnumEntry  `parser:"@@*"`
 }
 
+// macroHead is macro_name or template_name and its parameters. Its body is the rest of the file.
+type macroHead struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Template    bool          `parser:"( 'macro_name' | @'template_name' )"`
+	Name        string        `parser:"@Ident '('"`
+	Params      []*MacroParam `parser:"( @@ ( ',' @@ )* ','? )? ')'"`
+	Body        *fileBody     `parser:"@@"`
+}
+
+// fileBody is the body of a file-level macro or template: the rest of the file.
+type fileBody MacroBody
+
 type topItem struct {
 	Pos    lexer.Position
 	Class  *Class  `parser:"( @@"`
 	Extern *Extern `parser:"| @@"`
+	Macro  *Macro  `parser:"| @@"`
 	Member *Member `parser:"| @@ )"`
 }
 
@@ -71,6 +87,10 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 	case pf.Enum != nil:
 		h := pf.Enum
 		f.FileEnum = &Enum{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Extends: h.Extends, Entries: h.Entries}
+	case pf.Macro != nil:
+		h := pf.Macro
+		f.FileMacro = &Macro{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Template: h.Template, Name: h.Name, Params: h.Params,
+			Body: (*MacroBody)(h.Body)}
 	}
 	for _, item := range pf.Items {
 		m := item.Member
@@ -79,15 +99,62 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 			f.InlineClasses = append(f.InlineClasses, item.Class)
 		case item.Extern != nil:
 			f.InlineExterns = append(f.InlineExterns, item.Extern)
+		case item.Macro != nil:
+			f.InlineMacros = append(f.InlineMacros, item.Macro)
 		case members != nil:
 			*members = append(*members, m)
 		case m.Enum != nil && m.Enum.Value == nil:
 			f.InlineEnums = append(f.InlineEnums, m.Enum)
+		case m.Invoke != nil:
+			f.Invokes = append(f.Invokes, m.Invoke)
 		default:
 			return nil, outsideClass(m)
 		}
 	}
+	macros := f.InlineMacros
+	if f.FileMacro != nil {
+		macros = append([]*Macro{f.FileMacro}, macros...)
+	}
+	for _, m := range macros {
+		if e := m.check(); e != nil {
+			return nil, e
+		}
+		f.InlineMacros = append(f.InlineMacros, m.helpers()...)
+	}
 	return f, nil
+}
+
+// check reports a doc comment or annotations on m: Godot never sees a macro, so they'd have no effect.
+func (m *Macro) check() *Error {
+	what := m.what()
+	switch {
+	case m.Doc != nil:
+		return &Error{Pos: m.Doc.Pos, Len: 3, Msg: fmt.Sprintf("%ss have no doc comments, since Godot never sees them.", capitalize(what)),
+			Hint: "Use a plain comment: \"//\" or \"/* */\"."}
+	case len(m.Annotations) > 0:
+		a := m.Annotations[0]
+		return &Error{Pos: a.Pos, Len: len(a.Name) + 1, Msg: fmt.Sprintf("%ss take no annotations.", capitalize(what))}
+	}
+	return nil
+}
+
+// what returns "macro" or "template".
+func (m *Macro) what() string {
+	if m.Template {
+		return "template"
+	}
+	return "macro"
+}
+
+// helpers moves the macros and templates declared in m's body, and in theirs, and so on, out of their bodies, and
+// returns them.
+func (m *Macro) helpers() []*Macro {
+	var all []*Macro
+	for _, h := range m.Body.Helpers {
+		all = append(append(all, h), h.helpers()...)
+	}
+	m.Body.Helpers = nil
+	return all
 }
 
 // outsideClass returns the error for member m outside of any class.
@@ -121,6 +188,8 @@ func (m *Member) keyword() (string, lexer.Position) {
 		return "import", m.Pos
 	case m.NoImport != nil:
 		return "noimport", m.Pos
+	case m.Invoke != nil:
+		return "invoke", m.Invoke.Pos
 	}
 	if !m.Code.Decl {
 		return "impl", m.Code.Pos

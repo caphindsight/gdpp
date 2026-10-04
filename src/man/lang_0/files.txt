@@ -1,6 +1,6 @@
 Files: the layout of a GD++ file
 
-A GD++ file declares any number of classes, externs and enums. Every other GD++ file of the package can use them. This page covers the layout of a file.
+A GD++ file declares any number of classes, externs, enums, macros and templates. Every other GD++ file of the package can use them. This page covers the layout of a file.
 
 # File-level and inline declarations
 
@@ -15,6 +15,12 @@ extern Road { ... }      // an inline extern
 
 enum_name Suit           // a file-level enum: the rest of the file is its values
 enum Rank { ... }        // an inline enum
+
+macro_name stat(name)    // a file-level macro: the rest of the file is its Lua code
+macro log(event) { ... } // an inline macro
+
+template_name pool(T)    // a file-level template: the rest of the file is its GD++ code
+template slot(n) { ... } // an inline template
 ```
 
 - Both forms work the same.
@@ -106,7 +112,7 @@ extern Terrain {
 }
 ```
 
-Its top level can only hold inline classes, externs and enums. Anything else, e.g. a `func`, a `var`, an integer constant or a `decl` block, belongs in a class:
+Its top level can only hold inline classes, externs, enums, macros, templates, and invocations of macros and templates. Anything else, e.g. a `func`, a `var`, an integer constant or a `decl` block, belongs in a class:
 
 ```out
 [×] res://enemies.gd++:12:1: This func is outside of any class.
@@ -120,6 +126,13 @@ Its top level can only hold inline classes, externs and enums. Anything else, e.
 - Classes and externs can't be nested: an inline class can't be inside another class or extern.
 - Enums can be declared inside a class, but they are global types anyway. See `gd++ man enums`.
 
+# Macros and templates
+
+- Inline macros and templates can go anywhere an inline class can, also between the members of a file-level class.
+- With `macro_name` or `template_name`, the rest of the file is the body. Like after `enum_name`, nothing else can follow.
+- Their bodies may declare more macros and templates. Those are package-level declarations too.
+- See `gd++ man macros`.
+
 # Order
 
 - The order of declarations doesn't matter.
@@ -128,7 +141,7 @@ Its top level can only hold inline classes, externs and enums. Anything else, e.
 
 # Names
 
-- Every class, extern and enum has a name, unique in the package.
+- Every class, extern, enum, macro and template has a name, unique in the package.
   - Two GD++ files can't declare the same name.
   - A name can't be declared twice in one file.
 - Names must differ from Godot's classes and from godot-cpp's names, e.g. `Node` or `TypedArray`.
@@ -173,4 +186,4 @@ class Card {
 
 # See also
 
-`gd++ man classes`, `gd++ man externs`, `gd++ man enums`, `gd++ man grammar`.
+`gd++ man classes`, `gd++ man externs`, `gd++ man enums`, `gd++ man macros`, `gd++ man grammar`.

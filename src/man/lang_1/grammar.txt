@@ -25,17 +25,19 @@ Whitespace, newlines and comments may appear between any two tokens, except insi
 
 ```
 File        = Code* FileHead? TopItem*
-FileHead    = ClassHead | ExternHead | EnumHead
+FileHead    = ClassHead | ExternHead | EnumHead | MacroHead
 ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )?
 ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
 EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEntry*
-TopItem     = Class | Extern | Member
+MacroHead   = ( 'macro_name' | 'template_name' ) Ident '(' MacroParams? ')' Body
+TopItem     = Class | Extern | Macro | Member
 ```
 
 - `Code` before the file head is always an error: `decl` and `impl` blocks must be in a class.
 - After `class_name` or `extern_name`, every `Member` belongs to that class or extern.
 - In a file without either, only enum types are allowed as members at the top level.
 - After `enum_name`, only an optional `extends` and enum values follow.
+- After `macro_name` or `template_name`, the rest of the file is the `Body`.
 
 # Classes and externs
 
@@ -53,9 +55,30 @@ Member      = Code
             | Enum
             | 'import' Type
             | 'noimport' Type
+            | Invoke
 ```
 
 Externs only allow `Func`, `Signal` and `Var` members, without bodies, initial values or default values.
+
+# Macros and templates
+
+```
+Macro       = ( 'macro' | 'template' ) Ident '(' MacroParams? ')' '{' Body '}'
+MacroParams = MacroParam ( ',' MacroParam )* ','?
+MacroParam  = Ident ( '=' Default )?
+Body        = Lua code (macros) or GD++ code with ${...} holes (templates), with Macro declarations at its top level
+Invoke      = Doc? 'invoke' Ident ( '(' ( MacroArg ( ',' MacroArg )* ','? )? ')' | '{' Lua table fields '}' )
+MacroArg    = ( Ident '=' )? Value
+Value       = Number | '-' Number | String | Type | '[' ( Value ( ',' Value )* ','? )? ']'
+            | '{' ( MacroArg ( ',' MacroArg )* ','? )? '}' | 'code' Block | Expr
+```
+
+- A `Default` is a Lua expression.
+- Positional `MacroArg`s come before named ones. In a dictionary, every `MacroArg` has a key.
+- `Ident '='` starts a named `MacroArg` only if another `=` doesn't follow, so `a == b` is a positional `Expr`.
+- A `Value` that isn't one of the other forms is an `Expr`: C++ code up to the next `,` or closing bracket.
+- In C++ code, `'invoke' Ident '('` or `'invoke' Ident '{'` invokes a macro, if the package has one named `Ident`.
+- See `gd++ man macros`.
 
 # Code blocks
 
@@ -157,14 +180,16 @@ Default     = Block | Expr
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  noimport  on  set  signal  var
+func  get  impl  import  invoke  macro  macro_name  noimport  on  set  signal
+template  template_name  var
 ```
 
 In C++ code, GD++ also reserves:
 
 - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - `This` and `gd`. See `gd++ man code`.
+- `invoke`, which invokes macros. See `gd++ man macros`.
 
 # See also
 
-`gd++ man syntax`, `gd++ man files`, `gd++ man annotations`.
+`gd++ man syntax`, `gd++ man files`, `gd++ man annotations`, `gd++ man macros`.

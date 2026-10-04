@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Hero" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Hero" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="go">
+			<return type="void" />
+			<param index="0" name="to" type="int" enum="Hero.State" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="state" type="int" enum="Hero.State" setter="set_state" getter="get_state">
+		</member>
+	</members>
+	<signals>
+		<signal name="state_changed">
+			<param index="0" name="to" type="int" enum="Hero.State" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="STATE_IDLE" value="0" enum="State">
+		</constant>
+		<constant name="STATE_JUMP" value="1" enum="State">
+		</constant>
+	</constants>
+</class>

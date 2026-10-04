@@ -1,0 +1,4 @@
+input.gd++:8:3: Macro stat failed: cannot perform concat operation between string and nil.
+ 8 |   gd.var { name = name .. x, type = "int" }
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hint: Invoked at input.gd++:4.

@@ -89,7 +89,7 @@ func testManPages(t *testing.T, m manual) {
 				t.Errorf("page %s, line %d: trailing whitespace", p, i+1)
 			}
 			if lang, ok := strings.CutPrefix(line, "```"); ok {
-				if fence == "" && !slices.Contains([]string{"", "gd++", "cpp", "gdscript", "sh", "toml", "out"}, lang) {
+				if fence == "" && !slices.Contains([]string{"", "gd++", "cpp", "gdscript", "lua", "sh", "toml", "out"}, lang) {
 					t.Errorf("page %s, line %d: unknown code block language %q", p, i+1, lang)
 				}
 				fence = map[bool]string{true: "open", false: ""}[fence == ""]

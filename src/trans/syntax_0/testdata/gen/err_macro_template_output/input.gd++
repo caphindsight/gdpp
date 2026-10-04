@@ -1,0 +1,8 @@
+class_name A
+extends Node
+
+invoke broken(x)
+
+template broken(name) {
+  var ${name} int
+}

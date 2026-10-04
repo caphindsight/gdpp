@@ -64,6 +64,7 @@ Their operands:
 
 Other facts:
 
+- Rewrites also apply to the C++ that macros generate. GD++ expands macros first. See `gd++ man macros`.
 - A rewrite keeps the code's line breaks. So line numbers in errors still match the GD++ file.
 - `gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
 

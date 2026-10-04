@@ -1,0 +1,6 @@
+template_name pool_of(T, size = 64)
+
+@pool(${size}, "grow")
+class ${T}Pool {
+  extends Node
+}

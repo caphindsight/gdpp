@@ -1,0 +1,28 @@
+class_name Hud
+extends Node
+
+invoke labels([score, lives])
+
+func refresh() -> void {
+  invoke shout("refreshed");
+}
+
+// A label per name, each made by another macro, which gets a Lua function.
+macro labels(names) {
+  for _, n in ipairs(names) do
+    gd.invoke("label", { n, format = function(s) return gd.title(s) .. ":" end })
+  end
+}
+
+macro label(name, format) {
+  gd.var { name = name .. "_text", type = "String", init = gd.quote(format(name)) }
+}
+
+// Prints a message, through a macro that writes C++.
+macro shout(message) {
+  gd.invoke("print_upper", { message })
+}
+
+macro print_upper(text) {
+  gd.text("UtilityFunctions::print(" .. gd.quote(string.upper(text)) .. ")")
+}

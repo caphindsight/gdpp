@@ -1,0 +1,5 @@
+class_name Score
+extends Node
+
+invoke counter(points, start = 10)
+invoke getter(points, int)

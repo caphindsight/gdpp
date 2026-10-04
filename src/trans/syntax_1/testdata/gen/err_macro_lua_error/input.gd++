@@ -1,0 +1,9 @@
+class_name A
+extends Node
+
+invoke stat(health)
+
+macro stat(name) {
+  local x = nil
+  gd.var { name = name .. x, type = "int" }
+}

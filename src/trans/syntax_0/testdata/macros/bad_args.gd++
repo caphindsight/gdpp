@@ -1,0 +1,3 @@
+class Foo {
+  invoke stat(health, max = 1, 2)
+}

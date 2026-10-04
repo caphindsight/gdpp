@@ -72,12 +72,12 @@ func (e *Error) withSource(src string) *Error {
 var keywords = map[string]bool{
 	"class": true, "class_name": true, "ctor": true, "decl": true, "dtor": true, "enum": true, "enum_name": true,
 	"extends": true, "extern": true, "extern_name": true, "func": true, "get": true, "impl": true, "import": true,
-	"noimport": true, "set": true, "signal": true, "var": true,
+	"invoke": true, "macro": true, "macro_name": true, "noimport": true, "set": true, "signal": true, "template": true, "template_name": true, "var": true,
 }
 
 // declKeywords are the words that can start a declaration, in the order hints list them.
 // Unlike the others, "on" isn't a keyword: it can be a name too.
-var declKeywords = []string{"func", "var", "signal", "enum", "class", "extern", "decl", "impl", "ctor", "dtor", "on", "import", "noimport"}
+var declKeywords = []string{"func", "var", "signal", "enum", "class", "extern", "decl", "impl", "ctor", "dtor", "on", "import", "noimport", "invoke"}
 
 // describe names token t for humans, e.g. `keyword "func"` or `the end of the file`.
 func describe(t lexer.Token) string {
@@ -306,8 +306,9 @@ func endsAnnotation(sig []lexer.Token, i int) bool {
 var names = map[string]string{
 	"@": "an annotation name", "class": "a class name", "class_name": "a class name", "enum": "an enum name",
 	"enum_name": "an enum name", "extends": "a base class name", "extern": "an extern name",
-	"extern_name": "an extern name", "func": "a function name", "import": "a type name", "noimport": "a type name",
-	"signal": "a signal name", "var": "a variable name",
+	"extern_name": "an extern name", "func": "a function name", "import": "a type name", "invoke": "a macro or template name", "macro": "a macro name",
+	"macro_name": "a macro name", "noimport": "a type name", "signal": "a signal name", "template": "a template name",
+	"template_name": "a template name", "var": "a variable name",
 }
 
 // explain turns a participle error into an *Error with a human-readable message.
@@ -342,7 +343,7 @@ func diagnose(sig []lexer.Token, j int) (int, string, string) {
 	}
 	msg, hint := diagnoseAt(sig, j)
 	if p, p2 := at(sig, j-1), at(sig, j-2); names[p2.Value] != "" && (p2.Type == tokIdent || isPunct(p2, "@")) &&
-		p.Type == tokIdent && slices.Contains(append(declKeywords, "class_name", "enum_name", "extern_name"), p.Value) {
+		p.Type == tokIdent && slices.Contains(append(declKeywords, "class_name", "enum_name", "extern_name", "macro_name", "template_name"), p.Value) {
 		// The keyword was taken as a name, e.g. "class_name" followed by "var" on the next line.
 		return j - 1, fmt.Sprintf("Expected %s after %q, but found %s.", names[p2.Value], p2.Value, describe(p)),
 			fmt.Sprintf("%q is a keyword, so it can't be used as a name.", p.Value)
@@ -537,7 +538,7 @@ func inEnumValues(sig []lexer.Token, j int) bool {
 // declarationHint suggests a fix for token u found where a declaration should start.
 func declarationHint(u lexer.Token) string {
 	switch u.Value {
-	case "class_name", "enum_name", "extern_name":
+	case "class_name", "enum_name", "extern_name", "macro_name", "template_name":
 		return fmt.Sprintf("A file has at most one %q, at the very top. Only decl and impl blocks may come before it.", u.Value)
 	case "extends":
 		return "\"extends\" goes right after \"class_name Name\", or right after the \"{\" of an inline class."
@@ -553,7 +554,8 @@ func declarationHint(u lexer.Token) string {
 		return "An empty function body is written \"{}\"."
 	}
 	if u.Type == tokIdent {
-		if s := suggest(u.Value, slices.Concat(declKeywords, []string{"extends", "class_name", "enum_name", "extern_name"})...); s != "" {
+		if s := suggest(u.Value, slices.Concat(declKeywords, []string{"extends", "class_name", "enum_name", "extern_name", "macro", "template", "macro_name",
+			"template_name"})...); s != "" {
 			return fmt.Sprintf("Did you mean %q?", s)
 		}
 	}

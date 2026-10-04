@@ -28,18 +28,29 @@ func TestGenerate(t *testing.T) {
 			Values                     []meta.EnumValue
 			Gdpp, Bitfield, NonRuntime bool
 			Virtuals, Notifications    []string
+			File                       string // For macros and templates: their file in testdata/gen.
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
 		t.Fatal(err)
 	}
 	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
-		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other, "GodotEnum": meta.GodotEnum}
+		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other, "GodotEnum": meta.GodotEnum, "Macro": meta.Macro,
+		"Template": meta.Template}
 	var opts meta.Options
 	for _, d := range file.Dep {
+		source := ""
+		if d.File != "" {
+			data, err := os.ReadFile(filepath.Join("testdata/gen", d.File))
+			if err != nil {
+				t.Fatal(err)
+			}
+			source = string(data)
+		}
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals,
-			Notifications: d.Notifications, NonRuntime: d.NonRuntime})
+			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File})
 	}
+	opts.PackageID, opts.PackagePrefix, opts.CppStandard = "shooter", "Shooter", "c++17"
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +108,7 @@ func TestGenerate(t *testing.T) {
 func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 	const name = "input.gd++"
 	out := map[string]string{}
-	decls, err := ListClasses(name, src)
+	decls, err := ListClasses(name, src, opts)
 	if err == nil {
 		var lines []string
 		for _, d := range decls {
@@ -129,7 +140,10 @@ func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 	return out
 }
 
-var lineDirective = regexp.MustCompile(`^#line (\d+) "(.*)"$`)
+var (
+	lineDirective = regexp.MustCompile(`^#line (\d+) "(.*)"$`)
+	invocation    = regexp.MustCompile(`\binvoke\s+\w+\s*[({]`)
+)
 
 // checkLines asserts that #line directives name the right lines: each user code fragment matches the GD++ source
 // lines it claims to come from, and each directive back to the generated file names its own next line.
@@ -153,6 +167,9 @@ func checkLines(t *testing.T, src, self, text string) {
 		for k := 1; i+1+k < len(lines) && !lineDirective.MatchString(lines[i+1+k]); k++ {
 			if n+k > len(srcLines) {
 				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])
+			}
+			if invocation.MatchString(srcLines[n+k-1]) {
+				continue // The line holds what a macro generated.
 			}
 			want := identifiers(srcLines[n+k-1])
 			for _, id := range identifiers(lines[i+1+k]) {

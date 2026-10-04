@@ -6,7 +6,7 @@ import "github.com/alecthomas/participle/v2/lexer"
 // For declarations with a Doc or Annotations, Pos is the position of the keyword (func, var, ...) instead.
 // Later stages use Pos to emit #line directives.
 
-// File is a whole .gd++ file. At most one of FileClass, FileExtern and FileEnum is set.
+// File is a whole .gd++ file. At most one of FileClass, FileExtern, FileEnum and FileMacro is set.
 // Inline classes and externs are always listed in File, even when they appear after class_name.
 type File struct {
 	Pos           lexer.Position
@@ -16,6 +16,9 @@ type File struct {
 	InlineExterns []*Extern // Declared with extern Name { ... }.
 	FileEnum      *Enum     // Declared with enum_name.
 	InlineEnums   []*Enum   // Enums in a file without a file-level class. (Otherwise they are class members.)
+	FileMacro     *Macro    // Declared with macro_name or template_name.
+	InlineMacros  []*Macro  // Declared with macro or template, also inside other macros and templates.
+	Invokes       []*Invoke // Macro invocations in a file without a file-level class. Expansion replaces them.
 }
 
 // Member is one declaration in a class or extern. Exactly one field after Pos is set.
@@ -30,7 +33,8 @@ type Member struct {
 	Var      *Var    `parser:"| @@"`
 	Enum     *Enum   `parser:"| @@"`
 	Import   *Type   `parser:"| 'import' @@"`
-	NoImport *Type   `parser:"| 'noimport' @@ )"`
+	NoImport *Type   `parser:"| 'noimport' @@"`
+	Invoke   *Invoke `parser:"| @@ )"` // Expansion replaces it with what the macro generates.
 }
 
 // Ctor is a ctor block: the constructor's body, or with @recycle, what runs when a pool reuses an object, and also
@@ -230,12 +234,73 @@ type Arg struct {
 	Value string `parser:"@( String | Char | '-'? Number | Ident )"`
 }
 
+// Macro is a macro: Lua code that generates GD++ or C++ where code invokes it. With Template, it's a template
+// instead: GD++ code with ${...} holes. Declared inline, or with macro_name or template_name (the rest of the file).
+// Doc and Annotations are only parsed to report them: Godot never sees a macro.
+type Macro struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Template    bool          `parser:"( 'macro' | @'template' )"`
+	Name        string        `parser:"@Ident '('"`
+	Params      []*MacroParam `parser:"( @@ ( ',' @@ )* ','? )? ')'"`
+	Body        *MacroBody    `parser:"@@"`
+}
+
+// MacroParam is a parameter of a macro or template. Default is a Lua expression.
+type MacroParam struct {
+	Pos     lexer.Position
+	Name    string   `parser:"@Ident"`
+	Default *Default `parser:"( '=' @@ )?"`
+}
+
+// MacroBody is the body of a macro (Lua) or template (GD++). Text leaves out the macros and templates declared
+// in it, but keeps their newlines. Parse moves those Helpers to File.InlineMacros.
+type MacroBody struct {
+	Block
+	Helpers []*Macro
+}
+
+// Invoke is an invocation of a macro or template: invoke name(args), or invoke name { ... } with a Lua table.
+// Pos is the position of "invoke".
+type Invoke struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"` // Only parsed to report them.
+	Name        string        `parser:"'invoke' @Ident"`
+	Args        *ArgList      `parser:"@@"`
+}
+
+// ArgList is the arguments of an invocation: Args in parentheses, or a Lua table constructor's contents (Table).
+type ArgList struct {
+	Pos   lexer.Position
+	Args  []*MacroArg
+	Table *Block
+}
+
+// MacroArg is an argument of an invocation, or an entry of a dictionary value: Key = Value, or just Value.
+type MacroArg struct {
+	Pos   lexer.Position
+	Key   string
+	Value *Value
+}
+
+// Value is a value passed to a macro.
+type Value struct {
+	Pos   lexer.Position
+	Kind  string      // "string", "number", "name", "list", "dict", "code" or "expr" (a C++ expression).
+	Text  string      // For strings (with their quotes), numbers and names: true, false, null, or a type, e.g. Array[int].
+	Items []*MacroArg // For lists (without keys) and dicts.
+	Code  *Block      // For code { ... } blocks and C++ expressions.
+}
+
 // Block is a C++ block in braces. Text is the C++ code between the braces, with comments removed.
 // Text keeps every newline of the source, so its first line is at TextPos.Line.
 type Block struct {
-	Pos     lexer.Position
-	TextPos lexer.Position
-	Text    string
+	Pos       lexer.Position
+	TextPos   lexer.Position
+	Text      string
+	Generated bool `dump:"-"` // Whether a macro generated it: then all of it comes from the line of TextPos.
 }
 
 // Init is the initial value of a variable: a one-line C++ expression (Expr) or a C++ block that returns the value.

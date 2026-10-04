@@ -1,0 +1,4 @@
+input.gd++:5:3: Template getter can't be used in C++ code, since templates generate declarations.
+ 5 |   invoke getter(x);
+   |   ^^^^^^^^^^^^^
+Hint: Invoke it where declarations go, or use a macro that generates C++ with gd.text.

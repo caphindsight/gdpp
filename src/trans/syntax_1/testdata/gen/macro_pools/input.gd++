@@ -1,0 +1,25 @@
+class Bullet {
+  extends Node
+}
+
+class Spark {
+  extends Node
+}
+
+invoke pools { classes = { { "Bullet", size = 512 }, { "Spark" } } }
+
+// A pool class for any poolable class.
+template pool_of(T, size = 64) {
+  @pool(${size}, "grow")
+  class ${T}Pool {
+    extends Node
+    func take() -> ${T} { return create ${T}; }
+  }
+}
+
+// Pools for the classes of a Lua table.
+macro pools(classes) {
+  for _, c in ipairs(classes) do
+    gd.invoke("pool_of", { T = c[1], size = c.size })
+  end
+}

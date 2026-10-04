@@ -25,6 +25,8 @@ const (
 	Enum             Kind = 5 // A GD++ enum.
 	Other            Kind = 6 // A name in namespace godot that isn't a class, e.g. TypedArray: code may use it, but not as a GD++ type.
 	GodotEnum        Kind = 7 // An enum of Godot's API, e.g. Node.ProcessMode or Error: GD++ enums may extend it, but it isn't a GD++ type.
+	Macro            Kind = 8 // A GD++ macro, which code invokes as "invoke name(...)". Source and File hold its file.
+	Template         Kind = 9 // A GD++ template, which code invokes as "invoke name(...)". Source and File hold its file.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -44,6 +46,8 @@ type Dependency struct {
 	// For classes of the package: whether Godot registers it as a non-runtime class, with tool or abstract, or as a
 	// subclass of such a class. Godot doesn't let runtime classes extend it, so GD++ guards its subclasses instead.
 	NonRuntime bool
+	Source     string // For Kind Macro and Template: the whole GD++ file that declares it, which the translator parses.
+	File       string // For Kind Macro and Template: that file's name, for errors.
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.
@@ -61,12 +65,14 @@ type EnumValue struct {
 type DeclKind int
 
 const (
-	ClassDecl  DeclKind = 1
-	ExternDecl DeclKind = 2
-	EnumDecl   DeclKind = 3
+	ClassDecl    DeclKind = 1
+	ExternDecl   DeclKind = 2
+	EnumDecl     DeclKind = 3
+	MacroDecl    DeclKind = 4
+	TemplateDecl DeclKind = 5
 )
 
-// Declaration is a class, extern or enum type declared in a GD++ file, which other files may use.
+// Declaration is a class, extern, enum type, macro or template declared in a GD++ file, which other files may use.
 // Stable: additive changes only.
 type Declaration struct {
 	Name     string      //
@@ -94,6 +100,10 @@ type Options struct {
 	ProfileFPS    int          // With ProfilePeriod, the frame rate that the table's budget column assumes. Default: 0, 60 FPS.
 	AsyncClass    string       // The name of the package's class of tasks, e.g. "FooAsync", which Async types name. Default: "GdppAsync".
 	PackagePath   string       // The package root's res:// path, e.g. "res://addons/foo", which pkg:// paths resolve against. Default: "res://".
+	PackageID     string       // The package's ID, e.g. "foo", which macros see. Default: none.
+	PackagePrefix string       // The prefix of the classes that GD++ adds to the package, e.g. "Foo", which macros see. Default: none.
+	CppStandard   string       // The package's C++ standard, e.g. "c++17", which macros see. Default: none.
+	MacroTimeout  int          // The seconds that one macro or template invocation may run. Default: 0, 20 seconds.
 }
 
 // File is a generated C++ file. Each declaration of a GD++ file gets a header, named "<Name>.h", and each class

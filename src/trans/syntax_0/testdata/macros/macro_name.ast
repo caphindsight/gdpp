@@ -1,0 +1,33 @@
+File: @2:1
+  FileMacro: @2:1
+    Name: counter
+    Params:
+      - @2:20 name
+      - @2:26
+        Name: start
+        Default: @2:34 0
+    Body: @2:36
+      Block: @2:36
+        TextPos: 2:36
+        Text: |
+
+
+          gd.var { name = name, type = "int", init = start }
+
+
+
+          gd.invoke("twice", { name = name })
+
+  InlineMacros:
+    - @5:1
+      Template: true
+      Name: twice
+      Params:
+        - @5:16 name
+      Body: @5:22
+        Block: @5:22
+          TextPos: 5:23
+          Text: |
+
+              func ${name}_twice() -> int { return ${name} * 2; }
+

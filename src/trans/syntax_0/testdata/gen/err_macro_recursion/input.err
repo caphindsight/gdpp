@@ -1,0 +1,4 @@
+input.gd++:4:1: Invocations are nested more than 32 levels deep here.
+ 4 | invoke forever()
+   | ^^^^^^^^
+Hint: A macro or template probably invokes itself, directly or through others.

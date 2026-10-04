@@ -26,6 +26,9 @@ type unit struct {
 	classes []*classModel      // Bases first.
 	externs []*externModel
 	tracing bool // Whether the unit's header defines GDPP_TRACING, so that failed assertions print trace lines.
+	// The offsets of macro and template invocations, with what each one invokes, e.g. "macro stat". Everything
+	// that an invocation generates is at its offset.
+	generated map[int]string
 }
 
 type classModel struct {
@@ -156,21 +159,33 @@ type signalModel struct {
 }
 
 func (u *unit) errorAt(pos lexer.Position, n int, msg, hint string) *Error {
+	if what := u.generated[pos.Offset]; what != "" {
+		hint = strings.TrimSpace(hint + fmt.Sprintf(" This comes from %s.", what))
+	}
 	return (&Error{Pos: pos, Len: max(n, 1), Msg: msg, Hint: hint}).withSource(u.src)
 }
 
-// parseUnit parses src and indexes the declarations, without dependencies.
-func parseUnit(filename, src string) (*unit, error) {
+// parseUnit parses src, expands its macros and templates with those of the dependencies in opts, and indexes the
+// declarations, without the other dependencies.
+func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 	file, err := Parse(filename, src)
 	if err != nil {
 		return nil, err
 	}
-	u := &unit{src: src, file: file, symbols: map[string]*symbol{}}
+	x, err := newExpander(filename, src, file, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := x.expandFile(file); err != nil {
+		return nil, err
+	}
+	u := &unit{src: src, file: file, symbols: map[string]*symbol{}, generated: x.generated}
 	declare := func(pos lexer.Position, name string, s *symbol) error {
-		if u.symbols[name] != nil {
-			return u.errorAt(pos, 0, fmt.Sprintf("The name %q is declared twice in this file.", name), "Class, extern and enum names must be unique in the package.")
+		if u.symbols[name] != nil || x.defs[name] != nil && x.defs[name].file == filename {
+			return u.errorAt(pos, 0, fmt.Sprintf("The name %q is declared twice in this file.", name),
+				"Class, extern, enum, macro and template names must be unique in the package.")
 		}
-		s.name, s.include, s.gdpp = name, `"`+name+`.h"`, true
+		s.name, s.include, s.gdpp, s.order = name, `"`+name+`.h"`, true, len(u.symbols)
 		u.symbols[name] = s
 		return nil
 	}
@@ -455,7 +470,7 @@ func (u *unit) sortedSymbols() []*symbol {
 			syms = append(syms, s)
 		}
 	}
-	slices.SortFunc(syms, func(a, b *symbol) int { return a.pos().Offset - b.pos().Offset })
+	slices.SortFunc(syms, func(a, b *symbol) int { return cmp.Or(a.pos().Offset-b.pos().Offset, a.order-b.order) })
 	return syms
 }
 
@@ -478,7 +493,7 @@ func baseName(t *Type) string {
 
 // newUnit parses src and checks it against the dependencies in opts.
 func newUnit(filename, src string, opts meta.Options) (*unit, error) {
-	u, err := parseUnit(filename, src)
+	u, err := parseUnit(filename, src, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -487,6 +502,9 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 	}
 	u.opts = opts
 	for _, d := range opts.Dependencies {
+		if d.Kind == meta.Macro || d.Kind == meta.Template {
+			continue // Expanded already.
+		}
 		if s := u.symbols[d.Name]; s != nil {
 			if !s.local() {
 				continue // A duplicate dependency.

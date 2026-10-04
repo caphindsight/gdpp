@@ -1,0 +1,10 @@
+class_name A
+extends Node
+
+func f() -> void {
+  invoke getter(x);
+}
+
+template getter(name) {
+  var ${name}: int
+}

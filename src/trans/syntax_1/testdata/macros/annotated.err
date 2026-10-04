@@ -1,0 +1,3 @@
+macros/annotated.gd++:1:1: Macros take no annotations.
+ 1 | @tool
+   | ^^^^^

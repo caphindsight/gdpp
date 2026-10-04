@@ -1,0 +1,9 @@
+// Macros and templates of another file of the package, for the cases that use them.
+macro_name counter(name, start = 0)
+
+gd.var { name = name, type = "int", init = start }
+gd.func { name = "bump_" .. name, ret = "void", body = name .. "++;" }
+
+template getter(name, type) {
+  func get_${name}_twice() -> ${type} { return ${name} * 2; }
+}

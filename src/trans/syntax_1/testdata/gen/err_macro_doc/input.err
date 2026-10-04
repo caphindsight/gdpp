@@ -1,0 +1,4 @@
+input.gd++:1:1: Macros have no doc comments, since Godot never sees them.
+ 1 | /// A macro.
+   | ^^^
+Hint: Use a plain comment: "//" or "/* */".

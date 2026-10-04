@@ -1,0 +1,10 @@
+class_name A
+extends Node
+
+var health: int
+
+invoke stat(health)
+
+macro stat(name) {
+  gd.var { name = name, type = "int" }
+}

@@ -1,0 +1,23 @@
+class_name Hero
+extends Node
+
+invoke state_machine(Idle, {
+  Idle = code { if (Input::get_singleton()->is_action_pressed("jump")) go(State::JUMP); },
+  Jump = code { if (get_position().y <= 0) go(State::IDLE); },
+})
+
+// A state machine: an enum of the states, the current one, and a switch that runs the current state's code.
+macro state_machine(initial, states) {
+  local names = gd.keys(states)
+  gd.enum { name = "State", values = gd.map(names, gd.upper_snake) }
+  gd.signal { name = "state_changed", params = { "to: State" } }
+  gd.var { name = "state", type = "State", init = "State::" .. gd.upper_snake(initial) }
+  gd.func { name = "go", params = { "to: State" }, ret = "void", body = "state = to; emit state_changed(to);" }
+  gd.on { name = "physics_process", param = "delta", param_type = "float", body = function()
+    gd.text("switch (state) {\n")
+    for _, name in ipairs(names) do
+      gd.text("case State::" .. gd.upper_snake(name) .. ": {" .. tostring(states[name]) .. "} break;\n")
+    end
+    gd.text("}")
+  end }
+}

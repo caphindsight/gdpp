@@ -1,0 +1,4 @@
+input.gd++:1:1: The name "Stat" is declared twice in this file.
+ 1 | class Stat {
+   | ^
+Hint: Class, extern, enum, macro and template names must be unique in the package.

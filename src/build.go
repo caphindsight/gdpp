@@ -51,13 +51,15 @@ type BuildOptions struct {
 }
 
 // DebugOptions are the options of the build and trans commands that turn on
-// @trace and @profile annotations.
+// @trace and @profile annotations, and limit how long macros may run.
 type DebugOptions struct {
 	Trace   []string `arg:"--trace" placeholder:"GROUP" help:"turn on the @trace annotations of these groups, or of all"`
 	Profile []string `arg:"--profile" placeholder:"GROUP" help:"turn on the @profile annotations of these groups, or of all"`
 	Print   bool     `arg:"--print" help:"with --profile, also print a table of the timings every few seconds while the game runs"`
 	Period  *int     `arg:"--period" placeholder:"SECONDS" help:"with --print, the seconds between tables [default: 10]"`
 	FPS     int      `arg:"--fps" placeholder:"FPS" help:"with --print, the frame rate that the table's budget column assumes [default: 60]"`
+	// Seconds; 0 means the translator's default.
+	MacroTimeout int `arg:"--macro-timeout" placeholder:"SECONDS" help:"stop a macro or template invocation that runs longer than this [default: 20]"`
 }
 
 // validate asserts the group names are valid.
@@ -70,12 +72,13 @@ func (o DebugOptions) validate() {
 	Assert(o.Period == nil || o.Print, "Invalid arguments: --period needs --print.")
 	Assert(o.FPS >= 0, "Invalid arguments: --fps cannot be negative.")
 	Assert(o.FPS == 0 || o.Print, "Invalid arguments: --fps needs --print.")
+	Assert(o.MacroTimeout >= 0, "Invalid arguments: --macro-timeout cannot be negative.")
 }
 
-// transOptions returns opts with the options' groups, and the table's
-// period and frame rate if it's printed.
+// transOptions returns opts with the options' groups, the table's period and
+// frame rate if it's printed, and the macros' time limit.
 func (o DebugOptions) transOptions(opts trans.Options) trans.Options {
-	opts.Trace, opts.Profile = o.Trace, o.Profile
+	opts.Trace, opts.Profile, opts.MacroTimeout = o.Trace, o.Profile, o.MacroTimeout
 	if o.Print {
 		opts.ProfilePeriod, opts.ProfileFPS = 10, o.FPS
 		if o.Period != nil {
@@ -276,7 +279,7 @@ func (o BuildOptions) describe(targets []string, gdpp bool) string {
 // with SCons arguments bindArgs, if needed.
 func preparePackage(p Project, pkg Package, bindArgs []string, o BuildOptions) ([]gdppFile, []gdppClass) {
 	generateBuildCache(p, pkg)
-	files := listGdppFiles(p, pkg)
+	files := listGdppFiles(p, pkg, o.MacroTimeout)
 	syncSources(p, pkg, files)
 	if len(files) == 0 {
 		return nil, nil

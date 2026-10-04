@@ -1,0 +1,11 @@
+class_name A
+extends Node
+
+invoke stat(health, max = -3)
+
+macro stat(name, max = 100) {
+  if max < 0 then
+    gd.error_at("max", "a stat's max can't be negative", "use 0 or more")
+  end
+  gd.var { name = name, type = "int", init = max }
+}

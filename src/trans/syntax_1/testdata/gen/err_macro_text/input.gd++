@@ -1,0 +1,8 @@
+class_name A
+extends Node
+
+invoke broken()
+
+macro broken() {
+  gd.text("func f( -> void {}")
+}

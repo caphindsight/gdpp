@@ -6,7 +6,7 @@ gd++ trans: print a file's generated C++
 gd++ trans FILE [--syntax N | --nightly] [--spec NAME | --nospec]
                 [--object NAME[=INCLUDE]] [--refcounted NAME[=INCLUDE]]
                 [--extern NAME[=INCLUDE]] [--refcounted-extern NAME[=INCLUDE]]
-                [--enum NAME[=INCLUDE][:VALUES]]
+                [--enum NAME[=INCLUDE][:VALUES]] [--macro-timeout SECONDS]
                 [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 gd++ trans --runtime [--syntax N | --nightly]
 ```
@@ -97,6 +97,9 @@ Facts about these options:
 
 --fps FPS
   With `--print`, the frame rate that the table's budget column assumes, like `gd++ build --fps`. Default: 60.
+
+--macro-timeout SECONDS
+  Stop a macro or template invocation that runs longer than this, like `gd++ build --macro-timeout`. Default: 20.
 
 # Examples
 

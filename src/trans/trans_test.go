@@ -11,7 +11,7 @@ func TestDispatch(t *testing.T) {
 	opts := Options{Dependencies: []Dependency{{Name: "Node", Include: "<godot_cpp/classes/node.hpp>", Kind: Object}}}
 	for syntax := range forks {
 		t.Run(fmt.Sprint(syntax), func(t *testing.T) {
-			decls, err := ListClasses(name, src, syntax)
+			decls, err := ListClasses(name, src, Options{}, syntax)
 			if err != nil || len(decls) != 1 || decls[0].Name != "Player" || decls[0].Base != "Node" {
 				t.Errorf("ListClasses: %+v, %v", decls, err)
 			}
@@ -39,7 +39,7 @@ func TestErrors(t *testing.T) {
 	if _, err := Generate("bad.gd++", "fun foo() {}\n", Options{}, 0); err == nil || !strings.Contains(err.Error(), `Did you mean "func"?`) {
 		t.Errorf("Expected a syntax error, but got %v.", err)
 	}
-	if _, err := ListClasses("bad.gd++", "", 7); err == nil || err.Error() != "Unsupported GD++ syntax 7." {
+	if _, err := ListClasses("bad.gd++", "", Options{}, 7); err == nil || err.Error() != "Unsupported GD++ syntax 7." {
 		t.Errorf("Expected an unsupported syntax error, but got %v.", err)
 	}
 	if _, _, err := RuntimeHeader(-1); err == nil {

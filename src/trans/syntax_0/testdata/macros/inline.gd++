@@ -1,0 +1,27 @@
+class Foo {
+  extends Node
+  /// Documented.
+  invoke stat(health, max = 100, xs = [1, -2.5, "a", Array[int], Node.ProcessMode], d = {a = true, b_c = null},
+        body = code { x++; }, e = a + b * f(1, 2), lambda = [&]() { return 1; })
+  invoke stat { "mana", max = 25 + 25 }
+  invoke stat()
+}
+
+invoke stat(top)
+
+macro stat(name, max = 100, tags = {}, xs = { 1, 2 }) {
+  // A GD++ comment.
+  local x = { a = 1 } -- A Lua comment.
+  template slot(n) {
+    var ${n}: int
+  }
+  gd.var { name = name }
+}
+
+template pair(a, b) {
+  var ${a}: int
+  macro inner(x) {
+    gd.text(x)
+  }
+  var ${b}: int
+}

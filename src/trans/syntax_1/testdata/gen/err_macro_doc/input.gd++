@@ -1,0 +1,3 @@
+/// A macro.
+macro stat(name) {
+}

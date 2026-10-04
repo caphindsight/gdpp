@@ -19,9 +19,26 @@ const RuntimeHeaderName = "gd++/syntax_1.hpp"
 //go:embed runtime.hpp
 var RuntimeHeader string
 
-// ListClasses returns the classes, externs and enum types that the GD++ source src declares.
-func ListClasses(filename, src string) ([]meta.Declaration, error) {
-	u, err := parseUnit(filename, src)
+// ListMacros returns the macros and templates that the GD++ source src declares. Other files need them before
+// ListClasses can expand their invocations.
+func ListMacros(filename, src string) ([]meta.Declaration, error) {
+	file, err := Parse(filename, src)
+	if err != nil {
+		return nil, err
+	}
+	var decls []meta.Declaration
+	for _, m := range append([]*Macro{file.FileMacro}, file.InlineMacros...) {
+		if m != nil {
+			decls = append(decls, meta.Declaration{Name: m.Name, Kind: map[bool]meta.DeclKind{false: meta.MacroDecl, true: meta.TemplateDecl}[m.Template]})
+		}
+	}
+	return decls, nil
+}
+
+// ListClasses returns the classes, externs and enum types that the GD++ source src declares, with what its
+// invocations of the macros and templates in opts.Dependencies generate.
+func ListClasses(filename, src string, opts meta.Options) ([]meta.Declaration, error) {
+	u, err := parseUnit(filename, src, opts)
 	if err != nil {
 		return nil, err
 	}

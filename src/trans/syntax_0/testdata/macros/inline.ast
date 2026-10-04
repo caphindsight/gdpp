@@ -1,0 +1,173 @@
+File: @1:1
+  InlineClasses:
+    - @1:1
+      Name: Foo
+      Extends: @2:11 Node
+      Members:
+        - @3:3
+          Invoke: @4:3
+            Doc: @3:3 Documented.
+            Name: stat
+            Args: @4:14
+              Args:
+                - @4:15
+                  Value: @4:15
+                    Kind: name
+                    Text: health
+                - @4:23
+                  Key: max
+                  Value: @4:29
+                    Kind: number
+                    Text: 100
+                - @4:34
+                  Key: xs
+                  Value: @4:39
+                    Kind: list
+                    Items:
+                      - @4:40
+                        Value: @4:40
+                          Kind: number
+                          Text: 1
+                      - @4:43
+                        Value: @4:43
+                          Kind: number
+                          Text: -2.5
+                      - @4:49
+                        Value: @4:49
+                          Kind: string
+                          Text: "a"
+                      - @4:54
+                        Value: @4:54
+                          Kind: name
+                          Text: Array[int]
+                      - @4:66
+                        Value: @4:66
+                          Kind: name
+                          Text: Node.ProcessMode
+                - @4:85
+                  Key: d
+                  Value: @4:89
+                    Kind: dict
+                    Items:
+                      - @4:90
+                        Key: a
+                        Value: @4:94
+                          Kind: name
+                          Text: true
+                      - @4:100
+                        Key: b_c
+                        Value: @4:106
+                          Kind: name
+                          Text: null
+                - @5:9
+                  Key: body
+                  Value: @5:16
+                    Kind: code
+                    Code: @5:21
+                      TextPos: 5:22
+                      Text: " x++;"
+                - @5:31
+                  Key: e
+                  Value: @5:35
+                    Kind: expr
+                    Code: @5:35
+                      TextPos: 5:35
+                      Text: a + b * f(1, 2)
+                - @5:52
+                  Key: lambda
+                  Value: @5:61
+                    Kind: expr
+                    Code: @5:61
+                      TextPos: 5:61
+                      Text: [&]() { return 1; }
+        - @6:3
+          Invoke: @6:3
+            Name: stat
+            Args: @6:15
+              Table: @6:15
+                TextPos: 6:16
+                Text: " \"mana\", max = 25 + 25"
+        - @7:3
+          Invoke: @7:3
+            Name: stat
+            Args: @7:14
+  InlineMacros:
+    - @12:1
+      Name: stat
+      Params:
+        - @12:12 name
+        - @12:18
+          Name: max
+          Default: @12:24 100
+        - @12:29
+          Name: tags
+          Default: @12:36
+            Block: @12:36
+              TextPos: 12:37
+        - @12:40
+          Name: xs
+          Default: @12:45
+            Block: @12:45
+              TextPos: 12:46
+              Text: " 1, 2"
+      Body: @12:55
+        Block: @12:55
+          TextPos: 12:56
+          Text: |
+
+
+              local x = { a = 1 } -- A Lua comment.
+
+
+
+              gd.var { name = name }
+
+    - @21:1
+      Template: true
+      Name: pair
+      Params:
+        - @21:15 a
+        - @21:18 b
+      Body: @21:21
+        Block: @21:21
+          TextPos: 21:22
+          Text: |
+
+              var ${a}: int
+
+
+
+              var ${b}: int
+
+    - @15:3
+      Template: true
+      Name: slot
+      Params:
+        - @15:17 n
+      Body: @15:20
+        Block: @15:20
+          TextPos: 15:21
+          Text: |
+
+                var ${n}: int
+
+    - @23:3
+      Name: inner
+      Params:
+        - @23:15 x
+      Body: @23:18
+        Block: @23:18
+          TextPos: 23:19
+          Text: |
+
+                gd.text(x)
+
+  Invokes:
+    - @10:1
+      Name: stat
+      Args: @10:12
+        Args:
+          - @10:13
+            Value: @10:13
+              Kind: name
+              Text: top

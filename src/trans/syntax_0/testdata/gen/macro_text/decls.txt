@@ -1,0 +1,1 @@
+{Name:Abilities Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

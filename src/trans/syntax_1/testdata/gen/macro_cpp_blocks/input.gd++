@@ -1,0 +1,26 @@
+class_name Table
+extends Node
+
+decl {
+  invoke lookup_table(DAMAGE, [10, 20, 40])
+}
+
+invoke enter_functions([Idle, Run])
+
+func damage(level: int) -> int {
+  return DAMAGE[level];
+}
+
+// A C++ array of integers.
+macro lookup_table(name, values) {
+  gd.text("static constexpr int64_t " .. name .. "[] = {" .. gd.join(values, ", ") .. "};")
+}
+
+// An impl block with a function per state, written piece by piece.
+macro enter_functions(states) {
+  gd.impl { body = function()
+    for _, s in ipairs(states) do
+      gd.text("static void enter_" .. gd.snake(s) .. "(This *self) { self->emit_signal(" .. gd.string_name(s) .. "); }\n")
+    end
+  end }
+}

@@ -1,0 +1,21 @@
+class_name Player
+extends Node
+
+/// The player's health.
+invoke stat(health, max = 100, regen = 2.5)
+invoke stat { "mana", max = 25 + 25 }
+
+// A clamped stat with a changed signal and an exported max.
+macro stat(name, max = 100, regen = 0) {
+  gd.signal { name = name .. "_changed", params = { "value: int" } }
+  gd.var { name = "max_" .. name, type = "int", init = max, annotations = { "export" } }
+  local field = name .. "_"
+  gd.var { name = name, type = "int", doc = ctx.doc,
+           decl = "int64_t " .. field .. " = " .. max .. ";",
+           get = "return " .. field .. ";",
+           set = field .. " = CLAMP(value, 0, max_" .. name .. "); emit " .. name .. "_changed(" .. field .. ");" }
+  if regen > 0 then
+    gd.on { name = "process", param = "delta", param_type = "float",
+            body = "set_" .. name .. "(" .. field .. " + int64_t(" .. regen .. " * delta));" }
+  end
+}

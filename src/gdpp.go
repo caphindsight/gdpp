@@ -27,11 +27,12 @@ const gdppDirName = "gdpp"
 // gdppFile is a GD++ file of a package, with what it declares. Err is set,
 // and Decls empty, if the file has errors.
 type gdppFile struct {
-	File  Path
-	Rel   string // Relative to the package root, e.g. "src/player.gd++".
-	Src   string
-	Decls []trans.Declaration
-	Err   error
+	File   Path
+	Rel    string // Relative to the package root, e.g. "src/player.gd++".
+	Src    string
+	Decls  []trans.Declaration // Its classes, externs and enums, with those that macros generate.
+	Macros []trans.Declaration // Its macros and templates.
+	Err    error
 }
 
 // gdppClass is a class declared in a GD++ file.
@@ -41,23 +42,54 @@ type gdppClass struct {
 }
 
 // listGdppFiles reads the package's GD++ files, and lists what each one
-// declares. A file's errors don't fail, so gd++ ls can show broken files.
-func listGdppFiles(p Project, pkg Package) []gdppFile {
+// declares, with macros limited to macroTimeout seconds (0: the default). A
+// file's errors don't fail, so gd++ ls can show broken files.
+func listGdppFiles(p Project, pkg Package, macroTimeout int) []gdppFile {
 	var files []gdppFile
 	for _, rel := range packageFiles(p, pkg, gdppExtensions...) {
 		file := pkg.Root.Cd(rel)
 		src := file.ReadString()
-		decls, err := trans.ListClasses(file.ToString(), src, pkg.Config.Syntax)
-		files = append(files, gdppFile{File: file, Rel: rel, Src: src, Decls: decls, Err: err})
+		macros, err := trans.ListMacros(file.ToString(), src, pkg.Config.Syntax)
+		files = append(files, gdppFile{File: file, Rel: rel, Src: src, Macros: macros, Err: err})
+	}
+	// Macros may generate classes, so listing those needs every file's macros.
+	for i, f := range files {
+		if f.Err == nil {
+			opts := packageOptions(pkg, macroDeps(files, f.Rel))
+			opts.MacroTimeout = macroTimeout
+			files[i].Decls, files[i].Err = trans.ListClasses(f.File.ToString(), f.Src, opts, pkg.Config.Syntax)
+		}
 	}
 	return files
+}
+
+// packageOptions returns the options for transpiling the package's GD++
+// files, with dependencies deps.
+func packageOptions(pkg Package, deps []trans.Dependency) trans.Options {
+	return trans.Options{Dependencies: deps, AsyncClass: pkg.AsyncClass(), PackagePath: pkg.ResPath(), PackageID: pkg.Id,
+		PackagePrefix: pkg.Prefix(), CppStandard: pkg.Config.CppStandard}
+}
+
+// macroDeps returns the macros and templates of files, except those of the
+// file whose path relative to the package root is self, as dependencies.
+func macroDeps(files []gdppFile, self string) []trans.Dependency {
+	var deps []trans.Dependency
+	for _, f := range files {
+		for _, m := range f.Macros {
+			if f.Rel != self {
+				kind := map[trans.DeclKind]trans.Kind{trans.MacroDecl: trans.Macro, trans.TemplateDecl: trans.Template}[m.Kind]
+				deps = append(deps, trans.Dependency{Name: m.Name, Kind: kind, Source: f.Src, File: f.File.ToString()})
+			}
+		}
+	}
+	return deps
 }
 
 // assertNotGdppClass asserts that the package at root has no GD++ class
 // named name: GD++ classes live in code, so commands can't change them.
 func assertNotGdppClass(root Path, name string) {
 	pkg := LoadPackageAt(root)
-	for _, class := range gdppClasses(listGdppFiles(LoadProject(root), pkg)) {
+	for _, class := range gdppClasses(listGdppFiles(LoadProject(root), pkg, 0)) {
 		if class.Name == name {
 			LogFatal("Class %s is declared in %s, so it can only be changed there.", name, class.File.File.ToString())
 		}
@@ -264,7 +296,7 @@ func readSpec(file Path) apiSpec {
 // packageDeps returns the dependencies of the package's GD++ file whose path
 // relative to the package root is self: the spec's enums, names, e.g.
 // godot-cpp's and the package's C++ classes', with the spec's virtual methods, then what the package's other GD++
-// files declare. The spec's enums come first, so e.g. Error is an enum, not just a name.
+// files declare, macros and templates last. The spec's enums come first, so e.g. Error is an enum, not just a name.
 func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string, nonRuntime map[string]bool) []trans.Dependency {
 	godot := map[string]godotName{}
 	for _, n := range names {
@@ -292,7 +324,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 			}
 		}
 	}
-	return deps
+	return append(deps, macroDeps(files, self)...)
 }
 
 // gdppKinds returns the kinds of the declarations in files, following the
@@ -344,7 +376,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 		if f.Err != nil {
 			FailWithText(f.Err)
 		}
-		for _, d := range f.Decls {
+		for _, d := range slices.Concat(f.Decls, f.Macros) {
 			if prev, ok := owner[d.Name]; ok {
 				LogFatal("The name %s is declared in both %s and %s.", d.Name, prev.File.ToString(), f.File.ToString())
 			}
@@ -369,8 +401,9 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	}
 	for _, f := range files {
 		// #line names the GD++ file's copy, relative to the build cache, where SCons runs, like it names C++ sources.
-		opts := o.transOptions(trans.Options{Dependencies: packageDeps(files, names, spec, f.Rel, nonRuntime), SourceName: sourcesDirName + "/" + f.Rel, AsyncClass: pkg.AsyncClass(),
-			PackagePath: pkg.ResPath()})
+		opts := packageOptions(pkg, packageDeps(files, names, spec, f.Rel, nonRuntime))
+		opts.SourceName = sourcesDirName + "/" + f.Rel
+		opts = o.transOptions(opts)
 		name := f.File.ToString()
 		generated, err := trans.Generate(name, f.Src, opts, syntax)
 		if err != nil {

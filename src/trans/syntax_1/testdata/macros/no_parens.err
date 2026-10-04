@@ -1,0 +1,4 @@
+macros/no_parens.gd++:2:15: Expected "(" or "{" after the macro's name, but found name "health".
+ 2 |   invoke stat health
+   |               ^^^^^^
+Hint: Invoke a macro with "invoke name(args)", or with a Lua table: "invoke name { ... }".

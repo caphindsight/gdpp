@@ -1,0 +1,8 @@
+// A file-level macro.
+macro_name counter(name, start = 0)
+
+gd.var { name = name, type = "int", init = start }
+template twice(name) {
+  func ${name}_twice() -> int { return ${name} * 2; }
+}
+gd.invoke("twice", { name = name })

@@ -1,0 +1,4 @@
+input.gd++:7:15: Expected ":", "=" or "{" after the variable name, but found name "int".
+ 7 |   var ${name} int
+   |               ^^^
+Hint: Types are written after a colon: "var x: int". Instantiated at input.gd++:4.

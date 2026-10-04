@@ -1,0 +1,14 @@
+class_name Caller
+extends Node
+
+func call_twice(f: Callable) -> void {
+  std::invoke([&]() { f.call(); });
+  invoke(f, 1);
+  int invoke = 2;
+  invoke twice(invoke);
+}
+
+// Doubles a value.
+macro twice(value) {
+  gd.text("(" .. tostring(value) .. " * 2)")
+}

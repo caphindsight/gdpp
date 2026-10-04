@@ -28,14 +28,19 @@ const (
 	Enum             = meta.Enum
 	Other            = meta.Other
 	GodotEnum        = meta.GodotEnum
+	Macro            = meta.Macro
+	Template         = meta.Template
 	ClassDecl        = meta.ClassDecl
 	ExternDecl       = meta.ExternDecl
 	EnumDecl         = meta.EnumDecl
+	MacroDecl        = meta.MacroDecl
+	TemplateDecl     = meta.TemplateDecl
 )
 
 // fork is what every syntax fork provides.
 type fork struct {
-	listClasses   func(filename, src string) ([]meta.Declaration, error)
+	listMacros    func(filename, src string) ([]meta.Declaration, error)
+	listClasses   func(filename, src string, opts meta.Options) ([]meta.Declaration, error)
 	documentClass func(filename, src, class string, opts meta.Options) (string, error)
 	builtinDocs   func(opts meta.Options) []meta.File
 	generate      func(filename, src string, opts meta.Options) ([]meta.File, error)
@@ -45,9 +50,9 @@ type fork struct {
 
 // Syntax 0 is nightly: it may break code at any time. Every other syntax is a stable snapshot.
 var forks = map[int]fork{
-	0: {syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.DocumentBuiltinClasses, syntax_0.Generate,
+	0: {syntax_0.ListMacros, syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.DocumentBuiltinClasses, syntax_0.Generate,
 		syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
-	1: {syntax_1.ListClasses, syntax_1.DocumentClass, syntax_1.DocumentBuiltinClasses, syntax_1.Generate,
+	1: {syntax_1.ListMacros, syntax_1.ListClasses, syntax_1.DocumentClass, syntax_1.DocumentBuiltinClasses, syntax_1.Generate,
 		syntax_1.RuntimeHeaderName, syntax_1.RuntimeHeader},
 }
 
@@ -84,13 +89,24 @@ func get(syntax int) (fork, error) {
 // Each function takes a GD++ file's name and contents. The name appears in errors, and in #line directives unless
 // Options.SourceName is set.
 
-// ListClasses returns the classes, externs and enum types that the GD++ file declares.
-func ListClasses(name, src string, syntax int) ([]Declaration, error) {
+// ListMacros returns the macros and templates that the GD++ file declares. ListClasses needs those of the other
+// files of the package.
+func ListMacros(name, src string, syntax int) ([]Declaration, error) {
 	f, err := get(syntax)
 	if err != nil {
 		return nil, err
 	}
-	return f.listClasses(name, src)
+	return f.listMacros(name, src)
+}
+
+// ListClasses returns the classes, externs and enum types that the GD++ file declares, with what the macros and
+// templates in opts.Dependencies generate.
+func ListClasses(name, src string, opts Options, syntax int) ([]Declaration, error) {
+	f, err := get(syntax)
+	if err != nil {
+		return nil, err
+	}
+	return f.listClasses(name, src, opts)
 }
 
 // DocumentClass returns the Godot XML documentation of the class named class in the GD++ file.

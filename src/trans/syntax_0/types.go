@@ -37,6 +37,7 @@ type symbol struct {
 	class         *Class   // Set for classes in the file.
 	extern        *Extern  // Set for externs in the file.
 	enum          *Enum    // Set for enums in the file.
+	order         int      // For declarations in the file: how many came before, which orders those at the same position.
 }
 
 // local reports whether the file declares s.

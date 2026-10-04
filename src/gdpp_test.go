@@ -89,7 +89,7 @@ func runGdppSteps(docs bool) (classes []gdppClass, generated bool) {
 		cache.WriteString(encodeToml(godotNamesCache{godotNamesVersion, testGodotNames}))
 	}
 	names := loadGodotNames(pkg, func() { generated = true })
-	classes = transpilePackage(pkg, listGdppFiles(p, pkg), names, BuildOptions{NoDoc: !docs})
+	classes = transpilePackage(pkg, listGdppFiles(p, pkg, 0), names, BuildOptions{NoDoc: !docs})
 	generateRegisterTypes(pkg, classes)
 	return classes, generated
 }
@@ -298,6 +298,24 @@ func TestLoadGodotNamesOutdated(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageMacros(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"macros.gd++": "macro_name tagged(name)\n\ngd.class { name = name, body = function()\n  gd.invoke(\"tag\", { value = ctx.package.prefix .. \"/\" .. ctx.package.id })\nend }\n" +
+			"template tag(value) {\n  func tag() -> String { return ${gd.quote(value)}; }\n}\n",
+		"use.gd++": "invoke tagged(Crate)\n",
+	})
+	withTTY(t, false)
+	withQuiet(t, false)
+	classes, _, _ := transpileTestPackage(t, false)
+	if len(classes) != 1 || classes[0].Name != "Crate" {
+		t.Fatalf("classes = %+v, want Crate", classes)
+	}
+	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	if want := `return "Pkg/pkg";`; !strings.Contains(gen["Crate.cpp"], want) {
+		t.Errorf("Crate.cpp = %s\nwant it to contain %q", gen["Crate.cpp"], want)
+	}
+}
+
 func TestTranspilePackageFails(t *testing.T) {
 	cases := map[string]struct {
 		files map[string]string
@@ -305,6 +323,8 @@ func TestTranspilePackageFails(t *testing.T) {
 	}{
 		"duplicate": {map[string]string{"a.gd++": "class Twin {}\n", "b.gd++": "enum Twin { A }\n"},
 			"[x] The name Twin is declared in both res://src/pkg/a.gd++ and res://src/pkg/b.gd++.\n"},
+		"duplicate macro": {map[string]string{"a.gd++": "macro twin() {\n}\n", "b.gd++": "template twin() {\n}\n"},
+			"[x] The name twin is declared in both res://src/pkg/a.gd++ and res://src/pkg/b.gd++.\n"},
 		"config clash": {map[string]string{"enemy.gd++": "class Enemy {}\n"},
 			"[x] Class Enemy is declared in res://src/pkg/enemy.gd++ and in res://src/pkg/gd++pkg.toml.\n"},
 		"class of tasks clash": {map[string]string{"a.gd++": "class PkgAsync {\n  @onthread\n  func f() -> void {}\n}\n"},

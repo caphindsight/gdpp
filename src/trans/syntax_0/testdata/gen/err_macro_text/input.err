@@ -1,0 +1,4 @@
+input.gd++:4:1: Macro broken emitted GD++ that doesn't parse: this "(" is never closed.
+ 4 | invoke broken()
+   | ^^^^^^^^^^^^^
+Hint: Add a matching ")". The line it emitted: "func f( -> void {}".

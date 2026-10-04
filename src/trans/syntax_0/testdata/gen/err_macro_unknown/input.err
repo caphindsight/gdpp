@@ -1,0 +1,4 @@
+input.gd++:4:1: There is no macro or template stta.
+ 4 | invoke stta(health)
+   | ^^^^^^^^^^^
+Hint: Did you mean "stat"?

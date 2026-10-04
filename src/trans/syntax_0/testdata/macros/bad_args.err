@@ -1,0 +1,4 @@
+macros/bad_args.gd++:2:32: Positional arguments must come before named ones.
+ 2 |   invoke stat(health, max = 1, 2)
+   |                                ^
+Hint: Name this argument too, or move it.
