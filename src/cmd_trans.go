@@ -56,11 +56,12 @@ func (c *CmdTrans) Run() {
 	var names []godotName
 	var spec apiSpec
 	var cppClasses []godotName
+	nonRuntime := map[string]bool{}
 	self, asyncClass, pkgPath := "", "", ""
 	if root, ok := GetPackageRootMaybe(file); ok {
 		p, pkg := LoadProject(root), LoadPackage(root)
 		files, self, asyncClass, pkgPath = listGdppFiles(p, pkg), relPath(root, file), pkg.AsyncClass(), pkg.ResPath()
-		cppClasses = cppClassNames(pkg)
+		cppClasses, nonRuntime = cppClassNames(pkg), nonRuntimeClasses(pkg, fileDecls(files))
 		if c.Syntax == nil {
 			syntax = pkg.Config.Syntax
 		}
@@ -73,7 +74,7 @@ func (c *CmdTrans) Run() {
 		names, spec = specNames(c.Spec)
 	}
 	// Flags come first, so they win over other dependencies of the same name.
-	deps := append(c.flagDependencies(), packageDeps(files, append(names, cppClasses...), spec, self)...)
+	deps := append(c.flagDependencies(), packageDeps(files, append(names, cppClasses...), spec, self, nonRuntime)...)
 	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(trans.Options{Dependencies: deps, AsyncClass: asyncClass, PackagePath: pkgPath}), syntax)
 	if err != nil {
 		FailWithText(err)

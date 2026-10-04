@@ -27,6 +27,9 @@ func _score() -> int
 
 # Classes
 
+@abstract
+  Make the class only a base for other classes, like in GDScript: the editor doesn't offer it, and `create` doesn't work on it. Not with `@pool` or `@scene`. See `gd++ man classes`.
+
 @tool
   Run the class's code in the editor too. See `gd++ man classes`.
 
@@ -334,7 +337,7 @@ Other facts:
 
 Some GDScript annotations have no GD++ version, since GD++ does the same another way, or it doesn't apply to C++:
 
-- `@abstract`, `@static_unload`, `@warning_ignore` and the like: not supported.
+- `@abstract` on functions, `@static_unload`, `@warning_ignore` and the like: not supported.
 - `@export_node_path`, `@export_color_no_alpha`, `@export_exp_easing`, `@export_global_file`, `@export_global_dir` and the like: not supported yet. Use `@export`, or a property of the right type.
 - `static`, `const` and `onready` without `@` are not keywords. Write `@static` and `@onready`, and `enum NAME = VALUE` for constants.
 

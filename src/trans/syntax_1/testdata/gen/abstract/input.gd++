@@ -1,0 +1,13 @@
+@abstract
+class_name Weapon
+extends Node3D
+
+@virtual
+func _fire() -> void {}
+
+class Sword {
+  extends Weapon
+
+  @override
+  func _fire() -> void {}
+}

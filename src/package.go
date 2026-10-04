@@ -33,11 +33,12 @@ type PackageConfig struct {
 // PackageClass is a C++ class the package exposes to Godot. Its paths are
 // package-relative (pkg://) or project-relative (res://).
 type PackageClass struct {
-	Name    string `toml:"name"`
-	Include string `toml:"include,omitempty"` // the header declaring the class
-	Icon    string `toml:"icon,omitempty"`
-	Tool    bool   `toml:"tool,omitempty"` // whether its code runs in the editor too, like @tool
-	Kind    string `toml:"kind,omitempty"` // how GD++ code uses it: "ptr" (T*) or "ref" (Ref<T>); if empty, it can't
+	Name     string `toml:"name"`
+	Include  string `toml:"include,omitempty"` // the header declaring the class
+	Icon     string `toml:"icon,omitempty"`
+	Tool     bool   `toml:"tool,omitempty"`     // whether its code runs in the editor too, like @tool
+	Abstract bool   `toml:"abstract,omitempty"` // whether only its subclasses' objects are created, like @abstract
+	Kind     string `toml:"kind,omitempty"`     // how GD++ code uses it: "ptr" (T*) or "ref" (Ref<T>); if empty, it can't
 }
 
 var (

@@ -1,5 +1,5 @@
-{Name:Gun Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Bullet Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Spark Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Shard Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Shell Kind:2 Base:Bullet Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:Gun Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Bullet Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Spark Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Shard Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Shell Kind:2 Base:Bullet Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

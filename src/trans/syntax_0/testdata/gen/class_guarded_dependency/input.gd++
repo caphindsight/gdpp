@@ -1,0 +1,4 @@
+class_name Lid
+extends Vault
+
+func close() -> void {}

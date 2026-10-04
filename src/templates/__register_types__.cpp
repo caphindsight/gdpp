@@ -19,11 +19,18 @@ using namespace godot;
 template <typename T>
 constexpr bool gdpp_is_package_class = false{{range .Classes}} || std::is_same_v<T, {{.}}>{{end}};
 
-// Runtime classes are C++ classes without tool and GD++ classes without @tool:
-// in the editor, Godot makes placeholders of them that store their properties
-// but run none of their code.
+// Runtime classes are classes without tool or abstract, which don't extend a
+// class with one of those: in the editor, Godot makes placeholders of them
+// that store their properties but run none of their code.
 template <typename T>
 constexpr bool gdpp_is_runtime_class = false{{range .RuntimeClasses}} || std::is_same_v<T, {{.}}>{{end}};
+
+// Abstract classes are registered as virtual, like GDScript's @abstract: the
+// editor creates none of their objects, but scripts that extend them work.
+// Those with pure virtual functions are registered as abstract, which godot-cpp
+// requires: then not even scripts that extend them can be created.
+template <typename T>
+constexpr bool gdpp_is_abstract_class = false{{range .AbstractClasses}} || std::is_same_v<T, {{.}}>{{end}};
 
 // Whether T is registered. gdpp_uninitialize resets it: if the library stays
 // loaded on hot reload, e.g. because of thread_local storage, it must register
@@ -42,7 +49,11 @@ static void gdpp_register_class() {
 	if constexpr (gdpp_is_package_class<typename T::parent_type>) {
 		gdpp_register_class<typename T::parent_type>();
 	}
-	if constexpr (gdpp_is_runtime_class<T>) {
+	if constexpr (std::is_abstract_v<T>) {
+		GDREGISTER_ABSTRACT_CLASS(T);
+	} else if constexpr (gdpp_is_abstract_class<T>) {
+		GDREGISTER_VIRTUAL_CLASS(T);
+	} else if constexpr (gdpp_is_runtime_class<T>) {
 		GDREGISTER_RUNTIME_CLASS(T);
 	} else {
 		GDREGISTER_CLASS(T);

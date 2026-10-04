@@ -354,8 +354,10 @@ func (u *unit) document(c *classModel) string {
 			params: f.params, list: f.f.Params, doc: parseDoc(docText(f.f.Doc), false)})
 	}
 	void := &gtype{cpp: "void", doc: "void", void: true}
-	methods = append(methods, methodDoc{name: "gdpp_create", qualifiers: "static", ret: &gtype{cpp: c.createType(), doc: c.name},
-		doc: parseDoc(createDocs[[2]bool{c.scene != "", c.pool != nil}], false)})
+	if !c.abstract {
+		methods = append(methods, methodDoc{name: "gdpp_create", qualifiers: "static", ret: &gtype{cpp: c.createType(), doc: c.name},
+			doc: parseDoc(createDocs[[2]bool{c.scene != "", c.pool != nil}], false)})
+	}
 	if !c.refCounted {
 		methods = append(methods, methodDoc{name: "gdpp_destroy", ret: void,
 			doc: parseDoc(destroyDocs[c.pool != nil], false)})

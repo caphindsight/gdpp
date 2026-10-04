@@ -34,13 +34,14 @@ type classModel struct {
 	base       string
 	refCounted bool
 	node       bool       // Whether it extends Node.
-	gameOnly   bool       // Whether @game_only guards all its code against running in the editor.
+	gameOnly   bool       // Whether guards keep all its code from running in the editor: with @game_only, or as a non-runtime class without @tool.
 	trace      bool       // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
 	profile    bool       // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
 	codes      []*Code    // decl and impl blocks inside the class.
 	globals    []*Code    // @global decl and impl blocks, outside the class and namespace godot.
 	pool       *poolModel // Its @pool, or nil.
 	scene      string     // The res:// path of its @scene, or "".
+	abstract   bool       // Whether @abstract keeps the editor and GD++ code from creating its objects.
 	ctor, dtor *Block
 	notifs     []*notifModel
 	funcs      []*funcModel
@@ -262,7 +263,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			}
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
-				Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Async: usesAsync(c),
+				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Async: usesAsync(c),
 				Virtuals: classVirtuals(c), Notifications: ownNotifications(c.Members)})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
@@ -296,6 +297,19 @@ func usesAsync(c *Class) bool {
 // hasAnnotation reports whether class c has the annotation named name.
 func hasAnnotation(c *Class, name string) bool {
 	return slices.ContainsFunc(c.Annotations, func(a *Annotation) bool { return a.Name == name })
+}
+
+// nonRuntime reports whether Godot registers the class named name as a non-runtime class: one with @tool or @abstract,
+// or one that extends such a class of the package.
+func (u *unit) nonRuntime(name string) bool {
+	switch s := u.symbols[name]; {
+	case s == nil:
+		return false
+	case s.class == nil:
+		return s.nonRuntime
+	default:
+		return hasAnnotation(s.class, "tool") || hasAnnotation(s.class, "abstract") || u.nonRuntime(baseName(s.class.Extends))
+	}
 }
 
 // classVirtuals returns the names of the @virtual functions of class c.
@@ -481,7 +495,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
 		}
 		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
-			virtuals: d.Virtuals, notifications: d.Notifications}
+			virtuals: d.Virtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}
@@ -1040,7 +1054,7 @@ func cppString(s string) string {
 
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
-var knownAnnotations = []string{"bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
+var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "noprofile", "notrace", "onready",
 	"onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
@@ -1908,11 +1922,19 @@ func (u *unit) buildClasses() error {
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted,
 		node: u.extends(c.Name, "Node")}
-	a, err := u.annotations(c.Annotations, "a class", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
+	a, err := u.annotations(c.Annotations, "a class", "abstract", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
-	m.gameOnly = a["game_only"] != nil
+	m.abstract = a["abstract"] != nil
+	// Godot doesn't let runtime classes extend non-runtime ones, so classes without @tool below those are guarded instead.
+	m.gameOnly = a["game_only"] != nil || a["tool"] == nil && u.nonRuntime(c.Name)
+	for _, name := range []string{"pool", "scene"} {
+		if m.abstract && a[name] != nil {
+			return nil, u.errorAt(a[name].Pos, len(name)+1, fmt.Sprintf("Abstract classes can't have @%s, since they can't be created.", name),
+				"Put it on their subclasses.")
+		}
+	}
 	if m.pool, err = u.poolOf(a["pool"], c.Name); err != nil {
 		return nil, err
 	}
@@ -1928,7 +1950,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}
-	names := map[string]bool{"gdpp_create": true, "gdpp_destroy": !m.refCounted, "gdpp_queue_destroy": m.node} // Methods for scripts.
+	names := map[string]bool{"gdpp_create": !m.abstract, "gdpp_destroy": !m.refCounted, "gdpp_queue_destroy": m.node} // Methods for scripts.
 	for _, name := range []string{"gdpp_pool_reserve", "gdpp_pool_clear"} {
 		names[name] = m.pool != nil
 	}

@@ -31,14 +31,14 @@ type lsPackage struct {
 // so commands can't change them. A GD++ class with an empty Name stands for a
 // GD++ file with errors.
 type lsClass struct {
-	Name           string
-	File, Icon     Path   // The header of a C++ class, or the GD++ file of a GD++ class.
-	FileText       string // For GD++ classes, the file's pkg:// path; if empty, File's.
-	Base           string // For GD++ classes.
-	Kind           string // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
-	Gdpp           bool
-	Tool, GameOnly bool
-	Clash          bool // Another class has the same name.
+	Name                     string
+	File, Icon               Path   // The header of a C++ class, or the GD++ file of a GD++ class.
+	FileText                 string // For GD++ classes, the file's pkg:// path; if empty, File's.
+	Base                     string // For GD++ classes.
+	Kind                     string // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
+	Gdpp                     bool
+	Abstract, Tool, GameOnly bool
+	Clash                    bool // Another class has the same name.
 }
 
 func (c *CmdLs) Run() {
@@ -68,7 +68,8 @@ func (c *CmdLs) Run() {
 func lsClasses(p Project, pkg Package) []lsClass {
 	var classes, broken []lsClass
 	for _, class := range pkg.Config.Classes {
-		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), Tool: class.Tool, Kind: class.Kind})
+		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), Tool: class.Tool,
+			Abstract: class.Abstract, Kind: class.Kind})
 	}
 	for _, f := range listGdppFiles(p, pkg) {
 		file := lsClass{File: f.File, FileText: "pkg://" + f.Rel, Gdpp: true}
@@ -79,7 +80,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 			if d.Kind == trans.ClassDecl {
 				class := file
 				class.Name, class.Base, class.Icon = d.Name, d.Base, pkg.ClassPath(d.Icon)
-				class.Tool, class.GameOnly = d.Tool, d.GameOnly
+				class.Abstract, class.Tool, class.GameOnly = d.Abstract, d.Tool, d.GameOnly
 				classes = append(classes, class)
 			}
 		}
@@ -285,7 +286,7 @@ func lsTags(class lsClass) string {
 	for _, t := range []struct {
 		on   bool
 		name string
-	}{{class.Tool, "@tool"}, {class.GameOnly, "@game_only"}} {
+	}{{class.Abstract, "@abstract"}, {class.Tool, "@tool"}, {class.GameOnly, "@game_only"}} {
 		if t.on {
 			tags = append(tags, t.name)
 		}

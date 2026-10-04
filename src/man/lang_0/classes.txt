@@ -126,13 +126,43 @@ bullet.gdpp_destroy()               # destroy bullet
 bullet.gdpp_queue_destroy()         # queue_destroy bullet
 ```
 
-- `gdpp_create()`: a static method of every class. It returns `null` if a `"fixed"` pool is full, or a scene fails to load, so check it for `@pool` and `@scene` classes.
+- `gdpp_create()`: a static method of every class but `@abstract` ones. It returns `null` if a `"fixed"` pool is full, or a scene fails to load, so check it for `@pool` and `@scene` classes.
 - `gdpp_destroy()`: a method of classes that aren't refcounted.
 - `gdpp_queue_destroy()`: a method of classes that extend `Node`.
 - Prefer them to `new()`, `free()` and `queue_free()`: they keep working if the class gets `@pool` or `@scene` later. `new()` creates the object alone, outside the pool and without the scene.
 - They make and take objects of the GD++ class itself. Called on a script that extends the class, `gdpp_create()` still gives an object without the script.
 - GD++ code can call them too, e.g. `Bullet::gdpp_create()`, but `create Bullet` is shorter.
 - A class can't have a member named like them.
+
+# @abstract
+
+Like in GDScript, an `@abstract` class is only a base for other classes:
+
+```gd++
+@abstract
+class_name Weapon
+extends Node3D
+
+@virtual
+func _fire() -> void {}
+
+class Sword {
+  extends Weapon
+
+  @override
+  func _fire() -> void {}
+}
+```
+
+- The editor's "Create New Node" dialog doesn't show it.
+- It has no `gdpp_create()`, and `create Weapon` fails to compile: "Abstract classes can't be created. Create a subclass instead.".
+- Its subclasses work as usual, GD++ classes and scripts alike. Scripts can also use it as a type.
+- Unlike in GDScript, `Weapon.new()` in a script still works: Godot registers the class as a virtual class, which only the editor doesn't create.
+- Not with `@pool` or `@scene`, since both are about creating objects. Put them on the subclasses.
+- Not inherited: `Sword` is a regular class.
+- Without `@tool`, the class and its subclasses are guarded classes. See "Guarded classes" below.
+- `gd++ ls` shows `@abstract` classes with the tag `@abstract`.
+- Only classes are abstract. For functions that subclasses override, use `@virtual`. See `gd++ man functions`.
 
 # @tool
 
@@ -150,7 +180,7 @@ on process(delta: float) {
 
 Without `@tool`:
 
-- The class is registered as a runtime class.
+- The class is registered as a runtime class, unless it's a guarded class. See "Guarded classes" below.
 - In the editor, Godot creates placeholders for its objects. They store the property values that you set in the inspector, but run none of the class's code.
 - So a runtime class can't break the editor, e.g. by moving nodes around in a scene you're editing.
 - Games run from the editor and exported games run all code.
@@ -175,10 +205,12 @@ class_name Spawner
 extends Node3D
 ```
 
-- A `@game_only` class is a runtime class.
+- A `@game_only` class is a runtime class, unless it's a guarded class. See "Guarded classes" below.
 - In debug builds, which the editor loads, every function that GD++ generates for it starts with a check. In the editor:
   - the function returns right away, with a default value,
+  - getters and setters only read and write their variable,
   - an `@onthread` function returns an empty `Async`, without starting a task.
+- In the constructor, the check comes after the initial values of variables, so the editor still sees them.
 - The check covers the class's functions, constructor, destructor, getters, setters, signal emit functions, and the helpers that GD++ adds, e.g. for enums, default values and RPCs.
 - Your own `decl` and `impl` code isn't checked.
 - Release builds have no checks.
@@ -206,11 +238,33 @@ var wave: int
 ```
 
 - On a function: the function gets the same check, and so do its helpers: its enum wrapper, default value functions and RPC helper, and for `@virtual`, `@deferred` and `@onthread`, the functions that GD++ adds for them.
-- On a variable: its getter and setter get the check.
+- On a variable: its getter and setter get the check. In the editor, they only read and write the variable.
   - Its initial value is still assigned in the editor.
   - C++ code that uses the variable directly isn't checked.
   - It can't have an export annotation, since the editor would read and save the default value.
 - In a `@game_only` class, every function and variable is already `@game_only`.
+
+# Guarded classes
+
+Godot doesn't let a runtime class extend a class of the package that isn't one: a `@tool` class, an `@abstract` class, or a C++ class with `tool` or `abstract`. So GD++ guards such subclasses instead, like `@game_only` classes:
+
+```gd++
+@tool
+class_name Gizmo
+extends Node3D
+
+class Handle {
+  extends Gizmo             // Guarded.
+  @export var size: float = 1.0
+}
+```
+
+- Guarded classes are the subclasses without `@tool` of those classes, at any depth, and `@abstract` classes without `@tool`.
+- They are registered as regular classes, not runtime classes, so the editor creates real objects of them, not placeholders.
+- Their generated functions start with the check of `@game_only` classes, so their code doesn't run in the editor either.
+- Initial values of variables still set up their objects in the editor, so the inspector shows them.
+- In the editor, their getters and setters only read and write the variable. A variable with `get` and `set` blocks gets a hidden field for that, which only debug builds have.
+- C++ classes can't be guarded: one that extends such a class needs `tool = true` or `abstract = true`, or the build fails. See `gd++ man cpp-classes`.
 
 # @icon
 
@@ -311,7 +365,7 @@ See `gd++ man debugging`.
 Before `class_name` or `class`, a class can have, in any order:
 
 - `@tool` or `@game_only`,
-- `@icon`, `@pool`, `@scene`, `@trace` and `@profile`,
+- `@abstract`, `@icon`, `@pool`, `@scene`, `@trace` and `@profile`,
 - a doc comment.
 
 ```gd++

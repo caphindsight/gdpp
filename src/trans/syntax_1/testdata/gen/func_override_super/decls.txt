@@ -1,2 +1,2 @@
-{Name:Hatch Kind:1 Base:Gate Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[_knock] Notifications:[]}
-{Name:LoudHatch Kind:1 Base:Hatch Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:Hatch Kind:1 Base:Gate Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[_knock] Notifications:[]}
+{Name:LoudHatch Kind:1 Base:Hatch Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

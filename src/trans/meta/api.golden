@@ -50,3 +50,5 @@ field Dependency.Virtuals []string
 field Declaration.Virtuals []string
 field Dependency.Notifications []string
 field Declaration.Notifications []string
+field Declaration.Abstract bool
+field Dependency.NonRuntime bool

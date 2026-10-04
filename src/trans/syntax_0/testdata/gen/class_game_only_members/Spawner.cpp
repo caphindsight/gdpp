@@ -196,17 +196,13 @@ void Spawner::preview() {
 }
 
 Kind Spawner::get_kind() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	return kind;
 }
 
 void Spawner::set_kind(Kind p_value) {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
+		kind = p_value;
 		return;
 	}
 #endif
@@ -214,43 +210,34 @@ void Spawner::set_kind(Kind p_value) {
 }
 
 _gdpp_Spawner_Kind Spawner::_gdpp_get_kind() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	return static_cast<_gdpp_Spawner_Kind>(get_kind());
 }
 
 void Spawner::_gdpp_set_kind(_gdpp_Spawner_Kind p_value) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 	set_kind(static_cast<Kind>(p_value));
 }
 
 int64_t Spawner::get_count() const {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
+		return _gdpp_editor_count;
 	}
 #endif
 #line 9 "input.gd++"
  return 10;
-#line 243 "Spawner.cpp"
+#line 229 "Spawner.cpp"
 }
 
 void Spawner::set_count(int64_t v) {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
+		_gdpp_editor_count = v;
 		return;
 	}
 #endif
 #line 10 "input.gd++"
  gd::print(v);
-#line 254 "Spawner.cpp"
+#line 241 "Spawner.cpp"
 }
 
 double Spawner::get_radius() const {

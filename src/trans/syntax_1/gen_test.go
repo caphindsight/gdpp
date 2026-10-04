@@ -24,10 +24,10 @@ import (
 func TestGenerate(t *testing.T) {
 	var file struct {
 		Dep []struct {
-			Name, Include, Kind, Base string
-			Values                    []meta.EnumValue
-			Gdpp, Bitfield            bool
-			Virtuals, Notifications   []string
+			Name, Include, Kind, Base  string
+			Values                     []meta.EnumValue
+			Gdpp, Bitfield, NonRuntime bool
+			Virtuals, Notifications    []string
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
@@ -38,7 +38,7 @@ func TestGenerate(t *testing.T) {
 	var opts meta.Options
 	for _, d := range file.Dep {
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals,
-			Notifications: d.Notifications})
+			Notifications: d.Notifications, NonRuntime: d.NonRuntime})
 	}
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")
 	if err != nil {

@@ -255,6 +255,21 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 			w.ln("\t%s%s{};", withSpace(v.t.cpp), v.v.Name)
 		}
 	}
+	var editorFields []string
+	for _, v := range c.vars {
+		if v.gameOnly && v.v.Property != nil && v.editorField() != "" {
+			editorFields = append(editorFields, fmt.Sprintf("%s%s{};", withSpace(v.t.cpp), v.editorField()))
+		}
+	}
+	if len(editorFields) > 0 {
+		w.ln("")
+		w.ln("#ifdef DEBUG_ENABLED")
+		w.ln("private:")
+		for _, f := range editorFields {
+			w.ln("\t%s", f)
+		}
+		w.ln("#endif")
+	}
 	if len(decls) > 0 {
 		w.ln("")
 		w.ln("private:")
@@ -275,7 +290,11 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.scene != "" {
 		public = append(public, fmt.Sprintf("static constexpr gdpp::Scene<%s> _gdpp_scene{ %q };", c.name, c.scene))
 	}
-	public = append(public, fmt.Sprintf("static %sgdpp_create();", withSpace(c.createType())))
+	if c.abstract {
+		public = append(public, fmt.Sprintf("static constexpr gdpp::Abstract<%s> _gdpp_abstract{};", c.name))
+	} else {
+		public = append(public, fmt.Sprintf("static %sgdpp_create();", withSpace(c.createType())))
+	}
 	if !c.refCounted {
 		public = append(public, "void gdpp_destroy();")
 	}
@@ -374,6 +393,18 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 }
 
 // setterParam is the name of the setter's parameter.
+// editorField returns the field that v's guarded getter and setter use in the editor, instead of running their code:
+// its own, or an editor-only one for a property with both. Empty for others.
+func (v *varModel) editorField() string {
+	switch {
+	case v.v.Property == nil:
+		return v.v.Name
+	case v.getter != "" && v.setter != "":
+		return "_gdpp_editor_" + v.v.Name
+	}
+	return ""
+}
+
 func (v *varModel) setterParam() string {
 	if v.set != nil {
 		return v.set.Param.Name

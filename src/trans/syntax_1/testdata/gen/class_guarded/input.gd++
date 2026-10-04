@@ -1,0 +1,24 @@
+@tool
+class_name Gizmo
+extends Node3D
+
+// Guarded: Godot doesn't let runtime classes extend Gizmo.
+class Handle {
+  extends Gizmo
+
+  @export var size: float = 1.0
+  @export var color: Color {
+    get { return Color(); }
+    set(c) { gd::print(c); }
+  }
+  var area: float {
+    get { return size * size; }
+  }
+
+  func grab() -> void {}
+}
+
+// Guarded too, through Handle.
+class Knob {
+  extends Handle
+}

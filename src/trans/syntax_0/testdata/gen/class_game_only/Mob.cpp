@@ -29,15 +29,15 @@ void Mob::_bind_methods() {
 }
 
 Mob::Mob() {
+	gdpp::rpc_config<This>(this, "sync", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE, false, 0);
+#line 7 "input.gd++"
+	mood = Mood::CALM;
+#line 36 "Mob.cpp"
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
 #endif
-	gdpp::rpc_config<This>(this, "sync", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE, false, 0);
-#line 7 "input.gd++"
-	mood = Mood::CALM;
-#line 41 "Mob.cpp"
 #line 15 "input.gd++"
 	{
   gd::print("created");
@@ -159,17 +159,13 @@ void Mob::_gdpp_body_respawn() {
 }
 
 Mood Mob::get_mood() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	return mood;
 }
 
 void Mob::set_mood(Mood p_value) {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
+		mood = p_value;
 		return;
 	}
 #endif
@@ -177,43 +173,34 @@ void Mob::set_mood(Mood p_value) {
 }
 
 _gdpp_Mob_Mood Mob::_gdpp_get_mood() const {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
 	return static_cast<_gdpp_Mob_Mood>(get_mood());
 }
 
 void Mob::_gdpp_set_mood(_gdpp_Mob_Mood p_value) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
 	set_mood(static_cast<Mood>(p_value));
 }
 
 int64_t Mob::get_hp() const {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
+		return _gdpp_editor_hp;
 	}
 #endif
 #line 9 "input.gd++"
  return 10;
-#line 206 "Mob.cpp"
+#line 192 "Mob.cpp"
 }
 
 void Mob::set_hp(int64_t v) {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
+		_gdpp_editor_hp = v;
 		return;
 	}
 #endif
 #line 10 "input.gd++"
  gd::print(v);
-#line 217 "Mob.cpp"
+#line 204 "Mob.cpp"
 }
 
 gdpp::Emitted Mob::hit(int64_t amount) {

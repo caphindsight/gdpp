@@ -152,18 +152,59 @@ func cppClassNames(pkg Package) []godotName {
 		if class.Kind == "" {
 			continue
 		}
-		base := ""
-		if header := pkg.ClassPath(class.Include); header.IsFile() {
-			for _, d := range scanCppDecls(header.ReadString(), "godot") {
-				if d.name == class.Name && d.baseAccess == "public" {
-					base = d.base
-				}
-			}
-		}
 		kind := map[string]trans.Kind{"ptr": trans.Object, "ref": trans.RefCounted}[class.Kind]
-		names = append(names, godotName{Name: class.Name, Include: classInclude(class.Include), Kind: kind, Decl: "class", Base: base})
+		names = append(names, godotName{Name: class.Name, Include: classInclude(class.Include), Kind: kind, Decl: "class", Base: cppClassBase(pkg, class)})
 	}
 	return names
+}
+
+// cppClassBase returns the public base of the package's C++ class, as its
+// header declares it in namespace godot or at global scope, or "" if unknown.
+func cppClassBase(pkg Package, class PackageClass) string {
+	base := ""
+	if header := pkg.ClassPath(class.Include); header.IsFile() {
+		src := header.ReadString()
+		for _, d := range slices.Concat(scanCppDecls(src, "godot"), scanCppDecls(src, "")) {
+			if d.name == class.Name && d.baseAccess == "public" {
+				base = d.base
+			}
+		}
+	}
+	return base
+}
+
+// nonRuntimeClasses returns the package's classes, C++ ones and GD++ ones of
+// decls, that Godot registers as non-runtime classes: those with tool or
+// abstract, and those that extend one of them. Godot doesn't let
+// runtime classes extend them, so their GD++ subclasses are guarded instead.
+func nonRuntimeClasses(pkg Package, decls []trans.Declaration) map[string]bool {
+	own, bases := map[string]bool{}, map[string]string{}
+	for _, c := range pkg.Config.Classes {
+		own[c.Name], bases[c.Name] = c.Tool || c.Abstract, cppClassBase(pkg, c)
+	}
+	for _, d := range decls {
+		if d.Kind == trans.ClassDecl {
+			own[d.Name], bases[d.Name] = d.Tool || d.Abstract, d.Base
+		}
+	}
+	var nonRuntime func(name string, depth int) bool
+	nonRuntime = func(name string, depth int) bool { // depth stops at cycles, which other checks report.
+		return depth <= len(bases) && (own[name] || bases[name] != "" && nonRuntime(bases[name], depth+1))
+	}
+	classes := map[string]bool{}
+	for name := range bases {
+		classes[name] = nonRuntime(name, 0)
+	}
+	return classes
+}
+
+// fileDecls returns what the files declare.
+func fileDecls(files []gdppFile) []trans.Declaration {
+	var decls []trans.Declaration
+	for _, f := range files {
+		decls = append(decls, f.Decls...)
+	}
+	return decls
 }
 
 // apiSpec is what GD++ code needs from the API spec file.
@@ -224,7 +265,7 @@ func readSpec(file Path) apiSpec {
 // relative to the package root is self: the spec's enums, names, e.g.
 // godot-cpp's and the package's C++ classes', with the spec's virtual methods, then what the package's other GD++
 // files declare. The spec's enums come first, so e.g. Error is an enum, not just a name.
-func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string) []trans.Dependency {
+func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string, nonRuntime map[string]bool) []trans.Dependency {
 	godot := map[string]godotName{}
 	for _, n := range names {
 		godot[n.Name] = n
@@ -236,7 +277,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string)
 		deps[i].Include = godot[class].Include
 	}
 	for _, n := range names {
-		dep := trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind}
+		dep := trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind, NonRuntime: nonRuntime[n.Name]}
 		if n.Kind != trans.Other {
 			dep.Base, dep.Virtuals, dep.Notifications = n.Base, spec.virtuals[n.Name], spec.notifs[n.Name]
 		}
@@ -246,7 +287,8 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string)
 	for _, f := range files {
 		for _, d := range f.Decls {
 			if f.Rel != self {
-				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, Notifications: d.Notifications})
+				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, Notifications: d.Notifications,
+					NonRuntime: nonRuntime[d.Name]})
 			}
 		}
 	}
@@ -318,6 +360,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	syntax := pkg.Config.Syntax
 	spec := readSpec(pkg.BuildCache.Cd("extension_api.json"))
 	names = append(slices.Clip(names), cppClassNames(pkg)...)
+	nonRuntime := nonRuntimeClasses(pkg, fileDecls(files))
 	check := func(text string, err error) string {
 		if err != nil {
 			FailWithText(err)
@@ -326,7 +369,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	}
 	for _, f := range files {
 		// #line names the GD++ file's copy, relative to the build cache, where SCons runs, like it names C++ sources.
-		opts := o.transOptions(trans.Options{Dependencies: packageDeps(files, names, spec, f.Rel), SourceName: sourcesDirName + "/" + f.Rel, AsyncClass: pkg.AsyncClass(),
+		opts := o.transOptions(trans.Options{Dependencies: packageDeps(files, names, spec, f.Rel, nonRuntime), SourceName: sourcesDirName + "/" + f.Rel, AsyncClass: pkg.AsyncClass(),
 			PackagePath: pkg.ResPath()})
 		name := f.File.ToString()
 		generated, err := trans.Generate(name, f.Src, opts, syntax)

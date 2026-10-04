@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Handle" inherits="Gizmo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Handle" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="grab">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="area" type="float" setter="" getter="get_area">
+		</member>
+		<member name="color" type="Color" setter="set_color" getter="get_color">
+		</member>
+		<member name="size" type="float" setter="set_size" getter="get_size">
+		</member>
+	</members>
+</class>

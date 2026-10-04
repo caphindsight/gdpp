@@ -48,7 +48,6 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsCtor() {
 		w.ln("")
 		w.ln("%s::%s() {", c.name, c.name)
-		guard(w, c.gameOnly, "")
 		if c.pool != nil {
 			// Whether the pool reserves this object, unused, so it skips its @recycle parts until the pool hands it out.
 			w.ln("\tconst bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);")
@@ -80,6 +79,8 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 				initializer(w, v, "\t")
 			}
 		}
+		// Initial values set up the objects in the editor too, so the inspector shows them.
+		guard(w, c.gameOnly && (c.ctor != nil || c.recycleCtor != nil && !c.recycleCtorOnly), "")
 		if c.ctor != nil {
 			w.block(c.ctor, "\t{", "}", assertVoid)
 		}
@@ -122,11 +123,13 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("}")
 	}
 	// What scripts call for create, destroy and queue_destroy.
-	w.ln("")
-	w.ln("%s%s::gdpp_create() {", withSpace(c.createType()), c.name)
-	guard(w, c.gameOnly, c.createType())
-	w.ln("\treturn gdpp::create<%s>();", c.name)
-	w.ln("}")
+	if !c.abstract {
+		w.ln("")
+		w.ln("%s%s::gdpp_create() {", withSpace(c.createType()), c.name)
+		guard(w, c.gameOnly, c.createType())
+		w.ln("\treturn gdpp::create<%s>();", c.name)
+		w.ln("}")
+	}
 	if !c.refCounted {
 		w.ln("")
 		w.ln("void %s::gdpp_destroy() {", c.name)
@@ -284,15 +287,22 @@ func recycleBlock(w *writer, body *Block, open string) {
 // called in the editor, which only loads debug builds. ret is the C++ return type, empty for constructors and
 // destructors.
 func guard(w *writer, on bool, ret string) {
+	if ret == "" || ret == "void" {
+		guardWith(w, on, "return;")
+	} else {
+		guardWith(w, on, "return {};")
+	}
+}
+
+// guardWith is guard with its own lines of code to run in the editor.
+func guardWith(w *writer, on bool, lines ...string) {
 	if !on {
 		return
 	}
 	w.ln("#ifdef DEBUG_ENABLED")
 	w.ln("\tif (Engine::get_singleton()->is_editor_hint()) {")
-	if ret == "" || ret == "void" {
-		w.ln("\t\treturn;")
-	} else {
-		w.ln("\t\treturn {};")
+	for _, line := range lines {
+		w.ln("\t\t%s", line)
 	}
 	w.ln("\t}")
 	w.ln("#endif")
@@ -497,7 +507,11 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, v.t.cpp, v.getter, "", true))
-		guard(w, v.gameOnly, v.t.cpp)
+		if field := v.editorField(); field != "" {
+			guardWith(w, v.gameOnly && (v.get != nil || v.profile), "return "+field+";") // Else the getter is trivial already.
+		} else {
+			guard(w, v.gameOnly, v.t.cpp)
+		}
 		if v.profile {
 			u.profile(w, c.name+"."+v.getter)
 		}
@@ -511,7 +525,11 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.setter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", v.setter, withSpace(v.t.param())+v.setterParam(), false))
-		guard(w, v.gameOnly, "void")
+		if field := v.editorField(); field != "" {
+			guardWith(w, v.gameOnly, field+" = "+v.setterParam()+";", "return;")
+		} else {
+			guard(w, v.gameOnly, "void")
+		}
 		if v.deferral == "" { // Else the set block's method, which the call runs, profiles and watches.
 			if v.profile {
 				u.profile(w, c.name+"."+v.setter)
@@ -535,14 +553,12 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, tag, "_gdpp_"+v.getter, "", true))
-		guard(w, v.gameOnly, tag)
 		w.ln("\treturn static_cast<%s>(%s());", tag, v.getter)
 		w.ln("}")
 	}
 	if v.setter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", "_gdpp_"+v.setter, tag+" p_value", false))
-		guard(w, v.gameOnly, "void")
 		w.ln("\t%s(static_cast<%s>(p_value));", v.setter, v.t.cpp)
 		w.ln("}")
 	}
@@ -613,7 +629,9 @@ func (u *unit) bindings(w *writer, c *classModel) {
 			w.ln("\tClassDB::bind_method(%s, %s);", method(f.f.Name, names...), ref)
 		}
 	}
-	w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_create);", method("gdpp_create"), c.name)
+	if !c.abstract {
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_create);", method("gdpp_create"), c.name)
+	}
 	if !c.refCounted {
 		w.ln("\tClassDB::bind_method(%s, &%s::gdpp_destroy);", method("gdpp_destroy"), c.name)
 	}

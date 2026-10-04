@@ -184,7 +184,7 @@ type cppDecl struct {
 }
 
 // scanCppDecls returns the names declared directly in namespace ns, e.g.
-// godot, in the header src: class, struct, union and enum
+// godot, or at global scope for "", in the header src: class, struct, union and enum
 // definitions (not forward declarations or specializations), aliases, nested
 // namespaces, functions and variables. Macro invocations and anything in
 // nested scopes are skipped.
@@ -232,7 +232,7 @@ func (ts cppTokens) skip(j int, open, close cppToken) int {
 // its body, or after its ";".
 func walkCppDecls(tokens cppTokens, ns string, visit func(d cppDecl, start, end int)) {
 	var scopes []string // "namespace:NAME" for namespaces (NAME may be a::b), "" for other braces.
-	inNs := func() bool { return len(scopes) == 1 && scopes[0] == "namespace:"+ns }
+	inNs := func() bool { return ns == "" && len(scopes) == 0 || len(scopes) == 1 && scopes[0] == "namespace:"+ns }
 	for i := 0; i < len(tokens); {
 		switch t := tokens[i]; {
 		case t == "namespace":

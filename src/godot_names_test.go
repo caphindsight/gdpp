@@ -17,7 +17,7 @@ func TestScanCppDecls(t *testing.T) {
 	class m_name {};
 #include <godot_cpp/core/defs.hpp>
 
-class Global {};
+class Global : public Node3D {};
 typedef int GlobalInt;
 
 namespace godot {
@@ -110,6 +110,13 @@ typedef struct { int x; } CStruct;
 	}
 	if want := map[string]string{"Node3D": "Node", "RefCounted": "Object"}; !reflect.DeepEqual(bases, want) {
 		t.Errorf("bases = %v, want %v", bases, want)
+	}
+	var global []string
+	for _, d := range scanCppDecls(src, "") {
+		global = append(global, d.name+":"+d.base)
+	}
+	if want := []string{"Global:Node3D", "GlobalInt:", "godot:", "other:"}; !reflect.DeepEqual(global, want) {
+		t.Errorf("global names = %q, want %q", global, want)
 	}
 }
 

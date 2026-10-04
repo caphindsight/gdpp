@@ -122,6 +122,14 @@ gdpp = true
 base = "Node"
 
 [[dep]]
+name = "Vault"
+include = '"Vault.h"'
+kind = "Object"
+gdpp = true
+base = "Node"
+nonruntime = true
+
+[[dep]]
 name = "Key"
 include = '"Key.h"'
 kind = "RefCounted"

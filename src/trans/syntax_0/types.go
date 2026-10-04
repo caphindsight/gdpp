@@ -33,6 +33,7 @@ type symbol struct {
 	godotNames    []string // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
 	virtuals      []string // For dependency classes: the names of their virtual functions, see meta.Dependency.
 	notifications []string // For dependency classes: the names of their own notifications, see meta.Dependency.
+	nonRuntime    bool     // For dependency classes: see meta.Dependency.
 	class         *Class   // Set for classes in the file.
 	extern        *Extern  // Set for externs in the file.
 	enum          *Enum    // Set for enums in the file.

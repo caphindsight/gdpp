@@ -1,4 +1,4 @@
-{Name:Game Kind:1 Base:Resource Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[_pick] Notifications:[]}
-{Name:Mode Kind:3 Base: Values:[{Name:EASY Value:0 Doc: Implicit:true Expr:} {Name:NORMAL Value:0 Doc: Implicit:true Expr:} {Name:HARD Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Referee Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Bystander Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:Game Kind:1 Base:Resource Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[_pick] Notifications:[]}
+{Name:Mode Kind:3 Base: Values:[{Name:EASY Value:0 Doc: Implicit:true Expr:} {Name:NORMAL Value:0 Doc: Implicit:true Expr:} {Name:HARD Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Referee Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Bystander Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

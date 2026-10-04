@@ -19,6 +19,11 @@ class Mob : public Node {
 public:
 	Mood mood{};
 
+#ifdef DEBUG_ENABLED
+private:
+	int64_t _gdpp_editor_hp{};
+#endif
+
 public:
 	Mob();
 	~Mob();

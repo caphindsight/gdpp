@@ -1,5 +1,5 @@
-{Name:Deck Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Suit Kind:3 Base: Values:[{Name:A Value:0 Doc: Implicit:true Expr:} {Name:B Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Rank Kind:3 Base: Values:[{Name:ONE Value:0 Doc: Implicit:true Expr:} {Name:TWO Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Other Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
-{Name:Local Kind:3 Base: Values:[{Name:X Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:Deck Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Suit Kind:3 Base: Values:[{Name:A Value:0 Doc: Implicit:true Expr:} {Name:B Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Rank Kind:3 Base: Values:[{Name:ONE Value:0 Doc: Implicit:true Expr:} {Name:TWO Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Other Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Local Kind:3 Base: Values:[{Name:X Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

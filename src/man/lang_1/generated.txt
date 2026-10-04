@@ -234,7 +234,7 @@ GD++ names its helpers with the prefix `_gdpp_`, which is reserved: don't use it
 ```
 get_NAME, set_NAME           a variable's getter and setter
 NAME (of a signal)           a signal's emit function, returning gdpp::Emitted
-gdpp_create                  a class's static method for scripts, which calls create
+gdpp_create                  a class's static method for scripts, which calls create, unless it's @abstract
 gdpp_destroy                 a class's method for scripts, which calls destroy
 gdpp_queue_destroy           a node class's method for scripts, which calls queue_destroy
 gdpp_pool_reserve            a @pool class's static method, which fills its pool
@@ -253,6 +253,8 @@ _gdpp_pool                   a @pool class's pool, a static gdpp::Pool<T>
 _gdpp_pool_slot              where an object of a @pool class is in its pool
 _gdpp_recycle_ctor, _gdpp_recycle_dtor   what a @pool class runs when its pool reuses and keeps an object
 _gdpp_scene                  a @scene class's scene path, a static constexpr gdpp::Scene<T>
+_gdpp_abstract               an @abstract class's mark, a static constexpr gdpp::Abstract<T>, which makes create fail to compile
+_gdpp_editor_NAME            the field that a guarded variable's getter and setter use in the editor, if it has get and set blocks
 ```
 
 - `This` is a macro, defined around each class's code.
@@ -330,7 +332,8 @@ The build also generates `__register_types__.cpp`, in the build cache, outside `
 
 - It includes every class's header.
 - It registers each class when the library loads, bases first:
-  - with `GDREGISTER_RUNTIME_CLASS` for runtime classes, i.e. GD++ classes without `@tool` and C++ classes without `tool = true`,
+  - with `GDREGISTER_VIRTUAL_CLASS` for abstract classes, i.e. GD++ classes with `@abstract` and C++ classes with `abstract = true`,
+  - with `GDREGISTER_RUNTIME_CLASS` for runtime classes, i.e. classes without tool or abstract that don't extend such a class of the package,
   - with `GDREGISTER_CLASS` for the others.
 - Its entry point is `gdpp_library_init`. See `gd++ man cpp-classes`.
 

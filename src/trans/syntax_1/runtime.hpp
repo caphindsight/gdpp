@@ -990,11 +990,22 @@ struct is_extern<T, std::void_t<decltype(T::gdpp_name)>> : std::true_type {};
 template <typename>
 inline constexpr bool always_false = false;
 
+// Abstract<T> is the type of the @abstract class T's _gdpp_abstract.
+template <typename T>
+struct Abstract {};
+
+// has_abstract<T> is true for the @abstract class T, but not for classes that extend it.
+template <typename T, typename = void>
+struct has_abstract : std::false_type {};
+template <typename T>
+struct has_abstract<T, std::void_t<decltype(T::_gdpp_abstract)>> : std::is_same<std::remove_cv_t<decltype(T::_gdpp_abstract)>, Abstract<T>> {};
+
 // create creates an object of the class T, which `create T` calls: it takes one from T's pool for a @pool class, and
 // returns an Ext<T> for an extern, a Ref<T> for a refcounted class, and a T * otherwise, an instance of T's scene for
 // a @scene class.
 template <typename T>
 auto create() {
+	static_assert(!has_abstract<T>::value, "Abstract classes can't be created. Create a subclass instead.");
 	if constexpr (has_pool<T>::value) {
 		return T::_gdpp_pool.take();
 	} else if constexpr (is_extern<T>::value) {

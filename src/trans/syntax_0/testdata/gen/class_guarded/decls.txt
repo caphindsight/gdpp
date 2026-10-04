@@ -1,0 +1,3 @@
+{Name:Gizmo Kind:1 Base:Node3D Values:[] Icon: Tool:true Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Handle Kind:1 Base:Gizmo Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Knob Kind:1 Base:Handle Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

@@ -296,16 +296,17 @@ func TestInitInvalidArgs(t *testing.T) {
 		"syntax_nightly":      {CmdInit{Path: "src/pkg", Syntax: ptr(1), Nightly: true}, "--syntax and --nightly cannot be used together"},
 		"project_quit":        {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path"},
 		"class_prefix":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload and --nohotreload cannot be used with --class"},
-		"project_icon":        {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --ptr, --ref and --nogdpp require --class"},
-		"package_icon":        {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --ptr, --ref and --nogdpp require --class"},
+		"project_icon":        {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
+		"package_icon":        {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
 		"class_bind":          {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload and --nohotreload cannot be used with --class"},
 		"class_name":          {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
 		"class_include":       {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
 		"class_noinclude":     {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},
 		"class_noicon":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Icon: "pkg://a.svg", NoIcon: true}, "--icon and --noicon cannot be used together"},
-		"project_tool":        {CmdInit{Tool: true}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --ptr, --ref and --nogdpp require --class"},
+		"project_tool":        {CmdInit{Tool: true}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
 		"class_notool":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Tool: true, NoTool: true}, "--tool and --notool cannot be used together"},
-		"project_ptr":         {CmdInit{Ptr: true}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --ptr, --ref and --nogdpp require --class"},
+		"class_noabstract":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Abstract: true, NoAbstract: true}, "--abstract and --noabstract cannot be used together"},
+		"project_ptr":         {CmdInit{Ptr: true}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
 		"class_ptr_ref":       {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Ptr: true, Ref: true}, "--ptr, --ref and --nogdpp cannot be used together"},
 		"class_ref_nogdpp":    {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Ref: true, NoGdpp: true}, "--ptr, --ref and --nogdpp cannot be used together"},
 		"class_ptr_noinclude": {CmdInit{Path: "src/pkg", Class: "A", NoInclude: true, Ptr: true}, "GD++ code can only use class A if it has an include"},
@@ -400,6 +401,27 @@ func TestInitClassTool(t *testing.T) {
 	// --notool makes it a runtime class again.
 	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", NoTool: true, Update: true}, map[string]string{"src/pkg": toolConfig})
 	if want := "[-] Set class A to a runtime class.\n[-] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], classPkgConfig+"\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
+func TestInitClassAbstract(t *testing.T) {
+	config := classPkgConfig + "\n[[class]]\nname = \"A\"\ninclude = \"pkg://a.h\"\n"
+	// --abstract makes it an abstract class.
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Class: "A", Abstract: true, Update: true}, map[string]string{"src/pkg": config})
+	if want := "[-] Set class A to an abstract class.\n[-] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	abstractConfig := classPkgConfig + "\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n  abstract = true\n"
+	if got := after["src/pkg/"+packageFileName]; got != abstractConfig {
+		t.Errorf("config = %q, want %q", got, abstractConfig)
+	}
+	// --noabstract makes it concrete again.
+	out, after = runInit(t, CmdInit{Path: "src/pkg", Class: "A", NoAbstract: true, Update: true}, map[string]string{"src/pkg": abstractConfig})
+	if want := "[-] Set class A to a concrete class.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got, want := after["src/pkg/"+packageFileName], classPkgConfig+"\n[[class]]\n  name = \"A\"\n  include = \"pkg://a.h\"\n"; got != want {

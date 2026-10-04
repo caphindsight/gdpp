@@ -1,0 +1,5 @@
+class_name Weapon
+extends Node3D
+
+@abstract
+func fire() -> void {}

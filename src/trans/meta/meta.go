@@ -41,6 +41,9 @@ type Dependency struct {
 	// For classes: the names of its own notifications, without NOTIFICATION_, which on blocks handle: a GD++ class's
 	// constants named NOTIFICATION_..., or a Godot class's, e.g. Node's READY.
 	Notifications []string
+	// For classes of the package: whether Godot registers it as a non-runtime class, with tool or abstract, or as a
+	// subclass of such a class. Godot doesn't let runtime classes extend it, so GD++ guards its subclasses instead.
+	NonRuntime bool
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.
@@ -74,6 +77,7 @@ type Declaration struct {
 	Tool     bool        // For classes: whether @tool makes its functions run in the editor too.
 	Bitfield bool        // For enums: whether @bitfield makes it a bitfield.
 	GameOnly bool        // For classes: whether @game_only keeps its code from running in the editor.
+	Abstract bool        // For classes: whether @abstract keeps the editor and GD++ code from creating its objects.
 	Async    bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
 	Virtuals []string    // For classes: the names of its @virtual functions, which subclasses can override.
 	// For classes: the names of its own notifications, without NOTIFICATION_: its constants named NOTIFICATION_....

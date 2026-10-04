@@ -100,6 +100,7 @@ Classes, a table with a row per class:
 - For a GD++ class, its base class.
 - Its tags:
   - `[ptr]` or `[ref]`: a C++ class that GD++ code can use. See `gd++ man cpp-classes`.
+  - `@abstract`: it's only a base for other classes.
   - `@tool`: it runs in the editor too. Without it, it's a runtime class.
   - `@game_only` and `@icon`.
   - For GD++ classes, tags come from annotations. For C++ classes, from `gd++pkg.toml`.

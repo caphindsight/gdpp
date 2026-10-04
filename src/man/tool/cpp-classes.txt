@@ -91,13 +91,16 @@ icon (optional)
 tool (optional, default false)
   Whether the class's code runs in the editor too, like `@tool` on a GD++ class. `gd++ init --tool` sets it, and `gd++ init --notool` removes it. See "Editor and runtime code" below.
 
+abstract (optional, default false)
+  Whether the class is only a base for other classes, like `@abstract` on a GD++ class: the editor doesn't offer it. `gd++ init --abstract` sets it, and `gd++ init --noabstract` removes it.
+
 kind (optional)
   How GD++ code uses the class: `"ptr"`, as a pointer, or `"ref"`, as a `Ref`. Without it, GD++ code can't use the class by name. `gd++ ls` shows it as `[ptr]` or `[ref]`. See "Using a C++ class from GD++" below.
 
 Facts:
 
 - A new class needs `--include`, or `--noinclude` if an already included header declares it.
-- `gd++ man init` shows how to change the include, the icon, the tool setting and the kind later.
+- `gd++ man init` shows how to change the include, the icon, the tool and abstract settings and the kind later.
 - `gd++ man rm` shows how to remove the class.
 - The file lists classes sorted by name.
 
@@ -144,6 +147,12 @@ Placeholders only stop the code that Godot calls.
 - Code that already runs in the editor, e.g. a tool class's, can still create an object of a runtime class with `memnew`, or call its static functions. Then the runtime class's code runs.
 - To make sure a class's code never runs in the editor, check `is_editor_hint()` in its functions, like GD++ classes with `@game_only` do. See `gd++ man classes`.
 
+Godot doesn't let a runtime class extend a class of the package that isn't one: a tool class, an abstract class, or a GD++ class with `@tool` or `@abstract`.
+
+- A C++ class that extends one needs `tool = true` or `abstract = true` too, or the build fails: "Class Helper extends Actor, which isn't a runtime class, so it needs tool or abstract too: ...".
+- An abstract class's code runs in the editor too, so check `is_editor_hint()` in it if needed.
+- GD++ classes that extend one are guarded instead. See "Guarded classes" in `gd++ man classes`.
+
 # How registration works
 
 The build generates `__register_types__.cpp` in the build cache.
@@ -152,7 +161,8 @@ The build generates `__register_types__.cpp` in the build cache.
 - It registers them when Godot loads the library, at the scene initialization level.
 - A class is registered after its base class, if the base is in the same package, as Godot requires.
 - It has `using namespace godot`, so C++ classes can be declared in namespace `godot` or at global scope.
-- Runtime classes, i.e. C++ classes without `tool = true` and GD++ classes without `@tool`, are registered with `GDREGISTER_RUNTIME_CLASS`. The others with `GDREGISTER_CLASS`.
+- Abstract classes, i.e. C++ classes with `abstract = true` and GD++ classes with `@abstract`, are registered with `GDREGISTER_VIRTUAL_CLASS`, like GDScript's abstract scripts. Those with a pure virtual function are registered with `GDREGISTER_ABSTRACT_CLASS`, which godot-cpp requires: then not even scripts that extend them can be created.
+- Runtime classes, i.e. classes without tool or abstract that don't extend such a class of the package, are registered with `GDREGISTER_RUNTIME_CLASS`. The others with `GDREGISTER_CLASS`.
 - Don't register classes yourself: the generated code registers every class once.
 - The library's entry symbol is `gdpp_library_init`, which the `.gdextension` file names. Don't define your own entry point.
 

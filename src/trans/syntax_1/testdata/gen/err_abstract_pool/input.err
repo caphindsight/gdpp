@@ -1,0 +1,4 @@
+input.gd++:1:1: Abstract classes can't have @pool, since they can't be created.
+ 1 | @pool
+   | ^^^^^
+Hint: Put it on their subclasses.

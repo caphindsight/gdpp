@@ -20,6 +20,11 @@ public:
 	Kind kind{};
 	double radius{};
 
+#ifdef DEBUG_ENABLED
+private:
+	int64_t _gdpp_editor_count{};
+#endif
+
 public:
 	Spawner();
 	static Spawner *gdpp_create();

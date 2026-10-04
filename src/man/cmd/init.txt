@@ -6,7 +6,7 @@ gd++ init: set up projects, packages and classes
 gd++ init [--vcs none|git] [--presets | --nopresets]
 gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
 gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
-gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--ptr | --ref | --nogdpp] [--update]
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--abstract | --noabstract] [--ptr | --ref | --nogdpp] [--update]
 ```
 
 # Description
@@ -108,7 +108,7 @@ gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--
 # Adding or updating a C++ class
 
 ```sh
-gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--ptr | --ref | --nogdpp] [--update]
+gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--abstract | --noabstract] [--ptr | --ref | --nogdpp] [--update]
 ```
 
 - Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so the package registers it with Godot.
@@ -138,6 +138,12 @@ See `gd++ man cpp-classes`.
 --notool
   Make the class a runtime class: in the editor, Godot shows placeholders for its objects, which run none of its code. Removes `tool = true` from its `[[class]]` table.
 
+--abstract
+  Make the class only a base for other classes, like a GD++ class with `@abstract`: the editor doesn't offer it. Sets `abstract = true` in its `[[class]]` table.
+
+--noabstract
+  Make the class concrete again. Removes `abstract = true` from its `[[class]]` table.
+
 --ptr
   Let GD++ code use the class by name, as a pointer, e.g. `Spinner *`: for classes that aren't refcounted. Sets `kind = "ptr"` in its `[[class]]` table, shown as `[ptr]` by `gd++ ls`. The class needs an include.
 
@@ -151,6 +157,7 @@ Updating a class:
 
 - `--include` and `--icon` change the path. `--noinclude` and `--noicon` clear it. Without either, the path stays.
 - `--tool` and `--notool` make it a tool or a runtime class. Without either, that stays.
+- `--abstract` and `--noabstract` make it abstract or concrete. Without either, that stays.
 - `--ptr`, `--ref` and `--nogdpp` change how GD++ code uses it. Without any of them, that stays.
 - Without `--update`, `gd++ init` asks "Class NAME already exists in PATH. Update it?".
 
@@ -164,11 +171,11 @@ A new class:
 - `--vcs`, `--presets` and `--nopresets` work only without PATH.
 - `--presets` and `--nopresets` can't be used together.
 - `--update`, `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout` and `--class` need PATH.
-- `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool`, `--notool`, `--ptr`, `--ref` and `--nogdpp` need `--class`.
+- `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool`, `--notool`, `--abstract`, `--noabstract`, `--ptr`, `--ref` and `--nogdpp` need `--class`.
 - `--bind`, `--spec`, `--syntax`, `--std`, `--prefix` and `--quit-timeout` can't be used with `--class`.
 - `--quit-timeout` and `--syntax` can't be negative.
 - `--syntax` and `--nightly` can't be used together.
-- `--include` and `--noinclude`, `--icon` and `--noicon`, `--tool` and `--notool`, and `--ptr`, `--ref` and `--nogdpp` can't be used together.
+- `--include` and `--noinclude`, `--icon` and `--noicon`, `--tool` and `--notool`, `--abstract` and `--noabstract`, and `--ptr`, `--ref` and `--nogdpp` can't be used together.
 - `--ptr` and `--ref` need a class with an include.
 
 # Examples

@@ -31,6 +31,7 @@ func hit(power: Power) -> void {
   TypedArray<int64_t> list;
 }
 
+@abstract
 class Hitbox {
   extends Resource
 }
@@ -41,6 +42,10 @@ class Hitbox {
 }
 
 enum Power { WEAK, STRONG = 5 }
+
+class Blade {
+  extends Hitbox
+}
 `,
 	"misc.gg": "@tool\nclass Tiny {\n  @onthread\n  func work() -> void {}\n}\n",
 }
@@ -104,10 +109,10 @@ func TestTranspilePackage(t *testing.T) {
 	for _, c := range classes {
 		names, icons = append(names, c.Name), append(icons, c.Icon)
 	}
-	if want := []string{"Hitbox", "Player", "Tiny", "Weapon"}; !reflect.DeepEqual(names, want) {
+	if want := []string{"Blade", "Hitbox", "Player", "Tiny", "Weapon"}; !reflect.DeepEqual(names, want) {
 		t.Errorf("classes = %q, want %q", names, want)
 	}
-	if want := []string{"", "pkg://player.svg", "", ""}; !reflect.DeepEqual(icons, want) {
+	if want := []string{"", "", "pkg://player.svg", "", ""}; !reflect.DeepEqual(icons, want) {
 		t.Errorf("icons = %q, want %q", icons, want)
 	}
 
@@ -116,8 +121,8 @@ func TestTranspilePackage(t *testing.T) {
 	for file := range gen {
 		files = append(files, file)
 	}
-	wantFiles := []string{"Hitbox.cpp", "Hitbox.h", "Player.cpp", "Player.h", "Power.h", "Tiny.cpp", "Tiny.h", "Weapon.cpp", "Weapon.h",
-		"doc_classes/", "doc_classes/Hitbox.xml", "doc_classes/PkgAsync.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml", "gd++/", "gd++/syntax_0.hpp"}
+	wantFiles := []string{"Blade.cpp", "Blade.h", "Hitbox.cpp", "Hitbox.h", "Player.cpp", "Player.h", "Power.h", "Tiny.cpp", "Tiny.h", "Weapon.cpp", "Weapon.h",
+		"doc_classes/", "doc_classes/Blade.xml", "doc_classes/Hitbox.xml", "doc_classes/PkgAsync.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml", "gd++/", "gd++/syntax_0.hpp"}
 	slices.Sort(files)
 	if !reflect.DeepEqual(files, wantFiles) {
 		t.Errorf("generated files = %q, want %q", files, wantFiles)
@@ -127,6 +132,7 @@ func TestTranspilePackage(t *testing.T) {
 			"Ref<Weapon> weapon{};", "void hit(Power power);", `GDPP_ENUM_TAG(_gdpp_Player_Power, "Player.Power")`},
 		"Player.cpp":               {`#include "Player.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "package/player.gd++"`},
 		"Weapon.h":                 {`#include "Player.h"`, "Player *owner{};"},
+		"Blade.cpp":                {"Engine::get_singleton()->is_editor_hint()"}, // Guarded, since it extends the abstract Hitbox.
 		"Power.h":                  {"enum class Power : int64_t {"},
 		"doc_classes/Player.xml":   {"A player."},
 		"doc_classes/PkgAsync.xml": {`<class name="PkgAsync" inherits="RefCounted"`, `<member name="done" type="bool" setter="" getter="is_done">`},
@@ -138,9 +144,10 @@ func TestTranspilePackage(t *testing.T) {
 		}
 	}
 	register := m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
-	for _, want := range []string{`#include "Hitbox.h"`, `#include "Player.h"`, `#include "Weapon.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Hitbox>();",
-		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden> || std::is_same_v<T, Hitbox> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
-		"if constexpr (gdpp_is_runtime_class<T>) {\n\t\tGDREGISTER_RUNTIME_CLASS(T);\n\t} else {\n\t\tGDREGISTER_CLASS(T);\n\t}",
+	for _, want := range []string{`#include "Hitbox.h"`, `#include "Player.h"`, `#include "Weapon.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Blade>();\n\tgdpp_register_class<Hitbox>();",
+		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
+		"gdpp_is_abstract_class = false || std::is_same_v<T, Hitbox>;",
+		"if constexpr (std::is_abstract_v<T>) {\n\t\tGDREGISTER_ABSTRACT_CLASS(T);\n\t} else if constexpr (gdpp_is_abstract_class<T>) {\n\t\tGDREGISTER_VIRTUAL_CLASS(T);\n\t} else if constexpr (gdpp_is_runtime_class<T>) {\n\t\tGDREGISTER_RUNTIME_CLASS(T);\n\t} else {\n\t\tGDREGISTER_CLASS(T);\n\t}",
 		"#include <gd++/syntax_0.hpp>\n", "\tGDREGISTER_CLASS(gdpp::GDPP_ASYNC_CLASS);\n", "\tgdpp::uninitialize();\n"} {
 		if !strings.Contains(register, want) {
 			t.Errorf("__register_types__.cpp = %s\nwant it to contain %q", register, want)

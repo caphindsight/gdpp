@@ -1,0 +1,4 @@
+input.gd++:2:1: Abstract classes can't have @scene, since they can't be created.
+ 2 | @scene("res://weapon.tscn")
+   | ^^^^^^
+Hint: Put it on their subclasses.

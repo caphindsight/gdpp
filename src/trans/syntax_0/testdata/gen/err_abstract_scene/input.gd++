@@ -1,0 +1,4 @@
+@abstract
+@scene("res://weapon.tscn")
+class_name Weapon
+extends Node3D

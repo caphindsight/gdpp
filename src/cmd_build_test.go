@@ -80,6 +80,7 @@ func TestGenerateBuildCache(t *testing.T) {
 		"\n#include \"enemy/enemy.h\"\n#include <common/actor.h>\n\nusing",
 		"= false || std::is_same_v<T, Enemy> || std::is_same_v<T, Actor> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden>;",
 		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden>;",
+		"gdpp_is_abstract_class = false;",
 		"\tgdpp_register_class<Enemy>();\n\tgdpp_register_class<Actor>();\n\tgdpp_register_class<Helper>();\n\tgdpp_register_class<Hidden>();\n}",
 	} {
 		if !strings.Contains(register, want) {
@@ -413,5 +414,38 @@ func TestGenerateBuildCacheColor(t *testing.T) {
 		if got := strings.Contains(sconstruct, `"-fdiagnostics-color=always"`); got != tty {
 			t.Errorf("with a terminal = %v, SConstruct forces colors = %v, want %v", tty, got, tty)
 		}
+	}
+}
+
+func TestGenerateRegisterTypesAbstract(t *testing.T) {
+	withBuildFS(t)
+	pkg := NewPath("/games/my_game/src/pkg")
+	pkg.Cd(packageFileName).WriteString(strings.Replace(buildPkgConfig, "name = \"Hidden\"", "name = \"Hidden\"\n  abstract = true", 1))
+	captureStderr(t, func() { generateRegisterTypes(LoadPackage(Cwd()), nil) })
+	register := pkg.Cd(".gd++pkg", "__register_types__.cpp").ReadString()
+	for _, want := range []string{
+		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper>;",
+		"gdpp_is_abstract_class = false || std::is_same_v<T, Hidden>;",
+		"if constexpr (std::is_abstract_v<T>) {\n\t\tGDREGISTER_ABSTRACT_CLASS(T);\n\t} else if constexpr (gdpp_is_abstract_class<T>) {\n\t\tGDREGISTER_VIRTUAL_CLASS(T);",
+	} {
+		if !strings.Contains(register, want) {
+			t.Errorf("__register_types__.cpp = %s\nwant it to contain %q", register, want)
+		}
+	}
+}
+
+func TestGenerateRegisterTypesRuntimeSubclass(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		withBuildFS(t)
+		NewPath("/games/my_game/src/pkg/enemy/enemy.h").WriteString("class Helper : public Actor {};\n")
+		generateRegisterTypes(LoadPackage(Cwd()), nil)
+		return
+	}
+	out, code := runFailHelper(t, "TestGenerateRegisterTypesRuntimeSubclass")
+	want := "[x] Class Helper extends Actor, which isn't a runtime class, so it needs tool or abstract too: Godot doesn't let runtime classes extend it. " +
+		"Set one with e.g. `gd++ init res://src/pkg --class Helper --update --tool`.\n"
+	if code != 1 || out != want {
+		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }

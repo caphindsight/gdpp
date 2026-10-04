@@ -388,15 +388,30 @@ func syncSources(p Project, pkg Package, files []gdppFile) {
 // which registers the package's classes: those in its config, and the GD++
 // classes, which must not clash with them, and the class of tasks, if a GD++
 // class uses Async. With GD++ classes, it unloads them with the runtime's
-// gdpp::uninitialize. Runtime classes (C++ classes without tool, GD++ classes
-// without @tool) don't run their code in the editor.
+// gdpp::uninitialize. Runtime classes don't run their code in the editor:
+// classes without tool or abstract, unless they extend a class with one of
+// those, see nonRuntimeClasses.
 func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
-	var classes, runtime, includes []string
-	for _, class := range pkg.Config.Classes {
-		classes = append(classes, class.Name)
-		if !class.Tool {
-			runtime = append(runtime, class.Name)
+	var decls []trans.Declaration
+	for _, class := range gdpp {
+		decls = append(decls, class.Declaration)
+	}
+	nonRuntime := nonRuntimeClasses(pkg, decls)
+	var classes, runtime, abstract, includes []string
+	add := func(name string, isAbstract bool) {
+		classes = append(classes, name)
+		if !nonRuntime[name] {
+			runtime = append(runtime, name)
 		}
+		if isAbstract {
+			abstract = append(abstract, name)
+		}
+	}
+	for _, class := range pkg.Config.Classes {
+		Assert(!nonRuntime[class.Name] || class.Tool || class.Abstract,
+			"Class %s extends %s, which isn't a runtime class, so it needs tool or abstract too: Godot doesn't let runtime classes extend it. Set one with e.g. `gd++ init %s --class %s --update --tool`.",
+			class.Name, cppClassBase(pkg, class), pkg.Root.ToString(), class.Name)
+		add(class.Name, class.Abstract)
 		if class.Include != "" {
 			includes = append(includes, classInclude(class.Include))
 		}
@@ -420,18 +435,16 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 			class.Name, class.File.File.ToString(), pkg.Root.ToString())
 		Assert(!slices.Contains(classes, class.Name), "Class %s is declared in %s and in %s.",
 			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
-		classes = append(classes, class.Name)
+		add(class.Name, class.Abstract)
 		includes = append(includes, `"`+class.Name+`.h"`)
-		if !class.Tool {
-			runtime = append(runtime, class.Name)
-		}
 	}
 	if writeTemplate(pkg.BuildCache.Cd("__register_types__.cpp"), registerTypesTemplate, map[string]any{
-		"Classes":        classes,
-		"RuntimeClasses": runtime,
-		"Includes":       uniqueSorted(includes, strings.Compare),
-		"AsyncClass":     asyncClass,
-		"Runtime":        runtimeName,
+		"Classes":         classes,
+		"RuntimeClasses":  runtime,
+		"AbstractClasses": abstract,
+		"Includes":        uniqueSorted(includes, strings.Compare),
+		"AsyncClass":      asyncClass,
+		"Runtime":         runtimeName,
 	}) {
 		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}
