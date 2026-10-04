@@ -1,3 +1,3 @@
-{Name:Vehicle Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:Car Kind:2 Base:Vehicle Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:SportsCar Kind:2 Base:Car Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:Vehicle Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:Car Kind:2 Base:Vehicle Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:SportsCar Kind:2 Base:Car Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}

@@ -33,6 +33,7 @@ public:
 	static void pool_reserve(int64_t p_count, const String &p_mode = String());
 	static void pool_clear(bool p_keep_in_use = false);
 	void _gdpp_body__ready();
+	void _gdpp_body__notification(int64_t what);
 	MeshInstance3D *get_mesh() const;
 	void set_mesh(MeshInstance3D *p_value);
 	Node3D *get_trail() const;

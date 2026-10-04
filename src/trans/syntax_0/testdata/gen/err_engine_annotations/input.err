@@ -1,3 +1,0 @@
-input.gd++:4:1: Annotation @const can't be used on a ready block.
- 4 | @const
-   | ^^^^^^

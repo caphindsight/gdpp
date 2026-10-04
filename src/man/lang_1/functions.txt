@@ -111,7 +111,7 @@ The signature must match the engine's exactly, in C++ terms, including the retur
 
 Overrides are not bound, since the base class binds them already. Overriding `_process` or `_physics_process` turns processing on in the constructor, with `set_process(true)` or `set_physics_process(true)`, since godot-cpp doesn't do so on its own.
 
-A script that extends the class and defines a function of the same name replaces the override: the engine calls the script's version, and never the GD++ one. A script can't call the GD++ version with `super`, e.g. `super._unhandled_input(event)`, since Godot doesn't allow `super` calls of the engine's virtual functions. For `_ready`, `_process` and the like, use engine blocks instead, which scripts can't replace: see `gd++ man engine`. For the others, use `@override("super")`.
+A script that extends the class and defines a function of the same name replaces the override: the engine calls the script's version, and never the GD++ one. A script can't call the GD++ version with `super`, e.g. `super._unhandled_input(event)`, since Godot doesn't allow `super` calls of the engine's virtual functions. For `_ready`, `_process` and the like, use `on` blocks instead, which scripts can't replace: see `gd++ man notifications`. For the others, use `@override("super")`.
 
 # @override("super")
 
@@ -134,9 +134,9 @@ func _unhandled_input(event):
 
 It works on every `@override` function, of the engine or of a GD++ `@virtual` function, and on `@virtual` functions too: see "@virtual(\"super\")" below. The name of the function that it binds, e.g. `_super_unhandled_input`, must be free.
 
-# Engine blocks
+# on blocks
 
-To run code at `_ready`, `_process` and the like, write engine blocks, e.g. `ready { ... }` and `process(delta: float) { ... }`, rather than overrides, which scripts replace. See `gd++ man engine`.
+An override replaces the base's function: only the most derived one runs, unless it calls the base's, and a script's function of the same name replaces it in turn. An `on` block adds to the base's instead: the base's and the subclass's both run, and scripts can't replace them. So to run code at `_ready`, `_process` and the like, write `on` blocks, e.g. `on ready { ... }` and `on process(delta: float) { ... }`, rather than overrides. See `gd++ man notifications`.
 
 # @virtual
 
@@ -287,7 +287,7 @@ With `@onthread("detached")`, the function must return `void`, and its calls ret
 class_name Turntable
 extends Node3D
 
-process(delta: float) {
+on process(delta: float) {
   rotate_y(delta);          // Spins in the editor too.
 }
 
@@ -297,7 +297,7 @@ func launch() -> void {
 }
 ```
 
-With `@game_only`, the function only runs in the game, never in the editor, e.g. to keep a few functions of a `@tool` class out of the editor. In debug builds, which the editor loads, its body starts with a check: in the editor, the function returns right away, with a default value, and an `@onthread` function returns an empty `Async`. Engine blocks, e.g. `process(delta: float) { ... }`, take it too. In a `@game_only` class, every function already has it. See `gd++ man classes`.
+With `@game_only`, the function only runs in the game, never in the editor, e.g. to keep a few functions of a `@tool` class out of the editor. In debug builds, which the editor loads, its body starts with a check: in the editor, the function returns right away, with a default value, and an `@onthread` function returns an empty `Async`. `on` blocks, e.g. `on process(delta: float) { ... }`, take it too. In a `@game_only` class, every function already has it. See `gd++ man classes`.
 
 # @trace and @profile
 

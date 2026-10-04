@@ -1,3 +1,0 @@
-input.gd++:4:1: A draw block only works in classes that extend CanvasItem, which Marker doesn't.
- 4 | draw {}
-   | ^^^^

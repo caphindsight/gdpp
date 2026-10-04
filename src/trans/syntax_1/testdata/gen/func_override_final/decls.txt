@@ -1,1 +1,1 @@
-{Name:SlidingGate Kind:1 Base:Gate Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:SlidingGate Kind:1 Base:Gate Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}

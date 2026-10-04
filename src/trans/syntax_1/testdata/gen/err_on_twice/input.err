@@ -1,0 +1,4 @@
+input.gd++:6:1: Class Mob has two on process blocks.
+ 6 | on process(dt: float) {}
+   | ^^^^^^^^^^
+Hint: Merge them into one.

@@ -1,1 +1,1 @@
-{Name:Settings2 Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:Settings2 Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}

@@ -23,18 +23,19 @@ var builtins = map[string]string{
 
 // symbol is a class, extern or enum type that GD++ code can name: a dependency or a declaration in the file.
 type symbol struct {
-	name       string
-	kind       meta.Kind
-	include    string // What follows #include. Declarations in the file are in "<Name>.h".
-	gdpp       bool   // Whether a GD++ file declares it: this one or another.
-	values     []meta.EnumValue
-	base       string   // For enums: the enum it extends, until enumValues adds the base's values to values. For dependency classes and externs: their base, if known.
-	bitfield   bool     // For enums: whether its values are flags.
-	godotNames []string // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
-	virtuals   []string // For dependency classes: the names of their virtual functions, see meta.Dependency.
-	class      *Class   // Set for classes in the file.
-	extern     *Extern  // Set for externs in the file.
-	enum       *Enum    // Set for enums in the file.
+	name          string
+	kind          meta.Kind
+	include       string // What follows #include. Declarations in the file are in "<Name>.h".
+	gdpp          bool   // Whether a GD++ file declares it: this one or another.
+	values        []meta.EnumValue
+	base          string   // For enums: the enum it extends, until enumValues adds the base's values to values. For dependency classes and externs: their base, if known.
+	bitfield      bool     // For enums: whether its values are flags.
+	godotNames    []string // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
+	virtuals      []string // For dependency classes: the names of their virtual functions, see meta.Dependency.
+	notifications []string // For dependency classes: the names of their own notifications, see meta.Dependency.
+	class         *Class   // Set for classes in the file.
+	extern        *Extern  // Set for externs in the file.
+	enum          *Enum    // Set for enums in the file.
 }
 
 // local reports whether the file declares s.

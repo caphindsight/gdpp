@@ -219,9 +219,10 @@ func _unhandled_input(event: InputEvent) -> void {
   gd::print("My node got an input event.");
 }
 
-// To run code when the node gets ready, use a ready block. Unlike an override of _ready, a script can't replace it.
-// Likewise: enter_tree { ... }, exit_tree { ... }, process(delta: float) { ... }, physics_process(delta: float) { ... } and draw { ... }.
-ready {
+// To run code when the node gets ready, use an on ready block. Unlike an override of _ready, it adds to the base's, and a
+// script can't replace it. Likewise for any notification, e.g. on enter_tree { ... }, on process(delta: float) { ... },
+// on draw { ... } or on predelete { ... }, and on(what: int) { ... } runs at every notification.
+on ready {
   gd::print("My node is ready.");
 }
 

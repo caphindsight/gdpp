@@ -76,11 +76,11 @@ You never write `#include` lines. GD++ knows which header declares each name of 
 
 `create` and `destroy` are GD++ words, meant to create and delete objects of any class, and each kind of GD++ class gives them its own meaning. For example, for a pool class (see "Object pools"), `create` reuses a node from the pool, and `destroy` gives it back instead of deleting it. `create T` gives what GD++ uses for `T`, e.g. a `Ref<ArrayMesh>`, so a refcounted object deletes itself with its last reference, and `destroy` doesn't compile for one. `queue_destroy` destroys a node at the end of the frame, like Godot's `queue_free`, but works with pools too. See `gd++ man classes`.
 
-### Engine callbacks
+### Notifications
 
 <a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
 
-`ready` runs when the node gets ready, and `process` on every frame, with the seconds since the last one. The others are `enter_tree`, `exit_tree`, `physics_process(delta: float)` and `draw`. Under the hood, they run in the class's `_notification`, and aren't real functions, hence their own syntax instead of `func _ready()`: a script that extends the class can't replace them, and nothing can call them. `process` and `physics_process` also turn processing on. See `gd++ man engine`.
+An `on` block runs when the object gets a notification: `on ready` when the node gets ready, `on process` on every frame, with the seconds since the last one, and `on predelete` right before the object is deleted. Any notification of the class or its bases works, e.g. `on enter_tree`, `on draw` or `on resized`, and `on(what: int)` runs at every notification. `on` blocks add up: a base's and a subclass's both run, and a script can't replace them. An `@override` function replaces the base's instead (see "Overrides"). `on process` and `on physics_process` also turn processing on. See `gd++ man notifications`.
 
 ### Tool classes
 
@@ -122,7 +122,7 @@ A `decl` block holds the property's storage. Without `set`, a property is read-o
 
 <a href="readme/svg/onready.gd++"><img src="readme/svg/onready.svg" alt="GD++ code: onready"></a>
 
-Like in GDScript, the value is set when the node gets ready, so its children exist, and `$` and `%` get them by path or unique name. It's set before the `ready` block runs, and before any `_ready`, even a script's. See `gd++ man variables` and `gd++ man lifecycle`.
+Like in GDScript, the value is set when the node gets ready, so its children exist, and `$` and `%` get them by path or unique name. It's set before the `on ready` block runs, and before any `_ready`, even a script's. See `gd++ man variables` and `gd++ man lifecycle`.
 
 ### Typed arrays and dictionaries
 
@@ -158,7 +158,7 @@ With the prefix `stat_`, the group shows `stat_health` as "Health". See `gd++ ma
 
 <a href="readme/svg/override.gd++"><img src="readme/svg/override.svg" alt="GD++ code: override"></a>
 
-It overrides any engine callback, or a `@virtual` function. A function with the name of one needs it, so nothing is overridden by accident. A script's function of the same name replaces it, but with `"super"`, the script can still call it, as `_super_unhandled_input`. See `gd++ man functions`.
+It overrides an engine virtual function, e.g. `_unhandled_input`, or a `@virtual` function: it replaces the base's, unlike an `on` block, which adds to it. A function with the name of one needs it, so nothing is overridden by accident. A script's function of the same name replaces it, but with `"super"`, the script can still call it, as `_super_unhandled_input`. See `gd++ man functions`.
 
 ### Virtual functions
 
@@ -237,12 +237,6 @@ A `Weak[ArrayMesh]`, `Weak<ArrayMesh>` in C++, remembers the mesh without keepin
 <a href="readme/svg/pools.gd++"><img src="readme/svg/pools.svg" alt="GD++ code: pools"></a>
 
 For a `@pool` class, `destroy` doesn't delete the node. Instead, it removes the node from the tree and keeps it in the pool, and `create` reuses it later. So `ctor` runs only when a bullet is actually created, not each time it's reused. A `@recycle` variable, like `speed`, gets its initial value again each time a bullet is reused. See `gd++ man pools`.
-
-### Notification handlers
-
-<a href="readme/svg/notif.gd++"><img src="readme/svg/notif.svg" alt="GD++ code: notif"></a>
-
-`WHAT` is the notification being handled. See `gd++ man lifecycle`.
 
 ### Externs
 

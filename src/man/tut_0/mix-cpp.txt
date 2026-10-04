@@ -99,7 +99,7 @@ extends Node
 
 @export var spinner: Spinner
 
-ready {
+on ready {
   spinner->set_speed(2.0);
 }
 ```
@@ -118,7 +118,7 @@ extends Node
 
 @export var spinner: Node3D
 
-ready {
+on ready {
   Spinner *s = spinner as Spinner *;
   if (s) {
     s->set_speed(2.0);

@@ -170,6 +170,7 @@ func cppClassNames(pkg Package) []godotName {
 type apiSpec struct {
 	enums    []trans.Dependency  // The enums, which GD++ enums may extend: those of classes, e.g. Node.ProcessMode, and global ones, e.g. Error.
 	virtuals map[string][]string // Each class's own virtual methods, e.g. _input for Node, which GD++ code overrides with @override.
+	notifs   map[string][]string // Each class's own notifications, without NOTIFICATION_, e.g. READY for Node, which on blocks handle.
 }
 
 // readSpec reads the API spec file. Returns an empty spec if there is no file.
@@ -185,8 +186,11 @@ func readSpec(file Path) apiSpec {
 	var api struct {
 		GlobalEnums []enum `json:"global_enums"`
 		Classes     []struct {
-			Name    string `json:"name"`
-			Enums   []enum `json:"enums"`
+			Name      string `json:"name"`
+			Enums     []enum `json:"enums"`
+			Constants []struct {
+				Name string `json:"name"`
+			} `json:"constants"`
 			Methods []struct {
 				Name      string `json:"name"`
 				IsVirtual bool   `json:"is_virtual"`
@@ -194,13 +198,18 @@ func readSpec(file Path) apiSpec {
 		} `json:"classes"`
 	}
 	Check(json.Unmarshal([]byte(file.ReadString()), &api), "Failed to parse %s", file.ToString())
-	spec := apiSpec{virtuals: map[string][]string{}}
+	spec := apiSpec{virtuals: map[string][]string{}, notifs: map[string][]string{}}
 	for _, e := range api.GlobalEnums {
 		spec.enums = append(spec.enums, trans.Dependency{Name: e.Name, Kind: trans.GodotEnum, Values: e.Values, Bitfield: e.IsBitfield})
 	}
 	for _, c := range api.Classes {
 		for _, e := range c.Enums {
 			spec.enums = append(spec.enums, trans.Dependency{Name: c.Name + "." + e.Name, Kind: trans.GodotEnum, Values: e.Values, Bitfield: e.IsBitfield})
+		}
+		for _, k := range c.Constants {
+			if name, ok := strings.CutPrefix(k.Name, "NOTIFICATION_"); ok {
+				spec.notifs[c.Name] = append(spec.notifs[c.Name], name)
+			}
 		}
 		for _, m := range c.Methods {
 			if m.IsVirtual {
@@ -229,7 +238,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string)
 	for _, n := range names {
 		dep := trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind}
 		if n.Kind != trans.Other {
-			dep.Base, dep.Virtuals = n.Base, spec.virtuals[n.Name]
+			dep.Base, dep.Virtuals, dep.Notifications = n.Base, spec.virtuals[n.Name], spec.notifs[n.Name]
 		}
 		deps = append(deps, dep)
 	}
@@ -237,7 +246,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string)
 	for _, f := range files {
 		for _, d := range f.Decls {
 			if f.Rel != self {
-				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals})
+				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, Notifications: d.Notifications})
 			}
 		}
 	}

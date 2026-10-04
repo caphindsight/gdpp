@@ -1,0 +1,4 @@
+input.gd++:3:1: Externs can't contain on blocks.
+ 3 | on ready {}
+   | ^^
+Hint: Externs only declare the funcs, vars and signals that another package defines.

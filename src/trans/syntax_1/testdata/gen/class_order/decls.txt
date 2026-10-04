@@ -1,3 +1,3 @@
-{Name:B Kind:1 Base:A Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:A Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
-{Name:C Kind:1 Base:B Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:B Kind:1 Base:A Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:A Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}
+{Name:C Kind:1 Base:B Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}

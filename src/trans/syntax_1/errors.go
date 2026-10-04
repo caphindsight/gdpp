@@ -72,14 +72,12 @@ func (e *Error) withSource(src string) *Error {
 var keywords = map[string]bool{
 	"class": true, "class_name": true, "ctor": true, "decl": true, "dtor": true, "enum": true, "enum_name": true,
 	"extends": true, "extern": true, "extern_name": true, "func": true, "get": true, "impl": true, "import": true,
-	"noimport": true, "notif": true, "set": true, "signal": true, "var": true,
+	"noimport": true, "set": true, "signal": true, "var": true,
 }
 
 // declKeywords are the words that can start a declaration, in the order hints list them.
-var declKeywords = []string{"func", "var", "signal", "enum", "class", "extern", "decl", "impl", "ctor", "dtor", "notif", "import", "noimport"}
-
-// engineBlocks are the words that start engine blocks, e.g. ready { ... }. Unlike keywords, they can be names too.
-var engineBlocks = []string{"ready", "enter_tree", "exit_tree", "process", "physics_process", "draw"}
+// Unlike the others, "on" isn't a keyword: it can be a name too.
+var declKeywords = []string{"func", "var", "signal", "enum", "class", "extern", "decl", "impl", "ctor", "dtor", "on", "import", "noimport"}
 
 // describe names token t for humans, e.g. `keyword "func"` or `the end of the file`.
 func describe(t lexer.Token) string {
@@ -220,6 +218,8 @@ func owner(sig []lexer.Token, open lexer.Token) string {
 		return " (the decl impl block)"
 	case prev.Type == tokIdent && (prev.Value == "decl" || prev.Value == "impl" || prev.Value == "ctor" || prev.Value == "dtor" || prev.Value == "get"):
 		return fmt.Sprintf(" (the %s block)", prev.Value)
+	case onHead(sig, j-1) >= 0:
+		return " (the on block)"
 	case prev.Type == tokIdent && (prev2.Value == "class" || prev2.Value == "extern" || prev2.Value == "enum"):
 		return fmt.Sprintf(" (the body of %s %q)", prev2.Value, prev.Value)
 	}
@@ -231,8 +231,6 @@ func owner(sig []lexer.Token, open lexer.Token) string {
 		return fmt.Sprintf(" (the body of func %q)", at(sig, k+1).Value)
 	case sig[k].Value == "set":
 		return " (the set block)"
-	case sig[k].Value == "notif":
-		return " (the notif block)"
 	case sig[k].Value == "var" && prev.Value == "=":
 		return fmt.Sprintf(" (the initial value of var %q)", at(sig, k+1).Value)
 	case sig[k].Value == "var":
@@ -362,7 +360,7 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 	}
 	isName := u.Type == tokIdent
 	switch {
-	case (isDoc(p) || endsAnnotation(sig, j-1)) && isName && slices.Contains(append([]string{"decl", "impl", "ctor", "dtor", "notif", "import", "noimport"}, engineBlocks...), u.Value):
+	case (isDoc(p) || endsAnnotation(sig, j-1)) && isName && slices.Contains([]string{"decl", "impl", "ctor", "dtor", "on", "import", "noimport"}, u.Value):
 		what := "an annotation"
 		if isDoc(p) || u.Value == "decl" || u.Value == "impl" { // These take annotations, so a doc comment is before them.
 			what = "a doc comment"
@@ -404,25 +402,21 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 		}
 		return fmt.Sprintf("Expected \"{\" to start the %s block, but found %s.", p.Value, found), hint
 
-	case p.Type == tokIdent && p.Value == "notif" && !isName && !isPunct(u, "("):
-		return fmt.Sprintf("Expected a notification name after \"notif\", but found %s.", found),
-			"List the notifications that the block handles, e.g. \"notif READY { ... }\"."
+	case onHead(sig, j-1) == j-1 && !isName && !isPunct(u, "("):
+		return fmt.Sprintf("Expected a notification name, \"(\" or \"{\" after \"on\", but found %s.", found),
+			"E.g. \"on ready { ... }\", or \"on(what: int) { ... }\" for every notification."
 
 	case p.Type == tokIdent && p.Value == "set" && !isPunct(u, "("):
 		return fmt.Sprintf("Expected \"(\" after \"set\", but found %s.", found),
 			"Name the setter's parameter: \"set(value) { ... }\"."
 
-	case engineHead(sig, j-1) != "":
-		name := engineHead(sig, j-1)
-		return fmt.Sprintf("Expected \"{\" to start the %s block, but found %s.", name, found), fmt.Sprintf("Write \"%s\".", engineExample(name))
+	case onHead(sig, j-1) >= 0:
+		name := onName(sig, onHead(sig, j-1))
+		return fmt.Sprintf("Expected \"{\" to start the on block, but found %s.", found), fmt.Sprintf("Write \"%s\".", onExample(name))
 
-	case enclosing(sig, j, "(") >= 0 && engineHead(sig, enclosing(sig, j, "(")-1) != "":
-		name := engineHead(sig, enclosing(sig, j, "(")-1)
-		if engineFuncs["_"+name].delta == "" {
-			return fmt.Sprintf("A %s block takes no parameters.", name), fmt.Sprintf("Write \"%s\".", engineExample(name))
-		}
-		return fmt.Sprintf("Expected the delta time's name, then \": float)\", but found %s.", found),
-			fmt.Sprintf("Write \"%s\".", engineExample(name))
+	case enclosing(sig, j, "(") >= 0 && onHead(sig, enclosing(sig, j, "(")-1) >= 0:
+		name := onName(sig, onHead(sig, enclosing(sig, j, "(")-1))
+		return fmt.Sprintf("Expected the parameter's name, then \":\" and its type, but found %s.", found), fmt.Sprintf("Write \"%s\".", onExample(name))
 
 	case (isPunct(p, ":") || isPunct(p, "->") || isPunct(p, "[") || isPunct(p, ",") && enclosing(sig, j, "[") >= 0) && !isName:
 		if isPunct(p, ":") && isPunct(u, "=") {
@@ -492,9 +486,9 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 	return fmt.Sprintf("Expected a declaration, but found %s.", found), declarationHint(u)
 }
 
-// engineHead returns the name of the engine block whose head ends at sig[i], e.g. "process" for "process(delta: float)",
-// or "" if there's none.
-func engineHead(sig []lexer.Token, i int) string {
+// onHead returns the index of the "on" that starts the head of an on block ending at sig[i], e.g.
+// "on process(delta: float)", "on ready" or "on", or -1 if there's none.
+func onHead(sig []lexer.Token, i int) int {
 	switch {
 	case isPunct(at(sig, i), ")") && isPunct(at(sig, i-1), "("):
 		i -= 2
@@ -503,12 +497,23 @@ func engineHead(sig []lexer.Token, i int) string {
 	case isPunct(at(sig, i), ")") && isPunct(at(sig, i-4), "(") && isPunct(at(sig, i-2), ":"):
 		i -= 5
 	}
-	t, prev := at(sig, i), at(sig, i-1)
-	if t.Type != tokIdent || !slices.Contains(engineBlocks, t.Value) || prev.Type == tokIdent && keywords[prev.Value] ||
-		prev.Type == tokPunct && strings.Contains("(,:->=.[@", prev.Value) {
-		return ""
+	if at(sig, i).Type == tokIdent && at(sig, i).Value != "on" && at(sig, i-1).Value == "on" {
+		i--
 	}
-	return t.Value
+	t, prev := at(sig, i), at(sig, i-1)
+	if t.Type != tokIdent || t.Value != "on" || prev.Type == tokIdent && keywords[prev.Value] ||
+		prev.Type == tokPunct && strings.Contains("(,:->=.[@", prev.Value) {
+		return -1
+	}
+	return i
+}
+
+// onName returns the notification name of the on block whose "on" is sig[i], or "" for the nameless one.
+func onName(sig []lexer.Token, i int) string {
+	if t := at(sig, i+1); t.Type == tokIdent {
+		return t.Value
+	}
+	return ""
 }
 
 // inProperty reports whether sig[j] is inside the braces of a property.
@@ -548,14 +553,14 @@ func declarationHint(u lexer.Token) string {
 		return "An empty function body is written \"{}\"."
 	}
 	if u.Type == tokIdent {
-		if s := suggest(u.Value, slices.Concat(declKeywords, engineBlocks, []string{"extends", "class_name", "enum_name", "extern_name"})...); s != "" {
+		if s := suggest(u.Value, slices.Concat(declKeywords, []string{"extends", "class_name", "enum_name", "extern_name"})...); s != "" {
 			return fmt.Sprintf("Did you mean %q?", s)
 		}
 	}
 	if u.EOF() {
 		return ""
 	}
-	return "A declaration starts with one of: " + strings.Join(slices.Concat(declKeywords, engineBlocks), ", ") + "."
+	return "A declaration starts with one of: " + strings.Join(declKeywords, ", ") + "."
 }
 
 // suggest returns the candidate closest to word, if it is close enough to be a likely typo.

@@ -31,7 +31,7 @@ GD++ looks like GDScript, so GDScript habits are the most common mistakes. GD++ 
 
 ```
 func greet() -> void:          Bodies use braces: func greet() -> void { ... }
-func _process(delta):          Engine blocks: process(delta: float) { ... }, see gd++ man engine
+func _process(delta):          on blocks: on process(delta: float) { ... }, see gd++ man notifications
 var x := 5                     No type inference: var x: int = 5
 const X = 5                    No const: enum X = 5
 static func f()                Attributes are annotations: @static func f()
@@ -159,18 +159,20 @@ Annotation @override("final") only works on overrides of a GD++ @virtual functio
 Function _input overrides a virtual function of Node, so it needs @override.
   Add @override, or rename the function.
 Function _ready overrides a virtual function of Node, so it needs @override.
-  To run code at its notification, write a ready block instead: "ready { ... }". Only for a plain override, which a script replaces, add @override.
+  To add code that runs at its notification, write "on ready { ... }" instead. Only to replace the base's _ready, which a script replaces in turn, add @override.
 Annotation @override no longer takes "engine".
   Drop it: a plain @override already makes _ready a plain override.
-Annotation @const can't be used on a ready block.
-A ready block only works in classes that extend Node, which Counter doesn't.
-A ready block takes no parameters.
-  Write "ready { ... }".
-A process block takes the delta time as a parameter.
-  Name it, e.g. "process(delta: float) { ... }". It's a float, in seconds.
-The delta time delta needs its type, float.
-  Write "process(delta: float) { ... }".
-Class Mob has two process blocks.
+Annotation @const can't be used on an on ready block.
+Class Counter and its bases have no notification ready.
+Class Mob and its bases have no notification unhandled_input.
+  unhandled_input isn't a notification, but a virtual function of Node: write "@override func _unhandled_input(...)".
+An on predelete block takes no parameters.
+Parameter delta needs its type, float.
+  Write "delta: float".
+Write notification READY in lower case.
+  E.g. "on ready { ... }".
+Class Mob has two on process blocks.
+  Merge them into one.
 The @onthread function f already returns an Async: write -> int.
   Its callers get an Async of the type its body returns.
 Annotation @onthread takes "detached".
@@ -183,7 +185,7 @@ A pool's size must be a positive integer.
 Only a pool with a size has a mode, so "grow" needs one.
 A @recycle ctor only works in a @pool class, whose objects are reused.
 A @recycle var needs an initial value, which property x doesn't have.
-A @recycle ready block only works in a @pool class, whose objects are reused.
+A @recycle on ready block only works in a @pool class, whose objects are reused.
 Of all functions, only an @override _ready takes @recycle.
 Class A has two @recycle dtors.
 The scene's path must start with res:// or pkg://.

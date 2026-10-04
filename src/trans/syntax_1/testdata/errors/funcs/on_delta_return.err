@@ -1,0 +1,4 @@
+errors/funcs/on_delta_return.gd++:1:31: Expected "{" to start the on block, but found "->".
+ 1 | on physics_process(dt: float) -> void {}
+   |                               ^^
+Hint: Write "on physics_process(delta: float) { ... }".

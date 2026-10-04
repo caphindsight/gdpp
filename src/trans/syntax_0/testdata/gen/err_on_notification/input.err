@@ -1,0 +1,4 @@
+input.gd++:4:1: Class Mob and its bases have no notification notification.
+ 4 | on notification {}
+   | ^^^^^^^^^^^^^^^
+Hint: For every notification, write "on(what: int) { ... }".

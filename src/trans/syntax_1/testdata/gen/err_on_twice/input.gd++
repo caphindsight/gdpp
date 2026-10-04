@@ -1,0 +1,6 @@
+class_name Mob
+extends Node
+
+on process(delta: float) {}
+
+on process(dt: float) {}

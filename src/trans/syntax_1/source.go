@@ -150,13 +150,6 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("")
 		w.ln("void %s::_notification(int WHAT) {", c.name)
 		guard(w, c.gameOnly, "")
-		if slices.ContainsFunc(c.notifs, func(n *notifModel) bool { return n.body != nil && generationRegexp.MatchString(n.body.Text) }) {
-			if c.pool != nil {
-				w.ln("\tconst uint64_t GENERATION = _gdpp_pool_slot.generation;")
-			} else {
-				w.ln("\tconstexpr uint64_t GENERATION = 0;")
-			}
-		}
 		// POST_ENTER_TREE comes right before each READY, once the children are ready, but also on each later entry.
 		if c.hasOnready() {
 			w.ln("\tif (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {")
@@ -184,10 +177,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			}
 			w.ln("\t}")
 		}
-		// Each block runs in a lambda, so a return in one doesn't skip the later ones.
 		for _, n := range c.notifs {
-			if n.body != nil {
-				w.block(n.body, "\tif ("+n.cond+") [&] {", "}();", assertVoid)
+			if n.cond == "true" {
+				w.ln("\t%s;", n.call)
 			} else {
 				w.ln("\tif (%s) {", n.cond)
 				w.ln("\t\t%s;", n.call)
@@ -236,7 +228,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	w.ln("#undef This")
 }
 
-// generationRegexp matches the use of GENERATION, which notif blocks and @recycle ctor, dtor and _ready can read.
+// generationRegexp matches the use of GENERATION, which on blocks and @recycle ctor, dtor and _ready can read.
 var generationRegexp = regexp.MustCompile(`\bGENERATION\b`)
 
 // initializer writes the assignment of var v's initial value, or of its type's default if it has none.
@@ -405,8 +397,12 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t}")
 	}
 	u.debugHooks(w, c, f)
-	if f.recycle != nil && f.f.Body != nil && generationRegexp.MatchString(f.f.Body.Text) {
-		w.ln("\tconst uint64_t GENERATION = _gdpp_pool_slot.generation;")
+	if (f.recycle != nil || f.hidden == "notif") && f.f.Body != nil && generationRegexp.MatchString(f.f.Body.Text) {
+		if c.pool != nil {
+			w.ln("\tconst uint64_t GENERATION = _gdpp_pool_slot.generation;")
+		} else {
+			w.ln("\tconstexpr uint64_t GENERATION = 0;")
+		}
 	}
 	// A traced function that returns a value runs as a lambda, so the trace gets the value.
 	wrap := f.trace && !f.ret.void
@@ -750,9 +746,6 @@ func (u *unit) sourceNames() []string {
 		code(c.dtor)
 		code(c.recycleCtor)
 		code(c.recycleDtor)
-		for _, n := range c.notifs {
-			code(n.body)
-		}
 		for _, f := range c.funcs {
 			code(f.f.Body)
 			for _, p := range f.f.Params {

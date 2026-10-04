@@ -1,7 +1,11 @@
-ready {
+on ready {
   gd::print("Ready.");
 }
 
-process(delta: float) {
+on process(delta: float) {
   rotate_y(delta);
+}
+
+on predelete {
+  gd::print("About to be deleted.");
 }

@@ -1,0 +1,4 @@
+input.gd++:4:1: Write notification NOTIFICATION_READY without NOTIFICATION_.
+ 4 | on NOTIFICATION_READY {}
+   | ^^^^^^^^^^^^^^^^^^^^^
+Hint: GD++ adds the prefix: "on ready { ... }".

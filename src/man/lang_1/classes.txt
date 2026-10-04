@@ -88,7 +88,7 @@ Like in GDScript, the code of a class runs in the editor only if the class has `
 class_name Gizmo
 extends Node3D
 
-process(delta: float) {
+on process(delta: float) {
   rotate_y(delta);          // Spins in the editor too.
 }
 ```
@@ -120,7 +120,7 @@ A `@game_only` class is a runtime class. In debug builds, which the editor loads
 class_name Spawner
 extends Node3D
 
-process(delta: float) {
+on process(delta: float) {
   rotate_y(delta);          // Spins in the editor too.
 }
 
@@ -182,7 +182,7 @@ class_name Chest
 extends Node3D
 ```
 
-These are for debugging. `@trace` on a class traces all its functions (except `process` and `physics_process`, which run every frame, and have their own groups `process` and `physics_process`), variables and signals, and prints each creation and destruction of its objects. `@profile` times all its functions, and the getters and setters of its properties. They only generate code in builds that turn on one of their groups: here, `--trace loot`, `--trace Chest` or `--trace all` for `@trace`, and `--profile Chest` or `--profile all` for `@profile`. Like `@tool`, they're not inherited. See `gd++ man debugging`.
+These are for debugging. `@trace` on a class traces all its functions (except `on process` and `on physics_process`, which run every frame, and have their own groups `process` and `physics_process`), variables and signals, and prints each creation and destruction of its objects. `@profile` times all its functions, and the getters and setters of its properties. They only generate code in builds that turn on one of their groups: here, `--trace loot`, `--trace Chest` or `--trace all` for `@trace`, and `--profile Chest` or `--profile all` for `@profile`. Like `@tool`, they're not inherited. See `gd++ man debugging`.
 
 # Annotations and doc comments
 
@@ -211,7 +211,7 @@ signal     signals                        gd++ man signals
 enum       enums and integer constants    gd++ man enums
 ctor       the constructor                gd++ man lifecycle
 dtor       the destructor                 gd++ man lifecycle
-notif      notification handlers          gd++ man lifecycle
+on         notification handlers          gd++ man notifications
 decl, impl plain C++                      gd++ man code
 import     force an include               gd++ man includes
 noimport   prevent an include             gd++ man includes

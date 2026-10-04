@@ -77,6 +77,18 @@ func TestDoc(t *testing.T) {
 	}
 }
 
+func TestDocNotifications(t *testing.T) {
+	m := withDocFS(t)
+	m.nodes[pkgDir+".gd++pkg/extension_api.json"] = &memNode{data: []byte(`{"classes": [
+		{"name": "Object", "constants": [{"name": "NOTIFICATION_PREDELETE", "value": 1}, {"name": "NOTIFICATION_POSTINITIALIZE", "value": 0}]},
+		{"name": "Array"},
+		{"name": "CanvasItem", "constants": [{"name": "NOTIFICATION_DRAW", "value": 30}, {"name": "MARGIN", "value": 3}]}]}`)}
+	want := "CanvasItem:\n  draw\nObject:\n  postinitialize\n  predelete\n"
+	if out := captureStdout(t, (&CmdDoc{Notifications: true}).Run); out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
 func TestDocPackagePath(t *testing.T) {
 	m := withDocFS(t)
 	m.cwd = "/games/my_game"
@@ -118,23 +130,25 @@ func TestDocIndex(t *testing.T) {
 
 func TestDocFails(t *testing.T) {
 	cases := map[string]struct {
-		args  []string
-		want  string
-		index bool
+		args          []string
+		want          string
+		index, notifs bool
 	}{
-		"index and name": {[]string{"src/pkg", "Array"}, "[x] Invalid arguments: --index cannot be used with a name.\n", true},
-		"too many":       {[]string{"a", "b", "c"}, "[x] Invalid arguments: expected a name, optionally after a package path.\n", false},
-		"not in package": {[]string{"..", "Array"}, "[x] Path res://src is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`.\n", false},
-		"similar names":  {[]string{"typed"}, "[x] There is no name typed in godot-cpp or the GD++ runtime. Similar names: TypedArray, TypedDictionary.\n", false},
-		"unknown name":   {[]string{"Nothing"}, "[x] There is no name Nothing in godot-cpp or the GD++ runtime.\n", false},
-		"unknown member": {[]string{"TypedArray.nothing"}, "[x] Name TypedArray has no public member nothing.\n", false},
-		"missing header": {[]string{"TypedDictionary"}, "[x] Failed to find the header <godot_cpp/variant/typed_dictionary.hpp>, run `gd++ clean` to fix this.\n", false},
+		"index and name":          {[]string{"src/pkg", "Array"}, "[x] Invalid arguments: --index cannot be used with a name.\n", true, false},
+		"notifications and name":  {[]string{"src/pkg", "Array"}, "[x] Invalid arguments: --notifications cannot be used with a name.\n", false, true},
+		"index and notifications": {nil, "[x] Invalid arguments: --index cannot be used with --notifications.\n", true, true},
+		"too many":                {[]string{"a", "b", "c"}, "[x] Invalid arguments: expected a name, optionally after a package path.\n", false, false},
+		"not in package":          {[]string{"..", "Array"}, "[x] Path res://src is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`.\n", false, false},
+		"similar names":           {[]string{"typed"}, "[x] There is no name typed in godot-cpp or the GD++ runtime. Similar names: TypedArray, TypedDictionary.\n", false, false},
+		"unknown name":            {[]string{"Nothing"}, "[x] There is no name Nothing in godot-cpp or the GD++ runtime.\n", false, false},
+		"unknown member":          {[]string{"TypedArray.nothing"}, "[x] Name TypedArray has no public member nothing.\n", false, false},
+		"missing header":          {[]string{"TypedDictionary"}, "[x] Failed to find the header <godot_cpp/variant/typed_dictionary.hpp>, run `gd++ clean` to fix this.\n", false, false},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 				withDocFS(t)
-				(&CmdDoc{Args: tc.args, Index: tc.index}).Run()
+				(&CmdDoc{Args: tc.args, Index: tc.index, Notifications: tc.notifs}).Run()
 				return
 			}
 			out, code := runFailHelper(t, t.Name())

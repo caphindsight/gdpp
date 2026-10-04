@@ -1,0 +1,41 @@
+class_name Radar
+extends Node2D
+
+@onready var camera: Camera3D = get_node<Camera3D>("Camera")
+
+// Runs before NOTIFICATION_READY, so before a script's _ready.
+on ready {
+  camera->set_current(true);
+}
+
+// Runs even when a script overrides _process.
+@trace
+on process(dt: float) {
+  if (dt > 0.1) {
+    return;
+  }
+  queue_redraw();
+}
+
+// Runs at every notification, after the blocks before it.
+on(what: int) {
+  if (what == NOTIFICATION_PROCESS) {
+    gd::print("process");
+  }
+}
+
+on physics_process(delta: float) {
+  gd::print(delta);
+}
+
+on enter_tree {
+  gd::print("enter");
+}
+
+on exit_tree {
+  gd::print("exit");
+}
+
+on draw {
+  draw_circle(Vector2(), 10.0, Color(1, 0, 0));
+}

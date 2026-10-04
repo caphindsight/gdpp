@@ -1,0 +1,11 @@
+class_name Spinner
+extends Node3D
+
+// The delta time can have its type, float, written out.
+on process(dt: float) {
+  rotate_y(dt);
+}
+
+on physics_process(step: float) {
+  gd::print(step);
+}

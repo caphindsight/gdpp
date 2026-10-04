@@ -240,11 +240,14 @@ func TestTranspilePackageExternBases(t *testing.T) {
 
 func TestTranspilePackageCppClasses(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
-		"boss.gd++":     "class_name Boss\nextends Enemy\nready {}\n",
-		"kid.gd++":      "class Kid {\n  extends Actor\n}\n",
+		"boss.gd++":     "class_name Boss\nextends Enemy\non ready {}\n",
+		"kid.gd++":      "class Kid {\n  extends Actor\n  enum NOTIFICATION_HIT = 2000\n}\n",
+		"tot.gd++":      "class_name Tot\nextends Kid\non hit {}\n",
 		"user.gd++":     "class_name User\nextends Node\nvar actor: Actor\nvar enemy: Enemy\nvar kid: Kid\n",
 		"enemy/enemy.h": "#pragma once\nnamespace godot {\nclass Enemy : public Node3D {\n  GDCLASS(Enemy, Node3D)\n};\n}\n",
 	})
+	// Enemy's base, from its header, makes it a node, whose notifications come from the spec.
+	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Node", "constants": [{"name": "NOTIFICATION_READY", "value": 13}]}]}`)
 	config := strings.Replace(buildPkgConfig, `icon = "pkg://enemy/enemy.svg"`, `icon = "pkg://enemy/enemy.svg"`+"\n  kind = \"ptr\"", 1)
 	m.nodes[pkgDir+packageFileName].data = []byte(strings.Replace(config, "tool = true", "tool = true\n  kind = \"ref\"", 1))
 	withTTY(t, false)
@@ -253,7 +256,8 @@ func TestTranspilePackageCppClasses(t *testing.T) {
 	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
 	for file, want := range map[string]string{
 		"Boss.h":   "class Boss : public Enemy {",
-		"Boss.cpp": "_gdpp_body__ready();", // Enemy's base, from its header, makes it a node.
+		"Boss.cpp": "_gdpp_body__ready();",
+		"Tot.cpp":  "_gdpp_body__hit();", // Kid's notification, from another file.
 		"User.h":   "#include \"enemy/enemy.h\"\n#include <common/actor.h>\n",
 		"User.cpp": "Ref<Kid>",
 	} {

@@ -1,0 +1,11 @@
+class_name Ticker
+extends Node
+
+on internal_process(delta: float) {
+  gd::print(delta);
+}
+
+on internal_physics_process {}
+
+// Without the parameter, processing is still turned on.
+on process {}

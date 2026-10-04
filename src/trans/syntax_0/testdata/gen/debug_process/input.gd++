@@ -2,7 +2,7 @@ class_name Mover
 extends Node
 
 // Traced through the implicit group process.
-process(delta: float) {
+on process(delta: float) {
   gd::print(delta);
 }
 

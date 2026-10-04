@@ -1,0 +1,4 @@
+input.gd++:4:1: Class Mob and its bases have no notification redy.
+ 4 | on redy {}
+   | ^^^^^^^
+Hint: Did you mean "ready"?

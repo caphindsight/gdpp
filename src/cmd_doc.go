@@ -17,10 +17,12 @@ import (
 // come from the bindings and the runtime header of a package. godot-cpp's own
 // helpers, e.g. TypedArray, are documented nowhere else, while Godot's help describes the
 // engine's classes. Without a name, or with --index, it lists the types
-// instead, with what declares them and their bases.
+// instead, with what declares them and their bases. With --notifications, it
+// lists the notifications of each Godot class, which on blocks handle.
 type CmdDoc struct {
-	Args  []string `arg:"positional" placeholder:"[PKG] [NAME]" help:"the name to show, e.g. TypedArray, Array.push_back or Ext, after a path in the package whose bindings to use [default package: the current directory's]"`
-	Index bool     `arg:"-i,--index" help:"list the types that godot-cpp and the GD++ runtime declare, with their kinds and bases [default: without a name]"`
+	Args          []string `arg:"positional" placeholder:"[PKG] [NAME]" help:"the name to show, e.g. TypedArray, Array.push_back or Ext, after a path in the package whose bindings to use [default package: the current directory's]"`
+	Index         bool     `arg:"-i,--index" help:"list the types that godot-cpp and the GD++ runtime declare, with their kinds and bases [default: without a name]"`
+	Notifications bool     `arg:"--notifications" help:"list the notifications of each Godot class, as on blocks name them, e.g. ready for on ready"`
 }
 
 // docType is a name that godot-cpp or the runtime declares, with its
@@ -44,7 +46,9 @@ func (t docType) isAlias() bool {
 }
 
 func (c *CmdDoc) Run() {
-	index := c.Index || len(c.Args) == 0
+	Assert(!c.Index || !c.Notifications, "Invalid arguments: --index cannot be used with --notifications.")
+	Assert(!c.Notifications || len(c.Args) <= 1, "Invalid arguments: --notifications cannot be used with a name.")
+	index := c.Index || c.Notifications || len(c.Args) == 0
 	Assert(!index || len(c.Args) <= 1, "Invalid arguments: --index cannot be used with a name.")
 	Assert(len(c.Args) <= 2, "Invalid arguments: expected a name, optionally after a package path.")
 	path := Cwd()
@@ -54,6 +58,11 @@ func (c *CmdDoc) Run() {
 	root, ok := GetPackageRootMaybe(path)
 	Assert(ok, "Path %s is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`.", path.ToString())
 	pkg := LoadPackage(root)
+	if c.Notifications {
+		generateBuildCache(LoadProject(root), pkg)
+		PageResult(notificationsText(readSpec(pkg.BuildCache.Cd("extension_api.json"))))
+		return
+	}
 	names := docNames(LoadProject(root), pkg)
 	if index {
 		PageResult(indexText(names))
@@ -133,6 +142,24 @@ func indexText(names []godotName) string {
 			line += ": " + n.Base
 		}
 		text.WriteString(Styled(n.Decl, CodeKeyword) + " " + highlightCpp(line, types) + "\n")
+	}
+	return text.String()
+}
+
+// notificationsText returns each class of spec that has notifications, e.g.
+// "CanvasItem:", then its notifications as on blocks name them, e.g. "draw",
+// one per indented line. Both are sorted by name.
+func notificationsText(spec apiSpec) string {
+	var text strings.Builder
+	var classes []string
+	for class := range spec.notifs {
+		classes = append(classes, class)
+	}
+	slices.Sort(classes)
+	for _, class := range classes {
+		names := strings.Split(strings.ToLower(strings.Join(spec.notifs[class], "\n")), "\n")
+		slices.Sort(names)
+		text.WriteString(Styled(class, CodeType) + ":\n" + indent(strings.Join(names, "\n")))
 	}
 	return text.String()
 }

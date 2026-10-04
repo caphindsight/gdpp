@@ -1,0 +1,4 @@
+input.gd++:4:1: An on ready block takes no parameters.
+ 4 | on ready() {}
+   | ^^^^^^^^
+Hint: Write "on ready { ... }". Only process, physics_process, internal_process, internal_physics_process, and the nameless on block, which runs at every notification, take one.

@@ -1,6 +1,6 @@
 class_name HelloWorldNode
 extends Node
 
-ready {
+on ready {
   gd::print("Hello from GD++!");
 }

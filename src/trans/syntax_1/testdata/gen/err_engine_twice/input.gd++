@@ -1,6 +1,0 @@
-class_name Mob
-extends Node
-
-process(delta: float) {}
-
-process(dt: float) {}

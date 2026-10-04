@@ -69,33 +69,28 @@ Bullet *Bullet::new_pooled() {
 }
 
 void Bullet::_notification(int WHAT) {
-	const uint64_t GENERATION = _gdpp_pool_slot.generation;
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
 		if (!_gdpp_pool_slot.readied) {
 #line 5 "input.gd++"
 			mesh = get_node<MeshInstance3D>("Mesh");
-#line 78 "Bullet.cpp"
+#line 77 "Bullet.cpp"
 #line 6 "input.gd++"
 			trail = get_node<Node3D>("Trail");
-#line 81 "Bullet.cpp"
+#line 80 "Bullet.cpp"
 		}
 #line 7 "input.gd++"
 		start = get_global_position();
-#line 85 "Bullet.cpp"
+#line 84 "Bullet.cpp"
 		if (!_gdpp_pool_slot.readied) {
 #line 8 "input.gd++"
 			sound = get_node<Node>("Sound");
-#line 89 "Bullet.cpp"
+#line 88 "Bullet.cpp"
 		}
 	}
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready() && !_gdpp_pool_slot.readied) {
 		_gdpp_body__ready();
 	}
-#line 15 "input.gd++"
-	if (WHAT == NOTIFICATION_READY) [&] {
-  gd::print("ready in generation ", GENERATION);
-}();
-#line 99 "Bullet.cpp"
+	_gdpp_body__notification(WHAT);
 	if (WHAT == NOTIFICATION_READY) {
 		_gdpp_pool_slot.readied = true;
 	}
@@ -106,7 +101,18 @@ void Bullet::_gdpp_body__ready() {
 
   gd::print("first ready");
 
-#line 110 "Bullet.cpp"
+#line 105 "Bullet.cpp"
+}
+
+void Bullet::_gdpp_body__notification(int64_t what) {
+	const uint64_t GENERATION = _gdpp_pool_slot.generation;
+#line 16 "input.gd++"
+
+  if (what == NOTIFICATION_READY) {
+    gd::print("ready in generation ", GENERATION);
+  }
+
+#line 116 "Bullet.cpp"
 }
 
 MeshInstance3D *Bullet::get_mesh() const {

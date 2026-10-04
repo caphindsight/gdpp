@@ -65,7 +65,7 @@ var marker: Node3D = {
 }
 ```
 
-`@onready` assigns the initial value right before the `ready` block instead of in the constructor, like in GDScript. That's when the node's children exist, so it can get them, e.g. with the node path `$Camera`. GD++ assigns it in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`, so it's set before any `_ready` runs, even a script's. See `gd++ man lifecycle`. Without an initial value, `@onready` does nothing. Only classes that extend `Node` can use it, since only nodes get `_ready`.
+`@onready` assigns the initial value right before the `on ready` block instead of in the constructor, like in GDScript. That's when the node's children exist, so it can get them, e.g. with the node path `$Camera`. GD++ assigns it in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`, so it's set before any `_ready` runs, even a script's. See `gd++ man lifecycle`. Without an initial value, `@onready` does nothing. Only classes that extend `Node` can use it, since only nodes get `_ready`.
 
 # Node paths
 

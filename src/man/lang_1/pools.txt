@@ -87,32 +87,32 @@ Exported variables usually don't need `@recycle`: if nothing changes them while 
 
 # Getting ready again
 
-A reused node gets ready again the next time it enters the tree, like a new node. But in a `@pool` class, `@onready` values and the `ready` block only run the first time an object gets ready, since a reused node usually keeps its children, so e.g. `@onready var mesh = $Mesh` is still right. With `@recycle`, they run each time:
+A reused node gets ready again the next time it enters the tree, like a new node. But in a `@pool` class, `@onready` values and the `on ready` block only run the first time an object gets ready, since a reused node usually keeps its children, so e.g. `@onready var mesh = $Mesh` is still right. With `@recycle`, they run each time:
 
 ```gd++
 @onready var mesh: MeshInstance3D = $Mesh                         // set once
 @onready @recycle var start: Vector3 = get_global_position()      // set each time
 
-ready {
+on ready {
   gd::print("A new bullet is ready.");                            // runs once
 }
 ```
 
-With `@recycle ready { ... }`, the message would print each time. The order of annotations doesn't matter: `@recycle @onready` is the same. An `@override func _ready()` works the same way, and also takes `@recycle`. The values are still set in the order of the declarations, before `ready`, and the first time, all of them are set. An object that the pool reuses before it ever got ready, e.g. one that was created and destroyed without entering the tree, still gets everything the first time it gets ready.
+With `@recycle on ready { ... }`, the message would print each time. The order of annotations doesn't matter: `@recycle @onready` is the same. An `@override func _ready()` works the same way, and also takes `@recycle`. The values are still set in the order of the declarations, before `on ready`, and the first time, all of them are set. An object that the pool reuses before it ever got ready, e.g. one that was created and destroyed without entering the tree, still gets everything the first time it gets ready.
 
-`notif` blocks always run, e.g. `notif READY` at each ready. They, `@recycle ctor`, `@recycle dtor` and `@recycle ready` can read `GENERATION`, an unsigned integer: how many times the pool took the object back, so `0` until it's first returned. It goes up when `destroy` returns the object, before the `@recycle dtor` and before the node leaves the tree, so the `@recycle dtor` and `notif EXIT_TREE` already see the new value then. In other classes, `GENERATION` is always `0`.
+Other `on` blocks always run, e.g. `on enter_tree` at each entry. They, `@recycle ctor`, `@recycle dtor` and `@recycle on ready` can read `GENERATION`, an unsigned integer: how many times the pool took the object back, so `0` until it's first returned. It goes up when `destroy` returns the object, before the `@recycle dtor` and before the node leaves the tree, so the `@recycle dtor` and `on exit_tree` already see the new value then. In other classes, `GENERATION` is always `0`.
 
 ```gd++
-notif READY {
+on enter_tree {
   if (GENERATION > 0) {
     gd::print("Returned to the pool ", GENERATION, " times before.");
   }
 }
 ```
 
-Other functions can't read it, not even `ready` without `@recycle`.
+Functions can't read it, except an `@override` `@recycle _ready`.
 
-Only `@pool` classes can have `@recycle ready`, and `@recycle` works on no other block or function, except an `@override func _ready()`. Other classes pay nothing for any of this: they get no checks, and `GENERATION` is a constant there.
+Only `@pool` classes can have `@recycle on ready`, and `@recycle` works on no other block or function, except an `@override func _ready()`. Other classes pay nothing for any of this: they get no checks, and `GENERATION` is a constant there.
 
 # Returning objects at the end of the frame
 

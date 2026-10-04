@@ -1,0 +1,4 @@
+class_name Pool
+extends Node
+
+on NOTIFICATION_READY {}

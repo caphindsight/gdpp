@@ -1,4 +1,0 @@
-errors/funcs/engine_delta_return.gd++:1:28: Expected "{" to start the physics_process block, but found "->".
- 1 | physics_process(dt: float) -> void {}
-   |                            ^^
-Hint: Write "physics_process(delta: float) { ... }".

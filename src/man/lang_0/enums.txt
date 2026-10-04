@@ -232,7 +232,7 @@ enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
 
 @export var casting: ShadowCastingSetting = ON
 
-ready {
+on ready {
   mesh->set_cast_shadows_setting(casting as GeometryInstance3D::ShadowCastingSetting);
 }
 ```

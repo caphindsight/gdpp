@@ -1,4 +1,0 @@
-errors/funcs/engine_param_type.gd++:1:15: Expected the delta time's name, then ": float)", but found name "float".
- 1 | process(delta float) {}
-   |               ^^^^^
-Hint: Write "process(delta: float) { ... }".

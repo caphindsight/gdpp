@@ -1,0 +1,4 @@
+errors/heads/on_bad_name.gd++:3:4: Expected a notification name, "(" or "{" after "on", but found "+".
+ 3 | on + {}
+   |    ^
+Hint: E.g. "on ready { ... }", or "on(what: int) { ... }" for every notification.

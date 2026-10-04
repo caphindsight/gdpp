@@ -1,0 +1,4 @@
+errors/funcs/on_param_list.gd++:1:11: Expected the parameter's name, then ":" and its type, but found ",".
+ 1 | on ready(x, y) {}
+   |           ^
+Hint: Write "on ready { ... }".

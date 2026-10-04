@@ -1,0 +1,7 @@
+class_name Mob
+extends Node
+
+// Not a @pool class, so GENERATION is always 0.
+on post_enter_tree {
+  gd::print("entered in generation ", GENERATION);
+}

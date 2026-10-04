@@ -1,0 +1,4 @@
+input.gd++:4:1: Class Mob and its bases have no notification unhandled_input.
+ 4 | on unhandled_input {}
+   | ^^^^^^^^^^^^^^^^^^
+Hint: unhandled_input isn't a notification, but a virtual function of Node: write "@override func _unhandled_input(...)".

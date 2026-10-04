@@ -1,0 +1,6 @@
+class_name Counter
+
+// RefCounted extends Object, which has PREDELETE.
+on predelete {
+  gd::print("deleted");
+}

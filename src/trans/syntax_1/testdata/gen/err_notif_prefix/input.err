@@ -1,4 +1,0 @@
-input.gd++:3:7: Write notification NOTIFICATION_READY without NOTIFICATION_.
- 3 | notif NOTIFICATION_READY {}
-   |       ^^^^^^^^^^^^^^^^^^
-Hint: GD++ adds the prefix: "notif READY".

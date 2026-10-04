@@ -4,6 +4,7 @@
 name = "Object"
 include = "<godot_cpp/classes/object.hpp>"
 kind = "Object"
+notifications = ["POSTINITIALIZE", "PREDELETE", "EXTENSION_RELOADED"]
 
 [[dep]]
 name = "Node"
@@ -11,12 +12,14 @@ include = "<godot_cpp/classes/node.hpp>"
 kind = "Object"
 base = "Object"
 virtuals = ["_process", "_physics_process", "_enter_tree", "_exit_tree", "_ready", "_get_configuration_warnings", "_input", "_shortcut_input", "_unhandled_input", "_unhandled_key_input"]
+notifications = ["ENTER_TREE", "EXIT_TREE", "MOVED_IN_PARENT", "READY", "PAUSED", "UNPAUSED", "PHYSICS_PROCESS", "PROCESS", "PARENTED", "UNPARENTED", "SCENE_INSTANTIATED", "DRAG_BEGIN", "DRAG_END", "PATH_RENAMED", "CHILD_ORDER_CHANGED", "INTERNAL_PROCESS", "INTERNAL_PHYSICS_PROCESS", "POST_ENTER_TREE", "DISABLED", "ENABLED", "RESET_PHYSICS_INTERPOLATION", "EDITOR_PRE_SAVE", "EDITOR_POST_SAVE", "WM_MOUSE_ENTER", "WM_MOUSE_EXIT", "WM_WINDOW_FOCUS_IN", "WM_WINDOW_FOCUS_OUT", "WM_CLOSE_REQUEST", "WM_GO_BACK_REQUEST", "WM_SIZE_CHANGED", "WM_DPI_CHANGE", "VP_MOUSE_ENTER", "VP_MOUSE_EXIT", "WM_POSITION_CHANGED", "WM_OUTPUT_MAX_LINEAR_VALUE_CHANGED", "OS_MEMORY_WARNING", "TRANSLATION_CHANGED", "WM_ABOUT", "CRASH", "OS_IME_UPDATE", "APPLICATION_RESUMED", "APPLICATION_PAUSED", "APPLICATION_FOCUS_IN", "APPLICATION_FOCUS_OUT", "TEXT_SERVER_CHANGED", "APPLICATION_PIP_MODE_ENTERED", "APPLICATION_PIP_MODE_EXITED", "ACCESSIBILITY_UPDATE", "ACCESSIBILITY_INVALIDATE"]
 
 [[dep]]
 name = "Node3D"
 include = "<godot_cpp/classes/node3d.hpp>"
 kind = "Object"
 base = "Node"
+notifications = ["TRANSFORM_CHANGED", "ENTER_WORLD", "EXIT_WORLD", "VISIBILITY_CHANGED", "LOCAL_TRANSFORM_CHANGED"]
 
 [[dep]]
 name = "CanvasItem"
@@ -24,6 +27,14 @@ include = "<godot_cpp/classes/canvas_item.hpp>"
 kind = "Object"
 base = "Node"
 virtuals = ["_draw"]
+notifications = ["TRANSFORM_CHANGED", "LOCAL_TRANSFORM_CHANGED", "DRAW", "VISIBILITY_CHANGED", "ENTER_CANVAS", "EXIT_CANVAS", "WORLD_2D_CHANGED"]
+
+[[dep]]
+name = "Control"
+include = "<godot_cpp/classes/control.hpp>"
+kind = "Object"
+base = "CanvasItem"
+notifications = ["RESIZED", "MOUSE_ENTER", "MOUSE_EXIT", "MOUSE_ENTER_SELF", "MOUSE_EXIT_SELF", "FOCUS_ENTER", "FOCUS_EXIT", "THEME_CHANGED", "SCROLL_BEGIN", "SCROLL_END", "LAYOUT_DIRECTION_CHANGED"]
 
 [[dep]]
 name = "Node2D"
@@ -251,3 +262,4 @@ kind = "Object"
 gdpp = true
 base = "Node"
 virtuals = ["_open"]
+notifications = ["OPENED"]

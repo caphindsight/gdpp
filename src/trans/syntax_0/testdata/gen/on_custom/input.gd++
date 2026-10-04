@@ -1,0 +1,25 @@
+class Base {
+  extends Node
+
+  enum NOTIFICATION_HIT = 2000
+
+  on hit {
+    gd::print("hit");
+  }
+}
+
+// Base's notification, from a GD++ class of the file.
+class Sub {
+  extends Base
+
+  on hit {
+    gd::print("sub hit");
+  }
+}
+
+// OPENED is a notification of Gate, a GD++ class of another file.
+class SlidingGate {
+  extends Gate
+
+  on opened {}
+}

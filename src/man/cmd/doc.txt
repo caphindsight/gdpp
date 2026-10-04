@@ -6,6 +6,7 @@ gd++ doc: look up godot-cpp and GD++ runtime declarations
 gd++ doc [PKG] NAME
 gd++ doc [PKG] NAME.MEMBER
 gd++ doc [PKG] [-i]
+gd++ doc [PKG] --notifications
 ```
 
 # Description
@@ -29,6 +30,9 @@ NAME.MEMBER
 
 -i, --index
   List every type that godot-cpp and the GD++ runtime declare: its kind, e.g. class, struct, enum, template class or alias, its name, and its base class or what it aliases. This is the default without a name. Can't be used with a name.
+
+--notifications
+  List the notifications of each Godot class in the package's API spec, as `on` blocks name them, e.g. `ready` for `on ready { ... }`. Each class is followed by its own notifications, without those of its bases, one per line, indented by the tab width. Can't be used with a name or `--index`. See `gd++ man notifications`.
 
 # Output
 
@@ -64,6 +68,19 @@ alias CharString = CharStringT<char>
 template class TypedArray: Array
 ```
 
+The list of notifications has each class, then its notifications, one per line, both sorted by name:
+
+```
+CanvasItem:
+  draw
+  enter_canvas
+  ...
+Object:
+  extension_reloaded
+  postinitialize
+  predelete
+```
+
 # Examples
 
 ```sh
@@ -75,15 +92,17 @@ gd++ doc Ext                         # a GD++ runtime helper
 gd++ doc tools Ref                   # with the bindings of the package in res://tools
 gd++ doc                             # all types
 gd++ doc | grep Packed               # all packed array types
+gd++ doc --notifications             # the notifications of all classes
 ```
 
 # Errors
 
 - "There is no name NAME in godot-cpp or the GD++ runtime. Similar names: A, B." The name doesn't exist. The names that contain it, ignoring case, are listed if there are at most 10.
 - "Name NAME has no public member MEMBER."
+- "Invalid arguments: --notifications cannot be used with a name." `--notifications` lists all classes.
 - "Path ... is not contained in a GD++ package, run this in one or pass one, e.g. `gd++ doc PKG NAME`."
 - "Failed to find the header ..., run `gd++ clean` to fix this." The build cache is out of date.
 
 # See also
 
-`gd++ man types`, `gd++ man includes`, `gd++ man runtime`.
+`gd++ man types`, `gd++ man includes`, `gd++ man runtime`, `gd++ man notifications`.

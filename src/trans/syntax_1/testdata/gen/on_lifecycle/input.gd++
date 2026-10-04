@@ -1,0 +1,16 @@
+@game_only
+class_name Pool
+extends Node
+
+on postinitialize {
+  gd::print("created");
+}
+
+on predelete {
+  gd::print("deleted");
+}
+
+// Without a parameter, it can't tell the notifications apart.
+on {
+  gd::print("a notification");
+}

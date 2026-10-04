@@ -50,7 +50,7 @@ private:
 #line 51 "MyNode.h"
 
 private:
-#line 230 "input.gd++"
+#line 231 "input.gd++"
 
   int64_t my_value_;
 
@@ -67,7 +67,7 @@ public:
 	gdpp::ExtPtr<Terrain> my_extern{};
 
 private:
-#line 399 "input.gd++"
+#line 400 "input.gd++"
 
 
     int64_t my_property = 0;

@@ -3,7 +3,7 @@ extends Node3D
 
 @export var terrain: Terrain
 
-physics_process(delta: float) {
+on physics_process(delta: float) {
   Vector3 pos = get_position();
   pos.y = terrain->height_at(pos.x, pos.z);
   set_position(pos);

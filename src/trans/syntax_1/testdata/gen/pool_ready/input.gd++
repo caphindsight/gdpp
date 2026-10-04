@@ -8,10 +8,13 @@ extends Node3D
 @onready var sound: Node = $Sound
 @recycle var hits: int
 
-ready {
+on ready {
   gd::print("first ready");
 }
 
-notif READY {
-  gd::print("ready in generation ", GENERATION);
+// Runs at each ready, not only the first.
+on(what: int) {
+  if (what == NOTIFICATION_READY) {
+    gd::print("ready in generation ", GENERATION);
+  }
 }

@@ -40,9 +40,7 @@ Extern      = Doc? Annotation* 'extern' Ident '{' ( 'extends' Type )? Member* '}
 Member      = Code
             | Annotation* 'ctor' Block
             | Annotation* 'dtor' Block
-            | 'notif' ( '(' Ident ( ',' Ident )* ','? ')' | Ident ( ',' Ident )* ) Block
-            | Annotation* ( 'ready' | 'enter_tree' | 'exit_tree' | 'draw' ) Block
-            | Annotation* ( 'process' | 'physics_process' ) '(' Ident ':' Type ')' Block
+            | Annotation* 'on' Ident? ( '(' Ident ':' Type ')' )? Block
             | Func
             | Signal
             | Var
@@ -142,10 +140,8 @@ Default     = Block | Expr
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  noimport  notif  set  signal  var
+func  get  impl  import  noimport  on  set  signal  var
 ```
-
-The words of engine blocks, `ready`, `enter_tree`, `exit_tree`, `process`, `physics_process` and `draw`, are keywords only where they start a member, so they can still be names, e.g. `var ready: bool`. See `gd++ man engine`.
 
 In C++ code, GD++ also gives a meaning to `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val` (see `gd++ man rewrites`), and to `This` and `gd` (see `gd++ man code`).
 

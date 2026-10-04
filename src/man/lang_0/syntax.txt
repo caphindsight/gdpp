@@ -10,10 +10,10 @@ A GD++ file is a text file in UTF-8, with the extension `.gd++`, `.gdpp` or `.gg
 
 A file has four kinds of scope, and each one allows different things:
 
-1. The class declaration scope: the top of a file, the rest of a file after `class_name` or `extern_name`, and the inside of `class Name { ... }` and `extern Name { ... }`. It holds declarations: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `notif`, `decl`, `impl`, `import` and `noimport`, and at the top level, classes and externs. The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
+1. The class declaration scope: the top of a file, the rest of a file after `class_name` or `extern_name`, and the inside of `class Name { ... }` and `extern Name { ... }`. It holds declarations: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, `import` and `noimport`, and at the top level, classes and externs. The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
 2. The property declaration scope: the braces after `var name: type { ... }`. It holds only `decl`, `get` and `set` blocks. See `gd++ man variables`.
 3. The enum declaration scope: the braces after `enum Name { ... }`, and the rest of a file after `enum_name`. It holds an optional `extends`, then the enum's values. See `gd++ man enums`.
-4. The C++ scope: the inside of every other pair of braces, i.e. function bodies, `ctor`, `dtor` and `notif` blocks, engine blocks, e.g. `ready`, `decl` and `impl` blocks, `get` and `set` blocks, and initial and default values. It holds any C++ code, which GD++ copies into the generated C++. See `gd++ man code`.
+4. The C++ scope: the inside of every other pair of braces, i.e. function bodies, `ctor`, `dtor` and `on` blocks, `decl` and `impl` blocks, `get` and `set` blocks, and initial and default values. It holds any C++ code, which GD++ copies into the generated C++. See `gd++ man code`.
 
 In all scopes, GD++ splits the text into the same kinds of tokens, described below, and handles comments the same way. So a C++ block ends at the `}` that matches its `{`, and braces inside strings, character literals and comments don't count.
 
@@ -64,10 +64,8 @@ These words have a special meaning in declarations. Don't use them as the names 
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  noimport  notif  set  signal  var
+func  get  impl  import  noimport  on  set  signal  var
 ```
-
-The words of engine blocks, `ready`, `enter_tree`, `exit_tree`, `process`, `physics_process` and `draw`, only start a block at the start of a member, so they can still be names, e.g. `var ready: bool`. See `gd++ man engine`.
 
 GD++ has no other keywords: e.g. `const`, `static`, `pass`, `if` and `return` are not GD++ keywords. Attributes such as `@static` are annotations. See `gd++ man annotations`.
 

@@ -1,6 +1,0 @@
-class_name Mob
-extends Node
-
-notif READY {
-  gd::print("ready in generation ", GENERATION);
-}

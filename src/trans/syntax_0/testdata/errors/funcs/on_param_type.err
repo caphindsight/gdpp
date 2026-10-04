@@ -1,0 +1,4 @@
+errors/funcs/on_param_type.gd++:1:18: Expected the parameter's name, then ":" and its type, but found name "float".
+ 1 | on process(delta float) {}
+   |                  ^^^^^
+Hint: Write "on process(delta: float) { ... }".

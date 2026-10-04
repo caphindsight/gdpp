@@ -1,1 +1,0 @@
-physics_process(dt: float) -> void {}

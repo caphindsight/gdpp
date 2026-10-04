@@ -1,1 +1,1 @@
-{Name:Pool Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:Pool Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}

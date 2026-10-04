@@ -173,8 +173,10 @@ func withSpace(t string) string {
 	return t + " "
 }
 
-// processing maps the Node functions that the constructor turns on the processing of, if overridden, to their setters.
-var processing = map[string]string{"_process": "set_process", "_physics_process": "set_physics_process"}
+// processing maps the Node functions that the constructor turns on the processing of, if overridden or an on block,
+// to their setters.
+var processing = map[string]string{"_process": "set_process", "_physics_process": "set_physics_process",
+	"_internal_process": "set_process_internal", "_internal_physics_process": "set_physics_process_internal"}
 
 func (c *classModel) needsCtor() bool {
 	return c.ctor != nil || c.pool != nil || c.trace || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||

@@ -1,1 +1,1 @@
-{Name:Turret Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[]}
+{Name:Turret Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}

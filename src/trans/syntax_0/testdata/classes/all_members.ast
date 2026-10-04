@@ -27,20 +27,18 @@ File: @1:1
               TextPos: 6:9
               Text: " a_ = 0;"
         - @7:3
-          Notif: @7:3
-            Names:
-              - @7:9 READY
-              - @7:16 PREDELETE
-            Body: @7:28
-              TextPos: 7:29
+          On: @7:3
+            Name: ready
+            Body: @7:12
+              TextPos: 7:13
               Text: " a_ = 2;"
         - @8:3
-          Notif: @8:3
-            Names:
-              - @8:9 PREDELETE
-              - @8:20 READY
-            Body: @8:26
-              TextPos: 8:27
+          On: @8:3
+            Parens: true
+            Param: @8:6 what
+            ParamType: @8:12 int
+            Body: @8:17
+              TextPos: 8:18
               Text: " a_ = 3;"
         - @9:3
           Func: @9:3

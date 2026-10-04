@@ -1,4 +1,4 @@
 input.gd++:5:1: Of all functions, only an @override _ready takes @recycle.
  5 | @recycle func f() -> void {
    | ^^^^^^^^
-Hint: With @recycle, a ready block, or an @override _ready, runs each time a @pool class's object gets ready, not only the first time.
+Hint: With @recycle, an on ready block, or an @override _ready, runs each time a @pool class's object gets ready, not only the first time.

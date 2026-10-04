@@ -1,4 +1,0 @@
-input.gd++:3:1: Externs can't contain notif blocks.
- 3 | notif READY {}
-   | ^^^^^
-Hint: Externs only declare the funcs, vars and signals that another package defines.

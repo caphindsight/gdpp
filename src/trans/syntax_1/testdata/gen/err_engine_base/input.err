@@ -1,3 +1,0 @@
-input.gd++:4:1: A ready block only works in classes that extend Node, which Counter doesn't.
- 4 | ready {}
-   | ^^^^^

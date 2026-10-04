@@ -15,7 +15,7 @@ enum PORT = 7777
 @export var player_scene: PackedScene
 @export var spawner: MultiplayerSpawner
 
-ready {
+on ready {
   assert spawner != nullptr;
   spawner->set_spawn_function(callable_mp(this, &This::create_player));
 }
@@ -69,7 +69,7 @@ func sync_position(pos: Vector3) -> void {
   set_position(pos);
 }
 
-physics_process(delta: float) {
+on physics_process(delta: float) {
   if (!is_multiplayer_authority()) {
     return;
   }

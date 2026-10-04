@@ -39,12 +39,12 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "assert_void a; assert_val b;", Styled("assert_void", CodeKeyword) + " a; " + Styled("assert_val", CodeKeyword) + " b;"},
 		{"gd++", "signal died\nsignal hit(damage: int)", Styled("signal", CodeKeyword) + " " + Styled("died", CodeFunction) + "\n" +
 			Styled("signal", CodeKeyword) + " " + Styled("hit", CodeFunction) + "(damage: " + Styled("int", CodeType) + ")"},
-		{"gd++", "notif READY, PREDELETE {}", Styled("notif", CodeKeyword) + " READY, PREDELETE {}"},
-		{"gd++", "@trace process(dt: float) {\n  draw(dt);\n}\nready {}\nvar ready: int", Styled("@trace", CodePreProc) + " " + Styled("process", CodeKeyword) +
-			"(dt: " + Styled("float", CodeType) + ") {\n  " + Styled("draw", CodeFunction) + "(dt);\n}\n" + Styled("ready", CodeKeyword) + " {}\n" + Styled("var", CodeKeyword) + " ready: " +
-			Styled("int", CodeType)},
-		{"gd++", "physics_process(dt: float) {}\nphysics_process(dt);", Styled("physics_process", CodeKeyword) + "(dt: " + Styled("float", CodeType) + ") {}\n" +
-			Styled("physics_process", CodeFunction) + "(dt);"},
+		{"gd++", "@trace on process(dt: float) {\n  draw(dt);\n}\non ready {}\nvar ready: int\nvar on: int", Styled("@trace", CodePreProc) + " " +
+			Styled("on process", CodeKeyword) + "(dt: " + Styled("float", CodeType) + ") {\n  " + Styled("draw", CodeFunction) + "(dt);\n}\n" +
+			Styled("on ready", CodeKeyword) + " {}\n" + Styled("var", CodeKeyword) + " ready: " + Styled("int", CodeType) + "\n" +
+			Styled("var", CodeKeyword) + " on: " + Styled("int", CodeType)},
+		{"gd++", "on(what: int) {}\non {}\nsignal s(on: int)", Styled("on", CodeKeyword) + "(what: " + Styled("int", CodeType) + ") {}\n" +
+			Styled("on", CodeKeyword) + " {}\n" + Styled("signal", CodeKeyword) + " " + Styled("s", CodeFunction) + "(on: " + Styled("int", CodeType) + ")"},
 		{"gd++", "var x: Node = $Hud/\"a b\" // c", Styled("var", CodeKeyword) + " x: " + Styled("Node", CodeType) + " = " +
 			Styled("$Hud/\"a b\"", CodeLiteral) + " " + Styled("// c", CodeComment)},
 		{"gd++", "x = %Health; y = a % b; y %= 2;", "x = " + Styled("%Health", CodeLiteral) + "; y = a % b; y %= " + Styled("2", CodeLiteral) + ";"},

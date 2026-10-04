@@ -1,0 +1,96 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Mob
+    Extends: @2:9 Node2D
+    Members:
+      - @4:1
+        On: @5:1
+          Annotations:
+            - @4:1 trace
+          Name: ready
+          Body: @5:10
+            TextPos: 5:11
+            Text: |
+
+                a();
+
+      - @8:1
+        On: @8:1
+          Name: enter_tree
+          Body: @8:15
+            TextPos: 8:16
+      - @9:1
+        On: @9:1
+          Name: exit_tree
+          Body: @9:14
+            TextPos: 9:15
+      - @10:1
+        On: @10:1
+          Name: process
+          Parens: true
+          Param: @10:12 delta
+          ParamType: @10:19 float
+          Body: @10:26
+            TextPos: 10:27
+      - @11:1
+        On: @11:1
+          Name: physics_process
+          Parens: true
+          Param: @11:20 dt
+          ParamType: @11:24 float
+          Body: @11:31
+            TextPos: 11:32
+      - @12:1
+        On: @13:1
+          Annotations:
+            - @12:1 game_only
+            - @12:12 notrace
+          Name: draw
+          Body: @13:9
+            TextPos: 13:10
+      - @14:1
+        On: @14:1
+          Name: predelete
+          Body: @14:14
+            TextPos: 14:15
+      - @15:1
+        On: @15:1
+          Name: internal_process
+          Body: @15:21
+            TextPos: 15:22
+      - @16:1
+        On: @16:1
+          Parens: true
+          Param: @16:4 what
+          ParamType: @16:10 int
+          Body: @16:15
+            TextPos: 16:16
+      - @17:1
+        On: @17:1
+          Body: @17:4
+            TextPos: 17:5
+      - @20:1
+        Var: @20:1
+          Name: ready
+          Type: @20:12 int
+      - @21:1
+        Var: @21:1
+          Name: on
+          Type: @21:9 int
+      - @22:1
+        Func: @22:1
+          Name: process
+          Params:
+            - @22:14
+              Name: draw
+              Type: @22:20 int
+          Return: @22:28 void
+          Body: @22:33
+            TextPos: 22:34
+      - @23:1
+        Signal: @23:1
+          Name: locked
+          Params:
+            - @23:15
+              Name: on
+              Type: @23:19 int

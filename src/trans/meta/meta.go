@@ -38,6 +38,9 @@ type Dependency struct {
 	Gdpp     bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
 	Bitfield bool        // For Kind Enum and GodotEnum: whether it's a bitfield, whose values are flags.
 	Virtuals []string    // For classes: the names of its virtual functions, which subclasses override with @override: a GD++ class's @virtual functions, or a Godot class's own virtual methods, e.g. Node's _input.
+	// For classes: the names of its own notifications, without NOTIFICATION_, which on blocks handle: a GD++ class's
+	// constants named NOTIFICATION_..., or a Godot class's, e.g. Node's READY.
+	Notifications []string
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.
@@ -73,6 +76,8 @@ type Declaration struct {
 	GameOnly bool        // For classes: whether @game_only keeps its code from running in the editor.
 	Async    bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
 	Virtuals []string    // For classes: the names of its @virtual functions, which subclasses can override.
+	// For classes: the names of its own notifications, without NOTIFICATION_: its constants named NOTIFICATION_....
+	Notifications []string
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

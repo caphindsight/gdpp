@@ -1,5 +1,0 @@
-class_name Mob
-extends Node
-
-@const
-ready {}

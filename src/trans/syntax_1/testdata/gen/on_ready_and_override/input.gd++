@@ -1,0 +1,8 @@
+class_name Mob
+extends Node
+
+// Both run: on ready adds code at the notification, while the override replaces Node's _ready.
+on ready {}
+
+@override
+func _ready() -> void {}

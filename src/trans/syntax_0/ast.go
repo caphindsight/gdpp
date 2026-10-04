@@ -24,8 +24,7 @@ type Member struct {
 	Code     *Code   `parser:"( @@"`
 	Ctor     *Ctor   `parser:"| @@"`
 	Dtor     *Dtor   `parser:"| @@"`
-	Notif    *Notif  `parser:"| @@"`
-	Engine   *Engine `parser:"| @@"`
+	On       *On     `parser:"| @@"`
 	Func     *Func   `parser:"| @@"`
 	Signal   *Signal `parser:"| @@"`
 	Var      *Var    `parser:"| @@"`
@@ -50,27 +49,21 @@ type Dtor struct {
 	Body        *Block        `parser:"'dtor' @@"`
 }
 
-// Notif is a notif block: Body runs when the object gets one of the notifications Names (without NOTIFICATION_).
-type Notif struct {
-	Pos   lexer.Position
-	Names []*Name `parser:"'notif' ( '(' @@ ( ',' @@ )* ','? ')' | @@ ( ',' @@ )* )"`
-	Body  *Block  `parser:"@@"`
-}
-
-// Engine is an engine block, e.g. ready { ... } or process(delta: float) { ... }: Body runs at the notification of the
-// engine function of the same name, e.g. _ready. Delta names the delta time of process and physics_process, and
-// DeltaType is its type, which must be float. Parens is whether parentheses follow Name, even empty ones.
-type Engine struct {
+// On is an on block, e.g. on ready { ... } or on process(delta: float) { ... }: Body runs when the object gets the
+// notification NOTIFICATION_<NAME>, or every notification if Name is empty. Param names the value that the block
+// takes, e.g. the delta time of process, and ParamType is its type. Parens is whether parentheses follow, even empty
+// ones.
+type On struct {
 	Pos         lexer.Position
 	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
-	Name        string        `parser:"@( 'ready' | 'enter_tree' | 'exit_tree' | 'process' | 'physics_process' | 'draw' )"`
+	Name        string        `parser:"'on' @Ident?"`
 	Parens      bool          `parser:"( @'('"`
-	Delta       *Name         `parser:"  ( @@"`
-	DeltaType   *Type         `parser:"    ( ':' @@ )? )? ')' )?"`
+	Param       *Name         `parser:"  ( @@"`
+	ParamType   *Type         `parser:"    ( ':' @@ )? )? ')' )?"`
 	Body        *Block        `parser:"@@"`
 }
 
-// Name is a name on its own, e.g. a notification's in a notif block.
+// Name is a name on its own, e.g. an on block's parameter.
 type Name struct {
 	Pos  lexer.Position
 	Name string `parser:"@Ident"`

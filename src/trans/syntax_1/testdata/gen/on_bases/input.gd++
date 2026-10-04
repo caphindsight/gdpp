@@ -1,0 +1,28 @@
+class Panel {
+  extends Control
+
+  on resized {
+    gd::print("resized");
+  }
+
+  on focus_enter {}
+}
+
+class Spot {
+  extends Node3D
+
+  on transform_changed {}
+}
+
+class Mid {
+  extends Node2D
+}
+
+// DRAW is CanvasItem's, a base of Mid's base.
+class Leaf {
+  extends Mid
+
+  on draw {
+    draw_circle(Vector2(), 4.0, Color(1, 1, 1));
+  }
+}

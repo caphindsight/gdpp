@@ -1,0 +1,4 @@
+input.gd++:5:1: Class Mob has two nameless on blocks.
+ 5 | on(what: int) {}
+   | ^^
+Hint: Merge them into one.

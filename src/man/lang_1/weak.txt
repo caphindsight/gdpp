@@ -9,7 +9,7 @@ func aim(enemy: Enemy) -> void {
   target = enemy;
 }
 
-process(delta: float) {
+on process(delta: float) {
   if (Enemy *e = target) {
     look_at(e->get_global_position());
   }
@@ -77,7 +77,7 @@ A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays va
 ```gd++
 var target: Weak[Bullet]
 
-process(delta: float) {
+on process(delta: float) {
   if (Bullet *b = target) {
     look_at(b->get_global_position());
   }

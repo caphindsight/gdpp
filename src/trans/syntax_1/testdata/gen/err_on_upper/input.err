@@ -1,0 +1,4 @@
+input.gd++:4:1: Write notification READY in lower case.
+ 4 | on READY {}
+   | ^^^^^^^^
+Hint: E.g. "on ready { ... }".

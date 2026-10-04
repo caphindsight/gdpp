@@ -1,0 +1,23 @@
+class_name Mob
+extends Node2D
+
+@trace
+on ready {
+  a();
+}
+on enter_tree {}
+on exit_tree {}
+on process(delta: float) {}
+on physics_process(dt: float) {}
+@game_only @notrace
+on draw {}
+on predelete {}
+on internal_process {}
+on(what: int) {}
+on {}
+
+// On block words are still names elsewhere.
+var ready: int
+var on: int
+func process(draw: int) -> void {}
+signal locked(on: int)

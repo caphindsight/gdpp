@@ -5,7 +5,7 @@ extends Node3D
 @onready @recycle var start: Vector3 = get_global_position()
 
 @recycle
-ready {
+on ready {
   gd::print("each ready, in generation ", GENERATION);
 }
 

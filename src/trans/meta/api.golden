@@ -48,3 +48,5 @@ field Options.PackagePath string
 field Declaration.Async bool
 field Dependency.Virtuals []string
 field Declaration.Virtuals []string
+field Dependency.Notifications []string
+field Declaration.Notifications []string

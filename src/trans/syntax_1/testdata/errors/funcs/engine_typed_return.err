@@ -1,4 +1,0 @@
-errors/funcs/engine_typed_return.gd++:1:23: Expected "{" to start the process block, but found "->".
- 1 | process(delta: float) -> void {}
-   |                       ^^
-Hint: Write "process(delta: float) { ... }".

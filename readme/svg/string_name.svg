@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="461" height="129" viewBox="0 0 461 129">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#e3b341">process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) {</tspan></text>
+  <text x="16" y="30"><tspan fill="#e3b341">on process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) {</tspan></text>
   <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> (</tspan><tspan fill="#7ee787">int64_t</tspan><tspan fill="#e6edf3"> i = </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">; i &lt; </tspan><tspan fill="#56d4dd">get_child_count</tspan><tspan fill="#e6edf3">(); i++) {</tspan></text>
   <text x="16" y="70"><tspan fill="#e6edf3">    </tspan><tspan fill="#56d4dd">get_child</tspan><tspan fill="#e6edf3">(i)-&gt;</tspan><tspan fill="#56d4dd">call</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#e3b341">string_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#d2a8ff">"tick"</tspan><tspan fill="#e6edf3">, delta);</tspan></text>
   <text x="16" y="90"><tspan fill="#e6edf3">  }</tspan></text>

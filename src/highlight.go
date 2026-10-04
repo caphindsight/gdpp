@@ -38,11 +38,11 @@ func highlightCode(code, lang string) string {
 
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
-	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport notif set signal var"
-	// GD++'s engine blocks, e.g. ready { ... }, whose words are also names elsewhere: they're keywords only where they
-	// start a block, at the start of a line or after annotations.
-	engineBlockWords = "ready enter_tree exit_tree process physics_process draw"
-	cppWords  = "if else for while do return switch case break continue default auto const static constexpr namespace using " +
+	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport set signal var"
+	// GD++'s on blocks, e.g. on ready { ... }, whose word is also a name elsewhere: it's a keyword, with the
+	// notification's name, only where it starts a block, at the start of a line or after annotations.
+	onWord   = "on"
+	cppWords = "if else for while do return switch case break continue default auto const static constexpr namespace using " +
 		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
 	gdscriptWords = "pass and or not in"
 	// GD++'s rewrites in C++ code that are keywords wherever they appear.
@@ -67,7 +67,6 @@ var (
 	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords, castWords)
 	codeOperators = wordSet(rewriteOperatorWords)
 	codeStringOps = wordSet(rewriteStringWords)
-	codeBlocks    = wordSet(engineBlockWords)
 	codeTypes     = wordSet(cppTypeWords, godotTypeWords)
 	codePlain     = wordSet(plainWords)
 )
@@ -127,10 +126,15 @@ func highlightGdpp(code string, gdscript bool) string {
 		case identLen(rest) > 0:
 			n = identLen(rest)
 			word := rest[:n]
+			isOn := false
+			if word == onWord && annotationsRegexp.MatchString(code[strings.LastIndexByte(code[:i], '\n')+1:i]) {
+				if m := onHeadRegexp.FindStringSubmatch(rest[n:]); m != nil {
+					n, isOn = n+len(m[1]), true // With the notification's name.
+				}
+			}
 			switch {
-			case codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,
-				codeStringOps[word] && strings.HasPrefix(strings.TrimLeft(rest[n:], " \t\n"), "\""),
-				codeBlocks[word] && startsEngineBlock(code[:i], rest[n:]):
+			case isOn, codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,
+				codeStringOps[word] && strings.HasPrefix(strings.TrimLeft(rest[n:], " \t\n"), "\""):
 				style = []Style{CodeKeyword}
 			case codePlain[word]:
 			case codeTypes[word] || word[0] >= 'A' && word[0] <= 'Z' && strings.ToUpper(word) != word:
@@ -147,13 +151,9 @@ func highlightGdpp(code string, gdscript bool) string {
 
 var (
 	annotationsRegexp = regexp.MustCompile(`^\s*(@\w+(\([^)]*\))?\s*)*$`)
-	engineHeadRegexp  = regexp.MustCompile(`^\s*(\(\s*\w+\s*:\s*\w+\s*\)\s*)?\{`)
+	// What follows "on" in an on block's head: the notification's name, if any, then the parameter, if any, and "{".
+	onHeadRegexp = regexp.MustCompile(`^(\s+\w+)?\s*(\(\s*\w+\s*(:\s*\w+\s*)?\)\s*)?\{`)
 )
-
-// startsEngineBlock reports whether the word between before and after starts an engine block, e.g. "process(delta: float) {".
-func startsEngineBlock(before, after string) bool {
-	return annotationsRegexp.MatchString(before[strings.LastIndexByte(before, '\n')+1:]) && engineHeadRegexp.MatchString(after)
-}
 
 // lastWord returns the identifier at the end of s, before any spaces, e.g. signal in "signal ".
 func lastWord(s string) string {
