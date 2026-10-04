@@ -131,7 +131,7 @@ Its top level can only hold inline classes, externs, enums, macros, templates, a
 - Inline macros and templates can go anywhere an inline class can, also between the members of a file-level class.
 - With `macro_name` or `template_name`, the rest of the file is the body. Like after `enum_name`, nothing else can follow.
 - Their bodies may declare more macros and templates. Those are package-level declarations too.
-- See `gd++ man macros`.
+- See `gd++ man templates` and `gd++ man macros`. Prefer templates whenever they do the job: macros are more powerful, but also more advanced.
 
 # Order
 
@@ -186,4 +186,4 @@ class Card {
 
 # See also
 
-`gd++ man classes`, `gd++ man externs`, `gd++ man enums`, `gd++ man macros`, `gd++ man grammar`.
+`gd++ man classes`, `gd++ man externs`, `gd++ man enums`, `gd++ man templates`, `gd++ man macros`, `gd++ man grammar`.

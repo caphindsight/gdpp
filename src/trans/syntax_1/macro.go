@@ -1,6 +1,7 @@
 package syntax_1
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"reflect"
@@ -28,9 +29,10 @@ func (x *expander) maxDepth() int {
 
 // macroDef is a macro or template that code can invoke, declared in this file or another one of the package.
 type macroDef struct {
-	m    *Macro
-	file string // The name of the file that declares it.
-	src  string // That file's source.
+	m      *Macro
+	file   string // The name of the file that declares it.
+	src    string // That file's source.
+	source string // How #line names that file, for the C++ code of a template.
 }
 
 // expander expands the invocations of a file.
@@ -75,7 +77,7 @@ func newExpander(filename, src string, file *File, opts meta.Options) (*expander
 			return nil, (&Error{Pos: m.Pos, Len: len(m.what()), Msg: fmt.Sprintf("%ss can't be named %q, since it's a keyword.", capitalize(m.what()), m.Name),
 				Hint: "Choose another name."}).withSource(src)
 		}
-		x.defs[m.Name] = &macroDef{m: m, file: filename, src: src}
+		x.defs[m.Name] = &macroDef{m: m, file: filename, src: src, source: cmp.Or(opts.SourceName, filename)}
 	}
 	parsed := map[string]*File{}
 	for _, d := range opts.Dependencies {
@@ -92,7 +94,7 @@ func newExpander(filename, src string, file *File, opts meta.Options) (*expander
 		}
 		for _, m := range append([]*Macro{f.FileMacro}, f.InlineMacros...) {
 			if m != nil && m.Name == d.Name {
-				x.defs[d.Name] = &macroDef{m: m, file: d.File, src: d.Source}
+				x.defs[d.Name] = &macroDef{m: m, file: d.File, src: d.Source, source: cmp.Or(d.SourceName, d.File)}
 			}
 		}
 	}
@@ -237,7 +239,7 @@ func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth in
 }
 
 // invoke runs the macro or template that inv invokes, in scope sc, and returns what it generates, expanded.
-func (x *expander) invoke(inv *Invoke, sc *scope, depth int) ([]*topItem, error) {
+func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, err error) {
 	def := x.defs[inv.Name]
 	n := len(inv.Name) + 1
 	switch {
@@ -251,8 +253,13 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) ([]*topItem, error)
 		return nil, x.errorAt(a.Pos, len(a.Name)+1, "Invocations take no annotations.", "Have the macro add them to what it generates.")
 	}
 	if _, ok := x.generated[inv.Pos.Offset]; !ok {
-		x.generated[inv.Pos.Offset] = def.m.what() + " " + inv.Name
+		x.generated[inv.Pos.Offset] = x.frame(def, inv, depth)
 	}
+	defer func() {
+		if err != nil {
+			err = addFrame(err, x.frame(def, inv, depth))
+		}
+	}()
 	sc = &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel} // Without what other invocations emitted.
 	r, free := x.newRun(def, inv, sc, depth)
 	defer free()
@@ -275,7 +282,6 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) ([]*topItem, error)
 		return nil, err
 	}
 	// Expand the invocations in what it generated.
-	var out []*topItem
 	for _, item := range items {
 		switch {
 		case item.Member != nil && item.Member.Invoke != nil:
@@ -299,6 +305,23 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) ([]*topItem, error)
 		out = append(out, item)
 	}
 	return out, nil
+}
+
+// frame describes inv, at depth, as a line of a macro call stack: what it invokes, and where.
+func (x *expander) frame(def *macroDef, inv *Invoke, depth int) string {
+	if depth > 0 {
+		return fmt.Sprintf("%s %s, invoked in generated code", def.m.what(), inv.Name)
+	}
+	return fmt.Sprintf("%s %s, invoked at %s:%d", def.m.what(), inv.Name, inv.Pos.Filename, inv.Pos.Line)
+}
+
+// addFrame adds frame to the macro call stack of err, as the outermost invocation so far.
+func addFrame(err error, frame string) error {
+	var e *Error
+	if errors.As(err, &e) {
+		e.Stack = append(e.Stack, frame)
+	}
+	return err
 }
 
 // span returns how many characters an error about the invocation underlines: "invoke NAME".
@@ -388,7 +411,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 }
 
 // invokeCode runs the macro that inv invokes in C++ code, and returns the C++ it generates, on one line.
-func (x *expander) invokeCode(inv *Invoke, owner string, depth int) (string, error) {
+func (x *expander) invokeCode(inv *Invoke, owner string, depth int) (_ string, err error) {
 	def := x.defs[inv.Name]
 	switch {
 	case depth >= x.maxDepth():
@@ -398,6 +421,11 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int) (string, err
 		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Template %s can't be used in C++ code, since templates generate declarations.", inv.Name),
 			"Invoke it where declarations go, or use a macro that generates C++ with gd.text.")
 	}
+	defer func() {
+		if err != nil {
+			err = addFrame(err, x.frame(def, inv, depth))
+		}
+	}()
 	sc := &scope{kind: "cpp", owner: owner}
 	r, free := x.newRun(def, inv, sc, depth)
 	defer free()

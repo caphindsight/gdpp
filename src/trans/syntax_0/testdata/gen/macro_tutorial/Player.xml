@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Player" inherits="CharacterBody2D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="can_change_state">
+			<return type="bool" />
+			<param index="0" name="from" type="int" enum="Player.PlayerState" />
+			<param index="1" name="to" type="int" enum="Player.PlayerState" />
+			<description>
+				Whether the state machine may change from one state to another.
+			</description>
+		</method>
+		<method name="change_state">
+			<return type="void" />
+			<param index="0" name="to" type="int" enum="Player.PlayerState" />
+			<description>
+				Changes the state, if the state machine may change to it.
+			</description>
+		</method>
+		<method name="enter_attack">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="enter_jump">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="exit_attack">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Player" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="ground_state">
+			<return type="int" enum="Player.PlayerState" />
+			<description>
+			</description>
+		</method>
+		<method name="input_x">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_attack">
+			<return type="int" enum="Player.PlayerState" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_fall">
+			<return type="int" enum="Player.PlayerState" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_idle">
+			<return type="int" enum="Player.PlayerState" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_jump">
+			<return type="int" enum="Player.PlayerState" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_run">
+			<return type="int" enum="Player.PlayerState" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_state">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				Runs the current state's update, and changes to the state it returns.
+			</description>
+		</method>
+		<method name="walk">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="animation" type="AnimationPlayer" setter="set_animation" getter="get_animation">
+		</member>
+		<member name="attack_time" type="float" setter="set_attack_time" getter="get_attack_time">
+		</member>
+		<member name="gravity" type="float" setter="set_gravity" getter="get_gravity">
+		</member>
+		<member name="hitbox" type="Area2D" setter="set_hitbox" getter="get_hitbox">
+		</member>
+		<member name="jump_speed" type="float" setter="set_jump_speed" getter="get_jump_speed">
+		</member>
+		<member name="speed" type="float" setter="set_speed" getter="get_speed">
+		</member>
+		<member name="state" type="int" enum="Player.PlayerState" setter="set_state" getter="get_state">
+			The current state.
+		</member>
+		<member name="state_time" type="float" setter="set_state_time" getter="get_state_time">
+			The seconds since the state last changed.
+		</member>
+	</members>
+	<signals>
+		<signal name="state_changed">
+			<param index="0" name="from" type="int" enum="Player.PlayerState" />
+			<param index="1" name="to" type="int" enum="Player.PlayerState" />
+			<description>
+				Emitted when the state changes.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="PLAYER_STATE_ATTACK" value="0" enum="PlayerState">
+		</constant>
+		<constant name="PLAYER_STATE_FALL" value="1" enum="PlayerState">
+		</constant>
+		<constant name="PLAYER_STATE_IDLE" value="2" enum="PlayerState">
+		</constant>
+		<constant name="PLAYER_STATE_JUMP" value="3" enum="PlayerState">
+		</constant>
+		<constant name="PLAYER_STATE_RUN" value="4" enum="PlayerState">
+		</constant>
+	</constants>
+</class>

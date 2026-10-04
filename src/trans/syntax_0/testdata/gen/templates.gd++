@@ -1,0 +1,13 @@
+// A template of another file, for the cases that use it. Its C++ keeps its lines here, which #line names like a
+// build does, by the copy of the file in the build cache.
+template shield(name, power = 10) {
+  var ${name}_power: int = ${power} * 2
+
+  func raise_${name}(times: int = ${power} + 1) -> int {
+    int total = 0;
+    for (int i = 0; i < times; i++) {
+      total += ${name}_power;
+    }
+    return total;
+  }
+}

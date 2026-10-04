@@ -159,10 +159,11 @@ type signalModel struct {
 }
 
 func (u *unit) errorAt(pos lexer.Position, n int, msg, hint string) *Error {
-	if what := u.generated[pos.Offset]; what != "" {
-		hint = strings.TrimSpace(hint + fmt.Sprintf(" This comes from %s.", what))
+	e := &Error{Pos: pos, Len: max(n, 1), Msg: msg, Hint: hint}
+	if frame := u.generated[pos.Offset]; frame != "" {
+		e.Stack = []string{frame}
 	}
-	return (&Error{Pos: pos, Len: max(n, 1), Msg: msg, Hint: hint}).withSource(u.src)
+	return e.withSource(u.src)
 }
 
 // parseUnit parses src, expands its macros and templates with those of the dependencies in opts, and indexes the

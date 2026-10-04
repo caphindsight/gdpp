@@ -92,7 +92,7 @@ See `gd++ man packages`.
   Make the editor load the package's library only once, e.g. because hot reload crashes the editor. See `hot_reload` in `gd++ man packages`.
 
 --macro-depth LEVELS
-  How deeply the package's macro and template invocations may nest, e.g. `100`. Default: `64`. See `gd++ man macros`.
+  How deeply the package's macro and template invocations may nest, e.g. `100`. Default: `64`. See `gd++ man templates` and `gd++ man macros`.
 
 
 # Updating a package

@@ -82,7 +82,7 @@ macro_depth (optional, default 64)
   - It must be positive.
   - Raise it only if an invocation really needs to nest that deep. A macro that invokes itself forever hits the limit, which then stops it.
   - `gd++ init --macro-depth 64` removes the key, since 64 is the default.
-  - See "The sandbox" in `gd++ man macros`.
+  - See "Limits" in `gd++ man templates`, and "The sandbox" in `gd++ man macros`.
 
 [[class]] (optional, any number)
   A plain C++ class that the package registers with Godot. Its keys:

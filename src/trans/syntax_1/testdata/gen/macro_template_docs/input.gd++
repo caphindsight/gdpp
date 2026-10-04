@@ -1,0 +1,30 @@
+class_name A
+extends Node
+
+// Doc comments in a template document its output, holes included, directly or through gd.invoke.
+invoke t(x)
+invoke m()
+
+/// The invocation's doc, for a declaration without its own.
+invoke t2()
+
+template t(name) {
+  /// Doc of ${name}.
+  var ${name}: int = 0
+
+  /// Doc of y.
+  var y: int = 0
+}
+
+macro m() {
+  gd.invoke("t3", {})
+}
+
+template t2() {
+  var w: int = 0
+}
+
+template t3() {
+  /// Doc of z.
+  var z: int = 0
+}

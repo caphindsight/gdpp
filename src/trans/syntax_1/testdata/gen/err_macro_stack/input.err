@@ -1,0 +1,8 @@
+input.gd++:17:21: Expected ":", "=" or "{" after the variable name, but found name "float".
+ 17 |   var ${name}_twice float
+    |                     ^^^^^
+Hint: Types are written after a colon: "var speed_twice: float".
+Macro call stack:
+  template broken, invoked with gd.invoke at input.gd++:13
+  macro middle, invoked with gd.invoke at input.gd++:8
+  macro outer, invoked at input.gd++:4

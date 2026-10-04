@@ -1,6 +1,7 @@
 package syntax_0
 
 import (
+	"cmp"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -29,6 +30,7 @@ func TestGenerate(t *testing.T) {
 			Gdpp, Bitfield, NonRuntime bool
 			Virtuals, Notifications    []string
 			File                       string // For macros and templates: their file in testdata/gen.
+			SourceName                 string `toml:"source_name"`
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
@@ -48,7 +50,7 @@ func TestGenerate(t *testing.T) {
 			source = string(data)
 		}
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals,
-			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File})
+			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName})
 	}
 	opts.PackageID, opts.PackagePrefix, opts.CppStandard = "shooter", "Shooter", "c++17"
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")
@@ -116,6 +118,13 @@ func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 		}
 		out["decls.txt"] = strings.Join(lines, "\n") + "\n"
 	}
+	// The GD++ files that #line may name: this one, and those of the templates it uses.
+	sources := map[string]string{name: src}
+	for _, d := range opts.Dependencies {
+		if d.Source != "" {
+			sources[cmp.Or(d.SourceName, d.File)] = d.Source
+		}
+	}
 	files, err := Generate(name, src, opts)
 	if err != nil {
 		checkError(t, name, src, err)
@@ -123,7 +132,7 @@ func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 	}
 	for _, f := range files {
 		out[f.Name] = f.Text
-		checkLines(t, src, f.Name, f.Text)
+		checkLines(t, sources, f.Name, f.Text)
 	}
 	u, err := newUnit(name, src, opts)
 	if err != nil {
@@ -145,10 +154,9 @@ var (
 	invocation    = regexp.MustCompile(`\binvoke\s+\w+\s*[({]`)
 )
 
-// checkLines asserts that #line directives name the right lines: each user code fragment matches the GD++ source
-// lines it claims to come from, and each directive back to the generated file names its own next line.
-func checkLines(t *testing.T, src, self, text string) {
-	srcLines := strings.Split(src, "\n")
+// checkLines asserts that #line directives name the right lines: each user code fragment matches the lines of the
+// GD++ file in sources it claims to come from, and each directive back to the generated file names its own next line.
+func checkLines(t *testing.T, sources map[string]string, self, text string) {
 	lines := strings.Split(text, "\n")
 	for i := 0; i < len(lines); i++ {
 		m := lineDirective.FindStringSubmatch(lines[i])
@@ -162,14 +170,20 @@ func checkLines(t *testing.T, src, self, text string) {
 			}
 			continue
 		}
+		src, ok := sources[m[2]]
+		if !ok {
+			t.Errorf("%s:%d: %s names an unknown file.", self, i+1, lines[i])
+			continue
+		}
+		srcLines := strings.Split(src, "\n")
 		// Lines after the first come straight from the source (minus comments), so their identifiers match, except
 		// for the rewrites of emit, rpc, is_cancelled, string_name, claim, is_done, cancel, as and assert, whose operand may start on the next line.
 		for k := 1; i+1+k < len(lines) && !lineDirective.MatchString(lines[i+1+k]); k++ {
 			if n+k > len(srcLines) {
 				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])
 			}
-			if invocation.MatchString(srcLines[n+k-1]) {
-				continue // The line holds what a macro generated.
+			if invocation.MatchString(srcLines[n+k-1]) || strings.Contains(srcLines[n+k-1], "${") {
+				continue // The line holds what a macro generated, or a template's holes.
 			}
 			want := identifiers(srcLines[n+k-1])
 			for _, id := range identifiers(lines[i+1+k]) {

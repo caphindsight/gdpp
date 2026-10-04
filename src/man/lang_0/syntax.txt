@@ -93,7 +93,7 @@ In C++ code, GD++ reserves seventeen more names:
 
 - the rewrites `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - `This` and `gd`. See `gd++ man code`.
-- `invoke`, which invokes macros, e.g. `invoke log("hit")`. See `gd++ man macros`.
+- `invoke`, which invokes macros, e.g. `invoke log("hit")`. See `gd++ man macros`. Templates don't work in C++ code.
 
 # Numbers
 

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Slime" inherits="CharacterBody2D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="can_change_state">
+			<return type="bool" />
+			<param index="0" name="from" type="int" enum="Slime.SlimeState" />
+			<param index="1" name="to" type="int" enum="Slime.SlimeState" />
+			<description>
+				Whether the state machine may change from one state to another.
+			</description>
+		</method>
+		<method name="change_state">
+			<return type="void" />
+			<param index="0" name="to" type="int" enum="Slime.SlimeState" />
+			<description>
+				Changes the state, if the state machine may change to it.
+			</description>
+		</method>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Slime" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="player_in_sight">
+			<return type="Node2D" />
+			<description>
+			</description>
+		</method>
+		<method name="update_chase">
+			<return type="int" enum="Slime.SlimeState" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_patrol">
+			<return type="int" enum="Slime.SlimeState" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_state">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				Runs the current state's update, and changes to the state it returns.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="direction" type="float" setter="set_direction" getter="get_direction">
+		</member>
+		<member name="sight" type="float" setter="set_sight" getter="get_sight">
+		</member>
+		<member name="speed" type="float" setter="set_speed" getter="get_speed">
+		</member>
+		<member name="state" type="int" enum="Slime.SlimeState" setter="set_state" getter="get_state">
+			The current state.
+		</member>
+		<member name="state_time" type="float" setter="set_state_time" getter="get_state_time">
+			The seconds since the state last changed.
+		</member>
+	</members>
+	<signals>
+		<signal name="state_changed">
+			<param index="0" name="from" type="int" enum="Slime.SlimeState" />
+			<param index="1" name="to" type="int" enum="Slime.SlimeState" />
+			<description>
+				Emitted when the state changes.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="SLIME_STATE_CHASE" value="0" enum="SlimeState">
+		</constant>
+		<constant name="SLIME_STATE_PATROL" value="1" enum="SlimeState">
+		</constant>
+	</constants>
+</class>

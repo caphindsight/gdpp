@@ -78,7 +78,7 @@ Value       = Number | '-' Number | String | Type | '[' ( Value ( ',' Value )* '
 - `Ident '='` starts a named `MacroArg` only if another `=` doesn't follow, so `a == b` is a positional `Expr`.
 - A `Value` that isn't one of the other forms is an `Expr`: C++ code up to the next `,` or closing bracket.
 - In C++ code, `'invoke' Ident '('` or `'invoke' Ident '{'` invokes a macro, if the package has one named `Ident`.
-- See `gd++ man macros`.
+- See `gd++ man templates` and `gd++ man macros`. Prefer templates whenever they do the job: macros are more powerful, but also more advanced.
 
 # Code blocks
 
@@ -192,4 +192,4 @@ In C++ code, GD++ also reserves:
 
 # See also
 
-`gd++ man syntax`, `gd++ man files`, `gd++ man annotations`, `gd++ man macros`.
+`gd++ man syntax`, `gd++ man files`, `gd++ man annotations`, `gd++ man templates`, `gd++ man macros`.

@@ -43,6 +43,24 @@ kind = "Object"
 base = "CanvasItem"
 
 [[dep]]
+name = "CharacterBody2D"
+include = "<godot_cpp/classes/character_body2d.hpp>"
+kind = "Object"
+base = "Node2D"
+
+[[dep]]
+name = "Area2D"
+include = "<godot_cpp/classes/area2d.hpp>"
+kind = "Object"
+base = "Node2D"
+
+[[dep]]
+name = "AnimationPlayer"
+include = "<godot_cpp/classes/animation_player.hpp>"
+kind = "Object"
+base = "Node"
+
+[[dep]]
 name = "Engine"
 include = "<godot_cpp/classes/engine.hpp>"
 kind = "Object"
@@ -281,3 +299,9 @@ file = "macros.gd++"
 name = "getter"
 kind = "Template"
 file = "macros.gd++"
+
+[[dep]]
+name = "shield"
+kind = "Template"
+file = "templates.gd++"
+source_name = "package/templates.gd++"

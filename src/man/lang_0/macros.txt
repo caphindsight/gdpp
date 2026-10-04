@@ -1,11 +1,16 @@
-Macros: code that writes code
+Macros: Lua code that writes code
 
-Macros and templates generate GD++ and C++ code where your code invokes them.
+A macro is Lua code that generates GD++ and C++ code where your code invokes it.
 
-Warning: this is an advanced feature. Use it seldom in real code.
+Warning: macros are the most advanced feature of GD++. Use them seldom in real code.
 
 - Generated code is harder to read, search and debug than code you write out.
 - Plain GD++ is the default. A macro is worth it only when it removes a lot of repetition.
+- Prefer templates whenever they do the job: a template is GD++ code with holes, and reads like the code it generates. See `gd++ man templates`.
+- Macros are more powerful, but also more advanced. Use one only for what templates can't do:
+  - loops and conditions, e.g. a declaration for each entry of a table,
+  - checks of the arguments, with errors that explain them,
+  - C++ code, e.g. in a function body.
 - C++ has its own macros, `#define`. On this page, "macro" means a GD++ macro.
 
 # Macros
@@ -13,15 +18,14 @@ Warning: this is an advanced feature. Use it seldom in real code.
 A macro is a package-level declaration, like a class, an extern or an enum. Its body is Lua code:
 
 ```gd++
-// A clamped stat with a changed signal and an exported max.
-macro stat(name, max = 100) {
-  local field = name .. "_"
-  gd.signal { name = name .. "_changed", params = { "value: int" } }
-  gd.var { name = "max_" .. name, type = "int", init = max, annotations = { "export" } }
-  gd.var { name = name, type = "int", doc = ctx.doc,
-           decl = "int64_t " .. field .. " = " .. max .. ";",
-           get = "return " .. field .. ";",
-           set = field .. " = CLAMP(value, 0, max_" .. name .. "); emit " .. name .. "_changed(" .. field .. ");" }
+// The stat template for each entry, with a check of the maxima.
+macro stats(list) {
+  for name, max in pairs(list) do
+    if type(max) ~= "number" or max <= 0 then
+      gd.error_at("list", "the max of " .. name .. " must be a positive number", "e.g. invoke stats({health = 100})")
+    end
+    gd.invoke("stat", { name, max = max })
+  end
 }
 ```
 
@@ -31,12 +35,12 @@ Code invokes it with `invoke name(...)`:
 class_name Player
 extends Node
 
-/// The player's health.
-invoke stat(health, max = 100)
-invoke stat(mana, max = 50)
+invoke stats({health = 100, mana = 50, stamina = 80})
 ```
 
-Each invocation runs the Lua code, and is replaced by what it generates: here, a signal and two vars.
+- Each invocation runs the Lua code, and is replaced by what it generates: here, three stats.
+- `stat` is the template in `gd++ man templates`. It holds the code of one stat, as readable GD++.
+- The macro adds what the template can't: a loop over the table, and a check of each max.
 
 Facts:
 
@@ -48,54 +52,21 @@ Facts:
 - GD++ comments, `//` and `/* */`, work in the body, and so do Lua's `--` comments.
 - Lua's errors name the line of the GD++ file.
 
-# Parameters
+# Parameters and invoking
 
-- A parameter is `name`, or `name = default`.
-- Parameters have no types: they're Lua values, which only exist while code is generated. A macro checks what it needs, and reports problems with `gd.error_at`. See "Errors" below.
-- A default is a Lua expression, e.g. `max = 100` or `tags = {}`. It's evaluated at each invocation.
-- A parameter without an argument or a default is `nil`.
-- Parameters must not be Lua keywords, e.g. `end`.
-
-# Invoking
+Macros take parameters and arguments like templates. See "Parameters" and "Invoking" in `gd++ man templates`. In short:
 
 ```gd++
-invoke stat(health, max = 100)         // GD++ data
-invoke stat { "health", max = 50 + 50 } // a Lua table
-```
-
-`invoke name(...)` takes GD++ data:
-
-- Positional arguments first, then named ones: `name = value`, like the parameters' defaults.
-- An unknown name is an error.
-- An argument that starts with `name =` is named. To pass a C++ assignment, put it in parentheses: `invoke log((x = 3))`.
-
-Each value becomes a Lua value:
-
-```
-GD++                                   LUA
-42, -1.5, 0x10                         a number
-"text"                                 a string
-true, false, null                      true, false, nil
-health, Array[int], Node.ProcessMode   a string: a name or a type
-[a, b]                                 a list: a table with keys 1, 2, ...
-{key = v, other = w}                   a table with string keys
-code { x++; }                          a Code value: C++ statements
-a + b * 2                              a Code value: a C++ expression
-```
-
-- Anything that isn't one of the other forms is a C++ expression, up to the next `,` or `)` outside brackets. E.g. a lambda: `[&]() { return 1; }`.
-- In a dictionary, every key is a name, followed by `=`.
-- A `{ }` that isn't a dictionary, e.g. `{1, 2}`, is a C++ braced initializer.
-- A Code value converts to its C++ text with `tostring` or `..`. Emitted as a body, it keeps its own line, so compiler errors point at it.
-
-`invoke name { ... }` takes a Lua table constructor instead, like Lua's `f{ ... }` call:
-
-```gd++
+invoke stats({health = 100, mana = 50})         // GD++ data
+invoke stats { list = { health = 50 + 50 } }    // a Lua table
 invoke spawner { enemy = "Slime", waves = 4, count = function(w) return 3 + w * w end }
 ```
 
-- Its positional entries are the positional arguments, and its string keys the named ones.
-- Use it when the data needs Lua: computed values, nested tables, functions.
+- Parameters have no types: they're Lua values. A macro checks what it needs, and reports problems with `gd.error_at`. See "Lua: errors" below.
+- A default is a Lua expression, evaluated at each invocation.
+- GD++ data becomes Lua values: numbers, strings, names and types as strings, lists and dictionaries as tables, and C++ code as Code values.
+- A Code value converts to its C++ text with `tostring` or `..`. Emitted as a body, it keeps its own line, so compiler errors point at it.
+- `invoke name { ... }` takes a Lua table constructor, for data that needs Lua: computed values, nested tables, functions.
 
 # Where macros work
 
@@ -126,60 +97,41 @@ macro lookup_table(name, values) {
 
 A doc comment before an invocation goes to `ctx.doc`, so the macro can document what it generates, e.g. `gd.var { ..., doc = ctx.doc }`.
 
-# Templates
+# Templates from macros
 
-A template is GD++ code with holes. Use it for code that is easier to write as GD++ than as Lua:
+`gd.invoke` invokes a template, so a macro can generate readable GD++:
 
 ```gd++
-// A pool class for any poolable class.
-template pool_of(T, size = 64) {
-  @pool(${size}, "grow")
-  class ${T}Pool {
-    extends Node
-    func take() -> ${T} { return create ${T}; }
-  }
+// A pool class for each entry of the table.
+macro pools(classes) {
+  for _, c in ipairs(classes) do
+    gd.invoke("pool_of", { T = c[1], size = c.size })
+  end
 }
-
-invoke pool_of(Bullet, 512)
 ```
 
-- `${EXPR}` is a hole: a Lua expression over the parameters, e.g. `${name .. "_changed"}` or `${gd.pascal(name)}`.
-- A hole's value must be a string, a number, a boolean or code. Newlines in it become spaces.
-- `$` followed by a name is still a node path, e.g. `$Hud/Score`.
-- Templates have no loops or conditions. Macros have them, and instantiate templates with `gd.invoke`.
-- Templates take parameters and arguments like macros, and share the same namespace.
-- A template's output may invoke macros, e.g. `invoke stat(${name}, max = ${max})`.
-- Templates generate declarations, so they don't work in C++ code.
-- Errors in a template's output point into the template, with a hint that names the invocation.
-- The invocation's doc comment documents the first declaration of the output, unless it has its own.
+- Put the code that never changes in a template, and only the loops, conditions and checks in the macro.
+- See `gd++ man templates`, and "gd.invoke" below.
 
-# File-level macros and templates
+# File-level macros
 
-Like `class_name`, `macro_name` and `template_name` make the whole file one declaration:
+Like `class_name`, `macro_name` makes the whole file one macro:
 
 ```gd++
-// A counter with a function that bumps it.
 macro_name counter(name, start = 0)
 
+// A counter with a function that bumps it.
 gd.var { name = name, type = "int", init = start }
 gd.func { name = "bump_" .. name, ret = "void", body = name .. "++;" }
 ```
 
-```gd++
-template_name pool_of(T, size = 64)
-
-@pool(${size}, "grow")
-class ${T}Pool {
-  extends Node
-}
-```
-
 - The head comes first in the file. Everything after it, to the end of the file, is the body.
-- Both forms work the same.
+- It works the same as `macro counter(name, start = 0) { ... }`.
+- `template_name` does the same for templates. See `gd++ man templates`.
 
 # Inline templates and macros
 
-A macro's body may declare templates and macros, and so may a template's body:
+A macro's body may declare templates and macros:
 
 ```gd++
 macro inventory(slots) {
@@ -196,6 +148,7 @@ macro inventory(slots) {
 - They are ordinary package-level declarations, like inline classes in a `class_name` file. Writing them inside only keeps them next to their user.
 - They can't use the parameters or holes of the body around them.
 - They start a line of the body's top level: `macro NAME(` or `template NAME(`.
+- A template's body may declare them too. See `gd++ man templates`.
 
 # Lua
 
@@ -410,10 +363,28 @@ Lua code can only generate code:
 
 # Errors
 
-- A Lua error points at the Lua line, with a hint that names the invocation.
-- An error in generated code points at the invocation, with the hint "This comes from macro NAME.".
-- A compiler error in generated C++ points at the invocation's line.
+- A Lua error points at the Lua line.
+- An error in generated code points at the invocation.
+- A compiler error in C++ that a macro generates points at the invocation's line. In C++ from a template, it points into the template. See `gd++ man templates`.
 - Run `gd++ trans FILE` to see what a file generates.
+
+Every error that a macro or template causes ends with its macro call stack: the invocations that led to it, innermost first.
+
+```
+player.gd++:17:21: Expected ":", "=" or "{" after the variable name, but found name "float".
+ 17 |   var ${name}_twice float
+    |                     ^^^^^
+Hint: Types are written after a colon: "var speed_twice: float".
+Macro call stack:
+  template broken, invoked with gd.invoke at player.gd++:13
+  macro middle, invoked with gd.invoke at player.gd++:8
+  macro outer, invoked at player.gd++:4
+```
+
+- Each line names a macro or template, and where it was invoked: with `invoke` in your code, with `gd.invoke` in Lua code, or in generated code, i.e. in another invocation's output.
+- The last line is the invocation in your code.
+- A long stack, e.g. of a macro that invokes itself forever, shows its first and last five lines.
+- For an error that GD++ finds in the generated code after expanding it, e.g. a type that doesn't exist, the stack only names the invocation in your code.
 
 # Examples
 
@@ -479,18 +450,6 @@ macro log(event, values = {}) {
 }
 ```
 
-Templates, driven by a macro and a Lua table:
-
-```gd++
-invoke pools { classes = { { "Bullet", size = 512 }, { "Spark" } } }
-
-macro pools(classes) {
-  for _, c in ipairs(classes) do
-    gd.invoke("pool_of", { T = c[1], size = c.size })
-  end
-}
-```
-
 Values computed by Lua functions:
 
 ```gd++
@@ -508,4 +467,4 @@ macro spawner(enemy, waves, count) {
 
 # See also
 
-`gd++ man files`, `gd++ man code`, `gd++ man rewrites`, `gd++ man grammar`.
+`gd++ man templates`, `gd++ man files`, `gd++ man code`, `gd++ man rewrites`, `gd++ man grammar`, `gd++ man tut/state-machine`.

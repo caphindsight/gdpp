@@ -1,21 +1,24 @@
 class_name Player
 extends Node
 
-invoke stat(health, max = 100)
-invoke stat(mana, max = 50)
+@export var health: int = 100
+
+invoke flags([invincible, flying])
 
 func hurt(n: int) -> void {
+  if (invincible) return;
   health -= n;
   invoke log("hurt", [n, health]);
 }
 
-// An exported stat, and a function that refills it.
-macro stat(name, max = 100) {
-  gd.var { name = name, type = "int", init = max, annotations = { "export" } }
-  gd.func { name = "refill_" .. name, ret = "void", body = name .. " = " .. max .. ";" }
+// An exported flag for each name: a loop, which templates don't have.
+macro flags(names) {
+  for _, name in ipairs(names) do
+    gd.var { name = name, type = "bool", init = false, annotations = { "export" } }
+  end
 }
 
-// Prints an event, with the class's name.
+// Prints an event, with the class's name: C++ code, which templates don't generate.
 macro log(event, values = {}) {
   local args = { gd.quote(ctx.class .. ": " .. event) }
   for _, v in ipairs(values) do table.insert(args, v) end

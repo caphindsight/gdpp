@@ -273,6 +273,8 @@ Facts:
 - So compiler errors, warnings and debuggers point to the right line in the right file.
 - In builds, the GD++ file is named by its copy in the build cache, relative to the build cache, e.g. `package/src/player.gd++`.
 - Your code is copied with its line breaks. So a body's text starts on the line of its `{`.
+- C++ code from a template keeps its lines in the template, so `#line` names those, also in another file. See `gd++ man templates`.
+- C++ code from a macro has no lines of its own, so `#line` names the invocation's line. See `gd++ man macros`.
 
 # Extern headers
 

@@ -1,4 +1,5 @@
 input.gd++:7:3: Macro stat failed: gd.var: "3" isn't a type.
  7 |   gd.var { name = name, type = 3 }
    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Hint: Invoked at input.gd++:4.
+Macro call stack:
+  macro stat, invoked at input.gd++:4

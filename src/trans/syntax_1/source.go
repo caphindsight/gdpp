@@ -249,7 +249,7 @@ func initializer(w *writer, v *varModel, indent string) {
 	case init.Block != nil:
 		w.block(init.Block, fmt.Sprintf("%s%s = [&]() -> %s {", indent, v.v.Name, v.t.cpp), "}();", assertValue)
 	default:
-		w.user(init.Pos, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
+		w.user(init.Pos, init.Origin, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
 	}
 }
 
@@ -496,7 +496,7 @@ func defaultDefs(w *writer, c *classModel, f *funcModel) {
 		if d.Block != nil {
 			w.block(d.Block, "", "", assertValue)
 		} else {
-			w.user(d.Pos, "\treturn ", d.Expr, ";", assertValue)
+			w.user(d.Pos, d.Origin, "\treturn ", d.Expr, ";", assertValue)
 		}
 		w.ln("}")
 	}

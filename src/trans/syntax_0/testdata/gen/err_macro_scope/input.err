@@ -1,4 +1,5 @@
 input.gd++:4:3: Macro helper failed: gd.func can't be used outside of a class: only gd.class, gd.extern and gd.enum without a value can.
  4 |   gd.func { name = "f", ret = "void", body = "" }
    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Hint: Invoked at input.gd++:1.
+Macro call stack:
+  macro helper, invoked at input.gd++:1

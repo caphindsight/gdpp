@@ -1,0 +1,6 @@
+input.gd++:14:30: State Fall changes to Idel, which isn't a state.
+ 14 |   invoke state_machine(Idle, {
+    |                              ^
+Hint: The states are Attack, Fall, Idle, Jump, Run.
+Macro call stack:
+  macro state_machine, invoked at input.gd++:14

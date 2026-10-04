@@ -87,7 +87,7 @@ PATH
   With `--print`, the frame rate that the table's budget column assumes. Default: 60.
 
 --macro-timeout SECONDS
-  Stop a macro or template invocation that runs longer than this, with an error. Default: 20. See `gd++ man macros`.
+  Stop a macro or template invocation that runs longer than this, with an error. Default: 20. See `gd++ man templates` and `gd++ man macros`.
 
 --asan
   Detect memory errors, e.g. use after free or out-of-bounds access, with AddressSanitizer. See "Sanitizers" in `gd++ man building`.

@@ -258,7 +258,8 @@ type MacroParam struct {
 // in it, but keeps their newlines. Parse moves those Helpers to File.InlineMacros.
 type MacroBody struct {
 	Block
-	Helpers []*Macro
+	Helpers  []*Macro
+	Template string `dump:"-"` // Text with its doc comments, which a template's output keeps.
 }
 
 // Invoke is an invocation of a macro or template: invoke name(args), or invoke name { ... } with a Lua table.
@@ -300,15 +301,23 @@ type Block struct {
 	Pos       lexer.Position
 	TextPos   lexer.Position
 	Text      string
-	Generated bool `dump:"-"` // Whether a macro generated it: then all of it comes from the line of TextPos.
+	Generated bool   `dump:"-"` // Whether a macro generated it: then all of it comes from the line of TextPos.
+	Origin    Origin `dump:"-"`
+}
+
+// Origin is where C++ code from a template comes from, which #line names: its lines stay as in the template.
+type Origin struct {
+	Source string // How #line names the template's file. Empty for other code.
+	Line   int    // The code's first line there.
 }
 
 // Init is the initial value of a variable: a one-line C++ expression (Expr) or a C++ block that returns the value.
 // Pos is the position of the expression's first token.
 type Init struct {
-	Pos   lexer.Position
-	Expr  string
-	Block *Block
+	Pos    lexer.Position
+	Expr   string
+	Block  *Block
+	Origin Origin `dump:"-"`
 }
 
 // Default is the default value of a parameter: like Init, but its expression also ends at a "," outside brackets.

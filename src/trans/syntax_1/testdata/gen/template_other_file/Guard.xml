@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Guard" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Guard" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="raise_back">
+			<return type="int" />
+			<param index="0" name="times" type="int" default="5 + 1" />
+			<description>
+			</description>
+		</method>
+		<method name="raise_front">
+			<return type="int" />
+			<param index="0" name="times" type="int" default="10 + 1" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="back_power" type="int" setter="set_back_power" getter="get_back_power">
+		</member>
+		<member name="front_power" type="int" setter="set_front_power" getter="get_front_power">
+		</member>
+	</members>
+</class>

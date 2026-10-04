@@ -1,28 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="772" height="489" viewBox="0 0 772 489">
+<svg xmlns="http://www.w3.org/2000/svg" width="738" height="549" viewBox="0 0 738 549">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#e3b341">class_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Player</tspan></text>
   <text x="16" y="50"><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Node</tspan></text>
   <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">stat</tspan><tspan fill="#e6edf3">(health, max = </tspan><tspan fill="#d2a8ff">100</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="110"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">stat</tspan><tspan fill="#e6edf3">(mana, max = </tspan><tspan fill="#d2a8ff">50</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="130"></text>
-  <text x="16" y="150"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">hurt</tspan><tspan fill="#e6edf3">(n: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="170"><tspan fill="#e6edf3">  health -= n;</tspan></text>
-  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">log</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"hurt"</tspan><tspan fill="#e6edf3">, [n, health]);</tspan></text>
-  <text x="16" y="210"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="230"></text>
-  <text x="16" y="250"><tspan fill="#8b949e">// An exported stat, and a function that refills it.</tspan></text>
-  <text x="16" y="270"><tspan fill="#e3b341">macro</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">stat</tspan><tspan fill="#e6edf3">(name, max = </tspan><tspan fill="#d2a8ff">100</tspan><tspan fill="#e6edf3">) {</tspan></text>
-  <text x="16" y="290"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">var</tspan><tspan fill="#e6edf3"> { name = name, type = </tspan><tspan fill="#d2a8ff">"int"</tspan><tspan fill="#e6edf3">, init = max, annotations = { </tspan><tspan fill="#d2a8ff">"export"</tspan><tspan fill="#e6edf3"> } }</tspan></text>
-  <text x="16" y="310"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">func</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"refill_"</tspan><tspan fill="#e6edf3"> .. name, ret = </tspan><tspan fill="#d2a8ff">"void"</tspan><tspan fill="#e6edf3">, body = name .. </tspan><tspan fill="#d2a8ff">" = "</tspan><tspan fill="#e6edf3"> .. max .. </tspan><tspan fill="#d2a8ff">";"</tspan><tspan fill="#e6edf3"> }</tspan></text>
-  <text x="16" y="330"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="350"></text>
-  <text x="16" y="370"><tspan fill="#8b949e">// Prints an event, with the class's name.</tspan></text>
-  <text x="16" y="390"><tspan fill="#e3b341">macro</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">log</tspan><tspan fill="#e6edf3">(event, values = {}) {</tspan></text>
-  <text x="16" y="410"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">local</tspan><tspan fill="#e6edf3"> args = { </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">quote</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">ctx</tspan><tspan fill="#e6edf3">.class .. </tspan><tspan fill="#d2a8ff">": "</tspan><tspan fill="#e6edf3"> .. event) }</tspan></text>
-  <text x="16" y="430"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> _, v </tspan><tspan fill="#e3b341">in</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">ipairs</tspan><tspan fill="#e6edf3">(values) </tspan><tspan fill="#e3b341">do</tspan><tspan fill="#e6edf3"> table.</tspan><tspan fill="#56d4dd">insert</tspan><tspan fill="#e6edf3">(args, v) </tspan><tspan fill="#e3b341">end</tspan></text>
-  <text x="16" y="450"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"gd::print("</tspan><tspan fill="#e6edf3"> .. gd.</tspan><tspan fill="#56d4dd">join</tspan><tspan fill="#e6edf3">(args, </tspan><tspan fill="#d2a8ff">", "</tspan><tspan fill="#e6edf3">) .. </tspan><tspan fill="#d2a8ff">")"</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="470"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="90"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> health: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">100</tspan></text>
+  <text x="16" y="110"></text>
+  <text x="16" y="130"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">flags</tspan><tspan fill="#e6edf3">([invincible, flying])</tspan></text>
+  <text x="16" y="150"></text>
+  <text x="16" y="170"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">hurt</tspan><tspan fill="#e6edf3">(n: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (invincible) </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">  health -= n;</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">log</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"hurt"</tspan><tspan fill="#e6edf3">, [n, health]);</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="270"></text>
+  <text x="16" y="290"><tspan fill="#8b949e">// An exported flag for each name: a loop, which templates don't have.</tspan></text>
+  <text x="16" y="310"><tspan fill="#e3b341">macro</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">flags</tspan><tspan fill="#e6edf3">(names) {</tspan></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> _, name </tspan><tspan fill="#e3b341">in</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">ipairs</tspan><tspan fill="#e6edf3">(names) </tspan><tspan fill="#e3b341">do</tspan></text>
+  <text x="16" y="350"><tspan fill="#e6edf3">    </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">var</tspan><tspan fill="#e6edf3"> { name = name, type = </tspan><tspan fill="#d2a8ff">"bool"</tspan><tspan fill="#e6edf3">, init = </tspan><tspan fill="#e3b341">false</tspan><tspan fill="#e6edf3">, annotations = { </tspan><tspan fill="#d2a8ff">"export"</tspan><tspan fill="#e6edf3"> } }</tspan></text>
+  <text x="16" y="370"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">end</tspan></text>
+  <text x="16" y="390"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="410"></text>
+  <text x="16" y="430"><tspan fill="#8b949e">// Prints an event, with the class's name: C++ code, which templates don't generate.</tspan></text>
+  <text x="16" y="450"><tspan fill="#e3b341">macro</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">log</tspan><tspan fill="#e6edf3">(event, values = {}) {</tspan></text>
+  <text x="16" y="470"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">local</tspan><tspan fill="#e6edf3"> args = { </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">quote</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">ctx</tspan><tspan fill="#e6edf3">.class .. </tspan><tspan fill="#d2a8ff">": "</tspan><tspan fill="#e6edf3"> .. event) }</tspan></text>
+  <text x="16" y="490"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> _, v </tspan><tspan fill="#e3b341">in</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">ipairs</tspan><tspan fill="#e6edf3">(values) </tspan><tspan fill="#e3b341">do</tspan><tspan fill="#e6edf3"> table.</tspan><tspan fill="#56d4dd">insert</tspan><tspan fill="#e6edf3">(args, v) </tspan><tspan fill="#e3b341">end</tspan></text>
+  <text x="16" y="510"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"gd::print("</tspan><tspan fill="#e6edf3"> .. gd.</tspan><tspan fill="#56d4dd">join</tspan><tspan fill="#e6edf3">(args, </tspan><tspan fill="#d2a8ff">", "</tspan><tspan fill="#e6edf3">) .. </tspan><tspan fill="#d2a8ff">")"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="530"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

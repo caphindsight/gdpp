@@ -2,3 +2,5 @@ input.gd++:4:21: Macro stat has no parameter "maxx".
  4 | invoke stat(health, maxx = 3)
    |                     ^^^^
 Hint: Did you mean "max"?
+Macro call stack:
+  macro stat, invoked at input.gd++:4

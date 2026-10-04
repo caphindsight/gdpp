@@ -113,7 +113,22 @@ func checkError(t *testing.T, name, src string, err error) {
 	if len(caret) < col || caret[col-1] != '^' || strings.TrimSpace(string(caret[:col-1])) != "" {
 		t.Errorf("The caret is not at column %d:\n%s", col, err)
 	}
-	if len(lines) > 3 && !strings.HasPrefix(lines[3], "Hint: ") || len(lines) > 4 {
+	// After the caret: an optional hint, then an optional macro call stack.
+	rest := lines[3:]
+	if len(rest) > 0 && strings.HasPrefix(rest[0], "Hint: ") {
+		rest = rest[1:]
+	}
+	if len(rest) > 0 && rest[0] == "Macro call stack:" {
+		n := 1
+		for n < len(rest) && strings.HasPrefix(rest[n], "  ") {
+			n++
+		}
+		if n == 1 {
+			t.Errorf("Empty macro call stack:\n%s", err)
+		}
+		rest = rest[n:]
+	}
+	if len(rest) > 0 {
 		t.Errorf("Unexpected lines after the caret:\n%s", err)
 	}
 	for _, raw := range []string{"unexpected token", "expected <", "lexer:"} {

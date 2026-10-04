@@ -50,7 +50,7 @@ void BulletPool::gdpp_queue_destroy() {
 }
 
 Bullet *BulletPool::take() {
-#line 9 "input.gd++"
+#line 16 "input.gd++"
  return gdpp::create<Bullet>();
 #line 56 "BulletPool.cpp"
 }

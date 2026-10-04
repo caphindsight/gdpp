@@ -1,0 +1,6 @@
+class_name Guard
+extends Node
+
+// The C++ of a template in another file: #line names the template's lines there.
+invoke shield(front)
+invoke shield(back, power = 5)

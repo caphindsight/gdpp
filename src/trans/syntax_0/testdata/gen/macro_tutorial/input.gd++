@@ -1,0 +1,234 @@
+// The final code of `gd++ man tut/macros`, in one file: the tutorial has player.gd++, slime.gd++ and state_machine.gd++.
+
+class Player {
+  extends CharacterBody2D
+
+  @export var speed: float = 200.0
+  @export var jump_speed: float = 400.0
+  @export var gravity: float = 980.0
+  @export var attack_time: float = 0.3
+
+  @onready var animation: AnimationPlayer = $AnimationPlayer
+  @onready var hitbox: Area2D = $Hitbox
+
+  invoke state_machine(Idle, {
+    Idle   = [Run, Jump, Fall, Attack],
+    Run    = [Idle, Jump, Fall, Attack],
+    Jump   = {to = [Fall], enter = true},
+    Fall   = [Idle, Run, Jump, Attack],
+    Attack = {to = [Idle], enter = true, exit = true},
+  })
+
+  on physics_process(delta: float) {
+    Vector2 velocity = get_velocity();
+    velocity.y += gravity * delta;
+    set_velocity(velocity);
+    update_state(delta);
+    move_and_slide();
+  }
+
+  // The direction that the player presses: -1 for left, 1 for right, or 0.
+  func input_x() -> float {
+    return Input::get_singleton()->get_axis(string_name "left", string_name "right");
+  }
+
+  func walk() -> void {
+    set_velocity(Vector2(input_x() * speed, get_velocity().y));
+  }
+
+  // The next state of a player on the floor, or falling.
+  func ground_state() -> PlayerState {
+    if (!is_on_floor()) return PlayerState::FALL;
+    if (Input::get_singleton()->is_action_just_pressed(string_name "jump")) return PlayerState::JUMP;
+    if (Input::get_singleton()->is_action_just_pressed(string_name "attack")) return PlayerState::ATTACK;
+    return input_x() != 0 ? PlayerState::RUN : PlayerState::IDLE;
+  }
+
+  func update_idle(delta: float) -> PlayerState {
+    walk();
+    return ground_state();
+  }
+
+  func update_run(delta: float) -> PlayerState {
+    walk();
+    return ground_state();
+  }
+
+  func enter_jump() -> void {
+    set_velocity(Vector2(get_velocity().x, -jump_speed));
+    animation->play(string_name "jump");
+  }
+
+  func update_jump(delta: float) -> PlayerState {
+    walk();
+    return get_velocity().y >= 0 ? PlayerState::FALL : PlayerState::JUMP;
+  }
+
+  func update_fall(delta: float) -> PlayerState {
+    walk();
+    return ground_state();
+  }
+
+  func enter_attack() -> void {
+    hitbox->set_deferred(string_name "monitoring", true);
+    animation->play(string_name "attack");
+  }
+
+  func update_attack(delta: float) -> PlayerState {
+    set_velocity(Vector2(0, get_velocity().y));
+    return state_time >= attack_time ? PlayerState::IDLE : PlayerState::ATTACK;
+  }
+
+  func exit_attack() -> void {
+    hitbox->set_deferred(string_name "monitoring", false);
+  }
+}
+
+class Slime {
+  extends CharacterBody2D
+
+  @export var speed: float = 60.0
+  @export var sight: float = 150.0
+
+  var direction: float = 1.0
+
+  invoke state_machine(Patrol, {
+    Patrol = [Chase],
+    Chase  = [Patrol],
+  })
+
+  on physics_process(delta: float) {
+    update_state(delta);
+    move_and_slide();
+  }
+
+  // The player, if it's in sight.
+  func player_in_sight() -> Node2D {
+    Node2D *player = get_tree()->get_first_node_in_group(string_name "player") as Node2D *;
+    if (player && player->get_global_position().distance_to(get_global_position()) <= sight) {
+      return player;
+    }
+    return nullptr;
+  }
+
+  func update_patrol(delta: float) -> SlimeState {
+    if (is_on_wall()) {
+      direction = -direction;
+    }
+    set_velocity(Vector2(direction * speed, 0));
+    return player_in_sight() ? SlimeState::CHASE : SlimeState::PATROL;
+  }
+
+  func update_chase(delta: float) -> SlimeState {
+    Node2D *player = player_in_sight();
+    if (!player) return SlimeState::PATROL;
+    direction = player->get_global_position().x < get_global_position().x ? -1.0 : 1.0;
+    set_velocity(Vector2(direction * speed * 2, 0));
+    return SlimeState::CHASE;
+  }
+}
+
+// A state machine for the class that invokes it.
+// - initial: the state it starts in.
+// - states: each state, with the states it may change to: a list, or a table with them in "to", and with
+//   enter = true or exit = true if the class has enter_NAME or exit_NAME functions for it.
+// The class writes update_NAME(delta) for each state, which returns the next state, and calls update_state(delta).
+macro state_machine(initial, states) {
+  // The parts that never change, as GD++.
+  template state_core(Enum, initial) {
+    /// Emitted when the state changes.
+    signal state_changed(from: ${Enum}, to: ${Enum})
+
+    /// The current state.
+    var state: ${Enum} = ${Enum}::${initial}
+
+    /// The seconds since the state last changed.
+    var state_time: float = 0.0
+  }
+
+  if ctx.scope ~= "class" then
+    gd.error("a state machine must be invoked in a class", "it generates the class's members")
+  end
+  if type(states) ~= "table" then
+    gd.error_at("states", "states must be a dictionary of states", "e.g. {Idle = [Run], Run = [Idle]}")
+  end
+
+  // Read each state: the states it may change to, and whether it has enter and exit functions.
+  local names = gd.keys(states)
+  local info = {}
+  for _, name in ipairs(names) do
+    local s = states[name]
+    if type(s) ~= "table" then
+      gd.error_at("states", "state " .. name .. " needs a list of states, or a dictionary", "e.g. " .. name .. " = [Idle]")
+    end
+    if #s > 0 or next(s) == nil then
+      s = { to = s }
+    end
+    for key in pairs(s) do
+      if not gd.contains({ "to", "enter", "exit" }, key) then
+        gd.error_at("states", "state " .. name .. " has an unknown key " .. key, "the keys are to, enter and exit")
+      end
+    end
+    info[name] = { to = s.to or {}, enter = s.enter, exit = s.exit }
+  end
+
+  // Check the names, so that a typo is an error here, not in the generated C++.
+  if states[initial] == nil then
+    gd.error_at("initial", "the initial state " .. tostring(initial) .. " isn't a state", "the states are " .. gd.join(names, ", "))
+  end
+  for _, name in ipairs(names) do
+    for _, to in ipairs(info[name].to) do
+      if states[to] == nil then
+        gd.error_at("states", "state " .. name .. " changes to " .. to .. ", which isn't a state", "the states are " .. gd.join(names, ", "))
+      end
+    end
+  end
+
+  local enum = ctx.class .. "State"
+  local function value(name)
+    return enum .. "::" .. gd.upper_snake(name)
+  end
+
+  gd.enum { name = enum, values = gd.map(names, gd.upper_snake) }
+  gd.invoke("state_core", { Enum = enum, initial = gd.upper_snake(initial) })
+
+  gd.func { name = "can_change_state", params = { "from: " .. enum, "to: " .. enum }, ret = "bool",
+            doc = "Whether the state machine may change from one state to another.", body = function()
+    gd.text("switch (from) {\n")
+    for _, name in ipairs(names) do
+      local tests = gd.map(info[name].to, function(to) return "to == " .. value(to) end)
+      gd.text("case " .. value(name) .. ": return " .. (#tests > 0 and gd.join(tests, " || ") or "false") .. ";\n")
+    end
+    gd.text("}\nreturn false;")
+  end }
+
+  // A switch that calls the hook of the states that have one.
+  local function hooks(kind, var)
+    gd.text("switch (" .. var .. ") {\n")
+    for _, name in ipairs(names) do
+      if info[name][kind] then
+        gd.text("case " .. value(name) .. ": " .. kind .. "_" .. gd.snake(name) .. "(); break;\n")
+      end
+    end
+    gd.text("default: break;\n}\n")
+  end
+
+  gd.func { name = "change_state", params = { "to: " .. enum }, ret = "void",
+            doc = "Changes the state, if the state machine may change to it.", body = function()
+    gd.text("assert can_change_state(state, to);\n")
+    gd.text(enum .. " from = state;\n")
+    hooks("exit", "from")
+    gd.text("state = to;\nstate_time = 0.0;\n")
+    hooks("enter", "to")
+    gd.text("emit state_changed(from, to);")
+  end }
+
+  gd.func { name = "update_state", params = { "delta: float" }, ret = "void",
+            doc = "Runs the current state's update, and changes to the state it returns.", body = function()
+    gd.text("state_time += delta;\n" .. enum .. " next = state;\nswitch (state) {\n")
+    for _, name in ipairs(names) do
+      gd.text("case " .. value(name) .. ": next = update_" .. gd.snake(name) .. "(delta); break;\n")
+    end
+    gd.text("}\nif (next != state) {\n  change_state(next);\n}")
+  end }
+}

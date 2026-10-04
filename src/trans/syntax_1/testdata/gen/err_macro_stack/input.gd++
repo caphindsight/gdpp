@@ -1,0 +1,18 @@
+class_name A
+extends Node
+
+invoke outer()
+
+// The error's macro call stack names each invocation, innermost first.
+macro outer() {
+  gd.invoke("middle", { "speed" })
+}
+
+macro middle(name) {
+  gd.var { name = name, type = "float" }
+  gd.invoke("broken", { name })
+}
+
+template broken(name) {
+  var ${name}_twice float
+}

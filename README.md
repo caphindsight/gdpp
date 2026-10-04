@@ -298,13 +298,13 @@ An assertion checks what must always be true. In debug builds, a failed assertio
 
 <a href="readme/svg/templates.gd++"><img src="readme/svg/templates.svg" alt="GD++ code: templates"></a>
 
-A template is GD++ code with holes, `${...}`, which hold Lua expressions over its parameters. `invoke` fills them in, and puts the code in its place. Templates are package-level, like classes, so every file of the package can invoke them. See `gd++ man macros`.
+A template is GD++ code with holes, `${...}`, which hold Lua expressions over its parameters. `invoke` fills them in, and puts the code in its place. Templates are package-level, like classes, so every file of the package can invoke them. See `gd++ man templates`.
 
 ### Macros
 
 <a href="readme/svg/macros.gd++"><img src="readme/svg/macros.svg" alt="GD++ code: macros"></a>
 
-Where a template isn't enough, a macro is Lua code that generates code where `invoke` calls it: declarations with `gd.var`, `gd.func` and the like, or C++ code with `gd.text`. Macros can also instantiate templates, with `gd.invoke`. Macros and templates are an advanced feature: use them seldom, where they remove a lot of repetition. See `gd++ man macros`.
+Where a template isn't enough, a macro is Lua code that generates code where `invoke` calls it: declarations with `gd.var`, `gd.func` and the like, or C++ code with `gd.text`. Macros can also instantiate templates, with `gd.invoke`. Macros are more powerful than templates, but also more advanced: prefer templates whenever they do the job. Both are advanced features: use them seldom, where they remove a lot of repetition. See `gd++ man macros`.
 
 ## The build tool
 

@@ -1,0 +1,646 @@
+Tutorial: a character state machine with macros
+
+Characters in games are often state machines: a player is idle, runs, jumps or attacks, and an enemy patrols or chases. Each character needs the same code around its states: an enum, the current state, a signal, and functions that change the state. This tutorial writes that code once, as a macro, and uses it for two characters.
+
+Macros and templates are advanced features: use them seldom. This tutorial shows how to use them well:
+
+- Write the code by hand first, and turn it into a macro only when it repeats.
+- Prefer templates whenever they do the job: a template reads like the code it generates. A macro is more powerful, but also more advanced. Use one only for what templates can't do, e.g. loops over data and checks of it.
+- Check the data in the macro, so mistakes give clear errors.
+
+It assumes a project that builds, as in `gd++ man tour`, and that you've skimmed `gd++ man templates` and `gd++ man macros`.
+
+# The example
+
+A 2D platformer:
+
+- The player is a `CharacterBody2D`. It's idle, runs, jumps, falls or attacks.
+- A slime is an enemy. It patrols, and chases the player when it sees them.
+- Each state has its own code, which runs every physics frame, and decides the next state.
+- Some states run code when they start or end, e.g. a jump starts by setting the speed upwards.
+- Each character only allows some changes, e.g. the player can't attack while falling.
+
+# 1. Write the state machine by hand
+
+Start without macros. In the editor, make a scene `player.tscn` in the package: a `CharacterBody2D` with a `CollisionShape2D`, a `Sprite2D` and an `AnimationPlayer` as children. Add the input actions `left`, `right` and `jump` in the project settings. Then write `player.gd++`:
+
+```gd++
+class_name Player
+extends CharacterBody2D
+
+@export var speed: float = 200.0
+@export var jump_speed: float = 400.0
+@export var gravity: float = 980.0
+
+@onready var animation: AnimationPlayer = $AnimationPlayer
+
+enum PlayerState { IDLE, RUN, JUMP, FALL }
+
+/// Emitted when the state changes.
+signal state_changed(from: PlayerState, to: PlayerState)
+
+/// The current state.
+var state: PlayerState = PlayerState::IDLE
+
+/// The seconds since the state last changed.
+var state_time: float = 0.0
+
+on physics_process(delta: float) {
+  Vector2 velocity = get_velocity();
+  velocity.y += gravity * delta;
+  set_velocity(velocity);
+  update_state(delta);
+  move_and_slide();
+}
+
+func change_state(to: PlayerState) -> void {
+  PlayerState from = state;
+  state = to;
+  state_time = 0.0;
+  if (to == PlayerState::JUMP) {
+    enter_jump();
+  }
+  emit state_changed(from, to);
+}
+
+func update_state(delta: float) -> void {
+  state_time += delta;
+  PlayerState next = state;
+  switch (state) {
+  case PlayerState::IDLE: next = update_idle(delta); break;
+  case PlayerState::RUN: next = update_run(delta); break;
+  case PlayerState::JUMP: next = update_jump(delta); break;
+  case PlayerState::FALL: next = update_fall(delta); break;
+  }
+  if (next != state) {
+    change_state(next);
+  }
+}
+
+func input_x() -> float {
+  return Input::get_singleton()->get_axis(string_name "left", string_name "right");
+}
+
+func walk() -> void {
+  set_velocity(Vector2(input_x() * speed, get_velocity().y));
+}
+
+func ground_state() -> PlayerState {
+  if (!is_on_floor()) return PlayerState::FALL;
+  if (Input::get_singleton()->is_action_just_pressed(string_name "jump")) return PlayerState::JUMP;
+  return input_x() != 0 ? PlayerState::RUN : PlayerState::IDLE;
+}
+
+func update_idle(delta: float) -> PlayerState {
+  walk();
+  return ground_state();
+}
+
+func update_run(delta: float) -> PlayerState {
+  walk();
+  return ground_state();
+}
+
+func enter_jump() -> void {
+  set_velocity(Vector2(get_velocity().x, -jump_speed));
+  animation->play(string_name "jump");
+}
+
+func update_jump(delta: float) -> PlayerState {
+  walk();
+  return get_velocity().y >= 0 ? PlayerState::FALL : PlayerState::JUMP;
+}
+
+func update_fall(delta: float) -> PlayerState {
+  walk();
+  return ground_state();
+}
+```
+
+How it works:
+
+- Each state has an update function, e.g. `update_idle`, which returns the next state.
+- `update_state` calls the current state's update every physics frame, and changes the state when the update returns another one.
+- `change_state` runs the code that starts a state, e.g. `enter_jump`, and emits `state_changed`, e.g. for a HUD or a sound effect.
+
+Build the package, set the root of `player.tscn` to `Player`, and play. For one character, this is fine: don't reach for a macro yet.
+
+# 2. Decide whether a macro pays off
+
+Now the game needs a second character, the slime, and the player needs an attack. Look at what each new state, and each new character, costs:
+
+- The parts that only differ by the names: the enum, the signal, `state`, `state_time`, the `switch` in `update_state`, and the `if` in `change_state`.
+- The parts that really differ: each state's update, enter and exit code.
+- Nothing checks the changes between states. E.g. if `update_fall` returned `ATTACK`, the player would attack in the air.
+
+So the boilerplate grows with every state and every character, and nothing checks the rules. That's where a macro pays off:
+
+- A template can't do it alone: it has no loops, so it can't write a `case` per state.
+- A macro can: Lua loops over the states, and checks them.
+- The parts that never change go into a template, in step 7.
+
+Design the invocation first: it's what you'll read most. The data says which states there are, and which changes each one allows:
+
+```gd++
+invoke state_machine(Idle, {
+  Idle   = [Run, Jump, Fall, Attack],
+  Run    = [Idle, Jump, Fall, Attack],
+  Jump   = {to = [Fall], enter = true},
+  Fall   = [Idle, Run, Jump, Attack],
+  Attack = {to = [Idle], enter = true, exit = true},
+})
+```
+
+- The first argument is the initial state.
+- Each state maps to the states it may change to: a list, or a dictionary with the list in `to`.
+- `enter = true` and `exit = true` say that the class has `enter_NAME` and `exit_NAME` functions for that state.
+- The class still writes each state's `update_NAME(delta)`: that's the code that really differs.
+
+# 3. Start the macro
+
+Make a file `state_machine.gd++` in the package. `macro_name` makes the whole file one macro, like `class_name` makes it a class:
+
+```gd++
+macro_name state_machine(initial, states)
+
+// A state machine for the class that invokes it.
+// - initial: the state it starts in.
+// - states: each state, with the states it may change to: a list, or a table with them in "to", and with
+//   enter = true or exit = true if the class has enter_NAME or exit_NAME functions for it.
+// The class writes update_NAME(delta) for each state, which returns the next state, and calls update_state(delta).
+```
+
+The rest of the file is Lua code. It sees the parameters as Lua values: `initial` is the string `"Idle"`, and `states` is a table. First, read each state's entry into one shape:
+
+```lua
+// Read each state: the states it may change to, and whether it has enter and exit functions.
+local names = gd.keys(states)
+local info = {}
+for _, name in ipairs(names) do
+  local s = states[name]
+  if #s > 0 or next(s) == nil then
+    s = { to = s }
+  end
+  info[name] = { to = s.to or {}, enter = s.enter, exit = s.exit }
+end
+```
+
+- `gd.keys` returns the keys in sorted order. GD++ sorts tables wherever it iterates them, so the same input always generates the same code.
+- A list has entries from 1, so `#s > 0`. An empty list, `[]`, has no entries at all. Both become `{ to = ... }`.
+- GD++ comments work in the Lua code, and so do Lua's `--` comments.
+
+Then generate the declarations, with the emitters of `gd`:
+
+```lua
+local enum = ctx.class .. "State"
+local function value(name)
+  return enum .. "::" .. gd.upper_snake(name)
+end
+
+gd.enum { name = enum, values = gd.map(names, gd.upper_snake) }
+gd.signal { name = "state_changed", params = { "from: " .. enum, "to: " .. enum }, doc = "Emitted when the state changes." }
+gd.var { name = "state", type = enum, init = value(initial), doc = "The current state." }
+gd.var { name = "state_time", type = "float", init = "0.0", doc = "The seconds since the state last changed." }
+```
+
+- GD++ enums are global types of the package, even when declared in a class. So two characters can't both have an enum `State`. `ctx.class` names the class that invokes the macro, so the player gets `PlayerState` and the slime `SlimeState`.
+- `gd.upper_snake("Idle")` is `IDLE`, the style of enum values.
+- The enum's values follow the sorted names, so `ATTACK` is 0. Don't store them as numbers, e.g. in save files: use the names.
+- Each emitter takes a table with the same fields as the declaration in GD++. See "Lua: emitters" in `gd++ man macros`.
+
+# 4. Generate the functions
+
+Three functions follow from the data. `gd.func` takes the body as a string, or as a function that writes it with `gd.text`. The function form is easier for loops:
+
+```lua
+gd.func { name = "can_change_state", params = { "from: " .. enum, "to: " .. enum }, ret = "bool",
+          doc = "Whether the state machine may change from one state to another.", body = function()
+  gd.text("switch (from) {\n")
+  for _, name in ipairs(names) do
+    local tests = gd.map(info[name].to, function(to) return "to == " .. value(to) end)
+    gd.text("case " .. value(name) .. ": return " .. (#tests > 0 and gd.join(tests, " || ") or "false") .. ";\n")
+  end
+  gd.text("}\nreturn false;")
+end }
+
+// A switch that calls the hook of the states that have one.
+local function hooks(kind, var)
+  gd.text("switch (" .. var .. ") {\n")
+  for _, name in ipairs(names) do
+    if info[name][kind] then
+      gd.text("case " .. value(name) .. ": " .. kind .. "_" .. gd.snake(name) .. "(); break;\n")
+    end
+  end
+  gd.text("default: break;\n}\n")
+end
+
+gd.func { name = "change_state", params = { "to: " .. enum }, ret = "void",
+          doc = "Changes the state, if the state machine may change to it.", body = function()
+  gd.text("assert can_change_state(state, to);\n")
+  gd.text(enum .. " from = state;\n")
+  hooks("exit", "from")
+  gd.text("state = to;\nstate_time = 0.0;\n")
+  hooks("enter", "to")
+  gd.text("emit state_changed(from, to);")
+end }
+
+gd.func { name = "update_state", params = { "delta: float" }, ret = "void",
+          doc = "Runs the current state's update, and changes to the state it returns.", body = function()
+  gd.text("state_time += delta;\n" .. enum .. " next = state;\nswitch (state) {\n")
+  for _, name in ipairs(names) do
+    gd.text("case " .. value(name) .. ": next = update_" .. gd.snake(name) .. "(delta); break;\n")
+  end
+  gd.text("}\nif (next != state) {\n  change_state(next);\n}")
+end }
+```
+
+- `can_change_state` turns the data into a `switch`: one `case` per state, with the states it may change to.
+- `change_state` checks the change with `assert`. In debug builds, a change that the data doesn't allow prints an error, and doesn't happen. See "Assertions" in `gd++ man rewrites`.
+- The hooks run in order: the old state's exit, then the new state's enter.
+- `update_state` calls `update_idle`, `update_run` and so on: `gd.snake("Idle")` is `idle`.
+- The C++ that `gd.text` writes uses GD++'s rewrites, e.g. `assert` and `emit`, like any C++ code in GD++.
+- The macro doesn't take `on physics_process`: a class has at most one, and it belongs to the class, e.g. for gravity. The class calls `update_state` from it.
+
+# 5. Use it in the player
+
+Replace the hand-written parts of `player.gd++` with an invocation, and add the attack: an `Area2D` named `Hitbox` in the scene, with monitoring off, an `attack` input action, and three functions. The whole file:
+
+```gd++
+class_name Player
+extends CharacterBody2D
+
+@export var speed: float = 200.0
+@export var jump_speed: float = 400.0
+@export var gravity: float = 980.0
+@export var attack_time: float = 0.3
+
+@onready var animation: AnimationPlayer = $AnimationPlayer
+@onready var hitbox: Area2D = $Hitbox
+
+invoke state_machine(Idle, {
+  Idle   = [Run, Jump, Fall, Attack],
+  Run    = [Idle, Jump, Fall, Attack],
+  Jump   = {to = [Fall], enter = true},
+  Fall   = [Idle, Run, Jump, Attack],
+  Attack = {to = [Idle], enter = true, exit = true},
+})
+
+on physics_process(delta: float) {
+  Vector2 velocity = get_velocity();
+  velocity.y += gravity * delta;
+  set_velocity(velocity);
+  update_state(delta);
+  move_and_slide();
+}
+
+// The direction that the player presses: -1 for left, 1 for right, or 0.
+func input_x() -> float {
+  return Input::get_singleton()->get_axis(string_name "left", string_name "right");
+}
+
+func walk() -> void {
+  set_velocity(Vector2(input_x() * speed, get_velocity().y));
+}
+
+// The next state of a player on the floor, or falling.
+func ground_state() -> PlayerState {
+  if (!is_on_floor()) return PlayerState::FALL;
+  if (Input::get_singleton()->is_action_just_pressed(string_name "jump")) return PlayerState::JUMP;
+  if (Input::get_singleton()->is_action_just_pressed(string_name "attack")) return PlayerState::ATTACK;
+  return input_x() != 0 ? PlayerState::RUN : PlayerState::IDLE;
+}
+
+func update_idle(delta: float) -> PlayerState {
+  walk();
+  return ground_state();
+}
+
+func update_run(delta: float) -> PlayerState {
+  walk();
+  return ground_state();
+}
+
+func enter_jump() -> void {
+  set_velocity(Vector2(get_velocity().x, -jump_speed));
+  animation->play(string_name "jump");
+}
+
+func update_jump(delta: float) -> PlayerState {
+  walk();
+  return get_velocity().y >= 0 ? PlayerState::FALL : PlayerState::JUMP;
+}
+
+func update_fall(delta: float) -> PlayerState {
+  walk();
+  return ground_state();
+}
+
+func enter_attack() -> void {
+  hitbox->set_deferred(string_name "monitoring", true);
+  animation->play(string_name "attack");
+}
+
+func update_attack(delta: float) -> PlayerState {
+  set_velocity(Vector2(0, get_velocity().y));
+  return state_time >= attack_time ? PlayerState::IDLE : PlayerState::ATTACK;
+}
+
+func exit_attack() -> void {
+  hitbox->set_deferred(string_name "monitoring", false);
+}
+```
+
+What changed:
+
+- The enum, the signal, `state`, `state_time`, `change_state` and `update_state` are gone: the invocation generates them.
+- `Attack` cost one line of data, plus its own code.
+- `Fall` may change to `Jump` and `Attack`, since `ground_state` returns them when the player lands while pressing a button.
+
+Build and play. To see what the invocation generates, run:
+
+```sh
+gd++ trans player.gd++
+```
+
+It prints the C++ files that the build compiles: `Player.h`, `Player.cpp` and `PlayerState.h`. See `gd++ man trans`.
+
+# 6. Catch mistakes early
+
+Make a typo in the data: `Fall = [Idel, Run, Jump, Attack]`. Without checks, the macro would generate `PlayerState::IDEL`, and the C++ compiler would report an error about generated code. Better: check the data in Lua, and report what's wrong in terms of the data.
+
+Replace the code that reads the data, from step 3, with code that checks it while reading it:
+
+```lua
+if ctx.scope ~= "class" then
+  gd.error("a state machine must be invoked in a class", "it generates the class's members")
+end
+if type(states) ~= "table" then
+  gd.error_at("states", "states must be a dictionary of states", "e.g. {Idle = [Run], Run = [Idle]}")
+end
+
+// Read each state: the states it may change to, and whether it has enter and exit functions.
+local names = gd.keys(states)
+local info = {}
+for _, name in ipairs(names) do
+  local s = states[name]
+  if type(s) ~= "table" then
+    gd.error_at("states", "state " .. name .. " needs a list of states, or a dictionary", "e.g. " .. name .. " = [Idle]")
+  end
+  if #s > 0 or next(s) == nil then
+    s = { to = s }
+  end
+  for key in pairs(s) do
+    if not gd.contains({ "to", "enter", "exit" }, key) then
+      gd.error_at("states", "state " .. name .. " has an unknown key " .. key, "the keys are to, enter and exit")
+    end
+  end
+  info[name] = { to = s.to or {}, enter = s.enter, exit = s.exit }
+end
+
+// Check the names, so that a typo is an error here, not in the generated C++.
+if states[initial] == nil then
+  gd.error_at("initial", "the initial state " .. tostring(initial) .. " isn't a state", "the states are " .. gd.join(names, ", "))
+end
+for _, name in ipairs(names) do
+  for _, to in ipairs(info[name].to) do
+    if states[to] == nil then
+      gd.error_at("states", "state " .. name .. " changes to " .. to .. ", which isn't a state", "the states are " .. gd.join(names, ", "))
+    end
+  end
+end
+```
+
+Now the build stops with an error at the data:
+
+```
+player.gd++:12:28: State Fall changes to Idel, which isn't a state.
+ 12 | invoke state_machine(Idle, {
+    |                            ^
+Hint: The states are Attack, Fall, Idle, Jump, Run.
+Macro call stack:
+  macro state_machine, invoked at player.gd++:12
+```
+
+- `gd.error_at("states", ...)` points the error at the argument of the parameter `states`. `gd.error` points it at the invocation.
+- Messages become sentences: capitalized, ending with a period.
+- Every error that a macro causes ends with its macro call stack: the invocations that led to it, innermost first. Here it's only one. See "Errors" in `gd++ man macros`.
+
+The checks only see the data. What the update functions return is C++, which runs in the game. That's what the `assert` in `change_state` checks: if `update_jump` returned `PlayerState::ATTACK`, which `Jump` doesn't allow, debug builds would print:
+
+```
+Failed GD++ assertion: `can_change_state(state, to)`.
+```
+
+# 7. Move the fixed part into a template
+
+The signal and the two variables never change, apart from the enum's name. As emitter calls, they're harder to read than the GD++ they generate. That's what templates are for: GD++ code with holes. Declare one at the top level of the macro's body, right after the comments:
+
+```gd++
+// The parts that never change, as GD++.
+template state_core(Enum, initial) {
+  /// Emitted when the state changes.
+  signal state_changed(from: ${Enum}, to: ${Enum})
+
+  /// The current state.
+  var state: ${Enum} = ${Enum}::${initial}
+
+  /// The seconds since the state last changed.
+  var state_time: float = 0.0
+}
+```
+
+Then replace the `gd.signal` and the two `gd.var` calls with one call that invokes the template:
+
+```lua
+gd.invoke("state_core", { Enum = enum, initial = gd.upper_snake(initial) })
+```
+
+- A template declared in a macro's body is an ordinary template of the package. Writing it there only keeps it next to its user.
+- `${...}` holes are Lua expressions over the template's parameters.
+- The doc comments in the template document what it generates, so Godot's help shows them.
+- This is the usual split: a template holds what never changes, as readable GD++, and the macro adds only what needs loops or checks.
+
+The generated code is the same as before. Run `gd++ trans player.gd++` again to compare.
+
+# 8. Add a second character
+
+The slime is where the macro pays off. In `player.tscn`, add the root node to a group `player`, so that slimes can find it. Make a scene `slime.tscn` like the player's, and write `slime.gd++`:
+
+```gd++
+class_name Slime
+extends CharacterBody2D
+
+@export var speed: float = 60.0
+@export var sight: float = 150.0
+
+var direction: float = 1.0
+
+invoke state_machine(Patrol, {
+  Patrol = [Chase],
+  Chase  = [Patrol],
+})
+
+on physics_process(delta: float) {
+  update_state(delta);
+  move_and_slide();
+}
+
+// The player, if it's in sight.
+func player_in_sight() -> Node2D {
+  Node2D *player = get_tree()->get_first_node_in_group(string_name "player") as Node2D *;
+  if (player && player->get_global_position().distance_to(get_global_position()) <= sight) {
+    return player;
+  }
+  return nullptr;
+}
+
+func update_patrol(delta: float) -> SlimeState {
+  if (is_on_wall()) {
+    direction = -direction;
+  }
+  set_velocity(Vector2(direction * speed, 0));
+  return player_in_sight() ? SlimeState::CHASE : SlimeState::PATROL;
+}
+
+func update_chase(delta: float) -> SlimeState {
+  Node2D *player = player_in_sight();
+  if (!player) return SlimeState::PATROL;
+  direction = player->get_global_position().x < get_global_position().x ? -1.0 : 1.0;
+  set_velocity(Vector2(direction * speed * 2, 0));
+  return SlimeState::CHASE;
+}
+```
+
+- Its state machine is four lines of data, and two update functions.
+- It gets its own enum, `SlimeState`, since the macro names it after the class.
+- Patrol and chase have no enter or exit code, so their entries are plain lists.
+
+# 9. The whole macro
+
+`state_machine.gd++`, with the checks and the template:
+
+```gd++
+macro_name state_machine(initial, states)
+
+// A state machine for the class that invokes it.
+// - initial: the state it starts in.
+// - states: each state, with the states it may change to: a list, or a table with them in "to", and with
+//   enter = true or exit = true if the class has enter_NAME or exit_NAME functions for it.
+// The class writes update_NAME(delta) for each state, which returns the next state, and calls update_state(delta).
+
+// The parts that never change, as GD++.
+template state_core(Enum, initial) {
+  /// Emitted when the state changes.
+  signal state_changed(from: ${Enum}, to: ${Enum})
+
+  /// The current state.
+  var state: ${Enum} = ${Enum}::${initial}
+
+  /// The seconds since the state last changed.
+  var state_time: float = 0.0
+}
+
+if ctx.scope ~= "class" then
+  gd.error("a state machine must be invoked in a class", "it generates the class's members")
+end
+if type(states) ~= "table" then
+  gd.error_at("states", "states must be a dictionary of states", "e.g. {Idle = [Run], Run = [Idle]}")
+end
+
+// Read each state: the states it may change to, and whether it has enter and exit functions.
+local names = gd.keys(states)
+local info = {}
+for _, name in ipairs(names) do
+  local s = states[name]
+  if type(s) ~= "table" then
+    gd.error_at("states", "state " .. name .. " needs a list of states, or a dictionary", "e.g. " .. name .. " = [Idle]")
+  end
+  if #s > 0 or next(s) == nil then
+    s = { to = s }
+  end
+  for key in pairs(s) do
+    if not gd.contains({ "to", "enter", "exit" }, key) then
+      gd.error_at("states", "state " .. name .. " has an unknown key " .. key, "the keys are to, enter and exit")
+    end
+  end
+  info[name] = { to = s.to or {}, enter = s.enter, exit = s.exit }
+end
+
+// Check the names, so that a typo is an error here, not in the generated C++.
+if states[initial] == nil then
+  gd.error_at("initial", "the initial state " .. tostring(initial) .. " isn't a state", "the states are " .. gd.join(names, ", "))
+end
+for _, name in ipairs(names) do
+  for _, to in ipairs(info[name].to) do
+    if states[to] == nil then
+      gd.error_at("states", "state " .. name .. " changes to " .. to .. ", which isn't a state", "the states are " .. gd.join(names, ", "))
+    end
+  end
+end
+
+local enum = ctx.class .. "State"
+local function value(name)
+  return enum .. "::" .. gd.upper_snake(name)
+end
+
+gd.enum { name = enum, values = gd.map(names, gd.upper_snake) }
+gd.invoke("state_core", { Enum = enum, initial = gd.upper_snake(initial) })
+
+gd.func { name = "can_change_state", params = { "from: " .. enum, "to: " .. enum }, ret = "bool",
+          doc = "Whether the state machine may change from one state to another.", body = function()
+  gd.text("switch (from) {\n")
+  for _, name in ipairs(names) do
+    local tests = gd.map(info[name].to, function(to) return "to == " .. value(to) end)
+    gd.text("case " .. value(name) .. ": return " .. (#tests > 0 and gd.join(tests, " || ") or "false") .. ";\n")
+  end
+  gd.text("}\nreturn false;")
+end }
+
+// A switch that calls the hook of the states that have one.
+local function hooks(kind, var)
+  gd.text("switch (" .. var .. ") {\n")
+  for _, name in ipairs(names) do
+    if info[name][kind] then
+      gd.text("case " .. value(name) .. ": " .. kind .. "_" .. gd.snake(name) .. "(); break;\n")
+    end
+  end
+  gd.text("default: break;\n}\n")
+end
+
+gd.func { name = "change_state", params = { "to: " .. enum }, ret = "void",
+          doc = "Changes the state, if the state machine may change to it.", body = function()
+  gd.text("assert can_change_state(state, to);\n")
+  gd.text(enum .. " from = state;\n")
+  hooks("exit", "from")
+  gd.text("state = to;\nstate_time = 0.0;\n")
+  hooks("enter", "to")
+  gd.text("emit state_changed(from, to);")
+end }
+
+gd.func { name = "update_state", params = { "delta: float" }, ret = "void",
+          doc = "Runs the current state's update, and changes to the state it returns.", body = function()
+  gd.text("state_time += delta;\n" .. enum .. " next = state;\nswitch (state) {\n")
+  for _, name in ipairs(names) do
+    gd.text("case " .. value(name) .. ": next = update_" .. gd.snake(name) .. "(delta); break;\n")
+  end
+  gd.text("}\nif (next != state) {\n  change_state(next);\n}")
+end }
+```
+
+# 10. Keep it maintainable
+
+Macros make code shorter, but harder to follow. Some habits help:
+
+- Comment the macro: what it generates, what its parameters mean, and what the invoking class must write. Readers of `player.gd++` will look there.
+- Keep the data readable. The invocation is what people read most, so design it first, as in step 2.
+- Check the data, with `gd.error_at`, so that mistakes get errors about the data, not about generated code.
+- Put the code that never changes in a template.
+- Look at the output with `gd++ trans` whenever something is unclear.
+- Debugging:
+  - Compiler errors and debuggers point at the invocation's line for the C++ that the macro writes with `gd.text`, e.g. the `switch` in `update_state`.
+  - For the C++ of a template, they point at its line in the template, e.g. in `state_machine.gd++`.
+- Don't add features the characters don't need yet. Each one costs every reader of the macro.
+
+# See also
+
+`gd++ man templates`, `gd++ man macros`, `gd++ man enums`, `gd++ man notifications`, `gd++ man rewrites`, `gd++ man trans`.

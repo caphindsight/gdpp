@@ -42,7 +42,7 @@ points++;
 }
 
 int64_t Score::get_points_twice() {
-#line 5 "input.gd++"
+#line 8 "macros.gd++"
  return points * 2;
 #line 48 "Score.cpp"
 }

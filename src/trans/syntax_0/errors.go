@@ -19,7 +19,9 @@ type Error struct {
 	Len  int    // Width of the caret underline, in runes.
 	Msg  string // A capitalized sentence ending with a period.
 	Hint string // An optional suggestion, in the same style.
-	line string // The source line at Pos, set by withSource.
+	// For errors that macros and templates cause: the invocations that led to it, innermost first. See frame.
+	Stack []string
+	line  string // The source line at Pos, set by withSource.
 }
 
 func (e *Error) Message() string          { return e.Msg }
@@ -44,8 +46,23 @@ func (e *Error) Error() string {
 	if e.Hint != "" {
 		s += "\nHint: " + e.Hint
 	}
+	if len(e.Stack) > 0 {
+		s += "\nMacro call stack:"
+		for i, frame := range e.Stack {
+			if n := len(e.Stack); n > 2*stackEnds && i >= stackEnds && i < n-stackEnds {
+				if i == stackEnds {
+					s += fmt.Sprintf("\n  ... %d more", n-2*stackEnds)
+				}
+				continue
+			}
+			s += "\n  " + frame
+		}
+	}
 	return s
 }
+
+// stackEnds is how many frames of a long macro call stack an error shows at each end.
+const stackEnds = 5
 
 // errorAt returns an Error that underlines token t.
 func errorAt(t lexer.Token, msg, hint string) *Error {

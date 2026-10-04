@@ -188,7 +188,6 @@ func (r *run) luaError(err error) error {
 		}
 	}
 	msg = fmt.Sprintf("%s %s failed: %s", capitalize(r.def.m.what()), r.def.m.Name, strings.TrimSuffix(msg, "."))
-	hint := fmt.Sprintf("Invoked at %s:%d.", r.x.filename, r.inv.Pos.Line)
 	if line == 0 {
 		return r.x.errorAt(r.inv.Pos, r.inv.span(), msg+".", "")
 	}
@@ -202,7 +201,7 @@ func (r *run) luaError(err error) error {
 	}
 	pos := lexer.Position{Filename: file, Line: line, Column: col}
 	pos.Offset = offsetOf(src, pos)
-	return (&Error{Pos: pos, Len: max(1, len(strings.TrimSpace(text))), Msg: msg + ".", Hint: hint}).withSource(src)
+	return (&Error{Pos: pos, Len: max(1, len(strings.TrimSpace(text))), Msg: msg + "."}).withSource(src)
 }
 
 // offsetOf returns the byte offset in src of pos's line and column.
@@ -1280,10 +1279,12 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 		}
 		values[i] = v
 	})
+	// Its line of the macro call stack, if it fails.
+	frame := fmt.Sprintf("%s %s, invoked with gd.invoke at %s", def.m.what(), name, strings.TrimSuffix(L.Where(1), ":"))
 	if def.m.Template {
 		items, err := r.instantiate(def, values)
 		if err != nil {
-			r.fail(err.(*Error))
+			r.fail(addFrame(err, frame).(*Error))
 		}
 		for _, item := range items {
 			r.emit("gd.invoke", item)
@@ -1304,7 +1305,7 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 	L.SetGlobal("gd", gd)
 	L.SetGlobal("ctx", ctx)
 	if err != nil {
-		r.fail(err.(*Error))
+		r.fail(addFrame(err, frame).(*Error))
 	}
 	if sc.kind == "cpp" {
 		sc.chunks = append(sc.chunks, inner.chunks...)
@@ -1312,7 +1313,7 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 	}
 	items, err := n.collect(inner)
 	if err != nil {
-		r.fail(err.(*Error))
+		r.fail(addFrame(err, frame).(*Error))
 	}
 	for _, item := range items {
 		r.emit("gd.invoke", item)
@@ -1391,7 +1392,7 @@ func (r *run) instantiate(def *macroDef, values []lua.LValue) ([]*topItem, error
 		}
 		return col
 	}
-	text := body.Text
+	text := body.Template
 	line, col := body.TextPos.Line, body.TextPos.Column // Where text[i] is in def's file.
 	advance := func(s string) {
 		for _, c := range s {
@@ -1449,7 +1450,7 @@ func (r *run) instantiate(def *macroDef, values []lua.LValue) ([]*topItem, error
 		s, ok := str(v)
 		if !ok {
 			return nil, (&Error{Pos: holePos, Len: end - i + 1, Msg: fmt.Sprintf("This hole is %s, but holes need a string, a number, a boolean or code.", typeName(v)),
-				Hint: fmt.Sprintf("Instantiated at %s:%d.", r.x.filename, r.inv.Pos.Line)}).withSource(def.src)
+			}).withSource(def.src)
 		}
 		s = strings.ReplaceAll(s, "\n", " ")
 		holes = append(holes, hole{line, outCol(), utf8.RuneCountInString(text[i : end+1]), utf8.RuneCountInString(s)})
@@ -1475,7 +1476,6 @@ func (r *run) instantiate(def *macroDef, values []lua.LValue) ([]*topItem, error
 			}
 			e.Pos.Column = col
 			e.Pos.Offset = offsetOf(def.src, e.Pos)
-			e.Hint = strings.TrimSpace(e.Hint + fmt.Sprintf(" Instantiated at %s:%d.", r.x.filename, r.inv.Pos.Line))
 			return nil, e.withSource(def.src)
 		}
 		return nil, err
@@ -1485,6 +1485,18 @@ func (r *run) instantiate(def *macroDef, values []lua.LValue) ([]*topItem, error
 			return nil, (&Error{Pos: item.Macro.Pos, Len: len(item.Macro.what()), Msg: "Templates can't generate macros or templates.",
 				Hint: "Declare it next to the template: it's a package-level declaration either way."}).withSource(def.src)
 		}
+		// Its C++ code keeps the template's lines, so #line can name them. Errors point at the invocation, like
+		// for the rest of the output.
+		forEachNode(item, func(n any) {
+			switch n := n.(type) {
+			case *Block:
+				n.Origin = Origin{def.source, n.TextPos.Line}
+			case *Init:
+				n.Origin = Origin{def.source, n.Pos.Line}
+			case *Default:
+				n.Origin = Origin{def.source, n.Pos.Line}
+			}
+		})
 		r.place(item)
 	}
 	// The invocation's doc comment documents the first declaration that has none.

@@ -1,0 +1,6 @@
+input.gd++:12:3: Macro inner failed: cannot perform concat operation between number and nil.
+ 12 |   gd.var { name = "x" .. n .. nil, type = "int" }
+    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Macro call stack:
+  macro inner, invoked in generated code
+  template outer, invoked at input.gd++:4

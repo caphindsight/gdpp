@@ -399,10 +399,20 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 		}
 		return text
 	}
+	copies := map[string]string{} // How #line names each GD++ file: by its copy, see below.
+	for _, f := range files {
+		copies[f.File.ToString()] = sourcesDirName + "/" + f.Rel
+	}
 	for _, f := range files {
 		// #line names the GD++ file's copy, relative to the build cache, where SCons runs, like it names C++ sources.
+		// So do the templates of other files, whose C++ code keeps its lines.
 		opts := packageOptions(pkg, packageDeps(files, names, spec, f.Rel, nonRuntime))
-		opts.SourceName = sourcesDirName + "/" + f.Rel
+		opts.SourceName = copies[f.File.ToString()]
+		for i, d := range opts.Dependencies {
+			if d.Source != "" {
+				opts.Dependencies[i].SourceName = copies[d.File]
+			}
+		}
 		opts = o.transOptions(opts)
 		name := f.File.ToString()
 		generated, err := trans.Generate(name, f.Src, opts, syntax)

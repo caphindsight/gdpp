@@ -1,0 +1,13 @@
+class_name A
+extends Node
+
+invoke outer()
+
+// An invocation in generated code, and a Lua error in a macro it invokes.
+template outer() {
+  invoke inner(3)
+}
+
+macro inner(n) {
+  gd.var { name = "x" .. n .. nil, type = "int" }
+}

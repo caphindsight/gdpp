@@ -116,8 +116,9 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Debugging: `@trace` prints calls and changes, and `@profile` times code. See `gd++ man debugging`.
 - Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: `decl`, `impl` and `@global` blocks. See `gd++ man code`.
-- Macros and templates: Lua code and GD++ templates that generate code, invoked as `invoke name(...)`. See `gd++ man macros`.
-  - An advanced feature: use it seldom. Generated code is harder to read and debug than code you write out.
+- Templates: GD++ code with holes, which generates code where `invoke name(...)` invokes it. See `gd++ man templates`.
+- Macros: Lua code that generates code, invoked the same way. More powerful than templates, but also more advanced: prefer templates whenever they do the job. See `gd++ man macros`.
+  - Both are advanced features: use them seldom. Generated code is harder to read and debug than code you write out.
 - Rewrites: GD++'s few additions to C++ code. See `gd++ man rewrites`.
   - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as`,
   - `assert`, with its fallbacks `assert_void` and `assert_val`.

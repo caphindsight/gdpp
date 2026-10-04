@@ -311,8 +311,11 @@ func TestTranspilePackageMacros(t *testing.T) {
 		t.Fatalf("classes = %+v, want Crate", classes)
 	}
 	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
-	if want := `return "Pkg/pkg";`; !strings.Contains(gen["Crate.cpp"], want) {
-		t.Errorf("Crate.cpp = %s\nwant it to contain %q", gen["Crate.cpp"], want)
+	// The template's C++ keeps its line in macros.gd++, which #line names by its copy, like the invoking file's.
+	for _, want := range []string{`return "Pkg/pkg";`, `#line 7 "package/macros.gd++"`} {
+		if !strings.Contains(gen["Crate.cpp"], want) {
+			t.Errorf("Crate.cpp = %s\nwant it to contain %q", gen["Crate.cpp"], want)
+		}
 	}
 }
 

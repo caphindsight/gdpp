@@ -2,3 +2,5 @@ input.gd++:4:1: Macro broken emitted GD++ that doesn't parse: this "(" is never 
  4 | invoke broken()
    | ^^^^^^^^^^^^^
 Hint: Add a matching ")". The line it emitted: "func f( -> void {}".
+Macro call stack:
+  macro broken, invoked at input.gd++:4

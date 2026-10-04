@@ -48,6 +48,7 @@ type Dependency struct {
 	NonRuntime bool
 	Source     string // For Kind Macro and Template: the whole GD++ file that declares it, which the translator parses.
 	File       string // For Kind Macro and Template: that file's name, for errors.
+	SourceName string // For Kind Template: how #line names that file, like Options.SourceName. Default: File.
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.

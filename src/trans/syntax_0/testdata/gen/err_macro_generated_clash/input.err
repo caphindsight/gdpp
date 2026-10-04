@@ -1,4 +1,6 @@
 input.gd++:6:1: The name "health" is already used by another member.
  6 | invoke stat(health)
    | ^^^
-Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create. This comes from macro stat.
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create.
+Macro call stack:
+  macro stat, invoked at input.gd++:6

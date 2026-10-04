@@ -50,7 +50,7 @@ void SparkPool::gdpp_queue_destroy() {
 }
 
 Spark *SparkPool::take() {
-#line 9 "input.gd++"
+#line 16 "input.gd++"
  return gdpp::create<Spark>();
 #line 56 "SparkPool.cpp"
 }

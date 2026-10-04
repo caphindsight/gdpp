@@ -1,0 +1,218 @@
+Templates: GD++ code with holes
+
+A template is GD++ code with holes. `invoke` fills them in, and puts the code in its place.
+
+Warning: templates and macros are advanced features. Use them seldom in real code.
+
+- Generated code is harder to read, search and debug than code you write out.
+- Plain GD++ is the default. A template is worth it only when it removes a lot of repetition.
+- Prefer templates to macros whenever a template does the job. A template reads like the code it generates. Macros are more powerful, with loops, conditions and checks in Lua, but also more advanced. See `gd++ man macros`.
+- C++ has its own templates. On this page, "template" means a GD++ template.
+
+# Templates
+
+A template is a package-level declaration, like a class, an extern or an enum. Its body is GD++ code:
+
+```gd++
+// A clamped stat with an exported max, and a signal when it changes.
+template stat(name, max = 100) {
+  var ${name}: int {
+    decl { int64_t ${name}_ = ${max}; }
+    get { return ${name}_; }
+    set(value) {
+      ${name}_ = CLAMP(value, 0, max_${name});
+      emit ${name}_changed(${name}_);
+    }
+  }
+
+  @export var max_${name}: int = ${max}
+
+  signal ${name}_changed(value: int)
+}
+```
+
+Code invokes it with `invoke name(...)`:
+
+```gd++
+class_name Player
+extends Node
+
+/// The player's health.
+invoke stat(health, max = 100)
+invoke stat(mana, max = 50)
+```
+
+Each invocation fills in the holes, and is replaced by the result: here, a property, a variable and a signal.
+
+Facts:
+
+- `template NAME(params) { GD++ }` goes wherever an inline class can go. See `gd++ man files`.
+- Every file of the package can invoke it.
+- Its name shares the package's namespace with classes, externs, enums and macros. It can't be a GD++ or C++ keyword.
+- A template has no doc comment and no annotations: Godot never sees a template. Use `//` comments.
+- Its braces must balance.
+
+# Holes
+
+- `${EXPR}` is a hole: a Lua expression over the parameters, e.g. `${name}`, `${name .. "_changed"}` or `${gd.pascal(name)}`.
+- A hole's value must be a string, a number, a boolean or code. Newlines in it become spaces.
+- Holes work anywhere in the body: in names, types, values, C++ code, strings and doc comments.
+- `$` followed by a name is still a node path, e.g. `$Hud/Score`.
+- Holes can use the helpers of `gd`, e.g. `gd.pascal` and `gd.quote`. See "Lua: case conversion" and the sections after it in `gd++ man macros`.
+- Templates have no loops or conditions. When code needs them, use a macro.
+
+# Parameters
+
+- A parameter is `name`, or `name = default`.
+- Parameters have no types: they're Lua values, which only exist while code is generated.
+- A default is a Lua expression, e.g. `max = 100` or `tags = {}`. It's evaluated at each invocation.
+- A parameter without an argument or a default is `nil`.
+- Parameters must not be Lua keywords, e.g. `end`.
+
+# Invoking
+
+Templates and macros are invoked the same way:
+
+```gd++
+invoke stat(health, max = 100)          // GD++ data
+invoke stat { "health", max = 50 + 50 } // a Lua table
+```
+
+`invoke name(...)` takes GD++ data:
+
+- Positional arguments first, then named ones: `name = value`, like the parameters' defaults.
+- An unknown name is an error.
+- An argument that starts with `name =` is named. To pass a C++ assignment, put it in parentheses: `invoke log((x = 3))`.
+
+Each value becomes a Lua value:
+
+```
+GD++                                   LUA
+42, -1.5, 0x10                         a number
+"text"                                 a string
+true, false, null                      true, false, nil
+health, Array[int], Node.ProcessMode   a string: a name or a type
+[a, b]                                 a list: a table with keys 1, 2, ...
+{key = v, other = w}                   a table with string keys
+code { x++; }                          a Code value: C++ statements
+a + b * 2                              a Code value: a C++ expression
+```
+
+- Anything that isn't one of the other forms is a C++ expression, up to the next `,` or `)` outside brackets. E.g. a lambda: `[&]() { return 1; }`.
+- In a dictionary, every key is a name, followed by `=`.
+- A `{ }` that isn't a dictionary, e.g. `{1, 2}`, is a C++ braced initializer.
+- A Code value converts to its C++ text in a hole.
+
+`invoke name { ... }` takes a Lua table constructor instead, like Lua's `f{ ... }` call:
+
+```gd++
+invoke stat { "health", max = 50 + 50 }
+```
+
+- Its positional entries are the positional arguments, and its string keys the named ones.
+- Use it when the data needs Lua: computed values, nested tables, functions.
+
+# Where templates work
+
+Templates generate declarations:
+
+- At the top level of a file without `class_name` or `extern_name`, a template may generate classes, externs and enum types.
+- In a class or extern, it generates members.
+- In a file-level class or extern, i.e. after `class_name` or `extern_name`, it may generate inline classes and externs too.
+
+Templates don't work in C++ code, e.g. in a function body. Use a macro there. See `gd++ man macros`.
+
+# Doc comments
+
+- Doc comments in the template document what it generates, e.g. `/// The ${name} of the player.`
+- A doc comment before an invocation documents the first declaration of the output, unless that has its own. In the example above, it documents `health`.
+
+# File-level templates
+
+Like `class_name`, `template_name` makes the whole file one template:
+
+```gd++
+template_name pool_of(T, size = 64)
+
+// A pool class for any poolable class.
+@pool(${size}, "grow")
+class ${T}Pool {
+  extends Node
+  func take() -> ${T} { return create ${T}; }
+}
+```
+
+- The head comes first in the file. Everything after it, to the end of the file, is the body.
+- It works the same as `template pool_of(T, size = 64) { ... }`.
+
+# Inline templates and macros
+
+A template's body may declare templates and macros:
+
+```gd++
+template inventory(first, second) {
+  invoke slot(${first})
+  invoke slot(${second})
+
+  template slot(name) {
+    var ${name}: int
+    signal ${name}_changed
+  }
+}
+```
+
+- They are ordinary package-level declarations, like inline classes in a `class_name` file. Writing them inside only keeps them next to their user.
+- They can't use the parameters or holes of the body around them.
+- They start a line of the body's top level: `template NAME(` or `macro NAME(`.
+- A template's output can't declare templates or macros. Declare them next to the template.
+
+# Templates and macros together
+
+- A template's output may invoke templates and macros, e.g. `invoke stat(${name}, max = ${max})`.
+- Macros invoke templates with `gd.invoke`. See `gd++ man macros`.
+- A common split: a template holds the code that never changes, as readable GD++, and a macro adds the parts that need loops or checks.
+
+# Limits
+
+- Holes run in the same sandbox as macros: no I/O, nothing random.
+- An invocation may run for 20 seconds at most. `gd++ build --macro-timeout SECONDS` and `gd++ trans --macro-timeout SECONDS` change the limit.
+- Invocations nest at most 64 levels deep, e.g. a template whose output invokes a template. A package changes the limit with `macro_depth` in `gd++pkg.toml`, see `gd++ man packages`.
+
+# Errors
+
+- An error in a template's output points into the template.
+- An error in a hole's Lua expression points at the hole.
+- A compiler error in the template's C++ code points at its line in the template, also when the template is in another file: the generated code's `#line` directives name the template's lines.
+- Every error that a template causes ends with its macro call stack: the invocations that led to it, innermost first, e.g. a template invoked by a macro. See "Errors" in `gd++ man macros`.
+- Run `gd++ trans FILE` to see what a file generates.
+
+# Examples
+
+A pool class for each poolable class:
+
+```gd++
+invoke pool_of(Bullet, 512)
+invoke pool_of(Spark)
+
+template pool_of(T, size = 64) {
+  @pool(${size}, "grow")
+  class ${T}Pool {
+    extends Node
+    func take() -> ${T} { return create ${T}; }
+  }
+}
+```
+
+A getter that doubles a value, for any name and type:
+
+```gd++
+invoke getter(speed, float)
+
+template getter(name, type) {
+  func get_${name}_twice() -> ${type} { return ${name} * 2; }
+}
+```
+
+# See also
+
+`gd++ man macros`, `gd++ man files`, `gd++ man grammar`, `gd++ man tut/state-machine`.

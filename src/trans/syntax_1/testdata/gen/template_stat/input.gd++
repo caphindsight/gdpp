@@ -1,0 +1,34 @@
+class_name Player
+extends Node
+
+/// The player's health.
+invoke stat(health, max = 100)
+invoke stat(mana, max = 50)
+invoke stats({stamina = 80, focus = 10})
+invoke stats { list = { courage = 5 * 4 } }
+
+// A clamped stat with a changed signal and an exported max: the stat macro of `gd++ man macros`, as a template.
+template stat(name, max = 100) {
+  var ${name}: int {
+    decl { int64_t ${name}_ = ${max}; }
+    get { return ${name}_; }
+    set(value) {
+      ${name}_ = CLAMP(value, 0, max_${name});
+      emit ${name}_changed(${name}_);
+    }
+  }
+
+  @export var max_${name}: int = ${max}
+
+  signal ${name}_changed(value: int)
+}
+
+// The stat template for each entry, with a check of the maxima: the first macro of `gd++ man macros`.
+macro stats(list) {
+  for name, max in pairs(list) do
+    if type(max) ~= "number" or max <= 0 then
+      gd.error_at("list", "the max of " .. name .. " must be a positive number", "e.g. invoke stats({health = 100})")
+    end
+    gd.invoke("stat", { name, max = max })
+  end
+}

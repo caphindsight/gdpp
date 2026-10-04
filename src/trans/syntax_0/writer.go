@@ -25,17 +25,23 @@ func (w *writer) ln(format string, args ...any) {
 
 // user writes prefix+code+suffix as one line, where code is user C++ starting at pos in the GD++ file, and assertions
 // in it become the macro assert. #line directives around it make compilers report user code at its GD++ location.
-func (w *writer) user(pos lexer.Position, prefix, code, suffix, assert string) {
-	w.ln("#line %d %q", pos.Line, w.source)
+// From a template, code comes from its origin instead.
+func (w *writer) user(pos lexer.Position, origin Origin, prefix, code, suffix, assert string) {
+	line, source := pos.Line, w.source
+	if origin.Source != "" {
+		line, source = origin.Line, origin.Source
+	}
+	w.ln("#line %d %q", line, source)
 	w.ln("%s", prefix+cpp(code, assert)+suffix)
 	w.ln("#line %d %q", w.lines+2, w.self)
 }
 
-// block writes the text of b, a C++ block, between prefix and suffix, like user. Generated code all comes from
-// its invocation, so each of its lines gets a #line naming the invocation's line.
+// block writes the text of b, a C++ block, between prefix and suffix, like user. A template's code keeps its
+// lines in the template. Other generated code all comes from its invocation, so each of its lines gets a #line
+// naming the invocation's line.
 func (w *writer) block(b *Block, prefix, suffix, assert string) {
-	if !b.Generated {
-		w.user(b.TextPos, prefix, b.Text, suffix, assert)
+	if !b.Generated || b.Origin.Source != "" {
+		w.user(b.TextPos, b.Origin, prefix, b.Text, suffix, assert)
 		return
 	}
 	at := fmt.Sprintf("#line %d %q", b.TextPos.Line, w.source)

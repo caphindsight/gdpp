@@ -299,10 +299,11 @@ func nextRaw(lex *lexer.PeekingLexer) lexer.Token {
 type codeBuilder struct {
 	sb        strings.Builder
 	inComment bool // Whether the last token was a comment on a single line.
+	keepDocs  bool // Whether to keep doc comments, e.g. in a template's body.
 }
 
 func (c *codeBuilder) add(t lexer.Token) {
-	if isComment(t) || isDoc(t) {
+	if isComment(t) || isDoc(t) && !c.keepDocs {
 		n := strings.Count(t.Value, "\n")
 		c.sb.WriteString(strings.Repeat("\n", n))
 		c.inComment = n == 0
@@ -470,12 +471,13 @@ func (b *MacroBody) parse(lex *lexer.PeekingLexer, open lexer.Token, toEOF bool)
 	if !toEOF {
 		b.TextPos.Advance("{")
 	}
-	var code codeBuilder
+	var code, template codeBuilder
+	template.keepDocs = true
 	for depth := 1; ; {
 		t := peekRaw(lex)
 		switch {
 		case t.EOF() && toEOF:
-			b.Text = code.String()
+			b.Text, b.Template = code.String(), template.String()
 			return nil
 		case t.EOF():
 			return errorAt(open, "This \"{\" is never closed.", "Add a matching \"}\".")
@@ -486,18 +488,20 @@ func (b *MacroBody) parse(lex *lexer.PeekingLexer, open lexer.Token, toEOF bool)
 			}
 			b.Helpers = append(b.Helpers, h)
 			code.sb.WriteString(strings.Repeat("\n", newlines))
+			template.sb.WriteString(strings.Repeat("\n", newlines))
 			continue
 		case isPunct(t, "{"):
 			depth++
 		case isPunct(t, "}"):
 			if depth--; depth == 0 && !toEOF {
 				nextRaw(lex)
-				b.Text = code.String()
+				b.Text, b.Template = code.String(), template.String()
 				return nil
 			}
 		}
 		nextRaw(lex)
 		code.add(t)
+		template.add(t)
 	}
 }
 
