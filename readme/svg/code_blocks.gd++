@@ -9,7 +9,8 @@ decl {
   int64_t roll(int64_t sides);
 }
 
-// In its source file. This is the class.
+// In its source file. `This` names the
+// current class, like `Self` in Rust.
 impl {
   int64_t This::roll(int64_t sides) {
     std::uniform_int_distribution<int64_t> d(1, sides);
