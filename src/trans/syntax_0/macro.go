@@ -41,6 +41,8 @@ type expander struct {
 	opts          meta.Options
 	defs          map[string]*macroDef
 	generated     map[int]string   // The offsets of invocations, with what each one invokes, e.g. "macro stat".
+	edits         []edit           // What the file's own invocations generated, where they are.
+	lineStarts    []int            // The offsets of src's lines, for posAt.
 	done          map[*Class]bool  // Classes whose members are expanded already.
 	doneExterns   map[*Extern]bool // The same for externs.
 	uniques       int              // How many names gd.unique made.
@@ -123,6 +125,7 @@ func (x *expander) expandFile(f *File) error {
 		if err != nil {
 			return err
 		}
+		x.addDeclEdit(inv, items)
 		for _, item := range items {
 			switch {
 			case item.Class != nil:
@@ -184,11 +187,11 @@ func (x *expander) expandFile(f *File) error {
 				n.Text, err = x.expandCode(n.Text, n.TextPos, owner, 0, &lines, x.codeErrors(n.Origin, n.Generated, n.TextPos))
 			case *Init:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, false, n.Pos))
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, n.Generated, n.Pos))
 				}
 			case *Default:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, false, n.Pos))
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, n.Generated, n.Pos))
 				}
 			}
 		})
@@ -234,6 +237,9 @@ func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth in
 		items, err := x.invoke(m.Invoke, sc, depth)
 		if err != nil {
 			return nil, err
+		}
+		if depth == 0 {
+			x.addDeclEdit(m.Invoke, items)
 		}
 		for _, item := range items {
 			switch {
@@ -387,6 +393,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		return code, nil
 	}
 	tokens = significant(tokens)
+	var orig []lexer.Token // For code in the expanded file: its tokens in src, which match tokens.
 	var out strings.Builder
 	last := 0 // The end of what's copied to out.
 	for i := 0; i+2 < len(tokens); i++ {
@@ -458,22 +465,35 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		if err != nil {
 			return "", err
 		}
-		out.WriteString(code[last:t.Pos.Offset])
+		var piece strings.Builder // What replaces code[t.Pos.Offset:end].
 		if at != nil && hasDirective(text) {
 			directive := fmt.Sprintf("#line %d %q", at.Line, at.Source)
-			out.WriteString("\n")
+			piece.WriteString("\n")
 			prev := "" // The line before, which may already name the line, or continue on this one with "\".
 			for _, l := range strings.Split(strings.Trim(text, "\n"), "\n") {
 				if prev != directive && l != directive && !strings.HasSuffix(prev, "\\") {
-					out.WriteString(directive + "\n")
+					piece.WriteString(directive + "\n")
 				}
-				out.WriteString(l + "\n")
+				piece.WriteString(l + "\n")
 				prev = l
 			}
-			fmt.Fprintf(&out, "#line %d %q\n", at.Line+strings.Count(code[t.Pos.Offset:end], "\n"), at.Source)
+			fmt.Fprintf(&piece, "#line %d %q\n", at.Line+strings.Count(code[t.Pos.Offset:end], "\n"), at.Source)
 		} else {
-			out.WriteString(oneLine(text))
-			out.WriteString(strings.Repeat("\n", strings.Count(code[t.Pos.Offset:end], "\n")))
+			piece.WriteString(oneLine(text))
+			piece.WriteString(strings.Repeat("\n", strings.Count(code[t.Pos.Offset:end], "\n")))
+		}
+		out.WriteString(code[last:t.Pos.Offset] + piece.String())
+		if errorAt == nil { // Code in the expanded file: its source changes too.
+			if orig == nil { // The whole file lexed already, so the rest of it does too.
+				l, _ := gdppLexer.LexString(x.filename, x.src[pos.Offset:])
+				all, _ := lexer.ConsumeAll(l)
+				orig = significant(all)
+			}
+			k := i // The invocation's last token.
+			for k+1 < len(tokens) && tokens[k+1].Pos.Offset < end {
+				k++
+			}
+			x.edits = append(x.edits, edit{start: pos.Offset + orig[i].Pos.Offset, end: pos.Offset + orig[k].Pos.Offset + len(orig[k].Value), text: piece.String()})
 		}
 		last = end
 	}

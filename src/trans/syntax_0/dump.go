@@ -34,7 +34,7 @@ func dumpValue(sb *strings.Builder, key string, v reflect.Value, indent string) 
 		fmt.Fprintf(sb, "%s%s@%d:%d", indent, key, pos.Line, pos.Column)
 		var fields []int
 		for i := 0; i < v.NumField(); i++ {
-			if f := v.Type().Field(i); f.Name != "Pos" && f.Tag.Get("dump") != "-" && !isEmpty(v.Field(i)) {
+			if f := v.Type().Field(i); f.Name != "Pos" && f.Name != "EndPos" && f.Tag.Get("dump") != "-" && !isEmpty(v.Field(i)) {
 				fields = append(fields, i)
 			}
 		}

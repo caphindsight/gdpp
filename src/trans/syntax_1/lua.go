@@ -952,6 +952,10 @@ func (r *run) place(node any) {
 		switch n := n.(type) {
 		case *Block:
 			n.Pos, n.TextPos, n.Generated = pos, pos, true
+		case *Init:
+			n.Pos, n.Generated = pos, true
+		case *Default:
+			n.Pos, n.Generated = pos, true
 		case *MacroBody, *Error:
 		default:
 			if p := reflectPos(n); p != nil {
@@ -1195,7 +1199,7 @@ func (r *run) emitVar(t *lua.LTable) int {
 	const what = "gd.var"
 	v := &Var{Pos: r.inv.Pos, Doc: r.doc(what, t), Annotations: r.annotations(what, t), Name: r.name(what, t), Type: r.optType(what, t, "type")}
 	if b, expr := r.cpp(what, t, "init"); b != nil {
-		v.Init = &Init{Pos: b.Pos}
+		v.Init = &Init{Pos: b.Pos, Generated: true}
 		if expr || !strings.ContainsAny(b.Text, ";\n") {
 			v.Init.Expr = strings.TrimSpace(b.Text)
 		} else {

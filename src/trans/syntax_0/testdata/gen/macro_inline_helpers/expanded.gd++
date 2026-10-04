@@ -1,0 +1,36 @@
+class_name Bag
+extends Node
+
+var sword: int
+signal sword_changed
+var arrows: int
+signal arrows_changed
+
+class GoblinSpawner {
+  extends Node
+  enum WAVE_1 = 3
+  enum WAVE_2 = 6
+  enum WAVE_3 = 9
+}
+
+// Two vars and a signal per slot, from an inline template.
+macro inventory(slots) {
+  template slot(name, type) {
+    var ${name}: ${type}
+    signal ${name}_changed
+  }
+  for _, s in ipairs(slots) do
+    gd.invoke("slot", { name = s[1], type = s[2] })
+  end
+}
+
+// A spawner class, whose wave constants come from an inline macro.
+template spawner_class(T) {
+  macro waves(n) {
+    for w = 1, n do gd.enum { name = "WAVE_" .. w, value = w * 3 } end
+  }
+  class ${T}Spawner {
+    extends Node
+    invoke waves(3)
+  }
+}

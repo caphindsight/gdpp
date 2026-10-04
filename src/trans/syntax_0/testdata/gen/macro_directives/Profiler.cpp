@@ -29,7 +29,7 @@ void Profiler::gdpp_queue_destroy() {
 int64_t Profiler::scaled(int64_t n) {
 #line 10 "input.gd++"
 
-  
+
 #line 11 "input.gd++"
 #ifdef DEBUG_ENABLED
 #line 11 "input.gd++"
@@ -38,7 +38,7 @@ int64_t Profiler::scaled(int64_t n) {
 #endif
 #line 11 "input.gd++"
  int extra = 1;
-  
+
 #line 12 "input.gd++"
 #ifdef DEBUG_ENABLED
 #line 12 "input.gd++"
@@ -47,7 +47,7 @@ int64_t Profiler::scaled(int64_t n) {
 #endif
 #line 14 "input.gd++"
 
-  
+
 #line 15 "input.gd++"
 #ifdef DEBUG_ENABLED
 #line 15 "input.gd++"
@@ -66,7 +66,7 @@ int64_t Profiler::scaled(int64_t n) {
 int64_t Profiler::halve(int64_t n) {
 #line 43 "input.gd++"
 
-    
+
 #line 44 "input.gd++"
 #ifdef DEBUG_ENABLED
 #line 44 "input.gd++"

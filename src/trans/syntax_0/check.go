@@ -180,6 +180,11 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 	if err := x.expandFile(file); err != nil {
 		return nil, err
 	}
+	if len(x.edits) > 0 { // What later stages see is the expanded source, as GD++ text.
+		if file, err = x.reparse(); err != nil {
+			return nil, err
+		}
+	}
 	u := &unit{src: src, file: file, symbols: map[string]*symbol{}, generated: x.generated}
 	declare := func(pos lexer.Position, name string, s *symbol) error {
 		if u.symbols[name] != nil || x.defs[name] != nil && x.defs[name].file == filename {

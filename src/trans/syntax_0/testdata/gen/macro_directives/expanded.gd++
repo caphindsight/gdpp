@@ -1,0 +1,91 @@
+class_name Profiler
+extends Node
+
+// Invocations in C++ blocks are statements, and may generate preprocessor directives: those keep their lines.
+decl {
+  
+#line 6 "input.gd++"
+#define SCALE 3
+#line 6 "input.gd++"
+
+  
+#line 7 "input.gd++"
+#define TWICE(x) \
+  (x * 2)
+#line 7 "input.gd++"
+
+}
+
+func scaled(n: int) -> int {
+  
+#line 11 "input.gd++"
+#ifdef DEBUG_ENABLED
+#line 11 "input.gd++"
+ UtilityFunctions::print(n);
+#line 11 "input.gd++"
+#endif
+#line 11 "input.gd++"
+ int extra = 1;
+  
+#line 12 "input.gd++"
+#ifdef DEBUG_ENABLED
+#line 12 "input.gd++"
+ UtilityFunctions::print(SCALE);
+#line 12 "input.gd++"
+#endif
+#line 14 "input.gd++"
+
+  
+#line 15 "input.gd++"
+#ifdef DEBUG_ENABLED
+#line 15 "input.gd++"
+ UtilityFunctions::print(n);
+#line 15 "input.gd++"
+#endif
+#line 15 "input.gd++"
+ n += 0;
+#line 15 "input.gd++"
+
+  return TWICE(n) * SCALE + extra;
+}
+
+func halve(n: int) -> int {
+    
+#line 44 "input.gd++"
+#ifdef DEBUG_ENABLED
+#line 44 "input.gd++"
+ UtilityFunctions::print(n);
+#line 44 "input.gd++"
+#endif
+#line 44 "input.gd++"
+
+    return n / 2;
+}
+
+// A #define.
+macro define(name, value) {
+  gd.text("#define " .. name .. " " .. value)
+}
+
+// A #define continued on the next line.
+macro define_long(name, value) {
+  gd.text("#define " .. name .. " \\\n  (" .. tostring(value) .. ")")
+}
+
+// Code that only debug builds compile.
+macro debug_only(body) {
+  gd.text("#ifdef DEBUG_ENABLED\n" .. tostring(body) .. "\n#endif")
+}
+
+// Invocations in a macro's C++.
+macro both(n) {
+  gd.text("invoke debug_only(code { UtilityFunctions::print(" .. n .. "); }); " .. n .. " += 0;")
+}
+
+// A template whose C++ invokes a macro that generates directives: #line names the template's lines.
+template checked(name) {
+  func ${name}(n: int) -> int {
+    invoke debug_only(code { UtilityFunctions::print(n); });
+    return n / 2;
+  }
+}

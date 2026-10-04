@@ -266,10 +266,11 @@ type MacroBody struct {
 // Pos is the position of "invoke".
 type Invoke struct {
 	Pos         lexer.Position
-	Doc         *Doc          `parser:"@@?"`
-	Annotations []*Annotation `parser:"@@*"` // Only parsed to report them.
-	Name        string        `parser:"'invoke' @Ident"`
-	Args        *ArgList      `parser:"@@"`
+	Doc         *Doc           `parser:"@@?"`
+	Annotations []*Annotation  `parser:"@@*"` // Only parsed to report them.
+	Name        string         `parser:"'invoke' @Ident"`
+	Args        *ArgList       `parser:"@@"`
+	EndPos      lexer.Position // Where the invocation ends.
 	// Where errors at the invocation go, as an error without a message, if not to Pos: for an invocation in a
 	// template's output, its place in the template, and for gd.invoke, the line of Lua code that calls it.
 	Site *Error
@@ -319,10 +320,11 @@ type Origin struct {
 // Init is the initial value of a variable: a one-line C++ expression (Expr) or a C++ block that returns the value.
 // Pos is the position of the expression's first token.
 type Init struct {
-	Pos    lexer.Position
-	Expr   string
-	Block  *Block
-	Origin Origin `dump:"-"`
+	Pos       lexer.Position
+	Expr      string
+	Block     *Block
+	Generated bool   `dump:"-"` // Whether a macro or template generated it.
+	Origin    Origin `dump:"-"`
 }
 
 // Default is the default value of a parameter: like Init, but its expression also ends at a "," outside brackets.

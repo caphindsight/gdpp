@@ -1,0 +1,16 @@
+class Abilities {
+  extends RefCounted
+  var can_jump: bool = false
+  var can_dash: bool = false
+  var can_swim: bool = false
+  func any() -> bool { return can_jump || can_dash || can_swim;}
+}
+
+// A class of flags, written as text in fragments.
+macro flags_class(name, flags) {
+  gd.text("class " .. name .. " {\n  extends RefCounted\n")
+  for _, f in ipairs(flags) do
+    gd.text("  var " .. f .. ": bool = false\n")
+  end
+  gd.text("  func any() -> bool { return " .. gd.join(flags, " || ") .. "; }\n}\n")
+}

@@ -184,7 +184,7 @@ template inventory(first, second) {
 - An error in a hole's Lua expression points at the hole.
 - A compiler error in the template's C++ code points at its line in the template, also when the template is in another file: the generated code's `#line` directives name the template's lines.
 - Every error that a template causes ends with its macro call stack: the invocations that led to it, innermost first, e.g. a template invoked by a macro. See "Errors" in `gd++ man macros`.
-- Run `gd++ trans FILE` to see what a file generates.
+- Run `gd++ trans FILE --macro` to see the GD++ that a file expands to, and `gd++ trans FILE` for the C++ it generates.
 
 # Examples
 

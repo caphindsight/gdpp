@@ -3,7 +3,7 @@ gd++ trans: print a file's generated C++
 # Synopsis
 
 ```sh
-gd++ trans FILE [--syntax N | --nightly] [--spec NAME | --nospec]
+gd++ trans FILE [--macro] [--syntax N | --nightly] [--spec NAME | --nospec]
                 [--object NAME[=INCLUDE]] [--refcounted NAME[=INCLUDE]]
                 [--extern NAME[=INCLUDE]] [--refcounted-extern NAME[=INCLUDE]]
                 [--enum NAME[=INCLUDE][:VALUES]] [--macro-timeout SECONDS]
@@ -41,11 +41,15 @@ Other facts:
 
 - Errors are shown like in a build.
 - If the file declares nothing, it says "The file declares no classes, externs or enums.".
+- With `--macro`, it only expands the file's macros and templates, and prints the GD++ source that GD++ then parses, instead of the C++.
 
 # Options
 
 FILE
   The GD++ file to transpile.
+
+--macro
+  Only expand the file's macros and templates, and print the result: the file's GD++ source, with each invocation replaced by what it generates. It's exactly the source that GD++ parses to generate the C++. See `gd++ man macros`.
 
 --runtime
   Print the runtime header that all generated C++ includes, `gd++/syntax_N.hpp` for syntax N, instead of transpiling a file. Without `--syntax` or `--nightly`, it's the header of the latest stable syntax. See `gd++ man runtime`.
@@ -119,6 +123,12 @@ Without any project, declaring the classes by hand:
 
 ```sh
 gd++ trans test.gd++ --refcounted RefCounted --object Node --object Node3D --enum Suit:HEARTS,SPADES
+```
+
+See what the file's macros and templates expand to:
+
+```sh
+gd++ trans src/player.gd++ --macro
 ```
 
 See the code that `@trace` and `@profile` annotations generate:

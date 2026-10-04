@@ -1,0 +1,20 @@
+class_name Guard
+extends Node
+
+// The C++ of a template in another file: #line names the template's lines there.
+var front_power: int = 10 * 2
+func raise_front(times: int = 10 + 1) -> int {
+    int total = 0;
+    for (int i = 0; i < times; i++) {
+      total += front_power;
+    }
+    return total;
+}
+var back_power: int = 5 * 2
+func raise_back(times: int = 5 + 1) -> int {
+    int total = 0;
+    for (int i = 0; i < times; i++) {
+      total += back_power;
+    }
+    return total;
+}

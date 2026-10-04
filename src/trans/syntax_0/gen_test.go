@@ -136,6 +136,12 @@ func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 		out[f.Name] = f.Text
 		checkLines(t, sources, f.Name, f.Text)
 	}
+	// The source that later stages parse, if expanding the invocations changes it.
+	if expanded, err := Expand(name, src, opts); err != nil {
+		t.Fatal(err)
+	} else if expanded != src {
+		out["expanded.gd++"] = expanded
+	}
 	u, err := newUnit(name, src, opts)
 	if err != nil {
 		t.Fatal(err)

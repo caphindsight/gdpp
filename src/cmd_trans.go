@@ -12,7 +12,8 @@ import (
 )
 
 // CmdTrans transpiles a GD++ file and prints the C++ files it generates, each
-// after a line naming it. It's for trying out GD++, not for builds. In a
+// after a line naming it, or with --macro, the GD++ source that its macros and
+// templates expand to. It's for trying out GD++, not for builds. In a
 // package, the file's dependencies are the package's other GD++ files, its C++
 // classes with a kind, and Godot's classes from the package's spec and
 // bindings, like in a build.
@@ -22,6 +23,7 @@ import (
 type CmdTrans struct {
 	File             string   `arg:"positional" help:"the GD++ file to transpile"`
 	Runtime          bool     `arg:"--runtime" help:"print the runtime header that all generated C++ includes, without a file"`
+	Macro            bool     `arg:"--macro" help:"only expand the file's macros and templates, and print the GD++ source that GD++ then parses"`
 	Syntax           *int     `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: the package's, or else the latest stable one]"`
 	Nightly          bool     `arg:"--nightly" help:"the same as --syntax 0, the nightly syntax"`
 	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes and enums from this Godot API spec in the project's cache, instead of the package's"`
@@ -40,6 +42,7 @@ func (c *CmdTrans) Run() {
 	if c.Syntax != nil {
 		syntax = *c.Syntax
 	}
+	Assert(!c.Macro || !c.Runtime, "Invalid arguments: --macro and --runtime cannot be used together.")
 	if c.Runtime {
 		Assert(c.File == "", "Invalid arguments: --runtime cannot be used with a file.")
 		_, text, err := trans.RuntimeHeader(syntax)
@@ -75,6 +78,14 @@ func (c *CmdTrans) Run() {
 	}
 	// Flags come first, so they win over other dependencies of the same name.
 	opts.Dependencies = append(c.flagDependencies(), packageDeps(files, append(names, cppClasses...), spec, self, nonRuntime)...)
+	if c.Macro {
+		text, err := trans.Expand(c.File, file.ReadString(), c.transOptions(opts), syntax)
+		if err != nil {
+			FailWithText(err)
+		}
+		PageResult(highlightCode(text, "gd++"))
+		return
+	}
 	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(opts), syntax)
 	if err != nil {
 		FailWithText(err)

@@ -44,6 +44,7 @@ type fork struct {
 	documentClass func(filename, src, class string, opts meta.Options) (string, error)
 	builtinDocs   func(opts meta.Options) []meta.File
 	generate      func(filename, src string, opts meta.Options) ([]meta.File, error)
+	expand        func(filename, src string, opts meta.Options) (string, error)
 	runtimeName   string
 	runtimeText   string
 }
@@ -51,9 +52,9 @@ type fork struct {
 // Syntax 0 is nightly: it may break code at any time. Every other syntax is a stable snapshot.
 var forks = map[int]fork{
 	0: {syntax_0.ListMacros, syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.DocumentBuiltinClasses, syntax_0.Generate,
-		syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
+		syntax_0.Expand, syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
 	1: {syntax_1.ListMacros, syntax_1.ListClasses, syntax_1.DocumentClass, syntax_1.DocumentBuiltinClasses, syntax_1.Generate,
-		syntax_1.RuntimeHeaderName, syntax_1.RuntimeHeader},
+		syntax_1.Expand, syntax_1.RuntimeHeaderName, syntax_1.RuntimeHeader},
 }
 
 const (
@@ -135,6 +136,16 @@ func Generate(name, src string, opts Options, syntax int) ([]File, error) {
 		return nil, err
 	}
 	return f.generate(name, src, opts)
+}
+
+// Expand returns the GD++ file with its invocations of macros and templates expanded: the GD++ that Generate
+// turns into C++.
+func Expand(name, src string, opts Options, syntax int) (string, error) {
+	f, err := get(syntax)
+	if err != nil {
+		return "", err
+	}
+	return f.expand(name, src, opts)
 }
 
 // RuntimeHeader returns the name (as generated headers include it) and contents of the header that every

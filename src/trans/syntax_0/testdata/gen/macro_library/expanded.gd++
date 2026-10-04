@@ -1,0 +1,6 @@
+class_name Score
+extends Node
+
+var points: int = 10
+func bump_points() -> void {points++;}
+func get_points_twice() -> int { return points * 2;}

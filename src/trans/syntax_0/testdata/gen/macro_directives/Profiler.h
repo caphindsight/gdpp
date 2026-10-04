@@ -14,12 +14,12 @@ class Profiler : public Node {
 private:
 #line 5 "input.gd++"
 
-  
+
 #line 6 "input.gd++"
 #define SCALE 3
 #line 6 "input.gd++"
 
-  
+
 #line 7 "input.gd++"
 #define TWICE(x) \
   (x * 2)

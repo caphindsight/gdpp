@@ -1,0 +1,80 @@
+class_name Player
+extends Node
+
+/// The player's health.
+var health: int {
+  decl { int64_t health_ = 100;}
+  get { return health_;}
+  set(value) {
+      health_ = gd::clampi(value, 0, max_health);
+      emit health_changed(health_);
+}
+}
+@export var max_health: int = 100
+signal health_changed(value: int)
+var mana: int {
+  decl { int64_t mana_ = 50;}
+  get { return mana_;}
+  set(value) {
+      mana_ = gd::clampi(value, 0, max_mana);
+      emit mana_changed(mana_);
+}
+}
+@export var max_mana: int = 50
+signal mana_changed(value: int)
+var focus: int {
+  decl { int64_t focus_ = 10;}
+  get { return focus_;}
+  set(value) {
+      focus_ = gd::clampi(value, 0, max_focus);
+      emit focus_changed(focus_);
+}
+}
+@export var max_focus: int = 10
+signal focus_changed(value: int)
+var stamina: int {
+  decl { int64_t stamina_ = 80;}
+  get { return stamina_;}
+  set(value) {
+      stamina_ = gd::clampi(value, 0, max_stamina);
+      emit stamina_changed(stamina_);
+}
+}
+@export var max_stamina: int = 80
+signal stamina_changed(value: int)
+var courage: int {
+  decl { int64_t courage_ = 20;}
+  get { return courage_;}
+  set(value) {
+      courage_ = gd::clampi(value, 0, max_courage);
+      emit courage_changed(courage_);
+}
+}
+@export var max_courage: int = 20
+signal courage_changed(value: int)
+
+// A clamped stat with a changed signal and an exported max: the stat macro of `gd++ man macros`, as a template.
+template stat(name, max = 100) {
+  var ${name}: int {
+    decl { int64_t ${name}_ = ${max}; }
+    get { return ${name}_; }
+    set(value) {
+      ${name}_ = gd::clampi(value, 0, max_${name});
+      emit ${name}_changed(${name}_);
+    }
+  }
+
+  @export var max_${name}: int = ${max}
+
+  signal ${name}_changed(value: int)
+}
+
+// The stat template for each entry, with a check of the maxima: the first macro of `gd++ man macros`.
+macro stats(list) {
+  for name, max in pairs(list) do
+    if type(max) ~= "number" or max <= 0 then
+      gd.error_at("list", "the max of " .. name .. " must be a positive number", "e.g. invoke stats({health = 100})")
+    end
+    gd.invoke("stat", { name, max = max })
+  end
+}
