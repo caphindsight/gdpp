@@ -256,7 +256,17 @@ See `gd++ man debugging`.
 
 <a href="readme/svg/profile.gd++"><img src="readme/svg/profile.svg" alt="GD++ code: profile"></a>
 
-Turn it on with `gd++ build --profile ai`. See `gd++ man debugging`.
+With `gd++ build --profile ai --print`, the game prints a table every 10 seconds:
+
+```out
+━━ GD++ profile · last 10.0 s · 600 frames · debug, unoptimized ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Function                 Thread       Calls    Total ms     Self ms      Avg µs      Max µs    ms/frame  Budget (60 FPS)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Soldier.find_cover         main        1200      846.31      846.31      705.26     4210.55       1.411             8.5%
+Soldier.pick_target        main         600       41.82       41.82       69.70      290.04       0.070             0.4%
+```
+
+See `gd++ man debugging`.
 
 ### C++ blocks
 
