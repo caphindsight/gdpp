@@ -130,7 +130,7 @@ Preprocessor directives, e.g. for code that only debug builds compile:
 
 ```gd++
 func hurt(n: int) -> void {
-  invoke debug_only(code { UtilityFunctions::print("hurt: ", n); });
+  invoke debug_only(code { gd::print("hurt: ", n); });
   health -= n;
 }
 
@@ -521,7 +521,7 @@ macro log(event, values = {}) {
     table.insert(args, gd.quote((i > 1 and ", " or " ") .. v .. "="))
     table.insert(args, v)
   end
-  gd.text("UtilityFunctions::print(" .. gd.join(args, ", ") .. ");")
+  gd.text("gd::print(" .. gd.join(args, ", ") .. ");")
 }
 ```
 
