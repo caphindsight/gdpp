@@ -408,8 +408,24 @@ ctx.doc          the invocation's doc comment, if any
 ctx.file         the GD++ file's name
 ctx.line         the invocation's line
 ctx.macro        the macro's name, or nil in a macro block
-ctx.package      the package's settings: id, prefix, path (its res:// path) and std (its C++ standard)
+ctx.package      the package's settings, see below
 ```
+
+`ctx.package` holds:
+
+```
+FIELD                VALUE
+ctx.package.id       the package's id: the name of its directory, e.g. "my_game"
+ctx.package.prefix   the prefix of the classes that GD++ adds to the package: prefix in gd++pkg.toml, or the id in PascalCase, e.g. "MyGame"
+ctx.package.path     the res:// path of the package's directory, e.g. "res://addons/my_game", or "res://" for a package at the project's root
+ctx.package.std      the package's C++ standard: std in gd++pkg.toml, e.g. "c++20"
+```
+
+- They are strings.
+- Outside a package, e.g. `gd++ trans` on a file that isn't in one, `ctx.package` is an empty table: its fields are `nil`.
+- `path` doesn't end with `/`, except `"res://"`.
+- E.g. a macro can name a class after the package: `ctx.package.prefix .. "Stats"`.
+- See `gd++ man packages` for the settings.
 
 # The sandbox
 
