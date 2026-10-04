@@ -440,7 +440,7 @@ Lua code can only generate code:
 - A Lua error points at the Lua line.
 - An error in generated code points at the invocation.
 - A compiler error in C++ that a macro generates points at the invocation's line. In C++ from a template, it points into the template. See `gd++ man templates`.
-- Run `gd++ trans FILE --macro` to see the GD++ that a file expands to, and `gd++ trans FILE` for the C++ it generates.
+- Run `gd++ trans FILE --invoke` to see the GD++ that a file expands to, and `gd++ trans FILE` for the C++ it generates.
 
 Every error that a macro or template causes ends with its macro call stack: the invocations that led to it, innermost first.
 

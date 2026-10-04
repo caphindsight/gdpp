@@ -3,7 +3,7 @@ gd++ trans: print a file's generated C++
 # Synopsis
 
 ```sh
-gd++ trans FILE [--macro] [--syntax N | --nightly] [--spec NAME | --nospec]
+gd++ trans FILE [--invoke] [--syntax N | --nightly] [--spec NAME | --nospec]
                 [--object NAME[=INCLUDE]] [--refcounted NAME[=INCLUDE]]
                 [--extern NAME[=INCLUDE]] [--refcounted-extern NAME[=INCLUDE]]
                 [--enum NAME[=INCLUDE][:VALUES]] [--macro-timeout SECONDS]
@@ -41,14 +41,14 @@ Other facts:
 
 - Errors are shown like in a build.
 - If the file declares nothing, it says "The file declares no classes, externs or enums.".
-- With `--macro`, it only expands the file's macros and templates, and prints the GD++ source that GD++ then parses, instead of the C++.
+- With `--invoke`, it only expands the file's macros and templates, and prints the GD++ source that GD++ then parses, instead of the C++.
 
 # Options
 
 FILE
   The GD++ file to transpile.
 
---macro
+--invoke
   Only expand the file's macros and templates, and print the result: the file's GD++ source, with each invocation replaced by what it generates. It's exactly the source that GD++ parses to generate the C++. See `gd++ man macros`.
 
 --runtime
@@ -128,7 +128,7 @@ gd++ trans test.gd++ --refcounted RefCounted --object Node --object Node3D --enu
 See what the file's macros and templates expand to:
 
 ```sh
-gd++ trans src/player.gd++ --macro
+gd++ trans src/player.gd++ --invoke
 ```
 
 See the code that `@trace` and `@profile` annotations generate:

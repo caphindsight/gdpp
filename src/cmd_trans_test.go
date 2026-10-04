@@ -51,11 +51,12 @@ func TestTrans(t *testing.T) {
 	}
 }
 
-func TestTransMacro(t *testing.T) {
-	src := "class_name Player\nextends Node\n\ninvoke stat(health)\n\ntemplate stat(name) {\n  var ${name}: int = 100\n}\n"
+func TestTransInvoke(t *testing.T) {
+	src := "class_name Player\nextends Node\n\ninvoke stat(health)\ninvoke { gd.var { name = \"mana\", type = \"int\" } }\n\n" +
+		"func f() -> void {\n  invoke { gd.text(\"int x = 1;\") };\n}\n\ntemplate stat(name) {\n  var ${name}: int = 100\n}\n"
 	dir := writeTransFiles(t, map[string]string{"player.gd++": src})
-	out := captureStdout(t, (&CmdTrans{File: filepath.Join(dir, "player.gd++"), Macro: true}).Run)
-	if want := "class_name Player\nextends Node\n\nvar health: int = 100\n\ntemplate stat(name) {\n"; !strings.HasPrefix(out, want) {
+	out := captureStdout(t, (&CmdTrans{File: filepath.Join(dir, "player.gd++"), Invoke: true}).Run)
+	if want := "class_name Player\nextends Node\n\nvar health: int = 100\nvar mana: int\n\nfunc f() -> void {\n  int x = 1;\n}\n\ntemplate stat(name) {\n"; !strings.HasPrefix(out, want) {
 		t.Errorf("output = %q, want the prefix %q", out, want)
 	}
 }
