@@ -68,9 +68,6 @@ type run struct {
 	values map[string]lua.LValue
 	argPos map[string]lexer.Position
 	argLen map[string]int
-	// For a run that gd.invoke started: the line of Lua code that called it, as an error without a message. Errors
-	// at the invocation go there, rather than to inv, which is where the outermost invocation is.
-	site *Error
 }
 
 // newRun returns a run of def for inv, with a sandboxed Lua state, and a function that frees it.
@@ -139,14 +136,18 @@ func (r *run) failAt(msg, hint string) {
 	r.fail(r.invocationError(msg, hint))
 }
 
-// invocationError returns an error at the invocation that started the run: inv, or the site of gd.invoke.
+// invocationError returns an error at the invocation that started the run.
 func (r *run) invocationError(msg, hint string) *Error {
-	if r.site != nil {
-		e := *r.site
-		e.Msg, e.Hint = msg, hint
-		return &e
+	return r.x.invocationError(r.inv, msg, hint)
+}
+
+// argError returns an error at an argument, at pos, or at the invocation if it has a Site: its arguments' positions
+// are only known in the expanded file.
+func (r *run) argError(pos lexer.Position, n int, msg, hint string) *Error {
+	if r.inv.Site != nil {
+		return r.invocationError(msg, hint)
 	}
-	return r.x.errorAt(r.inv.Pos, r.inv.span(), msg, hint)
+	return r.x.errorAt(pos, n, msg, hint)
 }
 
 // lineError returns an error that underlines line of file, a GD++ file of the package, from its first character
@@ -221,7 +222,7 @@ func (r *run) luaError(err error) error {
 	src := r.x.sourceOf(file)
 	msg = fmt.Sprintf("%s %s failed: %s", capitalize(r.def.m.what()), r.def.m.Name, strings.TrimSuffix(msg, "."))
 	if line == 0 {
-		return r.x.errorAt(r.inv.Pos, r.inv.span(), msg+".", "")
+		return r.invocationError(msg+".", "")
 	}
 	lines := strings.Split(src, "\n")
 	text := ""
@@ -307,11 +308,11 @@ func (r *run) args(params []*MacroParam) ([]lua.LValue, error) {
 			if len(names) == 0 {
 				hint = "It takes no parameters."
 			}
-			return r.x.errorAt(pos, n, fmt.Sprintf("%s %s has no parameter %q.", capitalize(def.m.what()), def.m.Name, key), hint)
+			return r.argError(pos, n, fmt.Sprintf("%s %s has no parameter %q.", capitalize(def.m.what()), def.m.Name, key), hint)
 		case i >= len(params):
-			return r.x.errorAt(pos, n, fmt.Sprintf("%s %s takes %d arguments, but got more.", capitalize(def.m.what()), def.m.Name, len(params)), "")
+			return r.argError(pos, n, fmt.Sprintf("%s %s takes %d arguments, but got more.", capitalize(def.m.what()), def.m.Name, len(params)), "")
 		case set[i]:
-			return r.x.errorAt(pos, n, fmt.Sprintf("Parameter %s is set twice.", params[i].Name), "")
+			return r.argError(pos, n, fmt.Sprintf("Parameter %s is set twice.", params[i].Name), "")
 		}
 		values[i], set[i] = v, true
 		r.values[params[i].Name], r.argPos[params[i].Name], r.argLen[params[i].Name] = v, pos, n
@@ -834,7 +835,7 @@ func (r *run) failWhere(where lua.LValue, msg, hint string) {
 	}
 	if s, ok := where.(lua.LString); ok {
 		if pos, ok := r.argPos[string(s)]; ok {
-			r.fail(r.x.errorAt(pos, r.argLen[string(s)], msg, hint))
+			r.fail(r.argError(pos, r.argLen[string(s)], msg, hint))
 		}
 	}
 	r.failAt(msg, hint)
@@ -951,7 +952,7 @@ func (r *run) place(node any) {
 		switch n := n.(type) {
 		case *Block:
 			n.Pos, n.TextPos, n.Generated = pos, pos, true
-		case *MacroBody:
+		case *MacroBody, *Error:
 		default:
 			if p := reflectPos(n); p != nil {
 				*p = pos
@@ -1330,7 +1331,7 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 		line, _ := strconv.Atoi(m[2])
 		site = r.x.lineError(m[1], line, "", "")
 	}
-	n := &run{x: r.x, L: L, def: def, inv: &Invoke{Pos: r.inv.Pos, Name: name}, scopes: []*scope{inner}, depth: r.depth + 1, site: site,
+	n := &run{x: r.x, L: L, def: def, inv: &Invoke{Pos: r.inv.Pos, Name: name, Site: site}, scopes: []*scope{inner}, depth: r.depth + 1,
 		values: map[string]lua.LValue{}, argPos: map[string]lexer.Position{}, argLen: map[string]int{}}
 	gd, ctx := L.GetGlobal("gd"), L.GetGlobal("ctx")
 	L.SetGlobal("gd", n.gdTable())
@@ -1392,13 +1393,13 @@ func (r *run) parseText(text string) ([]*topItem, error) {
 		var e *Error
 		if errors.As(err, &e) {
 			hint = fmt.Sprintf("%s The line it emitted: %q", e.Hint, e.line)
-			err = r.x.errorAt(r.inv.Pos, r.inv.span(), fmt.Sprintf("Macro %s emitted GD++ that doesn't parse: %s", r.inv.Name, lowerFirst(e.Msg)), strings.TrimSpace(hint+"."))
+			err = r.invocationError(fmt.Sprintf("Macro %s emitted GD++ that doesn't parse: %s", r.inv.Name, lowerFirst(e.Msg)), strings.TrimSpace(hint+"."))
 		}
 		return nil, err
 	}
 	for _, item := range tree.Items {
 		if item.Macro != nil {
-			return nil, r.x.errorAt(r.inv.Pos, r.inv.span(), fmt.Sprintf("Macro %s emitted a %s, but macros can't generate macros or templates.", r.inv.Name, item.Macro.what()),
+			return nil, r.invocationError(fmt.Sprintf("Macro %s emitted a %s, but macros can't generate macros or templates.", r.inv.Name, item.Macro.what()),
 				"Declare it in the macro's body instead, next to the code that uses it.")
 		}
 		r.place(item)
@@ -1486,8 +1487,7 @@ func (r *run) instantiate(def *macroDef, values []lua.LValue) ([]*topItem, error
 		r.L.Pop(1)
 		s, ok := str(v)
 		if !ok {
-			return nil, (&Error{Pos: holePos, Len: end - i + 1, Msg: fmt.Sprintf("This hole is %s, but holes need a string, a number, a boolean or code.", typeName(v)),
-			}).withSource(def.src)
+			return nil, (&Error{Pos: holePos, Len: end - i + 1, Msg: fmt.Sprintf("This hole is %s, but holes need a string, a number, a boolean or code.", typeName(v))}).withSource(def.src)
 		}
 		s = strings.ReplaceAll(s, "\n", " ")
 		holes = append(holes, hole{line, outCol(), utf8.RuneCountInString(text[i : end+1]), utf8.RuneCountInString(s)})
@@ -1524,14 +1524,20 @@ func (r *run) instantiate(def *macroDef, values []lua.LValue) ([]*topItem, error
 		}
 		// Its C++ code keeps the template's lines, so #line can name them. Errors point at the invocation, like
 		// for the rest of the output.
+		origin := func(pos lexer.Position) Origin { // Positions' offsets are in the padded output.
+			pos.Offset = offsetOf(def.src, pos)
+			return Origin{def.source, pos.Line, &pos, def.src}
+		}
 		forEachNode(item, func(n any) {
 			switch n := n.(type) {
 			case *Block:
-				n.Origin = Origin{def.source, n.TextPos.Line}
+				n.Origin = origin(n.TextPos)
 			case *Init:
-				n.Origin = Origin{def.source, n.Pos.Line}
+				n.Origin = origin(n.Pos)
 			case *Default:
-				n.Origin = Origin{def.source, n.Pos.Line}
+				n.Origin = origin(n.Pos)
+			case *Invoke:
+				n.Site = (&Error{Pos: *origin(n.Pos).Start, Len: n.span()}).withSource(def.src)
 			}
 		})
 		r.place(item)

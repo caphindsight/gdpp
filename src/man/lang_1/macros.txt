@@ -364,6 +364,8 @@ gd.error_at(where, message, hint)
 
 For a macro that another one invokes with `gd.invoke`, "the invocation" is the line of Lua code that calls `gd.invoke`, in its file. Its arguments are Lua values, so `gd.error_at` puts errors about them there too.
 
+For an invocation in a template, "the invocation" is its place in the template, in its file. `gd.error_at` puts errors about its arguments there too. For an invocation in C++ code that a macro generated, it's the outer invocation, in your code.
+
 ```lua
 if type(max) ~= "number" or max < 0 then
   gd.error_at("max", "a stat's max must be a number of 0 or more", "e.g. invoke stat(health, max = 100)")

@@ -106,6 +106,16 @@ func (x *expander) errorAt(pos lexer.Position, n int, msg, hint string) *Error {
 	return (&Error{Pos: pos, Len: max(n, 1), Msg: msg, Hint: hint}).withSource(x.src)
 }
 
+// invocationError returns an error at inv: at its Site, if it has one.
+func (x *expander) invocationError(inv *Invoke, msg, hint string) *Error {
+	if inv.Site != nil {
+		e := *inv.Site
+		e.Msg, e.Hint = msg, hint
+		return &e
+	}
+	return x.errorAt(inv.Pos, inv.span(), msg, hint)
+}
+
 // expandFile replaces every invocation in f with what it generates, in declarations and in C++ code.
 func (x *expander) expandFile(f *File) error {
 	for _, inv := range f.Invokes {
@@ -169,16 +179,16 @@ func (x *expander) expandFile(f *File) error {
 			case *Block:
 				lines := n.Origin
 				if lines.Source == "" {
-					lines = Origin{x.source(), n.TextPos.Line}
+					lines = Origin{Source: x.source(), Line: n.TextPos.Line}
 				}
-				n.Text, err = x.expandCode(n.Text, n.TextPos, owner, 0, &lines)
+				n.Text, err = x.expandCode(n.Text, n.TextPos, owner, 0, &lines, x.codeErrors(n.Origin, n.Generated, n.TextPos))
 			case *Init:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil)
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, false, n.Pos))
 				}
 			case *Default:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil)
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, false, n.Pos))
 				}
 			}
 		})
@@ -245,10 +255,9 @@ func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth in
 // invoke runs the macro or template that inv invokes, in scope sc, and returns what it generates, expanded.
 func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, err error) {
 	def := x.defs[inv.Name]
-	n := len(inv.Name) + 1
 	switch {
 	case depth >= x.maxDepth():
-		return nil, x.errorAt(inv.Pos, n, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
+		return nil, x.invocationError(inv, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
 			"A macro or template probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in gd++pkg.toml.")
 	case def == nil:
 		return nil, x.unknown(inv)
@@ -313,7 +322,7 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 
 // frame describes inv, at depth, as a line of a macro call stack: what it invokes, and where.
 func (x *expander) frame(def *macroDef, inv *Invoke, depth int) string {
-	if depth > 0 {
+	if depth > 0 || inv.Site != nil {
 		return fmt.Sprintf("%s %s, invoked in generated code", def.m.what(), inv.Name)
 	}
 	return fmt.Sprintf("%s %s, invoked at %s:%d", def.m.what(), inv.Name, inv.Pos.Filename, inv.Pos.Line)
@@ -343,7 +352,7 @@ func (x *expander) unknown(inv *Invoke) *Error {
 	if s := suggest(inv.Name, names...); s != "" {
 		hint = fmt.Sprintf("Did you mean %q?", s)
 	}
-	return x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("There is no macro or template %s.", inv.Name), hint)
+	return x.invocationError(inv, fmt.Sprintf("There is no macro or template %s.", inv.Name), hint)
 }
 
 // expandCode replaces the invocations in C++ code, which starts at pos, with the C++ that their macros generate.
@@ -355,7 +364,17 @@ func (x *expander) unknown(inv *Invoke) *Error {
 //   - In an expression, an invocation has no ";", and what it generates goes on its line.
 //
 // Either way, the lines after an invocation keep their #line numbers.
-func (x *expander) expandCode(code string, pos lexer.Position, owner string, depth int, block *Origin) (string, error) {
+//
+// For code that isn't in the expanded file, pos is the invocation that put it there, and errorAt makes the errors
+// about the invocations in it, at their positions in code.
+func (x *expander) expandCode(code string, pos lexer.Position, owner string, depth int, block *Origin, errorAt errorFunc) (_ string, err error) {
+	if depth == 0 && errorAt != nil { // Code that an invocation in the file generated: its errors end with that one.
+		defer func() {
+			if err != nil {
+				err = addFrame(err, x.generated[pos.Offset])
+			}
+		}()
+	}
 	if !strings.Contains(code, "invoke") {
 		return code, nil
 	}
@@ -379,6 +398,9 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		}
 		start := open.Pos.Offset
 		inv := &Invoke{Pos: shift(t.Pos, pos, x.src), Name: name.Value}
+		if errorAt != nil {
+			inv.Pos, inv.Site = pos, errorAt(t.Pos, inv.span(), "", "")
+		}
 		sub, err := gdppLexer.LexString(x.filename, code[start:])
 		if err != nil {
 			return "", err
@@ -391,6 +413,9 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		if err := inv.Args.Parse(lex); err != nil {
 			var e *Error
 			if errors.As(err, &e) {
+				if errorAt != nil {
+					return "", errorAt(shift(e.Pos, open.Pos, ""), e.Len, e.Msg, e.Hint)
+				}
 				e.Pos = shift(shift(e.Pos, open.Pos, ""), pos, x.src)
 				return "", e.withSource(x.src)
 			}
@@ -405,12 +430,16 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 				end = start + semi.Pos.Offset + 1
 			} else {
 				// Right after the invocation, where the ";" is missing.
-				p := shift(shift(lex.RawPeek().Pos, open.Pos, ""), pos, x.src)
+				p := shift(lex.RawPeek().Pos, open.Pos, "")
 				if lex.RawPeek().EOF() {
-					p = shift(t.Pos, pos, x.src)
+					p = t.Pos
 				}
-				return "", x.errorAt(p, 1, fmt.Sprintf("Expected \";\" after the invocation of %s, but found %s.", name.Value, describe(*semi)),
-					"In a C++ block, an invocation is a statement, which ends with \";\": invoke log(\"hit\");. The macro's C++ replaces it, \";\" included.")
+				msg := fmt.Sprintf("Expected \";\" after the invocation of %s, but found %s.", name.Value, describe(*semi))
+				hint := "In a C++ block, an invocation is a statement, which ends with \";\": invoke log(\"hit\");. The macro's C++ replaces it, \";\" included."
+				if errorAt != nil {
+					return "", errorAt(p, 1, msg, hint)
+				}
+				return "", x.errorAt(shift(p, pos, x.src), 1, msg, hint)
 			}
 		}
 		forEachNode(inv.Args, func(n any) {
@@ -423,7 +452,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		})
 		var at *Origin // How #line names the invocation's line, in a block.
 		if block != nil {
-			at = &Origin{block.Source, block.Line + strings.Count(code[:t.Pos.Offset], "\n")}
+			at = &Origin{Source: block.Source, Line: block.Line + strings.Count(code[:t.Pos.Offset], "\n")}
 		}
 		text, err := x.invokeCode(inv, owner, depth, at)
 		if err != nil {
@@ -458,10 +487,10 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) 
 	def := x.defs[inv.Name]
 	switch {
 	case depth >= x.maxDepth():
-		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
+		return "", x.invocationError(inv, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
 			"A macro probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in gd++pkg.toml.")
 	case def.m.Template:
-		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Template %s can't be used in C++ code, since templates generate declarations.", inv.Name),
+		return "", x.invocationError(inv, fmt.Sprintf("Template %s can't be used in C++ code, since templates generate declarations.", inv.Name),
 			"Invoke it where declarations go, or use a macro that generates C++ with gd.text.")
 	}
 	defer func() {
@@ -487,13 +516,15 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) 
 	for _, c := range sc.chunks {
 		sb.WriteString(c.text)
 	}
-	// Its own invocations are statements, or expressions, like it. All its lines come from inv's line.
-	text, err := x.expandCode(sb.String(), inv.Pos, owner, depth+1, at)
+	// Its own invocations are statements, or expressions, like it. All its lines come from inv.
+	text, err := x.expandCode(sb.String(), inv.Pos, owner, depth+1, at, func(_ lexer.Position, _ int, msg, hint string) *Error {
+		return x.invocationError(inv, msg, hint)
+	})
 	if err != nil {
 		return "", err
 	}
 	if at == nil && hasDirective(text) {
-		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Macro %s generated a preprocessor directive, which only works in C++ blocks.", inv.Name),
+		return "", x.invocationError(inv, fmt.Sprintf("Macro %s generated a preprocessor directive, which only works in C++ blocks.", inv.Name),
 			"Here, the C++ must be an expression on one line.")
 	}
 	return text, nil
@@ -532,6 +563,26 @@ func oneLine(code string) string {
 		}
 	}
 	return strings.TrimSpace(sb.String())
+}
+
+// errorFunc makes an error at p, a position in some code, with msg and hint.
+type errorFunc func(p lexer.Position, n int, msg, hint string) *Error
+
+// codeErrors returns how to make errors at positions in C++ code at pos, from o: in the template's file for a
+// template's code, and at the invocation, at pos, for code that a macro generated. For code in the expanded file,
+// it's nil.
+func (x *expander) codeErrors(o Origin, generated bool, pos lexer.Position) errorFunc {
+	switch {
+	case o.Src != "":
+		return func(p lexer.Position, n int, msg, hint string) *Error {
+			return (&Error{Pos: shift(p, *o.Start, o.Src), Len: max(n, 1), Msg: msg, Hint: hint}).withSource(o.Src)
+		}
+	case generated:
+		return func(_ lexer.Position, _ int, msg, hint string) *Error {
+			return x.lineError(x.filename, pos.Line, msg, hint)
+		}
+	}
+	return nil
 }
 
 // shift turns p, a position in a text that starts at base, into a position in base's file. With src, it also sets

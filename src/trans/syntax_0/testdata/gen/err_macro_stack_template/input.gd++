@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+// gd.error in a macro that a template of another file invokes: the error is at that invocation, in the template's file.
+invoke stack_template(8)

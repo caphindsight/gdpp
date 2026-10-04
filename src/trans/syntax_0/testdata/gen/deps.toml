@@ -315,3 +315,8 @@ file = "stack_outer.gd++"
 name = "stack_inner"
 kind = "Macro"
 file = "stack_inner.gd++"
+
+[[dep]]
+name = "stack_template"
+kind = "Template"
+file = "stack_template.gd++"

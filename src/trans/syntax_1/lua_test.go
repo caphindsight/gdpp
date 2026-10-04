@@ -23,7 +23,7 @@ func runLuaWith(t *testing.T, code string, opts meta.Options) (string, error) {
 	opts.PackageID, opts.PackagePrefix = "foo", "Foo"
 	x := &expander{filename: "test.gd++", src: code, opts: opts,
 		defs: map[string]*macroDef{"test": {m: m, file: "test.gd++", src: code}}, generated: map[int]string{}}
-	text, err := x.invokeCode(&Invoke{Pos: pos, Name: "test", Args: &ArgList{}}, "Owner", 0, &Origin{"test.gd++", 1})
+	text, err := x.invokeCode(&Invoke{Pos: pos, Name: "test", Args: &ArgList{}}, "Owner", 0, &Origin{Source: "test.gd++", Line: 1})
 	return oneLine(text), err
 }
 

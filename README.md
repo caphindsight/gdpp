@@ -304,7 +304,7 @@ A template is GD++ code with holes, `${...}`, which hold Lua expressions over it
 
 <a href="readme/svg/macros.gd++"><img src="readme/svg/macros.svg" alt="GD++ code: macros"></a>
 
-Where a template isn't enough, a macro is Lua code that generates code where `invoke` calls it: declarations with `gd.var`, `gd.func` and the like, or C++ code with `gd.text`. Macros can also instantiate templates, with `gd.invoke`. Macros are more powerful than templates, but also more advanced: prefer templates whenever they do the job. Both are advanced features: use them seldom, where they remove a lot of repetition. See `gd++ man macros`.
+A macro is Lua code that generates code where `invoke` calls it. Unlike a template, it can loop and check its arguments. Macros are an advanced feature: use them sparingly. See `gd++ man macros`.
 
 ## The build tool
 

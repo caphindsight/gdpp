@@ -170,12 +170,88 @@ For plain text, prefer GD++'s helpers: `gd.split`, `gd.replace`, `gd.starts_with
 
 # Libraries
 
-Macros see these parts of Lua's standard library, and no others:
+Macros see these parts of Lua's standard library, and no others. They have no I/O, and can't load other code. See "The sandbox" in `gd++ man macros`.
 
-- the basics: `type`, `tostring`, `tonumber`, `pairs`, `ipairs`, `next`, `select`, `unpack`, `error`, `assert`, `pcall`, `setmetatable` and the like,
-- `string`, `table` and `math`, except `math.random` and `math.randomseed`.
+Basic functions:
 
-They have no I/O, and can't load other code. See "The sandbox" in `gd++ man macros`.
+```lua
+type(v)                       -- v's type, as a string: "nil", "boolean", "number", "string", "table" or "function"
+tostring(v)                   -- v as a string
+tonumber(s, base)             -- s as a number, or nil if it isn't one; base is optional, 10 by default
+pairs(t)                      -- each key and value of t, in sorted key order in GD++
+ipairs(t)                     -- each index and value of t's list part, from 1 to the first nil
+next(t, k)                    -- the key and value after k in t, or the first one if k is nil
+select(i, ...)                -- the arguments from the i-th on; select("#", ...) is how many there are
+unpack(list, i, j)            -- list's entries from i to j, as separate values; i and j are optional
+error(msg, level)             -- stops with an error; prefer gd.error in macros
+assert(v, msg)                -- v, or an error with msg if v is nil or false
+pcall(f, ...)                 -- calls f, and returns true and its results, or false and its error
+xpcall(f, handler)            -- like pcall, but handler(err) makes the error value
+rawequal(a, b)                -- a == b, without metamethods
+rawget(t, k), rawset(t, k, v) -- t[k] and t[k] = v, without metamethods
+setmetatable(t, mt)           -- sets t's metatable, e.g. for default values; returns t
+getmetatable(t)               -- t's metatable, or nil
+getfenv(f), setfenv(f, t)     -- a function's environment: its table of globals
+_G                            -- the table of all globals
+_VERSION                      -- "Lua 5.1"
+```
+
+`string`. Each function is also a method of strings: `s:upper()` is `string.upper(s)`.
+
+```lua
+string.len(s)                 -- s's length, like #s
+string.sub(s, i, j)           -- the characters from i to j, from 1, inclusive; negative ones count from the end
+string.upper(s)               -- s in upper case
+string.lower(s)               -- s in lower case
+string.rep(s, n)              -- s, n times over
+string.reverse(s)             -- s, backwards
+string.format(f, ...)         -- the values, formatted like C's printf: %s, %d, %f, %x, %q (a quoted string) and the like
+string.byte(s, i, j)          -- the codes of the characters from i to j; j is optional, and i is 1 by default
+string.char(...)              -- the string of these character codes
+string.find(s, p, i, plain)   -- the start and end of the first match of pattern p from i, or nil; with plain, p is plain text
+string.match(s, p, i)         -- the first match of p, or its captures, or nil
+string.gmatch(s, p)           -- each match of p, for a for loop: for w in s:gmatch("%a+") do
+string.gsub(s, p, r, n)       -- s with the matches of p replaced by r, and how many there were; r is a string, a table or a function
+string.dump(f)                -- f compiled to binary; not useful in macros
+string.gfind(s, p)            -- an old name for string.gmatch
+```
+
+`table`:
+
+```lua
+table.insert(t, v)            -- appends v to t's list part
+table.insert(t, i, v)         -- inserts v at i, and moves the entries after it up
+table.remove(t, i)            -- removes and returns the entry at i, the last one by default
+table.concat(t, sep, i, j)    -- t's entries from i to j joined into a string, with sep between; sep, i and j are optional
+table.sort(t, less)           -- sorts t's list part in place; less(a, b) is optional, < by default
+table.maxn(t)                 -- t's largest positive number key, or 0
+table.getn(t)                 -- an old name for #t
+```
+
+`math`. Angles are in radians.
+
+```lua
+math.abs(x)                   -- x without its sign
+math.floor(x), math.ceil(x)   -- x rounded down, or up, to a whole number
+math.min(...), math.max(...)  -- the smallest, or largest, of the arguments
+math.fmod(x, y)               -- the remainder of x / y, with the sign of x; x % y has the sign of y
+math.modf(x)                  -- x's whole part and its fraction, e.g. 3 and 0.5 for 3.5
+math.sqrt(x)                  -- x's square root
+math.pow(x, y)                -- x to the power y, like x ^ y
+math.exp(x)                   -- e to the power x
+math.log(x), math.log10(x)    -- x's natural logarithm, or base 10 one
+math.frexp(x), math.ldexp(m, e) -- x as m * 2 ^ e, and back
+math.sin(x), math.cos(x), math.tan(x)    -- trigonometry
+math.asin(x), math.acos(x), math.atan(x) -- their inverses
+math.atan2(y, x)              -- the angle of the point (x, y)
+math.sinh(x), math.cosh(x), math.tanh(x) -- hyperbolic functions
+math.deg(x), math.rad(x)      -- radians to degrees, and back
+math.pi                       -- 3.14159...
+math.huge                     -- the largest number
+math.mod(x, y)                -- an old name for math.fmod
+```
+
+`math.random` and `math.randomseed` are missing: the same input always generates the same code.
 
 # Lua for C++ programmers
 

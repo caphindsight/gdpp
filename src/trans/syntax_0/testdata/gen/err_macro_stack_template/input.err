@@ -1,0 +1,7 @@
+stack_template.gd++:4:1: N is too big: 16.
+ 4 | invoke stack_inner(${n * 2})
+   | ^^^^^^^^^^^^^^^^^^
+Hint: Keep it at 10 or less.
+Macro call stack:
+  macro stack_inner, invoked in generated code
+  template stack_template, invoked at input.gd++:5

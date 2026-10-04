@@ -1,0 +1,15 @@
+class_name A
+extends Node
+
+invoke outer()
+
+// gd.error in a macro that C++ code in a template's output invokes: the error is at that invocation, in the template.
+template outer() {
+  func f() -> void {
+    invoke inner(3);
+  }
+}
+
+macro inner(n) {
+  gd.error("n is " .. n)
+}

@@ -270,6 +270,9 @@ type Invoke struct {
 	Annotations []*Annotation `parser:"@@*"` // Only parsed to report them.
 	Name        string        `parser:"'invoke' @Ident"`
 	Args        *ArgList      `parser:"@@"`
+	// Where errors at the invocation go, as an error without a message, if not to Pos: for an invocation in a
+	// template's output, its place in the template, and for gd.invoke, the line of Lua code that calls it.
+	Site *Error
 }
 
 // ArgList is the arguments of an invocation: Args in parentheses, or a Lua table constructor's contents (Table).
@@ -307,8 +310,10 @@ type Block struct {
 
 // Origin is where C++ code from a template comes from, which #line names: its lines stay as in the template.
 type Origin struct {
-	Source string // How #line names the template's file. Empty for other code.
-	Line   int    // The code's first line there.
+	Source string          // How #line names the template's file. Empty for other code.
+	Line   int             // The code's first line there.
+	Start  *lexer.Position // Where the code starts there, for errors about the invocations in it.
+	Src    string          // The template file's source.
 }
 
 // Init is the initial value of a variable: a one-line C++ expression (Expr) or a C++ block that returns the value.

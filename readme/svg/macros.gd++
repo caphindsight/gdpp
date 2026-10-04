@@ -1,26 +1,20 @@
-class_name Player
-extends Node
+class_name Slime
+extends CharacterBody2D
 
-@export var health: int = 100
+invoke state_machine([Patrol, Chase])
 
-invoke flags([invincible, flying])
+func update_patrol() -> State { return sees_player() ? State::CHASE : State::PATROL; }
+func update_chase() -> State { return sees_player() ? State::CHASE : State::PATROL; }
 
-func hurt(n: int) -> void {
-  if (invincible) return;
-  health -= n;
-  invoke log("hurt", [n, health]);
-}
-
-// An exported flag for each name: a loop, which templates don't have.
-macro flags(names) {
-  for _, name in ipairs(names) do
-    gd.var { name = name, type = "bool", init = false, annotations = { "export" } }
-  end
-}
-
-// Prints an event, with the class's name: C++ code, which templates don't generate.
-macro log(event, values = {}) {
-  local args = { gd.quote(ctx.class .. ": " .. event) }
-  for _, v in ipairs(values) do table.insert(args, v) end
-  gd.text("gd::print(" .. gd.join(args, ", ") .. ");")
+// An enum of the states, and a switch that runs the current one's update.
+macro state_machine(states) {
+  gd.enum { name = "State", values = gd.map(states, gd.upper_snake) }
+  gd.var { name = "state", type = "State" }
+  gd.on { name = "physics_process", param = "delta", param_type = "float", body = function()
+    gd.text("switch (state) {\n")
+    for _, s in ipairs(states) do
+      gd.text("case State::" .. gd.upper_snake(s) .. ": state = update_" .. gd.snake(s) .. "(); break;\n")
+    end
+    gd.text("}")
+  end }
 }

@@ -1,0 +1,6 @@
+input.gd++:4:1: N is 3.
+ 4 | invoke outer()
+   | ^^^^^^^^^^^^^^
+Macro call stack:
+  macro inner, invoked in generated code
+  macro outer, invoked at input.gd++:4

@@ -1,0 +1,6 @@
+input.gd++:9:5: N is 3.
+ 9 |     invoke inner(3);
+   |     ^^^^^^^^^^^^
+Macro call stack:
+  macro inner, invoked in generated code
+  template outer, invoked at input.gd++:4

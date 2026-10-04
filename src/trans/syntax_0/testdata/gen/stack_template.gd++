@@ -1,0 +1,4 @@
+// A template of another file, for err_macro_stack_template: gd.error points at its invocation of stack_inner.
+template_name stack_template(n)
+
+invoke stack_inner(${n * 2})
