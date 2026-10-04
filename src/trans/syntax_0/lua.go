@@ -68,6 +68,9 @@ type run struct {
 	values map[string]lua.LValue
 	argPos map[string]lexer.Position
 	argLen map[string]int
+	// For a run that gd.invoke started: the line of Lua code that called it, as an error without a message. Errors
+	// at the invocation go there, rather than to inv, which is where the outermost invocation is.
+	site *Error
 }
 
 // newRun returns a run of def for inv, with a sandboxed Lua state, and a function that frees it.
@@ -133,7 +136,40 @@ func (r *run) fail(e *Error) {
 
 // failAt stops the run with an error at the invocation.
 func (r *run) failAt(msg, hint string) {
-	r.fail(r.x.errorAt(r.inv.Pos, r.inv.span(), msg, hint))
+	r.fail(r.invocationError(msg, hint))
+}
+
+// invocationError returns an error at the invocation that started the run: inv, or the site of gd.invoke.
+func (r *run) invocationError(msg, hint string) *Error {
+	if r.site != nil {
+		e := *r.site
+		e.Msg, e.Hint = msg, hint
+		return &e
+	}
+	return r.x.errorAt(r.inv.Pos, r.inv.span(), msg, hint)
+}
+
+// lineError returns an error that underlines line of file, a GD++ file of the package, from its first character
+// that isn't a space.
+func (x *expander) lineError(file string, line int, msg, hint string) *Error {
+	src := x.sourceOf(file)
+	text := ""
+	if lines := strings.Split(src, "\n"); line >= 1 && line <= len(lines) {
+		text = lines[line-1]
+	}
+	pos := lexer.Position{Filename: file, Line: line, Column: len(text) - len(strings.TrimLeft(text, " \t")) + 1}
+	pos.Offset = offsetOf(src, pos)
+	return (&Error{Pos: pos, Len: max(1, len(strings.TrimSpace(text))), Msg: msg, Hint: hint}).withSource(src)
+}
+
+// sourceOf returns the source of file: the expanded file, or a file whose macros and templates it uses.
+func (x *expander) sourceOf(file string) string {
+	for _, d := range x.defs {
+		if d.file == file {
+			return d.src
+		}
+	}
+	return x.src
 }
 
 // call runs fn with args, and turns what went wrong into a GD++ error.
@@ -153,13 +189,14 @@ func (r *run) call(fn *lua.LFunction, args ...lua.LValue) error {
 		if r.x.timeout() == time.Second {
 			limit = "1 second"
 		}
-		return r.x.errorAt(r.inv.Pos, r.inv.span(), fmt.Sprintf("Macro %s ran for more than %s.", r.inv.Name, limit),
+		return r.invocationError(fmt.Sprintf("Macro %s ran for more than %s.", r.inv.Name, limit),
 			"It probably loops forever. If it only needs more time, raise the limit with --macro-timeout.")
 	}
 	return r.luaError(err)
 }
 
 var (
+	luaWhere        = regexp.MustCompile(`^(.*):(\d+):$`) // What L.Where returns: a chunk's file and line.
 	luaRuntimeError = regexp.MustCompile(`^(.*?):(\d+): (?s)(.*)$`)
 	luaSyntaxError  = regexp.MustCompile(`^(.*?) line:(\d+)\(column:(\d+)\) near '(.*)':\s*(.*)$`)
 )
@@ -181,12 +218,7 @@ func (r *run) luaError(err error) error {
 		file, msg = m[1], m[3]
 		line, _ = strconv.Atoi(m[2])
 	}
-	src := r.x.src
-	for _, d := range r.x.defs {
-		if d.file == file && file != r.x.filename {
-			src = d.src
-		}
-	}
+	src := r.x.sourceOf(file)
 	msg = fmt.Sprintf("%s %s failed: %s", capitalize(r.def.m.what()), r.def.m.Name, strings.TrimSuffix(msg, "."))
 	if line == 0 {
 		return r.x.errorAt(r.inv.Pos, r.inv.span(), msg+".", "")
@@ -1293,7 +1325,12 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 	}
 	// A macro runs in this Lua state, so tables and functions pass as they are, with its own gd and ctx.
 	inner := &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel}
-	n := &run{x: r.x, L: L, def: def, inv: &Invoke{Pos: r.inv.Pos, Name: name}, scopes: []*scope{inner}, depth: r.depth + 1,
+	var site *Error
+	if m := luaWhere.FindStringSubmatch(L.Where(1)); m != nil {
+		line, _ := strconv.Atoi(m[2])
+		site = r.x.lineError(m[1], line, "", "")
+	}
+	n := &run{x: r.x, L: L, def: def, inv: &Invoke{Pos: r.inv.Pos, Name: name}, scopes: []*scope{inner}, depth: r.depth + 1, site: site,
 		values: map[string]lua.LValue{}, argPos: map[string]lexer.Position{}, argLen: map[string]int{}}
 	gd, ctx := L.GetGlobal("gd"), L.GetGlobal("ctx")
 	L.SetGlobal("gd", n.gdTable())

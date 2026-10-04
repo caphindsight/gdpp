@@ -1,0 +1,6 @@
+// A macro of another file, for err_macro_stack_files: gd.error points at where it's invoked, in stack_outer.gd++.
+macro_name stack_inner(n)
+
+if n > 10 then
+  gd.error("n is too big: " .. n, "keep it at 10 or less")
+end

@@ -1,0 +1,4 @@
+// A macro of another file, for err_macro_stack_files: it invokes one of a third file.
+macro_name stack_outer(n)
+
+gd.invoke("stack_inner", { n * 2 })

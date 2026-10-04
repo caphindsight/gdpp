@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+// gd.error in a macro that another one invokes with gd.invoke: the error is at that gd.invoke, in its file.
+invoke stack_outer(8)

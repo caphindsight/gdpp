@@ -51,7 +51,7 @@ func TestGolden(t *testing.T) {
 			var got, ext, other string
 			if err != nil {
 				got, ext, other = err.Error()+"\n", ".err", ".ast"
-				checkError(t, name, string(src), err)
+				checkError(t, map[string]string{name: string(src)}, err)
 			} else {
 				got, ext, other = Dump(file), ".ast", ".err"
 				checkPositions(t, name, file)
@@ -91,15 +91,20 @@ func checkPositions(t *testing.T, name string, file *File) {
 
 var errorHead = regexp.MustCompile(`^(.+):(\d+):(\d+): [A-Z].*[.?!]$`)
 
-// checkError asserts that err has a location, a readable message, the source line and a caret at the location.
-func checkError(t *testing.T, name, src string, err error) {
+// checkError asserts that err has a location in one of the files in sources, by name, a readable message, the
+// source line and a caret at the location.
+func checkError(t *testing.T, sources map[string]string, err error) {
 	var e *Error
 	if !errors.As(err, &e) {
 		t.Fatalf("Expected an *Error, but got %T: %v", err, err)
 	}
 	lines := strings.Split(err.Error(), "\n")
 	m := errorHead.FindStringSubmatch(lines[0])
-	if m == nil || m[1] != name || len(lines) < 3 {
+	src, ok := "", false
+	if m != nil {
+		src, ok = sources[m[1]]
+	}
+	if !ok || len(lines) < 3 {
 		t.Fatalf("Badly formatted error:\n%s", err)
 	}
 	line, _ := strconv.Atoi(m[2])

@@ -1,0 +1,7 @@
+stack_outer.gd++:4:1: N is too big: 16.
+ 4 | gd.invoke("stack_inner", { n * 2 })
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hint: Keep it at 10 or less.
+Macro call stack:
+  macro stack_inner, invoked with gd.invoke at stack_outer.gd++:4
+  macro stack_outer, invoked at input.gd++:5

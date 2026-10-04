@@ -118,16 +118,18 @@ func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 		}
 		out["decls.txt"] = strings.Join(lines, "\n") + "\n"
 	}
-	// The GD++ files that #line may name: this one, and those of the templates it uses.
-	sources := map[string]string{name: src}
+	// The GD++ files that #line may name, and that errors may point into: this one, and those of the macros and
+	// templates it uses.
+	sources, errSources := map[string]string{name: src}, map[string]string{name: src}
 	for _, d := range opts.Dependencies {
 		if d.Source != "" {
 			sources[cmp.Or(d.SourceName, d.File)] = d.Source
+			errSources[d.File] = d.Source
 		}
 	}
 	files, err := Generate(name, src, opts)
 	if err != nil {
-		checkError(t, name, src, err)
+		checkError(t, errSources, err)
 		return map[string]string{"input.err": err.Error() + "\n"}
 	}
 	for _, f := range files {

@@ -305,3 +305,13 @@ name = "shield"
 kind = "Template"
 file = "templates.gd++"
 source_name = "package/templates.gd++"
+
+[[dep]]
+name = "stack_outer"
+kind = "Macro"
+file = "stack_outer.gd++"
+
+[[dep]]
+name = "stack_inner"
+kind = "Macro"
+file = "stack_inner.gd++"
