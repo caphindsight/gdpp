@@ -167,14 +167,18 @@ func (x *expander) expandFile(f *File) error {
 			}
 			switch n := n.(type) {
 			case *Block:
-				n.Text, err = x.expandCode(n.Text, n.TextPos, owner, 0)
+				lines := n.Origin
+				if lines.Source == "" {
+					lines = Origin{x.source(), n.TextPos.Line}
+				}
+				n.Text, err = x.expandCode(n.Text, n.TextPos, owner, 0, &lines)
 			case *Init:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0)
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil)
 				}
 			case *Default:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0)
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil)
 				}
 			}
 		})
@@ -343,8 +347,15 @@ func (x *expander) unknown(inv *Invoke) *Error {
 }
 
 // expandCode replaces the invocations in C++ code, which starts at pos, with the C++ that their macros generate.
-// The generated C++ goes on the invocation's line, so the lines after it stay where they are.
-func (x *expander) expandCode(code string, pos lexer.Position, owner string, depth int) (string, error) {
+// The code is a block, whose first line #line names as block says, or with a nil block, a one-line expression, e.g.
+// an initial value.
+//   - In a block, an invocation is a statement: "invoke NAME(...);", whose ";" it replaces too. If what the macro
+//     generates holds preprocessor directives, it keeps its lines, each named as the invocation's line by #line,
+//     and a #line after them names the line where the invocation ends. Otherwise it goes on the invocation's line.
+//   - In an expression, an invocation has no ";", and what it generates goes on its line.
+//
+// Either way, the lines after an invocation keep their #line numbers.
+func (x *expander) expandCode(code string, pos lexer.Position, owner string, depth int, block *Origin) (string, error) {
 	if !strings.Contains(code, "invoke") {
 		return code, nil
 	}
@@ -389,6 +400,19 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		if lex.RawPeek().EOF() {
 			end = len(code)
 		}
+		if block != nil {
+			if semi := lex.Peek(); isPunct(*semi, ";") {
+				end = start + semi.Pos.Offset + 1
+			} else {
+				// Right after the invocation, where the ";" is missing.
+				p := shift(shift(lex.RawPeek().Pos, open.Pos, ""), pos, x.src)
+				if lex.RawPeek().EOF() {
+					p = shift(t.Pos, pos, x.src)
+				}
+				return "", x.errorAt(p, 1, fmt.Sprintf("Expected \";\" after the invocation of %s, but found %s.", name.Value, describe(*semi)),
+					"In a C++ block, an invocation is a statement, which ends with \";\": invoke log(\"hit\");. The macro's C++ replaces it, \";\" included.")
+			}
+		}
 		forEachNode(inv.Args, func(n any) {
 			if p := reflectPos(n); p != nil {
 				*p = shift(shift(*p, open.Pos, ""), pos, x.src)
@@ -397,21 +421,40 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 				b.TextPos = shift(shift(b.TextPos, open.Pos, ""), pos, x.src)
 			}
 		})
-		text, err := x.invokeCode(inv, owner, depth)
+		var at *Origin // How #line names the invocation's line, in a block.
+		if block != nil {
+			at = &Origin{block.Source, block.Line + strings.Count(code[:t.Pos.Offset], "\n")}
+		}
+		text, err := x.invokeCode(inv, owner, depth, at)
 		if err != nil {
 			return "", err
 		}
 		out.WriteString(code[last:t.Pos.Offset])
-		out.WriteString(text)
-		out.WriteString(strings.Repeat("\n", strings.Count(code[t.Pos.Offset:end], "\n")))
+		if at != nil && hasDirective(text) {
+			directive := fmt.Sprintf("#line %d %q", at.Line, at.Source)
+			out.WriteString("\n")
+			prev := "" // The line before, which may already name the line, or continue on this one with "\".
+			for _, l := range strings.Split(strings.Trim(text, "\n"), "\n") {
+				if prev != directive && l != directive && !strings.HasSuffix(prev, "\\") {
+					out.WriteString(directive + "\n")
+				}
+				out.WriteString(l + "\n")
+				prev = l
+			}
+			fmt.Fprintf(&out, "#line %d %q\n", at.Line+strings.Count(code[t.Pos.Offset:end], "\n"), at.Source)
+		} else {
+			out.WriteString(oneLine(text))
+			out.WriteString(strings.Repeat("\n", strings.Count(code[t.Pos.Offset:end], "\n")))
+		}
 		last = end
 	}
 	out.WriteString(code[last:])
 	return out.String(), nil
 }
 
-// invokeCode runs the macro that inv invokes in C++ code, and returns the C++ it generates, on one line.
-func (x *expander) invokeCode(inv *Invoke, owner string, depth int) (_ string, err error) {
+// invokeCode runs the macro that inv invokes in C++ code, and returns the C++ it generates, expanded. In a block,
+// at says how #line names inv's line. In an expression, it's nil.
+func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) (_ string, err error) {
 	def := x.defs[inv.Name]
 	switch {
 	case depth >= x.maxDepth():
@@ -444,11 +487,31 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int) (_ string, e
 	for _, c := range sc.chunks {
 		sb.WriteString(c.text)
 	}
-	text, err := x.expandCode(sb.String(), inv.Pos, owner, depth+1)
+	// Its own invocations are statements, or expressions, like it. All its lines come from inv's line.
+	text, err := x.expandCode(sb.String(), inv.Pos, owner, depth+1, at)
 	if err != nil {
 		return "", err
 	}
-	return oneLine(text), nil
+	if at == nil && hasDirective(text) {
+		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Macro %s generated a preprocessor directive, which only works in C++ blocks.", inv.Name),
+			"Here, the C++ must be an expression on one line.")
+	}
+	return text, nil
+}
+
+// hasDirective reports whether C++ code holds a preprocessor directive: a line that starts with "#".
+func hasDirective(code string) bool {
+	for _, l := range strings.Split(code, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(l), "#") {
+			return true
+		}
+	}
+	return false
+}
+
+// source returns how #line names the expanded file.
+func (x *expander) source() string {
+	return cmp.Or(x.opts.SourceName, x.filename)
 }
 
 // oneLine returns C++ code on a single line, without comments.

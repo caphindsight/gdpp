@@ -31,7 +31,7 @@ void Caller::call_twice(const Callable &f) {
   std::invoke([&]() { f.call(); });
   invoke(f, 1);
   int invoke = 2;
-  (invoke * 2);
+  invoke *= 2;
 
 #line 37 "Caller.cpp"
 }

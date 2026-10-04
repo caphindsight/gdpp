@@ -81,18 +81,46 @@ C++ code:
 - In any C++ code, a macro generates C++ code with `gd.text`. This includes function bodies, initial values, and `decl`, `impl` and `@global` blocks.
 - `invoke name(...)` and `invoke name { ... }` only invoke a macro if `name` is a macro of the package. Other uses of `invoke` stay C++, e.g. `std::invoke(f)` or `invoke(f, x)`.
 - Avoid `invoke` as a name in C++ code.
-- The generated C++ goes on the invocation's line, without comments. So it can't hold preprocessor lines, e.g. `#include`.
 - GD++'s rewrites, e.g. `emit` and `as`, work in generated C++.
+
+In C++ blocks, e.g. function bodies and `decl` blocks, an invocation is a statement:
+
+- It ends with `;`, which is required.
+- The generated C++ replaces it, `;` included. So the macro generates complete statements or declarations, with their own `;`.
+- The generated C++ goes on the invocation's line, without comments, so the lines after it keep their numbers.
+- Unless it holds preprocessor directives, e.g. `#define` or `#ifdef`: then it keeps its lines, and `#line` directives name each of them as the invocation's line. Lines continued with `\` stay together.
 
 ```gd++
 decl {
-  invoke lookup_table(DAMAGE, [10, 20, 40])
+  invoke lookup_table(DAMAGE, [10, 20, 40]);
 }
 
 // A C++ array of integers.
 macro lookup_table(name, values) {
   gd.text("static constexpr int64_t " .. name .. "[] = {" .. gd.join(values, ", ") .. "};")
 }
+```
+
+Preprocessor directives, e.g. for code that only debug builds compile:
+
+```gd++
+func hurt(n: int) -> void {
+  invoke debug_only(code { UtilityFunctions::print("hurt: ", n); });
+  health -= n;
+}
+
+macro debug_only(body) {
+  gd.text("#ifdef DEBUG_ENABLED\n" .. tostring(body) .. "\n#endif")
+}
+```
+
+In one-line C++ expressions, i.e. initial values and parameters' default values, an invocation is an expression:
+
+- It has no `;`.
+- The generated C++ must be an expression on one line. Preprocessor directives are an error.
+
+```gd++
+var label: String = invoke describe(health)
 ```
 
 A doc comment before an invocation goes to `ctx.doc`, so the macro can document what it generates, e.g. `gd.var { ..., doc = ctx.doc }`.
@@ -446,7 +474,7 @@ macro log(event, values = {}) {
     table.insert(args, gd.quote((i > 1 and ", " or " ") .. v .. "="))
     table.insert(args, v)
   end
-  gd.text("UtilityFunctions::print(" .. gd.join(args, ", ") .. ")")
+  gd.text("UtilityFunctions::print(" .. gd.join(args, ", ") .. ");")
 }
 ```
 

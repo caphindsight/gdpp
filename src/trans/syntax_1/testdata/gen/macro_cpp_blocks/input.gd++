@@ -2,7 +2,7 @@ class_name Table
 extends Node
 
 decl {
-  invoke lookup_table(DAMAGE, [10, 20, 40])
+  invoke lookup_table(DAMAGE, [10, 20, 40]);
 }
 
 invoke enter_functions([Idle, Run])

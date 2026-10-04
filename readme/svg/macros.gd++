@@ -22,5 +22,5 @@ macro flags(names) {
 macro log(event, values = {}) {
   local args = { gd.quote(ctx.class .. ": " .. event) }
   for _, v in ipairs(values) do table.insert(args, v) end
-  gd.text("gd::print(" .. gd.join(args, ", ") .. ")")
+  gd.text("gd::print(" .. gd.join(args, ", ") .. ");")
 }

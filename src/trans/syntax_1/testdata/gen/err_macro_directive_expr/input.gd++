@@ -1,0 +1,9 @@
+class_name A
+extends Node
+
+// An initial value is a one-line expression, so a macro can't generate directives there.
+var x: int = invoke defined()
+
+macro defined() {
+  gd.text("#ifdef DEBUG_ENABLED\n1\n#else\n0\n#endif")
+}

@@ -1,0 +1,4 @@
+input.gd++:6:17: Expected ";" after the invocation of hello, but found name "int".
+ 6 |   invoke hello()
+   |                 ^
+Hint: In a C++ block, an invocation is a statement, which ends with ";": invoke log("hit");. The macro's C++ replaces it, ";" included.

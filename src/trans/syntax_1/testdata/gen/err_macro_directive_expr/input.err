@@ -1,0 +1,6 @@
+input.gd++:5:14: Macro defined generated a preprocessor directive, which only works in C++ blocks.
+ 5 | var x: int = invoke defined()
+   |              ^^^^^^^^^^^^^^
+Hint: Here, the C++ must be an expression on one line.
+Macro call stack:
+  macro defined, invoked at input.gd++:5

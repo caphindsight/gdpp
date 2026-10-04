@@ -1,0 +1,12 @@
+class_name A
+extends Node
+
+// In a C++ block, an invocation is a statement, which ends with ";".
+func f() -> void {
+  invoke hello()
+  int x = 1;
+}
+
+macro hello() {
+  gd.text("UtilityFunctions::print(\"hello\");")
+}

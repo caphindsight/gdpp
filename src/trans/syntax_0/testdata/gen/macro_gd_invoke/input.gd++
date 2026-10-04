@@ -24,5 +24,5 @@ macro shout(message) {
 }
 
 macro print_upper(text) {
-  gd.text("UtilityFunctions::print(" .. gd.quote(string.upper(text)) .. ")")
+  gd.text("UtilityFunctions::print(" .. gd.quote(string.upper(text)) .. ");")
 }

@@ -182,8 +182,8 @@ func checkLines(t *testing.T, sources map[string]string, self, text string) {
 			if n+k > len(srcLines) {
 				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])
 			}
-			if invocation.MatchString(srcLines[n+k-1]) || strings.Contains(srcLines[n+k-1], "${") {
-				continue // The line holds what a macro generated, or a template's holes.
+			if invocation.MatchString(srcLines[n+k-1]) || strings.Contains(srcLines[n+k-1], "${") || strings.HasSuffix(lines[i+k], "\\") {
+				continue // The line holds what a macro generated, or a template's holes, or the line before continues on it.
 			}
 			want := identifiers(srcLines[n+k-1])
 			for _, id := range identifiers(lines[i+1+k]) {

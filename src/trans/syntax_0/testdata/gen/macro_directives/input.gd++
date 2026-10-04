@@ -1,0 +1,47 @@
+class_name Profiler
+extends Node
+
+// Invocations in C++ blocks are statements, and may generate preprocessor directives: those keep their lines.
+decl {
+  invoke define(SCALE, 3);
+  invoke define_long(TWICE(x), x * 2);
+}
+
+func scaled(n: int) -> int {
+  invoke debug_only(code { UtilityFunctions::print(n); }); int extra = 1;
+  invoke debug_only(
+    code { UtilityFunctions::print(SCALE); }
+  );
+  invoke both(n);
+  return TWICE(n) * SCALE + extra;
+}
+
+invoke checked(halve)
+
+// A #define.
+macro define(name, value) {
+  gd.text("#define " .. name .. " " .. value)
+}
+
+// A #define continued on the next line.
+macro define_long(name, value) {
+  gd.text("#define " .. name .. " \\\n  (" .. tostring(value) .. ")")
+}
+
+// Code that only debug builds compile.
+macro debug_only(body) {
+  gd.text("#ifdef DEBUG_ENABLED\n" .. tostring(body) .. "\n#endif")
+}
+
+// Invocations in a macro's C++.
+macro both(n) {
+  gd.text("invoke debug_only(code { UtilityFunctions::print(" .. n .. "); }); " .. n .. " += 0;")
+}
+
+// A template whose C++ invokes a macro that generates directives: #line names the template's lines.
+template checked(name) {
+  func ${name}(n: int) -> int {
+    invoke debug_only(code { UtilityFunctions::print(n); });
+    return n / 2;
+  }
+}

@@ -5,10 +5,10 @@ func call_twice(f: Callable) -> void {
   std::invoke([&]() { f.call(); });
   invoke(f, 1);
   int invoke = 2;
-  invoke twice(invoke);
+  invoke double_it(invoke);
 }
 
-// Doubles a value.
-macro twice(value) {
-  gd.text("(" .. tostring(value) .. " * 2)")
+// Doubles a variable.
+macro double_it(variable) {
+  gd.text(tostring(variable) .. " *= 2;")
 }
