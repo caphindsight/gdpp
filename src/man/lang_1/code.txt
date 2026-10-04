@@ -44,6 +44,7 @@ decl {
 - A `decl` block goes into the class definition, in the class's header.
 - Its code starts in the class's private section: it's for private fields and methods.
 - Functions declared there are plain C++ methods. Godot doesn't know them, and GDScript can't call them.
+- For such a method, `@private func` is shorter: it needs no `impl` block. See "@private" in `gd++ man functions`.
 - Define them in an `impl` block, or inline, in the `decl` block itself.
 - To make something public or protected, start with an access specifier:
 

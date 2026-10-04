@@ -338,7 +338,7 @@ func (u *unit) document(c *classModel) string {
 
 	var methods []methodDoc
 	for _, f := range c.funcs {
-		if f.override || f.hidden != "" {
+		if f.override || f.hidden != "" || f.isPrivate {
 			continue
 		}
 		var qualifiers []string

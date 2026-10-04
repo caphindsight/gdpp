@@ -1,0 +1,4 @@
+class_name A
+
+@private @virtual
+func _f() -> void {}

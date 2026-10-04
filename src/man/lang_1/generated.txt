@@ -152,9 +152,9 @@ In order:
    - each `decl` block, after `private:`,
    - `public:` the fields of simple variables, value-initialized with `{}`,
    - `private:` the `decl` blocks of properties,
-   - `public:` integer constants as `static constexpr int64_t`, the constructor and destructor if any, `GDVIRTUAL` declarations of `@virtual` functions, the functions, RPC helpers, getters and setters, and the emit functions of signals,
+   - `public:` integer constants as `static constexpr int64_t`, the constructor and destructor if any, `GDVIRTUAL` declarations of `@virtual` functions, the functions except `@private` ones, RPC helpers, getters and setters, and the emit functions of signals,
    - `protected:` `static void _bind_methods()`, and `void _notification(int WHAT)` if the class has `on` blocks or `@onready` variables,
-   - `private:` the generated helpers: enum wrappers, and default value functions.
+   - `private:` the `@private` functions, and the generated helpers: enum wrappers, and default value functions.
 6. The `#include` lines of the GD++ names that were only forward-declared, at the end, after namespace `godot`.
 
 # The class source
@@ -167,7 +167,7 @@ In order:
 
 `_bind_methods` binds:
 
-- each function, with its default values, except the bodies of `@onthread` functions, which their tasks call directly,
+- each function, with its default values, except `@private` functions, and the bodies of `@onthread` functions, which their tasks call directly,
 - each variable's getter and setter, and its property, after the inspector sections it starts,
 - each signal and each integer constant,
 - each value of each exposed enum, as a bitfield flag for a bitfield.

@@ -1,0 +1,4 @@
+extern A {
+  @private
+  func f() -> void
+}

@@ -44,12 +44,13 @@ func not_done_yet() -> int
 
 # What GD++ does with a function
 
-- Declares it as a public method of the C++ class, and defines it in the class's source file, with your body.
+- Declares it as a public method of the C++ class, or a private one with `@private`, and defines it in the class's source file, with your body.
 - Binds it in `_bind_methods`, so Godot can call it:
   - plain functions: with `ClassDB::bind_method`, with parameter names and default values,
   - `@static`: with `ClassDB::bind_static_method`,
   - `@virtual`: with `GDVIRTUAL_BIND`, next to a function that calls them,
-  - `@override`: not at all, since the engine binds them.
+  - `@override`: not at all, since the engine binds them,
+  - `@private`: not at all, so only C++ code calls them.
 - With `@game_only`, or in a `@game_only` class, starts the body with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
 - With `@editor_only`, or in an `@editor_only` class, starts the body with a check that returns right away in the game.
 
@@ -305,6 +306,25 @@ func lerp_angle(from: float, to: float, weight: float) -> float {
 - It has no `this`, and can't use the object's fields.
 - GDScript calls it on the class: `Player.lerp_angle(0, 1, 0.5)`.
 
+# @private
+
+```gd++
+func hurt(damage: int) -> void {
+  health -= clamped(damage);
+}
+
+@private
+func clamped(damage: int) -> int {
+  return damage < health ? damage : health;
+}
+```
+
+- Makes the function a private method in C++: only the class's own C++ code calls it.
+- GD++ doesn't bind it, so Godot doesn't know it: scripts, `call()` and signals connected by name can't reach it, and the editor's help leaves it out.
+- To connect it to a signal, use `callable_mp(this, &This::clamped)`.
+- Like a method in a `decl` block, but written as a `func`. See `gd++ man code`.
+- Combines with `@static`, `@const`, `@deferred`, `@thread_safe` and `@onthread`. Their `_gdpp_body_NAME` is still bound, since their calls run it by name or from a task.
+
 # @rpc
 
 `@rpc` makes the function callable over the network. See `gd++ man rpc`.
@@ -413,6 +433,7 @@ A function with the name of a virtual function of the base class, without @overr
 @recycle on a function other than an @override _ready
 @override with @rpc, @deferred, @thread_safe or @onthread
 @rpc with @onthread
+@private with @virtual, @override or @rpc
 @deferred with @thread_safe or @onthread
 @thread_safe with @onthread
 ```

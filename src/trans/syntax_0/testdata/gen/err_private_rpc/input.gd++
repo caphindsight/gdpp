@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+@private @rpc
+func f() -> void {}

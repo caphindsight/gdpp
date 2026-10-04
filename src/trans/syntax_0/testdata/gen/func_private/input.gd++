@@ -1,0 +1,22 @@
+class_name Safe
+extends Node
+
+enum Lock { OPEN, SHUT }
+
+func open() -> void {
+  apply(Lock::OPEN);
+}
+
+/// Not in the docs: scripts can't see it.
+@private
+func apply(lock: Lock, times: int = 1) -> bool {
+  return lock == Lock::SHUT;
+}
+
+@private @static
+func code() -> int {
+  return 42;
+}
+
+@private @deferred
+func flush() -> void {}

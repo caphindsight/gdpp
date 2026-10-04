@@ -124,7 +124,7 @@ See `gd++ man externs`.
 
 # Rules
 
-- `@rpc` can't be combined with `@static`, `@virtual`, `@override` or `@onthread`.
+- `@rpc` can't be combined with `@static`, `@virtual`, `@override`, `@private` or `@onthread`.
 - The channel must be the last argument.
 - In externs, `@rpc` takes no arguments.
 - The class or extern must extend `Node`.

@@ -98,6 +98,9 @@ func _score() -> int
 @static
   Make the function static. See `gd++ man functions`.
 
+@private
+  Make the function a private C++ method, which GD++ doesn't bind. Only C++ code of the class calls it. See `gd++ man functions`.
+
 @rpc(ARGS...)
   Make the function callable over the network. Only in classes that extend `Node`. See `gd++ man rpc`. Arguments:
   - `"authority"` or `"any_peer"`,
@@ -139,6 +142,7 @@ Rules:
 - `@virtual` doesn't combine with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`.
 - `@override` doesn't combine with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`.
 - `@rpc` doesn't combine with `@onthread`.
+- `@private` doesn't combine with `@virtual`, `@override` or `@rpc`.
 - `@deferred` doesn't combine with `@thread_safe` or `@onthread`.
 - `@thread_safe` doesn't combine with `@onthread`.
 - `@game_only` doesn't combine with `@editor_only`.

@@ -607,8 +607,8 @@ func info(c *classModel, t *gtype, name, usage, hint, hintString string) string 
 // bindings writes the body of _bind_methods.
 func (u *unit) bindings(w *writer, c *classModel) {
 	for _, f := range c.funcs {
-		if f.hidden == "onthread" || f.hidden == "notif" {
-			continue // Its func, or _notification, calls it directly.
+		if f.hidden == "onthread" || f.hidden == "notif" || f.isPrivate {
+			continue // Its func, or _notification, calls it directly. Or it's @private.
 		}
 		// The method, followed by the default values of its parameters.
 		ref := fmt.Sprintf("&%s::%s", c.name, f.f.Name)

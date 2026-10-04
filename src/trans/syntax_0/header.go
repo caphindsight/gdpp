@@ -285,7 +285,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 			w.block(d, "", "", assertAny)
 		}
 	}
-	var public []string
+	var public, private []string
 	for _, k := range c.consts {
 		public = append(public, fmt.Sprintf("static constexpr int64_t %s = %d;", k.Name, k.Value.Value))
 	}
@@ -341,7 +341,12 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		if f.isConst {
 			suffix = " const" + suffix
 		}
-		public = append(public, fmt.Sprintf("%s%s%s(%s)%s;", prefix, withSpace(f.ret.cpp), f.f.Name, declParams(f), suffix))
+		decl := fmt.Sprintf("%s%s%s(%s)%s;", prefix, withSpace(f.ret.cpp), f.f.Name, declParams(f), suffix)
+		if f.isPrivate {
+			private = append(private, decl)
+			continue
+		}
+		public = append(public, decl)
 		if f.rpc != nil {
 			public = append(public, "Error "+rpcDecl(f, declParams(f))+";")
 		}
@@ -370,29 +375,28 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.needsNotification() {
 		w.ln("\tvoid _notification(int WHAT);")
 	}
-	var helpers []string
 	for _, f := range c.funcs {
 		if !f.virtual && !f.override && f.trampolined() {
-			helpers = append(helpers, trampolineDecl(c, f))
+			private = append(private, trampolineDecl(c, f))
 		}
 		for i, p := range f.f.Params {
 			if p.Default != nil {
-				helpers = append(helpers, fmt.Sprintf("static %s%s();", withSpace(f.params[i].cpp), defaultName(f, p)))
+				private = append(private, fmt.Sprintf("static %s%s();", withSpace(f.params[i].cpp), defaultName(f, p)))
 			}
 		}
 	}
 	for _, v := range c.vars {
 		if v.trampolined() && v.getter != "" {
-			helpers = append(helpers, fmt.Sprintf("%s _gdpp_%s() const;", tagName(c, v.t.enum), v.getter))
+			private = append(private, fmt.Sprintf("%s _gdpp_%s() const;", tagName(c, v.t.enum), v.getter))
 		}
 		if v.trampolined() && v.setter != "" {
-			helpers = append(helpers, fmt.Sprintf("void _gdpp_%s(%s p_value);", v.setter, tagName(c, v.t.enum)))
+			private = append(private, fmt.Sprintf("void _gdpp_%s(%s p_value);", v.setter, tagName(c, v.t.enum)))
 		}
 	}
-	if len(helpers) > 0 {
+	if len(private) > 0 {
 		w.ln("")
 		w.ln("private:")
-		for _, t := range helpers {
+		for _, t := range private {
 			w.ln("\t%s", t)
 		}
 	}

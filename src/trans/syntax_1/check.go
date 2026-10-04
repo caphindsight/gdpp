@@ -97,6 +97,7 @@ type funcModel struct {
 	ret                                *gtype
 	virtual, override, isConst, static bool
 	final, super, private              bool        // With @override("final"), "super" on @override or @virtual, and @virtual("private").
+	isPrivate                          bool        // With @private: a private method, which isn't bound.
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string      // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
 	detached                           bool        // With @onthread("detached"): a call starts a task that nobody waits for, and returns nothing.
@@ -120,9 +121,9 @@ type rpcModel struct {
 }
 
 // trampolined reports whether the function's signature mentions an enum, so it's bound through a trampoline. The
-// body of an @onthread func isn't bound at all.
+// body of an @onthread func and a @private func aren't bound at all.
 func (f *funcModel) trampolined() bool {
-	return f.hidden != "onthread" && (f.ret.enum != nil || slices.ContainsFunc(f.params, func(t *gtype) bool { return t.enum != nil }))
+	return f.hidden != "onthread" && !f.isPrivate && (f.ret.enum != nil || slices.ContainsFunc(f.params, func(t *gtype) bool { return t.enum != nil }))
 }
 
 type varModel struct {
@@ -1110,7 +1111,7 @@ var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -1141,7 +1142,8 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}, {"static", "deferred"}, {"virtual", "deferred"},
 		{"override", "deferred"}, {"static", "thread_safe"}, {"virtual", "thread_safe"}, {"override", "thread_safe"},
 		{"deferred", "thread_safe"}, {"virtual", "onthread"}, {"override", "onthread"}, {"rpc", "onthread"},
-		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}, {"game_only", "editor_only"}} {
+		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"private", "virtual"}, {"private", "override"},
+		{"private", "rpc"}, {"tool", "game_only"}, {"game_only", "editor_only"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -1172,7 +1174,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "profile", "recycle", "rpc", "static",
+	allowed := []string{"const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "private", "profile", "recycle", "rpc", "static",
 		"thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "thread_safe", "trace"}
@@ -1186,7 +1188,7 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil,
-		isConst: a["const"] != nil, static: a["static"] != nil, recycle: a["recycle"]}
+		isConst: a["const"] != nil, static: a["static"] != nil, isPrivate: a["private"] != nil, recycle: a["recycle"]}
 	if m.only, err = u.onlyOf(a, owner); err != nil {
 		return nil, err
 	}
@@ -2206,7 +2208,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	// file-level class, in its file).
 	var api []*gtype
 	for _, f := range m.funcs {
-		if !f.override {
+		if !f.override && !f.isPrivate {
 			api = append(append(api, f.ret), f.params...)
 		}
 	}
