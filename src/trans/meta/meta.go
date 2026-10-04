@@ -76,17 +76,18 @@ const (
 // Declaration is a class, extern, enum type, macro or template declared in a GD++ file, which other files may use.
 // Stable: additive changes only.
 type Declaration struct {
-	Name     string      //
-	Kind     DeclKind    //
-	Base     string      // For classes and externs: the base class. For enums: the enum it extends, if any.
-	Values   []EnumValue // For enums: its own values, without those of its base.
-	Icon     string      // For classes: the icon's res:// or pkg:// path, from @icon.
-	Tool     bool        // For classes: whether @tool makes its functions run in the editor too.
-	Bitfield bool        // For enums: whether @bitfield makes it a bitfield.
-	GameOnly bool        // For classes: whether @game_only keeps its code from running in the editor.
-	Abstract bool        // For classes: whether @abstract keeps the editor and GD++ code from creating its objects.
-	Async    bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
-	Virtuals []string    // For classes: the names of its @virtual functions, which subclasses can override.
+	Name       string      //
+	Kind       DeclKind    //
+	Base       string      // For classes and externs: the base class. For enums: the enum it extends, if any.
+	Values     []EnumValue // For enums: its own values, without those of its base.
+	Icon       string      // For classes: the icon's res:// or pkg:// path, from @icon.
+	Tool       bool        // For classes: whether @tool makes its functions run in the editor too.
+	Bitfield   bool        // For enums: whether @bitfield makes it a bitfield.
+	GameOnly   bool        // For classes: whether @game_only keeps its code from running in the editor.
+	EditorOnly bool        // For classes: whether @editor_only, or @tool("editor_only"), keeps its code from running in the game.
+	Abstract   bool        // For classes: whether @abstract keeps the editor and GD++ code from creating its objects.
+	Async      bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
+	Virtuals   []string    // For classes: the names of its @virtual functions, which subclasses can override.
 	// For classes: the names of its own notifications, without NOTIFICATION_: its constants named NOTIFICATION_....
 	Notifications []string
 }

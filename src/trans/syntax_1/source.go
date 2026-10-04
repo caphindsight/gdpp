@@ -80,7 +80,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			}
 		}
 		// Initial values set up the objects in the editor too, so the inspector shows them.
-		guard(w, c.gameOnly && (c.ctor != nil || c.recycleCtor != nil && !c.recycleCtorOnly), "")
+		if c.ctor != nil || c.recycleCtor != nil && !c.recycleCtorOnly {
+			guard(w, c.only, "")
+		}
 		if c.ctor != nil {
 			w.block(c.ctor, "\t{", "}", assertVoid)
 		}
@@ -92,7 +94,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.needsDtor() {
 		w.ln("")
 		w.ln("%s::~%s() {", c.name, c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		if c.trace {
 			w.ln("\tgdpp::trace_lifetime(%q, this, false);", c.name)
 		}
@@ -113,12 +115,12 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		recycler(w, c, "dtor", c.recycleDtor)
 		w.ln("")
 		w.ln("void %s::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {", c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		w.ln("\t_gdpp_pool.reserve(p_count, p_mode);")
 		w.ln("}")
 		w.ln("")
 		w.ln("void %s::gdpp_pool_clear(bool p_keep_in_use) {", c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		w.ln("\t_gdpp_pool.clear(p_keep_in_use);")
 		w.ln("}")
 	}
@@ -126,40 +128,40 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if !c.abstract {
 		w.ln("")
 		w.ln("%s%s::gdpp_create() {", withSpace(c.createType()), c.name)
-		guard(w, c.gameOnly, c.createType())
+		guard(w, c.only, c.createType())
 		w.ln("\treturn gdpp::create<%s>();", c.name)
 		w.ln("}")
 	}
 	if !c.refCounted {
 		w.ln("")
 		w.ln("void %s::gdpp_destroy() {", c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		w.ln("\tgdpp::destroy(this);")
 		w.ln("}")
 	}
 	if c.node {
 		w.ln("")
 		w.ln("void %s::gdpp_queue_destroy() {", c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		w.ln("\tgdpp::queue_destroy(this);")
 		w.ln("}")
 	}
 	if c.scene != "" {
 		w.ln("")
 		w.ln("void %s::gdpp_scene_cache() {", c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		w.ln("\tgdpp::scene<%s>();", c.name)
 		w.ln("}")
 		w.ln("")
 		w.ln("void %s::gdpp_scene_evict() {", c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		w.ln("\tgdpp::evict_scene<%s>();", c.name)
 		w.ln("}")
 	}
 	if c.needsNotification() {
 		w.ln("")
 		w.ln("void %s::_notification(int WHAT) {", c.name)
-		guard(w, c.gameOnly, "")
+		guard(w, c.only, "")
 		// POST_ENTER_TREE comes right before each READY, once the children are ready, but also on each later entry.
 		if c.hasOnready() {
 			w.ln("\tif (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {")
@@ -210,7 +212,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		if f.rpc != nil {
 			w.ln("")
 			w.ln("Error %s::%s {", c.name, rpcDecl(f, params(nil, f.params, f.f.Params)))
-			guard(w, f.gameOnly, "Error")
+			guard(w, f.only, "Error")
 			w.ln("\treturn %s;", rpcCall(f))
 			w.ln("}")
 		}
@@ -221,7 +223,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	for _, s := range c.signals {
 		w.ln("")
 		w.ln("gdpp::Emitted %s::%s(%s) {", c.name, s.s.Name, params(nil, s.params, s.s.Params))
-		guard(w, c.gameOnly, "gdpp::Emitted")
+		guard(w, c.only, "gdpp::Emitted")
 		if s.trace {
 			w.ln("\tgdpp::trace_emit(this, %q%s);", s.s.Name, namedArgs(s.s.Params))
 		}
@@ -258,7 +260,7 @@ func initializer(w *writer, v *varModel, indent string) {
 func recycler(w *writer, c *classModel, keyword string, body *Block) {
 	w.ln("")
 	w.ln("void %s::_gdpp_recycle_%s() {", c.name, keyword)
-	guard(w, c.gameOnly, "")
+	guard(w, c.only, "")
 	if c.trace {
 		w.ln("\tgdpp::trace_recycle(%q, this, %t);", c.name, keyword == "ctor")
 	}
@@ -283,29 +285,36 @@ func recycleBlock(w *writer, body *Block, open string) {
 	w.block(body, open, "}", assertVoid)
 }
 
-// guard writes, if on, the check of @game_only code that returns right away, with a default value, when it's
-// called in the editor, which only loads debug builds. ret is the C++ return type, empty for constructors and
-// destructors.
-func guard(w *writer, on bool, ret string) {
+// guard writes the check of code that only runs on one side, only. For "game", @game_only code, it returns right
+// away, with a default value, when the editor calls it. The editor only loads debug builds, so release builds skip
+// the check. For "editor", @editor_only code, it returns when the game calls it. Nothing if only is empty. ret is the
+// C++ return type, empty for constructors and destructors.
+func guard(w *writer, only string, ret string) {
 	if ret == "" || ret == "void" {
-		guardWith(w, on, "return;")
+		guardWith(w, only, "return;")
 	} else {
-		guardWith(w, on, "return {};")
+		guardWith(w, only, "return {};")
 	}
 }
 
-// guardWith is guard with its own lines of code to run in the editor.
-func guardWith(w *writer, on bool, lines ...string) {
-	if !on {
+// guardWith is guard with its own lines of code to run on the other side.
+func guardWith(w *writer, only string, lines ...string) {
+	switch only {
+	case "game":
+		w.ln("#ifdef DEBUG_ENABLED")
+		w.ln("\tif (Engine::get_singleton()->is_editor_hint()) {")
+	case "editor":
+		w.ln("\tif (!Engine::get_singleton()->is_editor_hint()) {")
+	default:
 		return
 	}
-	w.ln("#ifdef DEBUG_ENABLED")
-	w.ln("\tif (Engine::get_singleton()->is_editor_hint()) {")
 	for _, line := range lines {
 		w.ln("\t\t%s", line)
 	}
 	w.ln("\t}")
-	w.ln("#endif")
+	if only == "game" {
+		w.ln("#endif")
+	}
 }
 
 // debugging reports whether the unit's source uses the runtime's code for @trace and @profile.
@@ -407,7 +416,7 @@ func cast(c *classModel, t *gtype, expr string, toTag bool) string {
 func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
 	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
-	guard(w, f.gameOnly, f.ret.cpp)
+	guard(w, f.only, f.ret.cpp)
 	if f.once && f.override {
 		w.ln("\tif (_gdpp_pool_slot.readied) {")
 		w.ln("\t\treturn;")
@@ -473,7 +482,7 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	}
 	w.ln("")
 	w.ln("%s {", qualified(c, tagged(c, f.ret), "_gdpp_"+f.f.Name, params(c, f.params, f.f.Params), f.isConst))
-	guard(w, f.gameOnly, f.ret.cpp)
+	guard(w, f.only, f.ret.cpp)
 	call := fmt.Sprintf("%s(%s)", f.f.Name, castList(c, f.params, f.f.Params, false))
 	if f.ret.void {
 		w.ln("\t%s;", call)
@@ -492,7 +501,7 @@ func defaultDefs(w *writer, c *classModel, f *funcModel) {
 		}
 		w.ln("")
 		w.ln("%s {", qualified(c, f.params[i].cpp, defaultName(f, p), "", false))
-		guard(w, f.gameOnly, f.params[i].cpp)
+		guard(w, f.only, f.params[i].cpp)
 		if d.Block != nil {
 			w.block(d.Block, "", "", assertValue)
 		} else {
@@ -507,10 +516,12 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, v.t.cpp, v.getter, "", true))
-		if field := v.editorField(); field != "" {
-			guardWith(w, v.gameOnly && (v.get != nil || v.profile), "return "+field+";") // Else the getter is trivial already.
+		if field := v.guardField(); field != "" {
+			if v.get != nil || v.profile { // Else the getter is trivial already.
+				guardWith(w, v.only, "return "+field+";")
+			}
 		} else {
-			guard(w, v.gameOnly, v.t.cpp)
+			guard(w, v.only, v.t.cpp)
 		}
 		if v.profile {
 			u.profile(w, c.name+"."+v.getter)
@@ -525,10 +536,10 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if v.setter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, "void", v.setter, withSpace(v.t.param())+v.setterParam(), false))
-		if field := v.editorField(); field != "" {
-			guardWith(w, v.gameOnly, field+" = "+v.setterParam()+";", "return;")
+		if field := v.guardField(); field != "" {
+			guardWith(w, v.only, field+" = "+v.setterParam()+";", "return;")
 		} else {
-			guard(w, v.gameOnly, "void")
+			guard(w, v.only, "void")
 		}
 		if v.deferral == "" { // Else the set block's method, which the call runs, profiles and watches.
 			if v.profile {

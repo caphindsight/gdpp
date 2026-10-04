@@ -86,7 +86,9 @@ on process(delta: float) {
 - Anywhere else, `Engine::get_singleton()->is_editor_hint()` tells whether the code runs in the editor.
 - A tool class that creates objects of a runtime class, e.g. with `create`, runs their code in the editor. Mark such classes `@game_only` if their code must never run there.
 
-See "@game_only" in `gd++ man classes`.
+The opposite also works: mark functions and variables `@editor_only` to run them only in the editor, e.g. a preview. `@editor_only @tool` on the class does it for all its code.
+
+See "@game_only" and "@editor_only" in `gd++ man classes`.
 
 # 4. Warn about wrong settings
 

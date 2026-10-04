@@ -211,10 +211,11 @@ Then:
 - each signal's emit function,
 - the `impl` blocks.
 
-Editor checks, in debug builds:
+Editor checks:
 
-- In a `@game_only` class, each of these functions except `_bind_methods` starts with an editor check.
+- In a `@game_only` class, each of these functions except `_bind_methods` starts with an editor check, in debug builds.
 - Outside one, the functions of a `@game_only` function or variable do.
+- `@editor_only` works the same way, with the opposite check, in all builds.
 - See `gd++ man classes`.
 
 When `@trace` or `@profile` annotations are on, the functions they apply to start with their code, after the editor check:

@@ -1,2 +1,2 @@
-{Name:Hero Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
-{Name:State Kind:3 Base: Values:[{Name:IDLE Value:0 Doc: Implicit:true Expr:} {Name:JUMP Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Hero Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:State Kind:3 Base: Values:[{Name:IDLE Value:0 Doc: Implicit:true Expr:} {Name:JUMP Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

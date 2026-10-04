@@ -353,6 +353,7 @@ The body runs on a worker thread, with the limits of any code on threads:
 - If the object is refcounted, the call keeps it alive until the body has run. Other objects, e.g. nodes, must not be freed while the body runs.
 - Most of the scene tree isn't thread-safe. To change it, the body can defer the change to the main thread, e.g. with `call_deferred` or a `@thread_safe` function. Or it returns what it computed, and the main thread uses the result.
 - In a `@game_only` class, calls in the editor start no task, and return an empty `Async`, which is `false`. See `gd++ man classes`.
+- In an `@editor_only` class, the same goes for calls in the game.
 
 # The class of tasks
 

@@ -1,2 +1,2 @@
-{Name:Asserted Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
-{Name:Plain Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Asserted Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Plain Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

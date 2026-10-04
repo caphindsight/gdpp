@@ -1,5 +1,0 @@
-// pkg:// is relative to the package,
-// res:// to the project.
-@icon("pkg://icons/chest.svg")
-class_name Chest
-extends StaticBody3D

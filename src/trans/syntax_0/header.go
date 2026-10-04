@@ -255,20 +255,28 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 			w.ln("\t%s%s{};", withSpace(v.t.cpp), v.v.Name)
 		}
 	}
-	var editorFields []string
-	for _, v := range c.vars {
-		if v.gameOnly && v.v.Property != nil && v.editorField() != "" {
-			editorFields = append(editorFields, fmt.Sprintf("%s%s{};", withSpace(v.t.cpp), v.editorField()))
+	// The editor only loads debug builds, so only those need the stand-ins of @game_only properties.
+	for _, only := range []string{"game", "editor"} {
+		var guardFields []string
+		for _, v := range c.vars {
+			if v.only == only && v.v.Property != nil && v.guardField() != "" {
+				guardFields = append(guardFields, fmt.Sprintf("%s%s{};", withSpace(v.t.cpp), v.guardField()))
+			}
 		}
-	}
-	if len(editorFields) > 0 {
+		if len(guardFields) == 0 {
+			continue
+		}
 		w.ln("")
-		w.ln("#ifdef DEBUG_ENABLED")
+		if only == "game" {
+			w.ln("#ifdef DEBUG_ENABLED")
+		}
 		w.ln("private:")
-		for _, f := range editorFields {
+		for _, f := range guardFields {
 			w.ln("\t%s", f)
 		}
-		w.ln("#endif")
+		if only == "game" {
+			w.ln("#endif")
+		}
 	}
 	if len(decls) > 0 {
 		w.ln("")
@@ -392,19 +400,21 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	w.ln("#undef This")
 }
 
-// setterParam is the name of the setter's parameter.
-// editorField returns the field that v's guarded getter and setter use in the editor, instead of running their code:
-// its own, or an editor-only one for a property with both. Empty for others.
-func (v *varModel) editorField() string {
+// guardField returns the field that v's guarded getter and setter use where guards keep their code from running:
+// its own, or a stand-in one for a property with both, e.g. used in the editor for @game_only. Empty for others.
+func (v *varModel) guardField() string {
 	switch {
 	case v.v.Property == nil:
 		return v.v.Name
+	case v.getter != "" && v.setter != "" && v.only == "editor":
+		return "_gdpp_game_" + v.v.Name
 	case v.getter != "" && v.setter != "":
 		return "_gdpp_editor_" + v.v.Name
 	}
 	return ""
 }
 
+// setterParam is the name of the setter's parameter.
 func (v *varModel) setterParam() string {
 	if v.set != nil {
 		return v.set.Param.Name

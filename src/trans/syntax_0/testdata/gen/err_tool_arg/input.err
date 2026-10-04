@@ -1,0 +1,4 @@
+input.gd++:1:7: Annotation @tool only takes "editor_only".
+ 1 | @tool("game_only")
+   |       ^^^^^^^^^^^
+Hint: E.g. @tool("editor_only").

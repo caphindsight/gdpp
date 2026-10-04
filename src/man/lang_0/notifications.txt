@@ -156,7 +156,7 @@ See "Integer constants" in `gd++ man enums`.
 `on` blocks take only:
 
 - `@trace`, `@profile`, `@notrace` and `@noprofile`,
-- `@game_only`,
+- `@game_only` or `@editor_only`,
 - `@recycle`, on `on ready` in a `@pool` class.
 
 ```gd++

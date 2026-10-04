@@ -31,14 +31,14 @@ type lsPackage struct {
 // so commands can't change them. A GD++ class with an empty Name stands for a
 // GD++ file with errors.
 type lsClass struct {
-	Name                     string
-	File, Icon               Path   // The header of a C++ class, or the GD++ file of a GD++ class.
-	FileText                 string // For GD++ classes, the file's pkg:// path; if empty, File's.
-	Base                     string // For GD++ classes.
-	Kind                     string // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
-	Gdpp                     bool
-	Abstract, Tool, GameOnly bool
-	Clash                    bool // Another class has the same name.
+	Name                                 string
+	File, Icon                           Path   // The header of a C++ class, or the GD++ file of a GD++ class.
+	FileText                             string // For GD++ classes, the file's pkg:// path; if empty, File's.
+	Base                                 string // For GD++ classes.
+	Kind                                 string // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
+	Gdpp                                 bool
+	Abstract, Tool, GameOnly, EditorOnly bool
+	Clash                                bool // Another class has the same name.
 }
 
 func (c *CmdLs) Run() {
@@ -80,7 +80,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 			if d.Kind == trans.ClassDecl {
 				class := file
 				class.Name, class.Base, class.Icon = d.Name, d.Base, pkg.ClassPath(d.Icon)
-				class.Abstract, class.Tool, class.GameOnly = d.Abstract, d.Tool, d.GameOnly
+				class.Abstract, class.Tool, class.GameOnly, class.EditorOnly = d.Abstract, d.Tool, d.GameOnly, d.EditorOnly
 				classes = append(classes, class)
 			}
 		}
@@ -286,7 +286,7 @@ func lsTags(class lsClass) string {
 	for _, t := range []struct {
 		on   bool
 		name string
-	}{{class.Abstract, "@abstract"}, {class.Tool, "@tool"}, {class.GameOnly, "@game_only"}} {
+	}{{class.Abstract, "@abstract"}, {class.Tool, "@tool"}, {class.GameOnly, "@game_only"}, {class.EditorOnly, "@editor_only"}} {
 		if t.on {
 			tags = append(tags, t.name)
 		}

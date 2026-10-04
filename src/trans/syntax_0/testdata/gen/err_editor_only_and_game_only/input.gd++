@@ -1,0 +1,6 @@
+@tool
+class_name A
+extends Node
+
+@game_only @editor_only
+func roll() -> void {}

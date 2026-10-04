@@ -37,7 +37,7 @@ type classModel struct {
 	base       string
 	refCounted bool
 	node       bool       // Whether it extends Node.
-	gameOnly   bool       // Whether guards keep all its code from running in the editor: with @game_only, or as a non-runtime class without @tool.
+	only       string     // Where guards keep all its code from running: "game" keeps it out of the editor, with @game_only, or as a non-runtime class without @tool. "editor" keeps it out of the game, with @editor_only. Else empty.
 	trace      bool       // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
 	profile    bool       // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
 	codes      []*Code    // decl and impl blocks inside the class.
@@ -103,7 +103,7 @@ type funcModel struct {
 	hidden                             string      // For the generated body of a class's func with a deferral: that deferral. "notif" for an on block.
 	trace, profile                     bool        // Whether its @trace or @profile, or its class's, is on.
 	notrace, noprofile                 bool        // Whether it has @notrace or @noprofile, which leave it out of its class's.
-	gameOnly                           bool        // Whether its @game_only, or its class's, guards it against running in the editor.
+	only                               string      // "game" or "editor" if its @game_only or @editor_only, or its class's, guards it against running outside of there. Else empty.
 	rpc                                *rpcModel   // Nil without @rpc.
 	recycle                            *Annotation // On _ready, its @recycle, or nil.
 	once                               bool        // Whether it's a _ready of a @pool class without @recycle, which only runs the first time an object gets ready.
@@ -134,7 +134,7 @@ type varModel struct {
 	recycle          *Annotation // Its @recycle, which resets it when its class's pool reuses an object, or nil.
 	trace            bool        // Whether its @trace, or its class's, is on: the class's funcs print its changes.
 	profile          bool        // Whether its @profile, or its class's, is on: it profiles its getter and setter.
-	gameOnly         bool        // Whether its @game_only, or its class's, guards its getter and setter against running in the editor.
+	only             string      // "game" or "editor" if its @game_only or @editor_only, or its class's, guards its getter and setter against running outside of there. Else empty.
 	usage            string      // A PROPERTY_USAGE_* expression.
 	hint, hintString string      // A PROPERTY_HINT_* name, and the hint string (not quoted).
 	getter, setter   string      // Empty if there is none.
@@ -284,7 +284,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			}
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
-				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), Async: usesAsync(c),
+				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c),
 				Virtuals: classVirtuals(c), Notifications: ownNotifications(c.Members)})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
@@ -318,6 +318,36 @@ func usesAsync(c *Class) bool {
 // hasAnnotation reports whether class c has the annotation named name.
 func hasAnnotation(c *Class, name string) bool {
 	return slices.ContainsFunc(c.Annotations, func(a *Annotation) bool { return a.Name == name })
+}
+
+// editorOnly reports whether class c has @editor_only, or @tool("editor_only"), which is the same.
+func editorOnly(c *Class) bool {
+	return slices.ContainsFunc(c.Annotations, func(a *Annotation) bool {
+		return a.Name == "editor_only" || a.Name == "tool" && len(a.Args) > 0
+	})
+}
+
+// onlyOf checks the annotations a of a member of the class named owner, or of the class itself, and returns where
+// guards keep its code: "game" for @game_only, "editor" for @editor_only, or @tool("editor_only") on a class, else empty.
+func (u *unit) onlyOf(a map[string]*Annotation, owner string) (string, error) {
+	c := u.symbols[owner].class
+	for _, arg := range argsOf(a["tool"]) {
+		if arg.Value != `"editor_only"` || len(a["tool"].Args) > 1 {
+			return "", u.errorAt(arg.Pos, len(arg.Value), "Annotation @tool only takes \"editor_only\".", "E.g. @tool(\"editor_only\").")
+		}
+	}
+	switch g, e := a["game_only"], a["editor_only"]; {
+	case g != nil && editorOnly(c):
+		return "", u.errorAt(g.Pos, len(g.Name)+1, fmt.Sprintf("Annotation @game_only can't be used in @editor_only class %s.", owner), "")
+	case g != nil:
+		return "game", nil
+	case e != nil && !hasAnnotation(c, "tool"):
+		return "", u.errorAt(e.Pos, len(e.Name)+1, fmt.Sprintf("Annotation @editor_only only works in @tool classes, which %s isn't.", owner),
+			fmt.Sprintf("Add @tool to class %s.", owner))
+	case e != nil || a["tool"] != nil && len(a["tool"].Args) > 0:
+		return "editor", nil
+	}
+	return "", nil
 }
 
 // nonRuntime reports whether Godot registers the class named name as a non-runtime class: one with @tool or @abstract,
@@ -1078,7 +1108,7 @@ func cppString(s string) string {
 
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
-var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
+var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "noprofile", "notrace", "onready",
 	"onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
@@ -1101,7 +1131,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "trace",
+			"export_placeholder", "export_range", "export_subgroup", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -1111,7 +1141,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		{"static", "rpc"}, {"virtual", "rpc"}, {"override", "rpc"}, {"static", "deferred"}, {"virtual", "deferred"},
 		{"override", "deferred"}, {"static", "thread_safe"}, {"virtual", "thread_safe"}, {"override", "thread_safe"},
 		{"deferred", "thread_safe"}, {"virtual", "onthread"}, {"override", "onthread"}, {"rpc", "onthread"},
-		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}} {
+		{"deferred", "onthread"}, {"thread_safe", "onthread"}, {"tool", "game_only"}, {"game_only", "editor_only"}} {
 		if a := found[pair[1]]; a != nil && found[pair[0]] != nil {
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", pair[0], pair[1]), "")
 		}
@@ -1142,7 +1172,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "game_only", "noprofile", "notrace", "onthread", "override", "profile", "recycle", "rpc", "static",
+	allowed := []string{"const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "profile", "recycle", "rpc", "static",
 		"thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "thread_safe", "trace"}
@@ -1156,7 +1186,10 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	m := &funcModel{f: f, virtual: a["virtual"] != nil, override: a["override"] != nil,
-		isConst: a["const"] != nil, static: a["static"] != nil, gameOnly: a["game_only"] != nil, recycle: a["recycle"]}
+		isConst: a["const"] != nil, static: a["static"] != nil, recycle: a["recycle"]}
+	if m.only, err = u.onlyOf(a, owner); err != nil {
+		return nil, err
+	}
 	for _, arg := range argsOf(a["override"]) {
 		name, _ := strconv.Unquote(arg.Value)
 		switch {
@@ -1289,7 +1322,7 @@ func (u *unit) buildOn(o *On, owner string) (*funcModel, error) {
 	if o.Name != "" {
 		what = "an on " + o.Name + " block"
 	}
-	allowed := []string{"game_only", "noprofile", "notrace", "profile", "trace"}
+	allowed := []string{"editor_only", "game_only", "noprofile", "notrace", "profile", "trace"}
 	if o.Name == "ready" {
 		allowed = append(allowed, "recycle")
 	}
@@ -1596,7 +1629,7 @@ func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage", "game_only", "noprofile", "notrace", "profile", "recycle", "trace"},
+		"export_multiline", "export_placeholder", "export_range", "export_storage", "editor_only", "game_only", "noprofile", "notrace", "profile", "recycle", "trace"},
 		sectionAnnotations...)
 	kind := "a var"
 	if ext {
@@ -1606,7 +1639,10 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &varModel{v: v, onready: a["onready"] != nil, recycle: a["recycle"], notrace: a["notrace"] != nil, noprofile: a["noprofile"] != nil, gameOnly: a["game_only"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
+	m := &varModel{v: v, onready: a["onready"] != nil, recycle: a["recycle"], notrace: a["notrace"] != nil, noprofile: a["noprofile"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
+	if m.only, err = u.onlyOf(a, owner); err != nil {
+		return nil, err
+	}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
 	}
@@ -1635,7 +1671,7 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 		return nil, err
 	}
 	for _, e := range v.Annotations {
-		if strings.HasPrefix(e.Name, "export") && !slices.Contains(sectionAnnotations, e.Name) && m.gameOnly {
+		if strings.HasPrefix(e.Name, "export") && !slices.Contains(sectionAnnotations, e.Name) && m.only == "game" {
 			return nil, u.errorAt(e.Pos, len(e.Name)+1, fmt.Sprintf("Annotations @game_only and @%s can't be used together.", e.Name),
 				"The editor would read and save the default value, since the getter and setter don't run there.")
 		}
@@ -1946,13 +1982,18 @@ func (u *unit) buildClasses() error {
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted,
 		node: u.extends(c.Name, "Node")}
-	a, err := u.annotations(c.Annotations, "a class", "abstract", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
+	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
 	m.abstract = a["abstract"] != nil
 	// Godot doesn't let runtime classes extend non-runtime ones, so classes without @tool below those are guarded instead.
-	m.gameOnly = a["game_only"] != nil || a["tool"] == nil && u.nonRuntime(c.Name)
+	if m.only, err = u.onlyOf(a, c.Name); err != nil {
+		return nil, err
+	}
+	if a["tool"] == nil && u.nonRuntime(c.Name) {
+		m.only = "game"
+	}
 	for _, name := range []string{"pool", "scene"} {
 		if m.abstract && a[name] != nil {
 			return nil, u.errorAt(a[name].Pos, len(name)+1, fmt.Sprintf("Abstract classes can't have @%s, since they can't be created.", name),
@@ -2062,7 +2103,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				// The bound function has the body, so scripts can call it in place of super.
 				body := *f.f
 				body.Name, body.Annotations = superName(f.f.Name), nil
-				f.calls = &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, gameOnly: f.gameOnly}
+				f.calls = &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, only: f.only}
 				m.funcs = append(m.funcs, f, f.calls)
 				err = u.unique(names, f.f.Pos, "func", body.Name)
 			default:
@@ -2072,7 +2113,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				// GDVIRTUAL_BIND doesn't make the function callable, so scripts call it through this one.
 				caller := *f.f
 				caller.Name, caller.Annotations = f.f.Name[1:], nil
-				m.funcs = append(m.funcs, &funcModel{f: &caller, params: f.params, ret: f.ret, isConst: f.isConst, calls: f, gameOnly: f.gameOnly})
+				m.funcs = append(m.funcs, &funcModel{f: &caller, params: f.params, ret: f.ret, isConst: f.isConst, calls: f, only: f.only})
 				err = u.unique(names, f.f.Pos, "func", caller.Name)
 			}
 			if err == nil && f.deferral != "" {
@@ -2087,7 +2128,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				}
 				// The body does the work, so it's what @trace and @profile follow.
 				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static,
-					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, gameOnly: f.gameOnly})
+					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, only: f.only})
 				f.trace, f.profile = false, false
 				if f.deferral == "onthread" && !f.detached {
 					f.ret = u.async(f.ret) // Callers get an Async of the body's result.
@@ -2104,7 +2145,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				m.readyOnce = m.readyOnce || m.pool != nil && v.onready && v.v.Init != nil && v.recycle == nil
 				v.trace = v.trace || m.trace && !v.notrace
 				v.profile = v.profile || m.profile && !v.noprofile && v.v.Property != nil
-				v.gameOnly = v.gameOnly || m.gameOnly
+				v.only = cmp.Or(v.only, m.only)
 				m.vars = append(m.vars, v)
 				err = u.unique(names, v.v.Pos, "var", v.v.Name, v.getter, v.setter)
 				if err == nil && v.deferral != "" {
@@ -2113,7 +2154,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 					p.Type = v.v.Type
 					body := &Func{Pos: v.set.Pos, Name: "_gdpp_body_" + v.setter, Params: []*Param{&p}, Body: v.set.Body}
 					m.funcs = append(m.funcs, &funcModel{f: body, params: []*gtype{v.t}, ret: &gtype{cpp: "void", doc: "void", void: true},
-						hidden: v.deferral, notrace: true, noprofile: true, profile: v.profile, gameOnly: v.gameOnly})
+						hidden: v.deferral, notrace: true, noprofile: true, profile: v.profile, only: v.only})
 					err = u.unique(names, v.v.Pos, "var", body.Name)
 				}
 				for _, s := range v.sections {
@@ -2153,7 +2194,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	// The class's @trace leaves out the functions called every frame, which would flood the output. Those are
 	// always in the implicit group named after them without the underscore, process or physics_process.
 	for _, f := range m.funcs {
-		f.gameOnly = f.gameOnly || m.gameOnly
+		f.only = cmp.Or(f.only, m.only)
 		if f.deferral == "" {
 			name := strings.TrimPrefix(f.f.Name, "_gdpp_body_")
 			perFrame := (f.override || f.hidden == "notif") && processing[name] != ""

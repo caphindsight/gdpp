@@ -30,11 +30,14 @@ func _score() -> int
 @abstract
   Make the class only a base for other classes, like in GDScript: the editor doesn't offer it, and `create` doesn't work on it. Not with `@pool` or `@scene`. See `gd++ man classes`.
 
-@tool
-  Run the class's code in the editor too. See `gd++ man classes`.
+@tool and @tool("editor_only")
+  Run the class's code in the editor too. With `"editor_only"`, the same as `@editor_only @tool`. See `gd++ man classes`.
 
 @game_only
   Run the class's code only in the game, never in the editor, not even when other code calls it. Not with `@tool`. See `gd++ man classes`.
+
+@editor_only
+  Run the class's code only in the editor, never in the game. Only with `@tool`. See `gd++ man classes`.
 
 @icon(PATH)
   The class's icon in the editor: a string with a `res://` or `pkg://` path. See `gd++ man classes`.
@@ -124,6 +127,9 @@ func _score() -> int
 @game_only
   Run the function only in the game, never in the editor, e.g. in a `@tool` class. See `gd++ man classes`.
 
+@editor_only
+  Run the function only in the editor, never in the game. Only in a `@tool` class. See `gd++ man classes`.
+
 @recycle
   Only on an `on ready` block, or an `@override func _ready()`, in a `@pool` class: run it each time an object gets ready, not only the first time. See "Getting ready again" in `gd++ man pools`.
 
@@ -135,7 +141,8 @@ Rules:
 - `@rpc` doesn't combine with `@onthread`.
 - `@deferred` doesn't combine with `@thread_safe` or `@onthread`.
 - `@thread_safe` doesn't combine with `@onthread`.
-- `on` blocks only take `@trace`, `@profile`, `@notrace`, `@noprofile` and `@game_only`. `on ready` also takes `@recycle`.
+- `@game_only` doesn't combine with `@editor_only`.
+- `on` blocks only take `@trace`, `@profile`, `@notrace`, `@noprofile`, `@game_only` and `@editor_only`. `on ready` also takes `@recycle`.
 - `@override("final")` only works on an override of a GD++ `@virtual` function.
 - A `@virtual` function's name must start with `_`.
 - A function named like a virtual function of the base class needs `@override`.
@@ -232,6 +239,9 @@ See `gd++ man externs`.
 
 @game_only
   Run its getter and setter only in the game, never in the editor, e.g. in a `@tool` class. Not with an export annotation. See `gd++ man classes`.
+
+@editor_only
+  Run its getter and setter only in the editor, never in the game. Only in a `@tool` class. See `gd++ man classes`.
 
 Rules:
 

@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotation @editor_only only works in @tool classes, which Spawner isn't.
+ 4 | @editor_only
+   | ^^^^^^^^^^^^
+Hint: Add @tool to class Spawner.

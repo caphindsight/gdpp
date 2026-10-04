@@ -1,2 +1,2 @@
-{Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
-{Name:Walker Kind:1 Base:Player Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Walker Kind:1 Base:Player Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

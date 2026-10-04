@@ -51,6 +51,7 @@ func not_done_yet() -> int
   - `@virtual`: with `GDVIRTUAL_BIND`, next to a function that calls them,
   - `@override`: not at all, since the engine binds them.
 - With `@game_only`, or in a `@game_only` class, starts the body with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
+- With `@editor_only`, or in an `@editor_only` class, starts the body with a check that returns right away in the game.
 
 Facts:
 
@@ -369,6 +370,7 @@ func launch() -> void {
 - In debug builds, which the editor loads, its body starts with a check. In the editor, the function returns right away, with a default value. An `@onthread` function returns an empty `Async`.
 - `on` blocks, e.g. `on process(delta: float) { ... }`, take it too.
 - In a `@game_only` class, every function already has it.
+- `@editor_only` is the opposite: the function only runs in the editor. Only in a `@tool` class.
 
 See `gd++ man classes`.
 
@@ -415,7 +417,8 @@ A function with the name of a virtual function of the base class, without @overr
 @thread_safe with @onthread
 ```
 
-- `@trace`, `@profile` and `@game_only` combine with all of them.
+- `@trace`, `@profile`, `@game_only` and `@editor_only` combine with all of them.
+- `@game_only` doesn't combine with `@editor_only`.
 - Each annotation can be used once per function.
 - Only `@override`, `@virtual`, `@rpc`, `@trace` and `@profile` take arguments.
 

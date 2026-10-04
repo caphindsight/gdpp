@@ -1,0 +1,46 @@
+@tool
+class_name Painter
+extends Node
+
+enum Kind { SMALL, BIG }
+
+@editor_only var kind: Kind = Kind::SMALL
+@editor_only var count: int {
+  get { return 10; }
+  set(v) { gd::print(v); }
+}
+@editor_only @export var brush: float = 1.0
+var radius: float = 1.0
+
+@editor_only
+on process(delta: float) {
+  gd::print(delta);
+}
+
+@editor_only
+func paint(kind: Kind = Kind::BIG) -> int {
+  return 1;
+}
+
+@editor_only @static
+func total() -> int {
+  return 0;
+}
+
+@editor_only @virtual
+func _pick() -> int {
+  return 0;
+}
+
+@editor_only @rpc
+func sync() -> void {}
+
+@editor_only @onthread
+func bake() -> int {
+  return 2;
+}
+
+@game_only
+func roll() -> void {}
+
+func preview() -> void {}

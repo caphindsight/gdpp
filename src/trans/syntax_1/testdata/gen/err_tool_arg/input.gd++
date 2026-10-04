@@ -1,0 +1,2 @@
+@tool("game_only")
+class_name A

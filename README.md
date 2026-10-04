@@ -94,12 +94,6 @@ See `gd++ man classes`.
 
 See `gd++ man classes`.
 
-### Class icons
-
-<a href="readme/svg/icon.gd++"><img src="readme/svg/icon.svg" alt="GD++ code: icon"></a>
-
-See `gd++ man classes`.
-
 ### Functions
 
 <a href="readme/svg/functions.gd++"><img src="readme/svg/functions.svg" alt="GD++ code: functions"></a>

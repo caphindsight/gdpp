@@ -1,5 +1,5 @@
-// create Enemy instantiates this scene.
-@scene("pkg://enemy.tscn")
+// Calling `create Enemy` in code instantiates this scene.
+@scene("res://enemy.tscn")
 class_name Enemy
 extends CharacterBody3D
 

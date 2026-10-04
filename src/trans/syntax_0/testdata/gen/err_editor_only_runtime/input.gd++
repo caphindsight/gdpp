@@ -1,0 +1,5 @@
+class_name Spawner
+extends Node
+
+@editor_only
+func preview() -> void {}

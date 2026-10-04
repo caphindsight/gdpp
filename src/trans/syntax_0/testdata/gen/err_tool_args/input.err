@@ -1,3 +1,4 @@
-input.gd++:1:7: Annotation @tool takes no arguments.
+input.gd++:1:7: Annotation @tool only takes "editor_only".
  1 | @tool(1)
    |       ^
+Hint: E.g. @tool("editor_only").

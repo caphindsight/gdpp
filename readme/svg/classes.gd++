@@ -1,4 +1,6 @@
 // The file-level class: the rest of the file.
+// @icon is its icon in the editor.
+@icon("res://icons/player.svg")
 class_name Player
 extends CharacterBody3D
 

@@ -220,6 +220,7 @@ Variables take:
 - one export annotation, see `gd++ man exports`,
 - the section annotations `@export_category`, `@export_group` and `@export_subgroup`,
 - `@game_only`, which keeps their getter and setter from running in the editor. Not with an export annotation. See `gd++ man classes`.
+- `@editor_only`, which keeps their getter and setter from running in the game. Only in a `@tool` class.
 - `@trace` and `@profile`, for debugging.
 
 A doc comment before a variable becomes its description in the editor's help. See `gd++ man docs` and `gd++ man annotations`.

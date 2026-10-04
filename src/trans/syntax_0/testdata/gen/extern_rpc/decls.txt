@@ -1,2 +1,2 @@
-{Name:Digger Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
-{Name:Terrain2 Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Digger Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Terrain2 Kind:2 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

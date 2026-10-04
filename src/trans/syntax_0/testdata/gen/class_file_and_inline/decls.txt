@@ -1,2 +1,2 @@
-{Name:Main Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
-{Name:Helper Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Main Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Helper Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}

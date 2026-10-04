@@ -189,6 +189,7 @@ Facts:
 
 - `@tool` is not inherited, neither from the file-level class nor from the base class. Inline classes need their own.
 - `gd++ ls` shows `@tool` classes with the tag `@tool`.
+- `@editor_only` keeps a `@tool` class's code out of the game. See "@editor_only" below.
 
 # @game_only
 
@@ -244,6 +245,50 @@ var wave: int
   - It can't have an export annotation, since the editor would read and save the default value.
 - In a `@game_only` class, every function and variable is already `@game_only`.
 
+# @editor_only
+
+`@editor_only` is the opposite of `@game_only`: the code only runs in the editor, never in the game. E.g. for gizmos and previews of a `@tool` class.
+
+```gd++
+@tool("editor_only")
+class_name Gizmo
+extends Node3D
+```
+
+- Only for `@tool` classes. `@tool("editor_only")` is the same as `@editor_only @tool`.
+- Every function that GD++ generates for the class starts with a check. In the game:
+  - the function returns right away, with a default value,
+  - getters and setters only read and write their variable,
+  - an `@onthread` function returns an empty `Async`, without starting a task.
+- The check covers the same functions as `@game_only`'s, and comes at the same place in the constructor.
+- Unlike `@game_only`'s, it's in release builds too, since the game runs them.
+- Your own `decl` and `impl` code isn't checked.
+- Not with `@game_only`, neither on the class nor on its functions and variables.
+- Not inherited.
+
+It also works on single functions and variables of a `@tool` class:
+
+```gd++
+@tool
+class_name Spawner
+extends Node3D
+
+@editor_only
+on process(delta: float) {
+  preview();                // Only previews in the editor.
+}
+
+@editor_only
+var preview_count: int = 3
+```
+
+- On a function: the function and its helpers get the check, like with `@game_only`.
+- On a variable: its getter and setter get the check. In the game, they only read and write the variable.
+  - Its initial value is still assigned in the game.
+  - C++ code that uses the variable directly isn't checked.
+  - Unlike with `@game_only`, it can have an export annotation, since the editor runs its getter and setter.
+- In an `@editor_only` class, every function and variable is already `@editor_only`.
+
 # Guarded classes
 
 Godot doesn't let a runtime class extend a class of the package that isn't one: a `@tool` class, an `@abstract` class, or a C++ class with `tool` or `abstract`. So GD++ guards such subclasses instead, like `@game_only` classes:
@@ -263,7 +308,8 @@ class Handle {
 - They are registered as regular classes, not runtime classes, so the editor creates real objects of them, not placeholders.
 - Their generated functions start with the check of `@game_only` classes, so their code doesn't run in the editor either.
 - Initial values of variables still set up their objects in the editor, so the inspector shows them.
-- In the editor, their getters and setters only read and write the variable. A variable with `get` and `set` blocks gets a hidden field for that, which only debug builds have.
+- In the editor, their getters and setters only read and write the variable. A variable with `get` and `set` blocks gets a hidden field for that.
+- Release builds have neither the checks nor the hidden fields, since the editor only loads debug builds. Only the variables you declare take up memory there.
 - C++ classes can't be guarded: one that extends such a class needs `tool = true` or `abstract = true`, or the build fails. See `gd++ man cpp-classes`.
 
 # @icon
@@ -364,7 +410,7 @@ See `gd++ man debugging`.
 
 Before `class_name` or `class`, a class can have, in any order:
 
-- `@tool` or `@game_only`,
+- `@tool`, `@tool("editor_only")`, `@editor_only @tool` or `@game_only`,
 - `@abstract`, `@icon`, `@pool`, `@scene`, `@trace` and `@profile`,
 - a doc comment.
 

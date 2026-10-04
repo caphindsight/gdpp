@@ -7,6 +7,9 @@ func spawn() -> void {
   // An extern.
   Ext<Terrain> terrain = create Terrain;
   // A pool class: reused from its pool.
+  // The crucial difference from memnew: create
+  // can fail by design for some classes, e.g. a
+  // full "fixed" pool gives nullptr.
   Bullet *bullet = create Bullet;
 
   // Deletes it.

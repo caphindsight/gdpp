@@ -1,0 +1,9 @@
+@tool("editor_only")
+class_name Handle
+extends Node
+
+var size: float = 1.0
+
+func drag() -> void {
+  gd::print(size);
+}

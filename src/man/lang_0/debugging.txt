@@ -567,6 +567,7 @@ Does my code run on threads? The Thread column says where each profiled function
 - `@trace` on a function doesn't trace its overrides in subclasses. Put `@trace` on the override.
 - Only `@tool` classes trace and profile in the editor, e.g. while you edit a scene:
   - A `@game_only` class, function or variable returns right away in the editor, before any tracing or profiling.
+  - An `@editor_only` one returns right away in the game, the same way.
   - Other classes without `@tool` don't run in the editor at all.
 - They work in debug and release builds. The monitors only show while the editor's debugger is connected to the game.
 - Calls by its own name, e.g. `_think` from GDScript, of a `@virtual` function that a script overrides go straight to the script. They aren't traced or timed. Calls from C++ are, and so are calls of `think`.
