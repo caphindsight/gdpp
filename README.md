@@ -294,6 +294,18 @@ An assertion checks what must always be true. In debug builds, a failed assertio
 
 `string_name "tick"` is short for `GDPP_STRING_NAME("tick")`: a `StringName` created once, and reused by every later call, which makes calls by name faster. See `gd++ man runtime`.
 
+### Templates
+
+<a href="readme/svg/templates.gd++"><img src="readme/svg/templates.svg" alt="GD++ code: templates"></a>
+
+A template is GD++ code with holes, `${...}`, which hold Lua expressions over its parameters. `invoke` fills them in, and puts the code in its place. Templates are package-level, like classes, so every file of the package can invoke them. See `gd++ man macros`.
+
+### Macros
+
+<a href="readme/svg/macros.gd++"><img src="readme/svg/macros.svg" alt="GD++ code: macros"></a>
+
+Where a template isn't enough, a macro is Lua code that generates code where `invoke` calls it: declarations with `gd.var`, `gd.func` and the like, or C++ code with `gd.text`. Macros can also instantiate templates, with `gd.invoke`. Macros and templates are an advanced feature: use them seldom, where they remove a lot of repetition. See `gd++ man macros`.
+
 ## The build tool
 
 - A **project** is a normal Godot project.

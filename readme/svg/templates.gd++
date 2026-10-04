@@ -1,0 +1,16 @@
+class_name Score
+extends Node
+
+invoke counter(points)
+invoke counter(lives, start = 3)
+
+// A counter with a changed signal. The holes hold Lua.
+template counter(name, start = 0) {
+  var ${name}: int = ${start}
+  signal ${name}_changed(value: int)
+
+  func add_${name}(n: int) -> void {
+    ${name} += n;
+    emit ${name}_changed(${name});
+  }
+}
