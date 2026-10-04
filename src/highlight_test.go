@@ -56,7 +56,8 @@ func TestHighlightCode(t *testing.T) {
 			"\n" + Styled("if", CodeKeyword) + " " + Styled("gd", CodeType) + "." + Styled("pascal", CodeFunction) + "(x) " + Styled("then", CodeKeyword) + " " +
 			Styled("return", CodeKeyword) + " " + Styled("[[s]]", CodeLiteral) + " " + Styled("end", CodeKeyword) + " " + Styled("--[[ a", CodeComment) + "\n" +
 			Styled("b ]]", CodeComment)},
-		{"lua", "x = ctx.scope .. 'a' // 2", "x = " + Styled("ctx", CodeType) + ".scope .. " + Styled("'a'", CodeLiteral) + " // " + Styled("2", CodeLiteral)},
+		{"lua", "x = ctx.scope .. 'a' // 2", "x = " + Styled("ctx", CodeType) + ".scope .. " + Styled("'a'", CodeLiteral) + " " + Styled("// 2", CodeComment)},
+		{"lua", "/* a /* b */ c */ x", Styled("/* a /* b */ c */", CodeComment) + " x"},
 		{"gd++", "macro stat(n, m = 1) {\n  local end_ = n // c\n}", Styled("macro", CodeKeyword) + " " + Styled("stat", CodeFunction) + "(n, m = " +
 			Styled("1", CodeLiteral) + ") {\n  " + Styled("local", CodeKeyword) + " end_ = n " + Styled("// c", CodeComment) + "\n}"},
 		{"gd++", "macro_name m(a)\nif a then end", Styled("macro_name", CodeKeyword) + " " + Styled("m", CodeFunction) + "(a)\n" + Styled("if", CodeKeyword) +

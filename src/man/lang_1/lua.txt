@@ -1,0 +1,198 @@
+Lua: the basics for macros
+
+Macros and template holes are written in Lua 5.1. This page covers the part of Lua that macros need. It's not a full guide: see the Lua 5.1 reference manual for the rest.
+
+- For macros, see `gd++ man macros`. For holes, see `gd++ man templates`.
+- In a GD++ file, Lua code can use GD++'s comments too: `//` and `/* */`.
+
+# Values
+
+```
+TYPE        EXAMPLES                      NOTES
+nil         nil                           no value: a missing variable, field or argument
+boolean     true, false
+number      42, -1.5, 0x10, 1e3           one type for integers and decimals
+string      "text", 'text', [[text]]      [[...]] spans lines, and has no escapes
+table       { 1, 2 }, { a = 1 }           lists and dictionaries, see "Tables"
+function    function(x) return x end
+```
+
+- `type(v)` returns the type's name, e.g. `"string"`. `gd.type(v)` also knows Code values, see `gd++ man macros`.
+- Only `nil` and `false` are false. `0` and `""` are true.
+- `tostring(v)` and `tonumber(s)` convert. `tonumber` returns `nil` if `s` isn't a number.
+- Numbers are decimals, so `7 / 2` is `3.5`. `math.floor(7 / 2)` is `3`, and `7 % 2` is `1`.
+- A whole number converts to a string without a decimal point: `tostring(3)` and `tostring(6 / 2)` are both `"3"`.
+
+# Variables
+
+```lua
+local count = 0               -- a local variable
+local a, b = 1, 2             -- several at once
+count = count + 1             -- no +=, no ++
+```
+
+- Always use `local`. A variable without it is global, and leaks into the rest of the macro's code.
+- A variable that was never set is `nil`, not an error.
+- Names are case-sensitive. Lua's keywords can't be names, e.g. `end`, `local`, `function`, `repeat` or `until`.
+
+# Operators
+
+```
+OPERATORS                   MEANING
++ - * / % ^                 arithmetic, ^ is a power
+== ~=                       equal, not equal: ~=, not !=
+< > <= >=                   comparisons, of numbers or of strings
+and or not                  logic: words, not && || !
+..                          joins strings: "hp_" .. 1 is "hp_1"
+#                           the length of a string or a list
+```
+
+- `and` and `or` return one of their operands, not a boolean. So `x and a or b` picks `a` if `x` is true, else `b`, like `x ? a : b` in C++. It picks `b` if `a` is `nil` or `false`.
+- `v or default` gives a default to a value that may be `nil`: `local size = args.size or 64`.
+- `==` compares tables by identity, not by contents.
+- `..` converts numbers to strings, but not `nil`, booleans or tables: `"x" .. nil` is an error. Use `tostring(v)`.
+
+# Conditions
+
+```lua
+if hp <= 0 then
+  dead = true
+elseif hp < 10 then
+  low = true
+else
+  low = false
+end
+```
+
+- `then` and `end` are required. There are no braces, and no parentheses around the condition.
+- It's `elseif`, in one word.
+
+# Loops
+
+```lua
+for i = 1, 3 do end                         -- i = 1, 2, 3
+for i = 10, 1, -1 do end                    -- i = 10, 9, ..., 1
+for i, v in ipairs(list) do end             -- each entry of a list, in order
+for k, v in pairs(t) do end                 -- each entry of a table
+while n > 0 do n = n - 1 end
+```
+
+- `for i = a, b` includes `b`.
+- `ipairs` goes through `t[1]`, `t[2]` and so on, and stops at the first `nil`.
+- `pairs` goes through every key. In GD++, it goes in sorted order, so the same input always generates the same code. See "Lua: tables" in `gd++ man macros`.
+- `_` is the usual name for an unused variable: `for _, v in ipairs(list) do`.
+- `break` leaves a loop. Lua has no `continue`: use an `if` around the loop's body.
+
+# Tables
+
+A table is Lua's only data structure: a list, a dictionary, or both.
+
+```lua
+local list = { "a", "b", "c" }              -- keys 1, 2, 3
+local item = { name = "Sword", damage = 10 } -- string keys
+local both = { "x", size = 3 }              -- keys 1 and "size"
+
+list[1]                                     -- "a": lists start at 1, not 0
+#list                                       -- 3
+item.name                                   -- "Sword", the same as item["name"]
+item.missing                                -- nil
+item.icon = "res://sword.svg"               -- adds a key
+item.damage = nil                           -- removes a key
+```
+
+- `t.name` works for keys that are names. Other keys need brackets: `t["max-hp"]` or `t[k]`.
+- In a constructor, `[expr] = value` sets a computed key: `{ [name] = 1 }`.
+- `#` only counts list entries, from `1` up to the first `nil`. A dictionary's `#` is `0`.
+- Tables are passed by reference: a function that changes a table changes the caller's. `gd.copy(t)` makes a copy.
+
+```lua
+table.insert(list, "d")                     -- appends
+table.insert(list, 1, "z")                  -- inserts at 1
+table.remove(list)                          -- removes the last entry, and returns it
+table.concat(list, ", ")                    -- "a, b, c": joins strings and numbers
+table.sort(list)                            -- sorts in place
+table.sort(list, function(a, b) return a > b end) -- with an order
+```
+
+GD++'s `gd` table has more helpers, e.g. `gd.keys`, `gd.map` and `gd.join`. See "Lua: tables" in `gd++ man macros`.
+
+# Functions
+
+```lua
+local function clamp(x, lo, hi)
+  return math.max(lo, math.min(x, hi))
+end
+
+local twice = function(x) return x * 2 end
+
+local function bounds(list)                 -- several return values
+  return list[1], list[#list]
+end
+local first, last = bounds({ 3, 5, 8 })
+```
+
+- Missing arguments are `nil`, and extra ones are dropped.
+- A function sees the variables around it, also after they change.
+- `f{ ... }` and `f"text"` call `f` with one table or string, without parentheses. That's why the emitters read `gd.var { name = "hp", type = "int" }`.
+- `s:upper()` calls a method: it's `s.upper(s)`, i.e. `string.upper(s)`.
+
+# Strings
+
+```lua
+"line\n\t\"quoted\""                        -- escapes, like in C++
+[[a "raw" string]]                          -- no escapes, may span lines
+#"hello"                                    -- 5
+("x"):rep(3)                                -- "xxx"
+s:upper(), s:lower()                        -- case
+s:sub(2, 4)                                 -- characters 2 to 4, from 1, inclusive
+s:sub(-3)                                   -- the last 3 characters
+string.format("%s = %d;", name, 42)         -- like C's printf: %s, %d, %f, %x
+```
+
+`string.find`, `string.match` and `string.gsub` use Lua patterns: they look like regular expressions, but are different.
+
+- `%` escapes, not `\`: `%.` is a dot, `%d` a digit, `%a` a letter, `%w` a letter or a digit, `%s` a space.
+- `.` is any character. `*`, `+` and `?` repeat, and `-` repeats as few times as possible.
+- `( )` captures. There is no `|`.
+
+```lua
+s:match("^(%w+)_(%d+)$")                    -- "hp_10" gives "hp", "10"
+s:gsub("%s+", " ")                          -- every run of spaces, as one space
+s:find(".", 1, true)                        -- the 4th argument, true, makes it plain text
+```
+
+For plain text, prefer GD++'s helpers: `gd.split`, `gd.replace`, `gd.starts_with` and the like. See "Lua: strings" in `gd++ man macros`.
+
+# Errors
+
+- `error("message")` stops the macro with a Lua error, at the Lua line.
+- In a macro, prefer `gd.error` and `gd.error_at`: they point at the invocation, or the argument, that is wrong. See "Lua: errors" in `gd++ man macros`.
+
+# Libraries
+
+Macros see these parts of Lua's standard library, and no others:
+
+- the basics: `type`, `tostring`, `tonumber`, `pairs`, `ipairs`, `next`, `select`, `unpack`, `error`, `assert`, `pcall`, `setmetatable` and the like,
+- `string`, `table` and `math`, except `math.random` and `math.randomseed`.
+
+They have no I/O, and can't load other code. See "The sandbox" in `gd++ man macros`.
+
+# Lua for C++ programmers
+
+```
+C++                     LUA
+!=                      ~=
+&&, ||, !               and, or, not
+a + b, on strings       a .. b
+x += 1, x++             x = x + 1
+list[0]                 list[1]
+list.size()             #list
+{ ... }, around code    then ... end, do ... end
+// comment              -- comment, or // in a GD++ file
+a / b, of integers      math.floor(a / b)
+nullptr                 nil
+```
+
+# See also
+
+`gd++ man macros`, `gd++ man templates`.

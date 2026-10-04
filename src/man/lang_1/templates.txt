@@ -54,7 +54,7 @@ Facts:
 
 # Holes
 
-- `${EXPR}` is a hole: a Lua expression over the parameters, e.g. `${name}`, `${name .. "_changed"}` or `${gd.pascal(name)}`.
+- `${EXPR}` is a hole: a Lua expression over the parameters, e.g. `${name}`, `${name .. "_changed"}` or `${gd.pascal(name)}`. For Lua's basics, see `gd++ man lua`.
 - A hole's value must be a string, a number, a boolean or code. Newlines in it become spaces.
 - Holes work anywhere in the body: in names, types, values, C++ code, strings and doc comments.
 - `$` followed by a name is still a node path, e.g. `$Hud/Score`.
@@ -215,4 +215,4 @@ template getter(name, type) {
 
 # See also
 
-`gd++ man macros`, `gd++ man files`, `gd++ man grammar`, `gd++ man tut/state-machine`.
+`gd++ man macros`, `gd++ man lua`, `gd++ man files`, `gd++ man grammar`, `gd++ man tut/state-machine`.

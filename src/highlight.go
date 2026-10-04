@@ -33,7 +33,7 @@ func highlightCode(code, lang string) string {
 	case lang == "gd++" || lang == "cpp" || lang == "gdscript":
 		return highlightGdpp(code, lang == "gdscript")
 	case lang == "lua":
-		return highlightLua(code, false)
+		return highlightLua(code)
 	}
 	return code
 }
@@ -107,16 +107,7 @@ func highlightGdpp(code string, gdscript bool) string {
 		case strings.HasPrefix(rest, "//") || gdscript && c == '#':
 			n, style = lineEnd(rest), []Style{CodeComment}
 		case strings.HasPrefix(rest, "/*"):
-			for depth := 0; n < len(rest); n++ { // Block comments nest, like in GD++.
-				if strings.HasPrefix(rest[n-1:], "/*") {
-					depth, n = depth+1, n+1
-				} else if strings.HasPrefix(rest[n-1:], "*/") {
-					if depth, n = depth-1, n+1; depth == 0 {
-						break
-					}
-				}
-			}
-			n, style = min(n, len(rest)), []Style{CodeComment}
+			n, style = blockCommentLen(rest), []Style{CodeComment}
 		case c == '#':
 			n, style = 1+identLen(strings.TrimLeft(rest[1:], " "))+len(rest[1:])-len(strings.TrimLeft(rest[1:], " ")), []Style{CodePreProc}
 		case c == '"' || c == '\'':
@@ -131,7 +122,7 @@ func highlightGdpp(code string, gdscript bool) string {
 			n, style = 1+identLen(rest[1:]), []Style{CodePreProc}
 		case !gdscript && strings.HasPrefix(rest, "${"): // A template's hole, which holds Lua.
 			end := closingBrace(rest, 1)
-			out.WriteString(Styled("${", CodePreProc) + highlightLua(rest[2:end], true) + styledLines(rest[end:min(end+1, len(rest))], CodePreProc))
+			out.WriteString(Styled("${", CodePreProc) + highlightLua(rest[2:end]) + styledLines(rest[end:min(end+1, len(rest))], CodePreProc))
 			i += min(end+1, len(rest))
 			continue
 		case !gdscript && macroHeadRegexp.MatchString(rest):
@@ -164,7 +155,7 @@ func highlightGdpp(code string, gdscript bool) string {
 				i += len(m[0])
 				if strings.HasPrefix(rest[len(m[0]):], "{") {
 					end := closingBrace(rest, len(m[0]))
-					out.WriteString("{" + highlightLua(rest[len(m[0])+1:end], true) + rest[end:min(end+1, len(rest))])
+					out.WriteString("{" + highlightLua(rest[len(m[0])+1:end]) + rest[end:min(end+1, len(rest))])
 					i += min(end+1, len(rest)) - len(m[0])
 				}
 				continue
@@ -201,13 +192,13 @@ func highlightMacro(rest string, i *int) string {
 	open := len(m[0]) - 1
 	end := closingBrace(rest, open)
 	var out strings.Builder
-	out.WriteString(Styled(m[1], CodeKeyword) + m[2] + Styled(m[3], CodeFunction) + m[4] + "(" + highlightLua(rest[open+1:end], true))
+	out.WriteString(Styled(m[1], CodeKeyword) + m[2] + Styled(m[3], CodeFunction) + m[4] + "(" + highlightLua(rest[open+1:end]))
 	n := min(end+1, len(rest))
 	out.WriteString(rest[end:n])
 	lua := strings.HasPrefix(m[1], "macro")
 	if strings.HasSuffix(m[1], "_name") {
 		if lua {
-			out.WriteString(highlightLua(rest[n:], true))
+			out.WriteString(highlightLua(rest[n:]))
 		} else {
 			out.WriteString(highlightGdpp(rest[n:], false))
 		}
@@ -223,7 +214,7 @@ func highlightMacro(rest string, i *int) string {
 	end = closingBrace(rest, open)
 	body := rest[open+1 : end]
 	if lua {
-		body = highlightLua(body, true)
+		body = highlightLua(body)
 	} else {
 		body = highlightGdpp(body, false)
 	}
@@ -254,9 +245,9 @@ func closingBrace(s string, open int) int {
 	return len(s)
 }
 
-// highlightLua highlights Lua code: keywords, gd and ctx, function names, literals and comments. With embedded, it's
-// in a GD++ file, where GD++'s comments work too, and templates can be declared inside.
-func highlightLua(code string, embedded bool) string {
+// highlightLua highlights the Lua code of GD++ macros: keywords, gd and ctx, function names, literals and comments,
+// Lua's and GD++'s, and the templates declared inside.
+func highlightLua(code string) string {
 	var out strings.Builder
 	for i := 0; i < len(code); {
 		c, rest := code[i], code[i:]
@@ -264,14 +255,10 @@ func highlightLua(code string, embedded bool) string {
 		switch {
 		case strings.HasPrefix(rest, "--") && longBracket(rest[2:]) > 0:
 			n, style = 2+longBracketEnd(rest[2:]), []Style{CodeComment}
-		case strings.HasPrefix(rest, "--") || embedded && strings.HasPrefix(rest, "//"):
+		case strings.HasPrefix(rest, "--") || strings.HasPrefix(rest, "//"):
 			n, style = lineEnd(rest), []Style{CodeComment}
-		case embedded && strings.HasPrefix(rest, "/*"):
-			end := strings.Index(rest, "*/")
-			if end < 0 {
-				end = len(rest) - 2
-			}
-			n, style = end+2, []Style{CodeComment}
+		case strings.HasPrefix(rest, "/*"):
+			n, style = blockCommentLen(rest), []Style{CodeComment}
 		case longBracket(rest) > 0:
 			n, style = longBracketEnd(rest), []Style{CodeLiteral}
 		case c == '"' || c == '\'':
@@ -287,7 +274,7 @@ func highlightLua(code string, embedded bool) string {
 				n++
 			}
 			style = []Style{CodeLiteral}
-		case embedded && macroHeadRegexp.MatchString(rest) && strings.HasPrefix(rest, "template "):
+		case macroHeadRegexp.MatchString(rest) && strings.HasPrefix(rest, "template "):
 			out.WriteString(highlightMacro(rest, &i))
 			continue
 		case identLen(rest) > 0:
@@ -307,6 +294,19 @@ func highlightLua(code string, embedded bool) string {
 		i += n
 	}
 	return out.String()
+}
+
+// blockCommentLen returns the length of the block comment that opens s. Block comments nest, like in GD++.
+func blockCommentLen(s string) int {
+	n := 2
+	for depth := 1; n < len(s) && depth > 0; n++ {
+		if strings.HasPrefix(s[n:], "/*") {
+			depth, n = depth+1, n+1
+		} else if strings.HasPrefix(s[n:], "*/") {
+			depth, n = depth-1, n+1
+		}
+	}
+	return min(n, len(s))
 }
 
 // longBracket returns the length of the Lua long bracket that opens s, e.g. 2 for "[[" or 4 for "[==[", or 0.

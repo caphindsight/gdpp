@@ -48,7 +48,8 @@ Facts:
 - Every file of the package can invoke it.
 - Its name shares the package's namespace with classes, externs, enums and templates. It can't be a GD++ or C++ keyword.
 - A macro has no doc comment and no annotations: Godot never sees a macro. Use `//` comments.
-- The body is Lua 5.1 code. Its braces must balance, also in Lua comments and long strings.
+- The body is Lua 5.1 code. New to Lua? See `gd++ man lua`.
+- Its braces must balance, also in Lua comments and long strings.
 - GD++ comments, `//` and `/* */`, work in the body, and so do Lua's `--` comments.
 - Lua's errors name the line of the GD++ file.
 
@@ -184,6 +185,8 @@ Lua code sees its parameters, Lua's `string`, `table` and `math` libraries, and 
 
 - `gd`: functions that generate code, and helpers.
 - `ctx`: where and how the macro was invoked.
+
+For the basics of Lua itself: values, tables, loops, functions and strings, see `gd++ man lua`.
 
 # Lua: emitters
 
@@ -497,4 +500,4 @@ macro spawner(enemy, waves, count) {
 
 # See also
 
-`gd++ man templates`, `gd++ man files`, `gd++ man code`, `gd++ man rewrites`, `gd++ man grammar`, `gd++ man tut/state-machine`.
+`gd++ man templates`, `gd++ man lua`, `gd++ man files`, `gd++ man code`, `gd++ man rewrites`, `gd++ man grammar`, `gd++ man tut/state-machine`.

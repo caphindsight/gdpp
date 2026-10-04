@@ -65,12 +65,12 @@ var langManPages = map[int][]string{
 	0: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
 		"lang/signals", "lang/enums", "lang/lifecycle", "lang/notifications", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance",
-		"lang/code", "lang/templates", "lang/macros", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
+		"lang/code", "lang/templates", "lang/macros", "lang/lua", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 	1: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
 		"lang/signals", "lang/enums", "lang/lifecycle", "lang/notifications", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/externs", "lang/debugging", "lang/performance",
-		"lang/code", "lang/templates", "lang/macros", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
+		"lang/code", "lang/templates", "lang/macros", "lang/lua", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 }
 
