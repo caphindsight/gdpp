@@ -79,7 +79,7 @@ func _on_body_entered(body: Node2D) -> void {
 What changed:
 
 - Objects are pointers, so members are reached with `->`: `sprite->...`. Refcounted objects, e.g. resources, are `Ref<T>`, and use `->` too. See `gd++ man types`.
-- `queue_free()` becomes `queue_destroy this;`. It does the same, and keeps working if the class later gets `@pool`. Scripts call the class's static methods `Coin.create()` and `Coin.queue_destroy(coin)` for the same. See `gd++ man classes`.
+- `queue_free()` becomes `queue_destroy this;`. It does the same, and keeps working if the class later gets `@pool`. Scripts call `Coin.gdpp_create()` and `coin.gdpp_queue_destroy()` for the same. See `gd++ man classes`.
 - Engine properties are getters and setters in C++: `sprite.rotation += x` becomes `sprite->set_rotation(sprite->get_rotation() + x)`. Your own GD++ variables are plain fields, so `player->score += value` works.
 - `as` casts like in GDScript, but names a C++ type: `body as Player *`. A failed downcast gives `nullptr`. See `gd++ man cast`.
 - Signals are sent with `emit NAME(ARGS);`. See `gd++ man signals`.
@@ -205,7 +205,7 @@ Bullet.new()                        create Bullet
 bullet.queue_free()                 queue_destroy bullet
 is_instance_valid(enemy)            Enemy *e = enemy, with enemy a Weak[Enemy]
 preload(PATH).instantiate()         create Bullet, with @scene(PATH) on Bullet
-                                    (and scripts call Bullet.create())
+                                    (and scripts call Bullet.gdpp_create())
 assert(x > 0)                       assert x > 0;
 ```
 

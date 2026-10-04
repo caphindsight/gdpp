@@ -7,9 +7,9 @@ namespace godot {
 #define This Settings2
 
 void Settings2::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Settings2::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Settings2::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Settings2::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Settings2::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Settings2::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Settings2::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_plain"), &Settings2::get_plain);
 	ClassDB::bind_method(D_METHOD("set_plain", "value"), &Settings2::set_plain);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("plain", PROPERTY_USAGE_DEFAULT), "set_plain", "get_plain");
@@ -51,16 +51,16 @@ void Settings2::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<Ref<Texture2D>>("tex", PROPERTY_USAGE_DEFAULT), "set_tex", "get_tex");
 }
 
-Settings2 *Settings2::create() {
+Settings2 *Settings2::gdpp_create() {
 	return gdpp::create<Settings2>();
 }
 
-void Settings2::destroy(Settings2 *p_object) {
-	gdpp::destroy(p_object);
+void Settings2::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Settings2::queue_destroy(Settings2 *p_object) {
-	gdpp::queue_destroy(p_object);
+void Settings2::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 int64_t Settings2::get_plain() const {

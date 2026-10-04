@@ -11,9 +11,9 @@ void Enemy::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("think"), &Enemy::think);
 	ClassDB::bind_method(D_METHOD("attack", "target"), &Enemy::attack);
 	ClassDB::bind_method(D_METHOD("move"), &Enemy::move);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Enemy::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Enemy::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Enemy::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Enemy::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Enemy::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Enemy::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_health"), &Enemy::get_health);
 	ClassDB::bind_method(D_METHOD("set_health", "value"), &Enemy::set_health);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("health", PROPERTY_USAGE_NONE), "set_health", "get_health");
@@ -24,16 +24,16 @@ void Enemy::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("ammo", PROPERTY_USAGE_NONE), "", "get_ammo");
 }
 
-Enemy *Enemy::create() {
+Enemy *Enemy::gdpp_create() {
 	return gdpp::create<Enemy>();
 }
 
-void Enemy::destroy(Enemy *p_object) {
-	gdpp::destroy(p_object);
+void Enemy::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Enemy::queue_destroy(Enemy *p_object) {
-	gdpp::queue_destroy(p_object);
+void Enemy::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Enemy::think() {

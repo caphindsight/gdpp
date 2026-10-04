@@ -13,23 +13,23 @@ void Spawner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_gdpp_body_report", "text"), &Spawner::_gdpp_body_report);
 	ClassDB::bind_method(D_METHOD("log"), &Spawner::log);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_log"), &Spawner::_gdpp_body_log);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spawner::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spawner::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spawner::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spawner::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spawner::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spawner::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_ONE", static_cast<int64_t>(Mode::ONE));
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_MANY", static_cast<int64_t>(Mode::MANY));
 }
 
-Spawner *Spawner::create() {
+Spawner *Spawner::gdpp_create() {
 	return gdpp::create<Spawner>();
 }
 
-void Spawner::destroy(Spawner *p_object) {
-	gdpp::destroy(p_object);
+void Spawner::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Spawner::queue_destroy(Spawner *p_object) {
-	gdpp::queue_destroy(p_object);
+void Spawner::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Spawner::spawn(int64_t count, Mode mode) {

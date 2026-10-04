@@ -1,4 +1,4 @@
 input.gd++:4:1: The name "get_x" is already used by another member.
  4 | func get_x() -> int {
    | ^^^^
-Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. create.
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create.

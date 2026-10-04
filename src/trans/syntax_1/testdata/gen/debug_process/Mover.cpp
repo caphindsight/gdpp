@@ -9,9 +9,9 @@ namespace godot {
 
 void Mover::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("step"), &Mover::step);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Mover::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Mover::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Mover::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Mover::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Mover::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Mover::gdpp_queue_destroy);
 }
 
 Mover::Mover() {
@@ -19,16 +19,16 @@ Mover::Mover() {
 	set_process(true);
 }
 
-Mover *Mover::create() {
+Mover *Mover::gdpp_create() {
 	return gdpp::create<Mover>();
 }
 
-void Mover::destroy(Mover *p_object) {
-	gdpp::destroy(p_object);
+void Mover::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Mover::queue_destroy(Mover *p_object) {
-	gdpp::queue_destroy(p_object);
+void Mover::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Mover::_notification(int WHAT) {

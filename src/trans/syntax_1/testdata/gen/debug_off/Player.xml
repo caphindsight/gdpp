@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Player" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_score" qualifiers="virtual">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="create" qualifiers="static">
+			<return type="Player" />
+			<description>
+			</description>
+		</method>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Player" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="is_alive" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="respawn">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="score">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="take_damage">
+			<return type="bool" />
+			<param index="0" name="amount" type="int" />
+			<param index="1" name="mood" type="int" enum="Player.Mood" default="Mood::ANGRY" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="ammo" type="int" setter="set_ammo" getter="get_ammo">
+		</member>
+		<member name="health" type="int" setter="set_health" getter="get_health">
+		</member>
+		<member name="items" type="Array" setter="set_items" getter="get_items">
+		</member>
+	</members>
+	<signals>
+		<signal name="died">
+			<param index="0" name="cause" type="int" enum="Player.Mood" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="MOOD_CALM" value="0" enum="Mood">
+		</constant>
+		<constant name="MOOD_ANGRY" value="1" enum="Mood">
+		</constant>
+	</constants>
+</class>

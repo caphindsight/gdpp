@@ -23,7 +23,7 @@ class A : public RefCounted {
 	GDCLASS(A, RefCounted)
 
 public:
-	static Ref<A> create();
+	static Ref<A> gdpp_create();
 	void f(Shared s);
 
 protected:

@@ -7,7 +7,7 @@ namespace godot {
 #define This Pool
 
 void Pool::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Pool::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Pool::gdpp_create);
 	ClassDB::bind_method(D_METHOD("get_size"), &Pool::get_size);
 	ClassDB::bind_method(D_METHOD("set_size", "value"), &Pool::set_size);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("size", PROPERTY_USAGE_NONE), "set_size", "get_size");
@@ -32,7 +32,7 @@ Pool::~Pool() {
 #line 33 "Pool.cpp"
 }
 
-Ref<Pool> Pool::create() {
+Ref<Pool> Pool::gdpp_create() {
 	return gdpp::create<Pool>();
 }
 

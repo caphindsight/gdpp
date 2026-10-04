@@ -11,10 +11,10 @@ void Math::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("log", "message"), &Math::log);
 	ClassDB::bind_method(D_METHOD("identity", "value"), &Math::identity);
 	ClassDB::bind_method(D_METHOD("nothing"), &Math::nothing);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Math::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Math::gdpp_create);
 }
 
-Ref<Math> Math::create() {
+Ref<Math> Math::gdpp_create() {
 	return gdpp::create<Math>();
 }
 

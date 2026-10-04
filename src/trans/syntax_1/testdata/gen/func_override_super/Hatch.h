@@ -12,9 +12,9 @@ class Hatch : public Gate {
 	GDCLASS(Hatch, Gate)
 
 public:
-	static Hatch *create();
-	static void destroy(Hatch *p_object);
-	static void queue_destroy(Hatch *p_object);
+	static Hatch *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void _ready() override;
 	void _super_ready();
 	bool _open() override final;

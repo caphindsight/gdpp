@@ -9,21 +9,21 @@ namespace godot {
 void Lock::_bind_methods() {
 	GDVIRTUAL_BIND(_open, "key");
 	ClassDB::bind_method(D_METHOD("open", "key"), &Lock::open);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Lock::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Lock::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Lock::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Lock::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Lock::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Lock::gdpp_queue_destroy);
 }
 
-Lock *Lock::create() {
+Lock *Lock::gdpp_create() {
 	return gdpp::create<Lock>();
 }
 
-void Lock::destroy(Lock *p_object) {
-	gdpp::destroy(p_object);
+void Lock::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Lock::queue_destroy(Lock *p_object) {
-	gdpp::queue_destroy(p_object);
+void Lock::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 Door *Lock::_open(const Ref<Key> &key) {

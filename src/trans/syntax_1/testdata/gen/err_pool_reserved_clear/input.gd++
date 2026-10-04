@@ -2,5 +2,5 @@
 class_name A
 extends Node
 
-func pool_clear() -> void {
+func gdpp_pool_clear() -> void {
 }

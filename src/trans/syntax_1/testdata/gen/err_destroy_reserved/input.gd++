@@ -1,4 +1,4 @@
 class_name A
 extends Node
 
-var destroy: int
+var gdpp_destroy: int

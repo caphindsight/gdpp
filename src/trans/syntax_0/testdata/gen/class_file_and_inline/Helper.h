@@ -17,7 +17,7 @@ public:
 	Main *main{};
 
 public:
-	static Ref<Helper> create();
+	static Ref<Helper> gdpp_create();
 	Main *get_main() const;
 	void set_main(Main *p_value);
 

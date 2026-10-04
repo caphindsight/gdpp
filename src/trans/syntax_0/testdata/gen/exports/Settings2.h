@@ -29,9 +29,9 @@ public:
 	Ref<Texture2D> tex{};
 
 public:
-	static Settings2 *create();
-	static void destroy(Settings2 *p_object);
-	static void queue_destroy(Settings2 *p_object);
+	static Settings2 *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	int64_t get_plain() const;
 	void set_plain(int64_t p_value);
 	int64_t get_hp() const;

@@ -19,9 +19,9 @@ void Pathfinder::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("done", "task"), &Pathfinder::done);
 	ClassDB::bind_method(D_METHOD("search", "steps"), &Pathfinder::search);
 	ClassDB::bind_method(D_METHOD("poll"), &Pathfinder::poll);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Pathfinder::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Pathfinder::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Pathfinder::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Pathfinder::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Pathfinder::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Pathfinder::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_pending"), &Pathfinder::get_pending);
 	ClassDB::bind_method(D_METHOD("set_pending", "value"), &Pathfinder::set_pending);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Async<PackedVector2Array>>("pending", PROPERTY_USAGE_NONE), "set_pending", "get_pending");
@@ -33,16 +33,16 @@ void Pathfinder::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "Terrain", "TERRAIN_WATER", static_cast<int64_t>(Terrain::WATER));
 }
 
-Pathfinder *Pathfinder::create() {
+Pathfinder *Pathfinder::gdpp_create() {
 	return gdpp::create<Pathfinder>();
 }
 
-void Pathfinder::destroy(Pathfinder *p_object) {
-	gdpp::destroy(p_object);
+void Pathfinder::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Pathfinder::queue_destroy(Pathfinder *p_object) {
-	gdpp::queue_destroy(p_object);
+void Pathfinder::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 gdpp::Async<PackedVector2Array> Pathfinder::find_path(const Vector2 &from, const Vector2 &to, int64_t steps) {

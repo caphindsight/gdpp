@@ -12,7 +12,7 @@ class MyRefCounted1 : public RefCounted {
 	GDCLASS(MyRefCounted1, RefCounted)
 
 public:
-	static Ref<MyRefCounted1> create();
+	static Ref<MyRefCounted1> gdpp_create();
 
 protected:
 	static void _bind_methods();

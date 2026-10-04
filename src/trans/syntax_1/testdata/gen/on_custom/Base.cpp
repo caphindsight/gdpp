@@ -7,22 +7,22 @@ namespace godot {
 #define This Base
 
 void Base::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Base::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Base::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Base::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Base::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Base::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Base::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "", "NOTIFICATION_HIT", NOTIFICATION_HIT);
 }
 
-Base *Base::create() {
+Base *Base::gdpp_create() {
 	return gdpp::create<Base>();
 }
 
-void Base::destroy(Base *p_object) {
-	gdpp::destroy(p_object);
+void Base::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Base::queue_destroy(Base *p_object) {
-	gdpp::queue_destroy(p_object);
+void Base::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Base::_notification(int WHAT) {

@@ -12,9 +12,9 @@ class Mid : public Node2D {
 	GDCLASS(Mid, Node2D)
 
 public:
-	static Mid *create();
-	static void destroy(Mid *p_object);
-	static void queue_destroy(Mid *p_object);
+	static Mid *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 
 protected:
 	static void _bind_methods();

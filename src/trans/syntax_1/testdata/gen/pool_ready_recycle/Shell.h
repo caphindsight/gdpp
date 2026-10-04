@@ -14,15 +14,15 @@ class Shell : public Node3D {
 public:
 	Shell();
 	~Shell();
-	static Shell *create();
-	static void destroy(Shell *p_object);
-	static void queue_destroy(Shell *p_object);
+	static Shell *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	static inline gdpp::Pool<Shell> _gdpp_pool{ 0, gdpp::PoolMode::GROW };
 	gdpp::PoolSlot<Shell> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static void pool_reserve(int64_t p_count, const String &p_mode = String());
-	static void pool_clear(bool p_keep_in_use = false);
+	static void gdpp_pool_reserve(int64_t p_count, const String &p_mode = String());
+	static void gdpp_pool_clear(bool p_keep_in_use = false);
 	void _ready() override;
 
 protected:

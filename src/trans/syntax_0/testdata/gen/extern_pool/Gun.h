@@ -12,9 +12,9 @@ class Gun : public Node {
 	GDCLASS(Gun, Node)
 
 public:
-	static Gun *create();
-	static void destroy(Gun *p_object);
-	static void queue_destroy(Gun *p_object);
+	static Gun *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void fire();
 
 protected:

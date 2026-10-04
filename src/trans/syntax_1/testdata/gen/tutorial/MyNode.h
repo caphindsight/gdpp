@@ -78,9 +78,9 @@ public:
 	static constexpr int64_t THE_ANSWER = 42;
 	MyNode();
 	~MyNode();
-	static MyNode *create();
-	static void destroy(MyNode *p_object);
-	static void queue_destroy(MyNode *p_object);
+	static MyNode *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void greet_user(const String &name);
 	void greet_users(int64_t count = _gdpp_default_greet_users_count(), const String &greeting = _gdpp_default_greet_users_greeting());
 	GDVIRTUAL0R(int64_t, _foo)

@@ -10,9 +10,9 @@ namespace godot {
 void Hatch::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_gdpp_body_set_state", "value"), &Hatch::_gdpp__gdpp_body_set_state);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_set_label", "text"), &Hatch::_gdpp_body_set_label);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Hatch::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Hatch::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Hatch::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Hatch::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Hatch::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Hatch::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_state"), &Hatch::_gdpp_get_state);
 	ClassDB::bind_method(D_METHOD("set_state", "value"), &Hatch::_gdpp_set_state);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Hatch_State>("state", PROPERTY_USAGE_NONE), "set_state", "get_state");
@@ -23,16 +23,16 @@ void Hatch::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "State", "STATE_CLOSED", static_cast<int64_t>(State::CLOSED));
 }
 
-Hatch *Hatch::create() {
+Hatch *Hatch::gdpp_create() {
 	return gdpp::create<Hatch>();
 }
 
-void Hatch::destroy(Hatch *p_object) {
-	gdpp::destroy(p_object);
+void Hatch::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Hatch::queue_destroy(Hatch *p_object) {
-	gdpp::queue_destroy(p_object);
+void Hatch::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Hatch::_gdpp_body_set_state(State value) {

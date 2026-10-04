@@ -2,5 +2,5 @@
 class_name A
 extends Node
 
-func scene_evict() -> void {
+func gdpp_scene_evict() -> void {
 }

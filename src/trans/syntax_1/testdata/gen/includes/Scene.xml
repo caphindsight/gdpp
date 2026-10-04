@@ -7,24 +7,22 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="create" qualifiers="static">
+		<method name="gdpp_create" qualifiers="static">
 			<return type="Scene" />
 			<description>
 				Creates an object of the class, like [code]create[/code] in GD++ code.
 			</description>
 		</method>
-		<method name="destroy" qualifiers="static">
+		<method name="gdpp_destroy">
 			<return type="void" />
-			<param index="0" name="object" type="Scene" />
 			<description>
-				Frees [param object] right away, like [code]destroy[/code] in GD++ code. Does nothing for [code]null[/code]. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
 			</description>
 		</method>
-		<method name="queue_destroy" qualifiers="static">
+		<method name="gdpp_queue_destroy">
 			<return type="void" />
-			<param index="0" name="object" type="Scene" />
 			<description>
-				Frees [param object] at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free]. Does nothing for [code]null[/code].
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
 			</description>
 		</method>
 		<method name="ready">

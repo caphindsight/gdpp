@@ -31,9 +31,9 @@ void MyNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("deal_damage", "amount"), &MyNode::deal_damage);
 	ClassDB::bind_method(D_METHOD("emit_both_signals"), &MyNode::emit_both_signals);
 	ClassDB::bind_method(D_METHOD("some_func"), &MyNode::some_func);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &MyNode::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &MyNode::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &MyNode::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &MyNode::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &MyNode::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &MyNode::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_primes"), &MyNode::get_primes);
 	ClassDB::bind_method(D_METHOD("set_primes", "value"), &MyNode::set_primes);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Async<int64_t>>("primes", PROPERTY_USAGE_NONE), "set_primes", "get_primes");
@@ -90,16 +90,16 @@ MyNode::~MyNode() {
 #line 91 "MyNode.cpp"
 }
 
-MyNode *MyNode::create() {
+MyNode *MyNode::gdpp_create() {
 	return gdpp::create<MyNode>();
 }
 
-void MyNode::destroy(MyNode *p_object) {
-	gdpp::destroy(p_object);
+void MyNode::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void MyNode::queue_destroy(MyNode *p_object) {
-	gdpp::queue_destroy(p_object);
+void MyNode::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void MyNode::_notification(int WHAT) {

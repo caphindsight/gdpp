@@ -13,9 +13,9 @@ class Walker : public Player {
 
 public:
 	Walker();
-	static Walker *create();
-	static void destroy(Walker *p_object);
-	static void queue_destroy(Walker *p_object);
+	static Walker *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void _process(double delta) override;
 
 protected:

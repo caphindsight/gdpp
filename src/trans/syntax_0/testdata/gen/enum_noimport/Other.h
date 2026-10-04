@@ -15,7 +15,7 @@ class Other : public RefCounted {
 	GDCLASS(Other, RefCounted)
 
 public:
-	static Ref<Other> create();
+	static Ref<Other> gdpp_create();
 
 protected:
 	static void _bind_methods();

@@ -14,9 +14,9 @@ void Mob::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("sync"), &Mob::sync);
 	ClassDB::bind_method(D_METHOD("respawn"), &Mob::respawn);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_respawn"), &Mob::_gdpp_body_respawn);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Mob::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Mob::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Mob::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Mob::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Mob::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Mob::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_mood"), &Mob::_gdpp_get_mood);
 	ClassDB::bind_method(D_METHOD("set_mood", "value"), &Mob::_gdpp_set_mood);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Mob_Mood>("mood", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_ENUM, "Calm:0,Angry:1"), "set_mood", "get_mood");
@@ -58,7 +58,7 @@ Mob::~Mob() {
 #line 59 "Mob.cpp"
 }
 
-Mob *Mob::create() {
+Mob *Mob::gdpp_create() {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return {};
@@ -67,22 +67,22 @@ Mob *Mob::create() {
 	return gdpp::create<Mob>();
 }
 
-void Mob::destroy(Mob *p_object) {
+void Mob::gdpp_destroy() {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
 #endif
-	gdpp::destroy(p_object);
+	gdpp::destroy(this);
 }
 
-void Mob::queue_destroy(Mob *p_object) {
+void Mob::gdpp_queue_destroy() {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
 #endif
-	gdpp::queue_destroy(p_object);
+	gdpp::queue_destroy(this);
 }
 
 int64_t Mob::attack(Mood mood) {

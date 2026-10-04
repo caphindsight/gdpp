@@ -8,24 +8,24 @@ namespace godot {
 
 void Asserted::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("aim"), &Asserted::aim);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Asserted::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Asserted::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Asserted::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Asserted::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Asserted::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Asserted::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_target"), &Asserted::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Asserted::set_target);
 	ClassDB::add_property(get_class_static(), gdpp::info<Node3D *>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
 }
 
-Asserted *Asserted::create() {
+Asserted *Asserted::gdpp_create() {
 	return gdpp::create<Asserted>();
 }
 
-void Asserted::destroy(Asserted *p_object) {
-	gdpp::destroy(p_object);
+void Asserted::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Asserted::queue_destroy(Asserted *p_object) {
-	gdpp::queue_destroy(p_object);
+void Asserted::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Asserted::aim() {

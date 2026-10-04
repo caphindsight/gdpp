@@ -13,21 +13,21 @@ namespace godot {
 
 void Gun::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire"), &Gun::fire);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Gun::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Gun::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Gun::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Gun::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Gun::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Gun::gdpp_queue_destroy);
 }
 
-Gun *Gun::create() {
+Gun *Gun::gdpp_create() {
 	return gdpp::create<Gun>();
 }
 
-void Gun::destroy(Gun *p_object) {
-	gdpp::destroy(p_object);
+void Gun::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Gun::queue_destroy(Gun *p_object) {
-	gdpp::queue_destroy(p_object);
+void Gun::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Gun::fire() {

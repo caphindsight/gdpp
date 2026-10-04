@@ -13,9 +13,9 @@ class Player : public Node {
 
 public:
 	Player();
-	static Player *create();
-	static void destroy(Player *p_object);
-	static void queue_destroy(Player *p_object);
+	static Player *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void _ready() override;
 	void _physics_process(double delta) override;
 	PackedStringArray _get_configuration_warnings() const override;

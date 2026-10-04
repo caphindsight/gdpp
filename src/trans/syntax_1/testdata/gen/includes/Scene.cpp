@@ -11,21 +11,21 @@ namespace godot {
 
 void Scene::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("ready"), &Scene::ready);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Scene::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Scene::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Scene::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Scene::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Scene::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Scene::gdpp_queue_destroy);
 }
 
-Scene *Scene::create() {
+Scene *Scene::gdpp_create() {
 	return gdpp::create<Scene>();
 }
 
-void Scene::destroy(Scene *p_object) {
-	gdpp::destroy(p_object);
+void Scene::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Scene::queue_destroy(Scene *p_object) {
-	gdpp::queue_destroy(p_object);
+void Scene::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Scene::ready() {

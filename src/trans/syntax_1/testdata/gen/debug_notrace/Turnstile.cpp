@@ -12,9 +12,9 @@ void Turnstile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("tick"), &Turnstile::tick);
 	ClassDB::bind_method(D_METHOD("cheap"), &Turnstile::cheap);
 	ClassDB::bind_method(D_METHOD("moved"), &Turnstile::moved);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Turnstile::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Turnstile::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Turnstile::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Turnstile::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Turnstile::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Turnstile::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_opened"), &Turnstile::get_opened);
 	ClassDB::bind_method(D_METHOD("set_opened", "value"), &Turnstile::set_opened);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("opened", PROPERTY_USAGE_NONE), "set_opened", "get_opened");
@@ -42,16 +42,16 @@ Turnstile::~Turnstile() {
 	gdpp::trace_lifetime("Turnstile", this, false);
 }
 
-Turnstile *Turnstile::create() {
+Turnstile *Turnstile::gdpp_create() {
 	return gdpp::create<Turnstile>();
 }
 
-void Turnstile::destroy(Turnstile *p_object) {
-	gdpp::destroy(p_object);
+void Turnstile::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Turnstile::queue_destroy(Turnstile *p_object) {
-	gdpp::queue_destroy(p_object);
+void Turnstile::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Turnstile::_notification(int WHAT) {

@@ -8,24 +8,24 @@ namespace godot {
 
 void Digger::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("use", "peer"), &Digger::use);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Digger::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Digger::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Digger::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Digger::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Digger::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Digger::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_terrain"), &Digger::get_terrain);
 	ClassDB::bind_method(D_METHOD("set_terrain", "value"), &Digger::set_terrain);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Terrain2>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
 }
 
-Digger *Digger::create() {
+Digger *Digger::gdpp_create() {
 	return gdpp::create<Digger>();
 }
 
-void Digger::destroy(Digger *p_object) {
-	gdpp::destroy(p_object);
+void Digger::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Digger::queue_destroy(Digger *p_object) {
-	gdpp::queue_destroy(p_object);
+void Digger::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Digger::use(int64_t peer) {

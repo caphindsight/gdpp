@@ -17,7 +17,7 @@ class Menu : public RefCounted {
 	GDCLASS(Menu, RefCounted)
 
 public:
-	static Ref<Menu> create();
+	static Ref<Menu> gdpp_create();
 
 protected:
 	static void _bind_methods();

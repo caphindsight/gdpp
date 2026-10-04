@@ -8,21 +8,21 @@ namespace godot {
 
 void Marker::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_draw"), &Marker::_draw);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Marker::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Marker::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Marker::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Marker::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Marker::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Marker::gdpp_queue_destroy);
 }
 
-Marker *Marker::create() {
+Marker *Marker::gdpp_create() {
 	return gdpp::create<Marker>();
 }
 
-void Marker::destroy(Marker *p_object) {
-	gdpp::destroy(p_object);
+void Marker::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Marker::queue_destroy(Marker *p_object) {
-	gdpp::queue_destroy(p_object);
+void Marker::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Marker::_draw() {

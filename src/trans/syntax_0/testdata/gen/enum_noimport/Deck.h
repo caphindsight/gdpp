@@ -18,7 +18,7 @@ class Deck : public RefCounted {
 	GDCLASS(Deck, RefCounted)
 
 public:
-	static Ref<Deck> create();
+	static Ref<Deck> gdpp_create();
 
 protected:
 	static void _bind_methods();

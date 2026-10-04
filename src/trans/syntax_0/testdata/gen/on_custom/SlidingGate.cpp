@@ -7,21 +7,21 @@ namespace godot {
 #define This SlidingGate
 
 void SlidingGate::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &SlidingGate::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &SlidingGate::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &SlidingGate::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &SlidingGate::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &SlidingGate::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &SlidingGate::gdpp_queue_destroy);
 }
 
-SlidingGate *SlidingGate::create() {
+SlidingGate *SlidingGate::gdpp_create() {
 	return gdpp::create<SlidingGate>();
 }
 
-void SlidingGate::destroy(SlidingGate *p_object) {
-	gdpp::destroy(p_object);
+void SlidingGate::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void SlidingGate::queue_destroy(SlidingGate *p_object) {
-	gdpp::queue_destroy(p_object);
+void SlidingGate::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void SlidingGate::_notification(int WHAT) {

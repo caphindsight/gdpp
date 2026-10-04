@@ -7,7 +7,7 @@ namespace godot {
 #define This Stats
 
 void Stats::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Stats::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Stats::gdpp_create);
 	ClassDB::bind_method(D_METHOD("get_hp"), &Stats::get_hp);
 	ClassDB::bind_method(D_METHOD("set_hp", "value"), &Stats::set_hp);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("hp", PROPERTY_USAGE_NONE), "set_hp", "get_hp");
@@ -37,7 +37,7 @@ Stats::Stats() {
 #line 38 "Stats.cpp"
 }
 
-Ref<Stats> Stats::create() {
+Ref<Stats> Stats::gdpp_create() {
 	return gdpp::create<Stats>();
 }
 

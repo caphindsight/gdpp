@@ -275,15 +275,15 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.scene != "" {
 		public = append(public, fmt.Sprintf("static constexpr gdpp::Scene<%s> _gdpp_scene{ %q };", c.name, c.scene))
 	}
-	public = append(public, fmt.Sprintf("static %screate();", withSpace(c.createType())))
+	public = append(public, fmt.Sprintf("static %sgdpp_create();", withSpace(c.createType())))
 	if !c.refCounted {
-		public = append(public, fmt.Sprintf("static void destroy(%s *p_object);", c.name))
+		public = append(public, "void gdpp_destroy();")
 	}
 	if c.node {
-		public = append(public, fmt.Sprintf("static void queue_destroy(%s *p_object);", c.name))
+		public = append(public, "void gdpp_queue_destroy();")
 	}
 	if c.scene != "" {
-		public = append(public, "static void scene_cache();", "static void scene_evict();")
+		public = append(public, "static void gdpp_scene_cache();", "static void gdpp_scene_evict();")
 	}
 	if p := c.pool; p != nil {
 		count := "int64_t p_count" // Defaults to the pool's size, if it has one.
@@ -292,8 +292,8 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		}
 		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, gdpp::PoolMode::%s };", c.name, p.size, strings.ToUpper(p.mode)),
 			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
-			fmt.Sprintf("static void pool_reserve(%s, const String &p_mode = String());", count),
-			"static void pool_clear(bool p_keep_in_use = false);")
+			fmt.Sprintf("static void gdpp_pool_reserve(%s, const String &p_mode = String());", count),
+			"static void gdpp_pool_clear(bool p_keep_in_use = false);")
 	}
 	for _, f := range c.funcs {
 		if f.virtual {
@@ -426,7 +426,7 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	}
 	w.ln("\tstatic constexpr const char *gdpp_name = %q;", e.name)
 	if e.scene || e.pool {
-		w.ln("\tstatic constexpr gdpp::ExtCreate<%s> gdpp_create{ %t };", e.name, e.pool)
+		w.ln("\tstatic constexpr gdpp::ExtCreate<%s> gdpp_ext_create{ %t };", e.name, e.pool)
 	}
 	w.ln("")
 	w.ln("\texplicit %s(Base *p_object) :", e.name)

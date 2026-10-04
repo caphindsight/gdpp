@@ -23,9 +23,9 @@ public:
 
 public:
 	Painter();
-	static Painter *create();
-	static void destroy(Painter *p_object);
-	static void queue_destroy(Painter *p_object);
+	static Painter *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	Effect paint(Effect extra = _gdpp_default_paint_extra());
 	Effect get_effect() const;
 	void set_effect(Effect p_value);

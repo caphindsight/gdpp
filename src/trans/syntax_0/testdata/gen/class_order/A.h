@@ -12,9 +12,9 @@ class A : public Node {
 	GDCLASS(A, Node)
 
 public:
-	static A *create();
-	static void destroy(A *p_object);
-	static void queue_destroy(A *p_object);
+	static A *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 
 protected:
 	static void _bind_methods();

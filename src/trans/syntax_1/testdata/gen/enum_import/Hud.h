@@ -17,7 +17,7 @@ class Hud : public RefCounted {
 	GDCLASS(Hud, RefCounted)
 
 public:
-	static Ref<Hud> create();
+	static Ref<Hud> gdpp_create();
 
 protected:
 	static void _bind_methods();

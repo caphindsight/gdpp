@@ -14,15 +14,15 @@ class Spark : public Node {
 public:
 	Spark();
 	~Spark();
-	static Spark *create();
-	static void destroy(Spark *p_object);
-	static void queue_destroy(Spark *p_object);
+	static Spark *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	static inline gdpp::Pool<Spark> _gdpp_pool{ 0, gdpp::PoolMode::GROW };
 	gdpp::PoolSlot<Spark> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static void pool_reserve(int64_t p_count, const String &p_mode = String());
-	static void pool_clear(bool p_keep_in_use = false);
+	static void gdpp_pool_reserve(int64_t p_count, const String &p_mode = String());
+	static void gdpp_pool_clear(bool p_keep_in_use = false);
 
 protected:
 	static void _bind_methods();

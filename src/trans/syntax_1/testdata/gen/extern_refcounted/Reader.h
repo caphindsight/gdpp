@@ -17,7 +17,7 @@ public:
 	gdpp::ExtRef<Config> config{};
 
 public:
-	static Ref<Reader> create();
+	static Ref<Reader> gdpp_create();
 	gdpp::ExtRef<Config> get_config() const;
 	void set_config(gdpp::ExtRef<Config> p_value);
 

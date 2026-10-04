@@ -8,30 +8,30 @@ namespace godot {
 
 void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire"), &Bullet::fire);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Bullet::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Bullet::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Bullet::queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_cache"), &Bullet::scene_cache);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_evict"), &Bullet::scene_evict);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Bullet::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Bullet::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Bullet::gdpp_queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_scene_cache"), &Bullet::gdpp_scene_cache);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_scene_evict"), &Bullet::gdpp_scene_evict);
 }
 
-Bullet *Bullet::create() {
+Bullet *Bullet::gdpp_create() {
 	return gdpp::create<Bullet>();
 }
 
-void Bullet::destroy(Bullet *p_object) {
-	gdpp::destroy(p_object);
+void Bullet::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Bullet::queue_destroy(Bullet *p_object) {
-	gdpp::queue_destroy(p_object);
+void Bullet::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
-void Bullet::scene_cache() {
+void Bullet::gdpp_scene_cache() {
 	gdpp::scene<Bullet>();
 }
 
-void Bullet::scene_evict() {
+void Bullet::gdpp_scene_evict() {
 	gdpp::evict_scene<Bullet>();
 }
 

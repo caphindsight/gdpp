@@ -10,9 +10,9 @@ namespace godot {
 
 void Lamp::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_all", "setting", "other"), &Lamp::_gdpp_set_all, DEFVAL(static_cast<int64_t>(_gdpp_default_set_all_setting())), DEFVAL(static_cast<int64_t>(_gdpp_default_set_all_other())));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Lamp::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Lamp::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Lamp::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Lamp::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Lamp::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Lamp::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_casting"), &Lamp::_gdpp_get_casting);
 	ClassDB::bind_method(D_METHOD("set_casting", "value"), &Lamp::_gdpp_set_casting);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Lamp_ShadowCastingSetting>("casting", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_ENUM, "Off:0,On:1,Double Sided:2,Shadows Only:3"), "set_casting", "get_casting");
@@ -54,16 +54,16 @@ Lamp::Lamp() {
 #line 55 "Lamp.cpp"
 }
 
-Lamp *Lamp::create() {
+Lamp *Lamp::gdpp_create() {
 	return gdpp::create<Lamp>();
 }
 
-void Lamp::destroy(Lamp *p_object) {
-	gdpp::destroy(p_object);
+void Lamp::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Lamp::queue_destroy(Lamp *p_object) {
-	gdpp::queue_destroy(p_object);
+void Lamp::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Lamp::set_all(ShadowCastingSetting setting, Level other) {

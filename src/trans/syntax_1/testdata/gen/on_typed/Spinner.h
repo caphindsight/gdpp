@@ -13,9 +13,9 @@ class Spinner : public Node3D {
 
 public:
 	Spinner();
-	static Spinner *create();
-	static void destroy(Spinner *p_object);
-	static void queue_destroy(Spinner *p_object);
+	static Spinner *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void _gdpp_body__process(double dt);
 	void _gdpp_body__physics_process(double step);
 

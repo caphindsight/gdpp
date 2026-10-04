@@ -7,11 +7,11 @@ namespace godot {
 #define This Shell
 
 void Shell::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Shell::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Shell::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Shell::queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Shell::pool_reserve, DEFVAL(String()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Shell::pool_clear, DEFVAL(false));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Shell::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Shell::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Shell::gdpp_queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_reserve", "count", "mode"), &Shell::gdpp_pool_reserve, DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_clear", "keep_in_use"), &Shell::gdpp_pool_clear, DEFVAL(false));
 }
 
 Shell::Shell() {
@@ -28,24 +28,24 @@ void Shell::_gdpp_recycle_ctor() {
 void Shell::_gdpp_recycle_dtor() {
 }
 
-void Shell::pool_reserve(int64_t p_count, const String &p_mode) {
+void Shell::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {
 	_gdpp_pool.reserve(p_count, p_mode);
 }
 
-void Shell::pool_clear(bool p_keep_in_use) {
+void Shell::gdpp_pool_clear(bool p_keep_in_use) {
 	_gdpp_pool.clear(p_keep_in_use);
 }
 
-Shell *Shell::create() {
+Shell *Shell::gdpp_create() {
 	return gdpp::create<Shell>();
 }
 
-void Shell::destroy(Shell *p_object) {
-	gdpp::destroy(p_object);
+void Shell::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Shell::queue_destroy(Shell *p_object) {
-	gdpp::queue_destroy(p_object);
+void Shell::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Shell::_ready() {

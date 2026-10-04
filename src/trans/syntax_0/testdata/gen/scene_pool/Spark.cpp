@@ -7,13 +7,13 @@ namespace godot {
 #define This Spark
 
 void Spark::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spark::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spark::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spark::queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_cache"), &Spark::scene_cache);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_evict"), &Spark::scene_evict);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Spark::pool_reserve, DEFVAL(10), DEFVAL(String()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Spark::pool_clear, DEFVAL(false));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spark::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spark::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spark::gdpp_queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_scene_cache"), &Spark::gdpp_scene_cache);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_scene_evict"), &Spark::gdpp_scene_evict);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_reserve", "count", "mode"), &Spark::gdpp_pool_reserve, DEFVAL(10), DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_clear", "keep_in_use"), &Spark::gdpp_pool_clear, DEFVAL(false));
 }
 
 Spark::Spark() {
@@ -30,31 +30,31 @@ void Spark::_gdpp_recycle_ctor() {
 void Spark::_gdpp_recycle_dtor() {
 }
 
-void Spark::pool_reserve(int64_t p_count, const String &p_mode) {
+void Spark::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {
 	_gdpp_pool.reserve(p_count, p_mode);
 }
 
-void Spark::pool_clear(bool p_keep_in_use) {
+void Spark::gdpp_pool_clear(bool p_keep_in_use) {
 	_gdpp_pool.clear(p_keep_in_use);
 }
 
-Spark *Spark::create() {
+Spark *Spark::gdpp_create() {
 	return gdpp::create<Spark>();
 }
 
-void Spark::destroy(Spark *p_object) {
-	gdpp::destroy(p_object);
+void Spark::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Spark::queue_destroy(Spark *p_object) {
-	gdpp::queue_destroy(p_object);
+void Spark::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
-void Spark::scene_cache() {
+void Spark::gdpp_scene_cache() {
 	gdpp::scene<Spark>();
 }
 
-void Spark::scene_evict() {
+void Spark::gdpp_scene_evict() {
 	gdpp::evict_scene<Spark>();
 }
 

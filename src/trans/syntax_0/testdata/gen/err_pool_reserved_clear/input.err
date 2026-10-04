@@ -1,4 +1,4 @@
-input.gd++:5:1: The name "pool_clear" is already used by another member.
- 5 | func pool_clear() -> void {
+input.gd++:5:1: The name "gdpp_pool_clear" is already used by another member.
+ 5 | func gdpp_pool_clear() -> void {
    | ^^^^
-Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. create.
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create.

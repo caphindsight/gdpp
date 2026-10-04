@@ -12,9 +12,9 @@ class SlidingGate : public Gate {
 	GDCLASS(SlidingGate, Gate)
 
 public:
-	static SlidingGate *create();
-	static void destroy(SlidingGate *p_object);
-	static void queue_destroy(SlidingGate *p_object);
+	static SlidingGate *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	bool _open() override final;
 
 protected:

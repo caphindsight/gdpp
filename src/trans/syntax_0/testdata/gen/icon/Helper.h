@@ -12,7 +12,7 @@ class Helper : public RefCounted {
 	GDCLASS(Helper, RefCounted)
 
 public:
-	static Ref<Helper> create();
+	static Ref<Helper> gdpp_create();
 
 protected:
 	static void _bind_methods();

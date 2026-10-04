@@ -12,9 +12,9 @@ class Leaf : public Mid {
 	GDCLASS(Leaf, Mid)
 
 public:
-	static Leaf *create();
-	static void destroy(Leaf *p_object);
-	static void queue_destroy(Leaf *p_object);
+	static Leaf *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void _gdpp_body__draw();
 
 protected:

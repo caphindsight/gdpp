@@ -7,10 +7,10 @@ namespace godot {
 #define This Plain
 
 void Plain::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Plain::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Plain::gdpp_create);
 }
 
-Ref<Plain> Plain::create() {
+Ref<Plain> Plain::gdpp_create() {
 	return gdpp::create<Plain>();
 }
 

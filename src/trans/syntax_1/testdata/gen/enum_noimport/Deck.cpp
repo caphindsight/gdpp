@@ -10,13 +10,13 @@ namespace godot {
 #define This Deck
 
 void Deck::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Deck::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Deck::gdpp_create);
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_A", static_cast<int64_t>(Suit::A));
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_B", static_cast<int64_t>(Suit::B));
 	ClassDB::bind_integer_constant(get_class_static(), "Local", "LOCAL_X", static_cast<int64_t>(Local::X));
 }
 
-Ref<Deck> Deck::create() {
+Ref<Deck> Deck::gdpp_create() {
 	return gdpp::create<Deck>();
 }
 

@@ -14,9 +14,9 @@ void Spawner::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("scale", "value"), &Spawner::scale, DEFVAL(_gdpp_default_scale_value()));
 	ClassDB::bind_method(D_METHOD("ping", "times"), &Spawner::ping, DEFVAL(_gdpp_default_ping_times()));
 	ClassDB::bind_method(D_METHOD("ping_all"), &Spawner::ping_all);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spawner::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spawner::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spawner::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spawner::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spawner::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spawner::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Kind", "KIND_SMALL", static_cast<int64_t>(Kind::SMALL));
 	ClassDB::bind_integer_constant(get_class_static(), "Kind", "KIND_BIG", static_cast<int64_t>(Kind::BIG));
 }
@@ -25,16 +25,16 @@ Spawner::Spawner() {
 	gdpp::rpc_config<This>(this, "ping", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE, false, 0);
 }
 
-Spawner *Spawner::create() {
+Spawner *Spawner::gdpp_create() {
 	return gdpp::create<Spawner>();
 }
 
-void Spawner::destroy(Spawner *p_object) {
-	gdpp::destroy(p_object);
+void Spawner::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Spawner::queue_destroy(Spawner *p_object) {
-	gdpp::queue_destroy(p_object);
+void Spawner::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Spawner::spawn(int64_t count, Kind kind, const Vector3 &at, const Variant &tag) {

@@ -8,9 +8,9 @@ namespace godot {
 
 void Stage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("compute", "a", "b"), &Stage::compute);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Stage::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Stage::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Stage::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Stage::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Stage::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Stage::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_count"), &Stage::get_count);
 	ClassDB::bind_method(D_METHOD("set_count", "value"), &Stage::set_count);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("count", PROPERTY_USAGE_NONE), "set_count", "get_count");
@@ -38,16 +38,16 @@ Stage::Stage() {
 #line 39 "Stage.cpp"
 }
 
-Stage *Stage::create() {
+Stage *Stage::gdpp_create() {
 	return gdpp::create<Stage>();
 }
 
-void Stage::destroy(Stage *p_object) {
-	gdpp::destroy(p_object);
+void Stage::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Stage::queue_destroy(Stage *p_object) {
-	gdpp::queue_destroy(p_object);
+void Stage::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Stage::_notification(int WHAT) {

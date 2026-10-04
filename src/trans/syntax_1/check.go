@@ -1870,7 +1870,7 @@ func (u *unit) unique(names map[string]bool, pos lexer.Position, keyword string,
 		}
 		if names[name] {
 			return u.errorAt(pos, len(keyword), fmt.Sprintf("The name %q is already used by another member.", name),
-				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. create.")
+				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create.")
 		}
 		names[name] = true
 	}
@@ -1928,11 +1928,11 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}
-	names := map[string]bool{"create": true, "destroy": !m.refCounted, "queue_destroy": m.node} // Methods for scripts.
-	for _, name := range []string{"pool_reserve", "pool_clear"} {
+	names := map[string]bool{"gdpp_create": true, "gdpp_destroy": !m.refCounted, "gdpp_queue_destroy": m.node} // Methods for scripts.
+	for _, name := range []string{"gdpp_pool_reserve", "gdpp_pool_clear"} {
 		names[name] = m.pool != nil
 	}
-	for _, name := range []string{"scene_cache", "scene_evict"} {
+	for _, name := range []string{"gdpp_scene_cache", "gdpp_scene_evict"} {
 		names[name] = m.scene != ""
 	}
 	// Enums declared in the class.

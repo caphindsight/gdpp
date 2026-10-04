@@ -20,7 +20,7 @@ public:
 	Level level{};
 
 public:
-	static Ref<Quest> create();
+	static Ref<Quest> gdpp_create();
 	Level harder(Level l);
 	Level get_level() const;
 	void set_level(Level p_value);

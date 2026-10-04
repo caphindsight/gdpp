@@ -7,7 +7,7 @@ namespace godot {
 #define This Clamp
 
 void Clamp::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Clamp::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Clamp::gdpp_create);
 	ClassDB::bind_method(D_METHOD("get_value"), &Clamp::get_value);
 	ClassDB::bind_method(D_METHOD("set_value", "value"), &Clamp::set_value);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("value", PROPERTY_USAGE_NONE), "set_value", "get_value");
@@ -18,7 +18,7 @@ void Clamp::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("logged", PROPERTY_USAGE_NONE), "set_logged", "get_logged");
 }
 
-Ref<Clamp> Clamp::create() {
+Ref<Clamp> Clamp::gdpp_create() {
 	return gdpp::create<Clamp>();
 }
 

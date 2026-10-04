@@ -7,9 +7,9 @@ namespace godot {
 #define This Ticker
 
 void Ticker::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Ticker::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Ticker::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Ticker::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Ticker::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Ticker::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Ticker::gdpp_queue_destroy);
 }
 
 Ticker::Ticker() {
@@ -18,16 +18,16 @@ Ticker::Ticker() {
 	set_process(true);
 }
 
-Ticker *Ticker::create() {
+Ticker *Ticker::gdpp_create() {
 	return gdpp::create<Ticker>();
 }
 
-void Ticker::destroy(Ticker *p_object) {
-	gdpp::destroy(p_object);
+void Ticker::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Ticker::queue_destroy(Ticker *p_object) {
-	gdpp::queue_destroy(p_object);
+void Ticker::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Ticker::_notification(int WHAT) {

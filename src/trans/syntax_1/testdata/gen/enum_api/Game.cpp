@@ -11,7 +11,7 @@ void Game::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("default_mode"), &Game::_gdpp_default_mode);
 	GDVIRTUAL_BIND(_pick, "options");
 	ClassDB::bind_method(D_METHOD("pick", "options"), &Game::_gdpp_pick);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Game::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Game::gdpp_create);
 	ClassDB::bind_method(D_METHOD("get_mode"), &Game::_gdpp_get_mode);
 	ClassDB::bind_method(D_METHOD("set_mode", "value"), &Game::_gdpp_set_mode);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Game_Mode>("mode", PROPERTY_USAGE_NONE), "set_mode", "get_mode");
@@ -30,7 +30,7 @@ Game::Game() {
 #line 31 "Game.cpp"
 }
 
-Ref<Game> Game::create() {
+Ref<Game> Game::gdpp_create() {
 	return gdpp::create<Game>();
 }
 

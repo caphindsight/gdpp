@@ -38,9 +38,9 @@ public:
 	Hard hard{};
 
 public:
-	static Board *create();
-	static void destroy(Board *p_object);
-	static void queue_destroy(Board *p_object);
+	static Board *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void finish(Result result);
 	Mode get_mode() const;
 	void set_mode(Mode p_value);

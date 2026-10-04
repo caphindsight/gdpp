@@ -21,21 +21,21 @@ void Brain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_super_react", "to"), &Brain::_super_react);
 	ClassDB::bind_method(D_METHOD("react", "to"), &Brain::react);
 	GDVIRTUAL_BIND(_secret);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Brain::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Brain::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Brain::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Brain::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Brain::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Brain::gdpp_queue_destroy);
 }
 
-Brain *Brain::create() {
+Brain *Brain::gdpp_create() {
 	return gdpp::create<Brain>();
 }
 
-void Brain::destroy(Brain *p_object) {
-	gdpp::destroy(p_object);
+void Brain::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Brain::queue_destroy(Brain *p_object) {
-	gdpp::queue_destroy(p_object);
+void Brain::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 int64_t Brain::_think(double delta) {

@@ -13,9 +13,9 @@ class Ticker : public Node {
 
 public:
 	Ticker();
-	static Ticker *create();
-	static void destroy(Ticker *p_object);
-	static void queue_destroy(Ticker *p_object);
+	static Ticker *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void _gdpp_body__internal_process(double delta);
 	void _gdpp_body__internal_physics_process();
 	void _gdpp_body__process();

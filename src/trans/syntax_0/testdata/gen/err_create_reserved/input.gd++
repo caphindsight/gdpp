@@ -1,5 +1,5 @@
 class_name A
 extends RefCounted
 
-func create() -> void {
+func gdpp_create() -> void {
 }

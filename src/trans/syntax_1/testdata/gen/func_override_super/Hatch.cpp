@@ -10,21 +10,21 @@ void Hatch::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_super_ready"), &Hatch::_super_ready);
 	ClassDB::bind_method(D_METHOD("_super_open"), &Hatch::_super_open);
 	GDVIRTUAL_BIND(_knock, "times");
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Hatch::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Hatch::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Hatch::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Hatch::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Hatch::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Hatch::gdpp_queue_destroy);
 }
 
-Hatch *Hatch::create() {
+Hatch *Hatch::gdpp_create() {
 	return gdpp::create<Hatch>();
 }
 
-void Hatch::destroy(Hatch *p_object) {
-	gdpp::destroy(p_object);
+void Hatch::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Hatch::queue_destroy(Hatch *p_object) {
-	gdpp::queue_destroy(p_object);
+void Hatch::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Hatch::_ready() {

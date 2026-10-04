@@ -22,7 +22,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="create" qualifiers="static">
+		<method name="gdpp_create" qualifiers="static">
 			<return type="Stub" />
 			<description>
 				Creates an object of the class, like [code]create[/code] in GD++ code.

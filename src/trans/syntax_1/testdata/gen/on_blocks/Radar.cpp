@@ -8,9 +8,9 @@ namespace godot {
 #define This Radar
 
 void Radar::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Radar::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Radar::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Radar::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Radar::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Radar::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Radar::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_camera"), &Radar::get_camera);
 	ClassDB::bind_method(D_METHOD("set_camera", "value"), &Radar::set_camera);
 	ClassDB::add_property(get_class_static(), gdpp::info<Camera3D *>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
@@ -21,16 +21,16 @@ Radar::Radar() {
 	set_physics_process(true);
 }
 
-Radar *Radar::create() {
+Radar *Radar::gdpp_create() {
 	return gdpp::create<Radar>();
 }
 
-void Radar::destroy(Radar *p_object) {
-	gdpp::destroy(p_object);
+void Radar::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Radar::queue_destroy(Radar *p_object) {
-	gdpp::queue_destroy(p_object);
+void Radar::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Radar::_notification(int WHAT) {

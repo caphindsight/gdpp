@@ -10,10 +10,10 @@ namespace godot {
 
 void UsesOther::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("f"), &UsesOther::f);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &UsesOther::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &UsesOther::gdpp_create);
 }
 
-Ref<UsesOther> UsesOther::create() {
+Ref<UsesOther> UsesOther::gdpp_create() {
 	return gdpp::create<UsesOther>();
 }
 

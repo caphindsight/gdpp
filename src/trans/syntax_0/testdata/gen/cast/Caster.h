@@ -31,9 +31,9 @@ public:
 	gdpp::Async<int64_t> task{};
 
 public:
-	static Caster *create();
-	static void destroy(Caster *p_object);
-	static void queue_destroy(Caster *p_object);
+	static Caster *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	int64_t convert(Node *node, const Ref<Resource> &resource, const Variant &value);
 	Mode get_mode() const;
 	void set_mode(Mode p_value);

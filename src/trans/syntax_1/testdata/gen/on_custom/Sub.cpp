@@ -7,21 +7,21 @@ namespace godot {
 #define This Sub
 
 void Sub::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Sub::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Sub::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Sub::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Sub::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Sub::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Sub::gdpp_queue_destroy);
 }
 
-Sub *Sub::create() {
+Sub *Sub::gdpp_create() {
 	return gdpp::create<Sub>();
 }
 
-void Sub::destroy(Sub *p_object) {
-	gdpp::destroy(p_object);
+void Sub::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Sub::queue_destroy(Sub *p_object) {
-	gdpp::queue_destroy(p_object);
+void Sub::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Sub::_notification(int WHAT) {

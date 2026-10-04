@@ -14,9 +14,9 @@ class B : public A {
 	GDCLASS(B, A)
 
 public:
-	static B *create();
-	static void destroy(B *p_object);
-	static void queue_destroy(B *p_object);
+	static B *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	Suit _pick(Suit s) override;
 
 protected:

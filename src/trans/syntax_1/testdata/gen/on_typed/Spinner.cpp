@@ -7,9 +7,9 @@ namespace godot {
 #define This Spinner
 
 void Spinner::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spinner::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spinner::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spinner::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spinner::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spinner::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spinner::gdpp_queue_destroy);
 }
 
 Spinner::Spinner() {
@@ -17,16 +17,16 @@ Spinner::Spinner() {
 	set_physics_process(true);
 }
 
-Spinner *Spinner::create() {
+Spinner *Spinner::gdpp_create() {
 	return gdpp::create<Spinner>();
 }
 
-void Spinner::destroy(Spinner *p_object) {
-	gdpp::destroy(p_object);
+void Spinner::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Spinner::queue_destroy(Spinner *p_object) {
-	gdpp::queue_destroy(p_object);
+void Spinner::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Spinner::_notification(int WHAT) {

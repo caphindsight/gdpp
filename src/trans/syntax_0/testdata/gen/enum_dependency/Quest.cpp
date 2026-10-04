@@ -8,7 +8,7 @@ namespace godot {
 
 void Quest::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("harder", "l"), &Quest::_gdpp_harder);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Quest::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Quest::gdpp_create);
 	ClassDB::bind_method(D_METHOD("get_level"), &Quest::_gdpp_get_level);
 	ClassDB::bind_method(D_METHOD("set_level", "value"), &Quest::_gdpp_set_level);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Quest_Level>("level", PROPERTY_USAGE_NONE), "set_level", "get_level");
@@ -16,7 +16,7 @@ void Quest::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "Level", "LEVEL_HARD", static_cast<int64_t>(Level::HARD));
 }
 
-Ref<Quest> Quest::create() {
+Ref<Quest> Quest::gdpp_create() {
 	return gdpp::create<Quest>();
 }
 

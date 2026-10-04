@@ -111,44 +111,44 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		recycler(w, c, "ctor", c.recycleCtor)
 		recycler(w, c, "dtor", c.recycleDtor)
 		w.ln("")
-		w.ln("void %s::pool_reserve(int64_t p_count, const String &p_mode) {", c.name)
+		w.ln("void %s::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {", c.name)
 		guard(w, c.gameOnly, "")
 		w.ln("\t_gdpp_pool.reserve(p_count, p_mode);")
 		w.ln("}")
 		w.ln("")
-		w.ln("void %s::pool_clear(bool p_keep_in_use) {", c.name)
+		w.ln("void %s::gdpp_pool_clear(bool p_keep_in_use) {", c.name)
 		guard(w, c.gameOnly, "")
 		w.ln("\t_gdpp_pool.clear(p_keep_in_use);")
 		w.ln("}")
 	}
 	// What scripts call for create, destroy and queue_destroy.
 	w.ln("")
-	w.ln("%s%s::create() {", withSpace(c.createType()), c.name)
+	w.ln("%s%s::gdpp_create() {", withSpace(c.createType()), c.name)
 	guard(w, c.gameOnly, c.createType())
 	w.ln("\treturn gdpp::create<%s>();", c.name)
 	w.ln("}")
 	if !c.refCounted {
 		w.ln("")
-		w.ln("void %s::destroy(%s *p_object) {", c.name, c.name)
+		w.ln("void %s::gdpp_destroy() {", c.name)
 		guard(w, c.gameOnly, "")
-		w.ln("\tgdpp::destroy(p_object);")
+		w.ln("\tgdpp::destroy(this);")
 		w.ln("}")
 	}
 	if c.node {
 		w.ln("")
-		w.ln("void %s::queue_destroy(%s *p_object) {", c.name, c.name)
+		w.ln("void %s::gdpp_queue_destroy() {", c.name)
 		guard(w, c.gameOnly, "")
-		w.ln("\tgdpp::queue_destroy(p_object);")
+		w.ln("\tgdpp::queue_destroy(this);")
 		w.ln("}")
 	}
 	if c.scene != "" {
 		w.ln("")
-		w.ln("void %s::scene_cache() {", c.name)
+		w.ln("void %s::gdpp_scene_cache() {", c.name)
 		guard(w, c.gameOnly, "")
 		w.ln("\tgdpp::scene<%s>();", c.name)
 		w.ln("}")
 		w.ln("")
-		w.ln("void %s::scene_evict() {", c.name)
+		w.ln("void %s::gdpp_scene_evict() {", c.name)
 		guard(w, c.gameOnly, "")
 		w.ln("\tgdpp::evict_scene<%s>();", c.name)
 		w.ln("}")
@@ -613,25 +613,25 @@ func (u *unit) bindings(w *writer, c *classModel) {
 			w.ln("\tClassDB::bind_method(%s, %s);", method(f.f.Name, names...), ref)
 		}
 	}
-	w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::create);", method("create"), c.name)
+	w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_create);", method("gdpp_create"), c.name)
 	if !c.refCounted {
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::destroy);", method("destroy", "object"), c.name)
+		w.ln("\tClassDB::bind_method(%s, &%s::gdpp_destroy);", method("gdpp_destroy"), c.name)
 	}
 	if c.node {
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::queue_destroy);", method("queue_destroy", "object"), c.name)
+		w.ln("\tClassDB::bind_method(%s, &%s::gdpp_queue_destroy);", method("gdpp_queue_destroy"), c.name)
 	}
 	if c.scene != "" {
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::scene_cache);", method("scene_cache"), c.name)
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::scene_evict);", method("scene_evict"), c.name)
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_scene_cache);", method("gdpp_scene_cache"), c.name)
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_scene_evict);", method("gdpp_scene_evict"), c.name)
 	}
 	if c.pool != nil {
-		// pool_reserve's count defaults to the pool's size, if it has one.
+		// gdpp_pool_reserve's count defaults to the pool's size, if it has one.
 		defaults := "DEFVAL(String())"
 		if c.pool.size != "0" {
 			defaults = "DEFVAL(" + c.pool.size + "), " + defaults
 		}
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::pool_reserve, %s);", method("pool_reserve", "count", "mode"), c.name, defaults)
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::pool_clear, DEFVAL(false));", method("pool_clear", "keep_in_use"), c.name)
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_pool_reserve, %s);", method("gdpp_pool_reserve", "count", "mode"), c.name, defaults)
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_pool_clear, DEFVAL(false));", method("gdpp_pool_clear", "keep_in_use"), c.name)
 	}
 	for _, v := range c.vars {
 		for _, s := range v.sections {

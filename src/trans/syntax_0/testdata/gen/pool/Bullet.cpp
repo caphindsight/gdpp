@@ -9,11 +9,11 @@ namespace godot {
 
 void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire"), &Bullet::fire);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Bullet::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Bullet::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Bullet::queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Bullet::pool_reserve, DEFVAL(100), DEFVAL(String()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Bullet::pool_clear, DEFVAL(false));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Bullet::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Bullet::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Bullet::gdpp_queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_reserve", "count", "mode"), &Bullet::gdpp_pool_reserve, DEFVAL(100), DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_clear", "keep_in_use"), &Bullet::gdpp_pool_clear, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_speed"), &Bullet::get_speed);
 	ClassDB::bind_method(D_METHOD("set_speed", "value"), &Bullet::set_speed);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("speed", PROPERTY_USAGE_NONE), "set_speed", "get_speed");
@@ -108,24 +108,24 @@ void Bullet::_gdpp_recycle_dtor() {
 #line 109 "Bullet.cpp"
 }
 
-void Bullet::pool_reserve(int64_t p_count, const String &p_mode) {
+void Bullet::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {
 	_gdpp_pool.reserve(p_count, p_mode);
 }
 
-void Bullet::pool_clear(bool p_keep_in_use) {
+void Bullet::gdpp_pool_clear(bool p_keep_in_use) {
 	_gdpp_pool.clear(p_keep_in_use);
 }
 
-Bullet *Bullet::create() {
+Bullet *Bullet::gdpp_create() {
 	return gdpp::create<Bullet>();
 }
 
-void Bullet::destroy(Bullet *p_object) {
-	gdpp::destroy(p_object);
+void Bullet::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Bullet::queue_destroy(Bullet *p_object) {
-	gdpp::queue_destroy(p_object);
+void Bullet::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Bullet::fire() {

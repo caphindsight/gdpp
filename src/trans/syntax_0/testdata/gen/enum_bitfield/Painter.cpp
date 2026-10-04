@@ -8,9 +8,9 @@ namespace godot {
 
 void Painter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("paint", "extra"), &Painter::_gdpp_paint, DEFVAL(static_cast<int64_t>(_gdpp_default_paint_extra())));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Painter::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Painter::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Painter::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Painter::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Painter::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Painter::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_effect"), &Painter::_gdpp_get_effect);
 	ClassDB::bind_method(D_METHOD("set_effect", "value"), &Painter::_gdpp_set_effect);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Painter_Effect>("effect", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_FLAGS, "Red:1,Bold:2,Blinking:4"), "set_effect", "get_effect");
@@ -41,16 +41,16 @@ Painter::Painter() {
 #line 42 "Painter.cpp"
 }
 
-Painter *Painter::create() {
+Painter *Painter::gdpp_create() {
 	return gdpp::create<Painter>();
 }
 
-void Painter::destroy(Painter *p_object) {
-	gdpp::destroy(p_object);
+void Painter::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Painter::queue_destroy(Painter *p_object) {
-	gdpp::queue_destroy(p_object);
+void Painter::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 Effect Painter::paint(Effect extra) {

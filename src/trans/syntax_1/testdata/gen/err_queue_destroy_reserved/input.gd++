@@ -1,5 +1,5 @@
 class_name A
 extends Node
 
-func queue_destroy() -> void {
+func gdpp_queue_destroy() -> void {
 }

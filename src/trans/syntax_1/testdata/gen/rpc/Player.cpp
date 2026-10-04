@@ -14,9 +14,9 @@ void Player::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("take_damage", "amount", "from"), &Player::_gdpp_take_damage);
 	ClassDB::bind_method(D_METHOD("sync_position", "pos"), &Player::sync_position);
 	ClassDB::bind_method(D_METHOD("hit", "peer", "other"), &Player::hit);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Player::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Player::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Player::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Player::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Player::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Player::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Team", "TEAM_RED", static_cast<int64_t>(Team::RED));
 	ClassDB::bind_integer_constant(get_class_static(), "Team", "TEAM_BLUE", static_cast<int64_t>(Team::BLUE));
 }
@@ -27,16 +27,16 @@ Player::Player() {
 	gdpp::rpc_config<This>(this, "sync_position", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE_ORDERED, false, 0);
 }
 
-Player *Player::create() {
+Player *Player::gdpp_create() {
 	return gdpp::create<Player>();
 }
 
-void Player::destroy(Player *p_object) {
-	gdpp::destroy(p_object);
+void Player::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Player::queue_destroy(Player *p_object) {
-	gdpp::queue_destroy(p_object);
+void Player::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Player::ping() {

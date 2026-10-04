@@ -18,9 +18,9 @@ class Spawner : public Node {
 
 public:
 	Spawner();
-	static Spawner *create();
-	static void destroy(Spawner *p_object);
-	static void queue_destroy(Spawner *p_object);
+	static Spawner *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	void spawn(int64_t count, Kind kind = _gdpp_default_spawn_kind(), const Vector3 &at = _gdpp_default_spawn_at(), const Variant &tag = _gdpp_default_spawn_tag());
 	static double scale(double value = _gdpp_default_scale_value());
 	void ping(int64_t times = _gdpp_default_ping_times());

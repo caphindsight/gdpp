@@ -20,15 +20,15 @@ public:
 public:
 	Bullet();
 	~Bullet();
-	static Bullet *create();
-	static void destroy(Bullet *p_object);
-	static void queue_destroy(Bullet *p_object);
+	static Bullet *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	static inline gdpp::Pool<Bullet> _gdpp_pool{ 100, gdpp::PoolMode::FIXED };
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static void pool_reserve(int64_t p_count = 100, const String &p_mode = String());
-	static void pool_clear(bool p_keep_in_use = false);
+	static void gdpp_pool_reserve(int64_t p_count = 100, const String &p_mode = String());
+	static void gdpp_pool_clear(bool p_keep_in_use = false);
 	void fire();
 	double get_speed() const;
 	void set_speed(double p_value);

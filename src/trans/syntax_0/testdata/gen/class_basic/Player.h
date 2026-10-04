@@ -12,9 +12,9 @@ class Player : public Node3D {
 	GDCLASS(Player, Node3D)
 
 public:
-	static Player *create();
-	static void destroy(Player *p_object);
-	static void queue_destroy(Player *p_object);
+	static Player *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 
 protected:
 	static void _bind_methods();

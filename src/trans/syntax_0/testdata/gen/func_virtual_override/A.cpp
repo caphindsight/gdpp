@@ -11,23 +11,23 @@ void A::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("pick", "s"), &A::_gdpp_pick);
 	GDVIRTUAL_BIND(_reset);
 	ClassDB::bind_method(D_METHOD("reset"), &A::reset);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &A::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &A::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &A::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &A::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &A::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &A::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_HEARTS", static_cast<int64_t>(Suit::HEARTS));
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_SPADES", static_cast<int64_t>(Suit::SPADES));
 }
 
-A *A::create() {
+A *A::gdpp_create() {
 	return gdpp::create<A>();
 }
 
-void A::destroy(A *p_object) {
-	gdpp::destroy(p_object);
+void A::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void A::queue_destroy(A *p_object) {
-	gdpp::queue_destroy(p_object);
+void A::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 Suit A::_pick(Suit s) {

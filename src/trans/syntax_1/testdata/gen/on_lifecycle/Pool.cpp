@@ -7,12 +7,12 @@ namespace godot {
 #define This Pool
 
 void Pool::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Pool::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Pool::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Pool::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Pool::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Pool::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Pool::gdpp_queue_destroy);
 }
 
-Pool *Pool::create() {
+Pool *Pool::gdpp_create() {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return {};
@@ -21,22 +21,22 @@ Pool *Pool::create() {
 	return gdpp::create<Pool>();
 }
 
-void Pool::destroy(Pool *p_object) {
+void Pool::gdpp_destroy() {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
 #endif
-	gdpp::destroy(p_object);
+	gdpp::destroy(this);
 }
 
-void Pool::queue_destroy(Pool *p_object) {
+void Pool::gdpp_queue_destroy() {
 #ifdef DEBUG_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
 #endif
-	gdpp::queue_destroy(p_object);
+	gdpp::queue_destroy(this);
 }
 
 void Pool::_notification(int WHAT) {

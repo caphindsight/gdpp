@@ -7,21 +7,21 @@ namespace godot {
 #define This Spot
 
 void Spot::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spot::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spot::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spot::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spot::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spot::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spot::gdpp_queue_destroy);
 }
 
-Spot *Spot::create() {
+Spot *Spot::gdpp_create() {
 	return gdpp::create<Spot>();
 }
 
-void Spot::destroy(Spot *p_object) {
-	gdpp::destroy(p_object);
+void Spot::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Spot::queue_destroy(Spot *p_object) {
-	gdpp::queue_destroy(p_object);
+void Spot::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Spot::_notification(int WHAT) {

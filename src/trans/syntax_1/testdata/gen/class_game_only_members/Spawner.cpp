@@ -17,9 +17,9 @@ void Spawner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("sync"), &Spawner::sync);
 	ClassDB::bind_method(D_METHOD("load"), &Spawner::load);
 	ClassDB::bind_method(D_METHOD("preview"), &Spawner::preview);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spawner::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spawner::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spawner::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spawner::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spawner::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spawner::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_kind"), &Spawner::_gdpp_get_kind);
 	ClassDB::bind_method(D_METHOD("set_kind", "value"), &Spawner::_gdpp_set_kind);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Spawner_Kind>("kind", PROPERTY_USAGE_NONE), "set_kind", "get_kind");
@@ -44,16 +44,16 @@ Spawner::Spawner() {
 #line 45 "Spawner.cpp"
 }
 
-Spawner *Spawner::create() {
+Spawner *Spawner::gdpp_create() {
 	return gdpp::create<Spawner>();
 }
 
-void Spawner::destroy(Spawner *p_object) {
-	gdpp::destroy(p_object);
+void Spawner::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Spawner::queue_destroy(Spawner *p_object) {
-	gdpp::queue_destroy(p_object);
+void Spawner::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 void Spawner::_notification(int WHAT) {

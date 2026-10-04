@@ -8,10 +8,10 @@ namespace godot {
 
 void C::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("a"), &C::a);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &C::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &C::gdpp_create);
 }
 
-Ref<C> C::create() {
+Ref<C> C::gdpp_create() {
 	return gdpp::create<C>();
 }
 

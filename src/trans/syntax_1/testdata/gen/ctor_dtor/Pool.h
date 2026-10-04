@@ -17,7 +17,7 @@ public:
 public:
 	Pool();
 	~Pool();
-	static Ref<Pool> create();
+	static Ref<Pool> gdpp_create();
 	int64_t get_size() const;
 	void set_size(int64_t p_value);
 

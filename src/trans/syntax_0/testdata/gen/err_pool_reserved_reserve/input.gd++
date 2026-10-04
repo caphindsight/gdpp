@@ -2,5 +2,5 @@
 class_name A
 extends Node
 
-func pool_reserve() -> void {
+func gdpp_pool_reserve() -> void {
 }

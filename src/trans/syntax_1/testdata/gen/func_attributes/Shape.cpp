@@ -9,21 +9,21 @@ namespace godot {
 void Shape::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("area"), &Shape::area);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("unit"), &Shape::unit);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Shape::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Shape::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Shape::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Shape::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Shape::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Shape::gdpp_queue_destroy);
 }
 
-Shape *Shape::create() {
+Shape *Shape::gdpp_create() {
 	return gdpp::create<Shape>();
 }
 
-void Shape::destroy(Shape *p_object) {
-	gdpp::destroy(p_object);
+void Shape::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void Shape::queue_destroy(Shape *p_object) {
-	gdpp::queue_destroy(p_object);
+void Shape::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 double Shape::area() const {

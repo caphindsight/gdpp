@@ -17,7 +17,7 @@ class Baker : public RefCounted {
 	GDCLASS(Baker, RefCounted)
 
 public:
-	static Ref<Baker> create();
+	static Ref<Baker> gdpp_create();
 	gdpp::Async<String> bake(Terrain mode);
 	String _gdpp_body_bake(Terrain mode);
 

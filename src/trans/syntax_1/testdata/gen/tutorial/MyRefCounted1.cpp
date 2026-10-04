@@ -7,10 +7,10 @@ namespace godot {
 #define This MyRefCounted1
 
 void MyRefCounted1::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &MyRefCounted1::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &MyRefCounted1::gdpp_create);
 }
 
-Ref<MyRefCounted1> MyRefCounted1::create() {
+Ref<MyRefCounted1> MyRefCounted1::gdpp_create() {
 	return gdpp::create<MyRefCounted1>();
 }
 

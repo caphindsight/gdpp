@@ -8,10 +8,10 @@ namespace godot {
 
 void Counter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_ready"), &Counter::_ready);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Counter::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Counter::gdpp_create);
 }
 
-Ref<Counter> Counter::create() {
+Ref<Counter> Counter::gdpp_create() {
 	return gdpp::create<Counter>();
 }
 

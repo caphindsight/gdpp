@@ -8,21 +8,21 @@ namespace godot {
 
 void LoudHatch::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_super_knock", "times"), &LoudHatch::_super_knock);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &LoudHatch::create);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &LoudHatch::destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &LoudHatch::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &LoudHatch::gdpp_create);
+	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &LoudHatch::gdpp_destroy);
+	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &LoudHatch::gdpp_queue_destroy);
 }
 
-LoudHatch *LoudHatch::create() {
+LoudHatch *LoudHatch::gdpp_create() {
 	return gdpp::create<LoudHatch>();
 }
 
-void LoudHatch::destroy(LoudHatch *p_object) {
-	gdpp::destroy(p_object);
+void LoudHatch::gdpp_destroy() {
+	gdpp::destroy(this);
 }
 
-void LoudHatch::queue_destroy(LoudHatch *p_object) {
-	gdpp::queue_destroy(p_object);
+void LoudHatch::gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
 }
 
 String LoudHatch::_knock(int64_t times) {

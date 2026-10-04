@@ -10,10 +10,10 @@ void Stub::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("a"), &Stub::a);
 	ClassDB::bind_method(D_METHOD("b"), &Stub::b);
 	ClassDB::bind_method(D_METHOD("c"), &Stub::c);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Stub::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Stub::gdpp_create);
 }
 
-Ref<Stub> Stub::create() {
+Ref<Stub> Stub::gdpp_create() {
 	return gdpp::create<Stub>();
 }
 

@@ -21,9 +21,9 @@ public:
 
 public:
 	Stage();
-	static Stage *create();
-	static void destroy(Stage *p_object);
-	static void queue_destroy(Stage *p_object);
+	static Stage *gdpp_create();
+	void gdpp_destroy();
+	void gdpp_queue_destroy();
 	int64_t compute(int64_t a, int64_t b);
 	int64_t get_count() const;
 	void set_count(int64_t p_value);

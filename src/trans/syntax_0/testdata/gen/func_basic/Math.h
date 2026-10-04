@@ -12,7 +12,7 @@ class Math : public RefCounted {
 	GDCLASS(Math, RefCounted)
 
 public:
-	static Ref<Math> create();
+	static Ref<Math> gdpp_create();
 	int64_t add(int64_t a, int64_t b);
 	void log(const String &message);
 	Variant identity(const Variant &value);

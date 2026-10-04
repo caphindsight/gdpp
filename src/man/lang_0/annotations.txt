@@ -38,8 +38,8 @@ func _score() -> int
 
 @pool, @pool(SIZE), @pool(SIZE, "fixed") and @pool(SIZE, "grow")
   `destroy` keeps objects in a pool instead of deleting them, and `create` reuses them. Only for classes that extend `Node`. See `gd++ man pools`.
-  - Scripts call the class's static methods `create()`, `destroy()` and `queue_destroy()` for the same.
-  - The class gets the static methods `pool_reserve()`, which makes objects ahead of time, and `pool_clear()`, which drops them all.
+  - Scripts call the class's methods `gdpp_create()`, `gdpp_destroy()` and `gdpp_queue_destroy()` for the same.
+  - The class gets the static methods `gdpp_pool_reserve()`, which makes objects ahead of time, and `gdpp_pool_clear()`, which drops them all.
   - With SIZE, a positive integer: the pool holds up to SIZE objects. `create` returns `nullptr` once all of them are in use, so code must check its result. `"fixed"` is the same.
   - With `"grow"`: the pool makes more objects then. In debug builds, it logs an error when it grows past SIZE objects, and again past each double of that.
 
@@ -47,8 +47,8 @@ func _score() -> int
   Make `create` instantiate the class's scene: a string with a `res://` or `pkg://` path. Only for classes that extend `Node`. See `gd++ man classes`.
   - The scene is loaded once.
   - Its root must be an object of the class.
-  - Scripts call the class's static method `create()` for the same.
-  - The class gets the static methods `scene_cache()`, which loads the scene ahead of time, and `scene_evict()`, which drops it.
+  - Scripts call the class's static method `gdpp_create()` for the same.
+  - The class gets the static methods `gdpp_scene_cache()`, which loads the scene ahead of time, and `gdpp_scene_evict()`, which drops it.
 
 @trace(GROUPS...)
   Trace all its functions, variables and signals, and print the creation and destruction of its objects. Except `on process`, `on physics_process` and overrides of `_process` and `_physics_process`. See "@trace and @profile" below.

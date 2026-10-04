@@ -8,10 +8,10 @@ namespace godot {
 
 void Undocumented::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("f"), &Undocumented::f);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Undocumented::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Undocumented::gdpp_create);
 }
 
-Ref<Undocumented> Undocumented::create() {
+Ref<Undocumented> Undocumented::gdpp_create() {
 	return gdpp::create<Undocumented>();
 }
 
