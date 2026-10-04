@@ -64,11 +64,7 @@ Blocks use braces, and every value has a static Godot type. Most examples show a
 
 <a href="readme/svg/classes.gd++"><img src="readme/svg/classes.svg" alt="GD++ code: classes"></a>
 
-See `gd++ man classes`.
-
-### Includes are automatic
-
-GD++ writes all `#include` lines. See `gd++ man includes`.
+See `gd++ man classes` and `gd++ man includes`.
 
 ### Creating and deleting objects
 

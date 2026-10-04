@@ -2,7 +2,7 @@
 // @icon is its icon in the editor.
 @icon("res://icons/player.svg")
 class_name Player
-extends CharacterBody3D
+extends CharacterBody3D  // Included automatically.
 
 var coins: int
 
