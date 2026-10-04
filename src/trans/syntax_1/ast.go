@@ -263,13 +263,15 @@ type MacroBody struct {
 }
 
 // Invoke is an invocation of a macro or template: invoke name(args), or invoke name { ... } with a Lua table.
-// Pos is the position of "invoke".
+// Or it's a macro block, macro { ... }: a macro without parameters (Body), invoked where it's declared. Its Name is
+// anonymous, and its Args are empty. Pos is the position of "invoke" or "macro".
 type Invoke struct {
 	Pos         lexer.Position
 	Doc         *Doc           `parser:"@@?"`
 	Annotations []*Annotation  `parser:"@@*"` // Only parsed to report them.
-	Name        string         `parser:"'invoke' @Ident"`
-	Args        *ArgList       `parser:"@@"`
+	Name        string         `parser:"( 'invoke' @Ident"`
+	Args        *ArgList       `parser:"  @@"`
+	Body        *MacroBody     `parser:"| 'macro' @@ )"`
 	EndPos      lexer.Position // Where the invocation ends.
 	// Where errors at the invocation go, as an error without a message, if not to Pos: for an invocation in a
 	// template's output, its place in the template, and for gd.invoke, the line of Lua code that calls it.

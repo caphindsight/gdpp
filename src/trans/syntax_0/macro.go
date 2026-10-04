@@ -217,9 +217,20 @@ func (x *expander) expandFile(f *File) error {
 	return nil
 }
 
+// anonymous is the name of macro blocks, macro { ... }, in messages.
+const anonymous = "{ ... }"
+
+// def returns what inv invokes: a macro or template of the package, or a macro block's body. It's nil if there's none.
+func (x *expander) def(inv *Invoke) *macroDef {
+	if inv.Body == nil {
+		return x.defs[inv.Name]
+	}
+	return &macroDef{m: &Macro{Pos: inv.Pos, Name: anonymous, Body: inv.Body}, file: x.filename, src: x.src, source: x.source()}
+}
+
 // what names what inv invokes, e.g. "Macro stat".
 func (x *expander) what(inv *Invoke) string {
-	if d := x.defs[inv.Name]; d != nil {
+	if d := x.def(inv); d != nil {
 		return capitalize(d.m.what()) + " " + inv.Name
 	}
 	return "Macro " + inv.Name
@@ -260,7 +271,7 @@ func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth in
 
 // invoke runs the macro or template that inv invokes, in scope sc, and returns what it generates, expanded.
 func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, err error) {
-	def := x.defs[inv.Name]
+	def := x.def(inv)
 	switch {
 	case depth >= x.maxDepth():
 		return nil, x.invocationError(inv, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
@@ -270,6 +281,8 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 	case len(inv.Annotations) > 0:
 		a := inv.Annotations[0]
 		return nil, x.errorAt(a.Pos, len(a.Name)+1, "Invocations take no annotations.", "Have the macro add them to what it generates.")
+	case len(def.m.Body.Helpers) > 0:
+		return nil, x.helpersError(inv)
 	}
 	if _, ok := x.generated[inv.Pos.Offset]; !ok {
 		x.generated[inv.Pos.Offset] = x.frame(def, inv, depth)
@@ -343,9 +356,22 @@ func addFrame(err error, frame string) error {
 	return err
 }
 
-// span returns how many characters an error about the invocation underlines: "invoke NAME".
+// span returns how many characters an error about the invocation underlines: "invoke NAME", or "macro".
 func (inv *Invoke) span() int {
+	if inv.Body != nil {
+		return len("macro")
+	}
 	return len("invoke ") + len(inv.Name)
+}
+
+// helpersError returns the error for a macro block, inv, that declares macros or templates.
+func (x *expander) helpersError(inv *Invoke) *Error {
+	h := inv.Body.Helpers[0]
+	msg, hint := fmt.Sprintf("A macro block can't declare %ss.", h.what()), "Declare it at the top level of the file."
+	if inv.Site != nil {
+		return x.invocationError(inv, msg, hint)
+	}
+	return x.errorAt(h.Pos, len(h.what()), msg, hint)
 }
 
 // unknown returns the error for an invocation of a macro that doesn't exist.
@@ -381,7 +407,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 			}
 		}()
 	}
-	if !strings.Contains(code, "invoke") {
+	if !strings.Contains(code, "invoke") && !strings.Contains(code, "macro") {
 		return code, nil
 	}
 	l, err := gdppLexer.LexString(x.filename, code)
@@ -397,14 +423,25 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 	var out strings.Builder
 	last := 0 // The end of what's copied to out.
 	for i := 0; i+2 < len(tokens); i++ {
-		// invoke NAME( or invoke NAME {, but not a member or a scope's name, e.g. std::invoke.
+		// invoke NAME( or invoke NAME {, but not a member or a scope's name, e.g. std::invoke. Or macro { at the start of
+		// the code or of a statement.
 		t, name, open := tokens[i], tokens[i+1], tokens[i+2]
-		if t.Type != tokIdent || t.Value != "invoke" || t.Pos.Offset < last || name.Type != tokIdent || x.defs[name.Value] == nil ||
-			!isPunct(open, "(") && !isPunct(open, "{") || i > 0 && (isPunct(tokens[i-1], ".") || isPunct(tokens[i-1], ">") || isPunct(tokens[i-1], ":")) {
+		var prev lexer.Token
+		if i > 0 {
+			prev = tokens[i-1]
+		}
+		var body *MacroBody
+		switch {
+		case t.Type != tokIdent || t.Pos.Offset < last:
+			continue
+		case t.Value == "macro" && isPunct(name, "{") && (i == 0 || isPunct(prev, ";") || isPunct(prev, "{") || isPunct(prev, "}")):
+			open, name.Value, body = name, anonymous, &MacroBody{}
+		case t.Value != "invoke" || name.Type != tokIdent || x.defs[name.Value] == nil || !isPunct(open, "(") && !isPunct(open, "{") ||
+			isPunct(prev, ".") || isPunct(prev, ">") || isPunct(prev, ":"):
 			continue
 		}
+		inv := &Invoke{Pos: shift(t.Pos, pos, x.src), Name: name.Value, Body: body}
 		start := open.Pos.Offset
-		inv := &Invoke{Pos: shift(t.Pos, pos, x.src), Name: name.Value}
 		if errorAt != nil {
 			inv.Pos, inv.Site = pos, errorAt(t.Pos, inv.span(), "", "")
 		}
@@ -417,7 +454,11 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 			return "", err
 		}
 		inv.Args = &ArgList{}
-		if err := inv.Args.Parse(lex); err != nil {
+		parse := inv.Args.Parse
+		if inv.Body != nil {
+			parse = inv.Body.Parse
+		}
+		if err := parse(lex); err != nil {
 			var e *Error
 			if errors.As(err, &e) {
 				if errorAt != nil {
@@ -441,7 +482,10 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 				if lex.RawPeek().EOF() {
 					p = t.Pos
 				}
-				msg := fmt.Sprintf("Expected \";\" after the invocation of %s, but found %s.", name.Value, describe(*semi))
+				msg := fmt.Sprintf("Expected \";\" after the invocation of %s, but found %s.", inv.Name, describe(*semi))
+				if inv.Body != nil {
+					msg = fmt.Sprintf("Expected \";\" after the macro block, but found %s.", describe(*semi))
+				}
 				hint := "In a C++ block, an invocation is a statement, which ends with \";\": invoke log(\"hit\");. The macro's C++ replaces it, \";\" included."
 				if errorAt != nil {
 					return "", errorAt(p, 1, msg, hint)
@@ -457,6 +501,12 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 				b.TextPos = shift(shift(b.TextPos, open.Pos, ""), pos, x.src)
 			}
 		})
+		if b := inv.Body; b != nil {
+			b.Pos, b.TextPos = inv.Pos, shift(shift(b.TextPos, open.Pos, ""), pos, x.src)
+			for _, h := range b.Helpers {
+				h.Pos = shift(shift(h.Pos, open.Pos, ""), pos, x.src)
+			}
+		}
 		var at *Origin // How #line names the invocation's line, in a block.
 		if block != nil {
 			at = &Origin{Source: block.Source, Line: block.Line + strings.Count(code[:t.Pos.Offset], "\n")}
@@ -504,7 +554,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 // invokeCode runs the macro that inv invokes in C++ code, and returns the C++ it generates, expanded. In a block,
 // at says how #line names inv's line. In an expression, it's nil.
 func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) (_ string, err error) {
-	def := x.defs[inv.Name]
+	def := x.def(inv)
 	switch {
 	case depth >= x.maxDepth():
 		return "", x.invocationError(inv, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
@@ -512,6 +562,8 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) 
 	case def.m.Template:
 		return "", x.invocationError(inv, fmt.Sprintf("Template %s can't be used in C++ code, since templates generate declarations.", inv.Name),
 			"Invoke it where declarations go, or use a macro that generates C++ with gd.text.")
+	case len(def.m.Body.Helpers) > 0:
+		return "", x.helpersError(inv)
 	}
 	defer func() {
 		if err != nil {

@@ -114,7 +114,9 @@ func (r *run) ctxTable(sc *scope) *lua.LTable {
 	}
 	t.RawSetString("file", lua.LString(r.x.filename))
 	t.RawSetString("line", lua.LNumber(inv.Pos.Line))
-	t.RawSetString("macro", lua.LString(inv.Name))
+	if inv.Body == nil {
+		t.RawSetString("macro", lua.LString(inv.Name))
+	}
 	pkg := L.NewTable()
 	for k, v := range map[string]string{"id": opts.PackageID, "prefix": opts.PackagePrefix, "path": opts.PackagePath, "std": opts.CppStandard} {
 		if v != "" {

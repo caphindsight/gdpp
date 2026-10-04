@@ -69,6 +69,30 @@ invoke spawner { enemy = "Slime", waves = 4, count = function(w) return 3 + w * 
 - A Code value converts to its C++ text with `tostring` or `..`. Emitted as a body, it keeps its own line, so compiler errors point at it.
 - `invoke name { ... }` takes a Lua table constructor, for data that needs Lua: computed values, nested tables, functions.
 
+# Macro blocks
+
+`macro { Lua }` runs Lua code right where it is. It's a macro without a name or parameters, invoked where it's declared:
+
+```gd++
+class_name Grid
+extends Node
+
+/// Whether the cell is open to the north, east, south or west.
+macro {
+  for _, d in ipairs({ "north", "east", "south", "west" }) do
+    gd.var { name = "open_" .. d, type = "bool", init = false, doc = ctx.doc }
+  end
+}
+```
+
+- It works like `macro m() { Lua }` and `invoke m()` in its place, without a package-level name.
+- It goes wherever an invocation can go, in declarations and in C++ code. See "Where macros work" below.
+- In C++ blocks, it's a statement, and ends with `;`: `macro { gd.text("n++;") };`. It starts the code, or follows `;`, `{` or `}`.
+- In one-line C++ expressions, it has no `;`: `var cells: int = macro { gd.text(tostring(8 * 8)) }`.
+- It can't declare macros or templates. Declare them at the top level of the file.
+- `ctx.macro` is `nil`. Errors name it `macro { ... }`.
+- Avoid `macro` as a name in C++ code.
+
 # Where macros work
 
 Declarations:
@@ -383,7 +407,7 @@ ctx.class        the class or extern around the invocation, if any
 ctx.doc          the invocation's doc comment, if any
 ctx.file         the GD++ file's name
 ctx.line         the invocation's line
-ctx.macro        the macro's name
+ctx.macro        the macro's name, or nil in a macro block
 ctx.package      the package's settings: id, prefix, path (its res:// path) and std (its C++ standard)
 ```
 

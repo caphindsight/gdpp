@@ -1,0 +1,9 @@
+class_name A
+extends Node
+
+macro {
+  macro helper(n) {
+    gd.var { name = n, type = "int" }
+  }
+  gd.invoke("helper", { "a" })
+}

@@ -1,0 +1,26 @@
+File: @1:1
+  InlineClasses:
+    - @1:1
+      Name: Foo
+      Extends: @2:11 Node
+      Members:
+        - @3:3
+          Invoke: @4:3
+            Doc: @3:3 Documented.
+            Name: { ... }
+            Args: @4:3
+            Body: @4:9
+              Block: @4:9
+                TextPos: 4:10
+                Text: |
+
+                      gd.var { name = "x", doc = ctx.doc }
+
+  Invokes:
+    - @9:1
+      Name: { ... }
+      Args: @9:1
+      Body: @9:7
+        Block: @9:7
+          TextPos: 9:8
+          Text: " gd.text(\"class Bar {}\")"

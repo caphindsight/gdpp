@@ -54,6 +54,9 @@ func parseTree[T any](p *participle.Parser[T], filename, src string) (*T, error)
 			e = liftDoc(node, sig)
 		}
 		moveToKeyword(node, sig)
+		if n, ok := node.(*Invoke); ok && n.Body != nil {
+			n.Name, n.Args = anonymous, &ArgList{Pos: n.Pos}
+		}
 	})
 	if e != nil {
 		return nil, e.withSource(src)

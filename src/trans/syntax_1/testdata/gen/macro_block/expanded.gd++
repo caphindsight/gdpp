@@ -1,0 +1,27 @@
+class_name Grid
+extends Node
+
+/// A flag for each direction.
+var open_north: bool = false
+/// A flag for each direction.
+var open_east: bool = false
+/// A flag for each direction.
+var open_south: bool = false
+/// A flag for each direction.
+var open_west: bool = false
+
+var cells: int = 64
+
+func neighbors() -> int {
+  int n = 0;
+  if (open_north) n++;if (open_east) n++;if (open_south) n++;if (open_west) n++;
+
+
+
+
+  return n;
+}
+
+class Cell {
+  extends RefCounted
+}

@@ -1,0 +1,7 @@
+class_name A
+extends Node
+
+macro {
+  local x = nil
+  gd.var { name = "a" .. x, type = "int" }
+}

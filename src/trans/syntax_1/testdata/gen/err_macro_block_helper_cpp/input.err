@@ -1,0 +1,4 @@
+input.gd++:7:5: A macro block can't declare templates.
+ 7 |     template t() {
+   |     ^^^^^^^^
+Hint: Declare it at the top level of the file.

@@ -1,0 +1,25 @@
+class_name Grid
+extends Node
+
+/// A flag for each direction.
+macro {
+  for _, d in ipairs({ "north", "east", "south", "west" }) do
+    gd.var { name = "open_" .. d, type = "bool", init = false, doc = ctx.doc }
+  end
+}
+
+var cells: int = macro { gd.text(tostring(8 * 8)) }
+
+func neighbors() -> int {
+  int n = 0;
+  macro {
+    for _, d in ipairs({ "north", "east", "south", "west" }) do
+      gd.text("if (open_" .. d .. ") n++;")
+    end
+  };
+  return n;
+}
+
+macro {
+  gd.class { name = "Cell", extends = "RefCounted" }
+}

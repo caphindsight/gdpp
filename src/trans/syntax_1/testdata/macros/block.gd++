@@ -1,0 +1,9 @@
+class Foo {
+  extends Node
+  /// Documented.
+  macro {
+    gd.var { name = "x", doc = ctx.doc }
+  }
+}
+
+macro { gd.text("class Bar {}") }

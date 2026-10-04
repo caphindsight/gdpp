@@ -89,11 +89,12 @@ template  template_name  var
 - GD++ has no other keywords. E.g. `const`, `static`, `pass`, `if` and `return` are not GD++ keywords.
 - Attributes such as `@static` are annotations. See `gd++ man annotations`.
 
-In C++ code, GD++ reserves seventeen more names:
+In C++ code, GD++ reserves eighteen more names:
 
 - the rewrites `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - `This` and `gd`. See `gd++ man code`.
 - `invoke`, which invokes macros, e.g. `invoke log("hit");`. See `gd++ man macros`. Templates don't work in C++ code.
+- `macro { ... }`, a macro block, which runs its Lua code right there, e.g. `macro { gd.text("x++;") };`.
 
 # Numbers
 

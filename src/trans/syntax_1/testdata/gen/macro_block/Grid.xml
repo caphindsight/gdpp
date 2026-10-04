@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Grid" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="gdpp_create" qualifiers="static">
+			<return type="Grid" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="gdpp_destroy">
+			<return type="void" />
+			<description>
+				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="gdpp_queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
+		<method name="neighbors">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cells" type="int" setter="set_cells" getter="get_cells">
+		</member>
+		<member name="open_east" type="bool" setter="set_open_east" getter="get_open_east">
+			A flag for each direction.
+		</member>
+		<member name="open_north" type="bool" setter="set_open_north" getter="get_open_north">
+			A flag for each direction.
+		</member>
+		<member name="open_south" type="bool" setter="set_open_south" getter="get_open_south">
+			A flag for each direction.
+		</member>
+		<member name="open_west" type="bool" setter="set_open_west" getter="get_open_west">
+			A flag for each direction.
+		</member>
+	</members>
+</class>

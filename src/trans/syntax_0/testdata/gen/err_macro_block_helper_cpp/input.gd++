@@ -1,0 +1,11 @@
+class_name A
+extends Node
+
+func f() -> void {
+  int x = 0;
+  macro {
+    template t() {
+      var a: int
+    }
+  };
+}

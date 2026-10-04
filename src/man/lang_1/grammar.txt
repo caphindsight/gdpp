@@ -68,6 +68,7 @@ MacroParams = MacroParam ( ',' MacroParam )* ','?
 MacroParam  = Ident ( '=' Default )?
 Body        = Lua code (macros) or GD++ code with ${...} holes (templates), with Macro declarations at its top level
 Invoke      = Doc? 'invoke' Ident ( '(' ( MacroArg ( ',' MacroArg )* ','? )? ')' | '{' Lua table fields '}' )
+            | Doc? 'macro' '{' Lua code '}'
 MacroArg    = ( Ident '=' )? Value
 Value       = Number | '-' Number | String | Type | '[' ( Value ( ',' Value )* ','? )? ']'
             | '{' ( MacroArg ( ',' MacroArg )* ','? )? '}' | 'code' Block | Expr
@@ -78,6 +79,8 @@ Value       = Number | '-' Number | String | Type | '[' ( Value ( ',' Value )* '
 - `Ident '='` starts a named `MacroArg` only if another `=` doesn't follow, so `a == b` is a positional `Expr`.
 - A `Value` that isn't one of the other forms is an `Expr`: C++ code up to the next `,` or closing bracket.
 - In C++ code, `'invoke' Ident '('` or `'invoke' Ident '{'` invokes a macro, if the package has one named `Ident`.
+- In C++ code, `'macro' '{'` is a macro block at the start of the code or of a statement: after `;`, `{` or `}`.
+- A macro block's `Lua code` can't declare macros or templates.
 - In C++ blocks, `';'` ends the invocation: `Invoke ';'`. In one-line C++ expressions, i.e. initial values and parameters' default values, nothing does.
 - See `gd++ man templates` and `gd++ man macros`. Prefer templates whenever they do the job: macros are more powerful, but also more advanced.
 
@@ -189,7 +192,7 @@ In C++ code, GD++ also reserves:
 
 - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - `This` and `gd`. See `gd++ man code`.
-- `invoke`, which invokes macros. See `gd++ man macros`.
+- `invoke`, which invokes macros, and `macro`, which starts a macro block. See `gd++ man macros`.
 
 # See also
 

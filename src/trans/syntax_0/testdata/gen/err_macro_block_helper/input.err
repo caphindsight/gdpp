@@ -1,0 +1,4 @@
+input.gd++:5:3: A macro block can't declare macros.
+ 5 |   macro helper(n) {
+   |   ^^^^^
+Hint: Declare it at the top level of the file.

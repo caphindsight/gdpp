@@ -159,7 +159,7 @@ func generate(t *testing.T, src string, opts meta.Options) map[string]string {
 
 var (
 	lineDirective = regexp.MustCompile(`^#line (\d+) "(.*)"$`)
-	invocation    = regexp.MustCompile(`\binvoke\s+\w+\s*[({]`)
+	invocation    = regexp.MustCompile(`\binvoke\s+\w+\s*[({]|\bmacro\s*\{`)
 )
 
 // checkLines asserts that #line directives name the right lines: each user code fragment matches the lines of the
