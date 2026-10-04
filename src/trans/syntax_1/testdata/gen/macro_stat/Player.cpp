@@ -76,7 +76,7 @@ return health_;
 
 void Player::set_health(int64_t value) {
 #line 5 "input.gd++"
-health_ = CLAMP(value, 0, max_health); (void) health_changed(health_);
+health_ = gd::clampi(value, 0, max_health); (void) health_changed(health_);
 #line 81 "Player.cpp"
 }
 
@@ -96,7 +96,7 @@ return mana_;
 
 void Player::set_mana(int64_t value) {
 #line 6 "input.gd++"
-mana_ = CLAMP(value, 0, max_mana); (void) mana_changed(mana_);
+mana_ = gd::clampi(value, 0, max_mana); (void) mana_changed(mana_);
 #line 101 "Player.cpp"
 }
 

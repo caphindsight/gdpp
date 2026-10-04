@@ -13,7 +13,7 @@ macro stat(name, max = 100, regen = 0) {
   gd.var { name = name, type = "int", doc = ctx.doc,
            decl = "int64_t " .. field .. " = " .. max .. ";",
            get = "return " .. field .. ";",
-           set = field .. " = CLAMP(value, 0, max_" .. name .. "); emit " .. name .. "_changed(" .. field .. ");" }
+           set = field .. " = gd::clampi(value, 0, max_" .. name .. "); emit " .. name .. "_changed(" .. field .. ");" }
   if regen > 0 then
     gd.on { name = "process", param = "delta", param_type = "float",
             body = "set_" .. name .. "(" .. field .. " + int64_t(" .. regen .. " * delta));" }

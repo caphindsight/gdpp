@@ -66,6 +66,8 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "invoke stat(hp, body = code { x++; }); invoke s { n = 1 }", Styled("invoke", CodeKeyword) + " " + Styled("stat", CodeFunction) +
 			"(hp, body = " + Styled("code", CodeKeyword) + " { x++; }); " + Styled("invoke", CodeKeyword) + " " + Styled("s", CodeFunction) + " { n = " +
 			Styled("1", CodeLiteral) + " }"},
+		// A keyword where a name follows it, e.g. in a list of keywords.
+		{"gd++", "import  invoke  macro", Styled("import", CodeKeyword) + "  " + Styled("invoke", CodeKeyword) + "  " + Styled("macro", CodeKeyword)},
 		{"gd++", "std::invoke(f); invoke(f, 1); int invoke = 2;", "std::" + Styled("invoke", CodeFunction) + "(f); " + Styled("invoke", CodeFunction) +
 			"(f, " + Styled("1", CodeLiteral) + "); " + Styled("int", CodeType) + " invoke = " + Styled("2", CodeLiteral) + ";"},
 		{"gd++", "int end = local; code = 1;", Styled("int", CodeType) + " end = local; code = " + Styled("1", CodeLiteral) + ";"},

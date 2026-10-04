@@ -58,6 +58,9 @@ const (
 	// GD++'s rewrites in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
 	// where a name follows them, which is where GD++ rewrites them.
 	rewriteOperatorWords = "is_done claim cancel as create destroy queue_destroy"
+	// GD++'s invocations of macros and templates, e.g. invoke log("hit"). C++ code may also use it as a name, e.g. in
+	// std::invoke(f), so it's a keyword only where a name follows it, like the words above.
+	invokeWord = "invoke"
 	// GD++'s rewrites in C++ code that are keywords only where a string follows them, which is where GD++ rewrites them.
 	rewriteStringWords = "string_name"
 	// C++'s and godot-cpp's ways to create and delete objects, which stay plain, so that GD++'s create and destroy stand
@@ -73,7 +76,7 @@ const (
 
 var (
 	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords, castWords)
-	codeOperators = wordSet(rewriteOperatorWords)
+	codeOperators = wordSet(rewriteOperatorWords, invokeWord)
 	codeStringOps = wordSet(rewriteStringWords)
 	codeTypes     = wordSet(cppTypeWords, godotTypeWords)
 	codePlain     = wordSet(plainWords)

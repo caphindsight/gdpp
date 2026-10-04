@@ -86,7 +86,7 @@ int64_t Player::get_health() const {
 void Player::set_health(int64_t value) {
 #line 15 "input.gd++"
 
-      health_ = CLAMP(value, 0, max_health);
+      health_ = gd::clampi(value, 0, max_health);
       (void) health_changed(health_);
 
 #line 93 "Player.cpp"
@@ -109,7 +109,7 @@ int64_t Player::get_mana() const {
 void Player::set_mana(int64_t value) {
 #line 15 "input.gd++"
 
-      mana_ = CLAMP(value, 0, max_mana);
+      mana_ = gd::clampi(value, 0, max_mana);
       (void) mana_changed(mana_);
 
 #line 116 "Player.cpp"
@@ -132,7 +132,7 @@ int64_t Player::get_focus() const {
 void Player::set_focus(int64_t value) {
 #line 15 "input.gd++"
 
-      focus_ = CLAMP(value, 0, max_focus);
+      focus_ = gd::clampi(value, 0, max_focus);
       (void) focus_changed(focus_);
 
 #line 139 "Player.cpp"
@@ -155,7 +155,7 @@ int64_t Player::get_stamina() const {
 void Player::set_stamina(int64_t value) {
 #line 15 "input.gd++"
 
-      stamina_ = CLAMP(value, 0, max_stamina);
+      stamina_ = gd::clampi(value, 0, max_stamina);
       (void) stamina_changed(stamina_);
 
 #line 162 "Player.cpp"
@@ -178,7 +178,7 @@ int64_t Player::get_courage() const {
 void Player::set_courage(int64_t value) {
 #line 15 "input.gd++"
 
-      courage_ = CLAMP(value, 0, max_courage);
+      courage_ = gd::clampi(value, 0, max_courage);
       (void) courage_changed(courage_);
 
 #line 185 "Player.cpp"

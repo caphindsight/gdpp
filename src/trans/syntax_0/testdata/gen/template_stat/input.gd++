@@ -13,7 +13,7 @@ template stat(name, max = 100) {
     decl { int64_t ${name}_ = ${max}; }
     get { return ${name}_; }
     set(value) {
-      ${name}_ = CLAMP(value, 0, max_${name});
+      ${name}_ = gd::clampi(value, 0, max_${name});
       emit ${name}_changed(${name}_);
     }
   }
