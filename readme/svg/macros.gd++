@@ -1,14 +1,8 @@
 class_name Slime
 extends CharacterBody2D
 
-invoke state_machine([Patrol, Chase])
-
-func update_patrol() -> State {
-  return sees_player() ? State::CHASE : State::PATROL;
-}
-
-func update_chase() -> State {
-  return sees_player() ? State::CHASE : State::PATROL;
+on physics_process(delta: float) {
+  state_machine_tick();
 }
 
 // Lua code that generates code. An advanced
@@ -19,8 +13,8 @@ macro state_machine(states) {
     values = gd.map(states, gd.upper_snake) }
   gd.var { name = "state", type = "State" }
   // Runs the current state's update.
-  gd.on { name = "physics_process", param = "delta",
-    param_type = "float", body = function()
+  gd.func { name = "state_machine_tick", ret = "void",
+    body = function()
       gd.text("switch (state) {\n")
       for _, s in ipairs(states) do
         gd.text("case State::" .. gd.upper_snake(s)
@@ -29,4 +23,16 @@ macro state_machine(states) {
       end
       gd.text("}")
     end }
+}
+
+invoke state_machine([Patrol, Chase])
+
+// Wanders until it sees the player.
+func update_patrol() -> State {
+  return sees_player() ? State::CHASE : State::PATROL;
+}
+
+// Follows the player until it loses sight of them.
+func update_chase() -> State {
+  return sees_player() ? State::CHASE : State::PATROL;
 }
