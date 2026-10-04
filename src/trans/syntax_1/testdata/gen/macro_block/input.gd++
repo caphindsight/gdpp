@@ -26,7 +26,24 @@ func first_open() -> int {
     invoke { gd.text("return i;") };
   }
   invoke { gd.text("i++;") };
+  invoke {
+    for _, d in ipairs({ "north", "south" }) do
+      gd.text("foo();\nif (open_" .. d .. ") return i;\n")
+    end
+  };
   return -1;
+}
+
+func foo() {}
+
+func foo_ten_times() -> int {
+  invoke {
+    for i = 1, 10 do
+      gd.text("foo();\n")
+    end
+  }
+  int calls_done = 10;
+  return calls_done;
 }
 
 on ready {

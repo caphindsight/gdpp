@@ -28,7 +28,48 @@ func first_open() -> int {
     return i;
   }
   i++;
+  
+#line 29 "input.gd++"
+foo();
+#line 29 "input.gd++"
+if (open_north) return i;
+#line 29 "input.gd++"
+foo();
+#line 29 "input.gd++"
+if (open_south) return i;
+#line 33 "input.gd++"
+
   return -1;
+}
+
+func foo() {}
+
+func foo_ten_times() -> int {
+  
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 44 "input.gd++"
+
+  int calls_done = 10;
+  return calls_done;
 }
 
 on ready {

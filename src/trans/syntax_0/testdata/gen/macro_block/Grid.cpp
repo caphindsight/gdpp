@@ -9,6 +9,8 @@ namespace godot {
 void Grid::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("neighbors"), &Grid::neighbors);
 	ClassDB::bind_method(D_METHOD("first_open"), &Grid::first_open);
+	ClassDB::bind_method(D_METHOD("foo"), &Grid::foo);
+	ClassDB::bind_method(D_METHOD("foo_ten_times"), &Grid::foo_ten_times);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Grid::gdpp_create);
 	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Grid::gdpp_destroy);
 	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Grid::gdpp_queue_destroy);
@@ -32,19 +34,19 @@ void Grid::_bind_methods() {
 Grid::Grid() {
 #line 5 "input.gd++"
 	open_north = false;
-#line 36 "Grid.cpp"
+#line 38 "Grid.cpp"
 #line 5 "input.gd++"
 	open_east = false;
-#line 39 "Grid.cpp"
+#line 41 "Grid.cpp"
 #line 5 "input.gd++"
 	open_south = false;
-#line 42 "Grid.cpp"
+#line 44 "Grid.cpp"
 #line 5 "input.gd++"
 	open_west = false;
-#line 45 "Grid.cpp"
+#line 47 "Grid.cpp"
 #line 11 "input.gd++"
 	cells = 64;
-#line 48 "Grid.cpp"
+#line 50 "Grid.cpp"
 }
 
 Grid *Grid::gdpp_create() {
@@ -76,7 +78,7 @@ int64_t Grid::neighbors() {
 
   return n;
 
-#line 80 "Grid.cpp"
+#line 82 "Grid.cpp"
 }
 
 int64_t Grid::first_open() {
@@ -87,17 +89,66 @@ int64_t Grid::first_open() {
     return i;
   }
   i++;
+
+#line 29 "input.gd++"
+foo();
+#line 29 "input.gd++"
+if (open_north) return i;
+#line 29 "input.gd++"
+foo();
+#line 29 "input.gd++"
+if (open_south) return i;
+#line 33 "input.gd++"
+
   return -1;
 
-#line 93 "Grid.cpp"
+#line 106 "Grid.cpp"
+}
+
+Variant Grid::foo() {
+#line 37 "input.gd++"
+
+#line 112 "Grid.cpp"
+}
+
+int64_t Grid::foo_ten_times() {
+#line 39 "input.gd++"
+
+
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 40 "input.gd++"
+foo();
+#line 44 "input.gd++"
+
+  int calls_done = 10;
+  return calls_done;
+
+#line 144 "Grid.cpp"
 }
 
 void Grid::_gdpp_body__ready() {
-#line 32 "input.gd++"
+#line 49 "input.gd++"
 
   open_north = true;
 
-#line 101 "Grid.cpp"
+#line 152 "Grid.cpp"
 }
 
 bool Grid::get_open_north() const {
@@ -140,11 +191,11 @@ void Grid::set_cells(int64_t p_value) {
 	cells = p_value;
 }
 
-#line 36 "input.gd++"
+#line 53 "input.gd++"
 
   static int grid_size() { return 8; }
 
-#line 148 "Grid.cpp"
+#line 199 "Grid.cpp"
 
 #undef This
 

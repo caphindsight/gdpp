@@ -12,6 +12,16 @@
 			<description>
 			</description>
 		</method>
+		<method name="foo">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="foo_ten_times">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="gdpp_create" qualifiers="static">
 			<return type="Grid" />
 			<description>

@@ -1,4 +1,0 @@
-input.gd++:5:35: Expected ";" after the macro block, but found name "int".
- 5 |   invoke { gd.text("int x = 1;") }
-   |                                   ^
-Hint: In a C++ block, an invocation is a statement, which ends with ";": invoke log("hit");. The macro's C++ replaces it, ";" included.

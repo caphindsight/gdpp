@@ -1,7 +1,0 @@
-class_name A
-extends Node
-
-func f() -> void {
-  invoke { gd.text("int x = 1;") }
-  int y = 2;
-}

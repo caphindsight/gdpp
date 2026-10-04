@@ -390,9 +390,10 @@ func (x *expander) unknown(inv *Invoke) *Error {
 // expandCode replaces the invocations in C++ code, which starts at pos, with the C++ that their macros generate.
 // The code is a block, whose first line #line names as block says, or with a nil block, a one-line expression, e.g.
 // an initial value.
-//   - In a block, an invocation is a statement: "invoke NAME(...);", whose ";" it replaces too. If what the macro
-//     generates holds preprocessor directives, it keeps its lines, each named as the invocation's line by #line,
-//     and a #line after them names the line where the invocation ends. Otherwise it goes on the invocation's line.
+//   - In a block, an invocation is a statement: "invoke NAME(...);", whose ";" it replaces too. A macro block's ";" is
+//     optional. If what the macro generates spans several lines or holds preprocessor directives, it keeps its
+//     lines, each named as the invocation's line by #line, and a #line after them names the line where the
+//     invocation ends. Otherwise it goes on the invocation's line.
 //   - In an expression, an invocation has no ";", and what it generates goes on its line.
 //
 // Either way, the lines after an invocation keep their #line numbers.
@@ -476,16 +477,13 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		if block != nil {
 			if semi := lex.Peek(); isPunct(*semi, ";") {
 				end = start + semi.Pos.Offset + 1
-			} else {
+			} else if inv.Body == nil { // A macro block's ";" is optional.
 				// Right after the invocation, where the ";" is missing.
 				p := shift(lex.RawPeek().Pos, open.Pos, "")
 				if lex.RawPeek().EOF() {
 					p = t.Pos
 				}
 				msg := fmt.Sprintf("Expected \";\" after the invocation of %s, but found %s.", inv.Name, describe(*semi))
-				if inv.Body != nil {
-					msg = fmt.Sprintf("Expected \";\" after the macro block, but found %s.", describe(*semi))
-				}
 				hint := "In a C++ block, an invocation is a statement, which ends with \";\": invoke log(\"hit\");. The macro's C++ replaces it, \";\" included."
 				if errorAt != nil {
 					return "", errorAt(p, 1, msg, hint)
@@ -516,7 +514,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 			return "", err
 		}
 		var piece strings.Builder // What replaces code[t.Pos.Offset:end].
-		if at != nil && hasDirective(text) {
+		if at != nil && (hasDirective(text) || strings.Contains(strings.Trim(text, "\n"), "\n")) {
 			directive := fmt.Sprintf("#line %d %q", at.Line, at.Source)
 			piece.WriteString("\n")
 			prev := "" // The line before, which may already name the line, or continue on this one with "\".

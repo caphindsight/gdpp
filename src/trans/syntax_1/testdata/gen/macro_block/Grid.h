@@ -25,6 +25,8 @@ public:
 	void gdpp_queue_destroy();
 	int64_t neighbors();
 	int64_t first_open();
+	Variant foo();
+	int64_t foo_ten_times();
 	void _gdpp_body__ready();
 	bool get_open_north() const;
 	void set_open_north(bool p_value);

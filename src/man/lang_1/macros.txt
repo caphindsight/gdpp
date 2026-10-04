@@ -87,7 +87,7 @@ invoke {
 
 - It works like `macro m() { Lua }` and `invoke m()` in its place, without a package-level name.
 - It goes wherever an invocation can go, in declarations and in C++ code. See "Where macros work" below.
-- In C++ blocks, it's a statement, and ends with `;`: `invoke { gd.text("n++;") };`. It starts the code, or follows `;`, `{` or `}`.
+- In C++ blocks, it's a statement: `invoke { gd.text("n++;") }`. It starts the code, or follows `;`, `{` or `}`. A `;` after it is optional.
 - In one-line C++ expressions, it has no `;`: `var cells: int = invoke { gd.text(tostring(8 * 8)) }`.
 - It can't declare macros or templates. Declare them at the top level of the file.
 - `ctx.macro` is `nil`. Errors name it `macro { ... }`.
@@ -109,10 +109,11 @@ C++ code:
 
 In C++ blocks, e.g. function bodies and `decl` blocks, an invocation is a statement:
 
-- It ends with `;`, which is required.
+- It ends with `;`, which is required, except after a macro block.
 - The generated C++ replaces it, `;` included. So the macro generates complete statements or declarations, with their own `;`.
-- The generated C++ goes on the invocation's line, without comments, so the lines after it keep their numbers.
-- Unless it holds preprocessor directives, e.g. `#define` or `#ifdef`: then it keeps its lines, and `#line` directives name each of them as the invocation's line. Lines continued with `\` stay together.
+- One line of generated C++ goes on the invocation's line, without comments.
+- Several lines, or preprocessor directives, e.g. `#define` or `#ifdef`, keep their lines. `#line` directives name each of them as the invocation's line. Lines continued with `\` stay together.
+- Either way, the lines after the invocation keep their numbers.
 
 ```gd++
 decl {
