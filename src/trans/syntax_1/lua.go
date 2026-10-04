@@ -1252,8 +1252,8 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 		L.RaiseError("gd.invoke: there is no macro or template %q.", name)
 	case def.m.Template && sc.kind == "cpp":
 		L.RaiseError("gd.invoke: template %s can't be used in C++ code, since templates generate declarations.", name)
-	case r.depth+1 >= maxDepth:
-		r.failAt(fmt.Sprintf("Invocations are nested more than %d levels deep here.", maxDepth), "A macro probably invokes itself, directly or through others.")
+	case r.depth+1 >= r.x.maxDepth():
+		r.failAt(fmt.Sprintf("Invocations are nested more than %d levels deep here.", r.x.maxDepth()), "A macro probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in gd++pkg.toml.")
 	}
 	params := def.m.Params
 	values := make([]lua.LValue, len(params))

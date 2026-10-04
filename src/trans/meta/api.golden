@@ -62,3 +62,4 @@ field Options.PackageID string
 field Options.PackagePrefix string
 field Options.CppStandard string
 field Options.MacroTimeout int
+field Options.MacroDepth int

@@ -12,15 +12,16 @@ import (
 
 // runLua runs code as the body of a macro invoked in C++ code, and returns the text it emits with gd.text.
 func runLua(t *testing.T, code string) (string, error) {
-	return runLuaFor(t, code, 0)
+	return runLuaWith(t, code, meta.Options{})
 }
 
-// runLuaFor is runLua with a time limit in seconds, or the default with 0.
-func runLuaFor(t *testing.T, code string, timeout int) (string, error) {
+// runLuaWith is runLua with opts, whose package ID and prefix it sets.
+func runLuaWith(t *testing.T, code string, opts meta.Options) (string, error) {
 	t.Helper()
 	pos := lexer.Position{Filename: "test.gd++", Line: 1, Column: 1}
 	m := &Macro{Pos: pos, Name: "test", Body: &MacroBody{Block: Block{Pos: pos, TextPos: pos, Text: code}}}
-	x := &expander{filename: "test.gd++", src: code, opts: meta.Options{PackageID: "foo", PackagePrefix: "Foo", MacroTimeout: timeout},
+	opts.PackageID, opts.PackagePrefix = "foo", "Foo"
+	x := &expander{filename: "test.gd++", src: code, opts: opts,
 		defs: map[string]*macroDef{"test": {m: m, file: "test.gd++", src: code}}, generated: map[int]string{}}
 	return x.invokeCode(&Invoke{Pos: pos, Name: "test", Args: &ArgList{}}, "Owner", 0)
 }
@@ -72,7 +73,7 @@ func TestLuaSandbox(t *testing.T) {
 		}
 	}
 	start := time.Now()
-	if _, err := runLuaFor(t, "while true do end", 1); err == nil || !strings.Contains(err.Error(), "ran for more than 1 second.") {
+	if _, err := runLuaWith(t, "while true do end", meta.Options{MacroTimeout: 1}); err == nil || !strings.Contains(err.Error(), "ran for more than 1 second.") {
 		t.Errorf("An endless loop gave %v.", err)
 	}
 	if d := time.Since(start); d > 5*time.Second {
@@ -89,6 +90,18 @@ func TestLuaErrors(t *testing.T) {
 	} {
 		if _, err := runLua(t, code); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("%s gave %v, want %q.", code, err, want)
+		}
+	}
+}
+
+func TestLuaDepth(t *testing.T) {
+	// Each gd.invoke nests one level deeper, like an invocation in generated code.
+	for _, tc := range []struct {
+		depth int
+		want  string
+	}{{0, "nested more than 64 levels"}, {3, "nested more than 3 levels"}} {
+		if _, err := runLuaWith(t, `gd.invoke("test")`, meta.Options{MacroDepth: tc.depth}); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("MacroDepth %d gave %v, want %q.", tc.depth, err, tc.want)
 		}
 	}
 }

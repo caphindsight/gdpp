@@ -56,6 +56,7 @@ Package: res://gameplay
   Class prefix:        Gameplay
   Quit timeout:        1 second
   Hot reload:          on
+  Macro depth:         64
 
   Classes
     res://gameplay/spinner.h  Spinner                              @tool

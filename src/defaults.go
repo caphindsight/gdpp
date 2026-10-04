@@ -27,4 +27,5 @@ const (
 	// Defaults for the optional keys in gd++pkg.toml.
 	defaultPackageSyntax      = 0
 	defaultPackageCppStandard = "c++20"
+	defaultPackageMacroDepth  = 64
 )

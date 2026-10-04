@@ -104,6 +104,7 @@ type Options struct {
 	PackagePrefix string       // The prefix of the classes that GD++ adds to the package, e.g. "Foo", which macros see. Default: none.
 	CppStandard   string       // The package's C++ standard, e.g. "c++17", which macros see. Default: none.
 	MacroTimeout  int          // The seconds that one macro or template invocation may run. Default: 0, 20 seconds.
+	MacroDepth    int          // How deeply macro and template invocations may nest. Default: 0, 64 levels.
 }
 
 // File is a generated C++ file. Each declaration of a GD++ file gets a header, named "<Name>.h", and each class

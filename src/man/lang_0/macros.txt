@@ -264,6 +264,10 @@ gd.import(type) and gd.noimport(type)
 
 gd.invoke(name, args)
   Invokes a macro or template, like the `invoke` keyword, and adds what it generates where the macro was invoked. `args` binds like `invoke name { ... }`: its list entries are the positional arguments, its string keys the named ones. Lua values pass as they are, functions too.
+  - In declarations, the output is declarations.
+  - In C++ code, e.g. when the calling macro was invoked in a function body, the invoked macro's `gd.text` is C++, and joins the caller's.
+  - Templates generate declarations, so `gd.invoke` can't invoke them in C++ code.
+  - Each call nests one level deeper, so a macro that invokes itself forever stops with an error. See "The sandbox".
 ```lua
 gd.invoke("pool_of", { T = "Bullet", size = 128 })
 gd.invoke("label", { "score", format = function(s) return gd.title(s) .. ":" end })
@@ -402,7 +406,7 @@ Lua code can only generate code:
 - No I/O, and no loading other code: no `io`, `os`, `require`, `dofile`, `load` or `print`.
 - Nothing random: no `math.random`. The same input always generates the same code.
 - An invocation may run for 20 seconds at most. `gd++ build --macro-timeout SECONDS` and `gd++ trans --macro-timeout SECONDS` change the limit.
-- Invocations nest at most 32 levels deep, e.g. a macro whose output invokes a macro.
+- Invocations nest at most 64 levels deep, e.g. a macro whose output invokes a macro, or a macro that calls `gd.invoke`. Each counts as one level. A package changes the limit with `macro_depth` in `gd++pkg.toml`, see `gd++ man packages`.
 
 # Errors
 

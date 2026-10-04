@@ -4,8 +4,8 @@ gd++ init: set up projects, packages and classes
 
 ```sh
 gd++ init [--vcs none|git] [--presets | --nopresets]
-gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
+gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS]
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--abstract | --noabstract] [--ptr | --ref | --nogdpp] [--update]
 ```
 
@@ -48,7 +48,7 @@ Writes `res://gd++proj.toml`, with the project's settings. See `gd++ man project
 # Creating a package
 
 ```sh
-gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
+gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS]
 ```
 
 - Creates the directory PATH if needed, and writes `PATH/gd++pkg.toml`.
@@ -91,11 +91,14 @@ See `gd++ man packages`.
 --nohotreload
   Make the editor load the package's library only once, e.g. because hot reload crashes the editor. See `hot_reload` in `gd++ man packages`.
 
+--macro-depth LEVELS
+  How deeply the package's macro and template invocations may nest, e.g. `100`. Default: `64`. See `gd++ man macros`.
+
 
 # Updating a package
 
 ```sh
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS]
 ```
 
 - Changes the given settings of the existing package at PATH, and keeps the others.
@@ -170,10 +173,11 @@ A new class:
 
 - `--vcs`, `--presets` and `--nopresets` work only without PATH.
 - `--presets` and `--nopresets` can't be used together.
-- `--update`, `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout` and `--class` need PATH.
+- `--update`, `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth` and `--class` need PATH.
 - `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool`, `--notool`, `--abstract`, `--noabstract`, `--ptr`, `--ref` and `--nogdpp` need `--class`.
-- `--bind`, `--spec`, `--syntax`, `--std`, `--prefix` and `--quit-timeout` can't be used with `--class`.
+- `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload` and `--macro-depth` can't be used with `--class`.
 - `--quit-timeout` and `--syntax` can't be negative.
+- `--macro-depth` must be positive.
 - `--syntax` and `--nightly` can't be used together.
 - `--include` and `--noinclude`, `--icon` and `--noicon`, `--tool` and `--notool`, `--abstract` and `--noabstract`, and `--ptr`, `--ref` and `--nogdpp` can't be used together.
 - `--ptr` and `--ref` need a class with an include.

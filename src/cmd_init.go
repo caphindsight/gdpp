@@ -28,6 +28,7 @@ type CmdInit struct {
 	QuitTimeout *float64 `arg:"--quit-timeout" placeholder:"SECONDS" help:"how long the package's tasks may still run after the game started quitting, before it exits anyway [default: 1]"`
 	HotReload   bool     `arg:"--hotreload" help:"make the editor reload the package's library when it changes (default)"`
 	NoHotReload bool     `arg:"--nohotreload" help:"make the editor load the package's library only once, e.g. to work around Godot crashing on reload"`
+	MacroDepth  *int     `arg:"--macro-depth" placeholder:"LEVELS" help:"how deeply the package's macro and template invocations may nest [default: 64]"`
 	Class       string   `arg:"--class" placeholder:"NAME" help:"the name of a class to add or update in the package"`
 	Include     string   `arg:"--include" placeholder:"PATH" help:"the class's header, e.g. pkg://my_node.h"`
 	NoInclude   bool     `arg:"--noinclude" help:"remove the class's header, or create the class without one"`
@@ -45,16 +46,16 @@ type CmdInit struct {
 func (c *CmdInit) Run() {
 	c.Syntax = chosenSyntax(c.Syntax, c.Nightly)
 	if c.Path == "" {
-		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.Class == "",
-			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --class require a package path.")
+		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && c.Class == "",
+			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --class require a package path.")
 		c.assertNoClassFlags()
 		c.initProject()
 		return
 	}
 	Assert(c.Vcs == "" && !c.Presets && !c.NoPresets, "Invalid arguments: --vcs, --presets and --nopresets cannot be used with a package path.")
 	if c.Class != "" {
-		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload,
-			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload and --nohotreload cannot be used with --class.")
+		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil,
+			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --macro-depth cannot be used with --class.")
 		c.initClass(ParsePath(c.Path))
 		return
 	}
@@ -67,6 +68,7 @@ func (c *CmdInit) Run() {
 	Assert(c.Prefix == "" || classNameRegexp.MatchString(c.Prefix), "Invalid arguments: %q is not a valid class name prefix.", c.Prefix)
 	Assert(c.QuitTimeout == nil || *c.QuitTimeout >= 0, "Invalid arguments: --quit-timeout cannot be negative.")
 	Assert(!c.HotReload || !c.NoHotReload, "Invalid arguments: --hotreload and --nohotreload cannot be used together.")
+	Assert(c.MacroDepth == nil || *c.MacroDepth > 0, "Invalid arguments: --macro-depth must be positive.")
 	if s := c.Syntax; s != nil {
 		Assert(*s >= 0, "Invalid arguments: --syntax cannot be negative.")
 		if *s == trans.NightlySyntax {
@@ -267,6 +269,13 @@ func (c *CmdInit) setPackageFlags(config *PackageConfig) (changes []string) {
 			config.HotReload = &c.HotReload
 		}
 		changes = append(changes, "hot reload to "+onOff(c.HotReload))
+	}
+	if d := c.MacroDepth; d != nil && *d != (Package{Config: *config}).MacroDepth() {
+		config.MacroDepth = nil // the default
+		if *d != defaultPackageMacroDepth {
+			config.MacroDepth = d
+		}
+		changes = append(changes, "the macro depth to "+strconv.Itoa(*d))
 	}
 	return changes
 }

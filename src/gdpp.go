@@ -67,7 +67,7 @@ func listGdppFiles(p Project, pkg Package, macroTimeout int) []gdppFile {
 // files, with dependencies deps.
 func packageOptions(pkg Package, deps []trans.Dependency) trans.Options {
 	return trans.Options{Dependencies: deps, AsyncClass: pkg.AsyncClass(), PackagePath: pkg.ResPath(), PackageID: pkg.Id,
-		PackagePrefix: pkg.Prefix(), CppStandard: pkg.Config.CppStandard}
+		PackagePrefix: pkg.Prefix(), CppStandard: pkg.Config.CppStandard, MacroDepth: pkg.MacroDepth()}
 }
 
 // macroDeps returns the macros and templates of files, except those of the

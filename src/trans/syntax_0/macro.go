@@ -14,8 +14,17 @@ import (
 	"gd++/trans/meta"
 )
 
-// maxDepth is how deeply invocations may nest: in what other invocations generate.
-const maxDepth = 32
+// defaultMacroDepth is how deeply invocations may nest, in what other invocations generate, unless
+// Options.MacroDepth says otherwise.
+const defaultMacroDepth = 64
+
+// maxDepth returns how deeply invocations may nest.
+func (x *expander) maxDepth() int {
+	if x.opts.MacroDepth > 0 {
+		return x.opts.MacroDepth
+	}
+	return defaultMacroDepth
+}
 
 // macroDef is a macro or template that code can invoke, declared in this file or another one of the package.
 type macroDef struct {
@@ -232,9 +241,9 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) ([]*topItem, error)
 	def := x.defs[inv.Name]
 	n := len(inv.Name) + 1
 	switch {
-	case depth >= maxDepth:
-		return nil, x.errorAt(inv.Pos, n, fmt.Sprintf("Invocations are nested more than %d levels deep here.", maxDepth),
-			"A macro or template probably invokes itself, directly or through others.")
+	case depth >= x.maxDepth():
+		return nil, x.errorAt(inv.Pos, n, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
+			"A macro or template probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in gd++pkg.toml.")
 	case def == nil:
 		return nil, x.unknown(inv)
 	case len(inv.Annotations) > 0:
@@ -382,9 +391,9 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 func (x *expander) invokeCode(inv *Invoke, owner string, depth int) (string, error) {
 	def := x.defs[inv.Name]
 	switch {
-	case depth >= maxDepth:
-		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Invocations are nested more than %d levels deep here.", maxDepth),
-			"A macro probably invokes itself, directly or through others.")
+	case depth >= x.maxDepth():
+		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
+			"A macro probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in gd++pkg.toml.")
 	case def.m.Template:
 		return "", x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("Template %s can't be used in C++ code, since templates generate declarations.", inv.Name),
 			"Invoke it where declarations go, or use a macro that generates C++ with gd.text.")

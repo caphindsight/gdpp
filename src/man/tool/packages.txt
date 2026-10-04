@@ -30,6 +30,7 @@ std = "c++20"
 prefix = "Foo"
 quit_timeout = 2.5
 hot_reload = false
+macro_depth = 100
 
 [[class]]
 name = "Foo"
@@ -75,6 +76,13 @@ hot_reload (optional, default `true`)
   - `false`: the editor loads the library once. Restart the editor to see a new build.
   - Turn it off if hot reload crashes the editor. Due to a Godot bug, it does when the package has a tool class that runs code on the worker thread pool, e.g. an `@onthread` function.
   - See "Debug and release builds" in `gd++ man building`.
+
+macro_depth (optional, default 64)
+  How deeply the package's macro and template invocations may nest, e.g. `100`.
+  - It must be positive.
+  - Raise it only if an invocation really needs to nest that deep. A macro that invokes itself forever hits the limit, which then stops it.
+  - `gd++ init --macro-depth 64` removes the key, since 64 is the default.
+  - See "The sandbox" in `gd++ man macros`.
 
 [[class]] (optional, any number)
   A plain C++ class that the package registers with Godot. Its keys:

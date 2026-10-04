@@ -113,7 +113,8 @@ const lsFooOut = "" +
 	"  C++ standard:        c++20\n" +
 	"  Class prefix:        Foo\n" +
 	"  Quit timeout:        1 second\n" +
-	"  Hot reload:          on\n"
+	"  Hot reload:          on\n" +
+	"  Macro depth:         64\n"
 
 func TestLsCmdPackages(t *testing.T) {
 	collapsed := lsDepsOut +
@@ -199,6 +200,7 @@ func TestLsCmdGdppClasses(t *testing.T) {
 		"  Class prefix:        Foo\n" +
 		"  Quit timeout:        1 second\n" +
 		"  Hot reload:          on\n" +
+		"  Macro depth:         64\n" +
 		"\n" +
 		"  Classes\n" +
 		"                           Player: declared twice\n" +
@@ -225,6 +227,7 @@ func TestLsCmdAllPackages(t *testing.T) {
 		"  Class prefix:        Icons\n" +
 		"  Quit timeout:        1 second\n" +
 		"  Hot reload:          on\n" +
+		"  Macro depth:         64\n" +
 		"\n" +
 		strings.NewReplacer("foo", "zed", "Foo", "Zed").Replace(lsFooOut) +
 		"\n" +
@@ -261,6 +264,7 @@ func TestLsPackages(t *testing.T) {
 		"  Class prefix:        Pk\n" +
 		"  Quit timeout:        2.5 seconds\n" +
 		"  Hot reload:          on\n" +
+		"  Macro depth:         64\n" +
 		"\n" +
 		"  Classes\n" +
 		"                                GrassPatch\n" +

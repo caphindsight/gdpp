@@ -27,6 +27,7 @@ type PackageConfig struct {
 	Prefix      string         `toml:"prefix,omitempty"`       // default: the package ID in PascalCase
 	QuitTimeout *float64       `toml:"quit_timeout,omitempty"` // seconds; default: 1
 	HotReload   *bool          `toml:"hot_reload,omitempty"`   // default: true
+	MacroDepth  *int           `toml:"macro_depth,omitempty"`  // default: defaultPackageMacroDepth
 	Classes     []PackageClass `toml:"class,omitempty"`
 }
 
@@ -82,6 +83,15 @@ func (pkg Package) QuitTimeout() float64 {
 // changes.
 func (pkg Package) HotReload() bool {
 	return pkg.Config.HotReload == nil || *pkg.Config.HotReload
+}
+
+// MacroDepth returns how deeply the package's macro and template invocations
+// may nest.
+func (pkg Package) MacroDepth() int {
+	if pkg.Config.MacroDepth != nil {
+		return *pkg.Config.MacroDepth
+	}
+	return defaultPackageMacroDepth
 }
 
 // seconds renders a number of seconds, e.g. "2.5 seconds".
@@ -177,6 +187,9 @@ func LoadPackage(p Path) Package {
 	}
 	if q := config.QuitTimeout; q != nil {
 		Assert(*q >= 0, "Invalid quit_timeout %v in %s: it can't be negative.", *q, file.ToString())
+	}
+	if d := config.MacroDepth; d != nil {
+		Assert(*d > 0, "Invalid macro_depth %d in %s: it must be positive.", *d, file.ToString())
 	}
 	names := map[string]bool{}
 	for _, class := range config.Classes {
