@@ -1,4 +1,5 @@
 var ammo: int {
+  // The property's storage.
   decl {
     int64_t ammo_ = 30;
   }
@@ -10,6 +11,7 @@ var ammo: int {
   }
 }
 
+// Without set, it's read-only.
 var is_empty: bool {
   get {
     return ammo_ == 0;

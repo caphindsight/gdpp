@@ -1,3 +1,5 @@
+// Times every call. The editor's monitors show
+// the timings live.
 @profile("ai")
 func find_cover(from: Vector3) -> Vector3 {
   Vector3 best = from;

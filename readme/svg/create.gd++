@@ -1,9 +1,16 @@
 func spawn() -> void {
-  Node3D *marker = create Node3D;            // a node: a pointer
-  Ref<ArrayMesh> mesh = create ArrayMesh;    // a resource: a reference
-  Ext<Terrain> terrain = create Terrain;     // an extern
-  Bullet *bullet = create Bullet;            // taken from Bullet's pool
+  // A node: a pointer.
+  Node3D *marker = create Node3D;
+  // A resource: a reference, which deletes the
+  // object with the last one.
+  Ref<ArrayMesh> mesh = create ArrayMesh;
+  // An extern.
+  Ext<Terrain> terrain = create Terrain;
+  // A pool class: reused from its pool.
+  Bullet *bullet = create Bullet;
 
-  destroy marker;                            // deletes it
-  destroy bullet;                            // gives it back to the pool
+  // Deletes it.
+  destroy marker;
+  // Gives it back to the pool.
+  destroy bullet;
 }

@@ -1,30 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="243" height="529" viewBox="0 0 243 529">
+<svg xmlns="http://www.w3.org/2000/svg" width="385" height="589" viewBox="0 0 385 589">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#e3b341">class_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Weapon</tspan></text>
   <text x="16" y="50"><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Node3D</tspan></text>
   <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#79c0ff">@virtual</tspan></text>
-  <text x="16" y="110"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_damage</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="130"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#d2a8ff">10</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="150"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="170"></text>
-  <text x="16" y="190"><tspan fill="#e3b341">class</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Axe</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Weapon</tspan></text>
-  <text x="16" y="230"></text>
-  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#79c0ff">@override</tspan></text>
-  <text x="16" y="270"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_damage</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="290"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#d2a8ff">15</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="310"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="330"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="350"></text>
-  <text x="16" y="370"><tspan fill="#e3b341">class</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Sword</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="390"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Weapon</tspan></text>
-  <text x="16" y="410"></text>
-  <text x="16" y="430"><tspan fill="#e6edf3">  </tspan><tspan fill="#79c0ff">@override</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"final"</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="450"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_damage</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="470"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#d2a8ff">25</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="490"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="510"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="90"><tspan fill="#8b949e">// Scripts can override it, and call it as</tspan></text>
+  <text x="16" y="110"><tspan fill="#8b949e">// damage().</tspan></text>
+  <text x="16" y="130"><tspan fill="#79c0ff">@virtual</tspan></text>
+  <text x="16" y="150"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_damage</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#d2a8ff">10</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="210"></text>
+  <text x="16" y="230"><tspan fill="#e3b341">class</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Axe</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Weapon</tspan></text>
+  <text x="16" y="270"></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">  </tspan><tspan fill="#79c0ff">@override</tspan></text>
+  <text x="16" y="310"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_damage</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#d2a8ff">15</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="350"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="370"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="390"></text>
+  <text x="16" y="410"><tspan fill="#e3b341">class</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Sword</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="430"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Weapon</tspan></text>
+  <text x="16" y="450"></text>
+  <text x="16" y="470"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Nothing can override it further.</tspan></text>
+  <text x="16" y="490"><tspan fill="#e6edf3">  </tspan><tspan fill="#79c0ff">@override</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"final"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="510"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">_damage</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="530"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#d2a8ff">25</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="550"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="570"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

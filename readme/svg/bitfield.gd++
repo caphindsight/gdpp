@@ -1,8 +1,10 @@
+// Flags: 1, 2, 4 and so on. The inspector shows
+// a checkbox for each.
 @bitfield
 enum Layer { NONE = 0, WORLD, PLAYER, ENEMY }
 
 @export var hits: Layer = WORLD | ENEMY
 
 func hits_player() -> bool {
-  return bool(hits & Layer::PLAYER);
+  return (hits & Layer::PLAYER) as bool;
 }

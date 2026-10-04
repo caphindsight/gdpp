@@ -1,8 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="318" height="89" viewBox="0 0 318 89">
+<svg xmlns="http://www.w3.org/2000/svg" width="385" height="149" viewBox="0 0 385 149">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">greet</tspan><tspan fill="#e6edf3">(name: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">::</tspan><tspan fill="#56d4dd">print</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Hello, "</tspan><tspan fill="#e6edf3">, name, </tspan><tspan fill="#d2a8ff">"!"</tspan><tspan fill="#e6edf3">);</tspan></text>
-  <text x="16" y="70"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="30"><tspan fill="#8b949e">// GDScript can call it too.</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">greet</tspan><tspan fill="#e6edf3">(name: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// The body is C++. gd is Godot's global</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// functions, UtilityFunctions.</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">::</tspan><tspan fill="#56d4dd">print</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Hello, "</tspan><tspan fill="#e6edf3">, name, </tspan><tspan fill="#d2a8ff">"!"</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

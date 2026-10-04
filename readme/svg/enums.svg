@@ -1,17 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="343" height="269" viewBox="0 0 343 269">
+<svg xmlns="http://www.w3.org/2000/svg" width="427" height="309" viewBox="0 0 427 309">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> { IDLE, RUNNING, JUMPING }</tspan></text>
-  <text x="16" y="50"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> MAX_JUMPS = </tspan><tspan fill="#d2a8ff">2</tspan></text>
-  <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> state: </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> = IDLE</tspan></text>
-  <text x="16" y="110"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> jumps: </tspan><tspan fill="#7ee787">int</tspan></text>
-  <text x="16" y="130"></text>
-  <text x="16" y="150"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">jump</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (jumps &lt; MAX_JUMPS) {</tspan></text>
-  <text x="16" y="190"><tspan fill="#e6edf3">    jumps++;</tspan></text>
-  <text x="16" y="210"><tspan fill="#e6edf3">    state = </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::JUMPING;</tspan></text>
-  <text x="16" y="230"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="250"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="30"><tspan fill="#8b949e">// An enum class in C++, for the whole package.</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> { IDLE, RUNNING, JUMPING }</tspan></text>
+  <text x="16" y="70"><tspan fill="#8b949e">// An integer constant of the class.</tspan></text>
+  <text x="16" y="90"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> MAX_JUMPS = </tspan><tspan fill="#d2a8ff">2</tspan></text>
+  <text x="16" y="110"></text>
+  <text x="16" y="130"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> state: </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> = IDLE</tspan></text>
+  <text x="16" y="150"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> jumps: </tspan><tspan fill="#7ee787">int</tspan></text>
+  <text x="16" y="170"></text>
+  <text x="16" y="190"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">jump</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (jumps &lt; MAX_JUMPS) {</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">    jumps++;</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">    state = </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::JUMPING;</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

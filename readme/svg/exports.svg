@@ -1,10 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="553" height="129" viewBox="0 0 553 129">
+<svg xmlns="http://www.w3.org/2000/svg" width="453" height="209" viewBox="0 0 453 209">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> title: </tspan><tspan fill="#7ee787">String</tspan></text>
-  <text x="16" y="50"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> target: </tspan><tspan fill="#7ee787">Node3D</tspan></text>
-  <text x="16" y="70"><tspan fill="#79c0ff">@export_range</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">100</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">1</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"suffix:%"</tspan><tspan fill="#e6edf3">) </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> volume: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">80</tspan></text>
-  <text x="16" y="90"><tspan fill="#79c0ff">@export_enum</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Easy"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"Normal"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"Hard"</tspan><tspan fill="#e6edf3">) </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> difficulty: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">1</tspan></text>
-  <text x="16" y="110"><tspan fill="#79c0ff">@export_file</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"*.json"</tspan><tspan fill="#e6edf3">) </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> save_path: </tspan><tspan fill="#7ee787">String</tspan></text>
+  <text x="16" y="30"><tspan fill="#8b949e">// The inspector shows them, and scenes save them.</tspan></text>
+  <text x="16" y="50"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> title: </tspan><tspan fill="#7ee787">String</tspan></text>
+  <text x="16" y="70"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> target: </tspan><tspan fill="#7ee787">Node3D</tspan></text>
+  <text x="16" y="90"><tspan fill="#8b949e">// All of GDScript's export annotations work.</tspan></text>
+  <text x="16" y="110"><tspan fill="#79c0ff">@export_range</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">100</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">1</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"suffix:%"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="130"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> volume: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">80</tspan></text>
+  <text x="16" y="150"><tspan fill="#79c0ff">@export_enum</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Easy"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"Normal"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"Hard"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="170"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> difficulty: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">1</tspan></text>
+  <text x="16" y="190"><tspan fill="#79c0ff">@export_file</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"*.json"</tspan><tspan fill="#e6edf3">) </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> save_path: </tspan><tspan fill="#7ee787">String</tspan></text>
   </g>
 </svg>

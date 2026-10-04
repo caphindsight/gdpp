@@ -1,6 +1,8 @@
 class_name Weapon
 extends Node3D
 
+// Scripts can override it, and call it as
+// damage().
 @virtual
 func _damage() -> int {
   return 10;
@@ -18,6 +20,7 @@ class Axe {
 class Sword {
   extends Weapon
 
+  // Nothing can override it further.
   @override("final")
   func _damage() -> int {
     return 25;

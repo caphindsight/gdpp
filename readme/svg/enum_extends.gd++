@@ -1,3 +1,5 @@
+// The values of Node.ProcessMode, and EDITOR.
+// Also how to use an engine enum as a type.
 enum Mode {
   extends Node.ProcessMode
   EDITOR

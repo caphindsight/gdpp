@@ -1,3 +1,6 @@
+// Includes are automatic, but GD++ can't see
+// the Material behind auto. noimport removes
+// an include.
 import Material
 
 func tint(mesh: MeshInstance3D, color: Color) -> void {

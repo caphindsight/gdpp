@@ -1,11 +1,14 @@
+// The editor runs its code too.
 @tool
 class_name Turntable
 extends Node3D
 
+// Spins in the editor and in the game.
 on process(delta: float) {
   rotate_y(delta);
 }
 
+// Only runs in the game.
 @game_only
 func launch() -> void {
   gd::print("Launched!");

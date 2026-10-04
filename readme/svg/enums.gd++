@@ -1,4 +1,6 @@
+// An enum class in C++, for the whole package.
 enum State { IDLE, RUNNING, JUMPING }
+// An integer constant of the class.
 enum MAX_JUMPS = 2
 
 var state: State = IDLE

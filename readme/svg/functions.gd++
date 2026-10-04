@@ -1,3 +1,6 @@
+// GDScript can call it too.
 func greet(name: String) -> void {
+  // The body is C++. gd is Godot's global
+  // functions, UtilityFunctions.
   gd::print("Hello, ", name, "!");
 }

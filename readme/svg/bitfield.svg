@@ -1,13 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="411" height="189" viewBox="0 0 411 189">
+<svg xmlns="http://www.w3.org/2000/svg" width="436" height="229" viewBox="0 0 436 229">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#79c0ff">@bitfield</tspan></text>
-  <text x="16" y="50"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Layer</tspan><tspan fill="#e6edf3"> { NONE = </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">, WORLD, PLAYER, ENEMY }</tspan></text>
-  <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> hits: </tspan><tspan fill="#7ee787">Layer</tspan><tspan fill="#e6edf3"> = WORLD | ENEMY</tspan></text>
+  <text x="16" y="30"><tspan fill="#8b949e">// Flags: 1, 2, 4 and so on. The inspector shows</tspan></text>
+  <text x="16" y="50"><tspan fill="#8b949e">// a checkbox for each.</tspan></text>
+  <text x="16" y="70"><tspan fill="#79c0ff">@bitfield</tspan></text>
+  <text x="16" y="90"><tspan fill="#e3b341">enum</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Layer</tspan><tspan fill="#e6edf3"> { NONE = </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">, WORLD, PLAYER, ENEMY }</tspan></text>
   <text x="16" y="110"></text>
-  <text x="16" y="130"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">hits_player</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">bool</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">bool</tspan><tspan fill="#e6edf3">(hits &amp; </tspan><tspan fill="#7ee787">Layer</tspan><tspan fill="#e6edf3">::PLAYER);</tspan></text>
-  <text x="16" y="170"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="130"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> hits: </tspan><tspan fill="#7ee787">Layer</tspan><tspan fill="#e6edf3"> = WORLD | ENEMY</tspan></text>
+  <text x="16" y="150"></text>
+  <text x="16" y="170"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">hits_player</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">bool</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> (hits &amp; </tspan><tspan fill="#7ee787">Layer</tspan><tspan fill="#e6edf3">::PLAYER) </tspan><tspan fill="#e3b341">as</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">bool</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

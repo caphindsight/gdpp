@@ -1,10 +1,11 @@
 class_name Score
 extends Node
 
+// Each invocation puts the template's code here.
 invoke counter(points)
 invoke counter(lives, start = 3)
 
-// A counter with a changed signal. The holes hold Lua.
+// GD++ code with holes, which hold Lua.
 template counter(name, start = 0) {
   var ${name}: int = ${start}
   signal ${name}_changed(value: int)

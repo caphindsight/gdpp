@@ -1,16 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="385" height="249" viewBox="0 0 385 249">
+<svg xmlns="http://www.w3.org/2000/svg" width="419" height="289" viewBox="0 0 419 289">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#79c0ff">@onready</tspan></text>
   <text x="16" y="50"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> chat_log: </tspan><tspan fill="#7ee787">RichTextLabel</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">%Log</tspan></text>
   <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#79c0ff">@rpc</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"any_peer"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"call_local"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"reliable"</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="110"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">chat</tspan><tspan fill="#e6edf3">(message: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="130"><tspan fill="#e6edf3">  chat_log-&gt;</tspan><tspan fill="#56d4dd">append_text</tspan><tspan fill="#e6edf3">(message + </tspan><tspan fill="#d2a8ff">"\n"</tspan><tspan fill="#e6edf3">);</tspan></text>
-  <text x="16" y="150"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="170"></text>
-  <text x="16" y="190"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">send</tspan><tspan fill="#e6edf3">(message: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">rpc</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">chat</tspan><tspan fill="#e6edf3">(message);</tspan></text>
-  <text x="16" y="230"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="90"><tspan fill="#8b949e">// The same arguments as in GDScript.</tspan></text>
+  <text x="16" y="110"><tspan fill="#79c0ff">@rpc</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"any_peer"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"call_local"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"reliable"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="130"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">chat</tspan><tspan fill="#e6edf3">(message: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  chat_log-&gt;</tspan><tspan fill="#56d4dd">append_text</tspan><tspan fill="#e6edf3">(message + </tspan><tspan fill="#d2a8ff">"\n"</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="190"></text>
+  <text x="16" y="210"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">send</tspan><tspan fill="#e6edf3">(message: </tspan><tspan fill="#7ee787">String</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// On every peer. On one: rpc(id) chat(...).</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">rpc</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">chat</tspan><tspan fill="#e6edf3">(message);</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

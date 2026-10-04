@@ -1,3 +1,4 @@
+// create Enemy instantiates this scene.
 @scene("pkg://enemy.tscn")
 class_name Enemy
 extends CharacterBody3D
@@ -6,7 +7,9 @@ class Spawner {
   extends Node3D
 
   func spawn() -> void {
+    // The scene's root, with its children.
     Enemy *enemy = create Enemy;
+    // Null if the root isn't an Enemy.
     if (enemy) {
       add_child(enemy);
     }

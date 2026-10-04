@@ -1,8 +1,11 @@
+// The file-level class: the rest of the file.
 class_name Player
 extends CharacterBody3D
 
 var coins: int
 
+// An inline class. Any number of them.
+// Without extends, a class extends RefCounted.
 class Coin {
   extends Area3D
   var value: int = 1

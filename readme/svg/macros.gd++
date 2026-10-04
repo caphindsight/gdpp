@@ -3,18 +3,30 @@ extends CharacterBody2D
 
 invoke state_machine([Patrol, Chase])
 
-func update_patrol() -> State { return sees_player() ? State::CHASE : State::PATROL; }
-func update_chase() -> State { return sees_player() ? State::CHASE : State::PATROL; }
+func update_patrol() -> State {
+  return sees_player() ? State::CHASE : State::PATROL;
+}
 
-// An enum of the states, and a switch that runs the current one's update.
+func update_chase() -> State {
+  return sees_player() ? State::CHASE : State::PATROL;
+}
+
+// Lua code that generates code. An advanced
+// feature: use it sparingly.
 macro state_machine(states) {
-  gd.enum { name = "State", values = gd.map(states, gd.upper_snake) }
+  // An enum of the states.
+  gd.enum { name = "State",
+    values = gd.map(states, gd.upper_snake) }
   gd.var { name = "state", type = "State" }
-  gd.on { name = "physics_process", param = "delta", param_type = "float", body = function()
-    gd.text("switch (state) {\n")
-    for _, s in ipairs(states) do
-      gd.text("case State::" .. gd.upper_snake(s) .. ": state = update_" .. gd.snake(s) .. "(); break;\n")
-    end
-    gd.text("}")
-  end }
+  // Runs the current state's update.
+  gd.on { name = "physics_process", param = "delta",
+    param_type = "float", body = function()
+      gd.text("switch (state) {\n")
+      for _, s in ipairs(states) do
+        gd.text("case State::" .. gd.upper_snake(s)
+          .. ": state = update_" .. gd.snake(s)
+          .. "(); break;\n")
+      end
+      gd.text("}")
+    end }
 }

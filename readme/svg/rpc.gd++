@@ -1,11 +1,13 @@
 @onready
 var chat_log: RichTextLabel = %Log
 
+// The same arguments as in GDScript.
 @rpc("any_peer", "call_local", "reliable")
 func chat(message: String) -> void {
   chat_log->append_text(message + "\n");
 }
 
 func send(message: String) -> void {
+  // On every peer. On one: rpc(id) chat(...).
   rpc chat(message);
 }

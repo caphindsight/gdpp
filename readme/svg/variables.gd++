@@ -1,5 +1,7 @@
+// GDScript sees them as properties.
 var health: int = 100
 var target: Node3D
+// A value can be a block that returns it.
 var spawn_points: PackedVector3Array = {
   PackedVector3Array points;
   points.push_back(Vector3(0, 0, 0));

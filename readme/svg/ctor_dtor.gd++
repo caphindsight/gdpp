@@ -5,6 +5,8 @@ decl {
   static inline int64_t alive = 0;
 }
 
+// No arguments: Godot creates objects
+// without any.
 ctor {
   alive++;
 }

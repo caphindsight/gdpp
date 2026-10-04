@@ -1,10 +1,14 @@
 var target: Vector2
 var pending: Async[PackedVector2Array]
 
+// Runs on a worker thread. A call returns right
+// away, with an Async task.
 @onthread
-func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
+func find_path(from: Vector2, to: Vector2)
+    -> PackedVector2Array {
   PackedVector2Array path;
-  // ... a long search, which stops early if is_cancelled ...
+  // ... a long search, which stops early
+  // if is_cancelled ...
   return path;
 }
 
@@ -12,6 +16,7 @@ on process(delta: float) {
   if (!pending) {
     pending = find_path(get_position(), target);
   } else if (is_done pending) {
+    // claim takes the task's result.
     follow(claim pending);
   }
 }

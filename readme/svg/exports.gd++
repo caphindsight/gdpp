@@ -1,5 +1,9 @@
+// The inspector shows them, and scenes save them.
 @export var title: String
 @export var target: Node3D
-@export_range(0, 100, 1, "suffix:%") var volume: int = 80
-@export_enum("Easy", "Normal", "Hard") var difficulty: int = 1
+// All of GDScript's export annotations work.
+@export_range(0, 100, 1, "suffix:%")
+var volume: int = 80
+@export_enum("Easy", "Normal", "Hard")
+var difficulty: int = 1
 @export_file("*.json") var save_path: String

@@ -1,5 +1,6 @@
 on process(delta: float) {
   for (int64_t i = 0; i < get_child_count(); i++) {
+    // A StringName, made once and reused.
     get_child(i)->call(string_name "tick", delta);
   }
 }

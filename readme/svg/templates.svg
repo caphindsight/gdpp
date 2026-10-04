@@ -1,21 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="495" height="349" viewBox="0 0 495 349">
+<svg xmlns="http://www.w3.org/2000/svg" width="444" height="369" viewBox="0 0 444 369">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#e3b341">class_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Score</tspan></text>
   <text x="16" y="50"><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Node</tspan></text>
   <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">counter</tspan><tspan fill="#e6edf3">(points)</tspan></text>
-  <text x="16" y="110"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">counter</tspan><tspan fill="#e6edf3">(lives, start = </tspan><tspan fill="#d2a8ff">3</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="130"></text>
-  <text x="16" y="150"><tspan fill="#8b949e">// A counter with a changed signal. The holes hold Lua.</tspan></text>
-  <text x="16" y="170"><tspan fill="#e3b341">template</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">counter</tspan><tspan fill="#e6edf3">(name, start = </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">) {</tspan></text>
-  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3">: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">start</tspan><tspan fill="#79c0ff">}</tspan></text>
-  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">signal</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#56d4dd">_changed</tspan><tspan fill="#e6edf3">(value: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="230"></text>
-  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> add_</tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3">(n: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="270"><tspan fill="#e6edf3">    </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3"> += n;</tspan></text>
-  <text x="16" y="290"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">emit</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#56d4dd">_changed</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3">);</tspan></text>
-  <text x="16" y="310"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="330"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="90"><tspan fill="#8b949e">// Each invocation puts the template's code here.</tspan></text>
+  <text x="16" y="110"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">counter</tspan><tspan fill="#e6edf3">(points)</tspan></text>
+  <text x="16" y="130"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">counter</tspan><tspan fill="#e6edf3">(lives, start = </tspan><tspan fill="#d2a8ff">3</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="150"></text>
+  <text x="16" y="170"><tspan fill="#8b949e">// GD++ code with holes, which hold Lua.</tspan></text>
+  <text x="16" y="190"><tspan fill="#e3b341">template</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">counter</tspan><tspan fill="#e6edf3">(name, start = </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">) {</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3">: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">start</tspan><tspan fill="#79c0ff">}</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">signal</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#56d4dd">_changed</tspan><tspan fill="#e6edf3">(value: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="250"></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> add_</tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3">(n: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">    </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3"> += n;</tspan></text>
+  <text x="16" y="310"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">emit</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#56d4dd">_changed</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#79c0ff">${</tspan><tspan fill="#e6edf3">name</tspan><tspan fill="#79c0ff">}</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="350"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

@@ -3,6 +3,7 @@ signal health_changed(health: int)
 
 func hurt(amount: int) -> void {
   health -= amount;
+  // emit sends a signal.
   emit health_changed(health);
   if (health <= 0) {
     emit died();

@@ -1,4 +1,6 @@
 func fire() -> void {
+  // Debug builds print an error, and return.
+  // Release builds drop it.
   assert target != nullptr;
   look_at(target->get_global_position());
 }

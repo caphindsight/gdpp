@@ -1,22 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="318" height="369" viewBox="0 0 318 369">
+<svg xmlns="http://www.w3.org/2000/svg" width="318" height="409" viewBox="0 0 318 409">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> ammo: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">decl</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="70"><tspan fill="#e6edf3">    </tspan><tspan fill="#7ee787">int64_t</tspan><tspan fill="#e6edf3"> ammo_ = </tspan><tspan fill="#d2a8ff">30</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="90"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">get</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="130"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> ammo_;</tspan></text>
-  <text x="16" y="150"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">set</tspan><tspan fill="#e6edf3">(value) {</tspan></text>
-  <text x="16" y="190"><tspan fill="#e6edf3">    ammo_ = value &lt; </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3"> ? </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3"> : value;</tspan></text>
-  <text x="16" y="210"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="230"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="250"></text>
-  <text x="16" y="270"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> is_empty: </tspan><tspan fill="#7ee787">bool</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="290"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">get</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="310"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> ammo_ == </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="330"><tspan fill="#e6edf3">  }</tspan></text>
-  <text x="16" y="350"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// The property's storage.</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">decl</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">    </tspan><tspan fill="#7ee787">int64_t</tspan><tspan fill="#e6edf3"> ammo_ = </tspan><tspan fill="#d2a8ff">30</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">get</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> ammo_;</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">set</tspan><tspan fill="#e6edf3">(value) {</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">    ammo_ = value &lt; </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3"> ? </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3"> : value;</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="270"></text>
+  <text x="16" y="290"><tspan fill="#8b949e">// Without set, it's read-only.</tspan></text>
+  <text x="16" y="310"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> is_empty: </tspan><tspan fill="#7ee787">bool</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">get</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="350"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> ammo_ == </tspan><tspan fill="#d2a8ff">0</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="370"><tspan fill="#e6edf3">  }</tspan></text>
+  <text x="16" y="390"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

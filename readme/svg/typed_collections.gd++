@@ -1,4 +1,6 @@
+// TypedArray<Item> in C++.
 var items: Array[Item]
+// TypedDictionary<String, int64_t> in C++.
 var prices: Dictionary[String, int]
 
 func add(item: Item) -> void {

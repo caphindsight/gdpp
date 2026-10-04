@@ -1,3 +1,4 @@
+// Doc comments become the editor's help.
 /// A chest full of [member gold].
 ///
 /// Opens when the player comes close.
@@ -7,7 +8,7 @@ extends Area3D
 /// How many coins the chest holds.
 @export var gold: int = 10
 
-/** Gives the coins to [param player], and empties the chest. */
+/** Gives the coins to [param player]. */
 func open(player: Player) -> void {
   player->add_coins(gold);
   gold = 0;

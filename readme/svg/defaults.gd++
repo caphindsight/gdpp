@@ -1,9 +1,13 @@
-func spawn(count: int = 1, at: Vector3 = Vector3(0, 1, 0)) -> void {
+func spawn(count: int = 1,
+    at: Vector3 = Vector3(0, 1, 0)) -> void {
   gd::print("Spawning ", count, " at ", at);
 }
 
+// A default can be a block that returns it.
 func save(path: String = {
-  return "user://save_" + Time::get_singleton()->get_date_string_from_system() + ".json";
+  String date = Time::get_singleton()
+      ->get_date_string_from_system();
+  return "user://save_" + date + ".json";
 }) -> void {
   gd::print("Saving to ", path);
 }

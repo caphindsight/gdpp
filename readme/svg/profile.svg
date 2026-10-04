@@ -1,11 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="394" height="149" viewBox="0 0 394 149">
+<svg xmlns="http://www.w3.org/2000/svg" width="427" height="189" viewBox="0 0 427 189">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
-  <text x="16" y="30"><tspan fill="#79c0ff">@profile</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"ai"</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="50"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">find_cover</tspan><tspan fill="#e6edf3">(from: </tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3"> best = from;</tspan></text>
-  <text x="16" y="90"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// ... a costly search ...</tspan></text>
-  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> best;</tspan></text>
-  <text x="16" y="130"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="30"><tspan fill="#8b949e">// Times every call. The editor's monitors show</tspan></text>
+  <text x="16" y="50"><tspan fill="#8b949e">// the timings live.</tspan></text>
+  <text x="16" y="70"><tspan fill="#79c0ff">@profile</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"ai"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="90"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">find_cover</tspan><tspan fill="#e6edf3">(from: </tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3">) -&gt; </tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Vector3</tspan><tspan fill="#e6edf3"> best = from;</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// ... a costly search ...</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> best;</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

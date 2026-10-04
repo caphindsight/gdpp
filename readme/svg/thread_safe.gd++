@@ -1,6 +1,8 @@
 @onready
 var bar: ProgressBar = $Bar
 
+// A call from another thread runs later, on the
+// main thread, where it can change the tree.
 @thread_safe
 func set_progress(percent: int) -> void {
   bar->set_value(percent);

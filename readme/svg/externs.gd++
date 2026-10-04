@@ -9,6 +9,9 @@ on physics_process(delta: float) {
   set_position(pos);
 }
 
+// A class that lives elsewhere: in another
+// package, GDExtension or script.
+// Its members are called by name.
 extern Terrain {
   extends Node3D
   func height_at(x: float, z: float) -> float

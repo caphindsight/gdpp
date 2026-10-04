@@ -1,3 +1,4 @@
+// Every call runs at the end of the frame.
 @deferred
 func respawn(at: Vector3) -> void {
   set_global_position(at);

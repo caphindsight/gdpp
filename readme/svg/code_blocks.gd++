@@ -1,14 +1,18 @@
+// Outside the class, in its header.
 @global decl {
   #include <random>
 }
 
+// In the class, in its header.
 decl {
   std::mt19937 rng_{std::random_device{}()};
   int64_t roll(int64_t sides);
 }
 
+// In its source file. This is the class.
 impl {
   int64_t This::roll(int64_t sides) {
-    return std::uniform_int_distribution<int64_t>(1, sides)(rng_);
+    std::uniform_int_distribution<int64_t> d(1, sides);
+    return d(rng_);
   }
 }

@@ -1,9 +1,13 @@
+// destroy keeps a bullet in the pool, and
+// create reuses it.
 @pool
 class_name Bullet
 extends Area3D
 
+// Gets its value again when a bullet is reused.
 @recycle var speed: float = 20.0
 
+// Only runs when a bullet is really created.
 ctor {
   gd::print("Created.");
 }
