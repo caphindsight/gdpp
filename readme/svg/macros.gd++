@@ -14,6 +14,7 @@ macro state_machine(states) {
   gd.var { name = "state", type = "State" }
   // Runs the current state's update.
   gd.func { name = "state_machine_tick", ret = "void",
+    annotations = { "private" },
     body = function()
       gd.text("switch (state) {\n")
       for _, s in ipairs(states) do
@@ -28,11 +29,13 @@ macro state_machine(states) {
 invoke state_machine([Patrol, Chase])
 
 // Wanders until it sees the player.
+@private
 func update_patrol() -> State {
   return sees_player() ? State::CHASE : State::PATROL;
 }
 
 // Follows the player until it loses sight of them.
+@private
 func update_chase() -> State {
   return sees_player() ? State::CHASE : State::PATROL;
 }

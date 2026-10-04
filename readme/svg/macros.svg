@@ -1,37 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="486" height="669" viewBox="0 0 486 669">
+<svg xmlns="http://www.w3.org/2000/svg" width="486" height="849" viewBox="0 0 486 849">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#e3b341">class_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Slime</tspan></text>
   <text x="16" y="50"><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">CharacterBody2D</tspan></text>
   <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">state_machine</tspan><tspan fill="#e6edf3">([</tspan><tspan fill="#7ee787">Patrol</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#7ee787">Chase</tspan><tspan fill="#e6edf3">])</tspan></text>
-  <text x="16" y="110"></text>
-  <text x="16" y="130"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">update_patrol</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">sees_player</tspan><tspan fill="#e6edf3">() ? </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::CHASE : </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::PATROL;</tspan></text>
-  <text x="16" y="170"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="190"></text>
-  <text x="16" y="210"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">update_chase</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="230"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">sees_player</tspan><tspan fill="#e6edf3">() ? </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::CHASE : </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::PATROL;</tspan></text>
-  <text x="16" y="250"><tspan fill="#e6edf3">}</tspan></text>
-  <text x="16" y="270"></text>
-  <text x="16" y="290"><tspan fill="#8b949e">// Lua code that generates code. An advanced</tspan></text>
-  <text x="16" y="310"><tspan fill="#8b949e">// feature: use it sparingly.</tspan></text>
-  <text x="16" y="330"><tspan fill="#e3b341">macro</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">state_machine</tspan><tspan fill="#e6edf3">(states) {</tspan></text>
-  <text x="16" y="350"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// An enum of the states.</tspan></text>
-  <text x="16" y="370"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">enum</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"State"</tspan><tspan fill="#e6edf3">,</tspan></text>
-  <text x="16" y="390"><tspan fill="#e6edf3">    values = </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">map</tspan><tspan fill="#e6edf3">(states, </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">upper_snake</tspan><tspan fill="#e6edf3">) }</tspan></text>
-  <text x="16" y="410"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">var</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"state"</tspan><tspan fill="#e6edf3">, type = </tspan><tspan fill="#d2a8ff">"State"</tspan><tspan fill="#e6edf3"> }</tspan></text>
-  <text x="16" y="430"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Runs the current state's update.</tspan></text>
-  <text x="16" y="450"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">on</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"physics_process"</tspan><tspan fill="#e6edf3">, param = </tspan><tspan fill="#d2a8ff">"delta"</tspan><tspan fill="#e6edf3">,</tspan></text>
-  <text x="16" y="470"><tspan fill="#e6edf3">    param_type = </tspan><tspan fill="#d2a8ff">"float"</tspan><tspan fill="#e6edf3">, body = </tspan><tspan fill="#e3b341">function</tspan><tspan fill="#e6edf3">()</tspan></text>
-  <text x="16" y="490"><tspan fill="#e6edf3">      </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"switch (state) {\n"</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="510"><tspan fill="#e6edf3">      </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> _, s </tspan><tspan fill="#e3b341">in</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">ipairs</tspan><tspan fill="#e6edf3">(states) </tspan><tspan fill="#e3b341">do</tspan></text>
-  <text x="16" y="530"><tspan fill="#e6edf3">        </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"case State::"</tspan><tspan fill="#e6edf3"> .. gd.</tspan><tspan fill="#56d4dd">upper_snake</tspan><tspan fill="#e6edf3">(s)</tspan></text>
-  <text x="16" y="550"><tspan fill="#e6edf3">          .. </tspan><tspan fill="#d2a8ff">": state = update_"</tspan><tspan fill="#e6edf3"> .. gd.</tspan><tspan fill="#56d4dd">snake</tspan><tspan fill="#e6edf3">(s)</tspan></text>
-  <text x="16" y="570"><tspan fill="#e6edf3">          .. </tspan><tspan fill="#d2a8ff">"(); break;\n"</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="590"><tspan fill="#e6edf3">      </tspan><tspan fill="#e3b341">end</tspan></text>
-  <text x="16" y="610"><tspan fill="#e6edf3">      </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"}"</tspan><tspan fill="#e6edf3">)</tspan></text>
-  <text x="16" y="630"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">end</tspan><tspan fill="#e6edf3"> }</tspan></text>
-  <text x="16" y="650"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="90"><tspan fill="#e3b341">on physics_process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) {</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">state_machine_tick</tspan><tspan fill="#e6edf3">();</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="150"></text>
+  <text x="16" y="170"><tspan fill="#8b949e">// Lua code that generates code. An advanced</tspan></text>
+  <text x="16" y="190"><tspan fill="#8b949e">// feature: use it sparingly.</tspan></text>
+  <text x="16" y="210"><tspan fill="#e3b341">macro</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">state_machine</tspan><tspan fill="#e6edf3">(states) {</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// An enum of the states.</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">enum</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"State"</tspan><tspan fill="#e6edf3">,</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">    values = </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">map</tspan><tspan fill="#e6edf3">(states, </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">upper_snake</tspan><tspan fill="#e6edf3">) }</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">var</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"state"</tspan><tspan fill="#e6edf3">, type = </tspan><tspan fill="#d2a8ff">"State"</tspan><tspan fill="#e6edf3"> }</tspan></text>
+  <text x="16" y="310"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Runs the current state's update.</tspan></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">func</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"state_machine_tick"</tspan><tspan fill="#e6edf3">, ret = </tspan><tspan fill="#d2a8ff">"void"</tspan><tspan fill="#e6edf3">,</tspan></text>
+  <text x="16" y="350"><tspan fill="#e6edf3">    annotations = { </tspan><tspan fill="#d2a8ff">"private"</tspan><tspan fill="#e6edf3"> },</tspan></text>
+  <text x="16" y="370"><tspan fill="#e6edf3">    body = </tspan><tspan fill="#e3b341">function</tspan><tspan fill="#e6edf3">()</tspan></text>
+  <text x="16" y="390"><tspan fill="#e6edf3">      </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"switch (state) {\n"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="410"><tspan fill="#e6edf3">      </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> _, s </tspan><tspan fill="#e3b341">in</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">ipairs</tspan><tspan fill="#e6edf3">(states) </tspan><tspan fill="#e3b341">do</tspan></text>
+  <text x="16" y="430"><tspan fill="#e6edf3">        </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"case State::"</tspan><tspan fill="#e6edf3"> .. gd.</tspan><tspan fill="#56d4dd">upper_snake</tspan><tspan fill="#e6edf3">(s)</tspan></text>
+  <text x="16" y="450"><tspan fill="#e6edf3">          .. </tspan><tspan fill="#d2a8ff">": state = update_"</tspan><tspan fill="#e6edf3"> .. gd.</tspan><tspan fill="#56d4dd">snake</tspan><tspan fill="#e6edf3">(s)</tspan></text>
+  <text x="16" y="470"><tspan fill="#e6edf3">          .. </tspan><tspan fill="#d2a8ff">"(); break;\n"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="490"><tspan fill="#e6edf3">      </tspan><tspan fill="#e3b341">end</tspan></text>
+  <text x="16" y="510"><tspan fill="#e6edf3">      </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">text</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"}"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="530"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">end</tspan><tspan fill="#e6edf3"> }</tspan></text>
+  <text x="16" y="550"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="570"></text>
+  <text x="16" y="590"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">state_machine</tspan><tspan fill="#e6edf3">([</tspan><tspan fill="#7ee787">Patrol</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#7ee787">Chase</tspan><tspan fill="#e6edf3">])</tspan></text>
+  <text x="16" y="610"></text>
+  <text x="16" y="630"><tspan fill="#8b949e">// Wanders until it sees the player.</tspan></text>
+  <text x="16" y="650"><tspan fill="#79c0ff">@private</tspan></text>
+  <text x="16" y="670"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">update_patrol</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="690"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">sees_player</tspan><tspan fill="#e6edf3">() ? </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::CHASE : </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::PATROL;</tspan></text>
+  <text x="16" y="710"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="730"></text>
+  <text x="16" y="750"><tspan fill="#8b949e">// Follows the player until it loses sight of them.</tspan></text>
+  <text x="16" y="770"><tspan fill="#79c0ff">@private</tspan></text>
+  <text x="16" y="790"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">update_chase</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="810"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">sees_player</tspan><tspan fill="#e6edf3">() ? </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::CHASE : </tspan><tspan fill="#7ee787">State</tspan><tspan fill="#e6edf3">::PATROL;</tspan></text>
+  <text x="16" y="830"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>
