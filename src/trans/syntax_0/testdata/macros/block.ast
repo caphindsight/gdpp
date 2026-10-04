@@ -9,9 +9,9 @@ File: @1:1
             Doc: @3:3 Documented.
             Name: { ... }
             Args: @4:3
-            Body: @4:9
-              Block: @4:9
-                TextPos: 4:10
+            Body: @4:10
+              Block: @4:10
+                TextPos: 4:11
                 Text: |
 
                       gd.var { name = "x", doc = ctx.doc }
@@ -20,7 +20,7 @@ File: @1:1
     - @9:1
       Name: { ... }
       Args: @9:1
-      Body: @9:7
-        Block: @9:7
-          TextPos: 9:8
+      Body: @9:8
+        Block: @9:8
+          TextPos: 9:9
           Text: " gd.text(\"class Bar {}\")"

@@ -2,6 +2,6 @@ class_name A
 extends Node
 
 func f() -> void {
-  macro { gd.text("int x = 1;") }
+  invoke { gd.text("int x = 1;") }
   int y = 2;
 }

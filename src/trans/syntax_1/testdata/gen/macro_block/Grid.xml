@@ -7,6 +7,11 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="first_open">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="gdpp_create" qualifiers="static">
 			<return type="Grid" />
 			<description>

@@ -1,9 +1,9 @@
 class Foo {
   extends Node
   /// Documented.
-  macro {
+  invoke {
     gd.var { name = "x", doc = ctx.doc }
   }
 }
 
-macro { gd.text("class Bar {}") }
+invoke { gd.text("class Bar {}") }

@@ -217,7 +217,7 @@ func (x *expander) expandFile(f *File) error {
 	return nil
 }
 
-// anonymous is the name of macro blocks, macro { ... }, in messages.
+// anonymous is the name of macro blocks, invoke { ... }, in messages.
 const anonymous = "{ ... }"
 
 // def returns what inv invokes: a macro or template of the package, or a macro block's body. It's nil if there's none.
@@ -356,10 +356,10 @@ func addFrame(err error, frame string) error {
 	return err
 }
 
-// span returns how many characters an error about the invocation underlines: "invoke NAME", or "macro".
+// span returns how many characters an error about the invocation underlines: "invoke NAME", or "invoke".
 func (inv *Invoke) span() int {
 	if inv.Body != nil {
-		return len("macro")
+		return len("invoke")
 	}
 	return len("invoke ") + len(inv.Name)
 }
@@ -407,7 +407,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 			}
 		}()
 	}
-	if !strings.Contains(code, "invoke") && !strings.Contains(code, "macro") {
+	if !strings.Contains(code, "invoke") {
 		return code, nil
 	}
 	l, err := gdppLexer.LexString(x.filename, code)
@@ -423,7 +423,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 	var out strings.Builder
 	last := 0 // The end of what's copied to out.
 	for i := 0; i+2 < len(tokens); i++ {
-		// invoke NAME( or invoke NAME {, but not a member or a scope's name, e.g. std::invoke. Or macro { at the start of
+		// invoke NAME( or invoke NAME {, but not a member or a scope's name, e.g. std::invoke. Or invoke { at the start of
 		// the code or of a statement.
 		t, name, open := tokens[i], tokens[i+1], tokens[i+2]
 		var prev lexer.Token
@@ -434,7 +434,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		switch {
 		case t.Type != tokIdent || t.Pos.Offset < last:
 			continue
-		case t.Value == "macro" && isPunct(name, "{") && (i == 0 || isPunct(prev, ";") || isPunct(prev, "{") || isPunct(prev, "}")):
+		case t.Value == "invoke" && isPunct(name, "{") && (i == 0 || isPunct(prev, ";") || isPunct(prev, "{") || isPunct(prev, "}")):
 			open, name.Value, body = name, anonymous, &MacroBody{}
 		case t.Value != "invoke" || name.Type != tokIdent || x.defs[name.Value] == nil || !isPunct(open, "(") && !isPunct(open, "{") ||
 			isPunct(prev, ".") || isPunct(prev, ">") || isPunct(prev, ":"):

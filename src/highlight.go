@@ -131,7 +131,7 @@ func highlightGdpp(code string, gdscript bool) string {
 		case !gdscript && macroBlockRegexp.MatchString(rest):
 			m := macroBlockRegexp.FindString(rest)
 			end := closingBrace(rest, len(m)-1)
-			out.WriteString(Styled("macro", CodeKeyword) + m[len("macro"):] + highlightLua(rest[len(m):end]) + rest[end:min(end+1, len(rest))])
+			out.WriteString(Styled("invoke", CodeKeyword) + m[len("invoke"):] + highlightLua(rest[len(m):end]) + rest[end:min(end+1, len(rest))])
 			i += min(end+1, len(rest))
 			continue
 		case c == '$' || c == '%' && strings.HasSuffix(strings.TrimRight(code[:i], " \t"), "="):
@@ -191,8 +191,8 @@ var invokeRegexp = regexp.MustCompile(`^(invoke)(\s+)(\w+)(\s*)`)
 // macroHeadRegexp matches the start of a macro or template: its keyword and name, up to "(".
 var macroHeadRegexp = regexp.MustCompile(`^(macro|template|macro_name|template_name)(\s+)(\w+)(\s*)\(`)
 
-// macroBlockRegexp matches the start of a macro block: "macro" and "{".
-var macroBlockRegexp = regexp.MustCompile(`^macro\s*\{`)
+// macroBlockRegexp matches the start of a macro block: "invoke" and "{".
+var macroBlockRegexp = regexp.MustCompile(`^invoke\s*\{`)
 
 // highlightMacro highlights the macro or template that starts code[*i:], and moves *i past it: its head, and its
 // body, which is Lua for macros and GD++ for templates. A file-level one's body is the rest of the file.

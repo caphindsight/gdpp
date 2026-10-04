@@ -2,17 +2,17 @@ class_name Grid
 extends Node
 
 /// A flag for each direction.
-macro {
+invoke {
   for _, d in ipairs({ "north", "east", "south", "west" }) do
     gd.var { name = "open_" .. d, type = "bool", init = false, doc = ctx.doc }
   end
 }
 
-var cells: int = macro { gd.text(tostring(8 * 8)) }
+var cells: int = invoke { gd.text(tostring(8 * 8)) }
 
 func neighbors() -> int {
   int n = 0;
-  macro {
+  invoke {
     for _, d in ipairs({ "north", "east", "south", "west" }) do
       gd.text("if (open_" .. d .. ") n++;")
     end
@@ -20,6 +20,23 @@ func neighbors() -> int {
   return n;
 }
 
-macro {
+func first_open() -> int {
+  invoke { gd.text("int i = 0;") };
+  if (open_north) {
+    invoke { gd.text("return i;") };
+  }
+  invoke { gd.text("i++;") };
+  return -1;
+}
+
+on ready {
+  invoke { gd.text("open_north = true;") };
+}
+
+impl {
+  static int grid_size() { invoke { gd.text("return 8;") }; }
+}
+
+invoke {
   gd.class { name = "Cell", extends = "RefCounted" }
 }

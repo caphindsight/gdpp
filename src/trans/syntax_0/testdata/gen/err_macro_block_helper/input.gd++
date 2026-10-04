@@ -1,7 +1,7 @@
 class_name A
 extends Node
 
-macro {
+invoke {
   macro helper(n) {
     gd.var { name = n, type = "int" }
   }

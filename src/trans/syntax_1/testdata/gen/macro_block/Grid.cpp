@@ -8,6 +8,7 @@ namespace godot {
 
 void Grid::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("neighbors"), &Grid::neighbors);
+	ClassDB::bind_method(D_METHOD("first_open"), &Grid::first_open);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Grid::gdpp_create);
 	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Grid::gdpp_destroy);
 	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Grid::gdpp_queue_destroy);
@@ -31,19 +32,19 @@ void Grid::_bind_methods() {
 Grid::Grid() {
 #line 5 "input.gd++"
 	open_north = false;
-#line 35 "Grid.cpp"
+#line 36 "Grid.cpp"
 #line 5 "input.gd++"
 	open_east = false;
-#line 38 "Grid.cpp"
+#line 39 "Grid.cpp"
 #line 5 "input.gd++"
 	open_south = false;
-#line 41 "Grid.cpp"
+#line 42 "Grid.cpp"
 #line 5 "input.gd++"
 	open_west = false;
-#line 44 "Grid.cpp"
+#line 45 "Grid.cpp"
 #line 11 "input.gd++"
 	cells = 64;
-#line 47 "Grid.cpp"
+#line 48 "Grid.cpp"
 }
 
 Grid *Grid::gdpp_create() {
@@ -58,6 +59,12 @@ void Grid::gdpp_queue_destroy() {
 	gdpp::queue_destroy(this);
 }
 
+void Grid::_notification(int WHAT) {
+	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
+		_gdpp_body__ready();
+	}
+}
+
 int64_t Grid::neighbors() {
 #line 13 "input.gd++"
 
@@ -69,7 +76,28 @@ int64_t Grid::neighbors() {
 
   return n;
 
-#line 73 "Grid.cpp"
+#line 80 "Grid.cpp"
+}
+
+int64_t Grid::first_open() {
+#line 23 "input.gd++"
+
+  int i = 0;
+  if (open_north) {
+    return i;
+  }
+  i++;
+  return -1;
+
+#line 93 "Grid.cpp"
+}
+
+void Grid::_gdpp_body__ready() {
+#line 32 "input.gd++"
+
+  open_north = true;
+
+#line 101 "Grid.cpp"
 }
 
 bool Grid::get_open_north() const {
@@ -111,6 +139,12 @@ int64_t Grid::get_cells() const {
 void Grid::set_cells(int64_t p_value) {
 	cells = p_value;
 }
+
+#line 36 "input.gd++"
+
+  static int grid_size() { return 8; }
+
+#line 148 "Grid.cpp"
 
 #undef This
 

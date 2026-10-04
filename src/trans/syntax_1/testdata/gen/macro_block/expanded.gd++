@@ -22,6 +22,23 @@ func neighbors() -> int {
   return n;
 }
 
+func first_open() -> int {
+  int i = 0;
+  if (open_north) {
+    return i;
+  }
+  i++;
+  return -1;
+}
+
+on ready {
+  open_north = true;
+}
+
+impl {
+  static int grid_size() { return 8; }
+}
+
 class Cell {
   extends RefCounted
 }

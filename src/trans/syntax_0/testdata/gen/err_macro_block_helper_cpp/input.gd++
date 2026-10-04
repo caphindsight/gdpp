@@ -3,7 +3,7 @@ extends Node
 
 func f() -> void {
   int x = 0;
-  macro {
+  invoke {
     template t() {
       var a: int
     }

@@ -24,6 +24,8 @@ public:
 	void gdpp_destroy();
 	void gdpp_queue_destroy();
 	int64_t neighbors();
+	int64_t first_open();
+	void _gdpp_body__ready();
 	bool get_open_north() const;
 	void set_open_north(bool p_value);
 	bool get_open_east() const;
@@ -37,6 +39,7 @@ public:
 
 protected:
 	static void _bind_methods();
+	void _notification(int WHAT);
 };
 #undef This
 
