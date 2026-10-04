@@ -1,6 +1,6 @@
 Cast: converting values with as
 
-C++ has many ways to convert a value, and godot-cpp adds more: `static_cast`, `Object::cast_to`, `Ref`'s constructors and `VariantCaster`. GD++ code needs just one: `VALUE as T` converts VALUE to the C++ type T, whatever the two types are, like GDScript's `as`.
+C++ and godot-cpp have many ways to convert a value: `static_cast`, `Object::cast_to`, `Ref`'s constructors and `VariantCaster`. GD++ code needs one: `VALUE as T` converts VALUE to the C++ type T, whatever the two types are, like GDScript's `as`.
 
 ```gd++
 func spawn(scene: PackedScene, mode: ProcessMode) -> Node3D {
@@ -10,19 +10,24 @@ func spawn(scene: PackedScene, mode: ProcessMode) -> Node3D {
 }
 ```
 
-`as` is a rewrite, which GD++ adds to C++: it turns `VALUE as T` into `gdpp::cast<T>(VALUE)`, a function of the runtime header. See `gd++ man rewrites`.
+`as` is a rewrite: GD++ turns `VALUE as T` into `gdpp::cast<T>(VALUE)`, a function of the runtime header. See `gd++ man rewrites`.
 
 # Precedence
 
-`as` binds VALUE like C++'s member accesses and calls do, tighter than any other operator: `a + b as float` converts `b` only, and `-x as int` is the negation of `x as int`. Use parentheses to convert more, e.g. `(a + b) as float`.
-
-T ends before anything that isn't part of a type. So `n as int < limit` compares, and `x as Ref<Mesh>` names a template. A `*` after T is part of it, so write `(x as int) * y` to multiply.
-
-GD++ only rewrites `as` where VALUE and T are clear. Elsewhere, e.g. in `x as int * y` or `(int) x as float`, the `as` stays, so the C++ doesn't compile, and parentheses fix it: `(x as int) * y`, `((int) x) as float`. VALUE must be a name or an expression in parentheses, followed by any member accesses, scopes, calls and subscripts, e.g. `body`, `this->items[i]`, `get_node("Mesh")` or `(a + b)`.
+- `as` binds VALUE like member accesses and calls do, tighter than any other operator.
+  - `a + b as float` converts `b` only.
+  - `-x as int` is the negation of `x as int`.
+  - Use parentheses to convert more: `(a + b) as float`.
+- T ends before anything that isn't part of a type.
+  - `n as int < limit` compares.
+  - `x as Ref<Mesh>` names a template.
+  - A `*` after T is part of it. Write `(x as int) * y` to multiply.
+- VALUE must be a name or an expression in parentheses, followed by any member accesses, scopes, calls and subscripts, e.g. `body`, `this->items[i]`, `get_node("Mesh")` or `(a + b)`.
+- GD++ only rewrites `as` where VALUE and T are clear. Elsewhere, e.g. in `x as int * y` or `(int) x as float`, the `as` stays, and the C++ doesn't compile. Parentheses fix it: `(x as int) * y`, `((int) x) as float`.
 
 # What it does
 
-`as` picks the conversion at compile time, from the two types, so nothing is decided while the game runs:
+`as` picks the conversion at compile time, from the two types. Nothing is decided while the game runs.
 
 ```
 FROM                    TO                       CONVERSION
@@ -34,13 +39,20 @@ an object               another class            dynamic: checks the object's cl
 anything else           T                        static_cast, e.g. numbers, enums, Array to Array[T]
 ```
 
-An object is a pointer, e.g. `Node3D *`, a `Ref`, e.g. `Ref<Mesh>`, an extern, or an `Async`. Any of them converts to any other that fits: a pointer to a `Ref`, a `Ref` to a pointer, an object to an extern, an extern to its base class, a `Ref<RefCounted>` to an `Async`, and so on.
-
-A conversion that none of these rows allow, e.g. from a `String` to a `Node3D *`, doesn't compile.
+- An object is a pointer (e.g. `Node3D *`), a `Ref` (e.g. `Ref<Mesh>`), an extern, or an `Async`.
+- Any of them converts to any other that fits: a pointer to a `Ref`, a `Ref` to a pointer, an object to an extern, an extern to its base class, a `Ref<RefCounted>` to an `Async`, and so on.
+- A conversion that no row allows, e.g. from a `String` to a `Node3D *`, doesn't compile.
 
 # Upcasts and downcasts
 
-A cast to the object's own class, or to a class it extends, is an upcast: it always works, so `as` does it statically, at no cost. A cast to a class that extends it, or to an unrelated class, is a downcast: it only works if the object is of that class, so `as` checks the class while the game runs, like `Object::cast_to`, and like GDScript's `as`, it gives `nullptr` or a null `Ref` if it doesn't match. So check the result of a downcast:
+- Upcast: to the object's own class, or to a class it extends.
+  - It always works, so `as` does it statically, at no cost.
+- Downcast: to a class that extends it, or to an unrelated class.
+  - It only works if the object is of that class.
+  - `as` checks the class while the game runs, like `Object::cast_to`.
+  - Like GDScript's `as`, it gives `nullptr` or a null `Ref` if it doesn't match. So check the result.
+  - A downcast of a null object gives null.
+- `as` keeps `const`: a `const Node *` casts to a `const Node3D *`, but not to a `Node3D *`.
 
 ```gd++
 func _on_body_entered(body: Node3D) -> void {
@@ -50,8 +62,6 @@ func _on_body_entered(body: Node3D) -> void {
   }
 }
 ```
-
-A downcast of a null object gives null. `as` keeps `const`: a `const Node *` casts to a `const Node3D *`, but not to a `Node3D *`.
 
 # Enums
 
@@ -70,7 +80,9 @@ on ready {
 
 # Variants
 
-A `Variant` converts to any type, the way Godot converts the arguments of a bound method: to an enum from an `int`, to a pointer, a `Ref`, an extern or an `Async` from an object, and so on. A value of the wrong type converts like it does in a bound method, e.g. to null for objects, and to 0 for numbers. Any type converts to a `Variant`, an enum as its `int`.
+- A `Variant` converts to any type, the way Godot converts the arguments of a bound method: to an enum from an `int`, to a pointer, a `Ref`, an extern or an `Async` from an object, and so on.
+- A value of the wrong type converts like in a bound method, e.g. to null for objects, and to 0 for numbers.
+- Any type converts to a `Variant`. An enum converts as its `int`.
 
 ```gd++
 func take(task: Variant) -> void {
@@ -81,7 +93,12 @@ func take(task: Variant) -> void {
 
 # Externs and Async
 
-An extern casts like an object of its base class, e.g. like a `Node *` for an extern `Road` that extends `Node`, or a `Ref<Resource>` for an extern `Settings` that extends `Resource`. In C++, `Ext<T>` names an extern's type, whether it's an `ExtPtr<T>` or an `ExtRef<T>`:
+An extern casts like an object of its base class:
+
+- like a `Node *` for an extern `Road` that extends `Node`,
+- like a `Ref<Resource>` for an extern `Settings` that extends `Resource`.
+
+In C++, `Ext<T>` names an extern's type, whether it's an `ExtPtr<T>` or an `ExtRef<T>`:
 
 ```
 FROM                    TO                       CONVERSION
@@ -98,13 +115,20 @@ Variant                 Ext<Road>                as Godot's bindings do
 Ext<Terrain> terrain = get_node("Terrain") as Ext<Terrain>;
 ```
 
-The check stops at the base class: Godot can't cheaply check a script class, so a `Node` with another script still converts to `Road`. For the same reason, a cast between two externs with the same base class isn't checked at all. An extern whose base isn't refcounted can't become a `Ref`: that cast doesn't compile.
+Facts:
 
-An `Async` converts from any refcounted object, which should be a task object of some package. See `gd++ man externs` and `gd++ man async`.
+- The check stops at the base class. Godot can't cheaply check a script class, so a `Node` with another script still converts to `Road`.
+- For the same reason, a cast between two externs with the same base class isn't checked at all.
+- An extern whose base isn't refcounted can't become a `Ref`: that cast doesn't compile.
+- An `Async` converts from any refcounted object, which should be a task object of some package.
+
+See `gd++ man externs` and `gd++ man async`.
 
 # Cost
 
-Static conversions cost nothing, like `static_cast`. A downcast asks the object for its class, which is cheap, but not free: in hot loops, keep the result instead of casting again. Converting to or from a `Variant` packs or unpacks the value.
+- Static conversions cost nothing, like `static_cast`.
+- A downcast asks the object for its class: cheap, but not free. In hot loops, keep the result instead of casting again.
+- Converting to or from a `Variant` packs or unpacks the value.
 
 # See also
 

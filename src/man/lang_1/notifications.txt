@@ -1,6 +1,6 @@
 Notifications: on ready, on process and the like
 
-This page explains `on` blocks, which run code when an object gets a notification from the engine, e.g. when a node gets ready, processes a frame, draws, or is about to be deleted.
+`on` blocks run code when an object gets a notification from the engine, e.g. when a node gets ready, processes a frame, draws, or is about to be deleted.
 
 # Syntax
 
@@ -18,11 +18,21 @@ on predelete {
 }
 ```
 
-An `on` block is `on`, the notification's name, and the body, C++ in braces. The name is that of the engine's constant without `NOTIFICATION_`, in lower case: `on predelete` runs at `NOTIFICATION_PREDELETE`. `on` blocks have no return type. A class has at most one `on` block for each notification. The notifications' names are still free to use as names elsewhere, e.g. `var ready: bool`.
+- `on`, the notification's name, then the body: C++ in braces.
+- The name is the engine's constant without `NOTIFICATION_`, in lower case: `on predelete` runs at `NOTIFICATION_PREDELETE`.
+- No return type.
+- A class has at most one `on` block per notification.
+- Notification names stay free as names elsewhere, e.g. `var ready: bool`.
 
 # Adding, not replacing
 
-`on` blocks add up. Godot sends each notification to every class in the chain of bases, so a base's `on ready` and a subclass's both run, the base's first, or last for notifications that Godot sends in reverse, e.g. `predelete`. A script that extends the class can't replace them either. An `@override` function does the opposite: it replaces the base's function, and a script's function of the same name replaces it in turn.
+`on` blocks add up:
+
+- Godot sends each notification to every class in the chain of bases.
+- So a base's `on ready` and a subclass's both run: the base's first, or last for notifications that Godot sends in reverse, e.g. `predelete`.
+- A script that extends the class can't replace them.
+
+An `@override` function does the opposite: it replaces the base's function, and a script's function of the same name replaces it in turn.
 
 ```gd++
 class Base {
@@ -42,11 +52,17 @@ class Sub {
 }
 ```
 
-A `Sub` prints both lines. With `@override func _ready() -> void` in both classes instead, it would only print "Sub is ready.". So use `on` to run code at an event, and `@override` only to change what a virtual function does. See "@override" in `gd++ man functions`.
+- A `Sub` prints both lines.
+- With `@override func _ready() -> void` in both classes instead, it would only print "Sub is ready.".
+- So use `on` to run code at an event, and `@override` only to change what a virtual function does. See "@override" in `gd++ man functions`.
 
 # Which notifications
 
-An `on` block works for every notification of its class and of its bases: GD++ looks up `NOTIFICATION_` constants in the package's API spec, which comes from the project's Godot version, and in the GD++ classes. So it also works for the notifications of newer Godot versions, and for the class's own ones. Any other name is an error:
+An `on` block works for every notification of its class and of its bases.
+
+- GD++ looks up `NOTIFICATION_` constants in the package's API spec, which comes from the project's Godot version, and in the GD++ classes.
+- So it also works for the notifications of newer Godot versions, and for the class's own ones.
+- Any other name is an error:
 
 ```out
 [×] res://a.gd++:4:1: Class Mob and its bases have no notification redy.
@@ -55,7 +71,7 @@ An `on` block works for every notification of its class and of its bases: GD++ l
     Hint: Did you mean "ready"?
 ```
 
-These are the notifications of Godot 4.7, by the class that has them. `gd++ doc --notifications` lists those of your package's Godot version:
+The notifications of Godot 4.7, by the class that has them. `gd++ doc --notifications` lists those of your package's Godot version:
 
 ```
 Object        postinitialize predelete extension_reloaded
@@ -84,20 +100,27 @@ MainLoop      os_memory_warning translation_changed wm_about crash os_ime_update
 EditorSettings editor_settings_changed
 ```
 
-Two classes can have notifications of the same name, e.g. `visibility_changed`: the block runs at the one of the class's own chain of bases. Godot's help explains when each one comes, e.g. `NOTIFICATION_PAUSED` in Node's.
+- Two classes can have notifications of the same name, e.g. `visibility_changed`. The block runs at the one of the class's own chain of bases.
+- Godot's help explains when each one comes, e.g. `NOTIFICATION_PAUSED` in Node's.
 
 # Special notifications
 
 Most `on` blocks just run at their notification. A few do more:
 
-- `on ready` runs at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, once the node's children are ready, right after the `@onready` initial values. So it runs before a script's `_ready`. It only runs the first time the node gets ready, not when it enters the tree again. In a `@pool` class, it only runs the first time an object gets ready, unless it has `@recycle`: see "Getting ready again" in `gd++ man pools`.
-- `on process`, `on physics_process`, `on internal_process` and `on internal_physics_process` turn their processing on in the constructor, with `set_process(true)` and the like. They can take the delta time, the seconds since the last frame, as a parameter of type `float`, in parentheses, whose name you choose: `on process(delta: float)` or `on process(dt: float)`. The parameter is optional: `on process { ... }` works too.
-
-Other `on` blocks take no parameters.
+- `on ready`:
+  - Runs at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, once the node's children are ready, right after the `@onready` initial values.
+  - So it runs before a script's `_ready`.
+  - It only runs the first time the node gets ready, not when it enters the tree again.
+  - In a `@pool` class, it only runs the first time an object gets ready, unless it has `@recycle`. See "Getting ready again" in `gd++ man pools`.
+- `on process`, `on physics_process`, `on internal_process` and `on internal_physics_process`:
+  - Turn their processing on in the constructor, with `set_process(true)` and the like.
+  - Can take the delta time, the seconds since the last frame, as a `float` parameter in parentheses, with a name you choose: `on process(delta: float)` or `on process(dt: float)`.
+  - The parameter is optional: `on process { ... }` works too.
+- Other `on` blocks take no parameters.
 
 # Every notification
 
-An `on` block without a name runs at every notification. Its optional parameter, of type `int`, is the notification:
+An `on` block without a name runs at every notification. Its optional `int` parameter is the notification:
 
 ```gd++
 on(what: int) {
@@ -107,19 +130,34 @@ on(what: int) {
 }
 ```
 
-`on { ... }`, without the parameter, runs at every notification too. A class has at most one of them. Use it for the notifications that have no `on` block of their own, or to handle several in one place, e.g. the engine's own `NOTIFICATION_READY`, which `on ready` doesn't run at.
+- `on { ... }`, without the parameter, runs at every notification too.
+- A class has at most one of them.
+- Use it for notifications without an `on` block of their own, or to handle several in one place, e.g. the engine's own `NOTIFICATION_READY`, at which `on ready` doesn't run.
 
 # Custom notifications
 
-A class's own constants named `NOTIFICATION_...` are notifications too, e.g. `enum NOTIFICATION_HIT = 2000`. `on hit` handles it, in the class and in its subclasses, and `notification(NOTIFICATION_HIT)` sends it. See "Integer constants" in `gd++ man enums`.
+- A class's own constants named `NOTIFICATION_...` are notifications too, e.g. `enum NOTIFICATION_HIT = 2000`.
+- `on hit` handles it, in the class and in its subclasses.
+- `notification(NOTIFICATION_HIT)` sends it.
+
+See "Integer constants" in `gd++ man enums`.
 
 # How they work
 
-GD++ generates the class's `_notification` from its `on` blocks and its `@onready` variables, so a class can't declare its own `_notification`. Each `on` block's body is a method of its own, which `_notification` calls when `WHAT` is its notification. Within `_notification`, the `@onready` initial values come first, then `on ready`, then the other `on` blocks, in the order of the file. A `return` ends only its own block. `on` blocks aren't functions of the class: C++ code and scripts can't call them. They can read `GENERATION`: see "Getting ready again" in `gd++ man pools`.
+- GD++ generates the class's `_notification` from its `on` blocks and its `@onready` variables. So a class can't declare its own `_notification`.
+- Each `on` block's body is a method of its own, which `_notification` calls when `WHAT` is its notification.
+- Within `_notification`: the `@onready` initial values first, then `on ready`, then the other `on` blocks, in file order.
+- A `return` ends only its own block.
+- `on` blocks aren't functions of the class: C++ code and scripts can't call them.
+- They can read `GENERATION`. See "Getting ready again" in `gd++ man pools`.
 
 # Annotations
 
-`on` blocks take only `@trace`, `@profile`, `@notrace`, `@noprofile` and `@game_only`, and `on ready` in a `@pool` class also `@recycle`:
+`on` blocks take only:
+
+- `@trace`, `@profile`, `@notrace` and `@noprofile`,
+- `@game_only`,
+- `@recycle`, on `on ready` in a `@pool` class.
 
 ```gd++
 @trace
@@ -132,7 +170,7 @@ The groups `process` and `physics_process` turn on the tracing and profiling of 
 
 # Overrides
 
-A function named like a notification's engine function, e.g. `func _ready() -> void`, is an override, so it needs `@override`, like any other override:
+A function named like a notification's engine function, e.g. `func _ready() -> void`, is an override. So it needs `@override`, like any other override:
 
 ```out
 [×] res://a.gd++:4:1: Function _ready overrides a virtual function of Node, so it needs @override.
@@ -141,11 +179,15 @@ A function named like a notification's engine function, e.g. `func _ready() -> v
     Hint: To add code that runs at its notification, write "on ready { ... }" instead. Only to replace the base's _ready, which a script replaces in turn, add @override.
 ```
 
-A plain override is rarely what you want, since it replaces the base's, and a script that defines a function of the same name replaces it. Only if you're sure you need one, write `@override func _ready() -> void`. It runs at `NOTIFICATION_READY`, unless a script replaces it. See "@override" in `gd++ man functions`.
+- A plain override is rarely what you want: it replaces the base's, and a script's function of the same name replaces it.
+- Only if you're sure you need one, write `@override func _ready() -> void`.
+- It runs at `NOTIFICATION_READY`, unless a script replaces it.
+
+See "@override" in `gd++ man functions`.
 
 # Not notifications
 
-Some of the engine's callbacks aren't notifications, but only virtual functions, so `on` blocks can't handle them. They're `@override` functions, which replace the base's:
+Some engine callbacks are only virtual functions, not notifications. `on` blocks can't handle them: use `@override` functions, which replace the base's.
 
 - Node: `_input`, `_shortcut_input`, `_unhandled_input` and `_unhandled_key_input`.
 - Control: `_gui_input` and `_drop_data`.

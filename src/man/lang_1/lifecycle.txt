@@ -1,6 +1,11 @@
 Lifecycle: what runs when
 
-This page explains what runs when an object of a GD++ class is created, gets ready, and is deleted: constructors, destructors, initial values of variables, `@onready`, and `on` blocks, e.g. `on ready`.
+This page covers what runs when an object of a GD++ class is created, gets ready, and is deleted:
+
+- constructors and destructors,
+- initial values of variables,
+- `@onready`,
+- `on` blocks, e.g. `on ready`.
 
 # ctor and dtor
 
@@ -17,7 +22,10 @@ dtor {
 }
 ```
 
-`ctor { ... }` is the class's constructor, and `dtor { ... }` its destructor. Their bodies are C++. A class has at most one of each, and neither takes arguments, since Godot creates objects without any:
+- `ctor { ... }` is the class's constructor. `dtor { ... }` is its destructor.
+- Their bodies are C++.
+- A class has at most one of each.
+- Neither takes arguments, since Godot creates objects without any:
 
 ```out
 [×] res://enemy.gd++:4:5: Expected "{" to start the ctor block, but found "(".
@@ -37,19 +45,43 @@ func with_health(hp: int) -> Enemy {
 }
 ```
 
-The constructor runs whenever an object is created: by `create` in C++, by `Enemy.new()` in GDScript, and when Godot loads a scene or resource that holds it. The destructor runs when the object is deleted: for nodes, when they're freed, e.g. with `queue_destroy` or `queue_free()`, and for refcounted objects, when the last reference goes away. A `@pool` class can also have `@recycle ctor` and `@recycle dtor` blocks, which run each time an object is put to use and stops being used: when it's created or taken from the pool, and when it's returned to the pool or deleted. See `gd++ man pools`.
+The constructor runs whenever an object is created:
+
+- by `create` in C++,
+- by `Enemy.new()` in GDScript,
+- when Godot loads a scene or resource that holds it.
+
+The destructor runs when the object is deleted:
+
+- nodes: when they're freed, e.g. with `queue_destroy` or `queue_free()`,
+- refcounted objects: when the last reference goes away.
+
+A `@pool` class can also have `@recycle ctor` and `@recycle dtor` blocks:
+
+- `@recycle ctor` runs each time an object is put to use: when it's created or taken from the pool.
+- `@recycle dtor` runs each time an object stops being used: when it's returned to the pool or deleted.
+
+See `gd++ man pools`.
 
 # What the constructor does
 
-GD++ generates a constructor if the class needs one: if it has a `ctor`, a `@recycle ctor`, a variable with an initial value that isn't `@onready`, an `@rpc` function, an `on process`, `on physics_process`, `on internal_process` or `on internal_physics_process` block, or an override of `_process` or `_physics_process`. The constructor does this, in order:
+GD++ generates a constructor if the class has any of:
 
-1. For each `@rpc` function, set its RPC configuration. See `gd++ man rpc`.
-2. If the class has one of these `on` blocks, or overrides `_process` or `_physics_process`, turn their processing on, e.g. with `set_process(true)` or `set_physics_process(true)`.
-3. Assign the initial values of the variables that aren't `@onready`, in the order of their declarations.
-4. Run the body of `ctor`, in a block of its own.
-5. In a `@pool` class, run the body of `@recycle ctor`, unless it has `@recycle("only")`. See `gd++ man pools`.
+- a `ctor` or a `@recycle ctor`,
+- a variable with an initial value that isn't `@onready`,
+- an `@rpc` function,
+- an `on process`, `on physics_process`, `on internal_process` or `on internal_physics_process` block,
+- an override of `_process` or `_physics_process`.
 
-So the body of `ctor` sees every variable with its initial value.
+The constructor, in order:
+
+1. Sets the RPC configuration of each `@rpc` function. See `gd++ man rpc`.
+2. Turns on the processing of those `on` blocks and overrides, e.g. with `set_process(true)` or `set_physics_process(true)`.
+3. Assigns the initial values of the variables that aren't `@onready`, in declaration order.
+4. Runs the body of `ctor`, in a block of its own.
+5. In a `@pool` class, runs the body of `@recycle ctor`, unless it has `@recycle("only")`. See `gd++ man pools`.
+
+So the body of `ctor` sees every variable with its initial value:
 
 ```gd++
 var speed: float = 5.0
@@ -62,7 +94,20 @@ ctor {
 
 # @onready and on ready
 
-A node gets ready when it and all its children have entered the scene tree, which is when Godot calls `_ready`. Variables with `@onready` get their initial values right before that, in the order of their declarations, since their initial values often need the node's children:
+A node gets ready when it and all its children have entered the scene tree. That's when Godot calls `_ready`.
+
+`@onready` variables:
+
+- Get their initial values right before that, in declaration order, since they often need the node's children.
+- GD++ assigns them in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`. That's the last notification before `NOTIFICATION_READY`, once the children are ready.
+- So they're set before the class's `on ready` block, and before any `_ready`, even a script's.
+- Only in classes that extend `Node`, since only nodes get ready. Elsewhere, `@onready` is an error.
+
+`on ready`:
+
+- Runs right after them, also before `NOTIFICATION_READY`. So it runs before a script's `_ready`.
+- An `@override func _ready()` runs at `NOTIFICATION_READY` instead, unless a script replaces it.
+- See `gd++ man notifications`.
 
 ```gd++
 @onready
@@ -73,11 +118,7 @@ on ready {
 }
 ```
 
-GD++ assigns them in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`, the last notification before `NOTIFICATION_READY`, once the children are ready. So they're set before the class's `on ready` block runs, and before any `_ready`, even a script's. `@onready` only works in classes that extend `Node`, since only nodes get ready: elsewhere, it's an error.
-
-The class's `on ready` block runs right after them, also before `NOTIFICATION_READY`, so it runs before a script's `_ready`. An `@override func _ready()` runs at `NOTIFICATION_READY` instead, unless a script replaces it. See `gd++ man notifications`.
-
-In a `@pool` class, a reused node gets ready again, but its `@onready` values and `on ready` block only run the first time, unless they have `@recycle`. See "Getting ready again" in `gd++ man pools`.
+In a `@pool` class, a reused node gets ready again. Its `@onready` values and `on ready` block only run the first time, unless they have `@recycle`. See "Getting ready again" in `gd++ man pools`.
 
 # The order of everything
 
@@ -91,28 +132,54 @@ For a node created by a scene, Godot:
 6. removes it from the tree: `on exit_tree` runs,
 7. deletes it: `on predelete` runs, then the destructor.
 
-Note step 2: values from the scene overwrite the initial values, since they're set after the constructor runs.
+Step 2 overwrites the initial values with the scene's values, since it comes after the constructor.
 
 # In the editor
 
-In the editor, Godot doesn't create objects of classes without `@tool`: it creates placeholders, which hold property values but run no code. So neither their constructor nor their destructor, nor any other of their functions, runs in the editor. Classes with `@tool` run everything in the editor too. Other code can still create an object of a runtime class with `create`, and then its code runs: `@game_only` classes check for the editor in every function, to prevent that. See `gd++ man classes`.
+- In the editor, Godot doesn't create objects of classes without `@tool`. It creates placeholders, which hold property values but run no code.
+- So their constructor, destructor and other functions don't run in the editor.
+- Classes with `@tool` run everything in the editor too.
+- Other code can still create an object of a runtime class with `create`, and then its code runs. `@game_only` classes check for the editor in every function, to prevent that.
+
+See `gd++ man classes`.
 
 # Tracing objects' lives
 
-With `@trace` on a class, in a build that turns it on, the constructor prints a line when an object is created, and the destructor when it's freed, e.g. `+ Bullet#28347 created` and `- Bullet#28347 freed`. They name the object by its instance id, since a node has no name yet in its constructor. An id without a "freed" line, once the object should be gone, points to a leak. For a `@pool` class, "created" and "freed" lines only show objects that are actually created and deleted: an object waiting in its pool is still alive. Its reuse and its return to the pool get lines of their own, marked `↻`. See `gd++ man debugging`.
+With `@trace` on a class, in a build that turns it on:
+
+- The constructor prints a line when an object is created, e.g. `+ Bullet#28347 created`.
+- The destructor prints one when it's freed, e.g. `- Bullet#28347 freed`.
+- Objects are named by their instance id, since a node has no name yet in its constructor.
+- An id without a "freed" line, once the object should be gone, points to a leak.
+- For a `@pool` class, "created" and "freed" only show objects that are actually created and deleted. An object waiting in its pool is still alive. Its reuse and its return to the pool get their own lines, marked `↻`.
+
+See `gd++ man debugging`.
 
 # Notifications
 
-Godot tells an object about events with notifications, e.g. `NOTIFICATION_READY` or `NOTIFICATION_PREDELETE`. An `on` block runs when the object gets its notification, e.g. `on predelete { ... }`, and `on(what: int) { ... }` at every notification. Two are worth knowing here:
+Godot tells an object about events with notifications, e.g. `NOTIFICATION_READY` or `NOTIFICATION_PREDELETE`.
 
-- `postinitialize` comes right after the constructor, once the object is fully created.
-- `predelete` comes when the object is about to be deleted, before the destructor. The object is still whole, e.g. a node is still in the tree, so it can still emit signals and call the engine.
+- An `on` block runs when the object gets its notification, e.g. `on predelete { ... }`.
+- `on(what: int) { ... }` runs at every notification.
+- A subclass's `on` blocks don't replace its base's: both run.
 
-A subclass's `on` blocks don't replace its base's: both run. See `gd++ man notifications`.
+Two are worth knowing here:
+
+- `postinitialize`: right after the constructor, once the object is fully created.
+- `predelete`: when the object is about to be deleted, before the destructor. The object is still whole, e.g. a node is still in the tree. So it can still emit signals and call the engine.
+
+See `gd++ man notifications`.
 
 # Pools
 
-A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later. Its `ctor` and `dtor` still run only when an object is actually created or deleted, while its `@recycle ctor` and `@recycle dtor` run each time an object is put to use and stops being used: when it's created or taken from the pool, and when it's returned to the pool or deleted, unless they have `@recycle("only")`. Its `@recycle` variables get their initial values again when an object is reused. A reused node gets ready again, but its `@onready` values and `on ready` block only run the first time, unless they have `@recycle`. See `gd++ man pools`.
+A `@pool` class reuses its objects: `destroy` keeps an object in the pool, and `create` reuses it later.
+
+- `ctor` and `dtor` run only when an object is actually created or deleted.
+- `@recycle ctor` and `@recycle dtor` run each time an object is put to use and stops being used, unless they have `@recycle("only")`.
+- `@recycle` variables get their initial values again when an object is reused.
+- A reused node gets ready again. Its `@onready` values and `on ready` block only run the first time, unless they have `@recycle`.
+
+See `gd++ man pools`.
 
 # See also
 

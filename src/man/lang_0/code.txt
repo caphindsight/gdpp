@@ -1,23 +1,33 @@
 C++ code: function bodies and C++ blocks
 
-Wherever GD++ takes a block in braces, the block is C++: function bodies, `ctor`, `dtor` and `on` blocks, `get` and `set` blocks, and initial and default values. `decl` and `impl` blocks go further: they put any C++ into the generated files, e.g. private helpers or `#include` lines. This page explains how GD++ treats C++ code, and where each block ends up.
+Wherever GD++ takes a block in braces, the block is C++:
+
+- function bodies,
+- `ctor`, `dtor` and `on` blocks,
+- `get` and `set` blocks,
+- initial and default values.
+
+`decl` and `impl` blocks go further: they put any C++ into the generated files, e.g. private helpers or `#include` lines. This page covers how GD++ treats C++ code, and where each block ends up.
 
 # What GD++ does to C++ code
 
 GD++ copies C++ code into the generated files almost as it is. It only:
 
-- removes comments, keeping their newlines, so line numbers stay the same. Remember that GD++'s block comments nest (see `gd++ man syntax`),
-- applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val` (see `gd++ man rewrites`),
+- removes comments, keeping their newlines, so line numbers stay the same. GD++'s block comments nest. See `gd++ man syntax`.
+- applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - wraps it in `#line` directives, so compiler errors point to the line in the GD++ file, not in the generated file.
 
-Everything else is plain C++, compiled by a C++ compiler with the package's C++ standard, against godot-cpp. Code in a class is inside namespace `godot`, like godot-cpp's own code, so Godot's names need no `godot::` prefix.
+Everything else is plain C++:
+
+- compiled by a C++ compiler with the package's C++ standard, against godot-cpp,
+- inside namespace `godot` for code in a class, like godot-cpp's own code. So Godot's names need no `godot::` prefix.
 
 # This and gd
 
 Two names are available in all C++ code of a class:
 
 This
-  The name of the current class, like `Self` in Rust: `This *copy = create This;` or `callable_mp(this, &This::on_hit)`. It's a macro that GD++ defines before the class's code and undefines after it, so it works in function bodies and in `decl` and `impl` blocks, but not in `@global` blocks.
+  The current class's name, like `Self` in Rust: `This *copy = create This;` or `callable_mp(this, &This::on_hit)`. A macro that GD++ defines before the class's code and undefines after it. It works in function bodies and in `decl` and `impl` blocks, but not in `@global` blocks.
 
 gd
   Short for `UtilityFunctions`, Godot's global functions: `gd::print`, `gd::randf`, `gd::clamp`, `gd::lerp`, `gd::is_instance_valid` and so on. See `gd++ man runtime`.
@@ -31,7 +41,11 @@ decl {
 }
 ```
 
-A `decl` block goes into the class definition, in the class's header. Its code starts in the private section of the class, so it's for private fields and methods. To make something public or protected, start with an access specifier:
+- A `decl` block goes into the class definition, in the class's header.
+- Its code starts in the class's private section: it's for private fields and methods.
+- Functions declared there are plain C++ methods. Godot doesn't know them, and GDScript can't call them.
+- Define them in an `impl` block, or inline, in the `decl` block itself.
+- To make something public or protected, start with an access specifier:
 
 ```gd++
 decl {
@@ -44,8 +58,6 @@ decl {
 
 Whatever GD++ writes after the block starts its own section, so access specifiers in a `decl` block don't leak.
 
-Functions declared in `decl` blocks are plain C++ methods: Godot doesn't know them, and GDScript can't call them. Define them in an `impl` block, or inline, in the `decl` block itself.
-
 # impl blocks
 
 ```gd++
@@ -56,7 +68,8 @@ impl {
 }
 ```
 
-An `impl` block goes into the class's source file, inside namespace `godot`, after the definitions that GD++ generates. It's for the definitions of methods declared in `decl` blocks, and for code that only the source file needs, e.g. static helper functions.
+- An `impl` block goes into the class's source file, inside namespace `godot`, after the definitions that GD++ generates.
+- It's for the definitions of methods declared in `decl` blocks, and for code that only the source file needs, e.g. static helper functions.
 
 # decl impl blocks
 
@@ -66,7 +79,8 @@ decl impl {
 }
 ```
 
-A `decl impl` block goes into both the header and the source file, e.g. for macros that both need. Macros leak into every file that includes the header, so `#undef` them at the end, in another `decl impl` block.
+- A `decl impl` block goes into both the header and the source file, e.g. for macros that both need.
+- Macros leak into every file that includes the header. `#undef` them at the end, in another `decl impl` block.
 
 # @global blocks
 
@@ -87,9 +101,17 @@ With `@global`, a block goes outside the class and outside namespace `godot`:
 - `@global impl`: into the class's source file, after the includes, before namespace `godot`.
 - `@global decl impl`: into both.
 
-Use them for the `#include` lines of other libraries, e.g. of the C++ standard library, and for declarations at global scope. `This` isn't available in `@global` blocks. The standard library needs no special setup: godot-cpp links it.
+Facts:
 
-`decl` and `impl` blocks must be inside a class, even with `@global`. At the top of a file, before `class_name`, they're an error. The only annotation they take is `@global`, and they take no doc comment.
+- Use them for the `#include` lines of other libraries, e.g. the C++ standard library, and for declarations at global scope.
+- `This` isn't available in `@global` blocks.
+- The standard library needs no setup: godot-cpp links it.
+
+Rules for `decl` and `impl` blocks:
+
+- They must be inside a class, even with `@global`. At the top of a file, before `class_name`, they're an error.
+- The only annotation they take is `@global`.
+- They take no doc comment.
 
 # Order in the generated files
 
@@ -126,17 +148,25 @@ See `gd++ man generated` for all details.
 
 # Includes in C++ code
 
-You don't write `#include` lines for Godot's classes, godot-cpp's names, or the package's GD++ classes, externs and enums: GD++ finds every name that the C++ code uses, and includes its header. See `gd++ man includes`. Write `#include` lines only for other code, e.g. `<vector>`, or the package's plain C++ headers, in `@global` blocks.
+- You don't write `#include` lines for Godot's classes, godot-cpp's names, or the package's GD++ classes, externs and enums.
+- GD++ finds every name that the C++ code uses, and includes its header. See `gd++ man includes`.
+- Write `#include` lines only for other code, e.g. `<vector>`, or the package's plain C++ headers, in `@global` blocks.
 
 # Line numbers
 
-GD++ keeps the line numbers of C++ code: comments are replaced by their newlines, and `#line` directives around each piece of your code tell the compiler where it came from. So when the compiler finds an error in a function body, it names the GD++ file and line:
+GD++ keeps the line numbers of C++ code:
+
+- Comments are replaced by their newlines.
+- `#line` directives around each piece of your code tell the compiler where it came from.
+- So when the compiler finds an error in a function body, it names the GD++ file and line:
 
 ```
 package/player.gd++:12:5: error: 'helth' was not declared in this scope
 ```
 
-The compiler runs in the package's build cache, so the path is relative to it. Each build compiles copies of the package's files, which it keeps in the build cache's `package/` directory, so errors show the code that was compiled, even if you edit a file during the build. Debuggers use the same information, so they show GD++ files and lines too, in debug builds.
+- The compiler runs in the package's build cache, so the path is relative to it.
+- Each build compiles copies of the package's files, kept in the build cache's `package/` directory. So errors show the compiled code, even if you edit a file during the build.
+- Debuggers use the same information. They show GD++ files and lines too, in debug builds.
 
 # Examples
 

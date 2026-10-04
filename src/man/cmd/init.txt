@@ -17,7 +17,10 @@ gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noic
 - With PATH, it creates or updates the package at PATH: it writes `PATH/gd++pkg.toml`.
 - With PATH and `--class`, it adds or updates a C++ class of the package at PATH.
 
-Every change is logged, e.g. "Set the Godot API spec to 4.7.2-stable." or "Set class Spinner to a tool class.". If the file already says what you asked for, it warns "No changes were made." and changes nothing.
+Output:
+
+- Every change is logged, e.g. "Set the Godot API spec to 4.7.2-stable." or "Set class Spinner to a tool class.".
+- If the file already says what you asked for, it warns "No changes were made." and changes nothing.
 
 # Setting up the project
 
@@ -28,15 +31,19 @@ gd++ init [--vcs none|git] [--presets | --nopresets]
 Writes `res://gd++proj.toml`, with the project's settings. See `gd++ man projects`.
 
 --vcs none|git
-  The project's version control system. With `git`, GD++ writes its blocks of ignores into the `.gitignore` files of the project and every package, and with `none`, it removes them. See `gd++ man vcs`.
+  The project's version control system.
+  - `git`: GD++ writes its blocks of ignores into the `.gitignore` files of the project and every package.
+  - `none`: GD++ removes them.
+  - See `gd++ man vcs`.
 
 --presets
-  Keep GD++'s sources and config files out of exported games: GD++ adds its exclude filters to every preset in `res://export_presets.cfg`, whenever `gd++ build` or `gd++ fix` runs. This is the default. See `gd++ man shipping`.
+  Keep GD++'s sources and config files out of exported games. `gd++ build` and `gd++ fix` add GD++'s exclude filters to every preset in `res://export_presets.cfg`. The default. See `gd++ man shipping`.
 
 --nopresets
   Make the next `gd++ build` or `gd++ fix` remove GD++'s exclude filters from every preset. After that, GD++ doesn't touch `res://export_presets.cfg`.
 
-Without options, it creates `gd++proj.toml` with the defaults, or reformats it. The file is optional, so you only need this step to change a setting.
+- Without options, it creates `gd++proj.toml` with the defaults, or reformats it.
+- The file is optional. You only need this step to change a setting.
 
 # Creating a package
 
@@ -44,7 +51,14 @@ Without options, it creates `gd++proj.toml` with the defaults, or reformats it. 
 gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
 ```
 
-Creates the directory PATH if it doesn't exist, and writes `PATH/gd++pkg.toml`. PATH must be inside a project. `.` makes the current directory a package, e.g. the project root. If the project uses git, it also writes the package-level block into `PATH/.gitignore`. If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`. See `gd++ man packages`.
+- Creates the directory PATH if needed, and writes `PATH/gd++pkg.toml`.
+- PATH must be inside a project.
+- `.` makes the current directory a package, e.g. the project root.
+- If the project uses git, it also writes the package-level block into `PATH/.gitignore`.
+- If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`.
+- `gd++ fetch --index` lists the bindings and specs that exist.
+
+See `gd++ man packages`.
 
 --bind NAME
   The package's Godot C++ bindings, e.g. `10.0.0-stable`. Required for a new package.
@@ -53,7 +67,11 @@ Creates the directory PATH if it doesn't exist, and writes `PATH/gd++pkg.toml`. 
   The package's Godot API spec, e.g. `4.7.2-stable`. Required for a new package.
 
 --syntax N
-  The package's GD++ syntax version. Default for a new package: the latest stable one. `gd++ --syntax` lists them all. See "Syntax versions" in `gd++ man packages`. Syntax 0 is the nightly version, which may break your code at any time, so `gd++ init` warns that it should never be used in production. For a version that this `gd++` doesn't know, e.g. `2`, `gd++ init` asks whether to continue, since either the value is wrong or `gd++` is outdated.
+  The package's GD++ syntax version. Default for a new package: the latest stable one.
+  - `gd++ --syntax` lists them all.
+  - Syntax 0 is the nightly version, which may break your code at any time. `gd++ init` warns that it should never be used in production.
+  - For a version that this `gd++` doesn't know, e.g. `2`, `gd++ init` asks whether to continue: either the value is wrong or `gd++` is outdated.
+  - See "Syntax versions" in `gd++ man packages`.
 
 --nightly
   The same as `--syntax 0`.
@@ -62,18 +80,17 @@ Creates the directory PATH if it doesn't exist, and writes `PATH/gd++pkg.toml`. 
   The package's C++ standard, e.g. `c++17`, `c++20` or `c++23`. Default: `c++20`.
 
 --prefix NAME
-  The prefix of the names of the classes that GD++ adds to the package, e.g. `Foo` for `FooAsync`, the class of its tasks. Default: the package's id in PascalCase, e.g. `MyGame` for `my_game`. See `gd++ man async`.
+  The prefix of the classes that GD++ adds to the package, e.g. `Foo` for `FooAsync`, the class of its tasks. Default: the package's id in PascalCase, e.g. `MyGame` for `my_game`. See `gd++ man async`.
 
 --quit-timeout SECONDS
-  How long the package's tasks may still run after the game started quitting, before the game exits anyway, e.g. `2.5`. Default: `1`. See "When the game quits" in `gd++ man async`.
+  How many seconds the package's tasks may still run after the game starts quitting, before it exits anyway, e.g. `2.5`. Default: `1`. See "When the game quits" in `gd++ man async`.
 
 --hotreload
-  Make the editor reload the package's library when a build changes it. This is the default.
+  Make the editor reload the package's library when a build changes it. The default.
 
 --nohotreload
   Make the editor load the package's library only once, e.g. because hot reload crashes the editor. See `hot_reload` in `gd++ man packages`.
 
-To see which bindings and specs exist, run `gd++ fetch --index`.
 
 # Updating a package
 
@@ -81,10 +98,12 @@ To see which bindings and specs exist, run `gd++ fetch --index`.
 gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload]
 ```
 
-Changes the given settings of the existing package at PATH, and keeps the others. Without `--update`, `gd++ init` asks "Package PATH already exists. Update it?" when PATH is a package already. Changing any setting makes the package's next build start from scratch.
+- Changes the given settings of the existing package at PATH, and keeps the others.
+- Without `--update`, `gd++ init` asks "Package PATH already exists. Update it?" when PATH is a package already.
+- Changing any setting makes the package's next build start from scratch.
 
 --update
-  Update an existing package, or with `--class` an existing class, without asking, instead of creating one. Fails if it doesn't exist.
+  Update an existing package, or with `--class` an existing class, without asking. Fails if it doesn't exist.
 
 # Adding or updating a C++ class
 
@@ -92,7 +111,11 @@ Changes the given settings of the existing package at PATH, and keeps the others
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--ptr | --ref | --nogdpp] [--update]
 ```
 
-Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so the package registers it with Godot, or updates the class if it's there already. GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here. See `gd++ man cpp-classes`.
+- Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so the package registers it with Godot.
+- Updates the class if it's there already.
+- GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here.
+
+See `gd++ man cpp-classes`.
 
 --class NAME
   The name of the class to add or update. It must be a C++ identifier.
@@ -124,7 +147,17 @@ Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so t
 --nogdpp
   Stop GD++ code from using the class by name. Removes `kind` from its `[[class]]` table.
 
-When you update a class, `--include` and `--icon` change the path, `--noinclude` and `--noicon` clear it, and without either, the path stays. In the same way, `--tool` and `--notool` make it a tool or runtime class, and `--ptr`, `--ref` and `--nogdpp` change how GD++ code uses it, and without any of them, that stays. A new class is a runtime class, unless you pass `--tool`, and GD++ code can't use it, unless you pass `--ptr` or `--ref`. Without `--update`, `gd++ init` asks "Class NAME already exists in PATH. Update it?".
+Updating a class:
+
+- `--include` and `--icon` change the path. `--noinclude` and `--noicon` clear it. Without either, the path stays.
+- `--tool` and `--notool` make it a tool or a runtime class. Without either, that stays.
+- `--ptr`, `--ref` and `--nogdpp` change how GD++ code uses it. Without any of them, that stays.
+- Without `--update`, `gd++ init` asks "Class NAME already exists in PATH. Update it?".
+
+A new class:
+
+- is a runtime class, unless you pass `--tool`,
+- can't be used by GD++ code, unless you pass `--ptr` or `--ref`.
 
 # Rules
 

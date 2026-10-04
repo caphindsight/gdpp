@@ -1,21 +1,32 @@
 Syntax: tokens, comments and literals
 
-This page describes the lexical structure of GD++: how a file is split into words, what comments look like, and which scopes a file has. For the grammar of declarations, see `gd++ man grammar`.
+This page covers the lexical structure of GD++: tokens, comments, literals and scopes. For the grammar of declarations, see `gd++ man grammar`.
 
 # Files
 
-A GD++ file is a text file in UTF-8, with the extension `.gd++`, `.gdpp` or `.gg`. Line endings can be `\n` or `\r\n`. Unlike GDScript, GD++ is not whitespace sensitive: indentation and spacing don't matter, except where this page says so.
+- A GD++ file is a UTF-8 text file with the extension `.gd++`, `.gdpp` or `.gg`.
+- Line endings can be `\n` or `\r\n`.
+- GD++ is not whitespace sensitive, unlike GDScript. Indentation and spacing don't matter, except where this page says so.
 
 # Scopes
 
-A file has four kinds of scope, and each one allows different things:
+A file has four kinds of scope:
 
-1. The class declaration scope: the top of a file, the rest of a file after `class_name` or `extern_name`, and the inside of `class Name { ... }` and `extern Name { ... }`. It holds declarations: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, `import` and `noimport`, and at the top level, classes and externs. The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
-2. The property declaration scope: the braces after `var name: type { ... }`. It holds only `decl`, `get` and `set` blocks. See `gd++ man variables`.
-3. The enum declaration scope: the braces after `enum Name { ... }`, and the rest of a file after `enum_name`. It holds an optional `extends`, then the enum's values. See `gd++ man enums`.
-4. The C++ scope: the inside of every other pair of braces, i.e. function bodies, `ctor`, `dtor` and `on` blocks, `decl` and `impl` blocks, `get` and `set` blocks, and initial and default values. It holds any C++ code, which GD++ copies into the generated C++. See `gd++ man code`.
+1. The class declaration scope.
+   - Where: the top of a file, the rest of a file after `class_name` or `extern_name`, and the inside of `class Name { ... }` and `extern Name { ... }`.
+   - Holds: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, `import` and `noimport`, and at the top level, classes and externs.
+   - The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
+2. The property declaration scope.
+   - Where: the braces after `var name: type { ... }`.
+   - Holds: only `decl`, `get` and `set` blocks. See `gd++ man variables`.
+3. The enum declaration scope.
+   - Where: the braces after `enum Name { ... }`, and the rest of a file after `enum_name`.
+   - Holds: an optional `extends`, then the enum's values. See `gd++ man enums`.
+4. The C++ scope.
+   - Where: every other pair of braces, i.e. function bodies, `ctor`, `dtor` and `on` blocks, `decl` and `impl` blocks, `get` and `set` blocks, and initial and default values.
+   - Holds: any C++ code, which GD++ copies into the generated C++. See `gd++ man code`.
 
-In all scopes, GD++ splits the text into the same kinds of tokens, described below, and handles comments the same way. So a C++ block ends at the `}` that matches its `{`, and braces inside strings, character literals and comments don't count.
+All scopes share the same tokens, described below, and the same comments. So a C++ block ends at the `}` that matches its `{`. Braces inside strings, character literals and comments don't count.
 
 # Comments
 
@@ -25,13 +36,15 @@ In all scopes, GD++ splits the text into the same kinds of tokens, described bel
 /* Block comments /* nest */, so this is still a comment. */
 ```
 
-Block comments nest, like in Rust but unlike in C++: every `/*` inside a block comment needs its own `*/`. This also holds in the C++ code of a GD++ file, so this common C++ trick doesn't work:
+- Block comments nest, like in Rust but unlike in C++: every `/*` inside a block comment needs its own `*/`.
+- This holds in C++ code too. So this common C++ trick doesn't work:
 
 ```gd++
 /* Disabled: /* old code */     <- still inside the comment here
 ```
 
-Comments are removed from the C++ code that GD++ generates. A comment is replaced by the newlines it spans, or by a space if it spans none, so the lines of the generated code still match the lines of the GD++ file.
+- Comments are removed from the generated C++.
+- A comment is replaced by the newlines it spans, or by a space if it spans none. So the lines of the generated code still match the lines of the GD++ file.
 
 # Doc comments
 
@@ -44,7 +57,10 @@ Comments are removed from the C++ code that GD++ generates. A comment is replace
 */
 ```
 
-A doc comment documents the declaration right after it, and becomes Godot's help for it. See `gd++ man docs`. A few look-alikes are plain comments, not doc comments:
+- A doc comment documents the declaration right after it, and becomes Godot's help for it. See `gd++ man docs`.
+- A doc comment not followed by a declaration is an error.
+- In C++ code, doc comments are plain comments.
+- These look-alikes are plain comments:
 
 ```gd++
 ////    four or more slashes
@@ -52,28 +68,40 @@ A doc comment documents the declaration right after it, and becomes Godot's help
 /***    three or more stars
 ```
 
-A doc comment that isn't followed by a declaration is an error. In C++ code, doc comments are plain comments.
-
 # Identifiers
 
-Identifiers are made of letters, digits and underscores, and don't start with a digit: `[A-Za-z_][A-Za-z0-9_]*`. They name classes, functions, variables, types and so on. Names are case sensitive, and only ASCII letters are allowed in them.
+- Made of letters, digits and underscores, not starting with a digit: `[A-Za-z_][A-Za-z0-9_]*`.
+- They name classes, functions, variables, types and so on.
+- Case sensitive.
+- Only ASCII letters.
 
 # Keywords
 
-These words have a special meaning in declarations. Don't use them as the names of classes, functions, variables and the like, since GD++ would misread them:
+Keywords have a special meaning in declarations. Don't use them as names of classes, functions, variables and the like, since GD++ would misread them:
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
 func  get  impl  import  noimport  on  set  signal  var
 ```
 
-GD++ has no other keywords: e.g. `const`, `static`, `pass`, `if` and `return` are not GD++ keywords. Attributes such as `@static` are annotations. See `gd++ man annotations`.
+- GD++ has no other keywords. E.g. `const`, `static`, `pass`, `if` and `return` are not GD++ keywords.
+- Attributes such as `@static` are annotations. See `gd++ man annotations`.
 
-In C++ code, GD++ gives a meaning to sixteen more words: the rewrites `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val` (see `gd++ man rewrites`), and `This` and `gd` (see `gd++ man code`).
+In C++ code, GD++ reserves sixteen more names:
+
+- the rewrites `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
+- `This` and `gd`. See `gd++ man code`.
 
 # Numbers
 
-Numbers are written like in C. Declarations use integers in enum values and constants, and integers or floating point numbers in annotation arguments, e.g. `@export_range(0.0, 1.5, 0.01)`. Integers can be written as:
+Numbers are written like in C.
+
+- Declarations use integers in enum values and constants.
+- Annotation arguments take integers or floating point numbers, e.g. `@export_range(0.0, 1.5, 0.01)`.
+- Integers must fit in a signed 64-bit integer.
+- In C++ code, any C++ number works, e.g. `1.5e-3`, `0x1p4`, `10u` or `1'000.0f`.
+
+Integer forms:
 
 ```gd++
 42        decimal
@@ -83,10 +111,6 @@ Numbers are written like in C. Declarations use integers in enum values and cons
 052       octal, with a leading 0
 1'000'000 with C++14 digit separators
 ```
-
-They must fit in a signed 64-bit integer.
-
-In C++ code, any C++ number works, e.g. `1.5e-3`, `0x1p4`, `10u` or `1'000.0f`.
 
 # Strings and characters
 
@@ -98,23 +122,31 @@ R"(A raw string, with "quotes" and } braces.)"
 R"delim(A raw string ending with )delim"
 ```
 
-Strings end on the same line. Raw strings, like in C++, can span lines, and end with `)`, their delimiter, and a quote. In declarations, strings are only used as annotation arguments, in double quotes. In C++ code, strings keep their C++ meaning.
-
-An apostrophe that isn't closed on the same line is not a character literal, so C++ code like `#error don't` works.
+- Strings end on the same line.
+- Raw strings, like in C++, can span lines. They end with `)`, their delimiter, and a quote.
+- In declarations, strings are only annotation arguments, in double quotes.
+- In C++ code, strings keep their C++ meaning.
+- An apostrophe not closed on the same line is not a character literal. So C++ code like `#error don't` works.
 
 # Punctuation
 
-Apart from the arrow `->`, every punctuation character is a token of its own: `(`, `)`, `[`, `]`, `{`, `}`, `,`, `:`, `=`, `@`, `-` and so on. In C++ code, all of C++'s operators work.
+- The arrow `->` is one token.
+- Every other punctuation character is a token of its own: `(`, `)`, `[`, `]`, `{`, `}`, `,`, `:`, `=`, `@`, `-` and so on.
+- In C++ code, all of C++'s operators work.
 
 # Brackets
 
-Every `(`, `[` and `{` in the file must be closed by the matching `)`, `]` or `}`, in C++ code too. GD++ first checks this for the whole file, and reports the bracket that is never closed, or the one that doesn't match. A missing `}` usually shows up as a `}` that is indented differently from its `{`, and GD++ uses that to point at the right place.
+- Every `(`, `[` and `{` in the file must be closed by the matching `)`, `]` or `}`, in C++ code too.
+- GD++ checks this first, for the whole file. It reports the bracket that is never closed, or the one that doesn't match.
+- A missing `}` usually shows up as a `}` indented differently from its `{`. GD++ uses that to point at the right place.
 
 # Values after "="
 
 After the `=` of a variable's initial value, or of a parameter's default value, comes C++ in one of two forms:
 
-- An expression, up to the end of the line. It can continue on the next lines while a bracket is open. A default value also ends at a `,` outside brackets, and at the `)` of the parameter list.
+- An expression, up to the end of the line.
+  - It continues on the next lines while a bracket is open.
+  - A default value also ends at a `,` outside brackets, and at the `)` of the parameter list.
 - A block in braces, which returns the value, like a function body.
 
 ```gd++

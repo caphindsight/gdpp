@@ -193,7 +193,8 @@ func (m manual) contents(parent string) string {
 //   - "# " starts a heading.
 //   - A line followed by a line indented by 2 spaces is a term, e.g. an option,
 //     and the indented lines describe it.
-//   - "- " and "1. " start list items.
+//   - "- " and "1. " start list items. A list item followed by indented items
+//     is not a term: the indented items are nested in it.
 //   - `...` is inline code.
 //   - A line "```LANG" starts a code block, and a line "```" ends it. LANG is
 //     gd++, cpp, gdscript, sh, toml, out (gd++'s output), or empty for plain
@@ -233,7 +234,7 @@ func renderMan(text, tag string, width int) string {
 			i = end
 		case strings.HasPrefix(line, "# "):
 			out = append(out, Styled(strings.TrimPrefix(line, "# "), Bold, Yellow))
-		case indent == 0 && body != "" && i+1 < len(lines) && len(lines[i+1]) > 2 && lines[i+1][:2] == "  " && lines[i+1][2] != ' ':
+		case indent == 0 && body != "" && !manItemRegexp.MatchString(body) && i+1 < len(lines) && len(lines[i+1]) > 2 && lines[i+1][:2] == "  " && lines[i+1][2] != ' ':
 			out = append(out, Styled(line, Bold, Green))
 		default:
 			indent += len(manItemRegexp.FindString(body))

@@ -1,10 +1,8 @@
 Rewrites: GD++'s additions to C++ code
 
-C++ code in a GD++ file is plain C++, with a handful of exceptions: rewrites, which GD++ adds to C++, and turns into plain C++ before the compiler sees the code. This page lists them, says why they exist, and where they apply.
+C++ code in a GD++ file is plain C++, with a handful of exceptions: rewrites. GD++ adds them to C++, and turns them into plain C++ before the compiler sees the code. This page lists them, why they exist, and where they apply.
 
 # The rewrites
-
-GD++ extends C++ with a few rewrites, which it turns into plain C++:
 
 ```
 emit NAME(ARGS)                (void) NAME(ARGS)                  send a signal, see `gd++ man signals`
@@ -26,31 +24,48 @@ assert_val COND;               GDPP_ASSERT_VALUE("COND", COND);
 
 # Why
 
-They are rare on purpose, and mostly trivial: most just call a method. What they add is the look. Sending a signal, calling a remote function, and polling or stopping a task look different from a plain function call, `is_cancelled` reads like a flag, `string_name "NAME"` reads like a typed literal, a conversion reads like GDScript's, and creating and deleting an object read alike for every class, pools included. So these places stand out when you read the code. `assert` does more: it returns from a function whose check fails, but only in debug builds, which plain C++ can only do with `#ifdef`. The method calls work too, e.g. `task.is_done()`, if you prefer them.
+- They are rare on purpose, and mostly trivial: most just call a method.
+- What they add is the look. These places stand out when you read the code:
+  - Sending a signal, calling a remote function, and polling or stopping a task look different from a plain function call.
+  - `is_cancelled` reads like a flag.
+  - `string_name "NAME"` reads like a typed literal.
+  - A conversion reads like GDScript's.
+  - Creating and deleting an object read alike for every class, pools included.
+- `assert` does more: it returns from a function whose check fails, but only in debug builds. Plain C++ can only do that with `#ifdef`.
+- The method calls work too, e.g. `task.is_done()`, if you prefer them.
 
 # Where they apply
 
-Rewrites only happen in C++ code, never in comments or strings. Each rewrite applies in its own places:
+Rewrites only happen in C++ code, never in comments or strings. Each applies in its own places:
 
-- `emit` is rewritten wherever it stands as a word, so it's reserved: don't use `emit` as a name in your C++ code, and don't call methods named `emit`, e.g. `Signal::emit`.
-- `is_cancelled` is rewritten wherever it isn't a member, e.g. `state.is_cancelled`, a name in a scope, e.g. `gdpp::is_cancelled`, or a call, e.g. `is_cancelled()`. So it's reserved too: a variable or field named `is_cancelled` doesn't compile.
-- `rpc` is only rewritten when a call follows it, or a peer in parentheses and then a call. Elsewhere it's left alone, e.g. in Godot's own `rpc("ping")`.
-- `string_name` is only rewritten when a string literal follows it, e.g. `string_name "update"`. Elsewhere it's left alone, e.g. a variable named `string_name`.
-- `is_done`, `claim` and `cancel` are only rewritten when a name follows them. Elsewhere they're left alone, e.g. a variable named `claim`, or the call `task.is_done()`.
-- `create`, `destroy` and `queue_destroy` are only rewritten when a name follows them, and aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
-- `as` is only rewritten when a value comes before it and a type after it.
-- `assert`, `assert_void` and `assert_val` are only rewritten where they start a statement, and a condition and then a `;` follow it. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere they're left alone, e.g. in `s.assert(x);` or `assert = 1;`.
+- `emit`: everywhere. So it's reserved: don't use `emit` as a name in your C++ code, and don't call methods named `emit`, e.g. `Signal::emit`.
+- `is_cancelled`: everywhere except as a member, e.g. `state.is_cancelled`, a name in a scope, e.g. `gdpp::is_cancelled`, or a call, e.g. `is_cancelled()`. So it's reserved too: a variable or field named `is_cancelled` doesn't compile.
+- `rpc`: only when a call follows it, or a peer in parentheses and then a call. Elsewhere it's left alone, e.g. in Godot's own `rpc("ping")`.
+- `string_name`: only when a string literal follows it, e.g. `string_name "update"`. Elsewhere it's left alone, e.g. a variable named `string_name`.
+- `is_done`, `claim` and `cancel`: only when a name follows them. Elsewhere they're left alone, e.g. a variable named `claim`, or the call `task.is_done()`.
+- `create`, `destroy` and `queue_destroy`: only when a name follows them, and they aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
+- `as`: only when a value comes before it and a type after it.
+- `assert`, `assert_void` and `assert_val`: only where they start a statement, followed by a condition and a `;`. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere they're left alone, e.g. in `s.assert(x);` or `assert = 1;`.
 
-Avoid the names of all rewrites as names in your C++ code. Their operands:
+Avoid the names of all rewrites as names in your C++ code.
 
-- NAME may be written with objects before it, joined by `->` or `.`, e.g. `rpc other->take_damage(5)`. The objects must be named by variables, not by function calls.
-- TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending`, `this->tasks[i]` or `find_path(a, b)`. Like C++'s own prefix operators, the rewrite applies to all of it: `claim find(a).size()` claims the result of `find(a).size()`, so write `(claim find(a)).size()` to call `size` on the result. TASK must start with a name: `claim (a ? x : y)` isn't rewritten, so write `(a ? x : y).claim()` then.
-- T is the name of a class, maybe in a scope, e.g. `Bullet`, `This` or `godot::Mesh`. OBJECT and NODE are like TASK, e.g. `bullet` or `this->bullets[i]`.
-- VALUE is like TASK, but may also be in parentheses, e.g. `body`, `get_node("Mesh")` or `(a + b)`. `as` binds it like a C++ postfix operator, so `a + b as float` converts `b` only. T is a type, e.g. `int`, `Node3D *` or `Ref<Mesh>`. `as` is only rewritten where both are clear: in `x as int * y` or `(int) x as float`, it stays, so the code doesn't compile, and parentheses fix it, e.g. `(x as int) * y`. See `gd++ man cast`.
+Their operands:
 
-A rewrite keeps the code's line breaks, so the line numbers in errors still match the GD++ file.
+- NAME may have objects before it, joined by `->` or `.`, e.g. `rpc other->take_damage(5)`. The objects must be named by variables, not by function calls.
+- TASK is a name, followed by any member accesses, scopes, calls and subscripts, e.g. `pending`, `this->tasks[i]` or `find_path(a, b)`.
+  - Like C++'s own prefix operators, the rewrite applies to all of it: `claim find(a).size()` claims the result of `find(a).size()`. Write `(claim find(a)).size()` to call `size` on the result.
+  - TASK must start with a name: `claim (a ? x : y)` isn't rewritten. Write `(a ? x : y).claim()` then.
+- T is a class name, maybe in a scope, e.g. `Bullet`, `This` or `godot::Mesh`.
+- OBJECT and NODE are like TASK, e.g. `bullet` or `this->bullets[i]`.
+- VALUE is like TASK, but may also be in parentheses, e.g. `body`, `get_node("Mesh")` or `(a + b)`.
+  - `as` binds it like a C++ postfix operator: `a + b as float` converts `b` only.
+  - T is a type, e.g. `int`, `Node3D *` or `Ref<Mesh>`.
+  - `as` is only rewritten where both are clear. In `x as int * y` or `(int) x as float`, it stays, and the code doesn't compile. Parentheses fix it, e.g. `(x as int) * y`. See `gd++ man cast`.
 
-`gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
+Other facts:
+
+- A rewrite keeps the code's line breaks. So line numbers in errors still match the GD++ file.
+- `gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
 
 # Assertions
 
@@ -63,38 +78,58 @@ func fire() -> void {
 }
 ```
 
-In debug builds, if the condition is false, the assertion prints an error and returns from the function. A function that returns a value returns the type's default, e.g. `0`, `nullptr` or an empty `String`. The error shows the condition, and Godot shows where the assertion is in the GD++ file below it:
+In debug builds, if the condition is false:
+
+- The assertion prints an error, and returns from the function.
+- A function that returns a value returns the type's default, e.g. `0`, `nullptr` or an empty `String`.
+- The error shows the condition. Below it, Godot shows where the assertion is in the GD++ file:
 
 ```
 Failed GD++ assertion: `target != nullptr`.
 ```
 
-With `gd++ build --trace`, the error is also a trace line, with the place, so it shows among the calls that led to it. See "Failed assertions" in `gd++ man debugging`.
+- With `gd++ build --trace`, the error is also a trace line, with the place, among the calls that led to it. See "Failed assertions" in `gd++ man debugging`.
 
-A failed assertion is always undefined behavior, in debug builds too. GD++ tries hard to keep the game from crashing and to let it go on sensibly, so you can find the bug and fix it. But the code around the assertion was written for a true condition: the function stops halfway, and its caller gets a default value it may not expect. So nothing that happens after a failed assertion is promised.
+A failed assertion is always undefined behavior, in debug builds too:
 
-To check a condition in a well-defined way, e.g. whether a file exists, use a plain `if`. What an assertion has over an `if` is that it costs nothing in release builds.
+- GD++ tries hard to keep the game from crashing, and to let it go on sensibly, so you can find the bug and fix it.
+- But the code around the assertion was written for a true condition. The function stops halfway, and its caller gets a default value it may not expect.
+- So nothing that happens after a failed assertion is promised.
+- To check a condition in a well-defined way, e.g. whether a file exists, use a plain `if`. An assertion's advantage over an `if` is that it costs nothing in release builds.
 
-In release builds, assertions are gone: the condition isn't evaluated, and the code goes on as if it were true. So the condition must not do anything that the code needs, e.g. call a function for its effect. It must still compile, though.
+In release builds:
+
+- Assertions are gone. The condition isn't evaluated, and the code goes on as if it were true.
+- So the condition must not do anything that the code needs, e.g. call a function for its effect.
+- It must still compile.
 
 C++'s own `assert(x);` is an assertion too: GD++ rewrites it like `assert x;`. So GD++ code never uses the `assert` macro of `<cassert>`.
 
-GD++ turns an assertion into a call of one of the runtime's macros, which gets the condition's text too, e.g. `GDPP_ASSERT_VOID("target != nullptr", target != nullptr);`. The macro depends on what the code around the assertion returns, since its `return` must match: `return;` in a function that returns `void`, a value in one that returns a value. GD++ tries hard to work this out, so that `assert` just works:
+How an assertion returns:
 
-- In functions, getters, setters and other code that GD++ wraps in a function, GD++ knows what the code returns.
-- In a lambda, GD++ reads the lambda's return type, e.g. `-> int`, `-> int &` or `-> void`. A lambda without one returns `void`.
-- In a constructor or destructor, in `decl` and `impl` blocks or in a class within a function, GD++ knows that it returns nothing.
-- In other functions in `decl` and `impl` blocks or in a class within a function, the runtime's `GDPP_ASSERT` finds out from the function's signature at compile time.
+- GD++ turns an assertion into a call of one of the runtime's macros, which gets the condition's text too, e.g. `GDPP_ASSERT_VOID("target != nullptr", target != nullptr);`.
+- The macro depends on what the surrounding code returns, since its `return` must match: `return;` in a `void` function, a value in one that returns a value.
+- GD++ works this out, so that `assert` just works:
+  - In functions, getters, setters and other code that GD++ wraps in a function, GD++ knows what the code returns.
+  - In a lambda, GD++ reads the lambda's return type, e.g. `-> int`, `-> int &` or `-> void`. A lambda without one returns `void`.
+  - In a constructor or destructor, in `decl` and `impl` blocks, or in a class within a function, GD++ knows that it returns nothing.
+  - In other functions in `decl` and `impl` blocks, or in a class within a function, the runtime's `GDPP_ASSERT` finds out from the function's signature at compile time.
 
 # Where C++ gets in the way
 
-A few cases are impossible to get right, because of how C++ works:
+A few cases can't be handled, because of how C++ works:
 
-- A lambda or function without a return type, e.g. `[](int x) { return x * 2; }` or `auto twice(int x) { ... }`, gets its type from its `return` statements. An assertion's `return` would need a value of that type, and the code can't name it. So an assertion there doesn't compile, and the error says to write the return type, e.g. `[](int x) -> int { ... }`. This is only a problem if it returns a value: a lambda without a return type that returns nothing is fine.
-- GD++ reads C++ code before the preprocessor does, so it can't see a lambda that a macro writes, e.g. `CALLBACK(int x) { ... }` with `#define CALLBACK(...) [&](__VA_ARGS__)`. An assertion there returns like the code around the lambda, which may not compile.
+- A lambda or function without a return type, e.g. `[](int x) { return x * 2; }` or `auto twice(int x) { ... }`, gets its type from its `return` statements.
+  - An assertion's `return` would need a value of that type, and the code can't name it.
+  - So an assertion there doesn't compile. The error says to write the return type, e.g. `[](int x) -> int { ... }`.
+  - Only a problem if it returns a value. A lambda without a return type that returns nothing is fine.
+- GD++ reads C++ code before the preprocessor does. It can't see a lambda that a macro writes, e.g. `CALLBACK(int x) { ... }` with `#define CALLBACK(...) [&](__VA_ARGS__)`. An assertion there returns like the code around the lambda, which may not compile.
 - `GDPP_ASSERT` needs a compiler that tells it the function's signature: GCC, Clang or MSVC. With another one, an assertion where `GDPP_ASSERT` is used doesn't compile, and the error says what to do.
 
-As a last resort for the last two cases, `assert_void COND;` and `assert_val COND;` are like `assert COND;`, but always return as from a function that returns `void` or a value. Use them only where `assert` doesn't work:
+The fallbacks, a last resort for the last two cases:
+
+- `assert_void COND;` and `assert_val COND;` are like `assert COND;`, but always return as from a function that returns `void` or a value.
+- Use them only where `assert` doesn't work:
 
 ```gd++
 #define CALLBACK(...) [&](__VA_ARGS__)
@@ -103,11 +138,13 @@ auto print = CALLBACK(int x) { assert_void x != 0; };
 
 # Trailing commas
 
-In C++ code, a call's arguments may end with a comma, like in GDScript: `f(a, b,)` becomes `f(a, b)`. This helps when each argument is on its own line. GD++ drops any `,` right before `)`, so avoid macro calls with an empty last argument, e.g. `M(a,)`.
+- In C++ code, a call's arguments may end with a comma, like in GDScript: `f(a, b,)` becomes `f(a, b)`.
+- This helps when each argument is on its own line.
+- GD++ drops any `,` right before `)`. So avoid macro calls with an empty last argument, e.g. `M(a,)`.
 
 # Seeing them
 
-`gd++ trans FILE` prints the generated C++, with every rewrite done. E.g. this function:
+`gd++ trans FILE` prints the generated C++, with every rewrite done. This function:
 
 ```gd++
 func poll() -> void {
@@ -135,7 +172,12 @@ void Pathfinder::poll() {
 
 # Other names
 
-`This` and `gd` aren't rewrites: `This` is a macro for the current class's name, and `gd` an alias of `UtilityFunctions`, both plain C++. See `gd++ man code`.
+`This` and `gd` aren't rewrites. Both are plain C++:
+
+- `This`: a macro for the current class's name.
+- `gd`: an alias of `UtilityFunctions`.
+
+See `gd++ man code`.
 
 # See also
 

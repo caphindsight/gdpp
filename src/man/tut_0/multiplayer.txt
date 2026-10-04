@@ -1,6 +1,12 @@
 Tutorial: make a small networked game
 
-This tutorial builds the network code of a small game with Godot's high-level multiplayer: a server that players join, players that move on every screen, and shots that the server checks. GD++ declares remote functions with `@rpc`, and calls them with `rpc`. Godot's own nodes, like `MultiplayerSpawner`, work as usual. It assumes a project that builds, as in `gd++ man tour`.
+This tutorial builds the network code of a small game with Godot's high-level multiplayer:
+
+- a server that players join,
+- players that move on every screen,
+- shots that the server checks.
+
+GD++ declares remote functions with `@rpc`, and calls them with `rpc`. Godot's own nodes, like `MultiplayerSpawner`, work as usual. It assumes a project that builds, as in `gd++ man tour`.
 
 # 1. Host and join
 
@@ -42,7 +48,18 @@ func add_player(id: int) -> void {
 }
 ```
 
-Add the `MultiplayerSpawner` to the scene in the editor, set its spawn path, e.g. to a `Players` node, and pick it for the `spawner` property. If you forget, `spawner` is `nullptr`: in debug builds, the assertions print an error instead of crashing the game. See "Assertions" in `gd++ man rewrites`. Only the server calls `spawn`, with the new player's peer id. The spawner then calls the spawn function on every peer, with that id, and adds the node it returns. The server's id is always 1.
+In the editor:
+
+1. Add the `MultiplayerSpawner` to the scene.
+2. Set its spawn path, e.g. to a `Players` node.
+3. Pick it for the `spawner` property.
+
+Facts:
+
+- If you forget, `spawner` is `nullptr`. In debug builds, the assertions print an error instead of crashing the game. See "Assertions" in `gd++ man rewrites`.
+- Only the server calls `spawn`, with the new player's peer id.
+- The spawner then calls the spawn function on every peer, with that id, and adds the node it returns.
+- The server's id is always 1.
 
 # 2. Give each player to its peer
 
@@ -80,8 +97,8 @@ on physics_process(delta: float) {
 }
 ```
 
-- `@rpc` marks a function that other peers may call. Without a mode, it's `"authority"`: only the node's authority may call it, so no other peer can move this player.
-- `"unreliable_ordered"` fits data that's sent every frame: a lost packet doesn't matter, since the next one comes soon, but an old one must not overwrite a newer one.
+- `@rpc` marks a function that other peers may call. Without a mode, it's `"authority"`: only the node's authority may call it. So no other peer can move this player.
+- `"unreliable_ordered"` fits data sent every frame. A lost packet doesn't matter, since the next one comes soon. But an old one must not overwrite a newer one.
 - `rpc sync_position(...)` calls the function on every other peer. A plain call, `sync_position(...)`, would only run it here.
 
 See `gd++ man rpc` for all arguments of `@rpc`.
@@ -119,12 +136,13 @@ func shoot(aim: Vector3) -> void {
 
 `find_target` is a helper that finds the player in the line of fire, e.g. with a raycast.
 
-- `rpc(1) request_shot(aim)` calls the function on the server only. `"any_peer"` lets clients call it, since the server isn't the player's authority. In exchange, the function checks who called it, with `get_remote_sender_id()`: only the player's own peer may shoot with it.
+- `rpc(1) request_shot(aim)` calls the function on the server only.
+  - `"any_peer"` lets clients call it, since the server isn't the player's authority.
+  - In exchange, the function checks who called it, with `get_remote_sender_id()`. Only the player's own peer may shoot with it.
 - `rpc target->set_health(...)` calls the function on every peer, for the target player. It also accepts any peer, so it checks that the server sent it.
 - `"reliable"` fits events that must arrive: a lost shot would be a bug.
-- `"call_local"` also runs the function on the calling peer, so the host's own player works like everyone else's.
-
-`rpc` needs the object in a variable, like `target` here, not a call: write `Player *p = get_player(); rpc p->...`, not `rpc get_player()->...`.
+- `"call_local"` also runs the function on the calling peer. So the host's own player works like everyone else's.
+- `rpc` needs the object in a variable, like `target` here, not a call. Write `Player *p = get_player(); rpc p->...`, not `rpc get_player()->...`.
 
 # 5. Test with two instances
 
@@ -134,9 +152,19 @@ Build once:
 gd++ build
 ```
 
-In the editor, open Debug > Customize Run Instances, and run two instances. Host in one, and join `127.0.0.1` in the other. Both load the same library.
+1. In the editor, open Debug > Customize Run Instances, and run two instances.
+2. Host in one.
+3. Join `127.0.0.1` in the other.
 
-To see the network traffic, trace the remote functions, e.g. `@trace("net")` on `request_shot` and `set_health`, and build with `gd++ build --trace net`: each call prints with its arguments, in both instances' output. See `gd++ man debugging`.
+Both load the same library.
+
+To see the network traffic:
+
+- Trace the remote functions, e.g. `@trace("net")` on `request_shot` and `set_health`.
+- Build with `gd++ build --trace net`.
+- Each call prints with its arguments, in both instances' output.
+
+See `gd++ man debugging`.
 
 # 6. Across packages
 
@@ -149,7 +177,7 @@ extern Player {
 }
 ```
 
-The class that defines the function configures it, so the extern's `@rpc` takes no arguments. See "@rpc" in `gd++ man externs`.
+The class that defines the function configures it. So the extern's `@rpc` takes no arguments. See "@rpc" in `gd++ man externs`.
 
 # See also
 

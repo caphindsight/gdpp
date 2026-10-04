@@ -2,12 +2,24 @@ Introduction: what GD++ is
 
 # What GD++ is
 
-GD++ lets you write Godot games in C++, without the boilerplate. It is one command line program, `gd++`, which does two jobs:
+GD++ lets you write Godot games in C++ without the boilerplate. It is one command line program, `gd++`, with two jobs:
 
-- It is a small build system for Godot C++ code. It downloads the Godot C++ bindings (godot-cpp) and the Godot API specs that your code needs, keeps them in your project, and compiles your code into GDExtension libraries, which Godot loads like its own modules.
-- It is the compiler of the GD++ language. GD++ compiles to plain C++. Its declarations look like GDScript, and its function bodies are C++, with a few rewrites (see `gd++ man rewrites`). GD++ writes the glue code that Godot needs for you: headers, `_bind_methods`, getters and setters, `#include` lines and class registration.
+- A small build system for Godot C++ code:
+  - It downloads the Godot C++ bindings (godot-cpp) and the Godot API specs.
+  - It keeps them in your project.
+  - It compiles your code into GDExtension libraries, which Godot loads like its own modules.
+- The compiler of the GD++ language:
+  - GD++ compiles to plain C++.
+  - Declarations look like GDScript.
+  - Function bodies are C++, with a few rewrites. See `gd++ man rewrites`.
+  - GD++ writes the glue code that Godot needs: headers, `_bind_methods`, getters and setters, `#include` lines and class registration.
 
-Since GD++ compiles to C++, your own logic, like math and loops, runs 15 to 50 times faster than in GDScript, in release builds. Code that mostly works with Godot's types, like `Array` and `Dictionary`, or calls the engine, gains much less. See `gd++ man performance`.
+Speed, in release builds:
+
+- Your own logic, like math and loops, runs 15 to 50 times faster than in GDScript.
+- Code that mostly uses Godot's types, like `Array` and `Dictionary`, or calls the engine, gains much less.
+
+See `gd++ man performance`.
 
 A GD++ class, saved as `hello_world.gd++` anywhere in a Godot project:
 
@@ -22,7 +34,7 @@ on ready {
 }
 ```
 
-Three commands, run in the project directory, turn it into a node type that Godot knows, like any built-in node:
+Three commands, run in the project directory, turn it into a node type that Godot knows:
 
 ```sh
 gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
@@ -30,43 +42,60 @@ gd++ fetch --missing
 gd++ build
 ```
 
-GD++ follows Godot's "all in one" approach: everything ships in one tool. It aims to be a joy to use: a new project takes one or two commands to set up. You can adapt it to your needs a little, but on purpose it is not highly configurable, since that would make it harder to use.
+Design goals:
+
+- All in one, like Godot: every feature ships in one tool.
+- A joy to use: a new project takes one or two commands to set up.
+- A little configurable, on purpose not more: more options would make it harder to use.
 
 # What you need
 
 - Godot 4, to run your game.
-- `gd++` itself. It is written in Go. To build it from its source code, run `make && sudo make install`, which copies the `gd++` binary to `/usr/local/bin`.
+- `gd++` itself, written in Go. To build it from source, run `make && sudo make install`. This copies the `gd++` binary to `/usr/local/bin`.
 - The tools that compile C++: Git, SCons, Python and a C++ compiler. `gd++ install` installs them with your system's package manager. See `gd++ man install`.
 
-You don't need to download godot-cpp or anything else from Godot yourself: GD++ does it for you.
+You don't download godot-cpp or anything else from Godot yourself: GD++ does it.
 
 # How to read this manual
 
-Run `gd++ man` to list all pages, and `gd++ man PAGE` to read one, e.g. `gd++ man classes`. Pages open in a pager when they don't fit the terminal: the up and down keys scroll by a line, page up and page down (or space) by a page, and q, escape or Ctrl+C quit. `/` searches: type a word and press Enter to highlight its matches, ignoring case, then n and Shift+N jump to the next and previous one, and q ends the search, so it takes a second q to quit. When the output is not a terminal, e.g. in `gd++ man classes > classes.txt`, pages are printed as they are.
+- `gd++ man` lists all pages, in reading order.
+- `gd++ man PAGE` shows one page, e.g. `gd++ man classes`.
 
-The manual is a tree of pages. At its top are this page, `tour` (a walk through a first project), and four sections:
+Pages that don't fit the terminal open in a pager:
 
-- `tut`, the tutorials: one page per goal, e.g. shipping a game, with all the steps to reach it.
-- `tool`, the build tool: how projects, packages, dependencies and builds work.
-- `cmd`, the commands: one page per `gd++` command, with all its options.
-- `lang`, the GD++ language: one page per topic, from the syntax to the C++ that GD++ generates.
+- Up and down scroll by a line.
+- Page up and page down, or space, scroll by a page.
+- q, escape or Ctrl+C quit.
+- `/` searches: type the text and press Enter. Matches are highlighted, ignoring case.
+- n and Shift+N jump to the next and the previous match.
+- q ends the search, so it takes a second q to quit.
 
-A section's page gives an overview of the section, and ends with the list of its pages. Every page has a unique name and a path in the tree: `gd++ man functions` and `gd++ man lang/functions` show the same page. `gd++ man` lists the pages in reading order.
+When the output is not a terminal, e.g. in `gd++ man classes > classes.txt`, pages are printed as they are.
 
-Each page starts with a short introduction, then explains the details, with examples. Pages refer to each other by name, e.g. "see `gd++ man externs`".
+The manual is a tree of pages. At its top are this page, `tour` (a first project), and four sections:
 
-In examples, lines like `gd++ build` are commands to type into a shell. Code examples are GD++, unless the page says otherwise.
+- `tut`: tutorials, one page per goal, e.g. shipping a game.
+- `tool`: the build tool, i.e. projects, packages, dependencies and builds.
+- `cmd`: one page per `gd++` command, with all its options.
+- `lang`: the GD++ language, one page per topic.
 
-The tutorials and the language pages describe one syntax version of GD++: in a package, the package's version, and elsewhere the latest stable one. `gd++ man --syntax N PAGE` shows another version's page. See `gd++ man man`.
+Facts about pages:
+
+- A section's page gives an overview, and ends with the list of its pages.
+- Every page has a unique name and a path: `gd++ man functions` and `gd++ man lang/functions` show the same page.
+- Pages refer to each other by name, e.g. "see `gd++ man externs`".
+- In examples, lines like `gd++ build` are shell commands.
+- Code examples are GD++, unless the page says otherwise.
+- The tutorials and the language pages describe one syntax version: in a package, the package's, and elsewhere the latest stable one. `gd++ man --syntax N PAGE` shows another version's page. See `gd++ man man`.
 
 # Where else to look
 
-- `gd++ --help` and `gd++ COMMAND --help` list the options of each command, in short.
-- `gd++ trans FILE` prints the C++ that GD++ generates from a GD++ file. It is the best way to learn what the language does. See `gd++ man trans`.
-- `gd++ doc NAME` shows what godot-cpp or the GD++ runtime declares under a name, e.g. a class and its methods. See `gd++ man doc`.
-- Godot's own help, in the editor, describes the engine's classes. Your GD++ classes show up there too, with their doc comments. See `gd++ man docs`.
+- `gd++ --help` and `gd++ COMMAND --help`: the options of each command, in short.
+- `gd++ trans FILE`: the C++ that GD++ generates from a file. The best way to learn what the language does. See `gd++ man trans`.
+- `gd++ doc NAME`: what godot-cpp or the GD++ runtime declares under a name, e.g. a class and its methods. See `gd++ man doc`.
+- Godot's help, in the editor: the engine's classes, and your GD++ classes with their doc comments. See `gd++ man docs`.
 
-# Words used in this manual
+# Glossary
 
 - Project: a Godot project, i.e. a directory with a `project.godot` file. See `gd++ man projects`.
 - Package: a directory in a project with a `gd++pkg.toml` file. It builds into one GDExtension library. See `gd++ man packages`.
@@ -74,6 +103,6 @@ The tutorials and the language pages describe one syntax version of GD++: in a p
 - Bindings: godot-cpp, the C++ library that GDExtensions are written against.
 - API spec: `extension_api.json`, the description of every class of one Godot version.
 - GD++ file: a file with the extension `.gd++`, `.gdpp` or `.gg`.
-- Build cache: the `.gd++pkg` directory of a package, where builds happen. See `gd++ man build-cache`.
+- Build cache: a package's `.gd++pkg` directory, where builds happen. See `gd++ man build-cache`.
 - Transpile: turn GD++ code into C++ code.
-- Rewrite: one of GD++'s few additions to C++ code, e.g. `emit` or `as`, which GD++ rewrites into plain C++. See `gd++ man rewrites`.
+- Rewrite: one of GD++'s few additions to C++ code, e.g. `emit` or `as`, which GD++ turns into plain C++. See `gd++ man rewrites`.

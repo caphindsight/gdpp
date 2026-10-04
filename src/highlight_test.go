@@ -43,6 +43,8 @@ func TestHighlightCode(t *testing.T) {
 			Styled("on process", CodeKeyword) + "(dt: " + Styled("float", CodeType) + ") {\n  " + Styled("draw", CodeFunction) + "(dt);\n}\n" +
 			Styled("on ready", CodeKeyword) + " {}\n" + Styled("var", CodeKeyword) + " ready: " + Styled("int", CodeType) + "\n" +
 			Styled("var", CodeKeyword) + " on: " + Styled("int", CodeType)},
+		{"gd++", "noimport  on  set", Styled("noimport", CodeKeyword) + "  " + Styled("on", CodeKeyword) + "  " + Styled("set", CodeKeyword)},
+		{"gd++", "on = on || x;", "on = on || x;"},
 		{"gd++", "on(what: int) {}\non {}\nsignal s(on: int)", Styled("on", CodeKeyword) + "(what: " + Styled("int", CodeType) + ") {}\n" +
 			Styled("on", CodeKeyword) + " {}\n" + Styled("signal", CodeKeyword) + " " + Styled("s", CodeFunction) + "(on: " + Styled("int", CodeType) + ")"},
 		{"gd++", "var x: Node = $Hud/\"a b\" // c", Styled("var", CodeKeyword) + " x: " + Styled("Node", CodeType) + " = " +

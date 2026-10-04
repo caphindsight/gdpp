@@ -1,26 +1,31 @@
 Tour: a first project
 
-This page walks through a small project, step by step. Each step links to the pages that explain it in full.
+This page walks through a small project. Each step links to the pages that explain it in full.
 
 # 1. Install the tools
 
-Build and install `gd++` from its source code:
+Build and install `gd++` from source:
 
 ```sh
 make && sudo make install
 ```
 
-Then install the tools that compile C++ (Git, SCons, Python and a C++ compiler):
+Install the tools that compile C++ (Git, SCons, Python and a C++ compiler):
 
 ```sh
 gd++ install
 ```
 
-It asks before running anything. To see its commands first, run `gd++ install --echo`. See `gd++ man install`.
+- It asks before running anything.
+- `gd++ install --echo` shows its commands without running them.
+
+See `gd++ man install`.
 
 # 2. Make a Godot project
 
-Create a project in the Godot editor, as usual. GD++ works in any Godot 4 project, i.e. a directory with a `project.godot` file. Open a terminal in the project directory. Like git finds its repository, every `gd++` command finds the project from the current directory, so you can run them from any subdirectory too.
+- Create a project in the Godot editor, as usual. Any Godot 4 project works, i.e. a directory with a `project.godot` file.
+- Open a terminal in the project directory.
+- Every `gd++` command finds the project from the current directory, like git finds its repository. So any subdirectory works too.
 
 # 3. Create a package
 
@@ -39,9 +44,12 @@ syntax = 1
 std = "c++20"
 ```
 
-`bind` names the Godot C++ bindings to build with, and `spec` names the Godot API spec, i.e. the Godot version to target. The spec must not be newer than the Godot version that runs the game. To see which versions exist, run `gd++ fetch --index`. See `gd++ man packages` and `gd++ man init`.
+- `bind`: the Godot C++ bindings to build with.
+- `spec`: the Godot API spec, i.e. the Godot version to target. It must not be newer than the Godot that runs the game.
+- `gd++ fetch --index` lists the versions that exist.
+- With git, also run `gd++ init --vcs git`. It adds GD++'s files to `.gitignore`. See `gd++ man vcs`.
 
-If you use git, also run `gd++ init --vcs git`: it adds GD++'s files to `.gitignore`. See `gd++ man vcs`.
+See `gd++ man packages` and `gd++ man init`.
 
 # 4. Download the dependencies
 
@@ -75,7 +83,12 @@ on physics_process(delta: float) {
 }
 ```
 
-The lines at the top are GD++: they declare the class, a property that shows up in the inspector, and a signal. The body of the `on physics_process` block, which runs every physics frame, is plain C++, except for `emit`, which sends the signal. Note what you didn't write: no header, no `#include` lines, no `_bind_methods`, no getter and setter for `speed`, and no class registration. See `gd++ man lang`.
+- The top lines are GD++: a class, a property shown in the inspector, and a signal.
+- `on physics_process` runs every physics frame. Its body is C++.
+- `emit` sends the signal. It's a GD++ rewrite.
+- You didn't write a header, `#include` lines, `_bind_methods`, a getter and setter for `speed`, or class registration.
+
+See `gd++ man lang`.
 
 # 6. Build
 
@@ -83,13 +96,18 @@ The lines at the top are GD++: they declare the class, a property that shows up 
 gd++ build
 ```
 
-The first build takes a while, since it compiles godot-cpp. Later builds only compile what changed. The build writes the library, e.g. `libmy_game.linux.debug.x86_64.so`, and `my_game.gdextension` into the package root, so Godot loads it right away. See `gd++ man building` and `gd++ man build`.
+- The first build is slow: it compiles godot-cpp.
+- Later builds only compile what changed.
+- The build writes the library, e.g. `libmy_game.linux.debug.x86_64.so`, and `my_game.gdextension` into the package root. Godot loads them right away.
+
+See `gd++ man building` and `gd++ man build`.
 
 # 7. Use the class in Godot
 
-Open the project in the Godot editor. `Player` is now a node type: add it to a scene, set its speed in the inspector, and run the game. Its doc comment shows up in the editor's help.
-
-While the editor is open, change the code and run `gd++ build` again: debug builds support hot reload, so the editor picks up the changes when its window gets focus.
+- Open the project in the Godot editor.
+- `Player` is now a node type: add it to a scene, set its speed in the inspector, and run the game.
+- Its doc comment shows up in the editor's help.
+- Debug builds support hot reload: change the code, run `gd++ build`, and the editor picks up the changes when its window gets focus.
 
 # 8. Look under the hood
 
@@ -97,17 +115,17 @@ While the editor is open, change the code and run `gd++ build` again: debug buil
 gd++ trans player.gd++
 ```
 
-This prints the C++ that GD++ generates from the file: `Player.h` and `Player.cpp`. Read it once, to see what GD++ does for you. See `gd++ man trans` and `gd++ man generated`.
+This prints the C++ that GD++ generates: `Player.h` and `Player.cpp`. See `gd++ man trans` and `gd++ man generated`.
 
 ```sh
 gd++ ls
 ```
 
-This shows an overview of the project: its dependencies, its packages and their classes. See `gd++ man ls`.
+This shows the project's dependencies, packages and classes. See `gd++ man ls`.
 
 # 9. Ship
 
-Build in release mode, for each platform you ship to:
+Build in release mode, for each target platform:
 
 ```sh
 gd++ build --ship --for l.x64 w.x64
@@ -117,8 +135,8 @@ Then export the game from Godot's Export dialog, as usual. See `gd++ man shippin
 
 # Where to go next
 
-- `gd++ man tut`, for tutorials that walk through common goals, e.g. porting GDScript, shipping, or debugging.
-- `gd++ man lang`, then the other language pages, to learn GD++ in depth.
-- `gd++ man cli`, for the options that every command takes.
-- `gd++ man debugging`, to trace and profile your code with `@trace` and `@profile`.
-- `gd++ man`, for the list of all pages.
+- `gd++ man tut`: tutorials for common goals, e.g. porting GDScript, shipping or debugging.
+- `gd++ man lang`, then the other language pages: GD++ in depth.
+- `gd++ man cli`: the options that every command takes.
+- `gd++ man debugging`: tracing and profiling with `@trace` and `@profile`.
+- `gd++ man`: the list of all pages.

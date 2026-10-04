@@ -1,6 +1,9 @@
 Shipping: exporting a game
 
-You export a game with GD++ code like any game with GDExtensions: build the libraries for every platform you ship to, in release mode, then export from Godot as usual.
+A game with GD++ code exports like any game with GDExtensions:
+
+1. Build the libraries for every target platform, in release mode.
+2. Export from Godot as usual.
 
 # 1. Build release libraries
 
@@ -8,31 +11,50 @@ You export a game with GD++ code like any game with GDExtensions: build the libr
 gd++ build --proj --ship --for l.x64 w.x64
 ```
 
-`--proj` builds every package in the project, `--ship` builds in release mode, and `--for` names the targets. Build for every platform and architecture you export to. See `gd++ man building`.
+- `--proj`: every package in the project.
+- `--ship`: release mode.
+- `--for`: the targets. Build for every platform and architecture you export to.
 
-Release builds are optimized for speed and use link-time optimization. To optimize for size instead, add `--small`. They don't include the documentation of GD++ classes, which only the editor shows.
+Release builds:
 
-If you export in debug mode too, e.g. for testers, also build debug libraries for those targets:
+- are optimized for speed, with link-time optimization. `--small` optimizes for size instead.
+- don't include the documentation of GD++ classes, which only the editor shows.
+
+See `gd++ man building`.
+
+To export in debug mode too, e.g. for testers, also build debug libraries:
 
 ```sh
 gd++ build --proj --for l.x64 w.x64
 ```
 
-Each package's `.gdextension` file lists the libraries of every target, debug and release, so Godot picks the right one. The libraries you haven't built are simply missing, and a game exported for a target without its library fails to load the extension. So check that the package roots have a library for each target you export to, e.g. `libmy_game.windows.release.x86_64.dll`.
+Facts:
+
+- Each package's `.gdextension` file lists the libraries of every target, debug and release. Godot picks the right one.
+- Libraries you haven't built are missing. A game exported for a target without its library fails to load the extension.
+- So check that each package root has a library for each target you export to, e.g. `libmy_game.windows.release.x86_64.dll`.
 
 # 2. Keep sources out of the export
 
-GD++ keeps your GD++ and C++ sources, `gd++pkg.toml` and `gd++proj.toml` out of the exported game for you: it adds these to "Filters to exclude files/folders from project" of every preset in `res://export_presets.cfg`:
+GD++ keeps your GD++ and C++ sources, `gd++pkg.toml` and `gd++proj.toml` out of the exported game. It adds these to "Filters to exclude files/folders from project" of every preset in `res://export_presets.cfg`:
 
 ```
 *.gd++, *.gdpp, *.gg, *.c, *.cc, *.cpp, *.cxx, *.c++, *.h, *.hh, *.hpp, *.hxx, *.h++, *.inl, gd++proj.toml, gd++pkg.toml, */gd++pkg.toml
 ```
 
-`gd++ build` and `gd++ fix` do it, and log "Updated res://export_presets.cfg." when they change the file. They only add and remove GD++'s own filters: the rest of the list is yours. Since you build the release libraries before you export (step 1), new presets get the filters too. After you create a preset without building, run `gd++ fix`.
+- `gd++ build` and `gd++ fix` do it, and log "Updated res://export_presets.cfg." when they change the file.
+- They only add and remove GD++'s own filters. The rest of the list is yours.
+- You build before you export (step 1), so new presets get the filters too.
+- After you create a preset without building, run `gd++ fix`.
+- The caches never get in: Godot doesn't see hidden directories, like `.gd++proj` and `.gd++pkg`, or directories with a `.gdignore` file, like `_gd++proj`.
 
-The caches never get in: hidden directories, like `.gd++proj` and `.gd++pkg`, and directories with a `.gdignore` file, like `_gd++proj`, are invisible to Godot.
+To manage the filters yourself:
 
-To manage the filters yourself, run `gd++ init --nopresets`. The next `gd++ build` or `gd++ fix` removes GD++'s filters from every preset, and after that GD++ doesn't touch `export_presets.cfg`. `gd++ init --presets` turns it back on. See `gd++ man projects`.
+- Run `gd++ init --nopresets`.
+- The next `gd++ build` or `gd++ fix` removes GD++'s filters from every preset. After that, GD++ doesn't touch `export_presets.cfg`.
+- `gd++ init --presets` turns it back on.
+
+See `gd++ man projects`.
 
 # 3. Export
 
@@ -46,21 +68,25 @@ Godot copies the right library of each package into the export.
 
 # Cross-compiling
 
-On Linux and macOS, `gd++ install` also installs MinGW-w64, so you can build Windows libraries without Windows:
+- On Linux and macOS, `gd++ install` also installs MinGW-w64. So you can build Windows libraries without Windows:
 
 ```sh
 gd++ build --ship --for w.x64
 ```
 
-Building for macOS generally needs a Mac with Xcode. Building for Linux needs Linux, or a cross-compiler that you set up yourself.
+- Building for macOS generally needs a Mac with Xcode.
+- Building for Linux needs Linux, or a cross-compiler that you set up yourself.
 
 # The minimum Godot version
 
-The library needs at least the Godot version of the package's API spec: the `.gdextension` file says so, e.g. `compatibility_minimum = "4.7"`, and older versions of Godot refuse to load it. Newer versions load it, since Godot keeps its API compatible. To support older versions of Godot, build against an older spec.
+- The library needs at least the Godot version of the package's API spec.
+- The `.gdextension` file says so, e.g. `compatibility_minimum = "4.7"`. Older Godot versions refuse to load it.
+- Newer versions load it, since Godot keeps its API compatible.
+- To support older Godot versions, build against an older spec.
 
 # A build script
 
-A script for a build machine, which exports Linux and Windows builds:
+A build machine script that exports Linux and Windows builds:
 
 ```sh
 gd++ fetch --missing
@@ -69,4 +95,4 @@ godot --headless --export-release "Linux" out/linux/my_game.x86_64
 godot --headless --export-release "Windows Desktop" out/windows/my_game.exe
 ```
 
-Scripts can't answer prompts, so pass `-f` to the commands that may ask for confirmation. See `gd++ man cli`.
+Scripts can't answer prompts, so pass `-f` to commands that may ask for confirmation. See `gd++ man cli`.

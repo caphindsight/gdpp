@@ -8,11 +8,19 @@ GD++ projects work with any version control system. With git, GD++ can also keep
 gd++ init --vcs git
 ```
 
-This sets `vcs = "git"` in `res://gd++proj.toml`, and writes GD++'s blocks of ignores into the `.gitignore` files of the project root and of each package root. `gd++ init --vcs none` turns it off, and removes the blocks again. The default is `none`: GD++ doesn't touch `.gitignore` files unless you ask.
+- Sets `vcs = "git"` in `res://gd++proj.toml`.
+- Writes GD++'s blocks of ignores into the `.gitignore` files of the project root and of each package root.
+- `gd++ init --vcs none` turns it off, and removes the blocks.
+- The default is `none`: GD++ doesn't touch `.gitignore` files unless you ask.
 
 # The blocks
 
-GD++ manages a block of lines in each `.gitignore` file. A block starts with a marker comment, and runs to the first empty line. GD++ only ever changes its own blocks: the rest of the file is yours.
+GD++ manages a block of lines in each `.gitignore` file.
+
+- A block starts with a marker comment, and runs to the first empty line.
+- GD++ only changes its own blocks. The rest of the file is yours.
+- Don't edit the blocks by hand: GD++ rewrites them.
+- To ignore more files, add your own lines outside the blocks, separated from them by an empty line.
 
 The project root's `.gitignore` gets the project-level block:
 
@@ -26,7 +34,7 @@ The project root's `.gitignore` gets the project-level block:
 **/~*
 ```
 
-It ignores the ephemeral dependency cache, and the backup and swap files of editors, e.g. Vim's.
+It ignores the ephemeral dependency cache, and editors' backup and swap files, e.g. Vim's.
 
 Each package root's `.gitignore` gets the package-level block:
 
@@ -42,16 +50,17 @@ Each package root's `.gitignore` gets the package-level block:
 
 It ignores the build cache, the built libraries and the generated `.gdextension` files. If the project root is also a package, its `.gitignore` gets both blocks.
 
-Don't edit the blocks by hand, since GD++ rewrites them. To ignore more files, add your own lines outside the blocks, separated from them by an empty line.
-
 # When the blocks are updated
 
 - `gd++ init --vcs git` or `--vcs none` writes or removes all blocks.
 - `gd++ init PATH ...` adds the package-level block to a new package, if the project uses git.
 - `gd++ rm --pkg PATH` removes the package-level block from the package's `.gitignore`.
-- `gd++ fix` brings every block in the project up to date: it adds missing ones, removes the ones that don't belong, and updates changed ones, e.g. after you upgrade `gd++`.
+- `gd++ fix` brings every block up to date: it adds missing ones, removes the ones that don't belong, and updates changed ones, e.g. after you upgrade `gd++`.
 
-When GD++ removes its blocks from a `.gitignore` file that held nothing else, it deletes the file. Differences in line endings and trailing empty lines don't count as changes, so GD++ doesn't rewrite files for them.
+Facts:
+
+- When GD++ removes its blocks from a `.gitignore` file that held nothing else, it deletes the file.
+- Differences in line endings and trailing empty lines don't count as changes. GD++ doesn't rewrite files for them.
 
 # What to commit
 
@@ -78,7 +87,11 @@ and has a working project.
 
 # Checked in dependencies
 
-Dependencies are big, so by default they're downloaded, not committed. Check one in to commit it, e.g. to build offline, to pin exact files, or because it can't be downloaded, like the spec of a custom Godot build:
+Dependencies are big, so by default they're downloaded, not committed. Check one in to commit it, e.g.:
+
+- to build offline,
+- to pin exact files,
+- because it can't be downloaded, like the spec of a custom Godot build.
 
 ```sh
 gd++ checkin --spec my-4.7
@@ -88,4 +101,4 @@ See `gd++ man dependencies` and `gd++ man checkin`.
 
 # Shipping without committing libraries
 
-Since libraries aren't committed, a build machine must build them before it exports the game. See `gd++ man shipping`.
+Libraries aren't committed, so a build machine must build them before it exports the game. See `gd++ man shipping`.

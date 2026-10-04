@@ -1,6 +1,12 @@
 Tutorial: mix plain C++ with GD++
 
-A package can mix GD++ with plain C++: helper code, other libraries, and even Godot classes written by hand. Which to use is up to you. GD++ writes headers, includes and bindings for you, and adds `@trace`, `@profile`, `assert` and the like, while its `decl` and `impl` blocks take any C++, so a GD++ class can do whatever a C++ class can. Plain C++ suits code that's shared with projects outside Godot, code that comes from elsewhere, or simply your taste. This tutorial shows each way to mix them, in one package. It assumes a project with a package, as set up in `gd++ man tour`.
+A package can mix GD++ with plain C++: helper code, other libraries, and even Godot classes written by hand. Which to use is up to you:
+
+- GD++ writes headers, includes and bindings for you, and adds `@trace`, `@profile`, `assert` and the like.
+- Its `decl` and `impl` blocks take any C++. So a GD++ class can do whatever a C++ class can.
+- Plain C++ suits code shared with projects outside Godot, code that comes from elsewhere, or simply your taste.
+
+This tutorial shows each way to mix them, in one package. It assumes a project with a package, as set up in `gd++ man tour`.
 
 # 1. Plain C++ helpers
 
@@ -18,7 +24,7 @@ struct Cell {
 std::vector<Cell> find_path(const std::vector<bool> &walls, int width, Cell from, Cell to);
 ```
 
-and `pkg://src/grid.cpp`, which defines `find_path`. Every C++ source in the package is compiled into its library: there's no build file to edit. See `gd++ man packages`.
+and `pkg://src/grid.cpp`, which defines `find_path`. Every C++ source in the package is compiled into its library. There's no build file to edit. See `gd++ man packages`.
 
 A GD++ class includes the header in a `@global decl` block, and calls the code from any function:
 
@@ -46,7 +52,11 @@ func path(from: Vector2i, to: Vector2i) -> PackedVector2Array {
 }
 ```
 
-Includes in quotes are relative to the package root, and includes in angle brackets to the project root. GD++ writes the `#include` lines of Godot's classes for you, but not those of your own headers, nor of the standard library, e.g. `<vector>`. See `gd++ man includes`.
+- Includes in quotes are relative to the package root. Includes in angle brackets are relative to the project root.
+- GD++ writes the `#include` lines of Godot's classes for you.
+- It doesn't write those of your own headers, or of the standard library, e.g. `<vector>`.
+
+See `gd++ man includes`.
 
 # 2. Private C++ members
 
@@ -65,33 +75,45 @@ impl {
 }
 ```
 
-`decl` code starts in the private section of the class. `This` is the class's name. See `gd++ man code`.
+- `decl` code starts in the private section of the class.
+- `This` is the class's name.
+
+See `gd++ man code`.
 
 # 3. Libraries
 
-To use a small C++ library, copy its headers and sources into the package, e.g. into `pkg://third_party/`, and include them like your own. Mind that every C++ source under the package root is compiled, so copy only the files the library needs, not its tests and examples.
-
-Warnings are errors, so code that warns doesn't build. If a library warns and you can't fix it, `gd++ build --nowarn` turns warnings off, for the whole package. See `gd++ man building`.
+- To use a small C++ library, copy its headers and sources into the package, e.g. into `pkg://third_party/`, and include them like your own.
+- Every C++ source under the package root is compiled. So copy only the files the library needs, not its tests and examples.
+- Warnings are errors, so code that warns doesn't build.
+- If a library warns and you can't fix it, `gd++ build --nowarn` turns warnings off, for the whole package. See `gd++ man building`.
 
 # 4. A Godot class in plain C++
 
-Sometimes you want a Godot class written the usual godot-cpp way, e.g. code ported from a godot-cpp project. Write it as usual, with `GDCLASS` and `_bind_methods`, e.g. in `pkg://src/spinner.h` and `pkg://src/spinner.cpp`, then register it:
+Sometimes you want a Godot class written the usual godot-cpp way, e.g. code ported from a godot-cpp project. Write it as usual, with `GDCLASS` and `_bind_methods`, e.g. in `pkg://src/spinner.h` and `pkg://src/spinner.cpp`. Then register it:
 
 ```sh
 gd++ init . --class Spinner --include pkg://src/spinner.h
 ```
 
-This lists the class in `gd++pkg.toml`, and the next build registers it with Godot, next to the GD++ classes. Don't register it yourself, and don't define an entry point: GD++ does both. Add `--tool` if its code must run in the editor too, and `--ptr` or `--ref` to use it from GD++ code, see section 5. See `gd++ man cpp-classes` and `gd++ man init`.
+- This lists the class in `gd++pkg.toml`. The next build registers it with Godot, next to the GD++ classes.
+- Don't register it yourself, and don't define an entry point: GD++ does both.
+- Add `--tool` if its code must run in the editor too.
+- Add `--ptr` or `--ref` to use it from GD++ code. See section 5.
+
+See `gd++ man cpp-classes` and `gd++ man init`.
 
 # 5. Use a C++ class from GD++
 
-GD++ code can use `Spinner` by name, like a Godot class, once you tell GD++ that it's used through pointers, since it isn't refcounted (`--ref` is for refcounted classes):
+GD++ code can use `Spinner` by name, like a Godot class, once you tell GD++ how it's used:
+
+- `--ptr`: through pointers, for classes that aren't refcounted, like `Spinner`.
+- `--ref`: through references, for refcounted classes.
 
 ```sh
 gd++ init . --class Spinner --update --ptr
 ```
 
-Then it can be the type of a `var` or a parameter, or a base class, and GD++ includes its header where needed:
+Then it can be the type of a `var` or a parameter, or a base class. GD++ includes its header where needed:
 
 ```gd++
 class_name Game
@@ -106,7 +128,7 @@ on ready {
 
 See "Using a C++ class from GD++" in `gd++ man cpp-classes`.
 
-Without `--ptr` or `--ref`, GD++ doesn't know the class, so it can't be the type of a `var` or a parameter. Use its Godot base class there, and cast in code:
+Without `--ptr` or `--ref`, GD++ doesn't know the class. So it can't be the type of a `var` or a parameter. Use its Godot base class there, and cast in code:
 
 ```gd++
 class_name Game
@@ -145,7 +167,12 @@ int64_t count_walls(godot::Level *level) {
 }
 ```
 
-GD++ classes are in namespace `godot`. Their functions, getters and setters are public methods, and the fields of simple variables are public too. A C++ class can even extend a GD++ class, but not the other way around. See `gd++ man generated`.
+- GD++ classes are in namespace `godot`.
+- Their functions, getters and setters are public methods. The fields of simple variables are public too.
+- A C++ class can extend a GD++ class.
+- A GD++ class can only extend a C++ class marked `[ptr]` or `[ref]`. See section 5.
+
+See `gd++ man generated`.
 
 # 7. Check the package
 
@@ -154,7 +181,10 @@ gd++ build
 gd++ ls
 ```
 
-`gd++ ls` lists the package's C++ classes with their headers, and its GD++ classes by file. A missing header is marked "(missing)". See `gd++ man ls`.
+- `gd++ ls` lists the package's C++ classes with their headers, and its GD++ classes by file.
+- A missing header is marked "(missing)".
+
+See `gd++ man ls`.
 
 # See also
 

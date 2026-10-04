@@ -1,6 +1,6 @@
 Pools: @pool, @recycle, create and destroy
 
-A game that creates and deletes many nodes of the same class, e.g. bullets, spends a lot of time allocating memory and setting up new objects. A pool avoids this: instead of deleting an object, it keeps it, and reuses it later. This page explains how pools work. For a step-by-step example, see `gd++ man pool-bullets`.
+Creating and deleting many nodes of one class, e.g. bullets, costs time: allocating memory and setting up new objects. A pool avoids this: instead of deleting an object, it keeps it, and reuses it later. For a step-by-step example, see `gd++ man pool-bullets`.
 
 # @pool
 
@@ -41,25 +41,34 @@ func retire(bullet: Bullet) -> void {
 }
 ```
 
-Code uses a pool with the same words as any other class: `create` and `destroy`. See `gd++ man classes`.
+Code uses a pool like any other class: with `create` and `destroy`. See `gd++ man classes`.
 
 - `destroy` returns the bullet to the pool: it runs the `@recycle dtor`, removes the node from its parent, and keeps it in the pool.
-- `create` takes a bullet from the pool if there is one, resets its `@recycle` variables, and runs its `@recycle ctor`. Otherwise, it creates a new bullet, which also runs its `@recycle ctor`, right after `ctor`.
-
-A reused node also gets ready again the next time it enters the tree, but only `@recycle` runs again: see "Getting ready again" below.
-
-`@pool` only works on classes that extend `Node`, since the pool removes its objects from the scene tree.
+- `create` takes a bullet from the pool, if there is one: it resets its `@recycle` variables, and runs its `@recycle ctor`.
+- Otherwise, `create` makes a new bullet, which runs `ctor`, then `@recycle ctor`.
+- A reused node gets ready again the next time it enters the tree, but only `@recycle` runs again. See "Getting ready again" below.
+- `@pool` only works on classes that extend `Node`, since the pool removes its objects from the scene tree.
 
 # Two kinds of ctor and dtor
 
-A `@pool` class can have two kinds of constructors and destructors, at most one of each:
+A `@pool` class has at most one of each:
 
-- `ctor` and `dtor` run only when an object is actually created or deleted, like in any other class. Variables get their initial values only then, together with `ctor`.
-- `@recycle ctor` runs each time an object is put to use: when it's created, right after `ctor`, and when the pool reuses it. `@recycle dtor` runs each time an object stops being used: when the pool keeps it, and when it's deleted, right before `dtor`. An object deleted while it waits in its pool, e.g. when the game quits, already ran its `@recycle dtor` when the pool kept it, so it doesn't run it again.
+- `ctor` and `dtor`: run only when an object is actually created or deleted, like in any other class. Variables get their initial values only then, with `ctor`.
+- `@recycle ctor`: runs each time an object is put to use:
+  - when it's created, right after `ctor`,
+  - when the pool reuses it.
+- `@recycle dtor`: runs each time an object stops being used:
+  - when the pool keeps it,
+  - when it's deleted, right before `dtor`.
+  - An object deleted while it waits in its pool, e.g. when the game quits, already ran its `@recycle dtor` when the pool kept it. It doesn't run it again.
+- Only `@pool` classes can have `@recycle` blocks.
 
-So a bullet that's created, returned to the pool, reused and finally deleted runs `ctor`, `@recycle ctor`, `@recycle dtor`, `@recycle ctor`, `@recycle dtor` and `dtor`, in that order: each use has its own pair. Put expensive setup that a reused object can keep in `ctor`, and set up each use in `@recycle ctor`, or with `@recycle` variables. Only `@pool` classes can have `@recycle` blocks.
+So a bullet that's created, returned to the pool, reused and finally deleted runs, in order: `ctor`, `@recycle ctor`, `@recycle dtor`, `@recycle ctor`, `@recycle dtor`, `dtor`. Each use has its own pair.
 
-With `@recycle("only")`, a block runs only when the pool reuses or keeps an object, not when it's created or deleted:
+- Put expensive setup that a reused object can keep in `ctor`.
+- Set up each use in `@recycle ctor`, or with `@recycle` variables.
+
+`@recycle("only")` runs a block only when the pool reuses or keeps an object, not when it's created or deleted:
 
 ```gd++
 @recycle("only") ctor {
@@ -67,13 +76,12 @@ With `@recycle("only")`, a block runs only when the pool reuses or keeps an obje
 }
 ```
 
-With `("only")` on both blocks, the same bullet runs `ctor`, `@recycle dtor`, `@recycle ctor` and `dtor`.
-
-An object that `pool_reserve` makes ahead of time runs only `ctor` then. Its `@recycle ctor` runs when `create` first hands it out, like when the pool reuses an object, see "Filling the pool ahead of time" below.
+- With `("only")` on both blocks, the same bullet runs `ctor`, `@recycle dtor`, `@recycle ctor` and `dtor`.
+- An object that `pool_reserve` makes ahead of time runs only `ctor` then. Its `@recycle ctor` runs when `create` first hands it out, like for a reused object. See "Filling the pool ahead of time" below.
 
 # Resetting variables
 
-Variables get their initial values only when an object is actually created, so a reused object keeps the values it had. `@recycle` on a variable resets it each time the pool reuses an object:
+Variables get their initial values only when an object is actually created. So a reused object keeps the values it had. `@recycle` on a variable resets it each time the pool reuses an object:
 
 ```gd++
 @recycle var speed: float = 20.0    // back to 20.0
@@ -81,13 +89,21 @@ Variables get their initial values only when an object is actually created, so a
 var mesh: Mesh = make_mesh()        // kept: made only once
 ```
 
-A `@recycle` variable gets its initial value again, or its type's default if it has none, in the order of the declarations, right before the `@recycle ctor` runs. An object that `pool_reserve` makes ahead of time gets the initial values of its `@recycle` variables only when `create` first hands it out. A property needs an initial value, since it has no storage of its own to reset. An `@onready @recycle` variable is different: it gets its initial value again when the node gets ready, see below. Only `@pool` classes can have `@recycle` variables.
-
-Exported variables usually don't need `@recycle`: if nothing changes them while the object is in use, a reused object still has the values from its scene or the inspector.
+- A `@recycle` variable gets its initial value again, or its type's default if it has none.
+- In declaration order, right before the `@recycle ctor` runs.
+- An object that `pool_reserve` makes ahead of time gets the initial values of its `@recycle` variables only when `create` first hands it out.
+- A property needs an initial value, since it has no storage of its own to reset.
+- An `@onready @recycle` variable gets its initial value again when the node gets ready. See below.
+- Only `@pool` classes can have `@recycle` variables.
+- Exported variables usually don't need `@recycle`: if nothing changes them while the object is in use, a reused object still has the values from its scene or the inspector.
 
 # Getting ready again
 
-A reused node gets ready again the next time it enters the tree, like a new node. But in a `@pool` class, `@onready` values and the `on ready` block only run the first time an object gets ready, since a reused node usually keeps its children, so e.g. `@onready var mesh = $Mesh` is still right. With `@recycle`, they run each time:
+A reused node gets ready again the next time it enters the tree, like a new node.
+
+- In a `@pool` class, `@onready` values and the `on ready` block only run the first time an object gets ready.
+- That's because a reused node usually keeps its children. So e.g. `@onready var mesh = $Mesh` is still right.
+- With `@recycle`, they run each time.
 
 ```gd++
 @onready var mesh: MeshInstance3D = $Mesh                         // set once
@@ -98,9 +114,23 @@ on ready {
 }
 ```
 
-With `@recycle on ready { ... }`, the message would print each time. The order of annotations doesn't matter: `@recycle @onready` is the same. An `@override func _ready()` works the same way, and also takes `@recycle`. The values are still set in the order of the declarations, before `on ready`, and the first time, all of them are set. An object that the pool reuses before it ever got ready, e.g. one that was created and destroyed without entering the tree, still gets everything the first time it gets ready.
+- With `@recycle on ready { ... }`, the message prints each time.
+- The order of annotations doesn't matter: `@recycle @onready` is the same.
+- An `@override func _ready()` works the same way, and also takes `@recycle`.
+- Values are still set in declaration order, before `on ready`. The first time, all of them are set.
+- An object that the pool reuses before it ever got ready, e.g. one created and destroyed without entering the tree, still gets everything the first time it gets ready.
+- Only `@pool` classes can have `@recycle on ready`.
+- `@recycle` works on no other block or function, except an `@override func _ready()`.
+- Other classes pay nothing for any of this: they get no checks, and `GENERATION` is a constant there.
 
-Other `on` blocks always run, e.g. `on enter_tree` at each entry. They, `@recycle ctor`, `@recycle dtor` and `@recycle on ready` can read `GENERATION`, an unsigned integer: how many times the pool took the object back, so `0` until it's first returned. It goes up when `destroy` returns the object, before the `@recycle dtor` and before the node leaves the tree, so the `@recycle dtor` and `on exit_tree` already see the new value then. In other classes, `GENERATION` is always `0`.
+Other `on` blocks always run, e.g. `on enter_tree` at each entry.
+
+`GENERATION`:
+
+- An unsigned integer: how many times the pool took the object back. `0` until it's first returned.
+- Readable in `on` blocks, `@recycle ctor`, `@recycle dtor`, `@recycle on ready`, and an `@override` `@recycle _ready`. Not in other functions.
+- It goes up when `destroy` returns the object, before the `@recycle dtor` and before the node leaves the tree. So the `@recycle dtor` and `on exit_tree` already see the new value.
+- In other classes, it's always `0`.
 
 ```gd++
 on enter_tree {
@@ -109,10 +139,6 @@ on enter_tree {
   }
 }
 ```
-
-Functions can't read it, except an `@override` `@recycle _ready`.
-
-Only `@pool` classes can have `@recycle on ready`, and `@recycle` works on no other block or function, except an `@override func _ready()`. Other classes pay nothing for any of this: they get no checks, and `GENERATION` is a constant there.
 
 # Returning objects at the end of the frame
 
@@ -124,31 +150,47 @@ func _on_body_entered(body: Node3D) -> void {
 }
 ```
 
-Returning an object twice is fine: destroying a bullet that's already back in its pool does nothing, so a bullet that hits two enemies in the same frame can destroy itself twice. Objects that don't belong to a pool are different: destroying one that's already deleted is a bug, like deleting it twice in C++. `queue_destroy` is safe for those too, though: for them it's `queue_free()`, which does nothing if the node is gone by the end of the frame. See `gd++ man classes`.
+- Returning an object twice is fine: destroying a bullet that's already back in its pool does nothing. So a bullet that hits two enemies in the same frame can destroy itself twice.
+- For objects outside pools, destroying one that's already deleted is a bug, like deleting it twice in C++.
+- `queue_destroy` is safe for those too: for them it's `queue_free()`, which does nothing if the node is gone by the end of the frame.
+
+See `gd++ man classes`.
 
 # Remembering pooled objects
 
-A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays valid after the bullet is returned to the pool, but the pool may reuse it for another shot. Keep a `Weak[Bullet]` instead: it gives `nullptr` once the bullet is returned to its pool, even if the pool has reused it since. See "Objects of @pool classes" in `gd++ man weak`.
+- A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays valid after the bullet is returned to the pool.
+- But the pool may reuse it for another shot.
+- Keep a `Weak[Bullet]` instead: it gives `nullptr` once the bullet is returned to its pool, even if the pool has reused it since.
+
+See "Objects of @pool classes" in `gd++ man weak`.
 
 # Out of the tree
 
-A node that's out of the tree gets no callbacks: no `_process`, `_physics_process`, input or physics, and its timers and tweens are paused. So an object waiting in a pool costs nothing. Signals and deferred calls still reach it, though, so disconnect any that must not.
+- A node out of the tree gets no callbacks: no `_process`, `_physics_process`, input or physics.
+- Its timers and tweens are paused.
+- So an object waiting in a pool costs nothing.
+- Signals and deferred calls still reach it. Disconnect any that must not.
 
 # The size and the mode
 
-The size is optional:
-
-- `@pool` has no limit: once all of its objects are in use, `create` makes a new one.
-- `@pool(100)` can hold up to 100 objects, counting both those in use and those waiting in the pool. Once all of them are in use, `create` returns `nullptr`. It's the same as `@pool(100, "fixed")`.
-- `@pool(100, "grow")` expects 100 objects, but makes more once all of them are in use. In debug builds, it logs an error when it grows past 100 objects, e.g. "GD++ object pool for class `Bullet` grew past 100 objects.", and again past 200, 400, 800 and so on. Each of these warns only once, even if the pool goes back and forth around it, so the log doesn't fill up. Use it while you find out how many objects a game needs, or when running out must not happen.
+- `@pool`: no limit. Once all of its objects are in use, `create` makes a new one.
+- `@pool(100)`: up to 100 objects, counting those in use and those waiting in the pool. Once all are in use, `create` returns `nullptr`. The same as `@pool(100, "fixed")`.
+- `@pool(100, "grow")`: expects 100 objects, but makes more once all are in use.
+  - In debug builds, it logs an error when it grows past 100 objects, e.g. "GD++ object pool for class `Bullet` grew past 100 objects.", and again past 200, 400, 800 and so on.
+  - Each of these warns only once, even if the pool goes back and forth around it.
+  - Use it while you find out how many objects a game needs, or when running out must not happen.
 
 So the mode, `"fixed"` or `"grow"`, says what happens once all the objects of the size are in use.
 
-Warning: in a `"fixed"` pool, `create` returns `nullptr` once all of its objects are in use. Always check the result before using the object, as `fire` does above: using a null pointer crashes the game. If running out is a bug, log an error there. Only a pool without a size, or with `"grow"`, never returns `nullptr`.
+Warning: in a `"fixed"` pool, `create` returns `nullptr` once all its objects are in use.
+
+- Always check the result before using the object, as `fire` does above. Using a null pointer crashes the game.
+- If running out is a bug, log an error there.
+- Only a pool without a size, or with `"grow"`, never returns `nullptr`.
 
 # Filling the pool ahead of time
 
-A pool makes its objects only when `create` needs them, so the first shots in a level still pay for making bullets. `pool_reserve` makes them ahead of time, e.g. when a level loads, and frees them again when it's unloaded:
+A pool makes its objects only when `create` needs them. So the first shots in a level still pay for making bullets. `pool_reserve` makes them ahead of time, e.g. when a level loads, and frees them again when it's unloaded:
 
 ```gdscript
 func _ready() -> void:
@@ -160,42 +202,54 @@ func _exit_tree() -> void:
 
 GD++ code calls it the same way: `Bullet::pool_reserve(200);`.
 
-`pool_reserve(count)` makes or frees resting objects, so that the pool holds `count` objects, counting both those in use and those resting, like the size:
+`pool_reserve(count)` makes or frees resting objects, so that the pool holds `count` objects, counting those in use and those resting, like the size:
 
-- If the pool has fewer, it makes new objects, which wait in the pool unused. A new object runs only its `ctor` and the initial values of its plain variables. Its `@recycle ctor` and `@recycle` variables wait until `create` hands it out, as for a reused object, and its `GENERATION` is still `0` then.
-- If the pool has more, it frees resting objects, which runs their `dtor`, until it has `count`, or none rest. Objects in use are never freed.
+- If the pool has fewer, it makes new objects, which wait in the pool unused.
+  - A new object runs only its `ctor` and the initial values of its plain variables.
+  - Its `@recycle ctor` and `@recycle` variables wait until `create` hands it out, as for a reused object. Its `GENERATION` is still `0` then.
+- If the pool has more, it frees resting objects, running their `dtor`, until it has `count`, or none rest.
+- Objects in use are never freed.
 
-If the `@pool` annotation gives a size, `count` is optional, and defaults to that size: with `@pool(200)`, `pool_reserve()` is `pool_reserve(200)`. It's always the annotation's size, even after a call with a mode changed the pool's size. A pool without a size has no default count.
+The count:
 
-A `"fixed"` pool makes no more objects than its size: `pool_reserve(200)` on a `@pool(100)` makes 100, and logs an error. In a `"grow"` pool, the usual errors are logged past its size.
+- If the `@pool` annotation gives a size, `count` is optional, and defaults to that size: with `@pool(200)`, `pool_reserve()` is `pool_reserve(200)`.
+- The default is always the annotation's size, even after a call with a mode changed the pool's size.
+- A pool without a size has no default count.
+- A `"fixed"` pool makes no more objects than its size: `pool_reserve(200)` on a `@pool(100)` makes 100, and logs an error.
+- In a `"grow"` pool, the usual errors are logged past its size.
 
-With a mode, `pool_reserve` also sets the size and the mode, until the next call that gives one:
+With a mode, `pool_reserve` also sets the size and the mode, until the next call that gives one. So each level can size its pools to its needs.
 
 ```gdscript
 Bullet.pool_reserve(200, "fixed")   # at most 200 bullets from now on, all made now
 Bullet.pool_reserve(200, "grow")    # 200 bullets made now, and more when needed
 ```
 
-So each level can size its pools to its needs.
-
 Warning: `pool_reserve` isn't thread-safe. Call it from the main thread only, e.g. in `_ready` or `_exit_tree`, not from an `@onthread` function.
 
 # Clearing the pool
 
-`pool_clear` drops all the objects of the pool for good, e.g. when the game goes back to its main menu: it frees the resting objects right away, and those in use at the end of the frame, like `queue_free()`. Then the pool is empty, and `create` starts from scratch. Its size and mode stay as they are.
+`pool_clear` drops all the objects of the pool for good, e.g. when the game goes back to its main menu:
+
+- It frees the resting objects right away.
+- It frees those in use at the end of the frame, like `queue_free()`.
+- Then the pool is empty, and `create` starts from scratch.
+- Its size and mode stay as they are.
+- Like `pool_reserve`, it isn't thread-safe: call it from the main thread only.
 
 ```gdscript
 Bullet.pool_clear()        # frees all the bullets, also those in flight
 Bullet.pool_clear(true)    # frees the resting bullets, and leaves those in flight alone
 ```
 
-Like `pool_reserve`, `pool_clear` isn't thread-safe: call it from the main thread only.
+With `true`, for `keep_in_use`, the objects in use leave the pool and live on:
 
-With `true`, for `keep_in_use`, the objects in use leave the pool and live on: they no longer belong to the pool, so they don't count toward its size, and `destroy` deletes them for good.
+- They no longer belong to the pool, so they don't count toward its size.
+- `destroy` deletes them for good.
 
-Warning: without `keep_in_use`, the objects in use are freed, so drop every pointer to them. A `Weak[Bullet]` gives `nullptr` once its bullet is freed.
+Warning: without `keep_in_use`, the objects in use are freed. Drop every pointer to them. A `Weak[Bullet]` gives `nullptr` once its bullet is freed.
 
-The difference between the two calls:
+The difference between the calls:
 
 ```
 Call                  Resting objects   Objects in use                     Size and mode
@@ -206,7 +260,12 @@ pool_clear(true)      freed             leave the pool                     kept
 
 # Which objects belong to the pool
 
-Only objects made by `create` belong to the pool. Objects created in other ways, e.g. by a scene, by `Bullet.new()` in GDScript, or by `memnew`, don't count toward its size, and `destroy` deletes them for good. If an object from the pool is deleted for good, e.g. with `queue_free()`, it leaves the pool, which frees up room for a new one. `destroy` also deletes an object for good when it's called through a pointer to a base class, e.g. `Node *`, or on an object of a class that extends a `@pool` class, unless that class has its own `@pool`.
+- Only objects made by `create` belong to the pool.
+- Objects created otherwise, e.g. by a scene, by `Bullet.new()` in GDScript, or by `memnew`, don't count toward its size. `destroy` deletes them for good.
+- An object from the pool that's deleted for good, e.g. with `queue_free()`, leaves the pool. That frees up room for a new one.
+- `destroy` also deletes an object for good when called:
+  - through a pointer to a base class, e.g. `Node *`,
+  - on an object of a class that extends a `@pool` class, unless that class has its own `@pool`.
 
 # Pools of scenes
 
@@ -219,11 +278,18 @@ class_name Bullet
 extends Area3D
 ```
 
-A reused object keeps its children, so reusing it doesn't touch the scene. If the scene fails to load, or its root isn't a `Bullet`, `create` logs an error and returns `nullptr`, without using up room in the pool. See "@scene" in `gd++ man classes`.
+- A reused object keeps its children. So reusing it doesn't touch the scene.
+- If the scene fails to load, or its root isn't a `Bullet`, `create` logs an error and returns `nullptr`, without using up room in the pool.
+
+See "@scene" in `gd++ man classes`.
 
 # Threads and speed
 
-`create`, `destroy` and `queue_destroy` are thread-safe, but `pool_reserve` and `pool_clear` aren't: call those from the main thread only. `create` and `destroy` take constant time: the pool stores its objects in a list of fixed-size chunks, so it never has to move them. Godot only lets the main thread change the scene tree, so when another thread destroys a node that's in the tree, `destroy` leaves it to the main thread, which destroys it at the end of the frame. Until then, the node stays in the tree and keeps running. A node that's out of the tree is destroyed right away, on any thread.
+- `create`, `destroy` and `queue_destroy` are thread-safe.
+- `pool_reserve` and `pool_clear` aren't: call them from the main thread only.
+- `create` and `destroy` take constant time: the pool stores its objects in a list of fixed-size chunks, so it never moves them.
+- Godot only lets the main thread change the scene tree. When another thread destroys a node that's in the tree, `destroy` leaves it to the main thread, which destroys it at the end of the frame. Until then, the node stays in the tree and keeps running.
+- A node out of the tree is destroyed right away, on any thread.
 
 # Unloading
 
@@ -231,7 +297,7 @@ When the library is unloaded, e.g. when the game quits, the pool deletes the obj
 
 # In scripts
 
-Scripts can't write `create`, `destroy` and `queue_destroy`, so a `@pool` class has three methods for them, which do the same:
+Scripts can't write `create`, `destroy` and `queue_destroy`. So a `@pool` class has three methods for them, which do the same:
 
 ```gdscript
 var bullet := Bullet.new_pooled()   # create Bullet
@@ -242,41 +308,92 @@ bullet.free_pooled()                 # destroy bullet
 bullet.queue_free_pooled()           # queue_destroy bullet
 ```
 
-- `Bullet.new_pooled()` takes a bullet from the pool, or creates a new one. In a `"fixed"` pool, it returns `null` once all the bullets are in use, so always check the result, like in C++. For a class with both `@pool` and `@scene`, it's named `new_scene_pooled()`, and a new bullet is an instance of the class's scene.
-- `bullet.free_pooled()` returns the bullet to its pool right away, like `destroy`. Calling it again before the bullet is reused does nothing. Like `destroy`, it can't be used during physics callbacks, e.g. in a handler of `body_entered`: use `queue_free_pooled()` there. A bullet that the pool didn't make is freed at the end of the frame, since it can't free itself in the middle of a call.
-- `bullet.queue_free_pooled()` returns the bullet to its pool at the end of the frame, like `queue_destroy`. That's safe in any signal handler, also during physics callbacks. Calling it again before the end of the frame does nothing.
+`Bullet.new_pooled()`:
 
-Use them together. `Bullet.new()` and `queue_free()` still work, but bypass the pool: `new()` creates a bullet outside the pool, which `free_pooled()` and `queue_free_pooled()` simply free, and `queue_free()` frees a pooled bullet for good, so nothing is ever reused.
+- Takes a bullet from the pool, or creates a new one.
+- In a `"fixed"` pool, it returns `null` once all the bullets are in use. Always check the result, like in C++.
+- For a class with both `@pool` and `@scene`, it's named `new_scene_pooled()`, and a new bullet is an instance of the class's scene.
 
-Warning: a returned bullet stays a valid object, and `new_pooled()` may hand it out again at any time, e.g. for another shot. So when a script returns a bullet, it must drop every reference to it. `is_instance_valid(bullet)` can't help: it's `true` for a returned bullet, and for a reused one. GD++ code can use `Weak[Bullet]` instead, and a script can read a GD++ class's `Weak[Bullet]` variable, which is `null` once the bullet is returned. See `gd++ man weak`.
+`bullet.free_pooled()`:
 
-A reused bullet gets ready again when it next enters the tree, and its `@recycle` variables are reset, as for GD++ code. A script's own `_ready` runs each time, though, since GD++ doesn't control it. Only the GD++ class's variables are reset, though: a script's own variables, if a script extends the class, aren't. And `new_pooled()` and `new_scene_pooled()` make objects of the GD++ class itself: called on a script that extends the class, it still gives bullets without the script.
+- Returns the bullet to its pool right away, like `destroy`.
+- Calling it again before the bullet is reused does nothing.
+- Like `destroy`, it can't be used during physics callbacks, e.g. in a handler of `body_entered`. Use `queue_free_pooled()` there.
+- A bullet that the pool didn't make is freed at the end of the frame, since it can't free itself in the middle of a call.
 
-`Bullet.pool_reserve()` and `Bullet.pool_clear()` are static methods already, see above, so scripts call them like GD++ code does.
+`bullet.queue_free_pooled()`:
 
-A `@pool` class can't have members named like these methods.
+- Returns the bullet to its pool at the end of the frame, like `queue_destroy`.
+- Safe in any signal handler, also during physics callbacks.
+- Calling it again before the end of the frame does nothing.
+
+Use them together. `Bullet.new()` and `queue_free()` still work, but bypass the pool:
+
+- `new()` creates a bullet outside the pool, which `free_pooled()` and `queue_free_pooled()` simply free.
+- `queue_free()` frees a pooled bullet for good, so nothing is ever reused.
+
+Warning: a returned bullet stays a valid object, and `new_pooled()` may hand it out again at any time, e.g. for another shot.
+
+- So when a script returns a bullet, it must drop every reference to it.
+- `is_instance_valid(bullet)` can't help: it's `true` for a returned bullet, and for a reused one.
+- GD++ code can use `Weak[Bullet]` instead. A script can read a GD++ class's `Weak[Bullet]` variable, which is `null` once the bullet is returned. See `gd++ man weak`.
+
+Other facts:
+
+- A reused bullet gets ready again when it next enters the tree, and its `@recycle` variables are reset, as for GD++ code.
+- A script's own `_ready` runs each time, since GD++ doesn't control it.
+- Only the GD++ class's variables are reset. A script's own variables, if a script extends the class, aren't.
+- `new_pooled()` and `new_scene_pooled()` make objects of the GD++ class itself. Called on a script that extends the class, they still give bullets without the script.
+- `Bullet.pool_reserve()` and `Bullet.pool_clear()` are static methods already, so scripts call them like GD++ code does.
+- A `@pool` class can't have members named like these methods.
 
 # Across packages
 
-Code of other packages uses the class through an extern. With `@pool` on the extern, also `@scene` if the class has it, its `create`, `destroy` and `queue_destroy` use the class's pool, through the methods for scripts. See "Pools and scenes" in `gd++ man externs`.
+- Code of other packages uses the class through an extern.
+- With `@pool` on the extern, plus `@scene` if the class has it, its `create`, `destroy` and `queue_destroy` use the class's pool, through the methods for scripts.
+
+See "Pools and scenes" in `gd++ man externs`.
 
 # Monitors
 
-In debug builds, each pool shows three graphs in the editor's Debugger panel, in its Monitors tab, in the "GD++ Object Pools" category, named after the class:
+In debug builds, each pool shows three graphs in the editor's Debugger panel, Monitors tab, "GD++ Object Pools" category, named after the class:
 
 - "Bullet (total)": how many objects the pool made that aren't freed, resting or in use.
 - "Bullet (active)": how many of them are in the scene tree.
-- "Bullet (orphan)": how many of them are orphan nodes, i.e. out of the tree, like in Godot's own "Orphan Nodes" monitor: those resting in the pool, and those in use but out of the tree.
+- "Bullet (orphan)": how many of them are orphan nodes, i.e. out of the tree, like Godot's own "Orphan Nodes" monitor: those resting in the pool, and those in use but out of the tree.
 
-A pool shows up once it's used for the first time, e.g. by `create` or `pool_reserve`. The editor reformats the names, as for profile monitors, see "Profile monitors" in `gd++ man debugging`. Release builds have no monitors, and pay nothing for them: they're counted only when the editor asks.
+Facts:
+
+- A pool shows up once it's first used, e.g. by `create` or `pool_reserve`.
+- The editor reformats the names, as for profile monitors. See "Profile monitors" in `gd++ man debugging`.
+- Release builds have no monitors, and pay nothing for them: they're counted only when the editor asks.
 
 # Tracing
 
-With `@trace` on a `@pool` class, in a build that turns it on, the trace shows when the pool reuses an object, and when the object is returned to the pool, e.g. `↻ Bullet#3001 reused` and `↻ Bullet#3001 returned to its pool`, besides the usual "created" and "freed" lines. See `gd++ man debugging`.
+With `@trace` on a `@pool` class, in a build that turns it on, the trace shows:
+
+- the usual "created" and "freed" lines,
+- when the pool reuses an object, e.g. `↻ Bullet#3001 reused`,
+- when the object is returned to the pool, e.g. `↻ Bullet#3001 returned to its pool`.
+
+See `gd++ man debugging`.
 
 # In the generated code
 
-A `@pool` class gets a few members, which the runtime's `create` and `destroy` use, besides `new_pooled` or `new_scene_pooled`, `free_pooled`, `queue_free_pooled`, `pool_reserve` and `pool_clear`, for scripts: `_gdpp_pool`, a static `gdpp::Pool<T>`, `_gdpp_pool_slot`, where the object is in the pool, its generation, and whether it got ready once, and `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`, which reset the `@recycle` variables and run the `@recycle` blocks. Without `"only"`, the constructor also runs the `@recycle ctor`, unless `pool_reserve` makes the object, and the destructor the `@recycle dtor`, unless the object rests in its pool. The destructor also tells the pool when an object is deleted for good. The constructor learns that `pool_reserve` makes the object from `gdpp::reserving()`, a flag of the thread, which it clears. See `gd++ man generated` and `gd++ man runtime`.
+A `@pool` class gets, besides the methods for scripts (`new_pooled` or `new_scene_pooled`, `free_pooled`, `queue_free_pooled`, `pool_reserve` and `pool_clear`):
+
+- `_gdpp_pool`: a static `gdpp::Pool<T>`.
+- `_gdpp_pool_slot`: where the object is in the pool, its generation, and whether it got ready once.
+- `_gdpp_recycle_ctor` and `_gdpp_recycle_dtor`: reset the `@recycle` variables and run the `@recycle` blocks.
+
+The runtime's `create` and `destroy` use them. Also:
+
+- Without `"only"`, the constructor runs the `@recycle ctor`, unless `pool_reserve` makes the object.
+- Without `"only"`, the destructor runs the `@recycle dtor`, unless the object rests in its pool.
+- The destructor tells the pool when an object is deleted for good.
+- The constructor learns that `pool_reserve` makes the object from `gdpp::reserving()`, a flag of the thread, which it clears.
+
+See `gd++ man generated` and `gd++ man runtime`.
 
 # See also
 

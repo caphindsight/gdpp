@@ -1,6 +1,6 @@
 Building: targets and kinds of builds
 
-`gd++ build` turns a package into GDExtension libraries, which Godot loads. This page explains builds in depth: what they do step by step, the targets you can build for, and the kinds of builds. For a short list of the command's options, see `gd++ man build`.
+`gd++ build` turns a package into GDExtension libraries, which Godot loads. This page covers builds in depth: the steps, the targets and the kinds of builds. For a short list of options, see `gd++ man build`.
 
 # A first build
 
@@ -8,7 +8,9 @@ Building: targets and kinds of builds
 gd++ build
 ```
 
-This builds the package that contains the current directory, for this machine, in debug mode. The first build of a package takes a while, since it compiles godot-cpp too. Later builds only compile what changed.
+- Builds the package that contains the current directory, for this machine, in debug mode.
+- The first build is slow: it compiles godot-cpp too.
+- Later builds only compile what changed.
 
 ```out
 [•] Build parameters: linux.x86_64, debug, unoptimized, with docs.
@@ -17,26 +19,34 @@ This builds the package that contains the current directory, for this machine, i
 [•] Generating .gdextension for res:// [my_game]...
 ```
 
-The build writes the library (e.g. `libmy_game.linux.debug.x86_64.so`), `my_game.gdextension` and `my_game.gdextension.uid` into the package root. Godot loads them from there, so the classes show up in the editor right away.
+The build writes into the package root:
+
+- the library, e.g. `libmy_game.linux.debug.x86_64.so`,
+- `my_game.gdextension` and `my_game.gdextension.uid`.
+
+Godot loads them from there, so the classes show up in the editor right away.
 
 # What a build does
 
 For each package, `gd++`:
 
 1. Checks that the package's bindings and spec are in the project's caches.
-2. Syncs its build cache, `.gd++pkg`: copies the bindings and the spec into it, if they changed. If the package's settings changed since the last build (its id, bindings, spec, syntax, C++ standard, prefix or quit timeout), it first cleans the package, so the build starts from scratch. See `gd++ man build-cache`.
+2. Syncs the build cache, `.gd++pkg`: copies the bindings and the spec into it, if they changed. If the package's settings changed since the last build (id, bindings, spec, syntax, C++ standard, prefix or quit timeout), it first cleans the package. See `gd++ man build-cache`.
 3. Writes the build script, `SConstruct`, into the build cache. It lists the package's C and C++ sources.
-4. Copies the package's GD++ and C/C++ files into the build cache, which compiles the copies. So compiler errors show the code that was compiled, even if you edit a file during the build.
-5. If the package has GD++ files: finds out what godot-cpp declares, and transpiles each GD++ file into C++. The first time, this generates godot-cpp's bindings from the spec and scans their headers, and the result is cached. Transpiling stops at the first error in any GD++ file. See `gd++ man lang`.
-6. Writes `__register_types__.cpp`, the code that registers the package's classes with Godot when the library loads, including the package's class of tasks, if a GD++ class uses `Async`. See `gd++ man async`.
+4. Copies the package's GD++ and C/C++ files into the build cache, and compiles the copies. So compiler errors show the compiled code, even if you edit a file during the build.
+5. If the package has GD++ files: finds out what godot-cpp declares, and transpiles each GD++ file into C++.
+   - The first time, this generates godot-cpp's bindings from the spec and scans their headers. The result is cached.
+   - Transpiling stops at the first error in any GD++ file.
+   - See `gd++ man lang`.
+6. Writes `__register_types__.cpp`, which registers the package's classes with Godot when the library loads. This includes the package's class of tasks, if a GD++ class uses `Async`. See `gd++ man async`.
 7. Runs SCons for each target. It compiles godot-cpp, the generated C++ and the copies of your C++ sources, and links the library into the package root.
 8. Writes the `.gdextension` file and its `.uid` file.
 
-Each step only rewrites the files whose contents change, so SCons and the Godot editor don't see needless changes. The one exception is the `.gdextension` file, which is rewritten on every build: its new modification time makes the editor reload the library.
+Each step rewrites only the files whose contents change, so SCons and the Godot editor see no needless changes. Exception: the `.gdextension` file is rewritten on every build. Its new modification time makes the editor reload the library.
 
 # Targets
 
-A target is a platform and a CPU architecture, written `PLATFORM.ARCH`, e.g. `linux.x86_64`. By default, `gd++` builds for the machine it runs on. To build for other targets, e.g. to cross-compile for Windows on Linux:
+A target is a platform and a CPU architecture, written `PLATFORM.ARCH`, e.g. `linux.x86_64`. By default, `gd++` builds for the machine it runs on.
 
 ```sh
 gd++ build --for windows.x86_64
@@ -61,13 +71,23 @@ x86_64    x64
 arm64     a64
 ```
 
-`macos.x86_32` doesn't exist, since godot-cpp doesn't support it. Cross-compiling needs a compiler for the target: `gd++ install` sets up MinGW-w64 on Linux and macOS, to build for Windows. Building for macOS generally needs a Mac.
+Facts:
 
-`--for` takes any number of targets, and can't be used with `-w`, `--platform` or `--arch`. The build compiles the targets one after another. Steps 1 to 5 above happen only once, before the first target.
+- `macos.x86_32` doesn't exist: godot-cpp doesn't support it.
+- Cross-compiling needs a compiler for the target. `gd++ install` sets up MinGW-w64 on Linux and macOS, to build for Windows.
+- Building for macOS generally needs a Mac.
+- `--for` takes any number of targets. Not with `-w`, `--platform` or `--arch`.
+- Targets are built one after another. Steps 1 to 5 above happen only once.
 
 # Compilers
 
-By default, godot-cpp picks the compiler for each target: GCC for Linux, Clang for macOS, and for Windows, MSVC on a Windows machine that has it, else MinGW-w64's GCC. `--cc` picks one instead, for all targets:
+By default, godot-cpp picks the compiler for each target:
+
+- Linux: GCC.
+- macOS: Clang.
+- Windows: MSVC on a Windows machine that has it, else MinGW-w64's GCC.
+
+`--cc` picks one for all targets:
 
 ```
 gcc        Linux, or Windows with MinGW-w64's GCC
@@ -76,26 +96,33 @@ msvc       Windows, on a Windows machine
 clang-cl   Windows, on a Windows machine, with MSVC's tools
 ```
 
-E.g. `gd++ build --cc clang` builds with Clang on Linux. The compiler must be installed; `gd++ install` only sets up the default ones. Changing it recompiles everything, including godot-cpp.
+- E.g. `gd++ build --cc clang` builds with Clang on Linux.
+- The compiler must be installed. `gd++ install` only sets up the default ones.
+- Changing it recompiles everything, including godot-cpp.
 
 # Debug and release builds
 
 A debug build, the default, is for development:
 
-- Built with godot-cpp's `template_debug` target, as a dev build with debug symbols, so you can step through your code in a debugger.
-- Unoptimized by default, so it compiles fast and is easy to debug, but runs slower, sometimes even slower than GDScript. See `gd++ man performance`.
-- Hot reload: rebuild while the editor runs, and the editor reloads the library when its window gets focus, without a restart. A package can turn it off with its `hot_reload` setting: due to a Godot bug, hot reload crashes the editor when the package has a tool class that runs code on the worker thread pool. See `gd++ man packages`.
+- Uses godot-cpp's `template_debug` target, as a dev build with debug symbols. You can step through your code in a debugger.
+- Unoptimized by default: fast to compile, easy to debug, but slower to run, sometimes slower than GDScript. See `gd++ man performance`.
+- Supports hot reload: rebuild while the editor runs, and the editor reloads the library when its window gets focus.
+  - A package can turn it off with its `hot_reload` setting.
+  - Due to a Godot bug, hot reload crashes the editor when the package has a tool class that runs code on the worker thread pool. See `gd++ man packages`.
 - Loaded by the editor, and by games run from the editor or exported in debug mode.
 - Includes the documentation of GD++ classes, for the editor's help. See `gd++ man docs`.
 
 A release build, with `--ship`, is for the game you ship:
 
-- Built with godot-cpp's `template_release` target, with link-time optimization.
+- Uses godot-cpp's `template_release` target, with link-time optimization.
 - Optimized for speed by default.
 - Loaded by games exported in release mode.
 - Has no documentation by default, since only the editor shows it.
 
-Debug and release libraries have different names, e.g. `libmy_game.linux.debug.x86_64.so` and `libmy_game.linux.release.x86_64.so`, so both can exist side by side. The `.gdextension` file lists both, for every target, and Godot picks the right one.
+Facts:
+
+- Debug and release libraries have different names, e.g. `libmy_game.linux.debug.x86_64.so` and `libmy_game.linux.release.x86_64.so`. Both can exist side by side.
+- The `.gdextension` file lists both, for every target. Godot picks the right one.
 
 ```sh
 gd++ build --ship                        # release, optimized for speed
@@ -103,7 +130,7 @@ gd++ build --ship --small                # release, optimized for size
 gd++ build --opt                         # debug, but optimized for speed
 ```
 
-Optimization can be chosen independently of `--ship`:
+Optimization, independent of `--ship`:
 
 ```
 --opt     optimize for speed (default with --ship)
@@ -111,20 +138,25 @@ Optimization can be chosen independently of `--ship`:
 --noopt   don't optimize (default without --ship)
 ```
 
-So can documentation:
+Documentation, independent of `--ship`:
 
 ```
 --doc     compile the documentation of GD++ classes into the library (default without --ship)
 --nodoc   don't (default with --ship)
 ```
 
-Compiler warnings are errors, so code that warns doesn't build. `--nowarn` disables them instead, e.g. while trying something out. This applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp. Changing it recompiles the package's sources, but not godot-cpp.
+Warnings:
 
-Before building, `gd++ build` says once what it builds, e.g. "Build parameters: windows.x86_64, release, optimized, no docs.", and the compiler chosen with `--cc`, whether warnings are disabled, which sanitizers are on, and whether tracing or profiling is on. On a terminal, the values that differ from the defaults are highlighted.
+- Compiler warnings are errors, so code that warns doesn't build.
+- `--nowarn` disables them, e.g. while trying something out.
+- They apply to the package's C++ and the generated C++, not to godot-cpp.
+- Changing it recompiles the package's sources, but not godot-cpp.
+
+Before building, `gd++ build` prints what it builds once, e.g. "Build parameters: windows.x86_64, release, optimized, no docs.". It also names the `--cc` compiler, disabled warnings, sanitizers, and tracing or profiling. On a terminal, values that differ from the defaults are highlighted.
 
 # Sanitizers
 
-Sanitizers make the compiler add checks to the code, which find bugs while the game runs, and print where they happened:
+Sanitizers add checks to the code. They find bugs while the game runs, and print where they happened.
 
 ```
 --asan    AddressSanitizer: memory errors, e.g. use after free or out-of-bounds access
@@ -132,29 +164,38 @@ Sanitizers make the compiler add checks to the code, which find bugs while the g
 --tsan    ThreadSanitizer: data races between threads
 ```
 
-They can be combined, except `--asan` with `--tsan`. They apply to the package's C++ and the C++ that GD++ generates, but not to godot-cpp. Code with sanitizers is slower and uses more memory, so use them while testing, not in shipped games. MSVC only supports `--asan`.
+Facts:
 
-Godot itself is built without sanitizers, so AddressSanitizer and ThreadSanitizer need their runtime library loaded first, when Godot starts. On Linux:
+- They can be combined, except `--asan` with `--tsan`.
+- They apply to the package's C++ and the generated C++, not to godot-cpp.
+- Code with sanitizers is slower and uses more memory. Use them while testing, not in shipped games.
+- MSVC only supports `--asan`.
+- Godot itself is built without sanitizers. So AddressSanitizer and ThreadSanitizer need their runtime library loaded first, when Godot starts.
+- Since the rest of Godot isn't checked, sanitizers only see bugs in your package's code.
+
+On Linux:
 
 ```sh
 LD_PRELOAD=$(gcc -print-file-name=libasan.so) godot     # or libtsan.so, with clang: clang -print-file-name=libclang_rt.asan-x86_64.so
 ```
 
-On macOS, set `DYLD_INSERT_LIBRARIES` the same way. Since the rest of Godot isn't checked, sanitizers only see bugs in your package's code.
+On macOS, set `DYLD_INSERT_LIBRARIES` the same way.
 
 # Editor and runtime code
 
-Like GDScript, GD++ runs the code of a class in the editor only if the class has `@tool`:
+Like GDScript, GD++ runs a class's code in the editor only if the class has `@tool`:
 
-- A class without `@tool` is a runtime class. In the editor, Godot shows placeholders for its objects: they keep their property values, but run none of the class's code.
-- A class with `@game_only` is a runtime class too. In debug builds, its functions also return right away when something calls them in the editor, e.g. a `@tool` class.
-- A class with `@tool` runs in the editor too, e.g. to draw gizmos or react to property changes.
+- Without `@tool`: a runtime class. In the editor, Godot shows placeholders for its objects. They keep their property values, but run none of the class's code.
+- With `@game_only`: a runtime class too. In debug builds, its functions also return right away when something calls them in the editor, e.g. a `@tool` class.
+- With `@tool`: the code runs in the editor too, e.g. to draw gizmos or react to property changes.
+- C++ classes work the same way, with `tool = true` in `gd++pkg.toml` in place of `@tool`.
+- Games run from the editor and exported games run all code.
 
-C++ classes work the same way, with `tool = true` in `gd++pkg.toml` in place of `@tool`. Games run from the editor and exported games run all code. See `gd++ man classes` and `gd++ man cpp-classes`.
+See `gd++ man classes` and `gd++ man cpp-classes`.
 
 # Tracing and profiling builds
 
-The `@trace` and `@profile` annotations in GD++ code generate nothing, unless a build turns on their groups:
+`@trace` and `@profile` generate nothing, unless a build turns on their groups:
 
 ```sh
 gd++ build --trace combat                        # the @trace annotations of the group combat
@@ -164,9 +205,17 @@ gd++ build --opt --profile all --print           # optimized, with a table of ti
 gd++ build                                       # back to none
 ```
 
-`--trace GROUP...` and `--profile GROUP...` take group names, or `all`. Every annotation is in the group named after its class, and in the groups that its arguments name. With `--profile`, the editor's Debugger > Monitors tab shows the time per frame of each profiled function. `--print` also prints a table of the timings every 10 seconds, `--period SECONDS` changes how often, and `--fps FPS` sets the frame rate that the table's budget column assumes, 60 by default.
+- `--trace GROUP...` and `--profile GROUP...` take group names, or `all`.
+- Every annotation is in the group named after its class, and in the groups that its arguments name.
+- With `--profile`, the editor's Debugger > Monitors tab shows the time per frame of each profiled function.
+- `--print` also prints a table of timings every 10 seconds.
+- `--period SECONDS` changes how often.
+- `--fps FPS` sets the frame rate that the table's budget column assumes. Default: 60.
+- They work in debug and release builds, and with any other option.
+- Switching them recompiles only the files whose code changes. Hot reload picks up the result.
+- `gd++ trans` takes the same options, to show the generated code.
 
-These options work in debug and release builds, and with any other option. Switching them only recompiles the files whose code changes, and hot reload picks up the result while the editor runs. `gd++ trans` takes the same options, to show the code they generate. See `gd++ man debugging`.
+See `gd++ man debugging`.
 
 # Parallel jobs
 
@@ -174,7 +223,8 @@ These options work in debug and release builds, and with any other option. Switc
 gd++ build -j 8
 ```
 
-Runs 8 compile jobs at once. By default, SCons runs one job per CPU core, minus one.
+- Runs 8 compile jobs at once.
+- Default: one job per CPU core, minus one.
 
 # Building every package
 
@@ -182,7 +232,9 @@ Runs 8 compile jobs at once. By default, SCons runs one job per CPU core, minus 
 gd++ build --proj
 ```
 
-Builds every package in the project, one after another, in the order of their paths. It can't be used with a path. If the project has no packages, it warns "Nothing to build.".
+- Builds every package in the project, one after another, in the order of their paths.
+- Not with a path.
+- Without packages, it warns "Nothing to build.".
 
 # Clean builds
 
@@ -190,16 +242,21 @@ Builds every package in the project, one after another, in the order of their pa
 gd++ build --clean
 ```
 
-Deletes the package's build cache and libraries first, like `gd++ clean --bin`, so the build starts from scratch. This helps when something in the build cache went wrong. A clean build compiles godot-cpp again, so it is slow.
+- Deletes the package's build cache and libraries first, like `gd++ clean --bin`.
+- Helps when something in the build cache went wrong.
+- Slow: it compiles godot-cpp again.
 
 # Errors
 
-If a GD++ file has an error, the build stops before compiling anything, and shows the error in the GD++ file. See `gd++ man errors`.
-
-If the C++ compiler fails, the build shows its whole output. Errors in the C++ code of GD++ files are reported at their lines in the GD++ files, thanks to `#line` directives in the generated code. Errors in generated code are reported in the generated files, in the build cache's `gdpp` directory. See `gd++ man generated`.
-
-If SCons isn't installed, builds fail with "Failed to find SCons, see https://scons.org to install it: ...". Run `gd++ install` to fix this.
+- An error in a GD++ file stops the build before compiling anything, and shows the error in the GD++ file. See `gd++ man errors`.
+- If the C++ compiler fails, the build shows its whole output.
+- Errors in the C++ code of GD++ files are reported at their lines in the GD++ files, thanks to `#line` directives.
+- Errors in generated code are reported in the generated files, in the build cache's `gdpp` directory. See `gd++ man generated`.
+- Without SCons, builds fail with "Failed to find SCons, see https://scons.org to install it: ...". Run `gd++ install` to fix this.
 
 # SCons
 
-`gd++` compiles with SCons, godot-cpp's build system. You never need to run it yourself: `gd++` writes the build script, and runs it in the build cache. The build script is rewritten on every build, so don't edit it. For a custom build step, write a separate script that runs `gd++ build`.
+- `gd++` compiles with SCons, godot-cpp's build system.
+- You never run it yourself: `gd++` writes the build script and runs it in the build cache.
+- The build script is rewritten on every build, so don't edit it.
+- For a custom build step, write a separate script that runs `gd++ build`.

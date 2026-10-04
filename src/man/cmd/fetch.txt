@@ -12,17 +12,24 @@ Any of these with [--url URL] [--branch BRANCH].
 
 # Description
 
-Downloads dependencies from the GD++ dependency repository, a git repository, into the project's ephemeral cache, `res://.gd++proj`, or with `--checkin` into the checked in cache, `res://_gd++proj`. With an `--index` option, it lists the dependencies that the repository has instead. See `gd++ man dependencies`.
+- Downloads dependencies from the GD++ dependency repository, a git repository.
+- They go into the ephemeral cache, `res://.gd++proj`, or with `--checkin` into the checked in cache, `res://_gd++proj`.
+- With an `--index` option, it lists the repository's dependencies instead.
+- It makes a shallow, sparse clone of the repository into a temporary directory, checks out only the index and the chosen dependencies, and moves them into the cache.
+- It needs git.
 
-`gd++` makes a shallow, sparse clone of the repository into a temporary directory, checks out only its index and the chosen dependencies, and moves them into the cache. This needs git.
+See `gd++ man dependencies`.
 
 # Options
 
 --missing
-  Fetch the bindings and specs that the project's packages name in their `gd++pkg.toml` files, but that neither cache has. This is the usual way to set up a project after cloning it. If nothing is missing, it says "No dependencies are missing." and doesn't touch the network. It can be combined with the options below, to fetch more.
+  Fetch the bindings and specs that the project's packages name in their `gd++pkg.toml` files, but that neither cache has.
+  - The usual way to set up a project after cloning it.
+  - If nothing is missing, it says "No dependencies are missing." and doesn't touch the network.
+  - Combines with the options below, to fetch more.
 
 --bind NAME...
-  Fetch these Godot C++ bindings. A name can be a version, e.g. `10.0.0-stable`, or a tag, e.g. `latest`.
+  Fetch these Godot C++ bindings. A name is a version, e.g. `10.0.0-stable`, or a tag, e.g. `latest`.
 
 --bind-all
   Fetch all Godot C++ bindings in the repository. Those already in the project are skipped, with a warning.
@@ -43,19 +50,26 @@ Downloads dependencies from the GD++ dependency repository, a git repository, in
   List only the bindings, the specs or the engines.
 
 --plain
-  List only the names of the versions, one per line, newest first, without tags, styles or headers, e.g. for scripts. Requires exactly one of `--index-bind`, `--index-spec` and `--index-engine`.
+  List only the version names, one per line, newest first, without tags, styles or headers, e.g. for scripts. Needs exactly one of `--index-bind`, `--index-spec` and `--index-engine`.
 
 --url URL
   The repository to fetch from. Default: https://github.com/caphindsight/gdpp-dep.git.
 
 --branch BRANCH
-  The branch of the repository. Default: `master`.
+  The repository's branch. Default: `master`.
 
-The `--index` options can't be used with the options that fetch, and `--index` can't be used with the other `--index` options. `--bind` and `--bind-all` can't be used together, and the same goes for `--spec` and `--engine`.
+Rules:
+
+- The `--index` options don't combine with the options that fetch.
+- `--index` doesn't combine with the other `--index` options.
+- Not `--bind` with `--bind-all`. The same for `--spec` and `--engine`.
 
 # Overwriting
 
-If you name a dependency that the project already has, it's downloaded again after you confirm. The new copy replaces the old ones, and goes into the cache that `--checkin` chooses, like any fetched dependency. With `--bind-all` and the like, the dependencies that the project already has are skipped instead. A dependency named twice, e.g. by a tag and by its version, is fetched once.
+- A named dependency that the project already has is downloaded again, after you confirm.
+- The new copy replaces the old ones, and goes into the cache that `--checkin` chooses.
+- `--bind-all` and the like skip the dependencies that the project already has.
+- A dependency named twice, e.g. by a tag and by its version, is fetched once.
 
 # Examples
 
@@ -101,7 +115,7 @@ gd++ fetch --index-spec --plain | head -n 1
 # Errors
 
 - "The Godot API spec NAME is not in the repository." Check the name with `gd++ fetch --index`.
-- The task "Cloning the repository..." fails. Git failed, e.g. without network access, and its output is shown.
+- The task "Cloning the repository..." fails: git failed, e.g. without network access. Its output is shown.
 
 # See also
 

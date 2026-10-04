@@ -1,40 +1,71 @@
 The runtime header: GD++'s C++ helpers
 
-Every file that GD++ generates includes one header, the GD++ runtime: `gd++/syntax_0.hpp`, for syntax 0. It holds the helpers that generated code needs, and a few that your C++ code can use. It doesn't depend on your code: it's the same for every package. To read it:
+Every file that GD++ generates includes one header, the GD++ runtime: `gd++/syntax_0.hpp`, for syntax 0.
+
+- It holds the helpers that generated code needs, and a few that your C++ code can use.
+- It doesn't depend on your code: it's the same for every package.
+- To read it:
 
 ```sh
 gd++ trans --runtime --nightly
 ```
 
-In a build, it's in the build cache, at `gdpp/gd++/syntax_0.hpp`.
+- In a build, it's in the build cache, at `gdpp/gd++/syntax_0.hpp`.
 
 # What it includes
 
-The runtime header includes the godot-cpp headers that generated code always needs, so your code can use their names without GD++ finding them first: `Engine`, `Node`, `Object`, `RefCounted`, `Ref`, `Resource`, `ResourceLoader`, `ProjectSettings`, the global constants (e.g. `Error` and `PropertyHint`), `ClassDB`, `Variant`, `TypedArray`, `TypedDictionary`, `UtilityFunctions`, `CallableCustom`, `SceneTree`, `Window` and `WorkerThreadPool`, and `<atomic>`, `<chrono>`, `<cstdint>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`, `<functional>`, `<mutex>`, `<thread>` and `<type_traits>`.
+The godot-cpp headers that generated code always needs. So your code can use their names without GD++ finding them first:
 
-A source file that defines `GDPP_DEBUGGING` before its includes also gets the code of `@trace` and `@profile`, and the headers it needs: `OS`, `Performance`, `SceneTree`, `Window`, and standard headers like `<atomic>`, `<chrono>`, `<functional>`, `<mutex>` and `<vector>`. GD++ defines it in the sources of classes, and the headers of externs, whose `@trace` or `@profile` annotations are on, so other files don't compile any of it. The debugging code has its own include guard, so an extern's header gets it even when the runtime header was included before without it. With `gd++ build --trace`, the headers of classes with assertions define `GDPP_TRACING`, which also gets the debugging code, and makes failed assertions print a trace line. It has its own include guard too, so it works whatever was included before. See `gd++ man debugging`.
+- `Engine`, `Node`, `Object`, `RefCounted`, `Ref`, `Resource`, `ResourceLoader`, `ProjectSettings`,
+- the global constants, e.g. `Error` and `PropertyHint`,
+- `ClassDB`, `Variant`, `TypedArray`, `TypedDictionary`, `UtilityFunctions`, `CallableCustom`,
+- `SceneTree`, `Window` and `WorkerThreadPool`,
+- `<atomic>`, `<chrono>`, `<cstdint>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`, `<functional>`, `<mutex>`, `<thread>` and `<type_traits>`.
+
+`GDPP_DEBUGGING`:
+
+- A source file that defines it before its includes also gets the code of `@trace` and `@profile`, and the headers it needs: `OS`, `Performance`, `SceneTree`, `Window`, and standard headers like `<atomic>`, `<chrono>`, `<functional>`, `<mutex>` and `<vector>`.
+- GD++ defines it in the sources of classes, and the headers of externs, whose `@trace` or `@profile` annotations are on. Other files don't compile any of it.
+- The debugging code has its own include guard. So an extern's header gets it even when the runtime header was included before without it.
+
+`GDPP_TRACING`:
+
+- With `gd++ build --trace`, the headers of classes with assertions define it.
+- It also gets the debugging code, and makes failed assertions print a trace line.
+- It has its own include guard too, so it works whatever was included before.
+
+See `gd++ man debugging`.
 
 # For your code
 
-`gd++ doc NAME` shows the declaration of any of these, with its comments, e.g. `gd++ doc Ext` or `gd++ doc Async.claim`.
-
-Your code writes these without a prefix. Generated code spells most of them with `gdpp::`, e.g. `gdpp::Async`, the namespace where the runtime defines them, so a name of yours can't hide them there.
+- `gd++ doc NAME` shows the declaration of any of these, with its comments, e.g. `gd++ doc Ext` or `gd++ doc Async.claim`.
+- Your code writes these without a prefix.
+- Generated code spells most of them with `gdpp::`, e.g. `gdpp::Async`, the namespace where the runtime defines them. So a name of yours can't hide them there.
 
 gd
-  An alias of `UtilityFunctions`, Godot's global functions, at global scope: `gd::print("Hello")`, `gd::push_error("Oops")`, `gd::randi_range(1, 6)`, `gd::lerp(a, b, 0.5)`, `gd::is_instance_valid(obj)`, and all the others of GDScript's global scope. See `gd++ doc UtilityFunctions` for the list.
+  An alias of `UtilityFunctions`, Godot's global functions, at global scope: `gd::print("Hello")`, `gd::push_error("Oops")`, `gd::randi_range(1, 6)`, `gd::lerp(a, b, 0.5)`, `gd::is_instance_valid(obj)`, and all the others of GDScript's global scope. `gd++ doc UtilityFunctions` lists them.
 
 float64_t
   A name for `double`, the C++ type of Godot's `float`, to match `int64_t`.
 
 gdpp::cast<T>(VALUE)
-  Converts VALUE to T, whatever the two types are: numbers, enums, `Variant`s, and objects, with upcasts done statically and downcasts checked, giving null if the class doesn't match. Your code writes it `VALUE as T`, which GD++ rewrites into this, so it keeps its prefix. See `gd++ man cast`.
+  Converts VALUE to T, whatever the two types are: numbers, enums, `Variant`s, and objects. Upcasts are static. Downcasts are checked, giving null if the class doesn't match. Your code writes it `VALUE as T`, which GD++ rewrites into this, so it keeps its prefix. See `gd++ man cast`.
 
 ```gd++
 Node3D *node = scene->instantiate() as Node3D *;
 ```
 
 GDPP_ASSERT(TEXT, CONDITION), GDPP_ASSERT_VOID(TEXT, CONDITION), GDPP_ASSERT_VALUE(TEXT, CONDITION) and GDPP_ASSERT_REFERENCE(TEXT, CONDITION)
-  What an assertion becomes: `assert CONDITION;` checks CONDITION in debug builds, and if it's false, prints an error and returns from the function, with the type's default value if it returns one. A failed assertion is always undefined behavior, even though the game usually goes on. With `GDPP_TRACING`, the error is also a trace line. Release builds don't evaluate CONDITION. `GDPP_ASSERT_VOID` is for functions that return `void`, `GDPP_ASSERT_VALUE` for those that return a value, `GDPP_ASSERT_REFERENCE` for those that return a reference, which get one to a default value that lives on, and `GDPP_ASSERT` finds out from the function's signature. `GDPP_ASSERT_DEDUCED(TEXT, CONDITION)` is for functions whose return type C++ deduces from a value they return: it doesn't compile, and says why. Your code writes it `assert`, which GD++ rewrites into one of these macros. See `gd++ man rewrites`.
+  What an assertion becomes. Your code writes it `assert`, which GD++ rewrites into one of these. See `gd++ man rewrites`.
+  - In debug builds, it checks CONDITION. If it's false, it prints an error and returns from the function, with the type's default value if it returns one.
+  - A failed assertion is always undefined behavior, even though the game usually goes on.
+  - With `GDPP_TRACING`, the error is also a trace line.
+  - Release builds don't evaluate CONDITION.
+  - `GDPP_ASSERT_VOID`: for functions that return `void`.
+  - `GDPP_ASSERT_VALUE`: for functions that return a value.
+  - `GDPP_ASSERT_REFERENCE`: for functions that return a reference. They get one to a default value that lives on.
+  - `GDPP_ASSERT`: finds out from the function's signature.
+  - `GDPP_ASSERT_DEDUCED(TEXT, CONDITION)`: for functions whose return type C++ deduces from a value they return. It doesn't compile, and says why.
 
 ```gd++
 assert health >= 0;
@@ -42,72 +73,105 @@ assert target != nullptr;
 ```
 
 gdpp::create<T>(), gdpp::destroy(OBJECT) and gdpp::queue_destroy(NODE)
-  What `create T`, `destroy OBJECT` and `queue_destroy NODE` become. `create` creates an object of the class `T`: it takes one from the pool of a `@pool` class, and returns an `Ext<T>` for an extern, which comes from the class's method for scripts for a `@pool` or `@scene` extern, a `Ref<T>` for a refcounted class, and a `T *` for other classes, an instance of the class's scene for a `@scene` class. `destroy` gives an object that a pool made back to its pool, and deletes other objects. It does nothing with null, and doesn't compile for a `Ref` or an `ExtRef`. `queue_destroy` returns a node of a `@pool` class to its pool at the end of the frame, on the main thread, unless it was returned or freed before, and for other classes calls `queue_free()`. For a `@pool` extern, `destroy` and `queue_destroy` call the object's `free_pooled()` and `queue_free_pooled()`. All three are thread-safe: on threads other than the main one, `destroy` leaves nodes that are in the scene tree to the main thread, at the end of the frame. See `gd++ man classes`.
+  What `create T`, `destroy OBJECT` and `queue_destroy NODE` become. All three are thread-safe. See `gd++ man classes`.
+  - `create` creates an object of the class `T`. For a `@pool` class, it takes one from the pool. It returns:
+  - an `Ext<T>` for an extern, which comes from the class's method for scripts for a `@pool` or `@scene` extern,
+  - a `Ref<T>` for a refcounted class,
+  - a `T *` for other classes, an instance of the class's scene for a `@scene` class.
+  - `destroy` gives an object that a pool made back to its pool, and deletes other objects. It does nothing with null, and doesn't compile for a `Ref` or an `ExtRef`.
+  - On threads other than the main one, `destroy` leaves nodes in the scene tree to the main thread, at the end of the frame.
+  - `queue_destroy` returns a node of a `@pool` class to its pool at the end of the frame, on the main thread, unless it was returned or freed before. For other classes, it calls `queue_free()`.
+  - For a `@pool` extern, `destroy` and `queue_destroy` call the object's `free_pooled()` and `queue_free_pooled()`.
 
 gdpp::Pool<T>
-  The pool of the `@pool` class `T`, which `create` and `destroy` use: a static member of `T`. `create` and `destroy` are thread-safe, and take constant time. Its `gdpp::PoolMode`, `FIXED` or `GROW`, says what it does once it has made as many objects as its size, like the arguments of `@pool`. `reserve` and `clear` do what the class's `pool_reserve` and `pool_clear` do, and like those, they must be called from the main thread. See `gd++ man pools`.
+  The pool of the `@pool` class `T`, which `create` and `destroy` use: a static member of `T`. See `gd++ man pools`.
+  - `create` and `destroy` are thread-safe, and take constant time.
+  - Its `gdpp::PoolMode`, `FIXED` or `GROW`, says what it does once it has made as many objects as its size, like the arguments of `@pool`.
+  - `reserve` and `clear` do what the class's `pool_reserve` and `pool_clear` do. Like those, they must be called from the main thread.
 
 ExtPtr<T>, ExtRef<T> and Ext<T>
   The C++ types of externs: a pointer or a reference to an object of an extern's class, whose members are called by name. `Ext<T>` is `ExtRef<T>` if `T`'s base is refcounted, and `ExtPtr<T>` otherwise. See `gd++ man externs`.
 
 Weak<T>
-  The C++ type of `Weak[T]`: a reference to an object of the class `T` that holds its ID, and doesn't keep it alive. It converts to a `Ref<T>` for a refcounted class, and to a `T *` otherwise, which is null once the object is freed, or for a `@pool` class, once it's returned to its pool. Where a conversion is ambiguous, `ptr()` gives the `T *`, and `ref()` the `Ref<T>`. In a condition, it's true while the object is there. See `gd++ man weak`.
+  The C++ type of `Weak[T]`: a reference to an object of the class `T` that holds its ID, and doesn't keep it alive. See `gd++ man weak`.
+  - It converts to a `Ref<T>` for a refcounted class, and to a `T *` otherwise.
+  - That's null once the object is freed, or for a `@pool` class, once it's returned to its pool.
+  - Where a conversion is ambiguous, `ptr()` gives the `T *`, and `ref()` the `Ref<T>`.
+  - In a condition, it's true while the object is there.
 
 Async<T>
-  The C++ type of `Async[T]`: a task, e.g. a call of an `@onthread` function. It refers to an object of a class of tasks, whose methods it calls directly for the package's own tasks, and by name for those of other packages, so it works with the tasks of any package. Copies share the task, like references to the task object in scripts, and its methods do what the object's methods do:
-
+  The C++ type of `Async[T]`: a task, e.g. a call of an `@onthread` function. See `gd++ man async`.
+  - It refers to an object of a class of tasks. It calls that object's methods directly for the package's own tasks, and by name for other packages' tasks. So it works with the tasks of any package.
+  - Copies share the task, like references to the task object in scripts.
   - In a condition, it's true while its task is running or done, and false once it's claimed, or when it's empty.
-  - `is_done()` is true when its task has finished, and isn't claimed yet.
-  - `claim()` returns the result of a done task, and claims it, for every copy.
-  - `result()` returns the result too, but keeps it.
-  - `wait()` waits for the task to finish, then returns the result, and keeps it, like `result()`.
-  - `cancel()` asks the task to stop. It's always safe: for an empty `Async`, or a task that's done or claimed, it does nothing.
-
-  Claiming or reading the result before the task is done, or once it's claimed, and calling `claim()`, `result()` or `wait()` on an empty `Async`, prints an error in debug builds, and is undefined behavior in release builds. A default-constructed `Async` is empty, and destroying it does nothing. It's `[[nodiscard]]`, so the compiler warns when a call's `Async` is dropped right away. In GD++ code, `is_done TASK`, `claim TASK` and `cancel TASK` call these methods (see `gd++ man rewrites`). See `gd++ man async`.
+  - `is_done()`: true when its task has finished, and isn't claimed yet.
+  - `claim()`: returns the result of a done task, and claims it, for every copy.
+  - `result()`: returns the result too, but keeps it.
+  - `wait()`: waits for the task to finish, then returns the result, and keeps it, like `result()`.
+  - `cancel()`: asks the task to stop. Always safe: for an empty `Async`, or a task that's done or claimed, it does nothing.
+  - Claiming or reading the result before the task is done, or once it's claimed, and calling `claim()`, `result()` or `wait()` on an empty `Async`, prints an error in debug builds. It's undefined behavior in release builds.
+  - A default-constructed `Async` is empty. Destroying it does nothing.
+  - It's `[[nodiscard]]`: the compiler warns when a call's `Async` is dropped right away.
+  - In GD++ code, `is_done TASK`, `claim TASK` and `cancel TASK` call these methods. See `gd++ man rewrites`.
 
 is_cancelled
-  Whether the task running on this thread should stop: its `Async` was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. It's a rewrite, which calls the runtime's `gdpp::is_cancelled()`. See `gd++ man rewrites` and `gd++ man async`.
+  Whether the task running on this thread should stop: its `Async` was cancelled, or the game is quitting. Outside of tasks, whether the game is quitting. A rewrite, which calls the runtime's `gdpp::is_cancelled()`. See `gd++ man rewrites` and `gd++ man async`.
 
 Emitted
   What a signal's emit function returns: a `[[nodiscard]]` struct with the `Error` of `emit_signal`, in its field `error`. See `gd++ man signals`.
 
 GDPP_STRING_NAME("name")
-  A `StringName`, created the first time the expression runs, and reused after, like the engine's `SNAME`. Creating a `StringName` from a string looks it up in a global table, behind a lock, so this is faster for names used over and over, e.g. in calls by name:
+  A `StringName`, created the first time the expression runs, and reused after, like the engine's `SNAME`.
+  - Creating a `StringName` from a string looks it up in a global table, behind a lock. So this is faster for names used over and over, e.g. in calls by name.
+  - In GD++ code, `string_name "update"` is short for it. See `gd++ man rewrites`.
 
 ```gd++
 node->call(GDPP_STRING_NAME("update"));
 ```
 
-In GD++ code, `string_name "update"` is short for it. See `gd++ man rewrites`.
-
 # For generated code
 
-These are used by the code that GD++ generates. Your code rarely needs them:
+The code that GD++ generates uses these. Your code rarely needs them:
 
 - `gdpp::info<T>(name, ...)` returns the `PropertyInfo` of a value of type T, for bindings. A pointer to a node class gets a node-type hint, so the inspector only accepts nodes of that class.
 - `gdpp::add_property_category(class, name)` adds an inspector category, for `@export_category`.
 - `gdpp::rpc_config<T>(node, method, ...)` configures an RPC, for `@rpc`. It fails to compile if `T` doesn't extend `Node`.
 - `gdpp::call_thread_safe(node, method, args...)` calls a method with `call_thread_safe`, for `@thread_safe`. It fails to compile if the node's class doesn't extend `Node`.
-- `gdpp::GDPP_ASYNC_CLASS` is the package's class of tasks. The build defines its name as `GDPP_ASYNC_CLASS`, e.g. `FooAsync`, and `gdpp::async_class` holds the name as a string. The package's generated registration code registers it. `gdpp::run_task(self, name, job)` starts the call of an `@onthread` function with an object of it, and `gdpp::TaskCallable` is the `Callable` that runs the body. See `gd++ man async`.
-- For quitting: `gdpp::watch_quit` notices when the game starts quitting, `gdpp::await_quit` waits for a task within the package's `quit_timeout`, which the build defines as `GDPP_QUIT_TIMEOUT_USEC`, and in games ends the game when it runs out, and `gdpp::finish_tasks` waits for the package's running tasks before its library is unloaded. See "When the game quits" in `gd++ man async`.
-- For unloading: `gdpp::uninitialize()` prepares the package's library to be unloaded, e.g. by hot reload: it calls `gdpp::finish_tasks()`, and removes the hooks that `gdpp::on_unload(unhook)` added, e.g. with `gdpp::connect_until_unload(object, signal, callable)`, which connects a signal until then. The package's generated registration code calls it.
-- `GDPP_ENUM_TAG(TAG, NAME)` makes a class's stand-in type for an enum bind as the enum NAME, e.g. `"Player.Suit"`. `GDPP_BITFIELD_TAG` does the same for a bitfield. See `gd++ man enums`.
-- `GDPP_BITFIELD(ENUM)` gives the enum class of a bitfield the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`. `&` returns a `gdpp::Masked<ENUM>`, which converts to `ENUM`, and to `bool` in conditions: true if any flag is set. See `gd++ man enums`.
-- Specializations of godot-cpp's `GetTypeInfo`, `PtrToArg` and `VariantCaster` for `ExtPtr` and `ExtRef`, so bindings see externs as their base classes, and for `Async`, so bindings see it as the package's class of tasks.
+- The class of tasks. See `gd++ man async`.
+  - `gdpp::GDPP_ASYNC_CLASS` is the package's class of tasks. The build defines its name as `GDPP_ASYNC_CLASS`, e.g. `FooAsync`.
+  - `gdpp::async_class` holds the name as a string.
+  - The package's generated registration code registers it.
+  - `gdpp::run_task(self, name, job)` starts the call of an `@onthread` function with an object of it.
+  - `gdpp::TaskCallable` is the `Callable` that runs the body.
+- Quitting. See "When the game quits" in `gd++ man async`.
+  - `gdpp::watch_quit` notices when the game starts quitting.
+  - `gdpp::await_quit` waits for a task within the package's `quit_timeout`, which the build defines as `GDPP_QUIT_TIMEOUT_USEC`. In games, it ends the game when that runs out.
+  - `gdpp::finish_tasks` waits for the package's running tasks before its library is unloaded.
+- Unloading, e.g. by hot reload:
+  - `gdpp::uninitialize()` prepares the package's library to be unloaded. It calls `gdpp::finish_tasks()`, and removes the hooks that `gdpp::on_unload(unhook)` added.
+  - `gdpp::connect_until_unload(object, signal, callable)` connects a signal until then.
+  - The package's generated registration code calls `gdpp::uninitialize()`.
+- Enums. See `gd++ man enums`.
+  - `GDPP_ENUM_TAG(TAG, NAME)` makes a class's stand-in type for an enum bind as the enum NAME, e.g. `"Player.Suit"`. `GDPP_BITFIELD_TAG` does the same for a bitfield.
+  - `GDPP_BITFIELD(ENUM)` gives the enum class of a bitfield the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`. `&` returns a `gdpp::Masked<ENUM>`, which converts to `ENUM`, and to `bool` in conditions: true if any flag is set.
+- Specializations of godot-cpp's `GetTypeInfo`, `PtrToArg` and `VariantCaster`:
+  - for `ExtPtr` and `ExtRef`, so bindings see externs as their base classes,
+  - for `Async`, so bindings see it as the package's class of tasks.
 
-With `GDPP_DEBUGGING`, for `@trace` and `@profile`. See `gd++ man debugging`:
+With `GDPP_DEBUGGING`, for `@trace` and `@profile` (see `gd++ man debugging`):
 
 - `gdpp::Trace` prints a call of a `@trace` function: its start, with its arguments, when created, and its end, with its result and time, when destroyed. Its `ret(value)` records the result and returns it.
 - `gdpp::Watch` checks the `@trace` variables of a class during a call of one of its functions, and prints their changes.
-- `gdpp::Trace` and `gdpp::trace_emit` take `gdpp::via_extern` first for calls and emissions through an extern, which their lines mark with "extern".
+- `gdpp::Trace` and `gdpp::trace_emit` take `gdpp::via_extern` first for calls and emissions through an extern. Their lines mark them with "extern".
 - `gdpp::trace_assert(condition, file, line)` prints a failed assertion, with `GDPP_TRACING`.
-- `gdpp::trace_emit(object, signal, args...)` prints an emission of a `@trace` signal, and `gdpp::trace_lifetime(class, object, created)` the creation or destruction of an object of a `@trace` class.
+- `gdpp::trace_emit(object, signal, args...)` prints an emission of a `@trace` signal.
+- `gdpp::trace_lifetime(class, object, created)` prints the creation or destruction of an object of a `@trace` class.
 - `gdpp::ProfileStats` holds the timings of one `@profile` function, from all threads, and registers its monitor. `gdpp::Profile` times one call.
-- `gdpp::print_profile()` prints the table of timings, and `gdpp::profile_monitor(index)` returns a monitor's value.
+- `gdpp::print_profile()` prints the table of timings. `gdpp::profile_monitor(index)` returns a monitor's value.
 - `gdpp::describe(object)` and `gdpp::repr(value)` turn objects and values into the text that trace lines show.
 - `gdpp::now()` returns the steady clock's time in nanoseconds.
-
-Arguments and variables are passed as alternating names and values, e.g. `gdpp::Trace t("Player", this, "take_damage", "amount", amount);`. Don't use these in your own code: they only exist in sources that GD++ compiles with tracing or profiling on, so the same code fails to compile in other builds.
+- Arguments and variables are passed as alternating names and values, e.g. `gdpp::Trace t("Player", this, "take_damage", "amount", amount);`.
+- Don't use these in your own code. They only exist in sources that GD++ compiles with tracing or profiling on, so the same code fails to compile in other builds.
 
 # Stability
 

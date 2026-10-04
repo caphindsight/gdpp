@@ -127,6 +127,10 @@ func TestRenderMan(t *testing.T) {
 	if got := renderMan("Title\n", "[syntax 1]", 0); got != want {
 		t.Errorf("renderMan with a tag = %q, want %q", got, want)
 	}
+	want = Styled("Title", Bold, BrightBlue) + "\n" + Styled("-----", BrightBlue) + "\n- item\n  - nested\n"
+	if got := renderMan("Title\n- item\n  - nested\n", "", 0); got != want {
+		t.Errorf("renderMan with a nested list = %q, want %q", got, want)
+	}
 }
 
 func TestMan(t *testing.T) {

@@ -1,8 +1,10 @@
 Commands: every gd++ command
 
-`gd++` is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUMENTS]`. Each command has a page here, named after it, e.g. `gd++ man build`, with its synopsis, all its options, examples and common errors.
+`gd++` is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUMENTS]`.
 
-For the options that all commands take, e.g. `-q`, `-v` and `-f`, and for how output, prompts and errors work, see `gd++ man cli`. `gd++ COMMAND --help` prints a short list of a command's options.
+- Each command has a page named after it, e.g. `gd++ man build`, with its synopsis, options, examples and common errors.
+- `gd++ man cli` covers the options that all commands take, e.g. `-q`, `-v` and `-f`, and how output, prompts and errors work.
+- `gd++ COMMAND --help` prints a short list of a command's options.
 
 # By task
 

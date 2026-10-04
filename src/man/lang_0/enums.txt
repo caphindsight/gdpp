@@ -1,6 +1,11 @@
 Enums and constants: enum types, bitfields and constants
 
-GD++ declares two things with `enum`: enum types, i.e. sets of named integer values, and integer constants of a class. Enum types in GD++ work a bit differently from enums in C++, Godot and GDScript: they're global types of the package.
+`enum` declares two things:
+
+- enum types: sets of named integer values,
+- integer constants of a class.
+
+GD++ enum types differ from enums in C++, Godot and GDScript: they're global types of the package.
 
 # Enum types
 
@@ -15,9 +20,12 @@ enum Suit {
 enum Rank { JACK = 11, QUEEN, KING, ACE = 1 }
 ```
 
-`enum Name { ... }` holds the values: names, each with an optional value after `=`. Separate them with spaces, newlines or commas. A comma after the last one is fine. A value without `=` is the previous value plus one, and the first one is 0. So `JACK` is 11, `QUEEN` 12, `KING` 13 and `ACE` 1. Bitfields count differently: see "Bitfields" below.
-
-Values are integers that fit in 64 bits, written as decimal, negative, hexadecimal, binary or octal numbers, with optional digit separators. See `gd++ man syntax`. Two values of an enum can't have the same name, but they can have the same number.
+- `enum Name { ... }` holds the values: names, each with an optional value after `=`.
+- Separate them with spaces, newlines or commas. A trailing comma is fine.
+- A value without `=` is the previous value plus one. The first one is 0. So `JACK` is 11, `QUEEN` 12, `KING` 13 and `ACE` 1.
+- Bitfields count differently. See "Bitfields" below.
+- Values are integers that fit in 64 bits: decimal, negative, hexadecimal, binary or octal, with optional digit separators. See `gd++ man syntax`.
+- Two values can't have the same name, but can have the same number.
 
 ```gd++
 enum Flags {
@@ -28,7 +36,10 @@ enum Flags {
 }
 ```
 
-A value can also be a value of another enum, whose number GD++ copies. Write it like in GD++, `Enum.VALUE`, for a GD++ enum or an engine enum, or like in GDScript, `Class.CONSTANT`, for an engine enum of a class:
+A value can be a value of another enum, whose number GD++ copies:
+
+- `Enum.VALUE`, the GD++ spelling: for a GD++ enum or an engine enum.
+- `Class.CONSTANT`, the GDScript spelling: for an engine enum of a class.
 
 ```gd++
 enum MyShadowSetting {
@@ -40,13 +51,23 @@ enum MyShadowSetting {
 }
 ```
 
-In GD++, the values of an engine enum leave out the prefix that comes from the enum's name, so that, like the values of GD++ enums, they have none: `GeometryInstance3D.ShadowCastingSetting`'s `SHADOW_CASTING_SETTING_ON` is `ON`, and `Node.ProcessMode`'s `PROCESS_MODE_INHERIT` is `INHERIT`. A value keeps its full name if the rest isn't a name, e.g. `Key`'s `KEY_3`, or is the name of another value of the enum. `Error`'s values keep theirs, e.g. `OK` and `ERR_BUSY`, since they don't start with `ERROR_`.
+GD++ names of engine enum values:
 
-So `GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF`, which mixes the two spellings, is an error. Global engine enums, e.g. `Error`, only have the GD++ spelling: `Error.OK`.
+- They leave out the prefix that comes from the enum's name, so that, like GD++ enum values, they have none.
+  - `GeometryInstance3D.ShadowCastingSetting`'s `SHADOW_CASTING_SETTING_ON` is `ON`.
+  - `Node.ProcessMode`'s `PROCESS_MODE_INHERIT` is `INHERIT`.
+- A value keeps its full name if the rest isn't a valid name, e.g. `Key`'s `KEY_3`, or is the name of another value of the enum.
+- `Error`'s values keep theirs, e.g. `OK` and `ERR_BUSY`, since they don't start with `ERROR_`.
+- Mixing the two spellings is an error, e.g. `GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF`.
+- Global engine enums, e.g. `Error`, only have the GD++ spelling: `Error.OK`.
 
-A value of the enum itself is written with or without the enum's name, `ON` or `MyShadowSetting.ON`, and must come before the value that uses it. A value without `=` counts on from the value before it, as usual: `DOUBLE_SIDED` is 2.
+Values of the enum itself:
 
-Values combine with operators, like in C++ and GDScript. From the ones that bind tightest to the loosest:
+- Written with or without the enum's name: `ON` or `MyShadowSetting.ON`.
+- Must come before the value that uses them.
+- A value without `=` counts on from the value before it, as usual: `DOUBLE_SIDED` is 2.
+
+Values combine with operators, like in C++ and GDScript. From tightest to loosest:
 
 - `~` (bitwise not) and `-` (negation),
 - `*` (multiplication), `/` (division) and `%` (remainder),
@@ -55,7 +76,16 @@ Values combine with operators, like in C++ and GDScript. From the ones that bind
 - `^` (bitwise xor),
 - `|` (bitwise or).
 
-Parentheses group, and operators of the same level go from left to right. So `A | B & C` is `A | (B & C)`, and `A - B - C` is `(A - B) - C`. They work on 64-bit integers like in GDScript: `~0` is -1, division rounds toward zero, so `-7 / 2` is -3 and `-7 % 2` is -1, and results that don't fit wrap around. Dividing by zero is an error. A value ends where no operator continues it, so `A = B | C D` holds two values, `A` and `D`.
+Facts:
+
+- Parentheses group.
+- Operators of the same level go from left to right. So `A | B & C` is `A | (B & C)`, and `A - B - C` is `(A - B) - C`.
+- They work on 64-bit integers like in GDScript:
+  - `~0` is -1.
+  - Division rounds toward zero: `-7 / 2` is -3, and `-7 % 2` is -1.
+  - Results that don't fit wrap around.
+  - Dividing by zero is an error.
+- A value ends where no operator continues it. So `A = B | C D` holds two values, `A` and `D`.
 
 ```gd++
 enum Letter {
@@ -72,7 +102,8 @@ enum Speed {
 }
 ```
 
-In ASCII, setting the bit 0x20 of a capital letter makes it lowercase, so `LOWER_A` is 97, the code of "a". For values that are sets of flags, don't write the powers of two by hand: use a bitfield, which counts them for you. See "Bitfields" below.
+- In ASCII, setting the bit 0x20 of a capital letter makes it lowercase. So `LOWER_A` is 97, the code of "a".
+- For sets of flags, don't write powers of two by hand: use a bitfield. See "Bitfields" below.
 
 Each value can have a doc comment, which Godot's help shows. See `gd++ man docs`.
 
@@ -119,13 +150,16 @@ enum Mode {
 }
 ```
 
-`extends Base`, first in the braces, makes an enum copy all the values of `Base`, with their GD++ names, as if they were written before its own. `Base` is a GD++ enum of the package, or an engine enum: either one of a class, e.g. `Node.ProcessMode`, or a global one, e.g. `Error`. The values of engine enums come from the package's API spec, and their GD++ names leave out the enum's prefix, as explained above. So `Mode` has `INHERIT`, `PAUSABLE`, `WHEN_PAUSED`, `ALWAYS`, `DISABLED` and `EDITOR`. The values of a GD++ base keep their names exactly, prefix or not.
+`extends Base`, first in the braces, copies all the values of `Base`, with their GD++ names, as if they were written before the enum's own.
 
-A value without `=` is the previous value plus one, so the first own value counts on from the base's last one: `TRUMPS` is 4, and `EDITOR` is 5, after `DISABLED = 4`. The own flags of a bitfield start above all of its base's values instead: see "Bitfields" below.
-
-The result is an enum like any other: in C++, a new enum class, e.g. `Mode::INHERIT`, and in Godot, an enum of each class that exposes it, e.g. `Board.MODE_INHERIT`. A global enum needs a new name, e.g. `enum KeyCode { extends Key }`, since Godot's names are taken.
-
-With `enum_name`, `extends` goes on the line after the name:
+- `Base` is a GD++ enum of the package, or an engine enum: one of a class, e.g. `Node.ProcessMode`, or a global one, e.g. `Error`.
+- Engine enum values come from the package's API spec. Their GD++ names leave out the enum's prefix, as above. So `Mode` has `INHERIT`, `PAUSABLE`, `WHEN_PAUSED`, `ALWAYS`, `DISABLED` and `EDITOR`.
+- Values of a GD++ base keep their names exactly, prefix or not.
+- The first own value counts on from the base's last one: `TRUMPS` is 4, and `EDITOR` is 5, after `DISABLED = 4`.
+- A bitfield's own flags start above all of its base's values instead. See "Bitfields" below.
+- The result is an enum like any other: in C++, a new enum class, e.g. `Mode::INHERIT`, and in Godot, an enum of each class that exposes it, e.g. `Board.MODE_INHERIT`.
+- A global enum needs a new name, e.g. `enum KeyCode { extends Key }`, since Godot's names are taken.
+- With `enum_name`, `extends` goes on the line after the name:
 
 ```gd++
 enum_name TarotSuit
@@ -146,11 +180,13 @@ enum Layer {
 }
 ```
 
-`@bitfield` makes an enum a bitfield: a set of flags, which a value can combine. Its values without `=` are the flags: powers of two, starting at 1. So `WORLD` is 1, `PLAYER` 2, `ENEMY` 4, and `ACTORS` 6.
+`@bitfield` makes an enum a bitfield: a set of flags, which a value can combine.
 
-The flags must be next to each other. Values with `=` can come before them, e.g. `NONE`, or after them, e.g. `ACTORS`, but not between them. The largest flag is 2^62, so a bitfield has at most 63 flags.
-
-A bitfield can only extend a bitfield, and an enum only an enum. The first own flag of a bitfield that extends another is the smallest power of two above the base's values:
+- Values without `=` are the flags: powers of two, starting at 1. So `WORLD` is 1, `PLAYER` 2, `ENEMY` 4, and `ACTORS` 6.
+- The flags must be next to each other. Values with `=` can come before them, e.g. `NONE`, or after them, e.g. `ACTORS`, but not between them.
+- The largest flag is 2^62, so a bitfield has at most 63 flags.
+- A bitfield can only extend a bitfield, and an enum only an enum.
+- The first own flag of a bitfield that extends another is the smallest power of two above the base's values:
 
 ```gd++
 @bitfield
@@ -166,9 +202,13 @@ enum MySizeFlags {
 }
 ```
 
-`PICKUP` is 8, after `ACTORS = 6`, and `HUGE` is 16, after `Control.SizeFlags`'s `SIZE_SHRINK_END = 8`.
+- `PICKUP` is 8, after `ACTORS = 6`.
+- `HUGE` is 16, after `Control.SizeFlags`'s `SIZE_SHRINK_END = 8`.
 
-In C++, a bitfield is an enum class like any other (see "In C++" below), with the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`, so values combine without casts. A value of `&` also tests as a `bool`, true if any flag is set, so test a flag with `if (mask & Layer::ENEMY)`:
+In C++, a bitfield is an enum class like any other (see "In C++" below), plus:
+
+- the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`, so values combine without casts,
+- a value of `&` tests as a `bool`, true if any flag is set. So test a flag with `if (mask & Layer::ENEMY)`.
 
 ```gd++
 @export var mask: Layer = WORLD | PLAYER
@@ -182,11 +222,20 @@ func add(layers: Layer = ENEMY) -> void {
 }
 ```
 
-The `bool` works where C++ expects a condition: in `if`, `while`, `!`, `&&`, `||` and `? :`. Elsewhere, e.g. in `return` or `bool b = ...`, write `bool(...)`. Otherwise, the value of `&` is a `Layer`: `Layer hit = mask & Layer::ENEMY;`. With `auto`, it stays a `gdpp::Masked<Layer>`, which converts to `Layer` but takes no `|=` and the like, so write the type.
+The value of `&`:
 
-An initial value or a default value of a bitfield type can combine the bitfield's values with `|`, `&`, `^`, `~` and parentheses without C++: `WORLD | PLAYER` stands for `Layer::WORLD | Layer::PLAYER`.
+- Works as a `bool` where C++ expects a condition: in `if`, `while`, `!`, `&&`, `||` and `? :`.
+- Elsewhere, e.g. in `return` or `bool b = ...`, write `bool(...)`.
+- Otherwise it's a `Layer`: `Layer hit = mask & Layer::ENEMY;`.
+- With `auto`, it stays a `gdpp::Masked<Layer>`, which converts to `Layer` but takes no `|=` and the like. So write the type.
 
-Godot sees a bitfield as a bitfield of each class that exposes it, like `Control.SizeFlags`: in GDScript, its type is e.g. `BitField[Table.Layer]` for a class `Table`, and the help marks it as one. An exported variable of a bitfield type shows a checkbox for each value that is a single flag. See `gd++ man exports`.
+Initial and default values of a bitfield type can combine the bitfield's values with `|`, `&`, `^`, `~` and parentheses, without C++: `WORLD | PLAYER` stands for `Layer::WORLD | Layer::PLAYER`.
+
+In Godot:
+
+- A bitfield is a bitfield of each class that exposes it, like `Control.SizeFlags`.
+- In GDScript, its type is e.g. `BitField[Table.Layer]` for a class `Table`, and the help marks it as one.
+- An exported variable of a bitfield type shows a checkbox for each value that is a single flag. See `gd++ man exports`.
 
 # In C++
 
@@ -201,7 +250,9 @@ enum class Suit : int64_t {
 };
 ```
 
-So values are scoped: write `Suit::HEARTS` in C++ code. Convert to and from integers with `as` (see `gd++ man cast`):
+- Values are scoped: write `Suit::HEARTS` in C++ code.
+- Convert to and from integers with `as`. See `gd++ man cast`.
+- GD++ includes the enum's header wherever it's used.
 
 ```gd++
 var trump: Suit = Suit::HEARTS
@@ -215,9 +266,11 @@ func set_trump_index(i: int) -> void {
 }
 ```
 
-GD++ includes the enum's header wherever it's used.
+Initial and default values of an enum type can name one of the enum's values, without C++:
 
-An initial value or a default value of an enum type can name one of the enum's values, without C++: `HEARTS` or `Suit.HEARTS` stands for `Suit::HEARTS`. For a bitfield, it can also combine them: see "Bitfields" above. Anything else is C++, as usual.
+- `HEARTS` or `Suit.HEARTS` stands for `Suit::HEARTS`.
+- For a bitfield, they can also combine them. See "Bitfields" above.
+- Anything else is C++, as usual.
 
 ```gd++
 var trump: Suit = HEARTS
@@ -225,7 +278,7 @@ var trump: Suit = HEARTS
 func deal(suit: Suit = Suit.SPADES) -> void { ... }
 ```
 
-An enum and its base are different C++ types, even with the same values: convert between them with `as`. Redeclaring an engine enum is how GD++ code uses it as a type:
+An enum and its base are different C++ types, even with the same values. Convert between them with `as`. Redeclaring an engine enum is how GD++ code uses it as a type:
 
 ```gd++
 enum ShadowCastingSetting { extends GeometryInstance3D.ShadowCastingSetting }
@@ -239,29 +292,46 @@ on ready {
 
 # In Godot
 
-Godot has no global enums for extensions: every enum belongs to a class, e.g. `Node.ProcessMode`. So GD++ gives each class that needs an enum its own copy of it. A class exposes an enum if:
+Godot has no global enums for extensions: every enum belongs to a class, e.g. `Node.ProcessMode`. So GD++ gives each class that needs an enum its own copy. A class exposes an enum if:
 
 - it uses the enum in its API: as the type of a variable, a parameter or the return value of a function (except `@override` functions), or a parameter of a signal,
 - it imports the enum, with `import Suit`,
 - the enum is declared inside it,
 - it's a file-level class, and the enum is declared anywhere in its file.
 
-`noimport Suit` stops a class from exposing the enum. `noimport` is an error if the class uses the enum in its API, since Godot must know the enum then.
+`noimport Suit`:
 
-A class exposes an enum, bitfields included, as integer constants of the class, named after the enum and the value, in UPPER_SNAKE_CASE: `Suit`'s `HEARTS` becomes `SUIT_HEARTS`, and `HTTPCode`'s `NOT_FOUND` becomes `HTTP_CODE_NOT_FOUND`. They belong to an enum of the class named like the GD++ enum, e.g. `Table.Suit`. In GDScript:
+- stops a class from exposing the enum,
+- is an error if the class uses the enum in its API, since Godot must know the enum then.
+
+How a class exposes an enum, bitfields included:
+
+- As integer constants of the class, named after the enum and the value, in UPPER_SNAKE_CASE.
+  - `Suit`'s `HEARTS` becomes `SUIT_HEARTS`.
+  - `HTTPCode`'s `NOT_FOUND` becomes `HTTP_CODE_NOT_FOUND`.
+- They belong to an enum of the class named like the GD++ enum, e.g. `Table.Suit`.
+- Two classes that expose the same enum have equal values: `Table.SUIT_HEARTS == Deck.SUIT_HEARTS`.
 
 ```gdscript
 var s: Table.Suit = Table.SUIT_HEARTS
 table.play(Table.SUIT_SPADES)
 ```
 
-In the editor's help, the values are listed under the class's constants, and variables, parameters and return values of the enum's type show as `int`, with the enum's name. An exported variable of an enum type shows a drop-down list of the values. A bitfield is marked as a bitfield instead, and an exported variable shows checkboxes: see "Bitfields" above, and `gd++ man exports`.
+In the editor:
 
-Two classes that expose the same enum have equal values: `Table.SUIT_HEARTS == Deck.SUIT_HEARTS`.
+- The help lists the values under the class's constants.
+- Variables, parameters and return values of the enum's type show as `int`, with the enum's name.
+- An exported variable of an enum type shows a drop-down list of the values.
+- A bitfield is marked as a bitfield, and an exported variable shows checkboxes. See "Bitfields" above, and `gd++ man exports`.
 
 # How it's done
 
-Functions, variables and signals whose types use an enum are bound through a stand-in type per class and enum, named `_gdpp_<Class>_<Enum>`, e.g. `_gdpp_Table_Suit`, which Godot sees as the enum `Table.Suit`, or for a bitfield, as the bitfield `Table.Suit`. Wrappers named `_gdpp_` followed by the name of the function, getter or setter convert between the stand-in and the real enum. Your code never sees them: it uses `Suit`. See `gd++ man generated`.
+- Functions, variables and signals whose types use an enum are bound through a stand-in type per class and enum, named `_gdpp_<Class>_<Enum>`, e.g. `_gdpp_Table_Suit`.
+- Godot sees it as the enum `Table.Suit`, or for a bitfield, as the bitfield `Table.Suit`.
+- Wrappers named `_gdpp_` followed by the name of the function, getter or setter convert between the stand-in and the real enum.
+- Your code never sees them: it uses `Suit`.
+
+See `gd++ man generated`.
 
 # Integer constants
 
@@ -273,9 +343,14 @@ enum MAX_PLAYERS = 4
 enum START_LIVES = 3
 ```
 
-`enum NAME = VALUE`, inside a class, declares an integer constant of the class. In C++, it's a `static constexpr int64_t` member, e.g. `MAX_PLAYERS` or `This::MAX_PLAYERS`, and in Godot, an integer constant of the class, e.g. `Game.MAX_PLAYERS` in GDScript.
+`enum NAME = VALUE`, inside a class, declares an integer constant of the class.
 
-Unlike enum types, constants belong to their class: they can only be declared inside a class, and share its namespace with functions and variables. GDExtensions can only expose integer constants to Godot, so GD++ only has integer constants, and has no `const` keyword. For constants of other types, use a `@static` function, or a `static constexpr` member in a `decl` block:
+- In C++: a `static constexpr int64_t` member, e.g. `MAX_PLAYERS` or `This::MAX_PLAYERS`.
+- In Godot: an integer constant of the class, e.g. `Game.MAX_PLAYERS` in GDScript.
+- Unlike enum types, constants belong to their class: they're only declared inside a class, and share its namespace with functions and variables.
+- They take a doc comment, but no annotations.
+- GDExtensions can only expose integer constants to Godot. So GD++ only has integer constants, and no `const` keyword.
+- For constants of other types, use a `@static` function, or a `static constexpr` member in a `decl` block:
 
 ```gd++
 @static
@@ -288,20 +363,19 @@ decl {
 }
 ```
 
-Constants take a doc comment, but no annotations.
-
 # Rules
 
-- Enum types take only `@bitfield`, and constants take no annotations.
+- Enum types take only `@bitfield`. Constants take no annotations.
 - An integer constant outside a class is an error: "This enum is outside of any class.".
-- A value that isn't an integer, a value of an enum, or those combined with operators is an error, e.g. `A = 1.5` or `A = 1 +`. So is dividing by zero.
-- A value of an unknown enum, or an unknown value, is an error, and so is an enum that depends on itself through its values.
-- A value of an engine enum must use one spelling: `GeometryInstance3D.ShadowCastingSetting.OFF` or `GeometryInstance3D.SHADOW_CASTING_SETTING_OFF`, not `GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF`.
-- An enum can't extend itself through its bases, a class, or an unknown name, and its own values can't have the names of inherited ones.
-- `extends` must come before the values: `enum A { X extends Suit }` is an error.
-- A bitfield's values without `=` must be next to each other, and a bitfield can't have more than 63 flags.
+- A value must be an integer, a value of an enum, or those combined with operators. E.g. `A = 1.5` or `A = 1 +` is an error. So is dividing by zero.
+- A value of an unknown enum, or an unknown value, is an error. So is an enum that depends on itself through its values.
+- A value of an engine enum uses one spelling: `GeometryInstance3D.ShadowCastingSetting.OFF` or `GeometryInstance3D.SHADOW_CASTING_SETTING_OFF`, not `GeometryInstance3D.ShadowCastingSetting.SHADOW_CASTING_SETTING_OFF`.
+- An enum can't extend itself through its bases, a class, or an unknown name.
+- Its own values can't have the names of inherited ones.
+- `extends` comes before the values: `enum A { X extends Suit }` is an error.
+- A bitfield's values without `=` must be next to each other. At most 63 flags.
 - A bitfield can't extend an enum, and an enum can't extend a bitfield.
-- An enum can't be the base of a class, nor an element type of `Array[T]` or `Dictionary[K, V]`: use `int` there.
+- An enum can't be the base of a class, nor an element type of `Array[T]` or `Dictionary[K, V]`. Use `int` there.
 
 # See also
 

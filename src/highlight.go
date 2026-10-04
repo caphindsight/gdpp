@@ -39,8 +39,9 @@ func highlightCode(code, lang string) string {
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
 	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import noimport set signal var"
-	// GD++'s on blocks, e.g. on ready { ... }, whose word is also a name elsewhere: it's a keyword, with the
-	// notification's name, only where it starts a block, at the start of a line or after annotations.
+	// GD++'s on blocks, e.g. on ready { ... }, whose keyword is also a name elsewhere: it's a keyword, with the
+	// notification's name, where it starts a block, at the start of a line or after annotations, and alone where
+	// another identifier follows it, e.g. in a list of keywords, since a name never has one right after it.
 	onWord   = "on"
 	cppWords = "if else for while do return switch case break continue default auto const static constexpr namespace using " +
 		"typedef template typename public private protected virtual override struct true false nullptr this sizeof operator inline explicit mutable"
@@ -131,6 +132,10 @@ func highlightGdpp(code string, gdscript bool) string {
 				if m := onHeadRegexp.FindStringSubmatch(rest[n:]); m != nil {
 					n, isOn = n+len(m[1]), true // With the notification's name.
 				}
+			}
+			if word == onWord && !isOn {
+				after := strings.TrimLeft(rest[n:], " \t")
+				isOn = len(after) < len(rest[n:]) && identLen(after) > 0
 			}
 			switch {
 			case isOn, codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,

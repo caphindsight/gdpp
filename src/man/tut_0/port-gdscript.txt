@@ -1,6 +1,6 @@
 Tutorial: port a GDScript class to GD++
 
-This tutorial turns a GDScript class into a GD++ class, step by step, and ends with a table of GDScript habits and what to write instead. It assumes a project with a package, as set up in `gd++ man tour`.
+This tutorial turns a GDScript class into a GD++ class, step by step. It ends with a table of GDScript habits and what to write instead. It assumes a project with a package, as set up in `gd++ man tour`.
 
 # The script
 
@@ -29,7 +29,8 @@ func _on_body_entered(body: Node2D) -> void:
     queue_free()
 ```
 
-`Player` is a GD++ class of the same package, with a `var score: int`. The coin's `body_entered` signal is connected to `_on_body_entered` in the scene, in the editor's Node dock.
+- `Player` is a GD++ class of the same package, with a `var score: int`.
+- The coin's `body_entered` signal is connected to `_on_body_entered` in the scene, in the editor's Node dock.
 
 # 1. Copy the declarations
 
@@ -56,7 +57,8 @@ Things to check in this part:
 
 # 2. Rewrite the function bodies in C++
 
-Signatures stay the same, except for `_process` and the like, which become `on` blocks, e.g. `on process(delta: float) { ... }`. Bodies go in braces, and are C++:
+- Signatures stay the same, except for `_process` and the like, which become `on` blocks, e.g. `on process(delta: float) { ... }`.
+- Bodies go in braces, and are C++:
 
 ```gd++
 on process(delta: float) {
@@ -77,15 +79,20 @@ func _on_body_entered(body: Node2D) -> void {
 What changed:
 
 - Objects are pointers, so members are reached with `->`: `sprite->...`. Refcounted objects, e.g. resources, are `Ref<T>`, and use `->` too. See `gd++ man types`.
-- `queue_free()` becomes `queue_destroy this;`. It does the same, and keeps working if the class later becomes a `@pool`. Scripts that still use the class call `new_pooled()` and `queue_free_pooled()` for a `@pool` class. See `gd++ man pools`.
+- `queue_free()` becomes `queue_destroy this;`. It does the same, and keeps working if the class later gets `@pool`. Scripts that use a `@pool` class call `new_pooled()` and `queue_free_pooled()`. See `gd++ man pools`.
 - Engine properties are getters and setters in C++: `sprite.rotation += x` becomes `sprite->set_rotation(sprite->get_rotation() + x)`. Your own GD++ variables are plain fields, so `player->score += value` works.
 - `as` casts like in GDScript, but names a C++ type: `body as Player *`. A failed downcast gives `nullptr`. See `gd++ man cast`.
 - Signals are sent with `emit NAME(ARGS);`. See `gd++ man signals`.
-- `func _process(delta)` becomes `on process(delta: float)`, and `func _ready()` becomes `on ready`, and the like: `on` blocks, which add to the base's, and which scripts can't replace. See `gd++ man notifications`. Other virtual functions of the engine, e.g. `_unhandled_input`, need `@override`. See `gd++ man functions`.
+- `func _process(delta)` becomes `on process(delta: float)`, `func _ready()` becomes `on ready`, and the like. `on` blocks add to the base's, and scripts can't replace them. See `gd++ man notifications`.
+- Other virtual functions of the engine, e.g. `_unhandled_input`, need `@override`. See `gd++ man functions`.
 
 # 3. Look up the API
 
-GDScript and C++ name most things the same, but not all. Global functions like `print` or `randi_range` live in `gd`: `gd::print(...)`. Singletons like `Input` are reached with `get_singleton()`: `Input::get_singleton()->is_action_pressed(string_name "jump")`. `string_name "jump"` is a `StringName` made once, the fast way to name actions, signals and methods. See `gd++ man rewrites`.
+GDScript and C++ name most things the same, but not all:
+
+- Global functions like `print` or `randi_range` live in `gd`: `gd::print(...)`.
+- Singletons like `Input` are reached with `get_singleton()`: `Input::get_singleton()->is_action_pressed(string_name "jump")`.
+- `string_name "jump"` is a `StringName` made once, the fast way to name actions, signals and methods. See `gd++ man rewrites`.
 
 When you don't know what a class offers in C++, ask `gd++ doc`:
 
@@ -103,7 +110,8 @@ See `gd++ man doc`.
 gd++ trans coin.gd++
 ```
 
-This checks the GD++ parts of the file, and prints the C++ it generates. GD++ recognizes most GDScript habits, and says what to write instead:
+- It checks the GD++ parts of the file, and prints the C++ it generates.
+- GD++ recognizes most GDScript habits, and says what to write instead:
 
 ```out
 [×] res://coin.gd++:11:36: Expected "{" to start the function body, but found ":".
@@ -112,7 +120,7 @@ This checks the GD++ parts of the file, and prints the C++ it generates. GD++ re
     Hint: GD++ uses braces for function bodies, not a colon as in GDScript: "func foo() -> void { ... }".
 ```
 
-The C++ in the bodies is only checked when it's compiled, in the next step. See `gd++ man errors`.
+- The C++ in the bodies is only checked when it's compiled, in the next step. See `gd++ man errors`.
 
 # 5. Swap the script for the class
 
@@ -122,13 +130,19 @@ Godot can't have two classes named `Coin`, so remove the old script first: delet
 gd++ build
 ```
 
-Compiler errors in your bodies point to the lines of `coin.gd++`. Once it builds, open the editor. In each scene that used the script, select the coin node, remove its script, and change its type to `Coin` with "Change Type". Check that the values in the inspector are still the ones you set, and that the Node dock still connects `body_entered` to `_on_body_entered`.
+Compiler errors in your bodies point to the lines of `coin.gd++`. Once it builds:
+
+1. Open the editor.
+2. In each scene that used the script, select the coin node, remove its script, and change its type to `Coin` with "Change Type".
+3. Check that the values in the inspector are still the ones you set.
+4. Check that the Node dock still connects `body_entered` to `_on_body_entered`.
 
 # 6. Connect signals in the scene
 
-Keep connecting signals in the scene, in the editor's Node dock, as with scripts: GD++ binds every `func`, so the editor lists the functions of `Coin`, and connects signals to them by name. Connections in the scene are visible in the editor, and the code needs none.
-
-Connect in code only where the scene can't, e.g. for nodes that the code creates. Then use `connect`, with `callable_mp` for a function of the class, and `This` for the class's name:
+- Keep connecting signals in the scene, in the editor's Node dock, as with scripts.
+- GD++ binds every `func`. So the editor lists the functions of `Coin`, and connects signals to them by name.
+- Connections in the scene are visible in the editor, and the code needs none.
+- Connect in code only where the scene can't, e.g. for nodes that the code creates. Then use `connect`, with `callable_mp` for a function of the class, and `This` for the class's name:
 
 ```gd++
 Coin *coin = create Coin;
@@ -140,7 +154,10 @@ See "Connecting to signals" in `gd++ man signals`.
 
 # 7. Port one class at a time
 
-Ported classes and scripts work together: a script can extend `Coin`, connect to its signals and call its functions, since they're all bound. The other way around, the C++ compiler doesn't know scripts, so GD++ code reaches them through an extern, which lists what the code needs of a script's class:
+Ported classes and scripts work together:
+
+- A script can extend `Coin`, connect to its signals and call its functions, since they're all bound.
+- The C++ compiler doesn't know scripts. So GD++ code reaches them through an extern, which lists what the code needs of a script's class:
 
 ```gd++
 extern Hud {
@@ -161,7 +178,10 @@ func _on_body_entered(body: Node2D) -> void {
 }
 ```
 
-Calls by name are slower than C++ calls, so keep them out of hot loops. Ported classes don't need externs, so start with classes that use no scripts, e.g. leaves of your scene tree, and work up, removing externs as their scripts get ported. See `gd++ man externs`.
+- Calls by name are slower than C++ calls. Keep them out of hot loops.
+- Ported classes don't need externs. So start with classes that use no scripts, e.g. leaves of your scene tree, and work up, removing externs as their scripts get ported.
+
+See `gd++ man externs`.
 
 # GDScript habits and what to write
 

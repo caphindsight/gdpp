@@ -1,6 +1,9 @@
 Grammar: the complete syntax
 
-This page is the formal summary of GD++'s syntax, for reference. Each part is explained on the page of its topic. For tokens, comments and literals, see `gd++ man syntax`.
+The formal summary of GD++'s syntax, for reference.
+
+- The page of each topic explains its part.
+- For tokens, comments and literals, see `gd++ man syntax`.
 
 # Notation
 
@@ -9,14 +12,14 @@ X?          X is optional
 X*          any number of X, including none
 X | Y       X or Y
 ( ... )     grouping
-'word'      the word or punctuation, as written
+'text'      a keyword or punctuation, as written
 Ident       an identifier
 Int         an integer: '-'? Number
 String      a string literal
 Block       '{' C++ code '}', up to the matching '}'
 ```
 
-Whitespace, newlines and comments may appear between any two tokens, except inside `Expr` (see below).
+Whitespace, newlines and comments may appear between any two tokens, except inside `Expr`. See "Values" below.
 
 # Files
 
@@ -29,7 +32,10 @@ EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEnt
 TopItem     = Class | Extern | Member
 ```
 
-`Code` before the file head is always an error: `decl` and `impl` blocks must be in a class. After `class_name` or `extern_name`, every `Member` belongs to that class or extern. In a file without either, only enum types are allowed as members at the top level. After `enum_name`, only an optional `extends` and enum values follow.
+- `Code` before the file head is always an error: `decl` and `impl` blocks must be in a class.
+- After `class_name` or `extern_name`, every `Member` belongs to that class or extern.
+- In a file without either, only enum types are allowed as members at the top level.
+- After `enum_name`, only an optional `extends` and enum values follow.
 
 # Classes and externs
 
@@ -100,7 +106,15 @@ EnumUnary   = ( '~' | '-' ) EnumUnary | '(' EnumExpr ')' | Int | EnumRef
 EnumRef     = Ident ( '.' Ident )*
 ```
 
-`enum NAME = Int` is an integer constant, only allowed in a class. `enum Name { ... }` is an enum type. `EnumBase` is a GD++ enum, or an engine enum, e.g. `Node.ProcessMode` or `Error`. `EnumRef` is an earlier value of the enum itself, e.g. `HEARTS`, or a value of another enum: `Enum.VALUE`, e.g. `Suit.HEARTS` or `Node.ProcessMode.INHERIT`, or `Class.CONSTANT`, e.g. `Node.PROCESS_MODE_INHERIT`. `EnumExpr` gives the operators C's precedence. A value ends where no operator continues it, so `A = B | C D` holds two values.
+- `enum NAME = Int` is an integer constant, only allowed in a class.
+- `enum Name { ... }` is an enum type.
+- `EnumBase` is a GD++ enum, or an engine enum, e.g. `Node.ProcessMode` or `Error`.
+- `EnumRef` is one of:
+  - an earlier value of the enum itself, e.g. `HEARTS`,
+  - `Enum.VALUE`, a value of another enum, e.g. `Suit.HEARTS` or `Node.ProcessMode.INHERIT`,
+  - `Class.CONSTANT`, e.g. `Node.PROCESS_MODE_INHERIT`.
+- `EnumExpr` gives the operators C's precedence.
+- A value ends where no operator continues it. So `A = B | C D` holds two values.
 
 # Types
 
@@ -108,7 +122,7 @@ EnumRef     = Ident ( '.' Ident )*
 Type        = Ident ( '[' Type ( ',' Type )* ']' )?
 ```
 
-Only `Array`, `Dictionary`, `Async` and `Weak` take type arguments: `Array`, `Async` and `Weak` take one, and `Dictionary` two.
+Only `Array`, `Dictionary`, `Async` and `Weak` take type arguments: `Array`, `Async` and `Weak` one, `Dictionary` two.
 
 # Annotations
 
@@ -134,7 +148,10 @@ Init        = Block | Expr
 Default     = Block | Expr
 ```
 
-`Expr` is C++ code that starts after `=` and runs to the end of the line, but continues while a `(`, `[` or `{` is open. A `Default` also ends at a `,` outside brackets, and before the `)` that closes the parameter list. A value that starts with `{` is a `Block`, which returns the value. An `Init` that starts with `$` or `%` is a node path, e.g. `$Hud/Score`. See `gd++ man variables`.
+- `Expr` is C++ code that starts after `=` and runs to the end of the line. It continues while a `(`, `[` or `{` is open.
+- A `Default` also ends at a `,` outside brackets, and before the `)` that closes the parameter list.
+- A value that starts with `{` is a `Block`, which returns the value.
+- An `Init` that starts with `$` or `%` is a node path, e.g. `$Hud/Score`. See `gd++ man variables`.
 
 # Keywords
 
@@ -143,7 +160,10 @@ class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_na
 func  get  impl  import  noimport  on  set  signal  var
 ```
 
-In C++ code, GD++ also gives a meaning to `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val` (see `gd++ man rewrites`), and to `This` and `gd` (see `gd++ man code`).
+In C++ code, GD++ also reserves:
+
+- `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
+- `This` and `gd`. See `gd++ man code`.
 
 # See also
 

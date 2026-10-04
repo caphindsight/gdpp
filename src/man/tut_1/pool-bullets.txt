@@ -1,10 +1,15 @@
 Tutorial: reuse bullets with an object pool
 
-A game that fires many bullets creates and deletes nodes all the time: each new bullet allocates memory, and Godot sets up the node and all of its children. An object pool avoids this: instead of deleting a bullet, it keeps it, and reuses it for the next shot. This tutorial builds bullets that hit enemies, deal damage and destroy themselves, and then turns them into a pool. It assumes a project that builds, as in `gd++ man tour`.
+A game that fires many bullets creates and deletes nodes all the time. Each new bullet allocates memory, and Godot sets up the node and all its children. An object pool avoids this: instead of deleting a bullet, it keeps it, and reuses it for the next shot.
+
+This tutorial builds bullets that hit enemies, deal damage and destroy themselves, then turns them into a pool. It assumes a project that builds, as in `gd++ man tour`.
 
 # The example
 
-A gun fires bullets. A bullet flies straight ahead. When it hits an enemy, it deals damage and destroys itself. If it hits nothing, it destroys itself after two seconds.
+- A gun fires bullets.
+- A bullet flies straight ahead.
+- When it hits an enemy, it deals damage and destroys itself.
+- If it hits nothing, it destroys itself after two seconds.
 
 # 1. Make the bullet's scene
 
@@ -40,7 +45,11 @@ func _on_body_entered(body: Node3D) -> void {
 
 A bullet destroys itself when it hits an enemy or its lifetime runs out. Step 2 explains how.
 
-Build the package, and change the type of the scene's root to `Bullet`. Connect its `body_entered` signal to `_on_body_entered` in the Node dock. `@scene` makes `create Bullet` instantiate `bullet.tscn`, so each bullet comes with its mesh and collision shape. See "@scene" in `gd++ man classes`.
+1. Build the package.
+2. Change the type of the scene's root to `Bullet`.
+3. Connect its `body_entered` signal to `_on_body_entered` in the Node dock.
+
+`@scene` makes `create Bullet` instantiate `bullet.tscn`. So each bullet comes with its mesh and collision shape. See "@scene" in `gd++ man classes`.
 
 The enemy takes the damage:
 
@@ -62,8 +71,12 @@ func take_damage(amount: int) -> void {
 
 The bullet uses `queue_destroy` rather than `destroy`, for two reasons:
 
-- `body_entered` comes in the middle of the physics engine's work, which doesn't allow removing a collision object from the tree. `queue_destroy` is like Godot's `queue_free`: it destroys the node at the end of the frame, when that's safe. Unlike `queue_free`, it works with pools: a pooled bullet goes back to its pool instead of being freed. See `gd++ man classes`.
-- A bullet can hit two enemies in the same frame, or hit one just as its lifetime runs out. Then it queues its destruction twice, which is fine: the second time does nothing, since the bullet is already gone, or already back in its pool.
+- `body_entered` comes in the middle of the physics engine's work, which doesn't allow removing a collision object from the tree.
+  - `queue_destroy` is like Godot's `queue_free`: it destroys the node at the end of the frame, when that's safe.
+  - Unlike `queue_free`, it works with pools: a pooled bullet goes back to its pool instead of being freed. See `gd++ man classes`.
+- A bullet can hit two enemies in the same frame, or hit one just as its lifetime runs out.
+  - Then it queues its destruction twice, which is fine.
+  - The second time does nothing, since the bullet is already gone, or already back in its pool.
 
 # 3. Fire bullets
 
@@ -80,7 +93,9 @@ func fire() -> void {
 }
 ```
 
-The bullet is added to the level, not to the gun, so that it doesn't move with the gun. Run the game: bullets fly, hit enemies, and disappear. For now, `destroy` deletes each bullet, and `create` makes a new one for each shot.
+- The bullet is added to the level, not to the gun, so that it doesn't move with the gun.
+- Run the game: bullets fly, hit enemies, and disappear.
+- For now, `queue_destroy` deletes each bullet, and `create` makes a new one for each shot.
 
 # 4. Pool the bullets
 
@@ -93,11 +108,21 @@ class_name Bullet
 extends Area3D
 ```
 
-Nothing else changes: `create` and `destroy` already handle pools. Now `destroy` doesn't delete the bullet. Instead, it removes the bullet from the tree and keeps it in the pool, and the next `create` reuses it. The pool only instantiates the scene when it has no bullet to reuse. A bullet that's out of the tree gets no `_physics_process` and no collisions, so a bullet waiting in the pool costs nothing. See `gd++ man pools`.
+Nothing else changes: `create` and `queue_destroy` already handle pools.
+
+- `queue_destroy` doesn't delete the bullet any more. It removes the bullet from the tree, and keeps it in the pool.
+- The next `create` reuses it.
+- The pool only instantiates the scene when it has no bullet to reuse.
+- A bullet out of the tree gets no `_physics_process` and no collisions. So a bullet waiting in the pool costs nothing.
+
+See `gd++ man pools`.
 
 # 5. Reset reused bullets
 
-Run the game again, and fire a few times: the bullets of later shots disappear right away. That's because a reused bullet keeps its variables: `age` is still past its `lifetime`. Variables get their initial values only when an object is actually created, not when it's reused.
+Run the game again, and fire a few times: the bullets of later shots disappear right away.
+
+- A reused bullet keeps its variables: `age` is still past its `lifetime`.
+- Variables get their initial values only when an object is actually created, not when it's reused.
 
 Mark `age` with `@recycle`, which resets a variable to its initial value each time the pool reuses an object:
 
@@ -105,7 +130,7 @@ Mark `age` with `@recycle`, which resets a variable to its initial value each ti
 @recycle var age: float = 0.0
 ```
 
-The exported variables don't need it: nothing changes them while a bullet flies, so a reused bullet still has the values from its scene. See "Resetting variables" in `gd++ man pools`.
+The exported variables don't need it: nothing changes them while a bullet flies. So a reused bullet still has the values from its scene. See "Resetting variables" in `gd++ man pools`.
 
 To see the pool at work, print a line in the plain `ctor`:
 
@@ -115,17 +140,19 @@ ctor {
 }
 ```
 
-The first shots print it. Once enough bullets are in the pool, firing prints nothing: every shot reuses a bullet.
+- The first shots print it.
+- Once enough bullets are in the pool, firing prints nothing: every shot reuses a bullet.
 
 # 6. Limit the pool's size
 
-`@pool` has no limit: if the gun fires faster than bullets expire, the pool creates as many bullets as needed. To cap the number of bullets, give the pool a size:
+`@pool` has no limit. If the gun fires faster than bullets expire, the pool creates as many bullets as needed. To cap the number of bullets, give the pool a size:
 
 ```gd++
 @pool(200)
 ```
 
-Now the pool can hold up to 200 bullets, counting both those in use and those waiting in the pool. Once all 200 are in use, `create` returns `nullptr`, so the gun must check for it:
+- Now the pool holds up to 200 bullets, counting those in use and those waiting in the pool.
+- Once all 200 are in use, `create` returns `nullptr`. So the gun must check for it:
 
 ```gd++
 func fire() -> void {
@@ -138,7 +165,8 @@ func fire() -> void {
 }
 ```
 
-Using the null pointer instead would crash the game. If you'd rather have more bullets than skip a shot, write `@pool(200, "grow")`: the pool then grows past 200 bullets, and only logs an error about it in debug builds, so you can raise the number.
+- Using the null pointer instead would crash the game.
+- To have more bullets rather than skip a shot, write `@pool(200, "grow")`. The pool then grows past 200 bullets, and only logs an error about it in debug builds, so you can raise the number.
 
 # 7. Fill the pool when the level loads
 
@@ -152,9 +180,9 @@ func _exit_tree() -> void:
     Bullet.pool_reserve(0)
 ```
 
-Without a count, `pool_reserve` makes as many bullets as the size in `@pool(200)`, so the number lives in one place.
-
-Now every shot reuses a bullet: the plain `ctor` prints its lines while the level loads, and never during the game. To drop all the bullets at once, also those in flight, e.g. when the player quits to the menu, call `Bullet.pool_clear()`.
+- Without a count, `pool_reserve` makes as many bullets as the size in `@pool(200)`. So the number lives in one place.
+- Now every shot reuses a bullet: the plain `ctor` prints its lines while the level loads, and never during the game.
+- To drop all the bullets at once, also those in flight, e.g. when the player quits to the menu, call `Bullet.pool_clear()`.
 
 # 8. Measure
 

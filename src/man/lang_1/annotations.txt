@@ -1,6 +1,6 @@
 Annotations: the complete list
 
-Annotations attach information to a declaration, like in GDScript: `@export` on a variable, `@override` on a function, `@tool` on a class. This page lists all of them. Each one is explained in full on the page of its topic.
+Annotations attach information to a declaration, like in GDScript: `@export` on a variable, `@override` on a function, `@tool` on a class. This page lists all of them. The page of each topic explains them in full.
 
 # Syntax
 
@@ -9,7 +9,11 @@ Annotations attach information to a declaration, like in GDScript: `@export` on 
 @name(ARG, ARG, ...)
 ```
 
-An annotation is `@` and a name, with arguments in parentheses if it takes any. Arguments are numbers (negative ones too), strings in double quotes, or names. A trailing comma is fine. Annotations go right before the declaration they belong to, on the same line or on the lines before, in any order:
+- `@` and a name, with arguments in parentheses if it takes any.
+- Arguments are numbers (negative ones too), strings in double quotes, or names.
+- A trailing comma is fine.
+- Annotations go right before their declaration, on the same line or on the lines before, in any order.
+- A doc comment can come before the annotations or between them. A declaration has at most one doc comment. See `gd++ man docs`.
 
 ```gd++
 @export var speed: float
@@ -21,27 +25,32 @@ var health: int
 func _score() -> int
 ```
 
-A declaration's doc comment can come before its annotations or between them, but a declaration has at most one doc comment. See `gd++ man docs`.
-
 # Classes
 
 @tool
   Run the class's code in the editor too. See `gd++ man classes`.
 
 @game_only
-  Run the class's code only in the game, never in the editor, not even when other code calls it. Can't be used with `@tool`. See `gd++ man classes`.
+  Run the class's code only in the game, never in the editor, not even when other code calls it. Not with `@tool`. See `gd++ man classes`.
 
 @icon(PATH)
   The class's icon in the editor: a string with a `res://` or `pkg://` path. See `gd++ man classes`.
 
 @pool, @pool(SIZE), @pool(SIZE, "fixed") and @pool(SIZE, "grow")
-  Instead of deleting objects, `destroy` keeps them in a pool, and `create` reuses them. Scripts get `new_pooled()`, or `new_scene_pooled()` with `@scene`, and `free_pooled()` and `queue_free_pooled()` for the same, and the class gets the static methods `pool_reserve()`, which makes objects ahead of time, and `pool_clear()`, which drops them all. With SIZE, a positive integer, the pool can hold up to SIZE objects, and `create` returns `nullptr` once all of them are in use, so code must check its result. `"fixed"` is the same. With `"grow"`, the pool makes more objects then, and in debug builds logs an error when it grows past SIZE objects, and again past each double of that. Only for classes that extend `Node`. See `gd++ man pools`.
+  `destroy` keeps objects in a pool instead of deleting them, and `create` reuses them. Only for classes that extend `Node`. See `gd++ man pools`.
+  - Scripts get `new_pooled()` (or `new_scene_pooled()` with `@scene`), `free_pooled()` and `queue_free_pooled()` for the same.
+  - The class gets the static methods `pool_reserve()`, which makes objects ahead of time, and `pool_clear()`, which drops them all.
+  - With SIZE, a positive integer: the pool holds up to SIZE objects. `create` returns `nullptr` once all of them are in use, so code must check its result. `"fixed"` is the same.
+  - With `"grow"`: the pool makes more objects then. In debug builds, it logs an error when it grows past SIZE objects, and again past each double of that.
 
 @scene(PATH)
-  Make `create` instantiate the class's scene: a string with a `res://` or `pkg://` path. The scene is loaded once, and its root must be an object of the class. Scripts get `new_scene()` for the same. Only for classes that extend `Node`. See `gd++ man classes`.
+  Make `create` instantiate the class's scene: a string with a `res://` or `pkg://` path. Only for classes that extend `Node`. See `gd++ man classes`.
+  - The scene is loaded once.
+  - Its root must be an object of the class.
+  - Scripts get `new_scene()` for the same.
 
 @trace(GROUPS...)
-  Trace all its functions (except `on process`, `on physics_process` and overrides of `_process` and `_physics_process`), variables and signals, and print the creation and destruction of its objects. See "@trace and @profile" below.
+  Trace all its functions, variables and signals, and print the creation and destruction of its objects. Except `on process`, `on physics_process` and overrides of `_process` and `_physics_process`. See "@trace and @profile" below.
 
 @profile(GROUPS...)
   Time all its functions, and the getters and setters of its properties with `get` and `set` blocks. See "@trace and @profile" below.
@@ -49,16 +58,32 @@ A declaration's doc comment can come before its annotations or between them, but
 # ctor and dtor blocks
 
 @recycle
-  In a `@pool` class, a `@recycle ctor` runs when the pool reuses an object, and a `@recycle dtor` runs when the pool keeps one. They also run when an object is actually created, after `ctor`, and deleted, before `dtor`, so they run once for each use of an object, unless they have `@recycle("only")`. For `@recycle` on variables, see "Variables of classes" below. The plain `ctor` and `dtor` run only when an object is actually created or deleted. See `gd++ man pools`.
+  Only in a `@pool` class. See `gd++ man pools`.
+  - `@recycle ctor` runs when the pool reuses an object, and when an object is actually created, after `ctor`.
+  - `@recycle dtor` runs when the pool keeps an object, and when an object is actually deleted, before `dtor`.
+  - So they run once per use of an object.
+  - With `@recycle("only")`, they run only when the pool reuses or keeps an object.
+  - The plain `ctor` and `dtor` run only when an object is actually created or deleted.
+  - For `@recycle` on variables, see "Variables of classes" below.
 
 # Functions of classes
 
 @override
-@override("final", "super")
-  Override a virtual function of the engine, e.g. `_input`, or a `@virtual` function of a GD++ base class. A function with the name of one needs it. A script's function of the same name replaces it. To add code that runs at a notification, e.g. at `_ready`, use an `on` block instead, e.g. `on ready { ... }`, which adds to the base's, and which scripts can't replace. Optional arguments, in double quotes: `"final"`, on an override of a GD++ `@virtual` function: subclasses and scripts can't override it any further. `"super"`: also bind the body as `_super_NAME`, which scripts call in place of `super`. See `gd++ man functions`.
+  Override a virtual function of the engine, e.g. `_input`, or a `@virtual` function of a GD++ base class. See `gd++ man functions`.
+  - A function named like one needs it.
+  - A script's function of the same name replaces it.
+  - To add code that runs at a notification, e.g. at `_ready`, use an `on` block instead, e.g. `on ready { ... }`. It adds to the base's, and scripts can't replace it.
+  - Optional arguments, in double quotes:
+  - `"final"`: on an override of a GD++ `@virtual` function, subclasses and scripts can't override it any further.
+  - `"super"`: also bind the body as `_super_NAME`, which scripts call in place of `super`.
+
 @virtual
-@virtual("private", "super")
-  Let subclasses and scripts override the function, whose name must start with `_`, e.g. `_think`. Scripts call it as `think`, which GD++ binds too. Optional arguments, in double quotes: `"private"`: don't bind `think`. `"super"`: also bind the body as `_super_think`, which scripts' overrides call in place of `super`. See `gd++ man functions`.
+  Let subclasses and scripts override the function. See `gd++ man functions`.
+  - Its name must start with `_`, e.g. `_think`.
+  - Scripts call it as `think`, which GD++ binds too.
+  - Optional arguments, in double quotes:
+  - `"private"`: don't bind `think`.
+  - `"super"`: also bind the body as `_super_think`, which scripts' overrides call in place of `super`.
 
 @const
   Make the function a const method. See `gd++ man functions`.
@@ -67,7 +92,11 @@ A declaration's doc comment can come before its annotations or between them, but
   Make the function static. See `gd++ man functions`.
 
 @rpc(ARGS...)
-  Make the function callable over the network. Arguments: `"authority"` or `"any_peer"`, `"call_remote"` or `"call_local"`, `"unreliable"`, `"unreliable_ordered"` or `"reliable"`, and a channel number, last. Only in classes that extend `Node`. See `gd++ man rpc`.
+  Make the function callable over the network. Only in classes that extend `Node`. See `gd++ man rpc`. Arguments:
+  - `"authority"` or `"any_peer"`,
+  - `"call_remote"` or `"call_local"`,
+  - `"unreliable"`, `"unreliable_ordered"` or `"reliable"`,
+  - a channel number, last.
 
 @deferred
   Every call, from C++ or from Godot, goes through `call_deferred` and runs later. The function must return `void`. See `gd++ man functions`.
@@ -76,7 +105,8 @@ A declaration's doc comment can come before its annotations or between them, but
   Like `@deferred`, with `call_thread_safe`: calls from other threads run later, on the main thread. Only in classes that extend `Node`. See `gd++ man functions`.
 
 @onthread
-  Every call, from C++ or from Godot, runs the body on the `WorkerThreadPool`, and returns an `Async` of the function's type, through which the caller waits for the body and gets its result. Argument: `"detached"`, for a function that returns `void`: then calls return nothing, and nothing waits for the task. See `gd++ man async`.
+  Every call, from C++ or from Godot, runs the body on the `WorkerThreadPool`, and returns an `Async` of the function's type. The caller waits for the body and gets its result through it. See `gd++ man async`.
+  - Argument `"detached"`, for a function that returns `void`: calls return nothing, and nothing waits for the task.
 
 @trace(GROUPS...)
   Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.
@@ -93,15 +123,26 @@ A declaration's doc comment can come before its annotations or between them, but
 @recycle
   Only on an `on ready` block, or an `@override func _ready()`, in a `@pool` class: run it each time an object gets ready, not only the first time. See "Getting ready again" in `gd++ man pools`.
 
-These can't be combined: `@static` with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`; `@virtual` with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@override` with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`; `@rpc` with `@onthread`; `@deferred` with `@thread_safe` or `@onthread`; `@thread_safe` with `@onthread`. `on` blocks only take `@trace`, `@profile`, `@notrace`, `@noprofile` and `@game_only`, and `on ready` also `@recycle`. `@override("final")` only works on an override of a GD++ `@virtual` function. A `@virtual` function's name must start with `_`. A function with the name of a virtual function of the base class needs `@override`.
+Rules:
+
+- `@static` doesn't combine with `@virtual`, `@override`, `@const`, `@rpc`, `@deferred` or `@thread_safe`.
+- `@virtual` doesn't combine with `@override`, `@rpc`, `@deferred`, `@thread_safe` or `@onthread`.
+- `@override` doesn't combine with `@rpc`, `@deferred`, `@thread_safe` or `@onthread`.
+- `@rpc` doesn't combine with `@onthread`.
+- `@deferred` doesn't combine with `@thread_safe` or `@onthread`.
+- `@thread_safe` doesn't combine with `@onthread`.
+- `on` blocks only take `@trace`, `@profile`, `@notrace`, `@noprofile` and `@game_only`. `on ready` also takes `@recycle`.
+- `@override("final")` only works on an override of a GD++ `@virtual` function.
+- A `@virtual` function's name must start with `_`.
+- A function named like a virtual function of the base class needs `@override`.
 
 # Externs
 
 @pool
-  The extern's class has `@pool`: `create`, `destroy` and `queue_destroy` use its pool, through its methods for scripts. Takes no arguments: the class configures its pool. Only for externs that extend `Node`. See "Pools and scenes" in `gd++ man externs`.
+  The extern's class has `@pool`: `create`, `destroy` and `queue_destroy` use its pool, through its methods for scripts. No arguments: the class configures its pool. Only for externs that extend `Node`. See "Pools and scenes" in `gd++ man externs`.
 
 @scene
-  The extern's class has `@scene`: `create` instantiates its scene, through its method for scripts. Takes no arguments: the class names its scene. Only for externs that extend `Node`. See "Pools and scenes" in `gd++ man externs`.
+  The extern's class has `@scene`: `create` instantiates its scene, through its method for scripts. No arguments: the class names its scene. Only for externs that extend `Node`. See "Pools and scenes" in `gd++ man externs`.
 
 Externs also take `@trace` and `@profile`, which work like a class's on their functions, variables and signals. See "@trace and @profile" below.
 
@@ -111,10 +152,10 @@ Externs also take `@trace` and `@profile`, which work like a class's on their fu
   The function is a const method of the class.
 
 @deferred
-  Call the function with `call_deferred`. The function must return `void`.
+  Call the function with `call_deferred`. It must return `void`.
 
 @thread_safe
-  Call the function with `call_thread_safe`. The function must return `void`. Only in externs that extend `Node`.
+  Call the function with `call_thread_safe`. It must return `void`. Only in externs that extend `Node`.
 
 @rpc
   The function can be called over the network, with `rpc`. No arguments in externs. Only in externs that extend `Node`.
@@ -136,7 +177,9 @@ See `gd++ man externs`.
   Assign the initial value right before the `on ready` block, instead of in the constructor. Only in classes that extend `Node`. In a `@pool` class, only the first time an object gets ready, unless it also has `@recycle`. See `gd++ man lifecycle`.
 
 @recycle
-  In a `@pool` class: reset the variable to its initial value, or to its type's default without one, each time the pool reuses an object. With `@onready`: assign the initial value each time an object gets ready, not only the first time. See "Resetting variables" and "Getting ready again" in `gd++ man pools`.
+  Only in a `@pool` class. See "Resetting variables" and "Getting ready again" in `gd++ man pools`.
+  - Reset the variable to its initial value, or to its type's default without one, each time the pool reuses an object.
+  - With `@onready`: assign the initial value each time an object gets ready, not only the first time.
 
 @export
   Show the variable in the inspector, and save it.
@@ -174,7 +217,22 @@ See `gd++ man externs`.
 @export_subgroup(NAME[, PREFIX])
   Start a subgroup of the inspector at this variable.
 
-A variable can have at most one export annotation, and any section annotations. Export and section annotations only work in classes that extend `Node` or `Resource`. See `gd++ man exports`.
+@trace(GROUPS...)
+  Print each change of its value, with the class's function that made it. See "@trace and @profile" below.
+
+@profile(GROUPS...)
+  Time its getter and setter. See "@trace and @profile" below.
+
+@notrace and @noprofile
+  Leave the variable out of its class's `@trace` or `@profile`: its changes aren't printed, or its getter and setter aren't timed. See "@trace and @profile" below.
+
+@game_only
+  Run its getter and setter only in the game, never in the editor, e.g. in a `@tool` class. Not with an export annotation. See `gd++ man classes`.
+
+Rules:
+
+- At most one export annotation per variable, and any section annotations.
+- Export and section annotations only work in classes that extend `Node` or `Resource`. See `gd++ man exports`.
 
 # Set blocks of properties
 
@@ -184,21 +242,15 @@ A variable can have at most one export annotation, and any section annotations. 
 @thread_safe
   Like `@deferred`, with `call_thread_safe`: calls from other threads run later, on the main thread. Only in classes that extend `Node`. See "Properties" in `gd++ man variables`.
 
-They can't be combined.
+They don't combine.
 
-@trace(GROUPS...)
-  Print each change of its value, with the function of its class that made it. See "@trace and @profile" below.
+# Variables of externs
 
 @profile(GROUPS...)
-  Time its getter and setter. See "@trace and @profile" below.
+  Time the calls of their getter and setter through the extern.
 
-@notrace and @noprofile
-  Leave the variable out of its class's `@trace` or `@profile`: its changes aren't printed, or its getter and setter aren't timed. See "@trace and @profile" below.
-
-@game_only
-  Run its getter and setter only in the game, never in the editor, e.g. in a `@tool` class. Can't be used with an export annotation. See `gd++ man classes`.
-
-Variables of externs can have `@profile`, which times the calls of their getter and setter through the extern, and `@noprofile`, which leaves them out of the extern's `@profile`.
+@noprofile
+  Leave them out of the extern's `@profile`.
 
 # Signals
 
@@ -222,7 +274,7 @@ Signals of externs can have `@trace` too, which prints each emission through the
 
 # @trace and @profile
 
-`@trace` and `@profile` are for debugging. They generate code only in builds that turn them on, so they can stay in your code:
+For debugging. They generate code only in builds that turn them on, so they can stay in your code:
 
 ```gd++
 @trace("combat")
@@ -242,25 +294,40 @@ gd++ build --profile Player            # profiles take_damage
 gd++ build                             # neither: the annotations generate nothing
 ```
 
-Their arguments are names of groups, in double quotes: `@trace("combat")` is in the group `combat`. Every annotation is also in the group named after its class, e.g. `Player`, without an argument. The groups `process` and `physics_process` turn on all `on process` and `on physics_process` blocks, and overrides of `_process` and `_physics_process`, even without annotations. `gd++ build --trace GROUP...` turns on the `@trace` annotations in those groups, `--profile GROUP...` the `@profile` ones, and `all` turns on all of them. A member is on if its own annotation is on, or its class's, unless it has `@notrace` or `@noprofile`.
+Groups:
 
-`@notrace` and `@noprofile`, on a function or a variable, and `@notrace` on a signal, leave it out of its class's `@trace` or `@profile`, including the groups `process` and `physics_process` for a function. A member's own `@trace` or `@profile` still applies. They need a `@trace` or `@profile` on the class or extern: without one, they're an error. See "Leaving members out" in `gd++ man debugging`.
+- The arguments are group names, in double quotes: `@trace("combat")` is in the group `combat`.
+- Every annotation is also in the group named after its class, e.g. `Player`, without an argument.
+- The groups `process` and `physics_process` turn on all `on process` and `on physics_process` blocks, and overrides of `_process` and `_physics_process`, even without annotations.
+- `gd++ build --trace GROUP...` turns on the `@trace` annotations in those groups. `--profile GROUP...` the `@profile` ones. `all` turns on all of them.
+- A member is on if its own annotation is on, or its class's, unless it has `@notrace` or `@noprofile`.
 
-They combine with every other annotation, and with each other. Externs can have them too, see "Externs" in `gd++ man debugging`. See `gd++ man debugging` for what they print, how to read it, and how to use them well.
+`@notrace` and `@noprofile`:
+
+- On a function or a variable, and `@notrace` on a signal: leave it out of its class's `@trace` or `@profile`, including the groups `process` and `physics_process` for a function.
+- A member's own `@trace` or `@profile` still applies.
+- They need a `@trace` or `@profile` on the class or extern. Without one, they're an error. See "Leaving members out" in `gd++ man debugging`.
+
+Other facts:
+
+- They combine with every other annotation, and with each other.
+- Externs can have them too. See "Externs" in `gd++ man debugging`.
+- `gd++ man debugging` covers what they print, how to read it, and how to use them well.
 
 # No annotations
 
-Enum values, integer constants, `ctor`, `dtor`, `import` and `noimport` take no annotations. Externs themselves only take `@pool`, `@scene`, `@trace` and `@profile`, see "Externs" above.
+- Enum values, integer constants, `ctor`, `dtor`, `import` and `noimport` take no annotations.
+- Externs themselves only take `@pool`, `@scene`, `@trace` and `@profile`. See "Externs" above.
 
 # Errors
 
-- An unknown annotation is an error, with a suggestion if it looks like a typo: "Unknown annotation @exprot." with "Did you mean \"@export\"?".
-- An annotation in the wrong place is an error, e.g. "Annotation @tool can't be used on a func.".
-- An annotation can be used once per declaration: "Annotation @export is used twice.".
-- Annotations that take no arguments reject them: "Annotation @const takes no arguments.".
-- `@trace` and `@profile` take only names in double quotes: "Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").".
-- Some annotations need a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
-- An annotation that isn't followed by a declaration is an error: "Expected a declaration after the annotation, ...".
+- An unknown annotation, with a suggestion if it looks like a typo: "Unknown annotation @exprot." with "Did you mean \"@export\"?".
+- An annotation in the wrong place, e.g. "Annotation @tool can't be used on a func.".
+- An annotation used twice on one declaration: "Annotation @export is used twice.".
+- Arguments for an annotation that takes none: "Annotation @const takes no arguments.".
+- `@trace` and `@profile` with anything but names in double quotes: "Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").".
+- An annotation that needs a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
+- An annotation not followed by a declaration: "Expected a declaration after the annotation, ...".
 
 # Not in GD++
 
@@ -268,7 +335,7 @@ Some GDScript annotations have no GD++ version, since GD++ does the same another
 
 - `@abstract`, `@static_unload`, `@warning_ignore` and the like: not supported.
 - `@export_node_path`, `@export_color_no_alpha`, `@export_exp_easing`, `@export_global_file`, `@export_global_dir` and the like: not supported yet. Use `@export`, or a property of the right type.
-- `static`, `const` and `onready` without `@` are not keywords: write `@static` and `@onready`, and `enum NAME = VALUE` for constants.
+- `static`, `const` and `onready` without `@` are not keywords. Write `@static` and `@onready`, and `enum NAME = VALUE` for constants.
 
 # See also
 

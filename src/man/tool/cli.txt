@@ -1,6 +1,6 @@
 The command line: what all commands share
 
-`gd++` is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUMENTS]`. This page explains what all commands have in common: the global options, where output goes, how prompts work, and what happens on errors.
+`gd++` is one program with many commands, like git: `gd++ COMMAND [OPTIONS] [ARGUMENTS]`. This page covers what all commands share: global options, output, prompts and errors.
 
 # Commands
 
@@ -21,61 +21,65 @@ gd++ trans     transpile a GD++ file and print the C++ it generates
 gd++ vendor    copy a dependency into or out of the project's cache
 ```
 
-Each command has its own manual page, e.g. `gd++ man build`. `gd++ --help` lists the commands, and `gd++ COMMAND --help` lists the options of one command. Running `gd++` without a command is an error: "Missing subcommand, see `gd++ --help`."
+- Each command has its own manual page, e.g. `gd++ man build`.
+- `gd++ --help` lists the commands.
+- `gd++ COMMAND --help` lists the options of one command.
+- `gd++` without a command is an error: "Missing subcommand, see `gd++ --help`."
 
 # Global options
 
-These options work with every command. They can go before or after the command name: `gd++ -v build` and `gd++ build -v` are the same.
+These work with every command, before or after its name: `gd++ -v build` and `gd++ build -v` are the same.
 
 -q, --quiet
-  Print fewer logs: info messages, warnings and the output of subprocesses are hidden. Errors and command results are always printed.
+  Print fewer logs. Hides info messages, warnings and subprocess output. Errors and command results are always printed.
 
 -v, --verbose
-  Print more logs: also the steps that commands normally keep quiet, e.g. "Syncing dependencies..." during a build, and the output of subprocesses that is normally hidden, e.g. git's. Can't be used with `-q`.
+  Print more logs: also steps that are normally quiet, e.g. "Syncing dependencies..." during a build, and subprocess output that is normally hidden, e.g. git's. Not with `-q`.
 
 -f, --yes
-  Assume yes on every confirmation prompt, without asking. Needed to confirm anything when the output is not a terminal, e.g. in scripts. Can't be used with `-n` or `--audit`.
+  Answer yes to every confirmation prompt. Needed to confirm anything when the output is not a terminal, e.g. in scripts. Not with `-n` or `--audit`.
 
 -n, --no
-  Assume no on every confirmation prompt. The command stops at the first prompt, with "Operation canceled by -n/--no." Useful to see what a command would ask, without risk. Can't be used with `-f`.
+  Answer no to every confirmation prompt. The command stops at the first prompt, with "Operation canceled by -n/--no." Shows what a command would ask, without risk. Not with `-f`.
 
 --audit
-  Ask before potentially dangerous operations, which normally happen without asking: currently, before deleting a directory that isn't empty. Can't be used with `-f`.
+  Ask before potentially dangerous operations that normally run without asking. Currently: deleting a directory that isn't empty. Not with `-f`.
 
 --tty
-  Behave as if the output were a terminal: use colors, icons, spinners, the pager and prompts, even when the output is redirected. Can't be used with `--notty`.
+  Act as if the output were a terminal: colors, icons, spinners, the pager and prompts, even when the output is redirected. Not with `--notty`.
 
 --notty
-  Behave as if the output were not a terminal: plain text, without styles, spinners or a pager, and prompts assume no. Can't be used with `--tty`.
+  Act as if the output were not a terminal: plain text, no styles, spinners or pager, and prompts assume no. Not with `--tty`.
 
 --pager
-  Show long results, e.g. of `gd++ man` and `gd++ cat`, in the pager even when they fit the terminal. Has no effect when the output is not a terminal. Can't be used with `--notty`.
+  Show long results, e.g. of `gd++ man` and `gd++ cat`, in the pager even when they fit the terminal. No effect when the output is not a terminal. Not with `--notty`.
 
 -L N, --log-depth N
-  Show the last N lines of a running subprocess's output under its task, e.g. of the compiler during a build. Default: 4.
+  Show the last N lines of a running subprocess's output under its task, e.g. the compiler's. Default: 4.
 
 -T N, --tab-width N
-  Show tabs as N columns in the pager, e.g. in `gd++ cat` and `gd++ trans`, and in the images of `gd++ cat --svg`, and indent the output of `gd++ doc` by N spaces. Must be at least 1. Default: 2.
+  Tab width, in columns, in the pager (e.g. in `gd++ cat` and `gd++ trans`) and in the images of `gd++ cat --svg`. Also the indent of `gd++ doc`'s output, in spaces. At least 1. Default: 2.
 
 --version
-  Print the version of GD++ and exit, e.g. "nightly". Can't be used with a command.
+  Print the version of GD++, e.g. "nightly", and exit. Not with a command.
 
 --syntax
-  Print the GD++ syntax versions that this `gd++` supports, marking the nightly and the latest stable one, and exit. Can't be used with other arguments. Commands that take `--syntax N`, e.g. `gd++ init`, use it to choose a version instead. See "Syntax versions" in `gd++ man packages`.
+  Print the GD++ syntax versions that this `gd++` supports, marking the nightly and the latest stable one, and exit. Not with other arguments. Commands that take `--syntax N`, e.g. `gd++ init`, use it to choose a version instead. See "Syntax versions" in `gd++ man packages`.
 
 -h, --help
   Print help and exit.
 
-Options that take a list, e.g. `gd++ fetch --bind A B` or `gd++ build --for l.x64 w.x64`, take all the values that follow them, up to the next option. If you repeat such an option, only its last values count: `--for l.x64 --for w.x64` builds for `w.x64` only.
+List options, e.g. `gd++ fetch --bind A B` or `gd++ build --for l.x64 w.x64`:
+
+- They take all the values that follow, up to the next option.
+- If repeated, only the last values count: `--for l.x64 --for w.x64` builds for `w.x64` only.
 
 # Output
 
-`gd++` keeps two kinds of output apart:
-
-- The result of a command goes to standard output (stdout), e.g. the overview of `gd++ ls`, the list of `gd++ fetch --index`, the C++ of `gd++ trans` or a page of `gd++ man`. So you can redirect it: `gd++ trans player.gd++ > player.txt`.
+- Results go to standard output (stdout), e.g. the overview of `gd++ ls`, the C++ of `gd++ trans` or a page of `gd++ man`. So you can redirect them: `gd++ trans player.gd++ > player.txt`.
 - Logs, progress and prompts go to standard error (stderr).
 
-Log messages start with an icon in brackets:
+Log messages start with an icon:
 
 ```out
 [•] An info message, e.g. "Success!"
@@ -84,39 +88,61 @@ Log messages start with an icon in brackets:
 [?] A question, answered with y or n.
 ```
 
-When the output is not a terminal, or the terminal can't show these icons (e.g. the Linux text console or the old Windows console), they are "-", "!", "x" and "?".
+Without a terminal, or on a terminal that can't show them (e.g. the Linux text console or the old Windows console), the icons are "-", "!", "x" and "?".
 
-A command that changed something ends with "Success!". A command that has nothing to do says so instead, e.g. "Nothing to clean." or "No changes were made.".
+- A command that changed something ends with "Success!".
+- A command with nothing to do says so, e.g. "Nothing to clean." or "No changes were made.".
 
-Long running steps, e.g. compiling, are tasks. On a terminal, a task shows a spinner with its name, and under it the last few lines that its subprocess prints (see `-L`). When the task ends, these lines disappear, and the spinner becomes an info icon. If the task fails, its whole output is printed, so you can see the error, and the task's name is repeated below a long output.
+Tasks are long running steps, e.g. compiling:
 
-Colors and icons are used only when both stdout and stderr are terminals. When either one is redirected to a file or a pipe, all output is plain text, without styles, spinners or a pager. Then each task prints "Running task: ...", its output lines indented, and "Task succeeded: ..." or "Task failed: ...". `--tty` and `--notty` override this.
+- On a terminal, a task shows a spinner with its name, and under it the last lines of its subprocess's output (see `-L`).
+- When the task ends, these lines disappear and the spinner becomes an info icon.
+- When the task fails, its whole output is printed. After a long output, the task's name is repeated.
 
-Paths in messages are shown relative to the project, e.g. `res://src/player.gd++`, or else relative to the current directory. `gd++` never prints your absolute paths, so logs are safe to share.
+Styles:
 
-Commands whose result can be long (`gd++ cat`, `gd++ doc`, `gd++ man` and `gd++ trans`) show it in a pager when it doesn't fit the terminal, or always with `--pager`: the up and down keys scroll by a line, page up and page down (or space) by a page, and q, escape or Ctrl+C quit. `/` searches: type a word and press Enter to highlight its matches, ignoring case, then n and Shift+N jump to the next and previous one, and q ends the search, so it takes a second q to quit.
+- Colors and icons are used only when both stdout and stderr are terminals.
+- Otherwise, all output is plain text, with no styles, spinners or pager. Each task prints "Running task: ...", its output lines indented, and "Task succeeded: ..." or "Task failed: ...".
+- `--tty` and `--notty` override this.
+
+Paths in messages:
+
+- Inside the project, they are `res://` paths, e.g. `res://src/player.gd++`.
+- Elsewhere, they are relative to the current directory.
+- `gd++` never prints your absolute paths, so logs are safe to share.
+
+The pager:
+
+- Used by `gd++ cat`, `gd++ doc`, `gd++ man` and `gd++ trans`, when the result doesn't fit the terminal, or always with `--pager`.
+- Up and down scroll by a line. Page up and page down, or space, scroll by a page.
+- q, escape or Ctrl+C quit.
+- `/` searches: type the text and press Enter. Matches are highlighted, ignoring case.
+- n and Shift+N jump to the next and the previous match.
+- q ends the search, so it takes a second q to quit.
 
 # Prompts
 
-Before a command does something that can't be undone, e.g. deleting a dependency or overwriting a file, it asks for confirmation:
+Before a command does something that can't be undone, e.g. deleting a dependency or overwriting a file, it asks:
 
 ```out
 [?] Remove the Godot API spec 4.3-stable? [y/n]
 ```
 
-Answer y or yes to go on, or n or no to stop. Anything else asks again. A command asks all its questions before it changes anything, so answering no leaves everything as it was.
-
-When the output is not a terminal, nobody can answer, so `gd++` assumes no and stops with "Output is not a tty, use -f to confirm.". In scripts, pass `-f`/`--yes` to confirm everything, or `-n`/`--no` to refuse everything.
+- y or yes goes on. n or no stops. Anything else asks again.
+- A command asks all its questions before it changes anything. So answering no leaves everything as it was.
+- Without a terminal, `gd++` assumes no and stops with "Output is not a tty, use -f to confirm.".
+- In scripts, pass `-f`/`--yes` to confirm everything, or `-n`/`--no` to refuse everything.
 
 # Errors
 
-When a command fails, it prints an error and exits with status 1. Errors say what went wrong, and usually how to fix it:
+A failing command prints an error and exits with status 1. Errors say what went wrong, and usually how to fix it:
 
 ```out
 [×] Missing Godot C++ bindings 10.0.0-stable, run `gd++ fetch --missing` to fix this.
 ```
 
-"Invalid arguments: ..." errors mean that the options don't make sense together. `gd++` checks the arguments before it changes anything.
+- "Invalid arguments: ..." means the options don't make sense together. `gd++` checks the arguments before it changes anything.
+- If `gd++` fails halfway, e.g. on an interrupted download, it deletes its temporary files before exiting.
 
 Errors in GD++ code show the file, line and column, the line with a caret under the problem, and a hint:
 
@@ -129,12 +155,14 @@ Errors in GD++ code show the file, line and column, the line with a caret under 
 
 See `gd++ man errors`.
 
-If `gd++` fails halfway, e.g. when a download is interrupted, it deletes the temporary files it made before exiting.
-
 # Exit status
 
-0 on success, including when a command had nothing to do. 1 on any error, and when a prompt is answered no.
+- 0: success, including when a command had nothing to do.
+- 1: any error, or a prompt answered no.
 
 # Where commands run
 
-Most commands work on the project that contains the current directory: `gd++` looks for a `project.godot` file in the current directory, then in its parent, and so on. So you can run `gd++` from any subdirectory of a project. Commands that work on one package, e.g. `gd++ build`, find the package that contains the current directory in the same way, or the one that contains the path you pass. See `gd++ man paths`.
+- Most commands work on the project that contains the current directory. `gd++` looks for a `project.godot` file in the current directory, then in its parent, and so on. So any subdirectory of a project works.
+- Commands that work on one package, e.g. `gd++ build`, find the package that contains the current directory, or the path you pass, the same way.
+
+See `gd++ man paths`.

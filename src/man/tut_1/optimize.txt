@@ -4,7 +4,10 @@ This tutorial finds out where a game spends its frames, speeds up the slowest pa
 
 # 1. Measure in an optimized build
 
-A plain debug build is unoptimized, and unoptimized C++ can be many times slower than the game you ship, sometimes even slower than GDScript. So never judge speed in one. Build with `--opt` instead: it optimizes, and keeps everything else of a debug build, like hot reload and the editor's help.
+- A plain debug build is unoptimized.
+- Unoptimized C++ can be many times slower than the game you ship, sometimes even slower than GDScript.
+- So never judge speed in one.
+- Build with `--opt` instead. It optimizes, and keeps everything else of a debug build, like hot reload and the editor's help.
 
 ```sh
 gd++ build --opt
@@ -22,13 +25,17 @@ class_name Enemy
 extends CharacterBody3D
 ```
 
-`@profile` on a class times all its functions. Then build with the group on, and ask for a table of timings every 5 seconds:
+`@profile` on a class times all its functions. Build with the group on, and ask for a table of timings every 5 seconds:
 
 ```sh
 gd++ build --opt --profile perf --print --period 5
 ```
 
-Without `--profile`, the annotations generate nothing, so leave them in your code. `--profile all` turns on every `@profile` in the package, and `--profile process` times every `_process` function, even without annotations. See `gd++ man debugging`.
+- Without `--profile`, the annotations generate nothing. So leave them in your code.
+- `--profile all` turns on every `@profile` in the package.
+- `--profile process` times every `_process` function, even without annotations.
+
+See `gd++ man debugging`.
 
 # 3. Read the table
 
@@ -73,7 +80,10 @@ func nearest_ally() -> Node3D {
 }
 ```
 
-The math is cheap, but every step of the loop calls into the engine: reading an item of the array, unpacking its `Variant`, and asking both nodes for their positions. Engine calls cost as much from C++ as from GDScript. And each of the 200 enemies does it for all 200 others, every frame: 40,000 times per frame.
+- The math is cheap.
+- But every step of the loop calls into the engine: reading an item of the array, unpacking its `Variant`, and asking both nodes for their positions.
+- Engine calls cost as much from C++ as from GDScript.
+- And each of the 200 enemies does it for all 200 others, every frame: 40,000 times per frame.
 
 That's the usual pattern. Your own logic in GD++ is fast, so slow code is usually:
 
@@ -110,7 +120,13 @@ on physics_process(delta: float) {
 }
 ```
 
-`Enemy` gets the manager with `@export var horde: Horde`, adds itself to `horde->members` in its `on ready` block, and removes itself in `on exit_tree`. Then `nearest_ally` is a loop over a `std::vector` of `Vector3`, without a single engine call:
+`Enemy`:
+
+- gets the manager with `@export var horde: Horde`,
+- adds itself to `horde->members` in its `on ready` block,
+- removes itself in `on exit_tree`.
+
+Then `nearest_ally` is a loop over a `std::vector` of `Vector3`, without a single engine call:
 
 ```gd++
 func nearest_ally() -> Node3D {
@@ -143,7 +159,8 @@ Build with the same flags, play the same part of the game, and compare the table
 gd++ build --opt --profile perf --print --period 5
 ```
 
-The first tables include loading, so look at a few. Check Budget again, and the frame time in the editor's monitors.
+- The first tables include loading, so look at a few.
+- Check Budget again, and the frame time in the editor's monitors.
 
 # 7. Turn it off
 
@@ -151,7 +168,8 @@ The first tables include loading, so look at a few. Check Budget again, and the 
 gd++ build
 ```
 
-A plain build turns profiling off again. Ship with `--ship`, which optimizes for speed, and has no profiling unless you ask for it. See `gd++ man ship`.
+- A plain build turns profiling off again.
+- Ship with `--ship`. It optimizes for speed, and has no profiling unless you ask for it. See `gd++ man ship`.
 
 # See also
 

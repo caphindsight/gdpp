@@ -9,22 +9,27 @@ gd++ clean --proj [--bin]
 
 # Description
 
-Deletes the build cache, `.gd++pkg`, of the package that contains each PATH, or the current directory. The next build of the package then starts from scratch: it copies the dependencies again, and compiles godot-cpp and all code again. With `--bin`, also deletes the package's built files: every library and `.gdextension` file in its root.
+- Deletes the build cache, `.gd++pkg`, of the package that contains each PATH, or the current directory.
+- The next build starts from scratch: it copies the dependencies again, and compiles godot-cpp and all code again.
+- With `--bin`, also deletes the package's built files: every library and `.gdextension` file in its root.
+- Always safe: build caches only hold generated files.
+- `gd++` checks every path before it deletes anything.
+- With nothing to delete, it says "Nothing to clean.".
 
-Clean when builds fail in ways that make no sense, e.g. after a crash during a build, or when `gd++` tells you to. Cleaning is always safe, since build caches only hold generated files. See `gd++ man build-cache`.
-
-`gd++` checks every path before it deletes anything. It says "Nothing to clean." when there is nothing to delete.
+Clean when builds fail in ways that make no sense, e.g. after a crash during a build, or when `gd++` tells you to. See `gd++ man build-cache`.
 
 # Options
 
 PATH...
-  Clean the packages that contain these paths. Default: the current directory. Can't be used with `--proj`.
+  Clean the packages that contain these paths. Default: the current directory. Not with `--proj`.
 
 --proj
   Clean all packages in the project.
 
 --bin
-  Also delete all libraries and `.gdextension` files in the package roots, whatever their names: `lib*.dll`, `lib*.so`, `lib*.dylib`, `*.gdextension` and `*.gdextension.uid`. So it also deletes the leftovers of a renamed package. After this, Godot can't load the package until you build it again.
+  Also delete all libraries and `.gdextension` files in the package roots, whatever their names: `lib*.dll`, `lib*.so`, `lib*.dylib`, `*.gdextension` and `*.gdextension.uid`.
+  - So it also deletes the leftovers of a renamed package.
+  - After this, Godot can't load the package until you build it again.
 
 # Examples
 

@@ -1,16 +1,21 @@
 The build tool: an overview
 
-`gd++` is a small build system for Godot C++ code. This page gives an overview of how it works. Each part has its own page, listed at the end.
+`gd++` is a small build system for Godot C++ code. Each part below has its own page, listed at the end.
 
 # The pieces
 
-A project is a normal Godot project, i.e. a directory with a `project.godot` file. GD++ needs nothing more to work in it. See `gd++ man projects`.
-
-A package is a directory in the project with a `gd++pkg.toml` file. It builds into one GDExtension library, from all the GD++ and C++ files in it. A project can have many packages, or just one at its root. See `gd++ man packages`.
-
-Dependencies are the big, versioned downloads that packages build with: the Godot C++ bindings (godot-cpp), and the Godot API spec of the Godot version to target. Each package names the ones it uses. `gd++` downloads them into the project's caches, one of which you can commit. See `gd++ man dependencies`.
-
-A build turns a package into libraries, one per target platform, and a `.gdextension` file, which tells Godot where the libraries are. See `gd++ man building`.
+- Project: a normal Godot project, i.e. a directory with a `project.godot` file. GD++ needs nothing more. See `gd++ man projects`.
+- Package: a directory in the project with a `gd++pkg.toml` file.
+  - It builds into one GDExtension library, from all its GD++ and C++ files.
+  - A project has any number of packages, or just one at its root.
+  - See `gd++ man packages`.
+- Dependencies: big, versioned downloads that packages build with.
+  - The Godot C++ bindings (godot-cpp).
+  - The Godot API spec of the Godot version to target.
+  - Each package names the ones it uses.
+  - `gd++` downloads them into the project's caches. You can commit one of them.
+  - See `gd++ man dependencies`.
+- Build: turns a package into one library per target platform, and a `.gdextension` file that tells Godot where the libraries are. See `gd++ man building`.
 
 ```
 my_game/                     a project
@@ -32,14 +37,22 @@ gd++ build                                              # build the package you'
 gd++ ls                                                 # see the state of the project
 ```
 
-Then edit the code, and run `gd++ build` again. Open the project in Godot: the classes are there.
+Then edit the code and run `gd++ build` again. Open the project in Godot: the classes are there.
 
 # Principles
 
-- Batteries included: every feature ships in the single `gd++` program. There are no plugins, and nothing else to install but the tools that compile C++, which `gd++ install` sets up.
-- Minimal friction: a new project takes one or two commands. Source files are found by their extensions, so you never list them.
-- Moderate configurability: packages choose their dependencies, C++ standard and GD++ syntax, and builds choose their targets and optimization. Not much more, on purpose.
+- Batteries included:
+  - Every feature ships in the single `gd++` program.
+  - There are no plugins.
+  - The only other things to install are the tools that compile C++. `gd++ install` sets them up.
+- Minimal friction:
+  - A new project takes one or two commands.
+  - Source files are found by their extensions. You never list them.
+- Moderate configurability, on purpose:
+  - Packages choose their dependencies, C++ standard and GD++ syntax.
+  - Builds choose their targets and optimization.
 
 # The command line
 
-All `gd++` commands share the same conventions for global options, output, prompts, errors and paths. See `gd++ man cli` and `gd++ man paths`. Each command has its own page under `gd++ man cmd`.
+- All commands share the same global options, output, prompts, errors and paths. See `gd++ man cli` and `gd++ man paths`.
+- Each command has its own page under `gd++ man cmd`.

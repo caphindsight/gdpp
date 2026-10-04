@@ -9,9 +9,18 @@ gd++ vendor (--bind NAME | --spec NAME | --engine NAME) --to PATH [--tar | --zip
 
 # Description
 
-Copies one dependency between the project's cache and your disk. With `--from`, it copies a directory or an archive into the cache, under the name NAME. With `--to`, it copies the dependency NAME out of the cache, to a directory or an archive. Use it to add dependencies that the GD++ dependency repository doesn't have, e.g. the API spec of your own build of Godot, and to share them. See `gd++ man dependencies`.
+Copies one dependency between the project's cache and your disk.
 
-The cache always stores dependencies as directories, which must have the dependency's layout: a spec is a directory with an `extension_api.json` file, and bindings are a copy of godot-cpp, with its `SConstruct` at the top.
+- `--from`: copies a directory or an archive into the cache, under the name NAME.
+- `--to`: copies the dependency NAME out of the cache, to a directory or an archive.
+- Use it to add dependencies that the GD++ dependency repository doesn't have, e.g. the API spec of your own Godot build, and to share them.
+
+The cache stores dependencies as directories, with the dependency's layout:
+
+- a spec: a directory with an `extension_api.json` file,
+- bindings: a copy of godot-cpp, with its `SConstruct` at the top.
+
+See `gd++ man dependencies`.
 
 # Options
 
@@ -35,11 +44,13 @@ The cache always stores dependencies as directories, which must have the depende
 
 # Details
 
-- With `--from`, the contents of the archive or directory become the dependency's directory: an archive holds the files of the dependency at its top, not in a subdirectory.
-- If the cache already has the dependency, `gd++` asks before overwriting it. Files that didn't change are left alone, and files that the new copy lacks are deleted.
+- With `--from`, the contents of the archive or directory become the dependency's directory. An archive holds the dependency's files at its top, not in a subdirectory.
+- If the cache already has the dependency, `gd++` asks before overwriting it. Unchanged files are left alone. Files that the new copy lacks are deleted.
 - With `--to`, if PATH exists, `gd++` asks before overwriting it. A directory at PATH becomes an exact copy of the dependency.
 - If PATH's extension doesn't match `--tar` (`.tar.gz`, `.tgz`) or `--zip` (`.zip`), `gd++` asks whether to use it anyway.
-- Archives keep file permissions. They are written to a temporary file first, so a failure never leaves half an archive behind. Archives with entries that point outside of them are refused.
+- Archives keep file permissions.
+- Archives are written to a temporary file first. So a failure never leaves half an archive behind.
+- Archives with entries that point outside of them are refused.
 
 # Examples
 

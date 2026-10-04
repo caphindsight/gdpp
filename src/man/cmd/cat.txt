@@ -9,13 +9,35 @@ gd++ cat --svg FILE
 
 # Description
 
-Shows any files, in the pager when they don't fit the terminal. The files don't have to be part of a project. Several files are shown one after another, each after a gray line naming it, e.g. `// ==== src/player.gd++ ====`, like in `gd++ trans`. For the pager's keys, see `gd++ man cli`.
+Shows any files, in the pager when they don't fit the terminal.
 
-On a terminal, C++ and GD++ files are highlighted: keywords, types, functions, literals and comments get their own colors. GD++'s rewrites in C++ code show as keywords too: `emit`, `rpc`, `is_cancelled`, `assert`, `assert_void` and `assert_val` everywhere, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it, so a plain call like `task.is_done()` shows as a call. C++'s `new` and `delete`, and godot-cpp's `memnew` and `memdelete`, stay plain, so that `create` and `destroy` stand out. See `gd++ man rewrites`.
+- The files don't have to be part of a project.
+- Several files are shown one after another, each after a gray line naming it, e.g. `// ==== src/player.gd++ ====`, like in `gd++ trans`.
+- For the pager's keys, see `gd++ man cli`.
+- When the output is not a terminal, e.g. in `gd++ cat player.gd++ | grep func`, files are printed as plain text, without the pager.
 
-A file is C++ if its extension is `.c`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.h`, `.hh`, `.hpp`, `.hxx`, `.h++` or `.inl`, and GD++ if it's `.gd++`, `.gdpp` or `.gg`. Other files are shown as they are. When the output is not a terminal, e.g. in `gd++ cat player.gd++ | grep func`, files are printed as plain text, without the pager.
+File types:
 
-With `--svg`, the file is printed as an SVG image instead: highlighted the same way, on a dark background, whether or not the output is a terminal. GitHub, for one, can't highlight GD++, but it shows SVG images in a README. The image shows tabs as `--tab-width` columns, and leaves out control characters and the trailing empty lines.
+- C++: `.c`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.h`, `.hh`, `.hpp`, `.hxx`, `.h++` and `.inl`.
+- GD++: `.gd++`, `.gdpp` and `.gg`.
+- Others are shown as they are.
+
+Highlighting, on a terminal, for C++ and GD++ files:
+
+- Keywords, types, functions, literals and comments get their own colors.
+- GD++'s rewrites show as keywords:
+  - `emit`, `rpc`, `is_cancelled`, `assert`, `assert_void` and `assert_val`: everywhere.
+  - `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as`: only where a name follows them. So `task.is_done()` shows as a plain call.
+  - `string_name`: only where a string follows it.
+- C++'s `new` and `delete`, and godot-cpp's `memnew` and `memdelete`, stay plain, so `create` and `destroy` stand out.
+- See `gd++ man rewrites`.
+
+With `--svg`, the file is printed as an SVG image:
+
+- Highlighted the same way, on a dark background, whether or not the output is a terminal.
+- Useful where GD++ isn't highlighted, e.g. in a README on GitHub, which shows SVG images.
+- Tabs are `--tab-width` columns wide.
+- Control characters and trailing empty lines are left out.
 
 # Arguments and options
 

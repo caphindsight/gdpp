@@ -12,22 +12,27 @@ gd++ build --proj [options...]
 
 # Description
 
-Builds the package that contains PATH, or the current directory, into GDExtension libraries, one per target, and writes them into the package root, along with the package's `.gdextension` file. Godot loads them from there. With `--proj`, builds every package in the project instead.
+- Builds the package that contains PATH, or the current directory, into GDExtension libraries, one per target.
+- Writes them into the package root, with the package's `.gdextension` file. Godot loads them from there.
+- With `--proj`, builds every package in the project.
+- Keeps GD++'s exclude filters in the project's export presets up to date, as the `presets` setting in `gd++proj.toml` says. See `gd++ man shipping`.
 
-It also keeps GD++'s exclude filters in the project's export presets up to date, as the `presets` setting in `gd++proj.toml` says. See `gd++ man shipping`.
-
-This page lists the options. For how builds work, and for targets and debug and release builds in depth, see `gd++ man building`.
+For how builds work, targets, and debug and release builds in depth, see `gd++ man building`.
 
 # Options
 
 PATH
-  Build the package that contains this path. Default: the current directory. Can't be used with `--proj`.
+  Build the package that contains this path. Default: the current directory. Not with `--proj`.
 
 --proj
   Build all packages in the project, one after another, sorted by path.
 
 --for PLATFORM.ARCH...
-  Build for each of these targets, e.g. `windows.x86_64` or `w.x64`. Platforms: `windows` (`win`, `w`), `linux` (`lin`, `l`), `macos` (`mac`, `m`). Architectures: `x86_32` (`x32`), `x86_64` (`x64`), `arm64` (`a64`). Duplicates are built once. Default: this machine. Can't be used with `-w`, `--platform` or `--arch`.
+  Build for each of these targets, e.g. `windows.x86_64` or `w.x64`.
+  - Platforms: `windows` (`win`, `w`), `linux` (`lin`, `l`), `macos` (`mac`, `m`).
+  - Architectures: `x86_32` (`x32`), `x86_64` (`x64`), `arm64` (`a64`).
+  - Duplicates are built once.
+  - Default: this machine. Not with `-w`, `--platform` or `--arch`.
 
 -p PLATFORM, --platform PLATFORM
   Build for this platform: `windows`, `linux` or `macos`, or their short names. The architecture is that of `--arch`, or else this machine's. Default: this machine's platform.
@@ -39,7 +44,7 @@ PATH
   Build for this CPU architecture: `x86_32`, `x86_64` or `arm64`, or their short names. Default: this machine's.
 
 --ship
-  Build for release instead of debugging: godot-cpp's `template_release` target, with link-time optimization, optimized for speed, without documentation. The default is a debug build: godot-cpp's `template_debug` target, a dev build with debug symbols and hot reload, unoptimized, with documentation.
+  Build for release: godot-cpp's `template_release` target, with link-time optimization, optimized for speed, without documentation. The default is a debug build: godot-cpp's `template_debug` target, a dev build with debug symbols and hot reload, unoptimized, with documentation.
 
 --opt
   Optimize for speed. Default with `--ship`.
@@ -60,16 +65,20 @@ PATH
   Compile with this C++ compiler: `gcc`, `clang`, `msvc` or `clang-cl`. For Windows, `gcc` and `clang` are MinGW-w64's. Default: godot-cpp's for the target. See "Compilers" in `gd++ man building`.
 
 --nowarn
-  Disable C++ warnings: `-w`, or `/w` with MSVC. By default, warnings are errors: `-Werror`, or `/WX` with MSVC. Either way, this applies to the package's C++ and the C++ that GD++ generates, but not to godot-cpp.
+  Disable C++ warnings: `-w`, or `/w` with MSVC. By default, warnings are errors: `-Werror`, or `/WX` with MSVC. Either way, it applies to the package's C++ and the generated C++, not to godot-cpp.
 
 --trace GROUP...
-  Compile in the `@trace` annotations of these groups, or with `all`, of all groups. An annotation is in the group named after its class, and in the groups that its arguments name. The groups `process` and `physics_process` also trace all `on process` and `on physics_process` blocks, and overrides of `_process` and `_physics_process`, without annotations. Other `@trace` annotations generate nothing. See `gd++ man debugging`.
+  Compile in the `@trace` annotations of these groups, or of all groups with `all`.
+  - An annotation is in the group named after its class, and in the groups that its arguments name.
+  - The groups `process` and `physics_process` also trace all `on process` and `on physics_process` blocks, and overrides of `_process` and `_physics_process`, without annotations.
+  - Other `@trace` annotations generate nothing.
+  - See `gd++ man debugging`.
 
 --profile GROUP...
-  Compile in the `@profile` annotations of these groups, or with `all`, of all groups, like `--trace` does for `@trace`. Their timings show in the editor's Debugger > Monitors tab. See `gd++ man debugging`.
+  Compile in the `@profile` annotations of these groups, or of all groups with `all`, like `--trace` does for `@trace`. Their timings show in the editor's Debugger > Monitors tab. See `gd++ man debugging`.
 
 --print
-  With `--profile`, also print a table of the timings every few seconds while the game runs.
+  With `--profile`, also print a table of timings every few seconds while the game runs.
 
 --period SECONDS
   With `--print`, the seconds between tables. Default: 10.
@@ -90,30 +99,46 @@ PATH
   Run N compile jobs at once. Default: one per CPU core, minus one.
 
 --clean
-  Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files, so the build starts from scratch.
+  Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files. The build starts from scratch.
 
-Only one of `--opt`, `--small` and `--noopt`, and only one of `--doc` and `--nodoc`, can be used. `--asan` and `--tsan` can't be used together. `--cc` must build for every target. Group names are made of letters, digits and underscores. `--print` needs `--profile`, and `--period` and `--fps` need `--print`.
+Rules:
+
+- At most one of `--opt`, `--small` and `--noopt`.
+- At most one of `--doc` and `--nodoc`.
+- Not `--asan` with `--tsan`.
+- `--cc` must build for every target.
+- Group names are made of letters, digits and underscores.
+- `--print` needs `--profile`. `--period` and `--fps` need `--print`.
 
 # Output
 
-First, once, the build parameters, then for each package a task:
+First, once, the build parameters. Then a task per package:
 
 ```out
 [•] Build parameters: windows.x86_64, release, optimized, no docs.
 [•] Building res://gameplay.
 ```
 
-The parameters are the targets, debug or release, the optimization, the compiler if `--cc` chooses one, whether warnings are disabled, and the sanitizers. If a package has GD++ files, they also say whether docs are compiled, which groups `--trace` turns on, and whether profiling is on. On a terminal, the parts that differ from the defaults are highlighted. With several targets, each package has a task per target, e.g. "Building res://gameplay for windows.x86_64...". The build also says "Registering classes for ..." when the package's list of classes changed, and "Generating .gdextension for ..." when the `.gdextension` file changed.
+The parameters:
 
-Files written into the package root:
+- Always: the targets, debug or release, and the optimization.
+- If set: the `--cc` compiler, disabled warnings, and the sanitizers.
+- If a package has GD++ files: whether docs are compiled, which groups `--trace` turns on, and whether profiling is on.
+- On a terminal, the parts that differ from the defaults are highlighted.
+
+Other lines:
+
+- With several targets, a task per package and target, e.g. "Building res://gameplay for windows.x86_64...".
+- "Registering classes for ...": the package's list of classes changed.
+- "Generating .gdextension for ...": the `.gdextension` file changed.
+
+Files written into the package root, where `<id>` is the name of the package's directory:
 
 ```
 lib<id>.<platform>.<debug|release>.<arch>.<so|dll|dylib>
 <id>.gdextension
 <id>.gdextension.uid
 ```
-
-where `<id>` is the name of the package's directory.
 
 # Examples
 
@@ -141,19 +166,19 @@ Build for Windows on a Linux machine:
 gd++ build -w
 ```
 
-Make a debug build that runs fast, e.g. to profile:
+Make a fast debug build, e.g. to profile:
 
 ```sh
 gd++ build --opt
 ```
 
-Turn on the `@trace` annotations of the group `combat`, and of the class `Player`:
+Turn on the `@trace` annotations of the group `combat` and of the class `Player`:
 
 ```sh
 gd++ build --trace combat Player
 ```
 
-Profile everything, in an optimized build, and print a table of timings every 10 seconds, with the frame budget of a 144 Hz screen:
+Profile everything in an optimized build, and print a table of timings every 10 seconds, with the frame budget of a 144 Hz screen:
 
 ```sh
 gd++ build --opt --profile all --print --fps 144
@@ -185,20 +210,20 @@ gd++ build --clean
 
 # Errors
 
-- "Missing Godot C++ bindings NAME, run `gd++ fetch --missing` to fix this." The package's dependencies aren't in the project. Run `gd++ fetch --missing`.
+- "Missing Godot C++ bindings NAME, run `gd++ fetch --missing` to fix this." The package's dependencies aren't in the project.
 - "Failed to find SCons, see https://scons.org to install it: ..." Run `gd++ install`.
-- "Failed to detect the platform, use --platform to choose one." GD++ doesn't support this machine's platform or architecture, so name the target.
+- "Failed to detect the platform, use --platform to choose one." GD++ doesn't support this machine's platform or architecture. Name the target.
 - "Invalid arguments: \"x\" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64."
 - "Invalid arguments: \"a-b\" is not a valid group name." A `--trace` or `--profile` group isn't a valid name.
 - "Invalid arguments: --print needs --profile.", "--period needs --print." and "--fps needs --print." The option does nothing without the other one.
 - "Invalid arguments: --period must be positive."
 - "Invalid arguments: --asan and --tsan cannot be used together."
 - "Invalid arguments: --cc msvc cannot build for linux." The compiler doesn't support a target. See "Compilers" in `gd++ man building`.
-- "Invalid arguments: --cc clang cannot build for windows on this machine." MSVC and clang-cl only run on Windows, and on Windows, godot-cpp only supports MinGW-w64's GCC.
+- "Invalid arguments: --cc clang cannot build for windows on this machine." MSVC and clang-cl only run on Windows. On Windows, godot-cpp only supports MinGW-w64's GCC.
 - An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
 - "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
 - "Class X is declared in FILE and in gd++pkg.toml." A GD++ class and a C++ class have the same name.
-- The building task fails. The compiler or linker failed, and its whole output follows. Errors in the C++ code of GD++ files point to the GD++ files.
+- The building task fails: the compiler or linker failed, and its whole output follows. Errors in the C++ code of GD++ files point to the GD++ files.
 
 # See also
 

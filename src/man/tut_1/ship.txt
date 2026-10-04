@@ -1,12 +1,27 @@
 Tutorial: ship a game on several platforms
 
-This tutorial takes a finished game from the editor to exported builds for Linux and Windows: release libraries, cross-compiling, the export itself, and a script that does it all on a build machine. It assumes a project that builds, as in `gd++ man tour`.
+This tutorial takes a finished game from the editor to exported builds for Linux and Windows:
+
+- release libraries,
+- cross-compiling,
+- the export itself,
+- a script that does it all on a build machine.
+
+It assumes a project that builds, as in `gd++ man tour`.
 
 # 1. Choose the targets and the Godot version
 
-A target is a platform and an architecture, e.g. `linux.x86_64`, or `l.x64` for short. List the ones you ship to: this tutorial uses `l.x64` and `w.x64`. See "Targets" in `gd++ man building`.
+Targets:
 
-Each library needs at least the Godot version of its package's API spec, the `spec` in `gd++pkg.toml`. Export with that version of Godot, or a newer one. To reach players on older versions of Godot, e.g. for an addon, build against an older spec. See `gd++ man upgrade`.
+- A target is a platform and an architecture, e.g. `linux.x86_64`, or `l.x64` for short.
+- List the ones you ship to. This tutorial uses `l.x64` and `w.x64`.
+- See "Targets" in `gd++ man building`.
+
+The Godot version:
+
+- Each library needs at least the Godot version of its package's API spec, the `spec` in `gd++pkg.toml`.
+- Export with that Godot version, or a newer one.
+- To reach players on older Godot versions, e.g. for an addon, build against an older spec. See `gd++ man upgrade`.
 
 # 2. Get the compilers
 
@@ -16,7 +31,11 @@ On Linux and macOS, `gd++ install` also installs MinGW-w64, which builds Windows
 gd++ install
 ```
 
-Building for macOS generally needs a Mac with Xcode, and building for Linux needs Linux. So a game for all three platforms is built on two machines, e.g. a Linux machine for Linux and Windows, and a Mac for macOS. See `gd++ man install`.
+- Building for macOS generally needs a Mac with Xcode.
+- Building for Linux needs Linux.
+- So a game for all three platforms is built on two machines, e.g. a Linux machine for Linux and Windows, and a Mac for macOS.
+
+See `gd++ man install`.
 
 # 3. Build release libraries
 
@@ -28,13 +47,21 @@ gd++ build --proj --ship --for l.x64 w.x64
 - `--ship` builds for release: optimized for speed, with link-time optimization, and without the editor's documentation. Add `--small` to optimize for size instead.
 - `--for` builds each target, one after another.
 
-The libraries land in each package root, next to the debug ones, e.g. `libmy_game.windows.release.x86_64.dll`. Each package's `.gdextension` file lists all of them, and Godot picks the right one. See `gd++ man build`.
+Facts:
 
-A release build drops what's only there for development: assertions aren't checked, and `@trace` and `@profile` generate nothing, unless you turn them on with `--trace` or `--profile`. So test the release build before shipping it, e.g. to catch code that only works because an assertion returned early. See `gd++ man rewrites`.
+- The libraries land in each package root, next to the debug ones, e.g. `libmy_game.windows.release.x86_64.dll`.
+- Each package's `.gdextension` file lists all of them. Godot picks the right one. See `gd++ man build`.
+- A release build drops what's only there for development: assertions aren't checked, and `@trace` and `@profile` generate nothing, unless `--trace` or `--profile` turns them on.
+- So test the release build before shipping it, e.g. to catch code that only works because an assertion returned early. See `gd++ man rewrites`.
 
 # 4. Check the export filters
 
-Your sources must stay out of the game. `gd++` takes care of it: it adds filters for them, e.g. `*.gd++` and `*.cpp`, to "Filters to exclude files/folders from project" of every export preset. `gd++ build` does it, e.g. in step 3, and so does `gd++ fix`: run it if you create a preset after building. The caches never get in.
+Your sources must stay out of the game. `gd++` takes care of it:
+
+- It adds filters for them, e.g. `*.gd++` and `*.cpp`, to "Filters to exclude files/folders from project" of every export preset.
+- `gd++ build` does it, e.g. in step 3, and so does `gd++ fix`.
+- Run `gd++ fix` if you create a preset after building.
+- The caches never get in.
 
 See `gd++ man shipping`.
 
@@ -47,7 +74,9 @@ godot --headless --export-release "Linux" out/linux/my_game.x86_64
 godot --headless --export-release "Windows Desktop" out/windows/my_game.exe
 ```
 
-The preset names are those of your `export_presets.cfg`. Godot copies the release library of each package into the export. If a target's library is missing, the exported game fails to load the extension, and the classes of the package are missing: run the exported game once on each platform before shipping it.
+- The preset names are those of your `export_presets.cfg`.
+- Godot copies the release library of each package into the export.
+- If a target's library is missing, the exported game fails to load the extension, and the package's classes are missing. Run the exported game once on each platform before shipping it.
 
 To give testers a build with assertions and Godot's debug output, export in debug mode, with `--export-debug`, after a debug build for the same targets:
 
@@ -73,7 +102,8 @@ godot --headless --export-release "Windows Desktop" out/windows/my_game.exe
 - On a machine that keeps its checkout between runs, add `--clean` to the build, so each release starts from scratch, at the cost of compiling godot-cpp again.
 - `gd++` exits with a non-zero status when it fails, so `set -e` stops the script.
 
-The build machine needs `gd++`, the tools from `gd++ install`, and Godot with its export templates. Use the same version of `gd++` as your team.
+- The build machine needs `gd++`, the tools from `gd++ install`, and Godot with its export templates.
+- Use the same `gd++` version as your team.
 
 # See also
 

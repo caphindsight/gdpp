@@ -1,6 +1,13 @@
 Tutorial: find and fix a bug
 
-This tutorial goes through the tools for finding bugs in GD++ code, from the cheapest to the heaviest: assertions, tracing, a debugger, and sanitizers. It follows one bug: enemies sometimes ignore hits, and sometimes the game crashes when one dies. It assumes a project that builds, as in `gd++ man tour`.
+This tutorial goes through the tools for finding bugs in GD++ code, from the cheapest to the heaviest:
+
+1. assertions,
+2. tracing,
+3. a debugger,
+4. sanitizers.
+
+It follows one bug: enemies sometimes ignore hits, and sometimes the game crashes when one dies. It assumes a project that builds, as in `gd++ man tour`.
 
 # 1. Write down what must be true
 
@@ -27,7 +34,11 @@ func aim() -> void {
 }
 ```
 
-In debug builds, a failed assertion prints an error with its condition, and returns from the function. In release builds, it's gone, at no cost. So leave assertions in for good. See "Assertions" in `gd++ man rewrites`.
+- In debug builds, a failed assertion prints an error with its condition, and returns from the function.
+- In release builds, it's gone, at no cost.
+- So leave assertions in for good.
+
+See "Assertions" in `gd++ man rewrites`.
 
 # 2. Watch what happens
 
@@ -50,7 +61,11 @@ Then build with the group on, and play until the bug shows:
 gd++ build --trace combat
 ```
 
-The Output panel shows each call with its arguments, each change of `health` with the function that made it, and each emission of `died`:
+The Output panel shows:
+
+- each call, with its arguments,
+- each change of `health`, with the function that made it,
+- each emission of `died`.
 
 ```out
 [f1204] ▶ Enemy "Grunt".take_damage(amount: 30)
@@ -63,20 +78,35 @@ The Output panel shows each call with its arguments, each change of `health` wit
 [f1204] ◀ Enemy "Grunt".take_damage  38.5 µs
 ```
 
-Here, the enemy took damage twice in the same frame, `[f1204]`, and died twice: two bullets hit it at once. With `--trace`, failed assertions print a red trace line too, among the calls that led to them.
+- Here, the enemy took damage twice in the same frame, `[f1204]`, and died twice: two bullets hit it at once.
+- With `--trace`, failed assertions print a red trace line too, among the calls that led to them.
+- Without the flag, the annotations generate nothing. So leave them in: the next time something breaks in combat, `--trace combat` is ready.
 
-Without the flag, the annotations generate nothing, so leave them in: the next time something breaks in combat, `--trace combat` is ready. See `gd++ man debugging`, which also has recipes, e.g. for leaks and signal handlers.
+See `gd++ man debugging`, which also has recipes, e.g. for leaks and signal handlers.
 
 # 3. Step through it in a debugger
 
-When the game crashes, a debugger shows where. Debug builds have debug symbols and no optimization, and the compiler knows the GD++ file and line of each piece of your C++ code, so the debugger shows your GD++ code. Run the game, not the editor, under the debugger, e.g. with GDB on Linux:
+When the game crashes, a debugger shows where.
+
+- Debug builds have debug symbols and no optimization.
+- The compiler knows the GD++ file and line of each piece of your C++ code. So the debugger shows your GD++ code.
+- Run the game, not the editor, under the debugger, e.g. with GDB on Linux:
 
 ```sh
 gd++ build
 gdb --args godot --path .
 ```
 
-Type `run`, play until it crashes, then `bt` to see the calls that led there. Frames of your code point to the copies of your files in the package's build cache, e.g. `.gd++pkg/package/enemy.gd++`, with the same line numbers as your files. Set breakpoints by function, e.g. `break godot::Enemy::take_damage`. Other debuggers, e.g. those of IDEs, LLDB or Visual Studio's, work the same way. See "Line numbers" in `gd++ man code`.
+1. Type `run`, and play until it crashes.
+2. Type `bt` to see the calls that led there.
+
+Facts:
+
+- Frames of your code point to the copies of your files in the package's build cache, e.g. `.gd++pkg/package/enemy.gd++`, with the same line numbers as your files.
+- Set breakpoints by function, e.g. `break godot::Enemy::take_damage`.
+- Other debuggers, e.g. those of IDEs, LLDB or Visual Studio's, work the same way.
+
+See "Line numbers" in `gd++ man code`.
 
 # 4. Let the compiler check memory
 
@@ -91,14 +121,21 @@ LD_PRELOAD=$(gcc -print-file-name=libasan.so) godot --path .
 - `--ubsan` finds undefined behavior, e.g. signed integer overflow.
 - `--tsan` finds data races between threads, e.g. in `@onthread` functions. It can't be combined with `--asan`.
 
-Godot itself is built without sanitizers, so AddressSanitizer and ThreadSanitizer need their library loaded first, with `LD_PRELOAD` on Linux, or `DYLD_INSERT_LIBRARIES` on macOS. They check your package's code only, and make it slower, so use them while testing. See "Sanitizers" in `gd++ man building`.
+- Godot itself is built without sanitizers. So AddressSanitizer and ThreadSanitizer need their library loaded first, with `LD_PRELOAD` on Linux, or `DYLD_INSERT_LIBRARIES` on macOS.
+- They check your package's code only.
+- They make it slower, so use them while testing.
+
+See "Sanitizers" in `gd++ man building`.
 
 # 5. Fix it, and go back to normal
 
 The usual suspects, in C++ coming from GDScript:
 
 - A null pointer: a node path that found nothing, an unset `@export`, or a failed downcast with `as`. Check pointers before using them, or assert that they're set.
-- A freed node: pointers don't keep nodes alive. After `queue_destroy` or `queue_free()`, the node goes away at the end of the frame, and pointers to it dangle. To hold on to a node that may go away, keep a `Weak[T]` instead, e.g. `var target: Weak[Enemy]`: `Enemy *e = target` gives `nullptr` once the node is gone. Use the pointer right away, and don't keep it. See `gd++ man weak`.
+- A freed node: pointers don't keep nodes alive.
+  - After `queue_destroy` or `queue_free()`, the node goes away at the end of the frame, and pointers to it dangle.
+  - To hold on to a node that may go away, keep a `Weak[T]` instead, e.g. `var target: Weak[Enemy]`. `Enemy *e = target` gives `nullptr` once the node is gone.
+  - Use the pointer right away, and don't keep it. See `gd++ man weak`.
 - Work done twice in one frame, like the double death above: guard it with a flag, e.g. `if (dead) return;`.
 - An integer that overflows, or a `float` that's divided by zero. `--ubsan` finds the first.
 

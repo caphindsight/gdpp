@@ -10,7 +10,9 @@ gd++ man SECTION/PAGE [--syntax N | --nightly]
 
 # Description
 
-Shows a page of this manual, the reference manual of GD++: tutorials, the build tool, its commands, and the GD++ language. Without a page, lists all pages as a tree, with their titles. The manual is built into `gd++`, so it always matches the version you run, and works offline.
+- Shows a page of this manual: tutorials, the build tool, its commands, and the GD++ language.
+- Without a page, lists all pages as a tree, with their titles.
+- The manual is built into `gd++`. It always matches the version you run, and works offline.
 
 Pages open in a pager when they don't fit the terminal, or with `--pager`:
 
@@ -18,24 +20,28 @@ Pages open in a pager when they don't fit the terminal, or with `--pager`:
 Up, Down                 scroll by a line
 Page Up, Page Down       scroll by a page
 Space                    scroll down by a page
-/                        search: type a word, then Enter
+/                        search: type the text, then Enter
 n, Shift+N               jump to the next or previous match
 q                        end the search, or quit without one
 Escape, Ctrl+C           quit
 ```
 
-On a terminal, pages are wrapped to its width, and headings are bold. When the output is not a terminal, e.g. in `gd++ man classes > classes.txt` or `gd++ man classes | grep emit`, pages are printed as plain text, without the pager.
+- On a terminal, pages are wrapped to its width, and headings are bold.
+- When the output is not a terminal, e.g. in `gd++ man classes > classes.txt` or `gd++ man classes | grep emit`, pages are printed as plain text, without the pager.
 
 # Arguments and options
 
 PAGE
-  The name of the page to show, e.g. `classes`, as the list shows it. Names are unique in the whole manual, so a name is enough. If there is no such page, `gd++` lists the pages whose names contain PAGE, or are contained in it.
+  The name of the page to show, e.g. `classes`, as the list shows it. Names are unique in the whole manual. If there is no such page, `gd++` lists the pages whose names contain PAGE, or are contained in it.
 
 SECTION/PAGE
   The path of the page to show, e.g. `lang/classes`. Works the same as its name.
 
 --syntax N
-  The GD++ syntax version that the tutorials and the language pages describe. Default: in a package, the package's, and elsewhere the latest stable one, which `gd++ --syntax` shows. Each of these pages shows its version after its title, e.g. "[syntax 1]" or "[syntax 0 (nightly)]". See "Syntax versions" in `gd++ man packages`.
+  The GD++ syntax version that the tutorials and the language pages describe.
+  - Default: in a package, the package's, and elsewhere the latest stable one, which `gd++ --syntax` shows.
+  - These pages show their version after their title, e.g. "[syntax 1]" or "[syntax 0 (nightly)]".
+  - See "Syntax versions" in `gd++ man packages`.
 
 --nightly
   The same as `--syntax 0`, the nightly syntax.
@@ -51,7 +57,8 @@ cmd      the commands, one page each, named after the command, e.g. cmd/build
 lang     the GD++ language, one page per topic, e.g. lang/signals
 ```
 
-A section is a page too: `gd++ man lang` shows an overview of the language, followed by the list of pages in the section. `gd++ man` lists the whole tree, in reading order: read it from top to bottom to learn GD++ from scratch.
+- A section is a page too: `gd++ man lang` shows an overview of the language, then the list of its pages.
+- `gd++ man` lists the whole tree, in reading order. Read it from top to bottom to learn GD++ from scratch.
 
 # Examples
 

@@ -1,6 +1,9 @@
 Doc comments: help in the editor
 
-Doc comments become real Godot documentation: the editor's help shows your classes, with their descriptions, like it shows Godot's own classes. Press F1 in the editor, or Ctrl+click a class name in a script, to see it.
+Doc comments become real Godot documentation:
+
+- The editor's help shows your classes, with their descriptions, like Godot's own classes.
+- Press F1 in the editor, or Ctrl+click a class name in a script, to see it.
 
 # Writing doc comments
 
@@ -15,20 +18,29 @@ var speed: float = 5.0
 func jump() -> void {}
 ```
 
-A doc comment is a run of lines that start with `///`, or a block that starts with `/**` and ends with `*/`. It documents the declaration right after it.
+A doc comment documents the declaration right after it. It's:
 
-- In `///` lines, GD++ removes the `///` and one space after it.
-- In `/** */` blocks, GD++ removes the indentation that all lines share, and blank lines at the start and the end. Like other block comments, doc blocks nest.
+- a run of lines that start with `///`. GD++ removes the `///` and one space after it.
+- or a block that starts with `/**` and ends with `*/`. GD++ removes the indentation that all lines share, and blank lines at the start and the end. Like other block comments, doc blocks nest.
 
-Doc comments can document:
+Documented in the editor's help:
 
-- classes: before `class_name` or `class`, along with the class's annotations,
+- classes: before `class_name` or `class`, with the class's annotations,
 - functions, variables and signals,
-- integer constants, and the values of enums.
+- integer constants, and the values of enums,
+- the `_super_NAME` function of `"super"`, with the function's doc comment,
+- the function without the underscore that GD++ binds for a `@virtual` function, with the function's doc comment.
 
-Enums and externs can have doc comments too, but they aren't shown anywhere. `@override` functions and `on` blocks, e.g. `on ready`, aren't documented, since the engine documents them already. The `_super_NAME` function of `"super"` is, with the function's doc comment, and so is the function without the underscore that GD++ binds for a `@virtual` function. `decl` and `impl` blocks can't have doc comments.
+Not documented:
 
-A declaration has at most one doc comment, which can come before its annotations or between them. A doc comment that isn't followed by a declaration is an error:
+- enums and externs: they can have doc comments, but they aren't shown anywhere,
+- `@override` functions and `on` blocks, e.g. `on ready`: the engine documents them already,
+- `decl` and `impl` blocks: they can't have doc comments.
+
+Rules:
+
+- A declaration has at most one doc comment. It can come before its annotations or between them.
+- A doc comment that isn't followed by a declaration is an error:
 
 ```out
 [×] res://a.gd++:5:1: This doc comment is not followed by a declaration.
@@ -42,7 +54,8 @@ A declaration has at most one doc comment, which can come before its annotations
 GD++ reads doc comments like Godot reads GDScript's `##` comments:
 
 - Lines are joined into one paragraph, with spaces. For a line break, write `[br]`.
-- BBCode tags format the text: `[b]bold[/b]`, `[i]italic[/i]`, `[code]code[/code]`, `[kbd]Ctrl + S[/kbd]`, `[url=https://example.com]links[/url]`, and `[codeblock] ... [/codeblock]` for code on several lines, whose lines are kept as they are.
+- BBCode tags format the text: `[b]bold[/b]`, `[i]italic[/i]`, `[code]code[/code]`, `[kbd]Ctrl + S[/kbd]`, `[url=https://example.com]links[/url]`.
+- `[codeblock] ... [/codeblock]` holds code on several lines, kept as it is.
 - Tags link to other documentation: `[Node3D]` to a class, `[method jump]`, `[member speed]`, `[signal died]`, `[constant MAX_PLAYERS]`, `[enum Suit]`, and `[param amount]` for a parameter.
 
 ```gd++
@@ -55,7 +68,10 @@ func hurt(amount: int) -> void { ... }
 
 # Classes
 
-A class's doc comment has two parts: its first paragraph, up to the first blank line, is the brief description, shown in lists and at the top of the class's page. The rest is the full description.
+A class's doc comment has two parts:
+
+- The brief description: its first paragraph, up to the first blank line. Shown in lists and at the top of the class's page.
+- The full description: the rest.
 
 ```gd++
 /// A player that runs and jumps.
@@ -69,7 +85,8 @@ class_name Player
 extends CharacterBody3D
 ```
 
-Lines that start with `@tutorial` add links to tutorials, with an optional title in parentheses: `@tutorial: URL` or `@tutorial(TITLE): URL`. Only classes have tutorials.
+- Lines that start with `@tutorial` add links to tutorials: `@tutorial: URL` or `@tutorial(TITLE): URL`.
+- Only classes have tutorials.
 
 # Deprecated and experimental
 
@@ -82,21 +99,30 @@ func hop() -> void {}
 func fly() -> void {}
 ```
 
-A line `@deprecated`, or `@deprecated: MESSAGE`, marks the declaration as deprecated, and `@experimental`, or `@experimental: MESSAGE`, marks it as experimental. The editor shows these marks, with the message. They work on all documented declarations.
+- `@deprecated`, or `@deprecated: MESSAGE`, marks the declaration as deprecated.
+- `@experimental`, or `@experimental: MESSAGE`, marks it as experimental.
+- The editor shows these marks, with the message.
+- They work on all documented declarations.
 
 # How it works
 
-In debug builds, the build generates the documentation of each GD++ class in Godot's XML format, the format of Godot's own class reference, into the build cache (`gdpp/doc_classes/NAME.xml`), and compiles it into the library. The editor loads it with the library. The XML lists the class's brief description, description and tutorials, its methods, members and signals, sorted by name, and its constants, with their types, qualifiers (virtual, const, static) and default values.
-
-The classes that GD++ adds to a package, e.g. its class of tasks, `FooAsync`, get documentation too, which GD++ writes, so the editor's help explains them like Godot's own classes. See `gd++ man async`.
-
-Release builds leave the documentation out, since exported games have no editor to show it. Use `--doc` and `--nodoc` to choose yourself. See `gd++ man build`.
-
-The editor shows the documentation of GDExtensions from Godot 4.3 on.
+- In debug builds, the build generates each GD++ class's documentation in Godot's XML format, the format of Godot's own class reference.
+- It goes into the build cache, as `gdpp/doc_classes/NAME.xml`, and is compiled into the library.
+- The editor loads it with the library.
+- The XML lists the class's brief description, description and tutorials, its methods, members and signals, sorted by name, and its constants, with their types, qualifiers (virtual, const, static) and default values.
+- The classes that GD++ adds to a package, e.g. its class of tasks, `FooAsync`, get documentation too, which GD++ writes. See `gd++ man async`.
+- Release builds leave the documentation out, since exported games have no editor to show it.
+- `--doc` and `--nodoc` choose yourself. See `gd++ man build`.
+- The editor shows the documentation of GDExtensions from Godot 4.3 on.
 
 # Types in the documentation
 
-The documentation spells types like GDScript: `int`, `float`, `String`, `Node3D`, `int[]` for `Array[int]`, and `Dictionary[String, int]` for typed dictionaries. Variables, parameters and return values of a GD++ enum show as `int`, with the enum's name, e.g. `Player.Suit`, and the enum's values are listed under the class's constants. Bitfields are marked as bitfields there. See `gd++ man enums`.
+The documentation spells types like GDScript:
+
+- `int`, `float`, `String`, `Node3D`,
+- `int[]` for `Array[int]`,
+- `Dictionary[String, int]` for typed dictionaries,
+- `int` with the enum's name, e.g. `Player.Suit`, for GD++ enums. The enum's values are listed under the class's constants. Bitfields are marked as bitfields there. See `gd++ man enums`.
 
 # See also
 

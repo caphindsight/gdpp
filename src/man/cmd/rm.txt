@@ -13,9 +13,18 @@ gd++ rm PATH (--class NAME... | --class-all)
 
 # Description
 
-Removes one of three things per run: dependencies from the project's caches, packages from the project, or C++ classes from a package. Every removal is confirmed first, and `gd++` asks all its questions before it removes anything, so answering no changes nothing. See `gd++ man cli` for `-f` and `-n`.
+Removes one of three things per run:
 
-After removing dependencies or packages, it deletes the cache directories left empty.
+- dependencies from the project's caches,
+- packages from the project,
+- C++ classes from a package.
+
+Facts:
+
+- Every removal is confirmed first.
+- `gd++` asks all its questions before it removes anything. So answering no changes nothing.
+- After removing dependencies or packages, it deletes the cache directories left empty.
+- See `gd++ man cli` for `-f` and `-n`.
 
 # Removing dependencies
 
@@ -38,11 +47,19 @@ After removing dependencies or packages, it deletes the cache directories left e
   The same, for Godot API specs and Godot engines.
 
 --dep-all, --dep-checked-in, --dep-ephemeral, --dep-unused
-  The same, for all dependencies of all kinds at once. Confirmed once. Can't be used with the options above.
+  The same, for all dependencies of all kinds at once. Confirmed once. Not with the options above.
 
-Only one option per kind can be used, e.g. not `--spec` and `--spec-all` together. Kinds can be combined, e.g. `gd++ rm --bind-ephemeral --spec 4.3-stable`. Every named dependency must exist: `gd++` checks them all before it asks anything.
+Rules:
 
-Removing a dependency that a package uses breaks the package's next build, until you fetch the dependency again, but it doesn't break the package's build cache, which has its own copy. `gd++ ls --deps` shows which dependencies are unused, and `--dep-unused` removes only those.
+- One option per kind, e.g. not `--spec` with `--spec-all`.
+- Kinds combine, e.g. `gd++ rm --bind-ephemeral --spec 4.3-stable`.
+- Every named dependency must exist. `gd++` checks them all before it asks anything.
+
+Facts:
+
+- Removing a dependency that a package uses breaks the package's next build, until you fetch it again.
+- It doesn't break the package's build cache, which has its own copy.
+- `gd++ ls --deps` shows which dependencies are unused. `--dep-unused` removes only those.
 
 # Removing packages
 
@@ -55,7 +72,17 @@ Removing a dependency that a package uses breaks the package's next build, until
 --dir
   Delete the package directories with everything inside, including your source files. Without it, only GD++'s files are deleted. It can't delete the project root. The prompt warns about it in bold, blinking red.
 
-Without `--dir`, removing a package deletes its `gd++pkg.toml`, its build cache, its libraries and `.gdextension` files (like `gd++ clean --bin`), and its block in `.gitignore`. Your GD++ and C++ files stay: the directory is no longer a package, and its files belong to the enclosing package, if any. Nested packages are removed before their parents.
+Without `--dir`, removing a package deletes:
+
+- its `gd++pkg.toml`,
+- its build cache,
+- its libraries and `.gdextension` files, like `gd++ clean --bin`,
+- its block in `.gitignore`.
+
+Facts:
+
+- Your GD++ and C++ files stay. The directory is no longer a package, and its files belong to the enclosing package, if any.
+- Nested packages are removed before their parents.
 
 # Removing classes
 
@@ -64,7 +91,11 @@ gd++ rm PATH --class NAME...
 gd++ rm PATH --class-all
 ```
 
-Removes C++ classes from the `gd++pkg.toml` of the package at PATH, so the package no longer registers them with Godot. Their files stay. GD++ classes can't be removed this way: delete them from their GD++ files instead. See `gd++ man cpp-classes`.
+- Removes C++ classes from the `gd++pkg.toml` of the package at PATH. The package no longer registers them with Godot.
+- Their files stay.
+- GD++ classes can't be removed this way: delete them from their GD++ files instead.
+
+See `gd++ man cpp-classes`.
 
 --class NAME...
   Remove these classes. Each one is confirmed on its own.

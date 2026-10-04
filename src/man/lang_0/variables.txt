@@ -1,6 +1,10 @@
 Variables: var, node paths and properties
 
-A variable is a property of its class that Godot knows: GDScript can read and write it, e.g. `player.speed = 3.0`, and with an export annotation, the inspector shows it and scenes save it. There are two kinds: simple variables, which GD++ stores for you, and properties, with your own getter and setter. Under the hood, they're the same.
+A variable is a property of its class that Godot knows.
+
+- GDScript can read and write it, e.g. `player.speed = 3.0`.
+- With an export annotation, the inspector shows it and scenes save it.
+- Two kinds: simple variables, which GD++ stores for you, and properties, with your own getter and setter. Under the hood, they're the same.
 
 # Simple variables
 
@@ -11,15 +15,19 @@ var target: Node3D
 var anything
 ```
 
-A simple variable is `var name: Type`, with an optional initial value after `=`. Without a type, the variable is a `Variant`. See `gd++ man types`.
+- `var name: Type`, with an optional initial value after `=`.
+- Without a type, the variable is a `Variant`. See `gd++ man types`.
 
 For each simple variable, GD++ generates:
 
-- a public field of the C++ class, with the variable's name and C++ type, e.g. `int64_t health{};`, which your C++ code reads and writes directly,
-- a getter, `int64_t get_health() const;`, and a setter, `void set_health(int64_t p_value);`, public methods which Godot calls,
+- a public field of the C++ class, with the variable's name and C++ type, e.g. `int64_t health{};`. Your C++ code reads and writes it directly.
+- a getter, `int64_t get_health() const;`, and a setter, `void set_health(int64_t p_value);`. Public methods, which Godot calls.
 - the binding of both in `_bind_methods`, and the property that uses them.
 
-Without an initial value, a field starts as its type's default: `0`, `0.0`, `false`, an empty `String`, a zero vector, `nullptr`, a null reference, and so on.
+Facts:
+
+- Without an initial value, a field starts as its type's default: `0`, `0.0`, `false`, an empty `String`, a zero vector, `nullptr`, a null reference, and so on.
+- In GDScript, `player.health = 50` calls `set_health`, and `player.health` calls `get_health`.
 
 ```gd++
 func heal() -> void {
@@ -27,11 +35,13 @@ func heal() -> void {
 }
 ```
 
-In GDScript, `player.health = 50` calls `set_health`, and `player.health` calls `get_health`.
-
 # Initial values
 
-The initial value is C++: either an expression to the end of the line, which can continue on the next lines while a bracket is open, or a block of C++ that returns the value:
+The initial value is C++:
+
+- an expression to the end of the line, which continues on the next lines while a bracket is open,
+- or a block of C++ that returns the value,
+- or, for a variable of a GD++ enum type, one of the enum's values, e.g. `var trump: Suit = HEARTS`, or for a bitfield, several combined, e.g. `var mask: Layer = WORLD | PLAYER`. See `gd++ man enums`.
 
 ```gd++
 var count: int = 3
@@ -47,9 +57,12 @@ var weights: PackedFloat32Array = {
 }
 ```
 
-For a variable of a GD++ enum type, the initial value can also be one of the enum's values, e.g. `var trump: Suit = HEARTS`, or for a bitfield, several of them combined, e.g. `var mask: Layer = WORLD | PLAYER`. See `gd++ man enums`.
+When they're assigned:
 
-GD++ assigns initial values in the constructor, in the order of the declarations, before the body of your `ctor`. A block becomes a lambda that is called right away, so it can use the object (`this`) and its other fields. See `gd++ man lifecycle`.
+- In the constructor, in the order of the declarations, before the body of your `ctor`.
+- A block becomes a lambda that is called right away. So it can use the object (`this`) and its other fields.
+
+See `gd++ man lifecycle`.
 
 # @onready
 
@@ -65,11 +78,22 @@ var marker: Node3D = {
 }
 ```
 
-`@onready` assigns the initial value right before the `on ready` block instead of in the constructor, like in GDScript. That's when the node's children exist, so it can get them, e.g. with the node path `$Camera`. GD++ assigns it in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`, so it's set before any `_ready` runs, even a script's. See `gd++ man lifecycle`. Without an initial value, `@onready` does nothing. Only classes that extend `Node` can use it, since only nodes get `_ready`.
+- Assigns the initial value right before the `on ready` block, instead of in the constructor, like in GDScript.
+- Then the node's children exist, so it can get them, e.g. with the node path `$Camera`.
+- GD++ assigns it in the class's `_notification`, at `NOTIFICATION_POST_ENTER_TREE`. So it's set before any `_ready` runs, even a script's.
+- Without an initial value, it does nothing.
+- Only for classes that extend `Node`, since only nodes get `_ready`.
+
+See `gd++ man lifecycle`.
 
 # Node paths
 
-Like in GDScript, the initial value of an `@onready` variable can be a node path: `$` and the path of a node, or `%` and the name of a unique node. GD++ turns it into a call of `get_node`, with the variable's type:
+Like in GDScript, the initial value of an `@onready` variable can be a node path:
+
+- `$` and the path of a node,
+- `%` and the name of a unique node.
+
+GD++ turns it into a call of `get_node`, with the variable's type:
 
 ```gd++
 @onready var camera: Camera3D = $Rig/Camera     // get_node<Camera3D>("Rig/Camera")
@@ -78,14 +102,24 @@ Like in GDScript, the initial value of an `@onready` variable can be a node path
 
 The rules are GDScript's:
 
-- After `$` or `%` come node names, joined by `/`. A name is a word, e.g. `Camera`, or a string, e.g. `$Hud/"Health Bar"`, for names with spaces or other signs. A string's text goes into the path as it is, so `$"../Sibling"` works too.
-- A word is any name or GDScript keyword, e.g. `$if`, except `true`, `false` and `null`. It can't start with a digit: write `$"2D"`.
-- Strings are GDScript strings: `"..."`, `'...'`, `"""..."""` and `'''...'''`, with GDScript's escapes, e.g. `\n` and `\u00e9`, or raw strings, e.g. `r"..."`, without them.
+- After `$` or `%` come node names, joined by `/`.
+- A name is an identifier, e.g. `Camera`, or a string, e.g. `$Hud/"Health Bar"`, for names with spaces or other signs.
+  - A string's text goes into the path as it is, so `$"../Sibling"` works too.
+  - An identifier can be any name or GDScript keyword, e.g. `$if`, except `true`, `false` and `null`.
+  - An identifier can't start with a digit: write `$"2D"`.
+- Strings are GDScript strings: `"..."`, `'...'`, `"""..."""` and `'''...'''`, with GDScript's escapes, e.g. `\n` and `é`, or raw strings, e.g. `r"..."`, without them.
 - `%` starts the name of a unique node, at the start or after a `/`, e.g. `%HealthBar`, `$%HealthBar` or `$Hud/%HealthBar`.
 - `$/` starts an absolute path, e.g. `$/root/Main`.
-- Spaces between the parts don't count: `$Hud / Score` is `$Hud/Score`. But `//` starts a comment, like everywhere in GD++, so `$Hud//Score` is `$Hud`.
+- Spaces between the parts don't count: `$Hud / Score` is `$Hud/Score`.
+- `//` starts a comment, like everywhere in GD++. So `$Hud//Score` is `$Hud`.
 
-A node path must be the whole initial value: for more, write C++, e.g. `get_node<Node>("Hud")->get_child(0)` instead of `$Hud.get_child(0)`. It needs `@onready`, since in the constructor, the node has no children yet. And the variable needs a node type: `Node`, or a class that extends it. `get_node` casts the node to that type, so if the node has another type, the variable is `nullptr`. If there's no node at the path, it's `nullptr` too, and Godot prints an error.
+Limits:
+
+- A node path must be the whole initial value. For more, write C++, e.g. `get_node<Node>("Hud")->get_child(0)` instead of `$Hud.get_child(0)`.
+- It needs `@onready`: in the constructor, the node has no children yet.
+- The variable needs a node type: `Node`, or a class that extends it.
+- `get_node` casts the node to that type. If the node has another type, the variable is `nullptr`.
+- If there's no node at the path, it's `nullptr` too, and Godot prints an error.
 
 # Properties
 
@@ -108,13 +142,34 @@ var ammo: int {
 The braces after the type hold three kinds of blocks, in any order:
 
 decl { ... }
-  C++ declarations that go into the private section of the class, typically the field that stores the value. A property has no field of its own, so without a `decl` block, it stores nothing. Any number of `decl` blocks are allowed.
+  C++ declarations for the private section of the class, typically the field that stores the value.
+  - A property has no field of its own. Without a `decl` block, it stores nothing.
+  - Any number of `decl` blocks are allowed.
 
 get { ... }
-  The body of the getter, `int64_t get_ammo() const`, which returns the value. It's required, since Godot doesn't support properties that can only be set. It's a const method, so it can't change fields, except mutable ones.
+  The body of the getter, `int64_t get_ammo() const`, which returns the value.
+  - Required: Godot doesn't support properties that can only be set.
+  - A const method: it can't change fields, except mutable ones.
 
 set(NAME) { ... }
-  The body of the setter, `void set_ammo(int64_t value)`, whose parameter is called NAME. It's optional: without it, the property is read-only, and Godot can't set it. The parameter's type can be left out, since it's the property's type. If you write it, it must be the same type.
+  The body of the setter, `void set_ammo(int64_t value)`, whose parameter is called NAME.
+  - Optional. Without it, the property is read-only, and Godot can't set it.
+  - The parameter's type can be left out: it's the property's type. If written, it must be the same type.
+
+Facts:
+
+- A property can't have an initial value. Initialize its storage in its `decl` block, or in the `ctor`.
+- Inside the class, C++ code calls the getter and the setter like any method, e.g. `set_ammo(10)`, or uses the storage directly.
+
+A read-only, computed property:
+
+```gd++
+var is_dead: bool {
+  get {
+    return health <= 0;
+  }
+}
+```
 
 The `set` block takes `@deferred` or `@thread_safe`, like a function:
 
@@ -129,21 +184,11 @@ var target: Vector3 {
 }
 ```
 
-With `@deferred`, every call of the setter goes through `call_deferred`: from C++, from scripts, and from the inspector or a scene file. The block runs later, at the end of the frame, so until then, the getter still returns the old value. `@thread_safe` is the same with `call_thread_safe`: a call from another thread runs later on the main thread, and a call from the main thread runs right away. Only classes that extend `Node` can use `@thread_safe`. GD++ puts the block in a second method, `_gdpp_body_set_NAME`, which the call runs by name. See "@deferred and @thread_safe" in `gd++ man functions`.
+- `@deferred`: every call of the setter goes through `call_deferred`, from C++, from scripts, and from the inspector or a scene file. The block runs at the end of the frame. Until then, the getter returns the old value.
+- `@thread_safe`: the same, with `call_thread_safe`. A call from another thread runs later on the main thread. A call from the main thread runs right away. Only for classes that extend `Node`.
+- GD++ puts the block in a second method, `_gdpp_body_set_NAME`, which the call runs by name.
 
-A property can't have an initial value: initialize its storage in its `decl` block, or in the `ctor`.
-
-A read-only, computed property:
-
-```gd++
-var is_dead: bool {
-  get {
-    return health <= 0;
-  }
-}
-```
-
-Inside the class, C++ code calls the getter and the setter like any method, e.g. `set_ammo(10)`, or uses the storage directly.
+See "@deferred and @thread_safe" in `gd++ man functions`.
 
 # Names
 
@@ -156,7 +201,8 @@ func get_speed() -> float { ... }     // error: get_speed is taken
 
 # Visibility in Godot
 
-Every variable is a property in Godot, so GDScript can get and set it by name. But only exported variables show up in the inspector, and are saved in scenes and resources:
+- Every variable is a property in Godot, so GDScript can get and set it by name.
+- Only exported variables show up in the inspector, and are saved in scenes and resources.
 
 ```gd++
 @export var health: int           // in the inspector, saved
@@ -168,9 +214,15 @@ See `gd++ man exports`.
 
 # Annotations
 
-Variables take `@onready`, one export annotation, and the section annotations `@export_category`, `@export_group` and `@export_subgroup`. See `gd++ man exports` and `gd++ man annotations`. They also take `@game_only`, which keeps their getter and setter from running in the editor, but not with an export annotation. See `gd++ man classes`. A doc comment before a variable becomes its description in the editor's help. See `gd++ man docs`.
+Variables take:
 
-For debugging, variables also take `@trace` and `@profile`:
+- `@onready`,
+- one export annotation, see `gd++ man exports`,
+- the section annotations `@export_category`, `@export_group` and `@export_subgroup`,
+- `@game_only`, which keeps their getter and setter from running in the editor. Not with an export annotation. See `gd++ man classes`.
+- `@trace` and `@profile`, for debugging.
+
+A doc comment before a variable becomes its description in the editor's help. See `gd++ man docs` and `gd++ man annotations`.
 
 ```gd++
 @trace
@@ -182,7 +234,11 @@ var path_length: float {
 }
 ```
 
-In builds with `--trace Player` (the class's name) or `--trace all`, `@trace` prints every change of `health`, and which function of the class made it, e.g. `Player "Hero".health: 100 → 70  (in take_damage)`. It's the quickest way to find out what changes a value. In builds with `--profile Player`, `@profile` times the getter and the setter, here `get_path_length`. In other builds, they generate nothing. See `gd++ man debugging`.
+- `@trace`: in builds with `--trace Player` (the class's name) or `--trace all`, prints every change of `health`, and which function of the class made it, e.g. `Player "Hero".health: 100 → 70  (in take_damage)`. The quickest way to find out what changes a value.
+- `@profile`: in builds with `--profile Player`, times the getter and the setter, here `get_path_length`.
+- In other builds, they generate nothing.
+
+See `gd++ man debugging`.
 
 # Examples
 

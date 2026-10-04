@@ -6,15 +6,23 @@ SYNTAX   STATUS
 1        stable in theory, experimental in practice
 ```
 
-Syntax 1 is the first stable version: it's not meant to change, but the language is young, so treat it as experimental. Later syntax versions are expected to be stable in practice, not just in theory. A package chooses its syntax version with `syntax` in its `gd++pkg.toml`. See "Syntax versions" below.
+- Syntax 1 is the first stable version. It's not meant to change, but the language is young, so treat it as experimental.
+- Later syntax versions are expected to be stable in practice, not just in theory.
+- A package chooses its syntax version with `syntax` in its `gd++pkg.toml`. See "Syntax versions" below.
 
-GD++ is a small language that compiles to plain C++. Its one goal is to make C++ for Godot easy. This page gives an overview of the whole language. Each part has its own page, listed at the end of this one.
+GD++ is a small language that compiles to plain C++. Its one goal: make C++ for Godot easy. This page is an overview. Each part has its own page, listed at the end.
 
 # Why
 
-To make a Godot class in plain C++ with godot-cpp, you write a header and a source file, a `_bind_methods` function that registers every method, property and signal, a getter and a setter for every property, `#include` lines for every class you use, and code that registers the class when the library loads. Most of it repeats what you already said once.
+A Godot class in plain C++ with godot-cpp needs:
 
-In GD++, you write only the parts that matter: what the class is, what it exposes to Godot, and the code of its functions. GD++ writes the rest, and the result is the C++ you would have written by hand.
+- a header and a source file,
+- a `_bind_methods` function that registers every method, property and signal,
+- a getter and a setter for every property,
+- `#include` lines for every class you use,
+- code that registers the class when the library loads.
+
+Most of it repeats what you already said once. In GD++, you write only what matters: what the class is, what it exposes to Godot, and the code of its functions. GD++ writes the rest, as the C++ you would have written by hand.
 
 # What it looks like
 
@@ -47,23 +55,25 @@ on physics_process(delta: float) {
 }
 ```
 
-The declarations look like GDScript: `class_name`, `extends`, `signal`, `var`, `func`, and annotations like `@export`. But GD++ is not GDScript:
+Declarations look like GDScript: `class_name`, `extends`, `signal`, `var`, `func`, and annotations like `@export`. But GD++ is not GDScript:
 
-- Blocks use braces, not indentation. GD++ doesn't care about whitespace.
+- Blocks use braces, not indentation. Whitespace doesn't matter.
 - Function bodies, initial values and the like are C++, compiled by a C++ compiler.
-- Types are Godot types, e.g. `int`, `float`, `Vector3` or `Node3D`, and GD++ maps each one to a C++ type, e.g. `int64_t`, `double`, `Vector3` and `Node3D *`.
+- Types are Godot types, e.g. `int`, `float`, `Vector3` or `Node3D`. GD++ maps each one to a C++ type, e.g. `int64_t`, `double`, `Vector3` and `Node3D *`.
 - Every variable, parameter and return value has a static type, or is a `Variant`.
 
-GD++ is not quite C++ either. Its code blocks hold C++ with a few rewrites, e.g. `emit` and `as`, which GD++ turns into plain C++. See `gd++ man rewrites`.
+GD++ is not quite C++ either: its code blocks hold C++ with a few rewrites, e.g. `emit` and `as`, which GD++ turns into plain C++. See `gd++ man rewrites`.
 
 # Two languages in one file
 
 A GD++ file mixes two languages:
 
 - GD++ declarations: classes, functions, variables, signals, enums and so on. GD++ parses them, and turns them into C++ declarations and bindings.
-- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and `decl` and `impl` blocks. GD++ copies this code into the generated C++, almost unchanged: it only removes comments, and applies its few rewrites, `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`.
+- C++ code, in braces: function bodies, getters and setters, constructors, initial values, and `decl` and `impl` blocks. GD++ copies it into the generated C++ almost unchanged. It only:
+  - removes comments,
+  - applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`.
 
-In C++ code, everything that godot-cpp offers works: Godot's classes, `Variant`, `memnew`, `Ref`, `UtilityFunctions` and so on. GD++ adds a few helpers. See `gd++ man runtime`.
+In C++ code, all of godot-cpp works: Godot's classes, `Variant`, `memnew`, `Ref`, `UtilityFunctions` and so on. GD++ adds a few helpers. See `gd++ man runtime`.
 
 # What GD++ generates
 
@@ -83,29 +93,44 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Classes: file-level with `class_name`, or inline with `class Name { ... }`. See `gd++ man classes`.
 - Types: Godot's types, and how they map to C++. See `gd++ man types`.
 - Casts: `value as T` converts between any two types, and checks downcasts. See `gd++ man cast`.
-- Functions: `func name(params) -> type { C++ }`, with annotations like `@override`, which overrides of the base class's virtual functions need, `@virtual`, `@const` and `@static`. See `gd++ man functions`.
-- Variables: `var name: type = value`, node paths like `@onready var label: Label = $Hud/Score`, and properties with their own `get` and `set`. See `gd++ man variables`.
+- Functions: `func name(params) -> type { C++ }`. See `gd++ man functions`. Annotations:
+  - `@override`: needed by overrides of the base class's virtual functions,
+  - `@virtual`, `@const` and `@static`.
+- Variables: `var name: type = value`. See `gd++ man variables`. Also:
+  - node paths, like `@onready var label: Label = $Hud/Score`,
+  - properties with their own `get` and `set`.
 - Exports: `@export` and its family, to show variables in the inspector. See `gd++ man exports`.
 - Signals: `signal name(params)`, sent with `emit`. See `gd++ man signals`.
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
 - Object lifecycle: `ctor { }`, `dtor { }` and `@onready`. See `gd++ man lifecycle`.
-- Notifications: `on ready { }`, `on process(delta: float) { }`, `on predelete { }` and the like run code at the engine's notifications, and add to the base's. See `gd++ man notifications`.
+- Notifications: `on ready { }`, `on process(delta: float) { }`, `on predelete { }` and the like. They run code at the engine's notifications, and add to the base's. See `gd++ man notifications`.
 - Classes of scenes: `@scene` makes `create` instantiate a scene. See `gd++ man classes`.
 - Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `@recycle on ready`, `GENERATION`, `create`, `destroy` and `queue_destroy`. See `gd++ man pools`.
 - Weak references: `Weak[T]`, a reference that knows when its object is gone. See `gd++ man weak`.
 - Networking: `@rpc` functions, and `rpc` calls. See `gd++ man rpc`.
-- Threads: `@onthread` runs a function on a worker thread, and returns an `Async` task with its result; `@onthread("detached")` returns nothing, for work that nobody waits for. See `gd++ man async`.
+- Threads: see `gd++ man async`.
+  - `@onthread` runs a function on a worker thread, and returns an `Async` task with its result.
+  - `@onthread("detached")` returns nothing, for work that nobody waits for.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
 - Debugging: `@trace` prints calls and changes, and `@profile` times code. See `gd++ man debugging`.
 - Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: `decl`, `impl` and `@global` blocks. See `gd++ man code`.
-- Rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`, GD++'s few additions to C++ code. See `gd++ man rewrites`.
+- Rewrites: GD++'s few additions to C++ code. See `gd++ man rewrites`.
+  - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as`,
+  - `assert`, with its fallbacks `assert_void` and `assert_val`.
 - Includes: automatic, with `import` and `noimport` to adjust them. See `gd++ man includes`.
 - Doc comments: `///` and `/** */`, which become the editor's help. See `gd++ man docs`.
 
 # Syntax versions
 
-A package's `gd++pkg.toml` says which version of the language its GD++ files use, e.g. `syntax = 1`. A stable version, 1 and up, never changes: changes to the language come in a new version, and you choose when to upgrade. Syntax 0, the nightly version, may break your code with any new `gd++`, so never use it in production. The language pages describe one syntax version, which their titles show: in a package, the package's, and elsewhere the latest stable one. `gd++ man --syntax N PAGE` shows a page for another version. See `gd++ man packages`.
+A package's `gd++pkg.toml` says which language version its GD++ files use, e.g. `syntax = 1`.
+
+- Stable versions, 1 and up, never change. Language changes come in a new version, and you choose when to upgrade.
+- Syntax 0, the nightly version, may break your code with any new `gd++`. Never use it in production.
+- The language pages describe one syntax version, shown in their titles: in a package, the package's, and elsewhere the latest stable one.
+- `gd++ man --syntax N PAGE` shows a page for another version.
+
+See `gd++ man packages`.
 
 # Learning GD++
 

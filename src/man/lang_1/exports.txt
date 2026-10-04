@@ -1,6 +1,11 @@
 Exports: variables in the inspector
 
-An exported variable shows up in the editor's inspector, where you can edit it, and is saved in scenes and resources. GD++ has the export annotations of GDScript. Each one exports the variable, and most also tell the inspector how to edit it.
+An exported variable:
+
+- shows up in the editor's inspector, where you can edit it,
+- is saved in scenes and resources.
+
+GD++ has GDScript's export annotations. Each one exports the variable, and most also tell the inspector how to edit it.
 
 # @export
 
@@ -14,12 +19,12 @@ An exported variable shows up in the editor's inspector, where you can edit it, 
 
 `@export` exports the variable, with the editor that fits its type:
 
-- Numbers, strings, vectors, colors and so on get their usual editors.
-- Node types, e.g. `Node3D`, get a node picker that only accepts nodes of that type.
-- Resource types, e.g. `Texture2D`, get a resource picker that only accepts that type.
-- GD++ enums get a drop-down list of their values, with names spelled like the editor spells enums: `DIAMONDS` becomes "Diamonds", and `NOT_SET` becomes "Not Set".
-- GD++ bitfields get a checkbox for each value that is a single flag, spelled the same way. See `gd++ man enums`.
-- Externs get a picker that only accepts objects of the extern's class. See `gd++ man externs`.
+- Numbers, strings, vectors, colors and so on: their usual editors.
+- Node types, e.g. `Node3D`: a node picker that only accepts nodes of that type.
+- Resource types, e.g. `Texture2D`: a resource picker that only accepts that type.
+- GD++ enums: a drop-down list of their values. Names are spelled like the editor spells enums: `DIAMONDS` becomes "Diamonds", and `NOT_SET` becomes "Not Set".
+- GD++ bitfields: a checkbox for each value that is a single flag, spelled the same way. See `gd++ man enums`.
+- Externs: a picker that only accepts objects of the extern's class. See `gd++ man externs`.
 
 # Numbers
 
@@ -35,7 +40,9 @@ An exported variable shows up in the editor's inspector, where you can edit it, 
 ```
 
 @export_enum(NAMES...)
-  An `int`, edited with a drop-down list of NAMES. Its value is the index of the chosen name, or the number after the name's colon. Or a `String`, whose value is the chosen name.
+  A drop-down list of NAMES.
+  - On an `int`: the value is the chosen name's index, or the number after the name's colon.
+  - On a `String`: the value is the chosen name.
 
 ```gd++
 @export_enum("Warrior", "Magician", "Thief") var job: int
@@ -80,7 +87,7 @@ An exported variable shows up in the editor's inspector, where you can edit it, 
 # Storage only
 
 @export_storage
-  Saves the variable in scenes and resources, but doesn't show it in the inspector. This is for state that must survive saving and loading, but that users shouldn't edit.
+  Saves the variable in scenes and resources, but doesn't show it in the inspector. For state that must survive saving and loading, but that users shouldn't edit.
 
 ```gd++
 @export_storage var visits: int
@@ -88,18 +95,22 @@ An exported variable shows up in the editor's inspector, where you can edit it, 
 
 # Sections
 
-Section annotations group the inspector's properties under headings. A section annotation goes on the first variable of its section, and the section holds that variable and all the variables after it, in the order of the class, up to the next section of the same or a higher level.
+Section annotations group the inspector's properties under headings.
+
+- A section annotation goes on the first variable of its section.
+- The section holds that variable and all the variables after it, in class order, up to the next section of the same or a higher level.
+- Their arguments are strings.
 
 @export_category(NAME)
   Starts a category: a top-level heading, like the ones that separate a node's classes in the inspector. Godot adds a category as a property named after it, so NAME must not be the name of a member or of another category.
 
 @export_group(NAME[, PREFIX])
-  Starts a group: a foldable section. With PREFIX, the inspector only groups the following properties whose names start with PREFIX, and shows their names without it. An empty NAME, `""`, ends the current group.
+  Starts a group: a foldable section.
+  - With PREFIX, the inspector only groups the following properties whose names start with PREFIX, and shows their names without it.
+  - An empty NAME, `""`, ends the current group.
 
 @export_subgroup(NAME[, PREFIX])
   Starts a subgroup inside the current group. Works like `@export_group`.
-
-Their arguments are strings.
 
 ```gd++
 class_name Hero
@@ -122,11 +133,12 @@ extends CharacterBody3D
 @export var notes: String
 ```
 
-A variable can have section annotations and one export annotation. Section annotations also work on variables that aren't exported, though the inspector then has nothing to show in them.
+- A variable can have section annotations and one export annotation.
+- Section annotations also work on variables that aren't exported, though the inspector then has nothing to show in them.
 
 # Rules
 
-- A variable can have only one export annotation: `@export`, `@export_range`, `@export_enum`, `@export_flags`, `@export_file`, `@export_dir`, `@export_multiline`, `@export_placeholder` or `@export_storage`.
+- One export annotation per variable: `@export`, `@export_range`, `@export_enum`, `@export_flags`, `@export_file`, `@export_dir`, `@export_multiline`, `@export_placeholder` or `@export_storage`.
 - Export annotations only go on variables, and not in externs.
 - Export and section annotations only work in classes that extend `Node` or `Resource`, since only those are edited in the inspector.
 - `@export`, `@export_dir`, `@export_multiline` and `@export_storage` take no arguments.
@@ -143,7 +155,7 @@ A variable can have section annotations and one export annotation. Section annot
 
 # Exports and properties
 
-Properties with `get` and `set` can be exported too: the inspector then calls your getter and setter.
+Properties with `get` and `set` can be exported too. The inspector then calls your getter and setter.
 
 ```gd++
 @export_range(0, 100)

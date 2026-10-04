@@ -1,10 +1,19 @@
 Tutorial: run heavy work on a background thread
 
-Some work is too slow for one frame, e.g. generating terrain, finding long paths, or parsing big files. Done on the main thread, it makes the game stutter. This tutorial moves such work to a worker thread with `@onthread`, uses the result when it's ready, and stops the work when it's no longer needed. It assumes a project that builds, as in `gd++ man tour`.
+Some work is too slow for one frame, e.g. generating terrain, finding long paths, or parsing big files. Done on the main thread, it makes the game stutter. This tutorial:
+
+- moves such work to a worker thread with `@onthread`,
+- uses the result when it's ready,
+- stops the work when it's no longer needed.
+
+It assumes a project that builds, as in `gd++ man tour`.
 
 # The example
 
-The world is made of chunks of terrain. Each chunk is a node that computes its heights when it enters the world, which takes a few milliseconds per chunk, and many chunks enter at once when the player moves fast.
+- The world is made of chunks of terrain.
+- Each chunk is a node that computes its heights when it enters the world.
+- That takes a few milliseconds per chunk.
+- Many chunks enter at once when the player moves fast.
 
 # 1. Make the work self-contained
 
@@ -25,7 +34,11 @@ func compute_heights(coords: Vector2i, size: int) -> PackedFloat32Array {
 }
 ```
 
-`height_at` is another `@static` function of the class. `@static` makes sure of it: a static function has no object, so it can't use fields by accident. Arguments are copied for the thread, but arrays and dictionaries share their contents with the caller, so don't change them while the work runs. See "Writing the body" in `gd++ man async`.
+- `height_at` is another `@static` function of the class.
+- `@static` makes sure of it: a static function has no object, so it can't use fields by accident.
+- Arguments are copied for the thread. Arrays and dictionaries still share their contents with the caller, so don't change them while the work runs.
+
+See "Writing the body" in `gd++ man async`.
 
 # 2. Run it on a thread
 
@@ -36,7 +49,11 @@ Add `@onthread`:
 func compute_heights(coords: Vector2i, size: int) -> PackedFloat32Array { ... }
 ```
 
-Now each call runs the body on Godot's `WorkerThreadPool`, and returns right away with an `Async[PackedFloat32Array]`: a task that will hold the result. The body still returns a plain `PackedFloat32Array`: GD++ adds the `Async`. See `gd++ man async`.
+- Each call now runs the body on Godot's `WorkerThreadPool`.
+- It returns right away with an `Async[PackedFloat32Array]`: a task that will hold the result.
+- The body still returns a plain `PackedFloat32Array`. GD++ adds the `Async`.
+
+See `gd++ man async`.
 
 # 3. Start it, and pick up the result
 
@@ -64,7 +81,8 @@ on process(delta: float) {
 - `claim pending` takes the result. After that, `pending` is empty, and `is_done` is false again, so the mesh is built once.
 - `build_mesh` runs on the main thread, in `on process`, since most of the scene tree isn't thread-safe. That's the usual split: compute on the thread, apply on the main thread.
 
-No frame waits for the work. `pending.wait()` would wait for it, but on the main thread, the game stops while it waits.
+- No frame waits for the work.
+- `pending.wait()` would wait for it. On the main thread, the game stops while it waits.
 
 # 4. Stop it when it's no longer needed
 
@@ -96,13 +114,17 @@ on exit_tree {
 }
 ```
 
-`cancel` only asks: the body stops at its next check. It's always safe, even when the task is done or `pending` is empty. Checking `is_cancelled` is cheap, so check it in every loop of a long body.
-
-When the last `Async` of a running task goes away, e.g. when the chunk is freed, it waits for the task to finish. Thanks to `cancel`, that's quick.
+- `cancel` only asks: the body stops at its next check.
+- It's always safe, even when the task is done or `pending` is empty.
+- Checking `is_cancelled` is cheap. Check it in every loop of a long body.
+- When the last `Async` of a running task goes away, e.g. when the chunk is freed, it waits for the task to finish. Thanks to `cancel`, that's quick.
 
 # 5. Quitting
 
-When the game quits, `is_cancelled` becomes true in every task, and tasks get a grace period to finish: 1 second by default. A body that ignores `is_cancelled` may get the game killed, skipping the rest of Godot's cleanup. Another reason to check it. To change the grace period:
+- When the game quits, `is_cancelled` becomes true in every task.
+- Tasks get a grace period to finish: 1 second by default.
+- A body that ignores `is_cancelled` may get the game killed, skipping the rest of Godot's cleanup. Another reason to check it.
+- To change the grace period:
 
 ```sh
 gd++ init . --update --quit-timeout 2.5
@@ -133,7 +155,12 @@ gd++ build --tsan
 LD_PRELOAD=$(gcc -print-file-name=libtsan.so) godot --path .
 ```
 
-`@trace` and `@profile` work on `@onthread` functions too: trace lines show the thread they ran on, and the profile table's Thread column says where each function ran. See `gd++ man hunt-bugs` and `gd++ man debugging`.
+`@trace` and `@profile` work on `@onthread` functions too:
+
+- Trace lines show the thread they ran on.
+- The profile table's Thread column says where each function ran.
+
+See `gd++ man hunt-bugs` and `gd++ man debugging`.
 
 # See also
 

@@ -10,7 +10,12 @@ Each package builds into its own library, so packages are useful when:
 - Some code is shared between games, e.g. an addon in `res://addons`, which you copy or link into each project.
 - Parts need different settings, e.g. another C++ standard, or another Godot API spec.
 
-The price: packages can't use each other's classes at compile time. They use them at runtime, through externs, which call members by name, and are slower than C++ calls. So split along clear boundaries, with few calls across them. For most small games, one package is the right choice.
+The price:
+
+- Packages can't use each other's classes at compile time.
+- They use them at runtime, through externs, which call members by name. That's slower than C++ calls.
+- So split along clear boundaries, with few calls across them.
+- For most small games, one package is the right choice.
 
 # 1. Plan the layout
 
@@ -29,7 +34,10 @@ res://
     inventory.gd++
 ```
 
-Packages can nest: the files under `world/` belong to the `world` package only, even though the game's package is at the project root. Each package's id is the name of its directory, e.g. `world`, and names its library, e.g. `libworld.linux.debug.x86_64.so`. See `gd++ man packages`.
+- Packages can nest: the files under `world/` belong to the `world` package only, even though the game's package is at the project root.
+- Each package's id is the name of its directory, e.g. `world`. It names its library, e.g. `libworld.linux.debug.x86_64.so`.
+
+See `gd++ man packages`.
 
 # 2. Create the packages
 
@@ -38,9 +46,10 @@ gd++ init world --bind 10.0.0-stable --spec 4.7.2-stable
 gd++ init addons/inventory --bind 10.0.0-stable --spec 4.7.2-stable
 ```
 
-Then move the source files into the new directories. There's nothing to list: a package is made of the GD++ and C++ files under its root, and the next build finds them. See `gd++ man init`.
-
-Each package names its own bindings and spec, but packages of one project share the dependency caches. Use the same spec in all of them, unless a package must load in older Godot versions than the others.
+- Move the source files into the new directories.
+- There's nothing to list: a package is made of the GD++ and C++ files under its root, and the next build finds them. See `gd++ man init`.
+- Each package names its own bindings and spec, but packages of one project share the dependency caches.
+- Use the same spec in all of them, unless a package must load in older Godot versions than the others.
 
 # 3. Build
 
@@ -48,9 +57,9 @@ Each package names its own bindings and spec, but packages of one project share 
 gd++ build --proj
 ```
 
-This builds every package, one after another. Later, build only the package you're working on, e.g. `gd++ build world`, or just `gd++ build` inside its directory. See `gd++ man build`.
-
-Godot loads every `.gdextension` file in the project, so after the build, the classes of all packages show up in the editor.
+- This builds every package, one after another.
+- Later, build only the package you're working on, e.g. `gd++ build world`, or just `gd++ build` inside its directory. See `gd++ man build`.
+- Godot loads every `.gdextension` file in the project. So after the build, the classes of all packages show up in the editor.
 
 # 4. Use a class of another package
 
@@ -100,13 +109,16 @@ func snap() -> void {
 
 - `terrain->height_at(...)` calls the function by name, and converts the result.
 - `terrain.base()` is the object as its base class, `Node3D *`, for everything the base class can do, e.g. `get_position()`.
-- `@export var terrain: Terrain` shows a node picker that only offers `Terrain` nodes. Connecting objects of different packages in the editor, rather than in code, is the usual way, and so is connecting signals: connect the terrain's `changed` signal to the car's `snap` in the Node dock. The extern doesn't need to declare `changed` for that, only for code that emits it.
+- `@export var terrain: Terrain` shows a node picker that only offers `Terrain` nodes.
+- Connect objects of different packages in the editor, rather than in code. The same goes for signals: connect the terrain's `changed` signal to the car's `snap` in the Node dock.
+- The extern doesn't need to declare `changed` for that, only for code that emits it.
+- To create objects of the other package in code, use `create Terrain`.
 
-To create objects of the other package in code, use `create Terrain`. See `gd++ man externs`.
+See `gd++ man externs`.
 
 # 5. Keep the extern in step
 
-An extern only says what the other class should have: nothing checks it at compile time. If `Terrain` renames `height_at`, the game still builds, and the call fails while the game runs, with Godot's error about a missing method. So:
+An extern only says what the other class should have. Nothing checks it at compile time. If `Terrain` renames `height_at`, the game still builds, and the call fails while the game runs, with Godot's error about a missing method. So:
 
 - Keep each package's externs in one file, e.g. `terrain_extern.gd++`, next to the code that uses them.
 - Declare only the members you use.
@@ -133,7 +145,11 @@ func find_path(from: Vector3, to: Vector3) -> Async[PackedVector3Array]
 gd++ ls -a
 ```
 
-This lists every package with its dependencies and classes. Godot has one namespace for all classes, so class names must be unique in the whole project, not only in a package: check the list for names that two packages share. See `gd++ man ls`.
+- It lists every package with its dependencies and classes.
+- Godot has one namespace for all classes. So class names must be unique in the whole project, not only in a package.
+- Check the list for names that two packages share.
+
+See `gd++ man ls`.
 
 # See also
 
