@@ -7,10 +7,25 @@ namespace godot {
 #define This Player
 
 void Player::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Player::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Player::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Player::queue_destroy);
 }
 
 Player::Player() {
 	set_physics_process(true);
+}
+
+Player *Player::create() {
+	return gdpp::create<Player>();
+}
+
+void Player::destroy(Player *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Player::queue_destroy(Player *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Player::_ready() {
@@ -18,13 +33,13 @@ void Player::_ready() {
 
   gd::print("ready");
 
-#line 22 "Player.cpp"
+#line 37 "Player.cpp"
 }
 
 void Player::_physics_process(double delta) {
 #line 10 "input.gd++"
 
-#line 28 "Player.cpp"
+#line 43 "Player.cpp"
 }
 
 PackedStringArray Player::_get_configuration_warnings() const {
@@ -32,7 +47,7 @@ PackedStringArray Player::_get_configuration_warnings() const {
 
   return {};
 
-#line 36 "Player.cpp"
+#line 51 "Player.cpp"
 }
 
 #undef This

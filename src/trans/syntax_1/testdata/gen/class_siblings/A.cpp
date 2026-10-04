@@ -8,9 +8,24 @@ namespace godot {
 
 void A::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("make_c"), &A::make_c);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &A::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &A::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &A::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_b"), &A::get_b);
 	ClassDB::bind_method(D_METHOD("set_b", "value"), &A::set_b);
 	ClassDB::add_property(get_class_static(), gdpp::info<B *>("b", PROPERTY_USAGE_NONE), "set_b", "get_b");
+}
+
+A *A::create() {
+	return gdpp::create<A>();
+}
+
+void A::destroy(A *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void A::queue_destroy(A *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 Ref<C> A::make_c() {
@@ -18,7 +33,7 @@ Ref<C> A::make_c() {
 
     return gdpp::create<C>();
 
-#line 22 "A.cpp"
+#line 37 "A.cpp"
 }
 
 B *A::get_b() const {

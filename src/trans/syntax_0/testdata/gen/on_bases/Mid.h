@@ -11,6 +11,11 @@ namespace godot {
 class Mid : public Node2D {
 	GDCLASS(Mid, Node2D)
 
+public:
+	static Mid *create();
+	static void destroy(Mid *p_object);
+	static void queue_destroy(Mid *p_object);
+
 protected:
 	static void _bind_methods();
 };

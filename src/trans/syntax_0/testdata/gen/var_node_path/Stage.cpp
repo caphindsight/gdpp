@@ -7,6 +7,9 @@ namespace godot {
 #define This Stage
 
 void Stage::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Stage::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Stage::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Stage::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_root"), &Stage::get_root);
 	ClassDB::bind_method(D_METHOD("set_root", "value"), &Stage::set_root);
 	ClassDB::add_property(get_class_static(), gdpp::info<Node *>("root", PROPERTY_USAGE_NONE), "set_root", "get_root");
@@ -27,26 +30,38 @@ void Stage::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<Stage *>("next", PROPERTY_USAGE_NONE), "set_next", "get_next");
 }
 
+Stage *Stage::create() {
+	return gdpp::create<Stage>();
+}
+
+void Stage::destroy(Stage *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Stage::queue_destroy(Stage *p_object) {
+	gdpp::queue_destroy(p_object);
+}
+
 void Stage::_notification(int WHAT) {
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
 #line 5 "input.gd++"
 		root = get_node<Node>("/root/Main");
-#line 35 "Stage.cpp"
+#line 50 "Stage.cpp"
 #line 8 "input.gd++"
 		camera = get_node<Camera3D>("Rig/Camera");
-#line 38 "Stage.cpp"
+#line 53 "Stage.cpp"
 #line 11 "input.gd++"
 		health = get_node<Node3D>("%Health");
-#line 41 "Stage.cpp"
+#line 56 "Stage.cpp"
 #line 14 "input.gd++"
 		bar = get_node<Node2D>("Hud/%Bar/Fill Rect");
-#line 44 "Stage.cpp"
+#line 59 "Stage.cpp"
 #line 17 "input.gd++"
 		label = get_node<Node>(U"Ünit \"1\"");
-#line 47 "Stage.cpp"
+#line 62 "Stage.cpp"
 #line 20 "input.gd++"
 		next = get_node<Stage>("%Next");
-#line 50 "Stage.cpp"
+#line 65 "Stage.cpp"
 	}
 }
 

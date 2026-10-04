@@ -9,6 +9,21 @@ namespace godot {
 void Shape::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("area"), &Shape::area);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("unit"), &Shape::unit);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Shape::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Shape::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Shape::queue_destroy);
+}
+
+Shape *Shape::create() {
+	return gdpp::create<Shape>();
+}
+
+void Shape::destroy(Shape *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Shape::queue_destroy(Shape *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 double Shape::area() const {
@@ -16,7 +31,7 @@ double Shape::area() const {
 
   return 0.0;
 
-#line 20 "Shape.cpp"
+#line 35 "Shape.cpp"
 }
 
 double Shape::unit() {
@@ -24,7 +39,7 @@ double Shape::unit() {
 
   return 1.0;
 
-#line 28 "Shape.cpp"
+#line 43 "Shape.cpp"
 }
 
 void Shape::_ready() {
@@ -32,7 +47,7 @@ void Shape::_ready() {
 
   gd::print("ready");
 
-#line 36 "Shape.cpp"
+#line 51 "Shape.cpp"
 }
 
 #undef This

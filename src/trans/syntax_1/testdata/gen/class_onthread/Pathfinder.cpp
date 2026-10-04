@@ -19,6 +19,9 @@ void Pathfinder::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("done", "task"), &Pathfinder::done);
 	ClassDB::bind_method(D_METHOD("search", "steps"), &Pathfinder::search);
 	ClassDB::bind_method(D_METHOD("poll"), &Pathfinder::poll);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Pathfinder::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Pathfinder::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Pathfinder::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_pending"), &Pathfinder::get_pending);
 	ClassDB::bind_method(D_METHOD("set_pending", "value"), &Pathfinder::set_pending);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Async<PackedVector2Array>>("pending", PROPERTY_USAGE_NONE), "set_pending", "get_pending");
@@ -30,6 +33,18 @@ void Pathfinder::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "Terrain", "TERRAIN_WATER", static_cast<int64_t>(Terrain::WATER));
 }
 
+Pathfinder *Pathfinder::create() {
+	return gdpp::create<Pathfinder>();
+}
+
+void Pathfinder::destroy(Pathfinder *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Pathfinder::queue_destroy(Pathfinder *p_object) {
+	gdpp::queue_destroy(p_object);
+}
+
 gdpp::Async<PackedVector2Array> Pathfinder::find_path(const Vector2 &from, const Vector2 &to, int64_t steps) {
 	return gdpp::run_task(this, "Pathfinder.find_path", [=, this] { return _gdpp_body_find_path(from, to, steps); });
 }
@@ -37,7 +52,7 @@ gdpp::Async<PackedVector2Array> Pathfinder::find_path(const Vector2 &from, const
 int64_t Pathfinder::_gdpp_default_find_path_steps() {
 #line 13 "input.gd++"
 	return 10;
-#line 41 "Pathfinder.cpp"
+#line 56 "Pathfinder.cpp"
 }
 
 PackedVector2Array Pathfinder::_gdpp_body_find_path(const Vector2 &from, const Vector2 &to, int64_t steps) {
@@ -45,7 +60,7 @@ PackedVector2Array Pathfinder::_gdpp_body_find_path(const Vector2 &from, const V
 
   return PackedVector2Array();
 
-#line 49 "Pathfinder.cpp"
+#line 64 "Pathfinder.cpp"
 }
 
 gdpp::Async<Terrain> Pathfinder::terrain_at(const Vector2i &at) {
@@ -59,7 +74,7 @@ Terrain Pathfinder::_gdpp_body_terrain_at(const Vector2i &at) {
 
   return Terrain::GRASS;
 
-#line 63 "Pathfinder.cpp"
+#line 78 "Pathfinder.cpp"
 	}());
 }
 
@@ -72,7 +87,7 @@ void Pathfinder::_gdpp_body_warm_up() {
 
   gd::print("warm");
 
-#line 76 "Pathfinder.cpp"
+#line 91 "Pathfinder.cpp"
 }
 
 gdpp::Async<int64_t> Pathfinder::count() const {
@@ -84,7 +99,7 @@ int64_t Pathfinder::_gdpp_body_count() const {
 
   return 42;
 
-#line 88 "Pathfinder.cpp"
+#line 103 "Pathfinder.cpp"
 }
 
 void Pathfinder::save(int64_t slot, const String &name) {
@@ -94,7 +109,7 @@ void Pathfinder::save(int64_t slot, const String &name) {
 String Pathfinder::_gdpp_default_save_name() {
 #line 33 "input.gd++"
 	return "auto";
-#line 98 "Pathfinder.cpp"
+#line 113 "Pathfinder.cpp"
 }
 
 void Pathfinder::_gdpp_body_save(int64_t slot, const String &name) {
@@ -103,7 +118,7 @@ void Pathfinder::_gdpp_body_save(int64_t slot, const String &name) {
 
   gd::print(name);
 
-#line 107 "Pathfinder.cpp"
+#line 122 "Pathfinder.cpp"
 }
 
 void Pathfinder::log_later() {
@@ -113,7 +128,7 @@ void Pathfinder::log_later() {
 void Pathfinder::_gdpp_body_log_later() {
 #line 38 "input.gd++"
 
-#line 117 "Pathfinder.cpp"
+#line 132 "Pathfinder.cpp"
 }
 
 gdpp::Async<Variant> Pathfinder::untyped() {
@@ -125,7 +140,7 @@ Variant Pathfinder::_gdpp_body_untyped() {
 
   return 1;
 
-#line 129 "Pathfinder.cpp"
+#line 144 "Pathfinder.cpp"
 }
 
 gdpp::Async<String> Pathfinder::follow(gdpp::Async<PackedVector2Array> path) {
@@ -133,7 +148,7 @@ gdpp::Async<String> Pathfinder::follow(gdpp::Async<PackedVector2Array> path) {
 
   return {};
 
-#line 137 "Pathfinder.cpp"
+#line 152 "Pathfinder.cpp"
 }
 
 bool Pathfinder::done(gdpp::Async<void> task) {
@@ -141,7 +156,7 @@ bool Pathfinder::done(gdpp::Async<void> task) {
 
   return bool(task);
 
-#line 145 "Pathfinder.cpp"
+#line 160 "Pathfinder.cpp"
 }
 
 gdpp::Async<int64_t> Pathfinder::search(int64_t steps) {
@@ -160,7 +175,7 @@ int64_t Pathfinder::_gdpp_body_search(int64_t steps) {
   bool stop = gdpp::is_cancelled() || !gdpp::is_cancelled();
   return stop ? done : -done;
 
-#line 164 "Pathfinder.cpp"
+#line 179 "Pathfinder.cpp"
 }
 
 int64_t Pathfinder::poll() {
@@ -190,7 +205,7 @@ int64_t Pathfinder::poll() {
   }
   return 0;
 
-#line 194 "Pathfinder.cpp"
+#line 209 "Pathfinder.cpp"
 }
 
 gdpp::Async<PackedVector2Array> Pathfinder::get_pending() const {

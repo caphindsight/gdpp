@@ -11,9 +11,14 @@ namespace godot {
 #define This Names
 
 void Names::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Names::create);
 	ClassDB::bind_integer_constant(get_class_static(), "HTTPCode", "HTTP_CODE_OK", static_cast<int64_t>(HTTPCode::OK));
 	ClassDB::bind_integer_constant(get_class_static(), "MyEnum", "MY_ENUM_VALUE", static_cast<int64_t>(MyEnum::VALUE));
 	ClassDB::bind_integer_constant(get_class_static(), "X", "X_Y", static_cast<int64_t>(X::Y));
+}
+
+Ref<Names> Names::create() {
+	return gdpp::create<Names>();
 }
 
 #undef This

@@ -11,7 +11,7 @@ class Bullet {
 public:
 	using Base = Node3D;
 	static constexpr const char *gdpp_name = "Bullet";
-	static constexpr gdpp::ExtCreate<Bullet> gdpp_create{ "new_pooled", true };
+	static constexpr gdpp::ExtCreate<Bullet> gdpp_create{ true };
 
 	explicit Bullet(Base *p_object) :
 			_gdpp_base(p_object) {}

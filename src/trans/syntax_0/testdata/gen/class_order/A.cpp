@@ -7,6 +7,21 @@ namespace godot {
 #define This A
 
 void A::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &A::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &A::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &A::queue_destroy);
+}
+
+A *A::create() {
+	return gdpp::create<A>();
+}
+
+void A::destroy(A *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void A::queue_destroy(A *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 #undef This

@@ -11,6 +11,9 @@ namespace godot {
 class Counter : public RefCounted {
 	GDCLASS(Counter, RefCounted)
 
+public:
+	static Ref<Counter> create();
+
 protected:
 	static void _bind_methods();
 };

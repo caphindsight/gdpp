@@ -13,6 +13,9 @@ class Mover : public Node {
 
 public:
 	Mover();
+	static Mover *create();
+	static void destroy(Mover *p_object);
+	static void queue_destroy(Mover *p_object);
 	void _gdpp_body__process(double delta);
 	void _physics_process(double delta) override;
 	void step();

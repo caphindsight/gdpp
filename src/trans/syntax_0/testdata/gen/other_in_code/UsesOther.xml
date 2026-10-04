@@ -7,6 +7,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="create" qualifiers="static">
+			<return type="UsesOther" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
 		<method name="f">
 			<return type="void" />
 			<description>

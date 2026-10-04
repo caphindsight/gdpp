@@ -353,24 +353,30 @@ func (u *unit) document(c *classModel) string {
 		methods = append(methods, methodDoc{name: f.f.Name, qualifiers: strings.Join(qualifiers, " "), ret: f.ret,
 			params: f.params, list: f.f.Params, doc: parseDoc(docText(f.f.Doc), false)})
 	}
-	if name := c.newName(); name != "" {
-		methods = append(methods, methodDoc{name: name, qualifiers: "static", ret: &gtype{cpp: c.name + " *", doc: c.name},
-			doc: parseDoc(newDocs[name], false)})
-	}
 	void := &gtype{cpp: "void", doc: "void", void: true}
+	self := []*gtype{{cpp: c.name + " *", doc: c.name}}
+	object := []*Param{{Name: "object"}}
+	methods = append(methods, methodDoc{name: "create", qualifiers: "static", ret: &gtype{cpp: c.createType(), doc: c.name},
+		doc: parseDoc(createDocs[[2]bool{c.scene != "", c.pool != nil}], false)})
+	if !c.refCounted {
+		methods = append(methods, methodDoc{name: "destroy", qualifiers: "static", ret: void, params: self, list: object,
+			doc: parseDoc(destroyDocs[c.pool != nil], false)})
+	}
+	if c.node {
+		methods = append(methods, methodDoc{name: "queue_destroy", qualifiers: "static", ret: void, params: self, list: object,
+			doc: parseDoc(queueDestroyDocs[c.pool != nil], false)})
+	}
 	if c.scene != "" {
-		methods = append(methods, methodDoc{name: "scene_cache", qualifiers: "static", ret: void, doc: parseDoc(fmt.Sprintf(sceneCacheDoc, c.newName()), false)},
-			methodDoc{name: "scene_evict", qualifiers: "static", ret: void, doc: parseDoc(fmt.Sprintf(sceneEvictDoc, c.newName()), false)})
+		methods = append(methods, methodDoc{name: "scene_cache", qualifiers: "static", ret: void, doc: parseDoc(sceneCacheDoc, false)},
+			methodDoc{name: "scene_evict", qualifiers: "static", ret: void, doc: parseDoc(sceneEvictDoc, false)})
 	}
 	if c.pool != nil {
 		var count *Default // pool_reserve's count defaults to the pool's size, if it has one.
 		if c.pool.size != "0" {
 			count = &Default{Expr: c.pool.size}
 		}
-		methods = append(methods, methodDoc{name: "free_pooled", ret: void, doc: parseDoc(freePooledDoc, false)},
-			methodDoc{name: "queue_free_pooled", ret: void, doc: parseDoc(queueFreePooledDoc, false)},
-			methodDoc{name: "pool_reserve", qualifiers: "static", ret: void, params: []*gtype{{cpp: "int64_t", doc: "int"}, {cpp: "String", doc: "String", byRef: true}},
-				list: []*Param{{Name: "count", Default: count}, {Name: "mode", Default: &Default{Expr: `""`}}}, doc: parseDoc(poolReserveDoc, false)},
+		methods = append(methods, methodDoc{name: "pool_reserve", qualifiers: "static", ret: void, params: []*gtype{{cpp: "int64_t", doc: "int"}, {cpp: "String", doc: "String", byRef: true}},
+			list: []*Param{{Name: "count", Default: count}, {Name: "mode", Default: &Default{Expr: `""`}}}, doc: parseDoc(poolReserveDoc, false)},
 			methodDoc{name: "pool_clear", qualifiers: "static", ret: void, params: []*gtype{{cpp: "bool", doc: "bool"}},
 				list: []*Param{{Name: "keep_in_use", Default: &Default{Expr: "false"}}}, doc: parseDoc(poolClearDoc, false)})
 	}
@@ -433,29 +439,39 @@ func (u *unit) document(c *classModel) string {
 	return x.sb.String()
 }
 
-// The documentation of the methods that @pool and @scene classes have for scripts, by name.
-var newDocs = map[string]string{
-	"new_scene":        `Creates an instance of the class's scene, like [code]create[/code] in GD++ code, and returns its root. The scene is loaded once, by the first call. Returns [code]null[/code] if the scene fails to load, or if its root isn't an object of this class, so always check the result. [code]new()[/code] creates the node alone, without the scene.`,
-	"new_pooled":       `Takes an object from the class's pool, or creates a new one if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a [code]"fixed"[/code] pool are in use, so always check the result. Return the object with [method free_pooled] or [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates an object outside the pool.`,
-	"new_scene_pooled": `Takes an object from the class's pool, or creates a new one, an instance of the class's scene, if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a [code]"fixed"[/code] pool are in use, or if the scene fails to load, or its root isn't an object of this class, so always check the result. Return the object with [method free_pooled] or [method queue_free_pooled], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates the node alone, outside the pool and without the scene.`,
+// The documentation of create, by whether the class has @scene and @pool.
+var createDocs = map[[2]bool]string{
+	{false, false}: `Creates an object of the class, like [code]create[/code] in GD++ code.`,
+	{true, false}:  `Creates an instance of the class's scene, like [code]create[/code] in GD++ code, and returns its root. The scene is loaded once, by the first call. Returns [code]null[/code] if the scene fails to load, or if its root isn't an object of this class, so always check the result. [code]new()[/code] creates the node alone, without the scene.`,
+	{false, true}:  `Takes an object from the class's pool, or creates a new one if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a [code]"fixed"[/code] pool are in use, so always check the result. Return the object with [method destroy] or [method queue_destroy], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates an object outside the pool.`,
+	{true, true}:   `Takes an object from the class's pool, or creates a new one, an instance of the class's scene, if the pool has none, like [code]create[/code] in GD++ code. Returns [code]null[/code] once all the objects of a [code]"fixed"[/code] pool are in use, or if the scene fails to load, or its root isn't an object of this class, so always check the result. Return the object with [method destroy] or [method queue_destroy], not [method Node.queue_free], or it won't be reused. [code]new()[/code] creates the node alone, outside the pool and without the scene.`,
 }
 
-const freePooledDoc = `Returns the node to its pool right away, like [code]destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before it's reused does nothing. Godot doesn't allow removing a collision object from the tree during a physics callback, e.g. in a handler of [signal Area3D.body_entered], so use [method queue_free_pooled] there. A node that the pool didn't make is freed at the end of the frame, like with [method Node.queue_free].
+// The warning on the methods that return a node to its pool.
+const pooledWarning = `
 [b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.`
+
+// The documentation of destroy, by whether the class has @pool.
+var destroyDocs = map[bool]string{
+	false: `Frees [param object] right away, like [code]destroy[/code] in GD++ code. Does nothing for [code]null[/code]. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.`,
+	true:  `Returns [param object] to its pool right away, like [code]destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before it's reused does nothing. Godot doesn't allow removing a collision object from the tree during a physics callback, e.g. in a handler of [signal Area3D.body_entered], so use [method queue_destroy] there. A node that the pool didn't make is freed. Does nothing for [code]null[/code]. It's thread-safe.` + pooledWarning,
+}
+
+// The documentation of queue_destroy, by whether the class has @pool.
+var queueDestroyDocs = map[bool]string{
+	false: `Frees [param object] at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free]. Does nothing for [code]null[/code].`,
+	true:  `Returns [param object] to its pool at the end of the frame, like [code]queue_destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before then does nothing. A node that the pool didn't make is freed, like with [method Node.queue_free]. Does nothing for [code]null[/code].` + pooledWarning,
+}
 
 const poolReserveDoc = `Makes or frees resting objects, so that the class's pool has [param count] objects, counting both those in use and those resting, e.g. when a level loads. A new object runs its constructor, but waits unused until the pool hands it out. Objects in use are never freed. With [param mode], [code]"fixed"[/code] or [code]"grow"[/code], [param count] becomes the pool's size first, and [param mode] its mode: once all the objects of the size are in use, a [code]"fixed"[/code] pool makes no more, while a [code]"grow"[/code] pool makes more. Without it, the size and mode stay as they are, and a [code]"fixed"[/code] pool makes at most its size, with an error if [param count] is more. [code]pool_reserve(0)[/code] frees all the resting objects. If the class's [code]@pool[/code] annotation gives a size, [param count] defaults to it.
 [b]Warning:[/b] it isn't thread-safe, so call it from the main thread only.`
 
-const poolClearDoc = `Drops all the objects of the class's pool for good: it frees the resting ones right away, and those in use at the end of the frame, like with [method Node.queue_free]. With [param keep_in_use], it leaves those in use alone instead: they no longer belong to the pool, so [method free_pooled] frees them. The pool's size and mode stay as they are.
+const poolClearDoc = `Drops all the objects of the class's pool for good: it frees the resting ones right away, and those in use at the end of the frame, like with [method Node.queue_free]. With [param keep_in_use], it leaves those in use alone instead: they no longer belong to the pool, so [method destroy] frees them. The pool's size and mode stay as they are.
 [b]Warning:[/b] the objects in use are freed, so drop every reference to them, unless [param keep_in_use] is [code]true[/code]. It isn't thread-safe, so call it from the main thread only.`
 
-// The documentation of scene_cache and scene_evict: %[1]s is the class's method for create.
-const sceneCacheDoc = `Loads the class's scene and keeps it, so that [method %[1]s] doesn't load it later, e.g. when a level loads. Does nothing if the scene is kept already. Prints an error if it fails to load. It's thread-safe.`
+const sceneCacheDoc = `Loads the class's scene and keeps it, so that [method create] doesn't load it later, e.g. when a level loads. Does nothing if the scene is kept already. Prints an error if it fails to load. It's thread-safe.`
 
-const sceneEvictDoc = `Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next [method %[1]s] or [method scene_cache] loads it again. Objects created from it stay as they are. It's thread-safe.`
-
-const queueFreePooledDoc = `Returns the node to its pool at the end of the frame, like [code]queue_destroy[/code] in GD++ code: the node is removed from the tree, and kept for reuse. Calling it again before then does nothing. A node that the pool didn't make is freed, like with [method Node.queue_free].
-[b]Warning:[/b] a returned node stays a valid object, and the pool may hand it out again at any time, so drop every reference to it. [method @GlobalScope.is_instance_valid] can't tell that it was returned.`
+const sceneEvictDoc = `Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next [method create] or [method scene_cache] loads it again. Objects created from it stay as they are. It's thread-safe.`
 
 // documentAsyncClass returns the Godot XML documentation of the class of tasks named name.
 func documentAsyncClass(name string) string {

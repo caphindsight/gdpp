@@ -10,6 +10,21 @@ void Hatch::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_super_ready"), &Hatch::_super_ready);
 	ClassDB::bind_method(D_METHOD("_super_open"), &Hatch::_super_open);
 	GDVIRTUAL_BIND(_knock, "times");
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Hatch::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Hatch::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Hatch::queue_destroy);
+}
+
+Hatch *Hatch::create() {
+	return gdpp::create<Hatch>();
+}
+
+void Hatch::destroy(Hatch *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Hatch::queue_destroy(Hatch *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Hatch::_ready() {
@@ -21,7 +36,7 @@ void Hatch::_super_ready() {
 
   gd::print("ready");
 
-#line 25 "Hatch.cpp"
+#line 40 "Hatch.cpp"
 }
 
 bool Hatch::_open() {
@@ -33,7 +48,7 @@ bool Hatch::_super_open() {
 
   return true;
 
-#line 37 "Hatch.cpp"
+#line 52 "Hatch.cpp"
 }
 
 String Hatch::_knock(int64_t times) {
@@ -45,7 +60,7 @@ String Hatch::_knock(int64_t times) {
 
   return "knock";
 
-#line 49 "Hatch.cpp"
+#line 64 "Hatch.cpp"
 }
 
 #undef This

@@ -18,6 +18,9 @@ public:
 	gdpp::ExtPtr<A> a{};
 
 public:
+	static User *create();
+	static void destroy(User *p_object);
+	static void queue_destroy(User *p_object);
 	gdpp::ExtRef<B> b();
 	gdpp::ExtPtr<A> get_a() const;
 	void set_a(gdpp::ExtPtr<A> p_value);

@@ -8,6 +8,11 @@ namespace godot {
 
 void C::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("a"), &C::a);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &C::create);
+}
+
+Ref<C> C::create() {
+	return gdpp::create<C>();
 }
 
 A *C::a() {
@@ -15,7 +20,7 @@ A *C::a() {
 
     return nullptr;
 
-#line 19 "C.cpp"
+#line 24 "C.cpp"
 }
 
 #undef This

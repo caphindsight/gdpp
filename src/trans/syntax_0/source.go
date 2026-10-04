@@ -110,23 +110,6 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.pool != nil {
 		recycler(w, c, "ctor", c.recycleCtor)
 		recycler(w, c, "dtor", c.recycleDtor)
-		// What scripts call for destroy. A node that the pool didn't make is queued, since freeing itself in a call by
-		// name would leave Godot's call with a deleted object.
-		w.ln("")
-		w.ln("void %s::free_pooled() {", c.name)
-		guard(w, c.gameOnly, "")
-		w.ln("\tif (_gdpp_pool_slot.owned) {")
-		w.ln("\t\tgdpp::destroy(this);")
-		w.ln("\t} else {")
-		w.ln("\t\tqueue_free();")
-		w.ln("\t}")
-		w.ln("}")
-		// What scripts call for queue_destroy.
-		w.ln("")
-		w.ln("void %s::queue_free_pooled() {", c.name)
-		guard(w, c.gameOnly, "")
-		w.ln("\tgdpp::queue_destroy(this);")
-		w.ln("}")
 		w.ln("")
 		w.ln("void %s::pool_reserve(int64_t p_count, const String &p_mode) {", c.name)
 		guard(w, c.gameOnly, "")
@@ -138,12 +121,24 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("\t_gdpp_pool.clear(p_keep_in_use);")
 		w.ln("}")
 	}
-	// What scripts call for create.
-	if name := c.newName(); name != "" {
+	// What scripts call for create, destroy and queue_destroy.
+	w.ln("")
+	w.ln("%s%s::create() {", withSpace(c.createType()), c.name)
+	guard(w, c.gameOnly, c.createType())
+	w.ln("\treturn gdpp::create<%s>();", c.name)
+	w.ln("}")
+	if !c.refCounted {
 		w.ln("")
-		w.ln("%s *%s::%s() {", c.name, c.name, name)
-		guard(w, c.gameOnly, c.name+" *")
-		w.ln("\treturn gdpp::create<%s>();", c.name)
+		w.ln("void %s::destroy(%s *p_object) {", c.name, c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\tgdpp::destroy(p_object);")
+		w.ln("}")
+	}
+	if c.node {
+		w.ln("")
+		w.ln("void %s::queue_destroy(%s *p_object) {", c.name, c.name)
+		guard(w, c.gameOnly, "")
+		w.ln("\tgdpp::queue_destroy(p_object);")
 		w.ln("}")
 	}
 	if c.scene != "" {
@@ -618,16 +613,18 @@ func (u *unit) bindings(w *writer, c *classModel) {
 			w.ln("\tClassDB::bind_method(%s, %s);", method(f.f.Name, names...), ref)
 		}
 	}
-	if name := c.newName(); name != "" {
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s);", method(name), c.name, name)
+	w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::create);", method("create"), c.name)
+	if !c.refCounted {
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::destroy);", method("destroy", "object"), c.name)
+	}
+	if c.node {
+		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::queue_destroy);", method("queue_destroy", "object"), c.name)
 	}
 	if c.scene != "" {
 		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::scene_cache);", method("scene_cache"), c.name)
 		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::scene_evict);", method("scene_evict"), c.name)
 	}
 	if c.pool != nil {
-		w.ln("\tClassDB::bind_method(%s, &%s::free_pooled);", method("free_pooled"), c.name)
-		w.ln("\tClassDB::bind_method(%s, &%s::queue_free_pooled);", method("queue_free_pooled"), c.name)
 		// pool_reserve's count defaults to the pool's size, if it has one.
 		defaults := "DEFVAL(String())"
 		if c.pool.size != "0" {

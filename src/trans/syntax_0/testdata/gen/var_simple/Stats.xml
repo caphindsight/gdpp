@@ -6,6 +6,14 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="create" qualifiers="static">
+			<return type="Stats" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="anything" type="Variant" setter="set_anything" getter="get_anything">
 		</member>

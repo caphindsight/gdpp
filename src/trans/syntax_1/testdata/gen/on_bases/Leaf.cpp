@@ -7,6 +7,21 @@ namespace godot {
 #define This Leaf
 
 void Leaf::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Leaf::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Leaf::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Leaf::queue_destroy);
+}
+
+Leaf *Leaf::create() {
+	return gdpp::create<Leaf>();
+}
+
+void Leaf::destroy(Leaf *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Leaf::queue_destroy(Leaf *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Leaf::_notification(int WHAT) {
@@ -20,7 +35,7 @@ void Leaf::_gdpp_body__draw() {
 
     draw_circle(Vector2(), 4.0, Color(1, 1, 1));
 
-#line 24 "Leaf.cpp"
+#line 39 "Leaf.cpp"
 }
 
 #undef This

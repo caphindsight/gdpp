@@ -19,6 +19,9 @@ public:
 	String title{};
 
 public:
+	static Sections *create();
+	static void destroy(Sections *p_object);
+	static void queue_destroy(Sections *p_object);
 	int64_t get_plain() const;
 	void set_plain(int64_t p_value);
 	int64_t get_stat_hp() const;

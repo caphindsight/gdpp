@@ -1,5 +1,0 @@
-@scene("res://a.tscn")
-class_name A
-extends Node
-
-var new_scene: int

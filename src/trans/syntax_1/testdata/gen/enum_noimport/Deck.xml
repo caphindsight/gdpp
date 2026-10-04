@@ -6,6 +6,14 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="create" qualifiers="static">
+			<return type="Deck" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+	</methods>
 	<constants>
 		<constant name="SUIT_A" value="0" enum="Suit">
 		</constant>

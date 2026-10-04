@@ -9,6 +9,11 @@ namespace godot {
 void Helper::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("count"), &Helper::count);
 	ClassDB::bind_method(D_METHOD("reset"), &Helper::reset);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Helper::create);
+}
+
+Ref<Helper> Helper::create() {
+	return gdpp::create<Helper>();
 }
 
 int64_t Helper::count() {
@@ -16,13 +21,13 @@ int64_t Helper::count() {
 
     return 0;
 
-#line 20 "Helper.cpp"
+#line 25 "Helper.cpp"
 }
 
 void Helper::reset() {
 #line 17 "input.gd++"
 
-#line 26 "Helper.cpp"
+#line 31 "Helper.cpp"
 }
 
 #undef This

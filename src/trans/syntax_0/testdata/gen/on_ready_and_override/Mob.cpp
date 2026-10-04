@@ -7,6 +7,21 @@ namespace godot {
 #define This Mob
 
 void Mob::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Mob::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Mob::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Mob::queue_destroy);
+}
+
+Mob *Mob::create() {
+	return gdpp::create<Mob>();
+}
+
+void Mob::destroy(Mob *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Mob::queue_destroy(Mob *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Mob::_notification(int WHAT) {
@@ -18,13 +33,13 @@ void Mob::_notification(int WHAT) {
 void Mob::_gdpp_body__ready() {
 #line 5 "input.gd++"
 
-#line 22 "Mob.cpp"
+#line 37 "Mob.cpp"
 }
 
 void Mob::_ready() {
 #line 8 "input.gd++"
 
-#line 28 "Mob.cpp"
+#line 43 "Mob.cpp"
 }
 
 #undef This

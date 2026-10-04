@@ -8,8 +8,13 @@ namespace godot {
 
 void Baker::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bake", "mode"), &Baker::_gdpp_bake);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Baker::create);
 	ClassDB::bind_integer_constant(get_class_static(), "Terrain", "TERRAIN_GRASS", static_cast<int64_t>(Terrain::GRASS));
 	ClassDB::bind_integer_constant(get_class_static(), "Terrain", "TERRAIN_WATER", static_cast<int64_t>(Terrain::WATER));
+}
+
+Ref<Baker> Baker::create() {
+	return gdpp::create<Baker>();
 }
 
 gdpp::Async<String> Baker::bake(Terrain mode) {
@@ -25,7 +30,7 @@ String Baker::_gdpp_body_bake(Terrain mode) {
 
     return "done";
 
-#line 29 "Baker.cpp"
+#line 34 "Baker.cpp"
 }
 
 #undef This

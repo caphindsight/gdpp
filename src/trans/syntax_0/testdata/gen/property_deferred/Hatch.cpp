@@ -10,6 +10,9 @@ namespace godot {
 void Hatch::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_gdpp_body_set_state", "value"), &Hatch::_gdpp__gdpp_body_set_state);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_set_label", "text"), &Hatch::_gdpp_body_set_label);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Hatch::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Hatch::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Hatch::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_state"), &Hatch::_gdpp_get_state);
 	ClassDB::bind_method(D_METHOD("set_state", "value"), &Hatch::_gdpp_set_state);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Hatch_State>("state", PROPERTY_USAGE_NONE), "set_state", "get_state");
@@ -20,13 +23,25 @@ void Hatch::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "State", "STATE_CLOSED", static_cast<int64_t>(State::CLOSED));
 }
 
+Hatch *Hatch::create() {
+	return gdpp::create<Hatch>();
+}
+
+void Hatch::destroy(Hatch *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Hatch::queue_destroy(Hatch *p_object) {
+	gdpp::queue_destroy(p_object);
+}
+
 void Hatch::_gdpp_body_set_state(State value) {
 	gdpp::Watch _gdpp_watch(this, "set_state", "state", [&] { return get_state(); });
 #line 10 "input.gd++"
 
     state_ = value;
 
-#line 30 "Hatch.cpp"
+#line 45 "Hatch.cpp"
 }
 
 void Hatch::_gdpp__gdpp_body_set_state(_gdpp_Hatch_State value) {
@@ -41,13 +56,13 @@ void Hatch::_gdpp_body_set_label(const String &text) {
 
     label_ = text;
 
-#line 45 "Hatch.cpp"
+#line 60 "Hatch.cpp"
 }
 
 State Hatch::get_state() const {
 #line 9 "input.gd++"
  return state_;
-#line 51 "Hatch.cpp"
+#line 66 "Hatch.cpp"
 }
 
 void Hatch::set_state(State value) {
@@ -67,7 +82,7 @@ String Hatch::get_label() const {
 	gdpp::Profile _gdpp_profile(_gdpp_stats);
 #line 18 "input.gd++"
  return label_;
-#line 71 "Hatch.cpp"
+#line 86 "Hatch.cpp"
 }
 
 void Hatch::set_label(const String &text) {

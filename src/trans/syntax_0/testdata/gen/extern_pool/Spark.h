@@ -11,7 +11,7 @@ class Spark {
 public:
 	using Base = Node3D;
 	static constexpr const char *gdpp_name = "Spark";
-	static constexpr gdpp::ExtCreate<Spark> gdpp_create{ "new_scene", false };
+	static constexpr gdpp::ExtCreate<Spark> gdpp_create{ false };
 
 	explicit Spark(Base *p_object) :
 			_gdpp_base(p_object) {}

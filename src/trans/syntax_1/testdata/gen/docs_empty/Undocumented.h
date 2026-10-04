@@ -12,6 +12,7 @@ class Undocumented : public RefCounted {
 	GDCLASS(Undocumented, RefCounted)
 
 public:
+	static Ref<Undocumented> create();
 	void f();
 
 protected:

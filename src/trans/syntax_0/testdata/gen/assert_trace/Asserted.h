@@ -17,6 +17,9 @@ public:
 	Node3D *target{};
 
 public:
+	static Asserted *create();
+	static void destroy(Asserted *p_object);
+	static void queue_destroy(Asserted *p_object);
 	void aim();
 	Node3D *get_target() const;
 	void set_target(Node3D *p_value);

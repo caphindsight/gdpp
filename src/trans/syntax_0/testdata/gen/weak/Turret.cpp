@@ -8,6 +8,9 @@ namespace godot {
 
 void Turret::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("aim", "at"), &Turret::aim);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Turret::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Turret::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Turret::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_target"), &Turret::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Turret::set_target);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Weak<Node3D>>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
@@ -15,6 +18,18 @@ void Turret::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_ammo", "value"), &Turret::set_ammo);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Weak<Resource>>("ammo", PROPERTY_USAGE_NONE), "set_ammo", "get_ammo");
 	ClassDB::add_signal(get_class_static(), MethodInfo("locked", gdpp::info<gdpp::Weak<Node3D>>("on")));
+}
+
+Turret *Turret::create() {
+	return gdpp::create<Turret>();
+}
+
+void Turret::destroy(Turret *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Turret::queue_destroy(Turret *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 gdpp::Weak<Node3D> Turret::aim(gdpp::Weak<Node3D> at) {
@@ -28,7 +43,7 @@ gdpp::Weak<Node3D> Turret::aim(gdpp::Weak<Node3D> at) {
   auto b = gdpp::cast<Ref<Resource>>(ammo);
   return target;
 
-#line 32 "Turret.cpp"
+#line 47 "Turret.cpp"
 }
 
 gdpp::Weak<Node3D> Turret::get_target() const {

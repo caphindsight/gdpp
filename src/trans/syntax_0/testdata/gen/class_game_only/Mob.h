@@ -22,6 +22,9 @@ public:
 public:
 	Mob();
 	~Mob();
+	static Mob *create();
+	static void destroy(Mob *p_object);
+	static void queue_destroy(Mob *p_object);
 	int64_t attack(Mood mood = _gdpp_default_attack_mood());
 	void sync();
 	Error _gdpp_rpc_sync(int64_t p_peer);

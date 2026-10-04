@@ -33,6 +33,7 @@ type classModel struct {
 	cls        *Class
 	base       string
 	refCounted bool
+	node       bool       // Whether it extends Node.
 	gameOnly   bool       // Whether @game_only guards all its code against running in the editor.
 	trace      bool       // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
 	profile    bool       // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
@@ -1869,7 +1870,7 @@ func (u *unit) unique(names map[string]bool, pos lexer.Position, keyword string,
 		}
 		if names[name] {
 			return u.errorAt(pos, len(keyword), fmt.Sprintf("The name %q is already used by another member.", name),
-				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @pool and @scene classes declare methods for scripts, e.g. new_pooled.")
+				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. create.")
 		}
 		names[name] = true
 	}
@@ -1905,7 +1906,8 @@ func (u *unit) buildClasses() error {
 }
 
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
-	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted}
+	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted,
+		node: u.extends(c.Name, "Node")}
 	a, err := u.annotations(c.Annotations, "a class", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
 	if err != nil {
 		return nil, err
@@ -1926,9 +1928,8 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}
-	names := map[string]bool{}
-	names[m.newName()] = true // Methods for scripts.
-	for _, name := range []string{"free_pooled", "queue_free_pooled", "pool_reserve", "pool_clear"} {
+	names := map[string]bool{"create": true, "destroy": !m.refCounted, "queue_destroy": m.node} // Methods for scripts.
+	for _, name := range []string{"pool_reserve", "pool_clear"} {
 		names[name] = m.pool != nil
 	}
 	for _, name := range []string{"scene_cache", "scene_evict"} {

@@ -17,6 +17,9 @@ void Spawner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("sync"), &Spawner::sync);
 	ClassDB::bind_method(D_METHOD("load"), &Spawner::load);
 	ClassDB::bind_method(D_METHOD("preview"), &Spawner::preview);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spawner::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spawner::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spawner::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_kind"), &Spawner::_gdpp_get_kind);
 	ClassDB::bind_method(D_METHOD("set_kind", "value"), &Spawner::_gdpp_set_kind);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Spawner_Kind>("kind", PROPERTY_USAGE_NONE), "set_kind", "get_kind");
@@ -35,10 +38,22 @@ Spawner::Spawner() {
 	set_process(true);
 #line 7 "input.gd++"
 	kind = Kind::SMALL;
-#line 39 "Spawner.cpp"
+#line 42 "Spawner.cpp"
 #line 12 "input.gd++"
 	radius = 1.0;
-#line 42 "Spawner.cpp"
+#line 45 "Spawner.cpp"
+}
+
+Spawner *Spawner::create() {
+	return gdpp::create<Spawner>();
+}
+
+void Spawner::destroy(Spawner *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Spawner::queue_destroy(Spawner *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Spawner::_notification(int WHAT) {
@@ -57,7 +72,7 @@ void Spawner::_gdpp_body__process(double delta) {
 
   gd::print(delta);
 
-#line 61 "Spawner.cpp"
+#line 76 "Spawner.cpp"
 }
 
 int64_t Spawner::spawn(Kind kind) {
@@ -70,7 +85,7 @@ int64_t Spawner::spawn(Kind kind) {
 
   return 1;
 
-#line 74 "Spawner.cpp"
+#line 89 "Spawner.cpp"
 }
 
 int64_t Spawner::_gdpp_spawn(_gdpp_Spawner_Kind kind) {
@@ -90,7 +105,7 @@ Kind Spawner::_gdpp_default_spawn_kind() {
 #endif
 #line 20 "input.gd++"
 	return Kind::BIG;
-#line 94 "Spawner.cpp"
+#line 109 "Spawner.cpp"
 }
 
 int64_t Spawner::total() {
@@ -103,7 +118,7 @@ int64_t Spawner::total() {
 
   return 0;
 
-#line 107 "Spawner.cpp"
+#line 122 "Spawner.cpp"
 }
 
 int64_t Spawner::_pick() {
@@ -120,7 +135,7 @@ int64_t Spawner::_pick() {
 
   return 0;
 
-#line 124 "Spawner.cpp"
+#line 139 "Spawner.cpp"
 }
 
 int64_t Spawner::pick() {
@@ -140,7 +155,7 @@ void Spawner::sync() {
 #endif
 #line 35 "input.gd++"
 
-#line 144 "Spawner.cpp"
+#line 159 "Spawner.cpp"
 }
 
 Error Spawner::_gdpp_rpc_sync(int64_t p_peer) {
@@ -171,13 +186,13 @@ int64_t Spawner::_gdpp_body_load() {
 
   return 2;
 
-#line 175 "Spawner.cpp"
+#line 190 "Spawner.cpp"
 }
 
 void Spawner::preview() {
 #line 42 "input.gd++"
 
-#line 181 "Spawner.cpp"
+#line 196 "Spawner.cpp"
 }
 
 Kind Spawner::get_kind() const {
@@ -224,7 +239,7 @@ int64_t Spawner::get_count() const {
 #endif
 #line 9 "input.gd++"
  return 10;
-#line 228 "Spawner.cpp"
+#line 243 "Spawner.cpp"
 }
 
 void Spawner::set_count(int64_t v) {
@@ -235,7 +250,7 @@ void Spawner::set_count(int64_t v) {
 #endif
 #line 10 "input.gd++"
  gd::print(v);
-#line 239 "Spawner.cpp"
+#line 254 "Spawner.cpp"
 }
 
 double Spawner::get_radius() const {

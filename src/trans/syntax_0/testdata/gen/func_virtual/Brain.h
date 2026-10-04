@@ -12,6 +12,9 @@ class Brain : public Node {
 	GDCLASS(Brain, Node)
 
 public:
+	static Brain *create();
+	static void destroy(Brain *p_object);
+	static void queue_destroy(Brain *p_object);
 	GDVIRTUAL1R(int64_t, _think, double)
 	virtual int64_t _think(double delta);
 	int64_t think(double delta);

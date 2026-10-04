@@ -45,6 +45,11 @@ private:
 
 #line 47 "Player.h"
 
+public:
+	static Player *create();
+	static void destroy(Player *p_object);
+	static void queue_destroy(Player *p_object);
+
 protected:
 	static void _bind_methods();
 };

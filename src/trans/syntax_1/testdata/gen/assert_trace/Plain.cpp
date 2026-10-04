@@ -8,12 +8,17 @@ namespace godot {
 
 void Plain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("run"), &Plain::run);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Plain::create);
+}
+
+Ref<Plain> Plain::create() {
+	return gdpp::create<Plain>();
 }
 
 void Plain::run() {
 #line 12 "input.gd++"
 
-#line 17 "Plain.cpp"
+#line 22 "Plain.cpp"
 }
 
 #undef This

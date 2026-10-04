@@ -12,6 +12,9 @@ class LoudHatch : public Hatch {
 	GDCLASS(LoudHatch, Hatch)
 
 public:
+	static LoudHatch *create();
+	static void destroy(LoudHatch *p_object);
+	static void queue_destroy(LoudHatch *p_object);
 	String _knock(int64_t times) override;
 	String _super_knock(int64_t times);
 

@@ -20,6 +20,9 @@ public:
 
 public:
 	static constexpr int64_t MAX_SPEED = 10;
+	static Player *create();
+	static void destroy(Player *p_object);
+	static void queue_destroy(Player *p_object);
 	void jump(double height);
 	int64_t get_hp() const;
 	void set_hp(int64_t p_value);

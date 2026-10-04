@@ -11,6 +11,9 @@ namespace godot {
 class Bystander : public RefCounted {
 	GDCLASS(Bystander, RefCounted)
 
+public:
+	static Ref<Bystander> create();
+
 protected:
 	static void _bind_methods();
 };

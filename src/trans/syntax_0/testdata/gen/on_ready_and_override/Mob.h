@@ -12,6 +12,9 @@ class Mob : public Node {
 	GDCLASS(Mob, Node)
 
 public:
+	static Mob *create();
+	static void destroy(Mob *p_object);
+	static void queue_destroy(Mob *p_object);
 	void _gdpp_body__ready();
 	void _ready() override;
 

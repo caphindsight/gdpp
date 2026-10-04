@@ -7,11 +7,11 @@ namespace godot {
 #define This Spark
 
 void Spark::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene_pooled"), &Spark::new_scene_pooled);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spark::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spark::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spark::queue_destroy);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_cache"), &Spark::scene_cache);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_evict"), &Spark::scene_evict);
-	ClassDB::bind_method(D_METHOD("free_pooled"), &Spark::free_pooled);
-	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Spark::queue_free_pooled);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Spark::pool_reserve, DEFVAL(10), DEFVAL(String()));
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Spark::pool_clear, DEFVAL(false));
 }
@@ -30,18 +30,6 @@ void Spark::_gdpp_recycle_ctor() {
 void Spark::_gdpp_recycle_dtor() {
 }
 
-void Spark::free_pooled() {
-	if (_gdpp_pool_slot.owned) {
-		gdpp::destroy(this);
-	} else {
-		queue_free();
-	}
-}
-
-void Spark::queue_free_pooled() {
-	gdpp::queue_destroy(this);
-}
-
 void Spark::pool_reserve(int64_t p_count, const String &p_mode) {
 	_gdpp_pool.reserve(p_count, p_mode);
 }
@@ -50,8 +38,16 @@ void Spark::pool_clear(bool p_keep_in_use) {
 	_gdpp_pool.clear(p_keep_in_use);
 }
 
-Spark *Spark::new_scene_pooled() {
+Spark *Spark::create() {
 	return gdpp::create<Spark>();
+}
+
+void Spark::destroy(Spark *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Spark::queue_destroy(Spark *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Spark::scene_cache() {

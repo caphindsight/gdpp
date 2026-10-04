@@ -14,6 +14,9 @@ void Mob::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("sync"), &Mob::sync);
 	ClassDB::bind_method(D_METHOD("respawn"), &Mob::respawn);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_respawn"), &Mob::_gdpp_body_respawn);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Mob::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Mob::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Mob::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_mood"), &Mob::_gdpp_get_mood);
 	ClassDB::bind_method(D_METHOD("set_mood", "value"), &Mob::_gdpp_set_mood);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Mob_Mood>("mood", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_ENUM, "Calm:0,Angry:1"), "set_mood", "get_mood");
@@ -34,12 +37,12 @@ Mob::Mob() {
 	gdpp::rpc_config<This>(this, "sync", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE, false, 0);
 #line 7 "input.gd++"
 	mood = Mood::CALM;
-#line 38 "Mob.cpp"
+#line 41 "Mob.cpp"
 #line 15 "input.gd++"
 	{
   gd::print("created");
 }
-#line 43 "Mob.cpp"
+#line 46 "Mob.cpp"
 }
 
 Mob::~Mob() {
@@ -52,7 +55,34 @@ Mob::~Mob() {
 	{
   gd::print("deleted");
 }
-#line 56 "Mob.cpp"
+#line 59 "Mob.cpp"
+}
+
+Mob *Mob::create() {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return {};
+	}
+#endif
+	return gdpp::create<Mob>();
+}
+
+void Mob::destroy(Mob *p_object) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
+	gdpp::destroy(p_object);
+}
+
+void Mob::queue_destroy(Mob *p_object) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
+	gdpp::queue_destroy(p_object);
 }
 
 int64_t Mob::attack(Mood mood) {
@@ -65,7 +95,7 @@ int64_t Mob::attack(Mood mood) {
 
   return 1;
 
-#line 69 "Mob.cpp"
+#line 99 "Mob.cpp"
 }
 
 int64_t Mob::_gdpp_attack(_gdpp_Mob_Mood mood) {
@@ -85,7 +115,7 @@ Mood Mob::_gdpp_default_attack_mood() {
 #endif
 #line 23 "input.gd++"
 	return Mood::ANGRY;
-#line 89 "Mob.cpp"
+#line 119 "Mob.cpp"
 }
 
 void Mob::sync() {
@@ -96,7 +126,7 @@ void Mob::sync() {
 #endif
 #line 28 "input.gd++"
 
-#line 100 "Mob.cpp"
+#line 130 "Mob.cpp"
 }
 
 Error Mob::_gdpp_rpc_sync(int64_t p_peer) {
@@ -125,7 +155,7 @@ void Mob::_gdpp_body_respawn() {
 #endif
 #line 31 "input.gd++"
 
-#line 129 "Mob.cpp"
+#line 159 "Mob.cpp"
 }
 
 Mood Mob::get_mood() const {
@@ -172,7 +202,7 @@ int64_t Mob::get_hp() const {
 #endif
 #line 9 "input.gd++"
  return 10;
-#line 176 "Mob.cpp"
+#line 206 "Mob.cpp"
 }
 
 void Mob::set_hp(int64_t v) {
@@ -183,7 +213,7 @@ void Mob::set_hp(int64_t v) {
 #endif
 #line 10 "input.gd++"
  gd::print(v);
-#line 187 "Mob.cpp"
+#line 217 "Mob.cpp"
 }
 
 gdpp::Emitted Mob::hit(int64_t amount) {

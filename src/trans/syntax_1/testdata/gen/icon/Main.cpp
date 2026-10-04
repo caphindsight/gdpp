@@ -7,6 +7,11 @@ namespace godot {
 #define This Main
 
 void Main::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Main::create);
+}
+
+Ref<Main> Main::create() {
+	return gdpp::create<Main>();
 }
 
 #undef This

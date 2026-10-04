@@ -1,0 +1,4 @@
+input.gd++:30:1: The name "create" is already used by another member.
+ 30 | func create() -> Player {
+    | ^^^^
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. create.

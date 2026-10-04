@@ -12,6 +12,9 @@ class Marker : public Node {
 	GDCLASS(Marker, Node)
 
 public:
+	static Marker *create();
+	static void destroy(Marker *p_object);
+	static void queue_destroy(Marker *p_object);
 	void _draw();
 
 protected:

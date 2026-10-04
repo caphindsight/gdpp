@@ -38,7 +38,7 @@ func _score() -> int
 
 @pool, @pool(SIZE), @pool(SIZE, "fixed") and @pool(SIZE, "grow")
   `destroy` keeps objects in a pool instead of deleting them, and `create` reuses them. Only for classes that extend `Node`. See `gd++ man pools`.
-  - Scripts get `new_pooled()` (or `new_scene_pooled()` with `@scene`), `free_pooled()` and `queue_free_pooled()` for the same.
+  - Scripts call the class's static methods `create()`, `destroy()` and `queue_destroy()` for the same.
   - The class gets the static methods `pool_reserve()`, which makes objects ahead of time, and `pool_clear()`, which drops them all.
   - With SIZE, a positive integer: the pool holds up to SIZE objects. `create` returns `nullptr` once all of them are in use, so code must check its result. `"fixed"` is the same.
   - With `"grow"`: the pool makes more objects then. In debug builds, it logs an error when it grows past SIZE objects, and again past each double of that.
@@ -47,7 +47,7 @@ func _score() -> int
   Make `create` instantiate the class's scene: a string with a `res://` or `pkg://` path. Only for classes that extend `Node`. See `gd++ man classes`.
   - The scene is loaded once.
   - Its root must be an object of the class.
-  - Scripts get `new_scene()` for the same.
+  - Scripts call the class's static method `create()` for the same.
   - The class gets the static methods `scene_cache()`, which loads the scene ahead of time, and `scene_evict()`, which drops it.
 
 @trace(GROUPS...)

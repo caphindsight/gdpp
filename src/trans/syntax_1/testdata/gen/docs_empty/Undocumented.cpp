@@ -8,12 +8,17 @@ namespace godot {
 
 void Undocumented::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("f"), &Undocumented::f);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Undocumented::create);
+}
+
+Ref<Undocumented> Undocumented::create() {
+	return gdpp::create<Undocumented>();
 }
 
 void Undocumented::f() {
 #line 2 "input.gd++"
 
-#line 17 "Undocumented.cpp"
+#line 22 "Undocumented.cpp"
 }
 
 #undef This

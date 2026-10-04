@@ -8,10 +8,15 @@ namespace godot {
 
 void Cards::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("best"), &Cards::_gdpp_best);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Cards::create);
 	ClassDB::bind_integer_constant(get_class_static(), "", "MAX_HAND", MAX_HAND);
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_DIAMONDS", static_cast<int64_t>(Suit::DIAMONDS));
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_CLUBS", static_cast<int64_t>(Suit::CLUBS));
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_SPADES", static_cast<int64_t>(Suit::SPADES));
+}
+
+Ref<Cards> Cards::create() {
+	return gdpp::create<Cards>();
 }
 
 Suit Cards::best() {
@@ -19,7 +24,7 @@ Suit Cards::best() {
 
   return Suit::SPADES;
 
-#line 23 "Cards.cpp"
+#line 28 "Cards.cpp"
 }
 
 _gdpp_Cards_Suit Cards::_gdpp_best() {

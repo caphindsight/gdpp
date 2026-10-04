@@ -7,12 +7,27 @@ namespace godot {
 #define This Ticker
 
 void Ticker::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Ticker::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Ticker::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Ticker::queue_destroy);
 }
 
 Ticker::Ticker() {
 	set_process_internal(true);
 	set_physics_process_internal(true);
 	set_process(true);
+}
+
+Ticker *Ticker::create() {
+	return gdpp::create<Ticker>();
+}
+
+void Ticker::destroy(Ticker *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Ticker::queue_destroy(Ticker *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Ticker::_notification(int WHAT) {
@@ -32,19 +47,19 @@ void Ticker::_gdpp_body__internal_process(double delta) {
 
   gd::print(delta);
 
-#line 36 "Ticker.cpp"
+#line 51 "Ticker.cpp"
 }
 
 void Ticker::_gdpp_body__internal_physics_process() {
 #line 8 "input.gd++"
 
-#line 42 "Ticker.cpp"
+#line 57 "Ticker.cpp"
 }
 
 void Ticker::_gdpp_body__process() {
 #line 11 "input.gd++"
 
-#line 48 "Ticker.cpp"
+#line 63 "Ticker.cpp"
 }
 
 #undef This

@@ -7,6 +7,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="create" qualifiers="static">
+			<return type="A" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
 		<method name="f">
 			<return type="void" />
 			<param index="0" name="s" type="int" enum="A.Shared" />

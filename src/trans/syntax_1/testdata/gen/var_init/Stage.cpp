@@ -8,6 +8,9 @@ namespace godot {
 
 void Stage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("compute", "a", "b"), &Stage::compute);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Stage::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Stage::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Stage::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_count"), &Stage::get_count);
 	ClassDB::bind_method(D_METHOD("set_count", "value"), &Stage::set_count);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("count", PROPERTY_USAGE_NONE), "set_count", "get_count");
@@ -26,27 +29,39 @@ Stage::Stage() {
 #line 4 "input.gd++"
 	count = compute(1,
   2);
-#line 30 "Stage.cpp"
+#line 33 "Stage.cpp"
 #line 17 "input.gd++"
 	ids = [&]() -> TypedArray<int64_t> {
   Array ids;
   return ids;
 }();
-#line 36 "Stage.cpp"
+#line 39 "Stage.cpp"
+}
+
+Stage *Stage::create() {
+	return gdpp::create<Stage>();
+}
+
+void Stage::destroy(Stage *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Stage::queue_destroy(Stage *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Stage::_notification(int WHAT) {
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
 #line 8 "input.gd++"
 		camera = get_node<Camera3D>("Camera");
-#line 43 "Stage.cpp"
+#line 58 "Stage.cpp"
 #line 11 "input.gd++"
 		mesh = [&]() -> MeshInstance3D * {
   MeshInstance3D* mesh = gdpp::create<MeshInstance3D>();
   add_child(mesh);
   return mesh;
 }();
-#line 50 "Stage.cpp"
+#line 65 "Stage.cpp"
 	}
 }
 
@@ -55,7 +70,7 @@ int64_t Stage::compute(int64_t a, int64_t b) {
 
   return a + b;
 
-#line 59 "Stage.cpp"
+#line 74 "Stage.cpp"
 }
 
 int64_t Stage::get_count() const {

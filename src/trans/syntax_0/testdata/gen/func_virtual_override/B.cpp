@@ -7,6 +7,21 @@ namespace godot {
 #define This B
 
 void B::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &B::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &B::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &B::queue_destroy);
+}
+
+B *B::create() {
+	return gdpp::create<B>();
+}
+
+void B::destroy(B *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void B::queue_destroy(B *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 Suit B::_pick(Suit s) {
@@ -18,7 +33,7 @@ Suit B::_pick(Suit s) {
 
     return Suit::SPADES;
 
-#line 22 "B.cpp"
+#line 37 "B.cpp"
 }
 
 #undef This

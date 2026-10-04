@@ -7,6 +7,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="create" qualifiers="static">
+			<return type="Quest" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
 		<method name="harder">
 			<return type="int" enum="Quest.Level" />
 			<param index="0" name="l" type="int" enum="Quest.Level" />

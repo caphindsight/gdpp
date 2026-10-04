@@ -12,6 +12,7 @@ class Plain : public RefCounted {
 	GDCLASS(Plain, RefCounted)
 
 public:
+	static Ref<Plain> create();
 	void run();
 
 protected:

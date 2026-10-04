@@ -14,6 +14,9 @@ void Spawner::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("scale", "value"), &Spawner::scale, DEFVAL(_gdpp_default_scale_value()));
 	ClassDB::bind_method(D_METHOD("ping", "times"), &Spawner::ping, DEFVAL(_gdpp_default_ping_times()));
 	ClassDB::bind_method(D_METHOD("ping_all"), &Spawner::ping_all);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spawner::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spawner::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spawner::queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Kind", "KIND_SMALL", static_cast<int64_t>(Kind::SMALL));
 	ClassDB::bind_integer_constant(get_class_static(), "Kind", "KIND_BIG", static_cast<int64_t>(Kind::BIG));
 }
@@ -22,10 +25,22 @@ Spawner::Spawner() {
 	gdpp::rpc_config<This>(this, "ping", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE, false, 0);
 }
 
+Spawner *Spawner::create() {
+	return gdpp::create<Spawner>();
+}
+
+void Spawner::destroy(Spawner *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Spawner::queue_destroy(Spawner *p_object) {
+	gdpp::queue_destroy(p_object);
+}
+
 void Spawner::spawn(int64_t count, Kind kind, const Vector3 &at, const Variant &tag) {
 #line 6 "input.gd++"
 
-#line 29 "Spawner.cpp"
+#line 44 "Spawner.cpp"
 }
 
 void Spawner::_gdpp_spawn(int64_t count, _gdpp_Spawner_Kind kind, const Vector3 &at, const Variant &tag) {
@@ -35,19 +50,19 @@ void Spawner::_gdpp_spawn(int64_t count, _gdpp_Spawner_Kind kind, const Vector3 
 Kind Spawner::_gdpp_default_spawn_kind() {
 #line 6 "input.gd++"
 	return Kind::BIG;
-#line 39 "Spawner.cpp"
+#line 54 "Spawner.cpp"
 }
 
 Vector3 Spawner::_gdpp_default_spawn_at() {
 #line 6 "input.gd++"
 	return Vector3(0, 1, 0);
-#line 45 "Spawner.cpp"
+#line 60 "Spawner.cpp"
 }
 
 Variant Spawner::_gdpp_default_spawn_tag() {
 #line 6 "input.gd++"
 	return "enemy";
-#line 51 "Spawner.cpp"
+#line 66 "Spawner.cpp"
 }
 
 double Spawner::scale(double value) {
@@ -55,7 +70,7 @@ double Spawner::scale(double value) {
 
   return value;
 
-#line 59 "Spawner.cpp"
+#line 74 "Spawner.cpp"
 }
 
 double Spawner::_gdpp_default_scale_value() {
@@ -64,19 +79,19 @@ double Spawner::_gdpp_default_scale_value() {
   float64_t s = 2.0;
   return s * s;
 
-#line 68 "Spawner.cpp"
+#line 83 "Spawner.cpp"
 }
 
 void Spawner::ping(int64_t times) {
 #line 17 "input.gd++"
 
-#line 74 "Spawner.cpp"
+#line 89 "Spawner.cpp"
 }
 
 int64_t Spawner::_gdpp_default_ping_times() {
 #line 17 "input.gd++"
 	return 1;
-#line 80 "Spawner.cpp"
+#line 95 "Spawner.cpp"
 }
 
 Error Spawner::_gdpp_rpc_ping(int64_t p_peer, int64_t times) {
@@ -89,7 +104,7 @@ void Spawner::ping_all() {
   _gdpp_rpc_ping(0);
   spawn(3);
 
-#line 93 "Spawner.cpp"
+#line 108 "Spawner.cpp"
 }
 
 #undef This

@@ -21,6 +21,9 @@ private:
 #line 22 "Scene.h"
 
 public:
+	static Scene *create();
+	static void destroy(Scene *p_object);
+	static void queue_destroy(Scene *p_object);
 	void ready();
 
 protected:

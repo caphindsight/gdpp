@@ -1,6 +1,0 @@
-@pool
-class_name A
-extends Node
-
-func new_pooled() -> void {
-}

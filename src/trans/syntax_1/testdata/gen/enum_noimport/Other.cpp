@@ -9,7 +9,12 @@ namespace godot {
 #define This Other
 
 void Other::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Other::create);
 	ClassDB::bind_integer_constant(get_class_static(), "Local", "LOCAL_X", static_cast<int64_t>(Local::X));
+}
+
+Ref<Other> Other::create() {
+	return gdpp::create<Other>();
 }
 
 #undef This

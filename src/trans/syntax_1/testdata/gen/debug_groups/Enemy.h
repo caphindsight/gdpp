@@ -16,6 +16,9 @@ public:
 	double speed{};
 
 public:
+	static Enemy *create();
+	static void destroy(Enemy *p_object);
+	static void queue_destroy(Enemy *p_object);
 	void think();
 	int64_t attack(Node *target);
 	void move();

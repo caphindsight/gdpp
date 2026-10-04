@@ -12,6 +12,9 @@ class Spot : public Node3D {
 	GDCLASS(Spot, Node3D)
 
 public:
+	static Spot *create();
+	static void destroy(Spot *p_object);
+	static void queue_destroy(Spot *p_object);
 	void _gdpp_body__transform_changed();
 
 protected:

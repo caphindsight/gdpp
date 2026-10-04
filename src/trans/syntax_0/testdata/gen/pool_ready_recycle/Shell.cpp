@@ -7,9 +7,9 @@ namespace godot {
 #define This Shell
 
 void Shell::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_pooled"), &Shell::new_pooled);
-	ClassDB::bind_method(D_METHOD("free_pooled"), &Shell::free_pooled);
-	ClassDB::bind_method(D_METHOD("queue_free_pooled"), &Shell::queue_free_pooled);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Shell::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Shell::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Shell::queue_destroy);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_reserve", "count", "mode"), &Shell::pool_reserve, DEFVAL(String()));
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("pool_clear", "keep_in_use"), &Shell::pool_clear, DEFVAL(false));
 }
@@ -28,18 +28,6 @@ void Shell::_gdpp_recycle_ctor() {
 void Shell::_gdpp_recycle_dtor() {
 }
 
-void Shell::free_pooled() {
-	if (_gdpp_pool_slot.owned) {
-		gdpp::destroy(this);
-	} else {
-		queue_free();
-	}
-}
-
-void Shell::queue_free_pooled() {
-	gdpp::queue_destroy(this);
-}
-
 void Shell::pool_reserve(int64_t p_count, const String &p_mode) {
 	_gdpp_pool.reserve(p_count, p_mode);
 }
@@ -48,8 +36,16 @@ void Shell::pool_clear(bool p_keep_in_use) {
 	_gdpp_pool.clear(p_keep_in_use);
 }
 
-Shell *Shell::new_pooled() {
+Shell *Shell::create() {
 	return gdpp::create<Shell>();
+}
+
+void Shell::destroy(Shell *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Shell::queue_destroy(Shell *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Shell::_ready() {
@@ -57,7 +53,7 @@ void Shell::_ready() {
 
     gd::print("each ready");
 
-#line 61 "Shell.cpp"
+#line 57 "Shell.cpp"
 }
 
 #undef This

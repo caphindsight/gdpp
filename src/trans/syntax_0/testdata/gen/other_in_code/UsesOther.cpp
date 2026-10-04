@@ -10,6 +10,11 @@ namespace godot {
 
 void UsesOther::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("f"), &UsesOther::f);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &UsesOther::create);
+}
+
+Ref<UsesOther> UsesOther::create() {
+	return gdpp::create<UsesOther>();
 }
 
 void UsesOther::f() {
@@ -17,7 +22,7 @@ void UsesOther::f() {
 
   TypedArray<int64_t> a;
 
-#line 21 "UsesOther.cpp"
+#line 26 "UsesOther.cpp"
 }
 
 #undef This

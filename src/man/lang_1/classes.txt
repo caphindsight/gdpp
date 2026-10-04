@@ -111,7 +111,28 @@ auto mesh = create ArrayMesh;              // a Ref<ArrayMesh>
 
 All three are rewrites: of `gdpp::create<T>()`, `gdpp::destroy(OBJECT)` and `gdpp::queue_destroy(NODE)`. See `gd++ man rewrites`. godot-cpp's `memnew` and `memdelete` work too, but skip pools.
 
-In GDScript, use GD++ classes like built-in classes: `Bullet.new()`, `var s: Stats`, `extends Player`, and so on.
+In GDScript, use GD++ classes like built-in classes: `var s: Stats`, `extends Player`, and so on.
+
+# In scripts
+
+Scripts can't write `create`, `destroy` and `queue_destroy`. So every GD++ class has static methods for them, which do the same:
+
+```gdscript
+var bullet := Bullet.create()       # create Bullet
+if bullet:
+    add_child(bullet)
+
+Bullet.destroy(bullet)              # destroy bullet
+Bullet.queue_destroy(bullet)        # queue_destroy bullet
+```
+
+- `create()`: every class. It returns `null` if a `"fixed"` pool is full, or a scene fails to load, so check it for `@pool` and `@scene` classes.
+- `destroy(object)`: classes that aren't refcounted.
+- `queue_destroy(node)`: classes that extend `Node`.
+- Prefer them to `new()`, `free()` and `queue_free()`: they keep working if the class gets `@pool` or `@scene` later. `new()` creates the object alone, outside the pool and without the scene.
+- They make and take objects of the GD++ class itself. Called on a script that extends the class, `create()` still gives an object without the script.
+- GD++ code can call them too, e.g. `Bullet::create()`, but `create Bullet` is shorter.
+- A class can't have a member named like them.
 
 # @tool
 
@@ -261,8 +282,7 @@ Other facts:
 - `@scene` works on classes that extend `Node`, since a scene's root is a node.
 - A class that extends a `@scene` class doesn't use its scene, unless it has a `@scene` of its own.
 - With `@pool`, the pool instantiates the scene for each new object, and reuses objects without it.
-- Scripts can't write `create`, so a `@scene` class has a static method for them, which does the same: `Bullet.new_scene()`. It returns the root of a new instance of the scene, or `null`, so check it.
-- A class with both `@scene` and `@pool` has `new_scene_pooled()` instead. See `gd++ man pools`.
+- Scripts call `Bullet.create()`, which does the same. It returns the root of a new instance of the scene, or `null`, so check it. See "In scripts" above.
 - A `@scene` class can't have a member named like its methods.
 
 # @trace and @profile
@@ -328,6 +348,7 @@ Functions, variables, signals and constants share one namespace, since they all 
 - `var x` also declares its getter `get_x` and its setter `set_x`.
 - `signal s` also declares a C++ method `s`, which emits it.
 - `@virtual func _f` also declares `f`, which scripts call. See `gd++ man functions`.
+- The class has the static methods `create`, `destroy` and `queue_destroy` for scripts. See "In scripts" above.
 - Names that start with `_gdpp_` are reserved for generated code.
 
 So `var x` and `func get_x()` can't be in the same class:
@@ -336,7 +357,7 @@ So `var x` and `func get_x()` can't be in the same class:
 [×] res://player.gd++:8:1: The name "get_x" is already used by another member.
      8 | func get_x() -> int {
        | ^^^^
-    Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, and a @virtual func _x declares x.
+    Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. create.
 ```
 
 # This

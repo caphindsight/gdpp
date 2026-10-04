@@ -20,6 +20,9 @@ public:
 	Suit suit{};
 
 public:
+	static B *create();
+	static void destroy(B *p_object);
+	static void queue_destroy(B *p_object);
 	Suit get_suit() const;
 	void set_suit(Suit p_value);
 

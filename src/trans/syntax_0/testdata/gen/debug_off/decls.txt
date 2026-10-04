@@ -1,2 +1,0 @@
-{Name:Player Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[_score] Notifications:[]}
-{Name:Mood Kind:3 Base: Values:[{Name:CALM Value:0 Doc: Implicit:true Expr:} {Name:ANGRY Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false Async:false Virtuals:[] Notifications:[]}

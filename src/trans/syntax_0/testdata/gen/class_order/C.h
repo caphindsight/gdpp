@@ -11,6 +11,11 @@ namespace godot {
 class C : public B {
 	GDCLASS(C, ::godot::B)
 
+public:
+	static C *create();
+	static void destroy(C *p_object);
+	static void queue_destroy(C *p_object);
+
 protected:
 	static void _bind_methods();
 };

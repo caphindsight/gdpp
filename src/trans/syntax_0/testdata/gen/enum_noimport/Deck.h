@@ -17,6 +17,9 @@ GDPP_ENUM_TAG(_gdpp_Deck_Local, "Deck.Local")
 class Deck : public RefCounted {
 	GDCLASS(Deck, RefCounted)
 
+public:
+	static Ref<Deck> create();
+
 protected:
 	static void _bind_methods();
 };

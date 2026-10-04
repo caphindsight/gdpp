@@ -12,6 +12,7 @@ class Stub : public RefCounted {
 	GDCLASS(Stub, RefCounted)
 
 public:
+	static Ref<Stub> create();
 	int64_t a();
 	void b();
 	Variant c();

@@ -17,6 +17,7 @@ public:
 	Main *main{};
 
 public:
+	static Ref<Helper> create();
 	Main *get_main() const;
 	void set_main(Main *p_value);
 

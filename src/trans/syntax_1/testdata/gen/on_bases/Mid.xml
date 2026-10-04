@@ -6,4 +6,26 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="create" qualifiers="static">
+			<return type="Mid" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
+		<method name="destroy" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="object" type="Mid" />
+			<description>
+				Frees [param object] right away, like [code]destroy[/code] in GD++ code. Does nothing for [code]null[/code]. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
+			</description>
+		</method>
+		<method name="queue_destroy" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="object" type="Mid" />
+			<description>
+				Frees [param object] at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free]. Does nothing for [code]null[/code].
+			</description>
+		</method>
+	</methods>
 </class>

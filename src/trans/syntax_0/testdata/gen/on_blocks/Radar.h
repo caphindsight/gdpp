@@ -17,6 +17,9 @@ public:
 
 public:
 	Radar();
+	static Radar *create();
+	static void destroy(Radar *p_object);
+	static void queue_destroy(Radar *p_object);
 	void _gdpp_body__ready();
 	void _gdpp_body__process(double dt);
 	void _gdpp_body__notification(int64_t what);

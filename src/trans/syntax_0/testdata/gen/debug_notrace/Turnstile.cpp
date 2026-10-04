@@ -12,6 +12,9 @@ void Turnstile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("tick"), &Turnstile::tick);
 	ClassDB::bind_method(D_METHOD("cheap"), &Turnstile::cheap);
 	ClassDB::bind_method(D_METHOD("moved"), &Turnstile::moved);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Turnstile::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Turnstile::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Turnstile::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_opened"), &Turnstile::get_opened);
 	ClassDB::bind_method(D_METHOD("set_opened", "value"), &Turnstile::set_opened);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("opened", PROPERTY_USAGE_NONE), "set_opened", "get_opened");
@@ -29,14 +32,26 @@ Turnstile::Turnstile() {
 	set_process(true);
 #line 6 "input.gd++"
 	opened = 0;
-#line 33 "Turnstile.cpp"
+#line 36 "Turnstile.cpp"
 #line 14 "input.gd++"
 	ticks = 0;
-#line 36 "Turnstile.cpp"
+#line 39 "Turnstile.cpp"
 }
 
 Turnstile::~Turnstile() {
 	gdpp::trace_lifetime("Turnstile", this, false);
+}
+
+Turnstile *Turnstile::create() {
+	return gdpp::create<Turnstile>();
+}
+
+void Turnstile::destroy(Turnstile *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Turnstile::queue_destroy(Turnstile *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Turnstile::_notification(int WHAT) {
@@ -54,7 +69,7 @@ void Turnstile::open() {
 
 
 
-#line 58 "Turnstile.cpp"
+#line 73 "Turnstile.cpp"
 }
 
 void Turnstile::tick() {
@@ -64,7 +79,7 @@ void Turnstile::tick() {
 #line 31 "input.gd++"
 
 
-#line 68 "Turnstile.cpp"
+#line 83 "Turnstile.cpp"
 }
 
 void Turnstile::cheap() {
@@ -73,7 +88,7 @@ void Turnstile::cheap() {
 #line 35 "input.gd++"
 
 
-#line 77 "Turnstile.cpp"
+#line 92 "Turnstile.cpp"
 }
 
 void Turnstile::moved() {
@@ -84,7 +99,7 @@ void Turnstile::moved() {
 #line 39 "input.gd++"
 
 
-#line 88 "Turnstile.cpp"
+#line 103 "Turnstile.cpp"
 }
 
 void Turnstile::_gdpp_body__process(double delta) {
@@ -92,7 +107,7 @@ void Turnstile::_gdpp_body__process(double delta) {
 #line 43 "input.gd++"
 
 
-#line 96 "Turnstile.cpp"
+#line 111 "Turnstile.cpp"
 }
 
 int64_t Turnstile::get_opened() const {
@@ -118,7 +133,7 @@ int64_t Turnstile::get_cost() const {
 
     return cost_;
 
-#line 122 "Turnstile.cpp"
+#line 137 "Turnstile.cpp"
 }
 
 gdpp::Emitted Turnstile::passed(Node *by) {

@@ -25,6 +25,9 @@ private:
 public:
 	Turnstile();
 	~Turnstile();
+	static Turnstile *create();
+	static void destroy(Turnstile *p_object);
+	static void queue_destroy(Turnstile *p_object);
 	void open();
 	void tick();
 	void cheap();

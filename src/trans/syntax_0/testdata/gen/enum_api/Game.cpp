@@ -11,6 +11,7 @@ void Game::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("default_mode"), &Game::_gdpp_default_mode);
 	GDVIRTUAL_BIND(_pick, "options");
 	ClassDB::bind_method(D_METHOD("pick", "options"), &Game::_gdpp_pick);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Game::create);
 	ClassDB::bind_method(D_METHOD("get_mode"), &Game::_gdpp_get_mode);
 	ClassDB::bind_method(D_METHOD("set_mode", "value"), &Game::_gdpp_set_mode);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Game_Mode>("mode", PROPERTY_USAGE_NONE), "set_mode", "get_mode");
@@ -26,7 +27,11 @@ void Game::_bind_methods() {
 Game::Game() {
 #line 6 "input.gd++"
 	mode = Mode::NORMAL;
-#line 30 "Game.cpp"
+#line 31 "Game.cpp"
+}
+
+Ref<Game> Game::create() {
+	return gdpp::create<Game>();
 }
 
 Mode Game::set_mode_to(Mode m) {
@@ -35,7 +40,7 @@ Mode Game::set_mode_to(Mode m) {
   mode = m;
   return m;
 
-#line 39 "Game.cpp"
+#line 44 "Game.cpp"
 }
 
 _gdpp_Game_Mode Game::_gdpp_set_mode_to(_gdpp_Game_Mode m) {
@@ -47,7 +52,7 @@ Mode Game::default_mode() {
 
   return Mode::EASY;
 
-#line 51 "Game.cpp"
+#line 56 "Game.cpp"
 }
 
 _gdpp_Game_Mode Game::_gdpp_default_mode() {

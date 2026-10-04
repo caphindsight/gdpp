@@ -12,6 +12,9 @@ class Shape : public Node {
 	GDCLASS(Shape, Node)
 
 public:
+	static Shape *create();
+	static void destroy(Shape *p_object);
+	static void queue_destroy(Shape *p_object);
 	double area() const;
 	static double unit();
 	void _ready() override;

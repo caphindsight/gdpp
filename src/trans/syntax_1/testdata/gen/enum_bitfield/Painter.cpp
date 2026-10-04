@@ -8,6 +8,9 @@ namespace godot {
 
 void Painter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("paint", "extra"), &Painter::_gdpp_paint, DEFVAL(static_cast<int64_t>(_gdpp_default_paint_extra())));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Painter::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Painter::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Painter::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_effect"), &Painter::_gdpp_get_effect);
 	ClassDB::bind_method(D_METHOD("set_effect", "value"), &Painter::_gdpp_set_effect);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Painter_Effect>("effect", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_FLAGS, "Red:1,Bold:2,Blinking:4"), "set_effect", "get_effect");
@@ -29,13 +32,25 @@ void Painter::_bind_methods() {
 Painter::Painter() {
 #line 16 "input.gd++"
 	effect = Effect::RED | Effect::BOLD;
-#line 33 "Painter.cpp"
+#line 36 "Painter.cpp"
 #line 17 "input.gd++"
 	saved = Effect::BLINKING;
-#line 36 "Painter.cpp"
+#line 39 "Painter.cpp"
 #line 18 "input.gd++"
 	mixed = ~(Effect::RED ^ Effect::BOLD) & Effect::ALL;
-#line 39 "Painter.cpp"
+#line 42 "Painter.cpp"
+}
+
+Painter *Painter::create() {
+	return gdpp::create<Painter>();
+}
+
+void Painter::destroy(Painter *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Painter::queue_destroy(Painter *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 Effect Painter::paint(Effect extra) {
@@ -43,7 +58,7 @@ Effect Painter::paint(Effect extra) {
 
   return effect | extra;
 
-#line 47 "Painter.cpp"
+#line 62 "Painter.cpp"
 }
 
 _gdpp_Painter_Effect Painter::_gdpp_paint(_gdpp_Painter_Effect extra) {
@@ -53,7 +68,7 @@ _gdpp_Painter_Effect Painter::_gdpp_paint(_gdpp_Painter_Effect extra) {
 Effect Painter::_gdpp_default_paint_extra() {
 #line 22 "input.gd++"
 	return Effect::BOLD | Effect::BLINKING;
-#line 57 "Painter.cpp"
+#line 72 "Painter.cpp"
 }
 
 Effect Painter::get_effect() const {

@@ -17,6 +17,7 @@ class Referee : public RefCounted {
 	GDCLASS(Referee, RefCounted)
 
 public:
+	static Ref<Referee> create();
 	void judge(Mode m);
 
 protected:

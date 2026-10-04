@@ -7,6 +7,21 @@ namespace godot {
 #define This Panel
 
 void Panel::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Panel::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Panel::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Panel::queue_destroy);
+}
+
+Panel *Panel::create() {
+	return gdpp::create<Panel>();
+}
+
+void Panel::destroy(Panel *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Panel::queue_destroy(Panel *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Panel::_notification(int WHAT) {
@@ -23,13 +38,13 @@ void Panel::_gdpp_body__resized() {
 
     gd::print("resized");
 
-#line 27 "Panel.cpp"
+#line 42 "Panel.cpp"
 }
 
 void Panel::_gdpp_body__focus_enter() {
 #line 8 "input.gd++"
 
-#line 33 "Panel.cpp"
+#line 48 "Panel.cpp"
 }
 
 #undef This

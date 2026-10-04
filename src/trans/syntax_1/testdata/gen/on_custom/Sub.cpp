@@ -7,6 +7,21 @@ namespace godot {
 #define This Sub
 
 void Sub::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Sub::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Sub::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Sub::queue_destroy);
+}
+
+Sub *Sub::create() {
+	return gdpp::create<Sub>();
+}
+
+void Sub::destroy(Sub *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Sub::queue_destroy(Sub *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Sub::_notification(int WHAT) {
@@ -20,7 +35,7 @@ void Sub::_gdpp_body__hit() {
 
     gd::print("sub hit");
 
-#line 24 "Sub.cpp"
+#line 39 "Sub.cpp"
 }
 
 #undef This

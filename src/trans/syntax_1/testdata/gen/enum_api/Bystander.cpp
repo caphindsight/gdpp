@@ -7,6 +7,11 @@ namespace godot {
 #define This Bystander
 
 void Bystander::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Bystander::create);
+}
+
+Ref<Bystander> Bystander::create() {
+	return gdpp::create<Bystander>();
 }
 
 #undef This

@@ -23,6 +23,7 @@ class A : public RefCounted {
 	GDCLASS(A, RefCounted)
 
 public:
+	static Ref<A> create();
 	void f(Shared s);
 
 protected:

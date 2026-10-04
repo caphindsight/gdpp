@@ -18,6 +18,7 @@ class Cards : public RefCounted {
 
 public:
 	static constexpr int64_t MAX_HAND = 7;
+	static Ref<Cards> create();
 	Suit best();
 
 protected:

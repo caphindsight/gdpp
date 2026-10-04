@@ -11,7 +11,7 @@ class Shard {
 public:
 	using Base = Node3D;
 	static constexpr const char *gdpp_name = "Shard";
-	static constexpr gdpp::ExtCreate<Shard> gdpp_create{ "new_scene_pooled", true };
+	static constexpr gdpp::ExtCreate<Shard> gdpp_create{ true };
 
 	explicit Shard(Base *p_object) :
 			_gdpp_base(p_object) {}

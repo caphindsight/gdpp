@@ -12,6 +12,7 @@ class UsesOther : public RefCounted {
 	GDCLASS(UsesOther, RefCounted)
 
 public:
+	static Ref<UsesOther> create();
 	void f();
 
 protected:

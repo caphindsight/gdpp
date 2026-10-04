@@ -7,9 +7,14 @@ namespace godot {
 #define This Reader
 
 void Reader::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Reader::create);
 	ClassDB::bind_method(D_METHOD("get_config"), &Reader::get_config);
 	ClassDB::bind_method(D_METHOD("set_config", "value"), &Reader::set_config);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtRef<Config>>("config", PROPERTY_USAGE_NONE), "set_config", "get_config");
+}
+
+Ref<Reader> Reader::create() {
+	return gdpp::create<Reader>();
 }
 
 gdpp::ExtRef<Config> Reader::get_config() const {

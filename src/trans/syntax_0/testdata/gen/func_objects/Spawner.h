@@ -15,6 +15,9 @@ class Spawner : public Node {
 	GDCLASS(Spawner, Node)
 
 public:
+	static Spawner *create();
+	static void destroy(Spawner *p_object);
+	static void queue_destroy(Spawner *p_object);
 	Node3D *spawn(Node *parent, const Ref<Texture2D> &tex);
 	TypedArray<int64_t> items(const TypedArray<String> &names, const TypedArray<Node> &nodes, const TypedDictionary<String, Resource> &map);
 

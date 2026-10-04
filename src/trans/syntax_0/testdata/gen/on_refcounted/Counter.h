@@ -12,6 +12,7 @@ class Counter : public RefCounted {
 	GDCLASS(Counter, RefCounted)
 
 public:
+	static Ref<Counter> create();
 	void _gdpp_body__predelete();
 
 protected:

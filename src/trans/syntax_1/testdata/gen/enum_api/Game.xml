@@ -13,6 +13,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="create" qualifiers="static">
+			<return type="Game" />
+			<description>
+				Creates an object of the class, like [code]create[/code] in GD++ code.
+			</description>
+		</method>
 		<method name="default_mode" qualifiers="static">
 			<return type="int" enum="Game.Mode" />
 			<description>

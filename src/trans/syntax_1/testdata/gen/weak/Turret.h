@@ -17,6 +17,9 @@ public:
 	gdpp::Weak<Resource> ammo{};
 
 public:
+	static Turret *create();
+	static void destroy(Turret *p_object);
+	static void queue_destroy(Turret *p_object);
 	gdpp::Weak<Node3D> aim(gdpp::Weak<Node3D> at);
 	gdpp::Weak<Node3D> get_target() const;
 	void set_target(gdpp::Weak<Node3D> p_value);

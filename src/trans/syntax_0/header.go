@@ -193,23 +193,12 @@ func (c *classModel) needsNotification() bool {
 	return c.hasOnready() || len(c.notifs) > 0 || c.readyOnce
 }
 
-// newName returns the name of the static method that scripts call for `create`: new_scene for a @scene class,
-// new_pooled for a @pool class, new_scene_pooled for both, and "" for other classes, which have new() for it.
-func (c *classModel) newName() string {
-	return newName(c.scene != "", c.pool != nil)
-}
-
-// newName returns the name of the static method that scripts call for `create` on a class with @scene, @pool, or both.
-func newName(scene, pool bool) string {
-	switch {
-	case scene && pool:
-		return "new_scene_pooled"
-	case scene:
-		return "new_scene"
-	case pool:
-		return "new_pooled"
+// createType returns the C++ type that the class's create() returns.
+func (c *classModel) createType() string {
+	if c.refCounted {
+		return fmt.Sprintf("Ref<%s>", c.name)
 	}
-	return ""
+	return c.name + " *"
 }
 
 func (c *classModel) needsDtor() bool {
@@ -286,8 +275,12 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.scene != "" {
 		public = append(public, fmt.Sprintf("static constexpr gdpp::Scene<%s> _gdpp_scene{ %q };", c.name, c.scene))
 	}
-	if name := c.newName(); name != "" {
-		public = append(public, fmt.Sprintf("static %s *%s();", c.name, name))
+	public = append(public, fmt.Sprintf("static %screate();", withSpace(c.createType())))
+	if !c.refCounted {
+		public = append(public, fmt.Sprintf("static void destroy(%s *p_object);", c.name))
+	}
+	if c.node {
+		public = append(public, fmt.Sprintf("static void queue_destroy(%s *p_object);", c.name))
 	}
 	if c.scene != "" {
 		public = append(public, "static void scene_cache();", "static void scene_evict();")
@@ -299,7 +292,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		}
 		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, gdpp::PoolMode::%s };", c.name, p.size, strings.ToUpper(p.mode)),
 			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
-			"void free_pooled();", "void queue_free_pooled();", fmt.Sprintf("static void pool_reserve(%s, const String &p_mode = String());", count),
+			fmt.Sprintf("static void pool_reserve(%s, const String &p_mode = String());", count),
 			"static void pool_clear(bool p_keep_in_use = false);")
 	}
 	for _, f := range c.funcs {
@@ -432,8 +425,8 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 		w.ln("\tusing Base = %s;", e.base)
 	}
 	w.ln("\tstatic constexpr const char *gdpp_name = %q;", e.name)
-	if name := newName(e.scene, e.pool); name != "" {
-		w.ln("\tstatic constexpr gdpp::ExtCreate<%s> gdpp_create{ %q, %t };", e.name, name, e.pool)
+	if e.scene || e.pool {
+		w.ln("\tstatic constexpr gdpp::ExtCreate<%s> gdpp_create{ %t };", e.name, e.pool)
 	}
 	w.ln("")
 	w.ln("\texplicit %s(Base *p_object) :", e.name)

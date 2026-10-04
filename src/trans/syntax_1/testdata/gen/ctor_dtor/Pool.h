@@ -17,6 +17,7 @@ public:
 public:
 	Pool();
 	~Pool();
+	static Ref<Pool> create();
 	int64_t get_size() const;
 	void set_size(int64_t p_value);
 

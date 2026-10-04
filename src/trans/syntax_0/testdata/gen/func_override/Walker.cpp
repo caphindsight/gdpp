@@ -7,16 +7,31 @@ namespace godot {
 #define This Walker
 
 void Walker::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Walker::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Walker::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Walker::queue_destroy);
 }
 
 Walker::Walker() {
 	set_process(true);
 }
 
+Walker *Walker::create() {
+	return gdpp::create<Walker>();
+}
+
+void Walker::destroy(Walker *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Walker::queue_destroy(Walker *p_object) {
+	gdpp::queue_destroy(p_object);
+}
+
 void Walker::_process(double delta) {
 #line 22 "input.gd++"
 
-#line 20 "Walker.cpp"
+#line 35 "Walker.cpp"
 }
 
 #undef This

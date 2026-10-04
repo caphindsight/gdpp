@@ -7,9 +7,14 @@ namespace godot {
 #define This Helper
 
 void Helper::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Helper::create);
 	ClassDB::bind_method(D_METHOD("get_main"), &Helper::get_main);
 	ClassDB::bind_method(D_METHOD("set_main", "value"), &Helper::set_main);
 	ClassDB::add_property(get_class_static(), gdpp::info<Main *>("main", PROPERTY_USAGE_NONE), "set_main", "get_main");
+}
+
+Ref<Helper> Helper::create() {
+	return gdpp::create<Helper>();
 }
 
 Main *Helper::get_main() const {

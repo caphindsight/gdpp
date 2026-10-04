@@ -8,6 +8,9 @@ namespace godot {
 
 void User::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("use"), &User::use);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &User::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &User::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &User::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_terrain"), &User::get_terrain);
 	ClassDB::bind_method(D_METHOD("set_terrain", "value"), &User::set_terrain);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Terrain2>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
@@ -19,6 +22,18 @@ void User::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Road>>("other", PROPERTY_USAGE_NONE), "set_other", "get_other");
 }
 
+User *User::create() {
+	return gdpp::create<User>();
+}
+
+void User::destroy(User *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void User::queue_destroy(User *p_object) {
+	gdpp::queue_destroy(p_object);
+}
+
 void User::use() {
 #line 18 "input.gd++"
 
@@ -28,7 +43,7 @@ void User::use() {
   terrain->set_size(3);
   (void) terrain->done(true);
 
-#line 32 "User.cpp"
+#line 47 "User.cpp"
 }
 
 gdpp::ExtPtr<Terrain2> User::get_terrain() const {

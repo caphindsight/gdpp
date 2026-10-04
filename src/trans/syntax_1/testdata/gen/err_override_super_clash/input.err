@@ -1,4 +1,4 @@
 input.gd++:7:1: The name "_super_ready" is already used by another member.
  7 | func _ready() -> void {}
    | ^^^^
-Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @pool and @scene classes declare methods for scripts, e.g. new_pooled.
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. create.

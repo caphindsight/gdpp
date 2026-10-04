@@ -8,9 +8,24 @@ namespace godot {
 
 void Digger::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("use", "peer"), &Digger::use);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Digger::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Digger::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Digger::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_terrain"), &Digger::get_terrain);
 	ClassDB::bind_method(D_METHOD("set_terrain", "value"), &Digger::set_terrain);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Terrain2>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
+}
+
+Digger *Digger::create() {
+	return gdpp::create<Digger>();
+}
+
+void Digger::destroy(Digger *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Digger::queue_destroy(Digger *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Digger::use(int64_t peer) {
@@ -20,7 +35,7 @@ void Digger::use(int64_t peer) {
   terrain->_gdpp_rpc_reset(peer);
   terrain->reset();
 
-#line 24 "Digger.cpp"
+#line 39 "Digger.cpp"
 }
 
 gdpp::ExtPtr<Terrain2> Digger::get_terrain() const {

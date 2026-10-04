@@ -8,9 +8,24 @@ namespace godot {
 
 void Button2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("click"), &Button2::click);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Button2::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Button2::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Button2::queue_destroy);
 	ClassDB::add_signal(get_class_static(), MethodInfo("pressed"));
 	ClassDB::add_signal(get_class_static(), MethodInfo("toggled", gdpp::info<bool>("on")));
 	ClassDB::add_signal(get_class_static(), MethodInfo("moved", gdpp::info<Vector3>("from"), gdpp::info<Vector3>("to"), gdpp::info<Variant>("by")));
+}
+
+Button2 *Button2::create() {
+	return gdpp::create<Button2>();
+}
+
+void Button2::destroy(Button2 *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Button2::queue_destroy(Button2 *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Button2::click() {
@@ -22,7 +37,7 @@ void Button2::click() {
 
   gd::print("emit in a string");
 
-#line 26 "Button2.cpp"
+#line 41 "Button2.cpp"
 }
 
 gdpp::Emitted Button2::pressed() {

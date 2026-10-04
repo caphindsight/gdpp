@@ -8,13 +8,23 @@ namespace godot {
 
 void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire"), &Bullet::fire);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("new_scene"), &Bullet::new_scene);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Bullet::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Bullet::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Bullet::queue_destroy);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_cache"), &Bullet::scene_cache);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_evict"), &Bullet::scene_evict);
 }
 
-Bullet *Bullet::new_scene() {
+Bullet *Bullet::create() {
 	return gdpp::create<Bullet>();
+}
+
+void Bullet::destroy(Bullet *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Bullet::queue_destroy(Bullet *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Bullet::scene_cache() {
@@ -30,7 +40,7 @@ void Bullet::fire() {
 
   Bullet *b = gdpp::create<Bullet>();
 
-#line 34 "Bullet.cpp"
+#line 44 "Bullet.cpp"
 }
 
 #undef This

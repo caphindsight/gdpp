@@ -7,12 +7,27 @@ namespace godot {
 #define This Garage
 
 void Garage::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Garage::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Garage::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Garage::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_highway"), &Garage::get_highway);
 	ClassDB::bind_method(D_METHOD("set_highway", "value"), &Garage::set_highway);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Highway>>("highway", PROPERTY_USAGE_NONE), "set_highway", "get_highway");
 	ClassDB::bind_method(D_METHOD("get_profile"), &Garage::get_profile);
 	ClassDB::bind_method(D_METHOD("set_profile", "value"), &Garage::set_profile);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtRef<Profile>>("profile", PROPERTY_USAGE_NONE), "set_profile", "get_profile");
+}
+
+Garage *Garage::create() {
+	return gdpp::create<Garage>();
+}
+
+void Garage::destroy(Garage *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Garage::queue_destroy(Garage *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 gdpp::ExtPtr<Highway> Garage::get_highway() const {

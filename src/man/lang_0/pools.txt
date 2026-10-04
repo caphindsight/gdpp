@@ -297,31 +297,31 @@ When the library is unloaded, e.g. when the game quits, the pool deletes the obj
 
 # In scripts
 
-Scripts can't write `create`, `destroy` and `queue_destroy`. So a `@pool` class has three methods for them, which do the same:
+Scripts can't write `create`, `destroy` and `queue_destroy`. So they call the class's static methods, which do the same, like for any GD++ class (see `gd++ man classes`):
 
 ```gdscript
-var bullet := Bullet.new_pooled()   # create Bullet
+var bullet := Bullet.create()       # create Bullet
 if bullet:
     add_child(bullet)
 
-bullet.free_pooled()                 # destroy bullet
-bullet.queue_free_pooled()           # queue_destroy bullet
+Bullet.destroy(bullet)              # destroy bullet
+Bullet.queue_destroy(bullet)        # queue_destroy bullet
 ```
 
-`Bullet.new_pooled()`:
+`Bullet.create()`:
 
 - Takes a bullet from the pool, or creates a new one.
 - In a `"fixed"` pool, it returns `null` once all the bullets are in use. Always check the result, like in C++.
-- For a class with both `@pool` and `@scene`, it's named `new_scene_pooled()`, and a new bullet is an instance of the class's scene.
+- For a class with `@scene` too, a new bullet is an instance of the class's scene.
 
-`bullet.free_pooled()`:
+`Bullet.destroy(bullet)`:
 
 - Returns the bullet to its pool right away, like `destroy`.
 - Calling it again before the bullet is reused does nothing.
-- Like `destroy`, it can't be used during physics callbacks, e.g. in a handler of `body_entered`. Use `queue_free_pooled()` there.
-- A bullet that the pool didn't make is freed at the end of the frame, since it can't free itself in the middle of a call.
+- Like `destroy`, it can't be used during physics callbacks, e.g. in a handler of `body_entered`. Use `queue_destroy()` there.
+- A bullet that the pool didn't make is freed.
 
-`bullet.queue_free_pooled()`:
+`Bullet.queue_destroy(bullet)`:
 
 - Returns the bullet to its pool at the end of the frame, like `queue_destroy`.
 - Safe in any signal handler, also during physics callbacks.
@@ -329,10 +329,10 @@ bullet.queue_free_pooled()           # queue_destroy bullet
 
 Use them together. `Bullet.new()` and `queue_free()` still work, but bypass the pool:
 
-- `new()` creates a bullet outside the pool, which `free_pooled()` and `queue_free_pooled()` simply free.
+- `new()` creates a bullet outside the pool, which `destroy()` and `queue_destroy()` simply free.
 - `queue_free()` frees a pooled bullet for good, so nothing is ever reused.
 
-Warning: a returned bullet stays a valid object, and `new_pooled()` may hand it out again at any time, e.g. for another shot.
+Warning: a returned bullet stays a valid object, and `create()` may hand it out again at any time, e.g. for another shot.
 
 - So when a script returns a bullet, it must drop every reference to it.
 - `is_instance_valid(bullet)` can't help: it's `true` for a returned bullet, and for a reused one.
@@ -343,9 +343,9 @@ Other facts:
 - A reused bullet gets ready again when it next enters the tree, and its `@recycle` variables are reset, as for GD++ code.
 - A script's own `_ready` runs each time, since GD++ doesn't control it.
 - Only the GD++ class's variables are reset. A script's own variables, if a script extends the class, aren't.
-- `new_pooled()` and `new_scene_pooled()` make objects of the GD++ class itself. Called on a script that extends the class, they still give bullets without the script.
+- `create()` makes objects of the GD++ class itself. Called on a script that extends the class, it still gives bullets without the script.
 - `Bullet.pool_reserve()` and `Bullet.pool_clear()` are static methods already, so scripts call them like GD++ code does.
-- A `@pool` class can't have members named like these methods.
+- A `@pool` class can't have members named like these methods, nor like `pool_reserve` and `pool_clear`.
 
 # Across packages
 
@@ -380,7 +380,7 @@ See `gd++ man debugging`.
 
 # In the generated code
 
-A `@pool` class gets, besides the methods for scripts (`new_pooled` or `new_scene_pooled`, `free_pooled`, `queue_free_pooled`, `pool_reserve` and `pool_clear`):
+A `@pool` class gets, besides the static methods `pool_reserve` and `pool_clear`:
 
 - `_gdpp_pool`: a static `gdpp::Pool<T>`.
 - `_gdpp_pool_slot`: where the object is in the pool, its generation, and whether it got ready once.

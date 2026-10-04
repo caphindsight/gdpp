@@ -7,8 +7,13 @@ namespace godot {
 #define This Hud
 
 void Hud::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Hud::create);
 	ClassDB::bind_integer_constant(get_class_static(), "Level", "LEVEL_EASY", static_cast<int64_t>(Level::EASY));
 	ClassDB::bind_integer_constant(get_class_static(), "Level", "LEVEL_HARD", static_cast<int64_t>(Level::HARD));
+}
+
+Ref<Hud> Hud::create() {
+	return gdpp::create<Hud>();
 }
 
 #undef This

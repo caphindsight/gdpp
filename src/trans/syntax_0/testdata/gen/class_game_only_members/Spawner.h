@@ -22,6 +22,9 @@ public:
 
 public:
 	Spawner();
+	static Spawner *create();
+	static void destroy(Spawner *p_object);
+	static void queue_destroy(Spawner *p_object);
 	void _gdpp_body__process(double delta);
 	int64_t spawn(Kind kind = _gdpp_default_spawn_kind());
 	static int64_t total();

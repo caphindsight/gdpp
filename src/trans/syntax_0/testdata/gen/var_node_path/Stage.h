@@ -23,6 +23,9 @@ public:
 	Stage *next{};
 
 public:
+	static Stage *create();
+	static void destroy(Stage *p_object);
+	static void queue_destroy(Stage *p_object);
 	Node *get_root() const;
 	void set_root(Node *p_value);
 	Camera3D *get_camera() const;

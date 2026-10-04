@@ -13,6 +13,9 @@ class Gizmo : public Node3D {
 
 public:
 	Gizmo();
+	static Gizmo *create();
+	static void destroy(Gizmo *p_object);
+	static void queue_destroy(Gizmo *p_object);
 	double size();
 	void _process(double delta) override;
 

@@ -14,6 +14,9 @@ GDPP_ENUM_TAG(_gdpp_Other_Local, "Other.Local")
 class Other : public RefCounted {
 	GDCLASS(Other, RefCounted)
 
+public:
+	static Ref<Other> create();
+
 protected:
 	static void _bind_methods();
 };

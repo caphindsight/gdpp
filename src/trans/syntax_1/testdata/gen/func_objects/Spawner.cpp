@@ -9,6 +9,21 @@ namespace godot {
 void Spawner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("spawn", "parent", "tex"), &Spawner::spawn);
 	ClassDB::bind_method(D_METHOD("items", "names", "nodes", "map"), &Spawner::items);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spawner::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spawner::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spawner::queue_destroy);
+}
+
+Spawner *Spawner::create() {
+	return gdpp::create<Spawner>();
+}
+
+void Spawner::destroy(Spawner *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Spawner::queue_destroy(Spawner *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 Node3D *Spawner::spawn(Node *parent, const Ref<Texture2D> &tex) {
@@ -16,7 +31,7 @@ Node3D *Spawner::spawn(Node *parent, const Ref<Texture2D> &tex) {
 
   return nullptr;
 
-#line 20 "Spawner.cpp"
+#line 35 "Spawner.cpp"
 }
 
 TypedArray<int64_t> Spawner::items(const TypedArray<String> &names, const TypedArray<Node> &nodes, const TypedDictionary<String, Resource> &map) {
@@ -24,7 +39,7 @@ TypedArray<int64_t> Spawner::items(const TypedArray<String> &names, const TypedA
 
   return {};
 
-#line 28 "Spawner.cpp"
+#line 43 "Spawner.cpp"
 }
 
 #undef This

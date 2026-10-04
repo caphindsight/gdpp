@@ -10,6 +10,9 @@ namespace godot {
 
 void Player::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("jump", "height"), &Player::jump);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Player::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Player::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Player::queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_hp"), &Player::get_hp);
 	ClassDB::bind_method(D_METHOD("set_hp", "value"), &Player::set_hp);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("hp", PROPERTY_USAGE_NONE), "set_hp", "get_hp");
@@ -22,10 +25,22 @@ void Player::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "State", "STATE_RUNNING", static_cast<int64_t>(State::RUNNING));
 }
 
+Player *Player::create() {
+	return gdpp::create<Player>();
+}
+
+void Player::destroy(Player *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Player::queue_destroy(Player *p_object) {
+	gdpp::queue_destroy(p_object);
+}
+
 void Player::jump(double height) {
 #line 17 "input.gd++"
 
-#line 29 "Player.cpp"
+#line 44 "Player.cpp"
 }
 
 int64_t Player::get_hp() const {

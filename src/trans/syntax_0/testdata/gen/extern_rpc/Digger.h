@@ -17,6 +17,9 @@ public:
 	gdpp::ExtPtr<Terrain2> terrain{};
 
 public:
+	static Digger *create();
+	static void destroy(Digger *p_object);
+	static void queue_destroy(Digger *p_object);
 	void use(int64_t peer);
 	gdpp::ExtPtr<Terrain2> get_terrain() const;
 	void set_terrain(gdpp::ExtPtr<Terrain2> p_value);

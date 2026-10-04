@@ -12,6 +12,9 @@ class Sub : public Base {
 	GDCLASS(Sub, Base)
 
 public:
+	static Sub *create();
+	static void destroy(Sub *p_object);
+	static void queue_destroy(Sub *p_object);
 	void _gdpp_body__hit();
 
 protected:

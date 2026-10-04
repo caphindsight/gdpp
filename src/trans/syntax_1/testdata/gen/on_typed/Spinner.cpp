@@ -7,11 +7,26 @@ namespace godot {
 #define This Spinner
 
 void Spinner::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spinner::create);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("destroy", "object"), &Spinner::destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue_destroy", "object"), &Spinner::queue_destroy);
 }
 
 Spinner::Spinner() {
 	set_process(true);
 	set_physics_process(true);
+}
+
+Spinner *Spinner::create() {
+	return gdpp::create<Spinner>();
+}
+
+void Spinner::destroy(Spinner *p_object) {
+	gdpp::destroy(p_object);
+}
+
+void Spinner::queue_destroy(Spinner *p_object) {
+	gdpp::queue_destroy(p_object);
 }
 
 void Spinner::_notification(int WHAT) {
@@ -28,7 +43,7 @@ void Spinner::_gdpp_body__process(double dt) {
 
   rotate_y(dt);
 
-#line 32 "Spinner.cpp"
+#line 47 "Spinner.cpp"
 }
 
 void Spinner::_gdpp_body__physics_process(double step) {
@@ -36,7 +51,7 @@ void Spinner::_gdpp_body__physics_process(double step) {
 
   gd::print(step);
 
-#line 40 "Spinner.cpp"
+#line 55 "Spinner.cpp"
 }
 
 #undef This
