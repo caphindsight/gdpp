@@ -86,9 +86,9 @@ Facts:
 # Cleaning
 
 ```sh
-gd++ clean                 # this package's build cache
-gd++ clean --bin           # also its libraries and .gdextension files
-gd++ clean --proj          # every package's build cache
+gd++ clean                 # the build caches of the packages in the current directory
+gd++ clean --bin           # also their libraries and .gdextension files
+gd++ clean res://...       # every package's build cache
 gd++ build --clean         # clean with --bin, then build
 ```
 

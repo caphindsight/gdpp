@@ -322,10 +322,10 @@ gd++ fetch --missing          # download what the packages need
 gd++ checkin --spec 4.7.2-stable   # commit a dependency with the project
 gd++ vendor --spec my-4.7 --from my-4.7   # add a custom one, e.g. from your own Godot build
 
-gd++ build                    # build the package you're in, for this machine, in debug mode
-gd++ build --proj             # build every package of the project
+gd++ build                    # build the packages in the current directory, for this machine, in debug mode
+gd++ build res://...          # build every package of the project
 gd++ build --ship --for l.x64 w.x64   # release builds for Linux and Windows
-gd++ clean                    # delete the build cache
+gd++ clean                    # delete their build caches
 
 gd++ ls                       # an overview of the project
 gd++ trans player.gd++        # print the C++ that GD++ generates from a file

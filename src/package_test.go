@@ -170,3 +170,44 @@ func TestListPackages(t *testing.T) {
 		t.Errorf("ListPackages() = %v, want %v", got, want)
 	}
 }
+
+func TestParsePackagePaths(t *testing.T) {
+	config := "bind = \"a\"\nspec = \"b\"\n"
+	tree := withPackages(map[string]string{"a": config, "b": config, "b/nested": config})
+	tree["/games/my_game/b/src/main.cpp"] = ""
+	withMemFS(t, "/games/my_game/b", tree)
+	tests := []struct {
+		paths []string
+		want  []string
+	}{
+		{nil, []string{"res://b", "res://b/nested"}},
+		{[]string{"src/main.cpp", "."}, []string{"res://b"}},
+		{[]string{"..."}, []string{"res://b", "res://b/nested"}},
+		{[]string{"./..."}, []string{"res://b", "res://b/nested"}},
+		{[]string{"nested", "res://..."}, []string{"res://b/nested", "res://a", "res://b"}},
+		{[]string{"src/..."}, nil},
+	}
+	for _, tt := range tests {
+		var got []string
+		for _, root := range ParsePackagePaths(tt.paths) {
+			got = append(got, root.ToString())
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("ParsePackagePaths(%q) = %v, want %v", tt.paths, got, tt.want)
+		}
+	}
+}
+
+func TestParsePackagePathsNotDir(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		withMemFS(t, "/games/my_game", withPackages(map[string]string{"a": "bind = \"a\"\nspec = \"b\"\n"}))
+		withQuiet(t, false)
+		ParsePackagePaths([]string{"missing/..."})
+		return
+	}
+	out, code := runFailHelper(t, "TestParsePackagePathsNotDir")
+	if want := "[x] Path res://missing is not a directory.\n"; code != 1 || out != want {
+		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
+	}
+}

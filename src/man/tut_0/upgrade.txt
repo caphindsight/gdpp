@@ -64,7 +64,7 @@ In a project with many packages, update each one, then build them all:
 ```sh
 gd++ init world --update --spec 4.8.1-stable --bind 11.0.0-stable
 gd++ init addons/inventory --update --spec 4.8.1-stable --bind 11.0.0-stable
-gd++ build --proj
+gd++ build res://...
 ```
 
 - Packages don't have to agree.

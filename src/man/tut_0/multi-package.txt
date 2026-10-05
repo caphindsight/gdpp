@@ -54,7 +54,7 @@ gd++ init addons/inventory --bind 10.0.0-stable --spec 4.7.2-stable
 # 3. Build
 
 ```sh
-gd++ build --proj
+gd++ build res://...
 ```
 
 - This builds every package, one after another.

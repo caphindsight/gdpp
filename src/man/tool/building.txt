@@ -8,7 +8,7 @@ Building: targets and kinds of builds
 gd++ build
 ```
 
-- Builds the package that contains the current directory, for this machine, in debug mode.
+- Builds every package in the current directory, for this machine, in debug mode.
 - The first build is slow: it compiles godot-cpp too.
 - Later builds only compile what changed.
 
@@ -230,7 +230,7 @@ gd++ build -j 8
 # Building every package
 
 ```sh
-gd++ build --proj
+gd++ build res://...
 ```
 
 - Builds every package in the project, one after another, in the order of their paths.

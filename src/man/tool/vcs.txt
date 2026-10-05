@@ -80,7 +80,7 @@ A teammate who clones the repository runs:
 
 ```sh
 gd++ fetch --missing
-gd++ build --proj
+gd++ build res://...
 ```
 
 and has a working project.

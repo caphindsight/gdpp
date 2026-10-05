@@ -1,31 +1,32 @@
-gd++ build: compile a package
+gd++ build: compile packages
 
 # Synopsis
 
 ```sh
-gd++ build [PATH] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
+gd++ build [PATH...] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
            [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [-j N] [--clean]
            [--cc COMPILER] [--asan] [--ubsan] [--tsan] [--macro-timeout SECONDS]
            [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
-gd++ build --proj [options...]
 ```
 
 # Description
 
-- Builds the package that contains PATH, or the current directory, into GDExtension libraries, one per target.
+- Builds the package that contains each PATH into GDExtension libraries, one per target.
+- Builds the packages one after another, in the order of the paths.
 - Writes them into the package root, with the package's `.gdextension` file. Godot loads them from there.
-- With `--proj`, builds every package in the project.
+- To build the whole project, run `gd++ build res://...`.
 - Keeps GD++'s exclude filters in the project's export presets up to date, as the `presets` setting in `.gd++proj.toml` says. See `gd++ man shipping`.
 
 For how builds work, targets, and debug and release builds in depth, see `gd++ man building`.
 
 # Options
 
-PATH
-  Build the package that contains this path. Default: the current directory. Not with `--proj`.
-
---proj
-  Build all packages in the project, one after another, sorted by path.
+PATH...
+  Build the packages that contain these paths. Default: `...`.
+  - `DIR/...` builds every package in `DIR`, sorted by path, e.g. `res://...` the whole project, and `...` or `./...` the current directory.
+  - At the root of a package without nested packages, `...` builds just that package.
+  - Each package is built once.
+  - All packages must be in one Godot project.
 
 --for PLATFORM.ARCH...
   Build for each of these targets, e.g. `windows.x86_64` or `w.x64`.
@@ -145,7 +146,7 @@ lib<id>.<platform>.<debug|release>.<arch>.<so|dll|dylib>
 
 # Examples
 
-Build the package you're in, for this machine, in debug mode:
+Build every package in the current directory, for this machine, in debug mode:
 
 ```sh
 gd++ build
@@ -160,7 +161,7 @@ gd++ build tools/level_editor
 Build everything for release, for Linux and Windows:
 
 ```sh
-gd++ build --proj --ship --for l.x64 w.x64
+gd++ build res://... --ship --for l.x64 w.x64
 ```
 
 Build for Windows on a Linux machine:

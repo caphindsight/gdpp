@@ -8,10 +8,10 @@ A game with GD++ code exports like any game with GDExtensions:
 # 1. Build release libraries
 
 ```sh
-gd++ build --proj --ship --for l.x64 w.x64
+gd++ build res://... --ship --for l.x64 w.x64
 ```
 
-- `--proj`: every package in the project.
+- `res://...`: every package in the project.
 - `--ship`: release mode.
 - `--for`: the targets. Build for every platform and architecture you export to.
 
@@ -25,7 +25,7 @@ See `gd++ man building`.
 To export in debug mode too, e.g. for testers, also build debug libraries:
 
 ```sh
-gd++ build --proj --for l.x64 w.x64
+gd++ build res://... --for l.x64 w.x64
 ```
 
 Facts:
@@ -90,7 +90,7 @@ A build machine script that exports Linux and Windows builds:
 
 ```sh
 gd++ fetch --missing
-gd++ build --proj --ship --for l.x64 w.x64
+gd++ build res://... --ship --for l.x64 w.x64
 godot --headless --export-release "Linux" out/linux/my_game.x86_64
 godot --headless --export-release "Windows Desktop" out/windows/my_game.exe
 ```

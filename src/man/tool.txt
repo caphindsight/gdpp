@@ -33,7 +33,7 @@ my_game/                     a project
 ```sh
 gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable   # make the project root a package
 gd++ fetch --missing                                    # download what packages need
-gd++ build                                              # build the package you're in
+gd++ build                                              # build the packages in the current directory
 gd++ ls                                                 # see the state of the project
 ```
 

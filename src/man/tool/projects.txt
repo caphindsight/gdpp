@@ -79,7 +79,7 @@ Facts:
 
 - A project has any number of packages, anywhere in it, including at its root and nested in each other.
 - Each one builds into its own library.
-- Commands with `--proj`, e.g. `gd++ build --proj` and `gd++ clean --proj`, work on all of them.
+- `gd++ build res://...` and `gd++ clean res://...` work on all of them. `DIR/...` means every package in `DIR`.
 - `gd++ ls` shows them all.
 - Packages share the dependency caches, but each one chooses its own bindings and spec.
 
@@ -116,5 +116,5 @@ gd++ init --vcs git                                              # creates .gd++
 gd++ init gameplay --bind 10.0.0-stable --spec 4.7.2-stable
 gd++ init tools --bind 10.0.0-stable --spec 4.7.2-stable
 gd++ fetch --missing
-gd++ build --proj
+gd++ build res://...
 ```

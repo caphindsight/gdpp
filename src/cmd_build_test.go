@@ -376,7 +376,6 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"noopt":         {CmdBuild{BuildOptions: BuildOptions{Small: true, NoOpt: true}}, "--opt, --small and --noopt cannot be used together"},
 		"platform":      {CmdBuild{Platform: "web"}, "--platform must be one of windows, linux, macos"},
 		"arch":          {CmdBuild{Arch: "mips"}, "--arch must be one of x86_32, x86_64, arm64"},
-		"proj":          {CmdBuild{Proj: true, Path: "src"}, "a path and --proj cannot be used together"},
 		"jobs":          {CmdBuild{BuildOptions: BuildOptions{Jobs: -1}}, "--jobs cannot be negative"},
 		"macro timeout": {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{MacroTimeout: -1}}}, "--macro-timeout cannot be negative"},
 		"tsan":          {CmdBuild{BuildOptions: BuildOptions{Asan: true, Tsan: true}}, "--asan and --tsan cannot be used together"},

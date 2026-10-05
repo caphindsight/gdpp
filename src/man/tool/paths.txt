@@ -47,9 +47,10 @@ A project is a directory with a `project.godot` file.
 
 A package is a directory with a `.gd++pkg.toml` file. It must be inside a project.
 
-- Commands that work on one package, e.g. `build`, `clean` and `doc`, take an optional path.
-- They use the package that contains it: the path itself if it's a package root, or else its nearest parent that is one.
-- Without a path, they use the current directory. So `gd++ build` builds the package you're in.
+- Commands that work on packages, e.g. `build`, `clean` and `doc`, take optional paths.
+- They use the package that contains each path: the path itself if it's a package root, or else its nearest parent that is one.
+- `build` and `clean` also take `DIR/...`: every package in `DIR`, e.g. `res://...` the whole project.
+- Without a path, `build` and `clean` use `...`, every package in the current directory. Other commands use the package that contains the current directory.
 - If packages are nested, the innermost one wins.
 
 These need the path of a package root itself, not of a directory inside it:

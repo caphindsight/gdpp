@@ -3,6 +3,7 @@
 package main
 
 import (
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -272,21 +273,60 @@ func LoadPackageAt(root Path) Package {
 }
 
 // ListPackages returns all packages in the project, including the root and
-// packages nested in other packages, sorted by path. It skips hidden
-// directories, res://_gd++, and nested Godot projects.
+// packages nested in other packages, sorted by path.
 func (p *Project) ListPackages() []Package {
 	var pkgs []Package
+	for _, root := range packageRootsIn(p.Root) {
+		pkgs = append(pkgs, LoadPackage(root))
+	}
+	return pkgs
+}
+
+// packageRootsIn returns the roots of all packages at or inside dir, which
+// must be in a project, sorted by path. It skips hidden directories,
+// res://_gd++, and nested Godot projects.
+func packageRootsIn(dir Path) []Path {
+	deps := GetProjectRoot(dir).Cd(checkedInDepsDirName)
+	var roots []Path
 	var walk func(dir Path)
 	walk = func(dir Path) {
 		if dir.IsPackageRoot() {
-			pkgs = append(pkgs, LoadPackage(dir))
+			roots = append(roots, dir)
 		}
 		for _, child := range dir.Ls() {
-			if child.IsDir() && !child.IsProjectRoot() && child != p.Root.Cd(checkedInDepsDirName) {
+			if child.IsDir() && !child.IsProjectRoot() && child != deps {
 				walk(child)
 			}
 		}
 	}
-	walk(p.Root)
-	return pkgs
+	walk(dir)
+	return roots
+}
+
+// ParsePackagePaths returns the roots of the packages containing the given
+// paths, without duplicates, in order. A path ending in "..." names every
+// package at or inside the directory before it instead: "..." or "./..."
+// the current directory, "res://..." the whole project. No paths means
+// "...".
+func ParsePackagePaths(paths []string) []Path {
+	if len(paths) == 0 {
+		paths = []string{"..."}
+	}
+	var roots []Path
+	for _, s := range paths {
+		var found []Path
+		if dir, ok := strings.CutSuffix(s, "..."); ok && (dir == "" || os.IsPathSeparator(dir[len(dir)-1])) {
+			p := ParsePath(dir)
+			Assert(p.IsDir(), "Path %s is not a directory.", p.ToString())
+			found = packageRootsIn(p)
+		} else {
+			found = append(found, GetPackageRoot(ParsePath(s)))
+		}
+		for _, root := range found {
+			if !slices.Contains(roots, root) {
+				roots = append(roots, root)
+			}
+		}
+	}
+	return roots
 }

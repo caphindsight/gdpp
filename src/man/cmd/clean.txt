@@ -4,12 +4,11 @@ gd++ clean: delete build caches
 
 ```sh
 gd++ clean [PATH...] [--bin]
-gd++ clean --proj [--bin]
 ```
 
 # Description
 
-- Deletes the build cache, `.gd++pkg`, of the package that contains each PATH, or the current directory.
+- Deletes the build cache, `.gd++pkg`, of the package that contains each PATH.
 - The next build starts from scratch: it copies the dependencies again, and compiles godot-cpp and all code again.
 - With `--bin`, also deletes the package's built files: every library and `.gdextension` file in its root.
 - Always safe: build caches only hold generated files.
@@ -21,10 +20,8 @@ Clean when builds fail in ways that make no sense, e.g. after a crash during a b
 # Options
 
 PATH...
-  Clean the packages that contain these paths. Default: the current directory. Not with `--proj`.
-
---proj
-  Clean all packages in the project.
+  Clean the packages that contain these paths. Default: `...`.
+  - `DIR/...` cleans every package in `DIR`, e.g. `res://...` the whole project, and `...` or `./...` the current directory.
 
 --bin
   Also delete all libraries and `.gdextension` files in the package roots, whatever their names: `lib*.dll`, `lib*.so`, `lib*.dylib`, `*.gdextension` and `*.gdextension.uid`.
@@ -34,9 +31,9 @@ PATH...
 # Examples
 
 ```sh
-gd++ clean                    # the package you're in
+gd++ clean                    # every package in the current directory
 gd++ clean gameplay tools     # two packages
-gd++ clean --proj --bin       # everything that builds made, in all packages
+gd++ clean res://... --bin    # everything that builds made, in all packages
 ```
 
 # See also

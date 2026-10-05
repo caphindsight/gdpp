@@ -40,10 +40,10 @@ See `gd++ man install`.
 # 3. Build release libraries
 
 ```sh
-gd++ build --proj --ship --for l.x64 w.x64
+gd++ build res://... --ship --for l.x64 w.x64
 ```
 
-- `--proj` builds every package of the project.
+- `res://...` builds every package of the project.
 - `--ship` builds for release: optimized for speed, with link-time optimization, and without the editor's documentation. Add `--small` to optimize for size instead.
 - `--for` builds each target, one after another.
 
@@ -81,7 +81,7 @@ godot --headless --export-release "Windows Desktop" out/windows/my_game.exe
 To give testers a build with assertions and Godot's debug output, export in debug mode, with `--export-debug`, after a debug build for the same targets:
 
 ```sh
-gd++ build --proj --for l.x64 w.x64
+gd++ build res://... --for l.x64 w.x64
 ```
 
 # 6. Automate it
@@ -92,7 +92,7 @@ A script that builds the game from a fresh clone, e.g. on a build machine:
 #!/bin/sh
 set -e
 gd++ -f fetch --missing
-gd++ -f build --proj --ship --for l.x64 w.x64
+gd++ -f build res://... --ship --for l.x64 w.x64
 mkdir -p out/linux out/windows
 godot --headless --export-release "Linux" out/linux/my_game.x86_64
 godot --headless --export-release "Windows Desktop" out/windows/my_game.exe

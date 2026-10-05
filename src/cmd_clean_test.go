@@ -4,7 +4,6 @@
 package main
 
 import (
-	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -61,9 +60,9 @@ func TestCleanPaths(t *testing.T) {
 	}
 }
 
-func TestCleanProj(t *testing.T) {
+func TestCleanRecursive(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game/src/other")
-	out := captureStderr(t, (&CmdClean{Proj: true}).Run)
+	out := captureStderr(t, (&CmdClean{Paths: []string{"res://..."}}).Run)
 	if want := "[$] Running task: cleaning res:// [my_game]...\n[-] Task succeeded: cleaning res:// [my_game]\n[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -101,16 +100,14 @@ func TestCleanBin(t *testing.T) {
 	}
 }
 
-func TestCleanProjWithPaths(t *testing.T) {
-	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
-		isTTY = false
-		withCleanFS(t, "/games/my_game")
-		(&CmdClean{Proj: true, Paths: []string{"src/pkg"}}).Run()
-		return
+func TestCleanRecursiveSubdir(t *testing.T) {
+	m := withCleanFS(t, "/games/my_game/src")
+	out := captureStderr(t, (&CmdClean{Paths: []string{"..."}}).Run)
+	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
 	}
-	out, code := runFailHelper(t, "TestCleanProjWithPaths")
-	if want := "[x] Invalid arguments: paths and --proj cannot be used together.\n"; code != 1 || out != want {
-		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
+	if got, want := buildCaches(m), []string{".gd++pkg/"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("caches = %v, want %v", got, want)
 	}
 }
 

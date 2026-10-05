@@ -48,11 +48,11 @@ A teammate, or a build machine, clones the repository, then runs:
 
 ```sh
 gd++ fetch --missing
-gd++ build --proj
+gd++ build res://...
 ```
 
 - `gd++ fetch --missing` downloads the bindings and the specs that the packages name in their `.gd++pkg.toml` files.
-- `gd++ build --proj` builds every package.
+- `gd++ build res://...` builds every package.
 - Then the project opens in Godot as usual.
 - On a new machine, run `gd++ install` first, to get a C++ compiler and SCons. See `gd++ man install`.
 - Use the same `gd++` version on all machines, so everyone's builds generate the same code. `gd++ --version` prints it.
@@ -100,7 +100,7 @@ See `gd++ man ls`.
 
 # What a teammate does day to day
 
-- After pulling changes: `gd++ fetch --missing`, in case a package now names a new dependency, then `gd++ build --proj`.
+- After pulling changes: `gd++ fetch --missing`, in case a package now names a new dependency, then `gd++ build res://...`.
 - After adding a package: commit its `.gd++pkg.toml` and `.gitignore`.
 - After a merge conflict in `.gd++pkg.toml`: resolve it like any file, then run `gd++ fix`.
 

@@ -163,6 +163,7 @@ See `gd++ man errors`.
 # Where commands run
 
 - Most commands work on the project that contains the current directory. `gd++` looks for a `project.godot` file in the current directory, then in its parent, and so on. So any subdirectory of a project works.
-- Commands that work on one package, e.g. `gd++ build`, find the package that contains the current directory, or the path you pass, the same way.
+- Commands that work on one package, e.g. `gd++ doc`, find the package that contains the current directory, or the path you pass, the same way.
+- `gd++ build` and `gd++ clean` work on every package in the current directory.
 
 See `gd++ man paths`.
