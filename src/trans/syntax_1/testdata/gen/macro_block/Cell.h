@@ -11,9 +11,6 @@ namespace godot {
 class Cell : public RefCounted {
 	GDCLASS(Cell, RefCounted)
 
-public:
-	static Ref<Cell> gdpp_create();
-
 protected:
 	static void _bind_methods();
 };

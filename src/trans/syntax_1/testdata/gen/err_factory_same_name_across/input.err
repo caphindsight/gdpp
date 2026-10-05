@@ -1,0 +1,4 @@
+input.gd++:3:1: The methods create and pool_clear have the same name, pool_clear.
+ 3 | @factory_pool
+   | ^^^^^^^^^^^^^
+Hint: Give them different names.

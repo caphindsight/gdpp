@@ -12,7 +12,6 @@ class Bow : public Item {
 	GDCLASS(Bow, Item)
 
 public:
-	static Ref<Bow> gdpp_create();
 	int64_t _damage() override;
 	double _range() override;
 

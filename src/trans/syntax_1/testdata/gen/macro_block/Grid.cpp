@@ -11,9 +11,6 @@ void Grid::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("first_open"), &Grid::first_open);
 	ClassDB::bind_method(D_METHOD("foo"), &Grid::foo);
 	ClassDB::bind_method(D_METHOD("foo_ten_times"), &Grid::foo_ten_times);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Grid::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Grid::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Grid::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_open_north"), &Grid::get_open_north);
 	ClassDB::bind_method(D_METHOD("set_open_north", "value"), &Grid::set_open_north);
 	ClassDB::add_property(get_class_static(), gdpp::info<bool>("open_north", PROPERTY_USAGE_NONE), "set_open_north", "get_open_north");
@@ -34,31 +31,19 @@ void Grid::_bind_methods() {
 Grid::Grid() {
 #line 5 "input.gd++"
 	open_north = false;
-#line 38 "Grid.cpp"
+#line 35 "Grid.cpp"
 #line 5 "input.gd++"
 	open_east = false;
-#line 41 "Grid.cpp"
+#line 38 "Grid.cpp"
 #line 5 "input.gd++"
 	open_south = false;
-#line 44 "Grid.cpp"
+#line 41 "Grid.cpp"
 #line 5 "input.gd++"
 	open_west = false;
-#line 47 "Grid.cpp"
+#line 44 "Grid.cpp"
 #line 11 "input.gd++"
 	cells = 64;
-#line 50 "Grid.cpp"
-}
-
-Grid *Grid::gdpp_create() {
-	return gdpp::create<Grid>();
-}
-
-void Grid::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Grid::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 47 "Grid.cpp"
 }
 
 void Grid::_notification(int WHAT) {
@@ -78,7 +63,7 @@ int64_t Grid::neighbors() {
 
   return n;
 
-#line 82 "Grid.cpp"
+#line 67 "Grid.cpp"
 }
 
 int64_t Grid::first_open() {
@@ -102,13 +87,13 @@ if (open_south) return i;
 
   return -1;
 
-#line 106 "Grid.cpp"
+#line 91 "Grid.cpp"
 }
 
 Variant Grid::foo() {
 #line 37 "input.gd++"
 
-#line 112 "Grid.cpp"
+#line 97 "Grid.cpp"
 }
 
 int64_t Grid::foo_ten_times() {
@@ -140,7 +125,7 @@ foo();
   int calls_done = 10;
   return calls_done;
 
-#line 144 "Grid.cpp"
+#line 129 "Grid.cpp"
 }
 
 void Grid::_gdpp_body__ready() {
@@ -148,7 +133,7 @@ void Grid::_gdpp_body__ready() {
 
   open_north = true;
 
-#line 152 "Grid.cpp"
+#line 137 "Grid.cpp"
 }
 
 bool Grid::get_open_north() const {
@@ -195,7 +180,7 @@ void Grid::set_cells(int64_t p_value) {
 
   static int grid_size() { return 8; }
 
-#line 199 "Grid.cpp"
+#line 184 "Grid.cpp"
 
 #undef This
 

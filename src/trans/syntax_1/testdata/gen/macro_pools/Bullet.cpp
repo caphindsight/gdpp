@@ -7,21 +7,6 @@ namespace godot {
 #define This Bullet
 
 void Bullet::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Bullet::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Bullet::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Bullet::gdpp_queue_destroy);
-}
-
-Bullet *Bullet::gdpp_create() {
-	return gdpp::create<Bullet>();
-}
-
-void Bullet::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Bullet::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 #undef This

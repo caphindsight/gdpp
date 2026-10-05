@@ -7,26 +7,11 @@ namespace godot {
 #define This B
 
 void B::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &B::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &B::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &B::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_suit"), &B::_gdpp_get_suit);
 	ClassDB::bind_method(D_METHOD("set_suit", "value"), &B::_gdpp_set_suit);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_B_Suit>("suit", PROPERTY_USAGE_NONE), "set_suit", "get_suit");
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_HEARTS", static_cast<int64_t>(Suit::HEARTS));
 	ClassDB::bind_integer_constant(get_class_static(), "Suit", "SUIT_SPADES", static_cast<int64_t>(Suit::SPADES));
-}
-
-B *B::gdpp_create() {
-	return gdpp::create<B>();
-}
-
-void B::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void B::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 Suit B::get_suit() const {

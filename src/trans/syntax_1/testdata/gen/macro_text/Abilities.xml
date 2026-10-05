@@ -12,12 +12,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="Abilities" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
 	</methods>
 	<members>
 		<member name="can_dash" type="bool" setter="set_can_dash" getter="get_can_dash">

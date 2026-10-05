@@ -12,11 +12,5 @@
 			<description>
 			</description>
 		</method>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="C" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
 	</methods>
 </class>

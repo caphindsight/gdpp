@@ -12,7 +12,6 @@ class UsesOther : public RefCounted {
 	GDCLASS(UsesOther, RefCounted)
 
 public:
-	static Ref<UsesOther> gdpp_create();
 	void f();
 
 protected:

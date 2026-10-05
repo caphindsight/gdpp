@@ -8,9 +8,6 @@ namespace godot {
 
 void Hero::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("go", "to"), &Hero::_gdpp_go);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Hero::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Hero::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Hero::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_state"), &Hero::_gdpp_get_state);
 	ClassDB::bind_method(D_METHOD("set_state", "value"), &Hero::_gdpp_set_state);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Hero_State>("state", PROPERTY_USAGE_NONE), "set_state", "get_state");
@@ -23,19 +20,7 @@ Hero::Hero() {
 	set_physics_process(true);
 #line 4 "input.gd++"
 	state = State::IDLE;
-#line 27 "Hero.cpp"
-}
-
-Hero *Hero::gdpp_create() {
-	return gdpp::create<Hero>();
-}
-
-void Hero::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Hero::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 24 "Hero.cpp"
 }
 
 void Hero::_notification(int WHAT) {
@@ -47,7 +32,7 @@ void Hero::_notification(int WHAT) {
 void Hero::go(State to) {
 #line 4 "input.gd++"
 state = to; (void) state_changed(to);
-#line 51 "Hero.cpp"
+#line 36 "Hero.cpp"
 }
 
 void Hero::_gdpp_go(_gdpp_Hero_State to) {
@@ -63,7 +48,7 @@ case State::IDLE: { if (Input::get_singleton()->is_action_pressed("jump")) go(St
 case State::JUMP: { if (get_position().y <= 0) go(State::IDLE);} break;
 #line 4 "input.gd++"
 }
-#line 67 "Hero.cpp"
+#line 52 "Hero.cpp"
 }
 
 State Hero::get_state() const {

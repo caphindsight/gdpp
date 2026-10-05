@@ -8,20 +8,15 @@ namespace godot {
 
 void Referee::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("judge", "m"), &Referee::_gdpp_judge);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Referee::gdpp_create);
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_EASY", static_cast<int64_t>(Mode::EASY));
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_NORMAL", static_cast<int64_t>(Mode::NORMAL));
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_HARD", static_cast<int64_t>(Mode::HARD));
 }
 
-Ref<Referee> Referee::gdpp_create() {
-	return gdpp::create<Referee>();
-}
-
 void Referee::judge(Mode m) {
 #line 25 "input.gd++"
 
-#line 25 "Referee.cpp"
+#line 20 "Referee.cpp"
 }
 
 void Referee::_gdpp_judge(_gdpp_Referee_Mode m) {

@@ -12,9 +12,6 @@ class Marker : public Node {
 	GDCLASS(Marker, Node)
 
 public:
-	static Marker *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _draw();
 
 protected:

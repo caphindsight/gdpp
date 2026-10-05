@@ -15,17 +15,16 @@ public:
 	Spark();
 	~Spark();
 	static constexpr gdpp::Scene<Spark> _gdpp_scene{ "res://spark.tscn" };
-	static Spark *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-	static void gdpp_scene_cache();
-	static void gdpp_scene_evict();
 	static inline gdpp::Pool<Spark> _gdpp_pool{ 10, gdpp::PoolMode::FIXED };
 	gdpp::PoolSlot<Spark> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static void gdpp_pool_reserve(int64_t p_count = 10, const String &p_mode = String());
-	static void gdpp_pool_clear(bool p_keep_in_use = false);
+	static Spark *create();
+	void destroy();
+	void queue_destroy();
+	static void prewarm(int64_t p_count = 10, const String &p_mode = String());
+	static void scene_cache();
+	static void scene_evict();
 
 protected:
 	static void _bind_methods();

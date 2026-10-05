@@ -17,9 +17,6 @@ class Safe : public Node {
 	GDCLASS(Safe, Node)
 
 public:
-	static Safe *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void open();
 	void _gdpp_body_flush();
 

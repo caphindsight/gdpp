@@ -19,9 +19,6 @@ public:
 	gdpp::ExtRef<Profile> profile{};
 
 public:
-	static Garage *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	gdpp::ExtPtr<Highway> get_highway() const;
 	void set_highway(gdpp::ExtPtr<Highway> p_value);
 	gdpp::ExtRef<Profile> get_profile() const;

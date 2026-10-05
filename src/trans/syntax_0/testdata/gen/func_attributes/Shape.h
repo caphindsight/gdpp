@@ -12,9 +12,6 @@ class Shape : public Node {
 	GDCLASS(Shape, Node)
 
 public:
-	static Shape *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	double area() const;
 	static double unit();
 	void _ready() override;

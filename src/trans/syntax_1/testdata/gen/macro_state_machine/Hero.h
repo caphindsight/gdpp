@@ -21,9 +21,6 @@ public:
 
 public:
 	Hero();
-	static Hero *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void go(State to);
 	void _gdpp_body__physics_process(double delta);
 	State get_state() const;

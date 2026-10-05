@@ -9,24 +9,9 @@ namespace godot {
 void Asserted::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fire", "count"), &Asserted::fire);
 	ClassDB::bind_method(D_METHOD("aim"), &Asserted::aim);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Asserted::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Asserted::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Asserted::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_target"), &Asserted::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Asserted::set_target);
 	ClassDB::add_property(get_class_static(), gdpp::info<Node3D *>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
-}
-
-Asserted *Asserted::gdpp_create() {
-	return gdpp::create<Asserted>();
-}
-
-void Asserted::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Asserted::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Asserted::fire(int64_t count) {
@@ -39,7 +24,7 @@ int64_t Asserted::fire(int64_t count) {
   check();
   return count;
 
-#line 43 "Asserted.cpp"
+#line 28 "Asserted.cpp"
 }
 
 void Asserted::aim() {
@@ -49,7 +34,7 @@ void Asserted::aim() {
   auto height = [&]() -> float { GDPP_ASSERT_VALUE("target->is_inside_tree()", target->is_inside_tree()); return 1.0f; };
   target->look_at(Vector3(0, height(), 0));
 
-#line 53 "Asserted.cpp"
+#line 38 "Asserted.cpp"
 }
 
 Node3D *Asserted::get_target() const {
@@ -67,7 +52,7 @@ void Asserted::set_target(Node3D *p_value) {
     target = nullptr;
   }
 
-#line 71 "Asserted.cpp"
+#line 56 "Asserted.cpp"
 
 #undef This
 

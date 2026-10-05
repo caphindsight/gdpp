@@ -13,9 +13,6 @@ class Mover : public Node {
 
 public:
 	Mover();
-	static Mover *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body__process(double delta);
 	void _physics_process(double delta) override;
 	void step();

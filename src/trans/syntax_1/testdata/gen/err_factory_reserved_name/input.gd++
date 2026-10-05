@@ -1,0 +1,3 @@
+@factory("_gdpp_spawn", "", "")
+class_name A
+extends Node

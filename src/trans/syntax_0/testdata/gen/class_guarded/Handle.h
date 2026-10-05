@@ -21,9 +21,6 @@ private:
 
 public:
 	Handle();
-	static Handle *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void grab();
 	double get_size() const;
 	void set_size(double p_value);

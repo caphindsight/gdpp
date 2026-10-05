@@ -30,9 +30,6 @@ public:
 
 public:
 	Player();
-	static Player *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	bool can_change_state(PlayerState from, PlayerState to);
 	void change_state(PlayerState to);
 	void update_state(double delta);

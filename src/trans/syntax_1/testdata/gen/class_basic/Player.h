@@ -11,11 +11,6 @@ namespace godot {
 class Player : public Node3D {
 	GDCLASS(Player, Node3D)
 
-public:
-	static Player *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-
 protected:
 	static void _bind_methods();
 };

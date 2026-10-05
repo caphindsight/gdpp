@@ -1,0 +1,4 @@
+input.gd++:1:1: Annotation @factory_pool needs @pool on the class.
+ 1 | @factory_pool
+   | ^^^^^^^^^^^^^
+Hint: Add @pool, or remove @factory_pool.

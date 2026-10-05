@@ -170,19 +170,24 @@ func fire() -> void {
 
 # 7. Fill the pool when the level loads
 
-The pool still makes the first 200 bullets during the first shots. To make them while the level loads instead, call `gdpp_pool_reserve` in the level's script, and free them again when the level is unloaded:
+The pool still makes the first 200 bullets during the first shots. To make them while the level loads instead, add `@factory_pool` next to `@pool(200)`. It gives `Bullet` the static method `pool_reserve`. Call it in the level's script, and free the bullets again when the level is unloaded:
+
+```gd++
+@pool(200)
+@factory_pool
+```
 
 ```gdscript
 func _ready() -> void:
-    Bullet.gdpp_pool_reserve()    # 200 bullets, the size of the pool
+    Bullet.pool_reserve()    # 200 bullets, the size of the pool
 
 func _exit_tree() -> void:
-    Bullet.gdpp_pool_reserve(0)
+    Bullet.pool_reserve(0)
 ```
 
-- Without a count, `gdpp_pool_reserve` makes as many bullets as the size in `@pool(200)`. So the number lives in one place.
+- Without a count, `pool_reserve` makes as many bullets as the size in `@pool(200)`. So the number lives in one place.
 - Now every shot reuses a bullet: the plain `ctor` prints its lines while the level loads, and never during the game.
-- To drop all the bullets at once, also those in flight, e.g. when the player quits to the menu, call `Bullet.gdpp_pool_clear()`.
+- To drop all the bullets at once, also those in flight, e.g. when the player quits to the menu, call `Bullet.pool_clear()`, the other method of `@factory_pool`.
 
 # 8. Measure
 

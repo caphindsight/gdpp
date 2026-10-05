@@ -23,9 +23,6 @@ public:
 	Node3D *target{};
 
 public:
-	static Asserted *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t fire(int64_t count);
 	void aim();
 	Node3D *get_target() const;

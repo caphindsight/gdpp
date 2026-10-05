@@ -12,9 +12,6 @@ class Caller : public Node {
 	GDCLASS(Caller, Node)
 
 public:
-	static Caller *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void call_twice(const Callable &f);
 
 protected:

@@ -11,11 +11,6 @@ namespace godot {
 class Spark : public Node {
 	GDCLASS(Spark, Node)
 
-public:
-	static Spark *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-
 protected:
 	static void _bind_methods();
 };

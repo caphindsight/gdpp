@@ -14,19 +14,14 @@ namespace godot {
 
 void A::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("f", "s"), &A::_gdpp_f);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &A::gdpp_create);
 	ClassDB::bind_integer_constant(get_class_static(), "Shared", "SHARED_ONE", static_cast<int64_t>(Shared::ONE));
 	ClassDB::bind_integer_constant(get_class_static(), "Shared", "SHARED_TWO", static_cast<int64_t>(Shared::TWO));
-}
-
-Ref<A> A::gdpp_create() {
-	return gdpp::create<A>();
 }
 
 void A::f(Shared s) {
 #line 12 "input.gd++"
 
-#line 30 "A.cpp"
+#line 25 "A.cpp"
 }
 
 void A::_gdpp_f(_gdpp_A_Shared s) {

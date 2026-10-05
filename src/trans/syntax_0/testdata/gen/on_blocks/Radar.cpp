@@ -8,9 +8,6 @@ namespace godot {
 #define This Radar
 
 void Radar::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Radar::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Radar::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Radar::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_camera"), &Radar::get_camera);
 	ClassDB::bind_method(D_METHOD("set_camera", "value"), &Radar::set_camera);
 	ClassDB::add_property(get_class_static(), gdpp::info<Camera3D *>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
@@ -21,23 +18,11 @@ Radar::Radar() {
 	set_physics_process(true);
 }
 
-Radar *Radar::gdpp_create() {
-	return gdpp::create<Radar>();
-}
-
-void Radar::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Radar::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
-}
-
 void Radar::_notification(int WHAT) {
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
 #line 4 "input.gd++"
 		camera = get_node<Camera3D>("Camera");
-#line 41 "Radar.cpp"
+#line 26 "Radar.cpp"
 	}
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
 		_gdpp_body__ready();
@@ -65,7 +50,7 @@ void Radar::_gdpp_body__ready() {
 
   camera->set_current(true);
 
-#line 69 "Radar.cpp"
+#line 54 "Radar.cpp"
 }
 
 void Radar::_gdpp_body__process(double dt) {
@@ -77,7 +62,7 @@ void Radar::_gdpp_body__process(double dt) {
   }
   queue_redraw();
 
-#line 81 "Radar.cpp"
+#line 66 "Radar.cpp"
 }
 
 void Radar::_gdpp_body__notification(int64_t what) {
@@ -87,7 +72,7 @@ void Radar::_gdpp_body__notification(int64_t what) {
     gd::print("process");
   }
 
-#line 91 "Radar.cpp"
+#line 76 "Radar.cpp"
 }
 
 void Radar::_gdpp_body__physics_process(double delta) {
@@ -95,7 +80,7 @@ void Radar::_gdpp_body__physics_process(double delta) {
 
   gd::print(delta);
 
-#line 99 "Radar.cpp"
+#line 84 "Radar.cpp"
 }
 
 void Radar::_gdpp_body__enter_tree() {
@@ -103,7 +88,7 @@ void Radar::_gdpp_body__enter_tree() {
 
   gd::print("enter");
 
-#line 107 "Radar.cpp"
+#line 92 "Radar.cpp"
 }
 
 void Radar::_gdpp_body__exit_tree() {
@@ -111,7 +96,7 @@ void Radar::_gdpp_body__exit_tree() {
 
   gd::print("exit");
 
-#line 115 "Radar.cpp"
+#line 100 "Radar.cpp"
 }
 
 void Radar::_gdpp_body__draw() {
@@ -119,7 +104,7 @@ void Radar::_gdpp_body__draw() {
 
   draw_circle(Vector2(), 10.0, Color(1, 0, 0));
 
-#line 123 "Radar.cpp"
+#line 108 "Radar.cpp"
 }
 
 Camera3D *Radar::get_camera() const {

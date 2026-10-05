@@ -43,6 +43,7 @@ class Hitbox {
 
 enum Power { WEAK, STRONG = 5 }
 
+@factory
 class Blade {
   extends Hitbox
 }

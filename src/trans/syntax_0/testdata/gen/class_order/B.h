@@ -11,11 +11,6 @@ namespace godot {
 class B : public A {
 	GDCLASS(B, A)
 
-public:
-	static B *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-
 protected:
 	static void _bind_methods();
 };

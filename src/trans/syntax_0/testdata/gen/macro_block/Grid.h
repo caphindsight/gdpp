@@ -20,9 +20,6 @@ public:
 
 public:
 	Grid();
-	static Grid *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t neighbors();
 	int64_t first_open();
 	Variant foo();

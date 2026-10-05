@@ -7,7 +7,6 @@ namespace godot {
 #define This Clamp
 
 void Clamp::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Clamp::gdpp_create);
 	ClassDB::bind_method(D_METHOD("get_value"), &Clamp::get_value);
 	ClassDB::bind_method(D_METHOD("set_value", "value"), &Clamp::set_value);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("value", PROPERTY_USAGE_NONE), "set_value", "get_value");
@@ -18,16 +17,12 @@ void Clamp::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("logged", PROPERTY_USAGE_NONE), "set_logged", "get_logged");
 }
 
-Ref<Clamp> Clamp::gdpp_create() {
-	return gdpp::create<Clamp>();
-}
-
 int64_t Clamp::get_value() const {
 #line 7 "input.gd++"
 
     return value_;
 
-#line 31 "Clamp.cpp"
+#line 26 "Clamp.cpp"
 }
 
 void Clamp::set_value(int64_t v) {
@@ -35,25 +30,25 @@ void Clamp::set_value(int64_t v) {
 
     value_ = v < 0 ? 0 : v;
 
-#line 39 "Clamp.cpp"
+#line 34 "Clamp.cpp"
 }
 
 String Clamp::get_read_only() const {
 #line 16 "input.gd++"
  return "fixed";
-#line 45 "Clamp.cpp"
+#line 40 "Clamp.cpp"
 }
 
 double Clamp::get_logged() const {
 #line 20 "input.gd++"
  return 0;
-#line 51 "Clamp.cpp"
+#line 46 "Clamp.cpp"
 }
 
 void Clamp::set_logged(double x) {
 #line 21 "input.gd++"
  gd::print(x);
-#line 57 "Clamp.cpp"
+#line 52 "Clamp.cpp"
 }
 
 #undef This

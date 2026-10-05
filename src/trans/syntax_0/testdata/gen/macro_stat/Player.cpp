@@ -7,9 +7,6 @@ namespace godot {
 #define This Player
 
 void Player::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Player::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Player::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Player::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_max_health"), &Player::get_max_health);
 	ClassDB::bind_method(D_METHOD("set_max_health", "value"), &Player::set_max_health);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("max_health", PROPERTY_USAGE_DEFAULT), "set_max_health", "get_max_health");
@@ -30,22 +27,10 @@ Player::Player() {
 	set_process(true);
 #line 5 "input.gd++"
 	max_health = 100;
-#line 34 "Player.cpp"
+#line 31 "Player.cpp"
 #line 6 "input.gd++"
 	max_mana = 50;
-#line 37 "Player.cpp"
-}
-
-Player *Player::gdpp_create() {
-	return gdpp::create<Player>();
-}
-
-void Player::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Player::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 34 "Player.cpp"
 }
 
 void Player::_notification(int WHAT) {
@@ -57,7 +42,7 @@ void Player::_notification(int WHAT) {
 void Player::_gdpp_body__process(double delta) {
 #line 5 "input.gd++"
 set_health(health_ + int64_t(2.5 * delta));
-#line 61 "Player.cpp"
+#line 46 "Player.cpp"
 }
 
 int64_t Player::get_max_health() const {
@@ -71,13 +56,13 @@ void Player::set_max_health(int64_t p_value) {
 int64_t Player::get_health() const {
 #line 5 "input.gd++"
 return health_;
-#line 75 "Player.cpp"
+#line 60 "Player.cpp"
 }
 
 void Player::set_health(int64_t value) {
 #line 5 "input.gd++"
 health_ = gd::clampi(value, 0, max_health); (void) health_changed(health_);
-#line 81 "Player.cpp"
+#line 66 "Player.cpp"
 }
 
 int64_t Player::get_max_mana() const {
@@ -91,13 +76,13 @@ void Player::set_max_mana(int64_t p_value) {
 int64_t Player::get_mana() const {
 #line 6 "input.gd++"
 return mana_;
-#line 95 "Player.cpp"
+#line 80 "Player.cpp"
 }
 
 void Player::set_mana(int64_t value) {
 #line 6 "input.gd++"
 mana_ = gd::clampi(value, 0, max_mana); (void) mana_changed(mana_);
-#line 101 "Player.cpp"
+#line 86 "Player.cpp"
 }
 
 gdpp::Emitted Player::health_changed(int64_t value) {

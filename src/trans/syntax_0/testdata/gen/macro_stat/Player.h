@@ -25,9 +25,6 @@ int64_t mana_ = 50;
 
 public:
 	Player();
-	static Player *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body__process(double delta);
 	int64_t get_max_health() const;
 	void set_max_health(int64_t p_value);

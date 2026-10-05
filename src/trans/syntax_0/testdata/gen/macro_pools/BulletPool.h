@@ -16,15 +16,10 @@ class BulletPool : public Node {
 public:
 	BulletPool();
 	~BulletPool();
-	static BulletPool *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	static inline gdpp::Pool<BulletPool> _gdpp_pool{ 512, gdpp::PoolMode::GROW };
 	gdpp::PoolSlot<BulletPool> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static void gdpp_pool_reserve(int64_t p_count = 512, const String &p_mode = String());
-	static void gdpp_pool_clear(bool p_keep_in_use = false);
 	Bullet *take();
 
 protected:

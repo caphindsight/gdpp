@@ -17,9 +17,6 @@ public:
 
 public:
 	Fighter();
-	static Fighter *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void hurt(int64_t n);
 	int64_t get_health() const;
 	void set_health(int64_t p_value);

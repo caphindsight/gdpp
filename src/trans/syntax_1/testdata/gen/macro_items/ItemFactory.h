@@ -18,7 +18,6 @@ class ItemFactory : public RefCounted {
 	GDCLASS(ItemFactory, RefCounted)
 
 public:
-	static Ref<ItemFactory> gdpp_create();
 	static Ref<Item> make(ItemKind kind);
 
 protected:

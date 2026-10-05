@@ -7,9 +7,6 @@ namespace godot {
 #define This Bag
 
 void Bag::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Bag::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Bag::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Bag::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_sword"), &Bag::get_sword);
 	ClassDB::bind_method(D_METHOD("set_sword", "value"), &Bag::set_sword);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("sword", PROPERTY_USAGE_NONE), "set_sword", "get_sword");
@@ -18,18 +15,6 @@ void Bag::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("arrows", PROPERTY_USAGE_NONE), "set_arrows", "get_arrows");
 	ClassDB::add_signal(get_class_static(), MethodInfo("sword_changed"));
 	ClassDB::add_signal(get_class_static(), MethodInfo("arrows_changed"));
-}
-
-Bag *Bag::gdpp_create() {
-	return gdpp::create<Bag>();
-}
-
-void Bag::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Bag::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Bag::get_sword() const {

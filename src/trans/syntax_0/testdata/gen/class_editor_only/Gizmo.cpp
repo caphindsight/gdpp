@@ -14,9 +14,6 @@ void Gizmo::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("sync"), &Gizmo::sync);
 	ClassDB::bind_method(D_METHOD("respawn"), &Gizmo::respawn);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_respawn"), &Gizmo::_gdpp_body_respawn);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Gizmo::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Gizmo::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Gizmo::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_mood"), &Gizmo::_gdpp_get_mood);
 	ClassDB::bind_method(D_METHOD("set_mood", "value"), &Gizmo::_gdpp_set_mood);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Gizmo_Mood>("mood", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_ENUM, "Calm:0,Angry:1"), "set_mood", "get_mood");
@@ -32,7 +29,7 @@ Gizmo::Gizmo() {
 	gdpp::rpc_config<This>(this, "sync", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE, false, 0);
 #line 7 "input.gd++"
 	mood = Mood::CALM;
-#line 36 "Gizmo.cpp"
+#line 33 "Gizmo.cpp"
 	if (!Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
@@ -40,7 +37,7 @@ Gizmo::Gizmo() {
 	{
   gd::print("created");
 }
-#line 44 "Gizmo.cpp"
+#line 41 "Gizmo.cpp"
 }
 
 Gizmo::~Gizmo() {
@@ -51,28 +48,7 @@ Gizmo::~Gizmo() {
 	{
   gd::print("deleted");
 }
-#line 55 "Gizmo.cpp"
-}
-
-Gizmo *Gizmo::gdpp_create() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-	return gdpp::create<Gizmo>();
-}
-
-void Gizmo::gdpp_destroy() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-	gdpp::destroy(this);
-}
-
-void Gizmo::gdpp_queue_destroy() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-	gdpp::queue_destroy(this);
+#line 52 "Gizmo.cpp"
 }
 
 int64_t Gizmo::attack(Mood mood) {
@@ -83,7 +59,7 @@ int64_t Gizmo::attack(Mood mood) {
 
   return 1;
 
-#line 87 "Gizmo.cpp"
+#line 63 "Gizmo.cpp"
 }
 
 int64_t Gizmo::_gdpp_attack(_gdpp_Gizmo_Mood mood) {
@@ -99,7 +75,7 @@ Mood Gizmo::_gdpp_default_attack_mood() {
 	}
 #line 23 "input.gd++"
 	return Mood::ANGRY;
-#line 103 "Gizmo.cpp"
+#line 79 "Gizmo.cpp"
 }
 
 void Gizmo::sync() {
@@ -108,7 +84,7 @@ void Gizmo::sync() {
 	}
 #line 28 "input.gd++"
 
-#line 112 "Gizmo.cpp"
+#line 88 "Gizmo.cpp"
 }
 
 Error Gizmo::_gdpp_rpc_sync(int64_t p_peer) {
@@ -131,7 +107,7 @@ void Gizmo::_gdpp_body_respawn() {
 	}
 #line 31 "input.gd++"
 
-#line 135 "Gizmo.cpp"
+#line 111 "Gizmo.cpp"
 }
 
 Mood Gizmo::get_mood() const {
@@ -160,7 +136,7 @@ int64_t Gizmo::get_hp() const {
 	}
 #line 9 "input.gd++"
  return 10;
-#line 164 "Gizmo.cpp"
+#line 140 "Gizmo.cpp"
 }
 
 void Gizmo::set_hp(int64_t v) {
@@ -170,7 +146,7 @@ void Gizmo::set_hp(int64_t v) {
 	}
 #line 10 "input.gd++"
  gd::print(v);
-#line 174 "Gizmo.cpp"
+#line 150 "Gizmo.cpp"
 }
 
 gdpp::Emitted Gizmo::hit(int64_t amount) {

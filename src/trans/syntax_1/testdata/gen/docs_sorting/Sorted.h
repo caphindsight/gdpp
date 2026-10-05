@@ -16,7 +16,6 @@ public:
 	int64_t Y{};
 
 public:
-	static Ref<Sorted> gdpp_create();
 	void b10();
 	void b2();
 	void A();

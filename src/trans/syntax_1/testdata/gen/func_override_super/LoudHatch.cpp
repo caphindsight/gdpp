@@ -8,21 +8,6 @@ namespace godot {
 
 void LoudHatch::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_super_knock", "times"), &LoudHatch::_super_knock);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &LoudHatch::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &LoudHatch::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &LoudHatch::gdpp_queue_destroy);
-}
-
-LoudHatch *LoudHatch::gdpp_create() {
-	return gdpp::create<LoudHatch>();
-}
-
-void LoudHatch::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void LoudHatch::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 String LoudHatch::_knock(int64_t times) {
@@ -38,7 +23,7 @@ String LoudHatch::_super_knock(int64_t times) {
 
     return "KNOCK";
 
-#line 42 "LoudHatch.cpp"
+#line 27 "LoudHatch.cpp"
 }
 
 #undef This

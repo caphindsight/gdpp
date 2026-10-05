@@ -19,21 +19,6 @@ namespace godot {
 #define This Player
 
 void Player::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Player::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Player::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Player::gdpp_queue_destroy);
-}
-
-Player *Player::gdpp_create() {
-	return gdpp::create<Player>();
-}
-
-void Player::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Player::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 #line 25 "input.gd++"
@@ -43,13 +28,13 @@ void Player::gdpp_queue_destroy() {
     counter++;
   }
 
-#line 47 "Player.cpp"
+#line 32 "Player.cpp"
 
 #line 32 "input.gd++"
 
   #define PLAYER_TAG "player"
 
-#line 53 "Player.cpp"
+#line 38 "Player.cpp"
 
 #undef This
 

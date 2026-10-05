@@ -8,11 +8,6 @@ namespace godot {
 
 void BulletPool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("take"), &BulletPool::take);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &BulletPool::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &BulletPool::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &BulletPool::gdpp_queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_reserve", "count", "mode"), &BulletPool::gdpp_pool_reserve, DEFVAL(512), DEFVAL(String()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_clear", "keep_in_use"), &BulletPool::gdpp_pool_clear, DEFVAL(false));
 }
 
 BulletPool::BulletPool() {
@@ -29,30 +24,10 @@ void BulletPool::_gdpp_recycle_ctor() {
 void BulletPool::_gdpp_recycle_dtor() {
 }
 
-void BulletPool::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {
-	_gdpp_pool.reserve(p_count, p_mode);
-}
-
-void BulletPool::gdpp_pool_clear(bool p_keep_in_use) {
-	_gdpp_pool.clear(p_keep_in_use);
-}
-
-BulletPool *BulletPool::gdpp_create() {
-	return gdpp::create<BulletPool>();
-}
-
-void BulletPool::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void BulletPool::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
-}
-
 Bullet *BulletPool::take() {
 #line 16 "input.gd++"
  return gdpp::create<Bullet>();
-#line 56 "BulletPool.cpp"
+#line 31 "BulletPool.cpp"
 }
 
 #undef This

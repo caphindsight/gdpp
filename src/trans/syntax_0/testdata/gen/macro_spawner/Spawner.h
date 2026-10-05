@@ -16,9 +16,6 @@ public:
 	static constexpr int64_t WAVE_2_SLIMES = 7;
 	static constexpr int64_t WAVE_3_SLIMES = 12;
 	static constexpr int64_t WAVE_4_SLIMES = 19;
-	static Spawner *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t wave_size(int64_t wave);
 
 protected:

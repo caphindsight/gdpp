@@ -9,9 +9,6 @@ namespace godot {
 void Guard::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("raise_front", "times"), &Guard::raise_front, DEFVAL(_gdpp_default_raise_front_times()));
 	ClassDB::bind_method(D_METHOD("raise_back", "times"), &Guard::raise_back, DEFVAL(_gdpp_default_raise_back_times()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Guard::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Guard::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Guard::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_front_power"), &Guard::get_front_power);
 	ClassDB::bind_method(D_METHOD("set_front_power", "value"), &Guard::set_front_power);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("front_power", PROPERTY_USAGE_NONE), "set_front_power", "get_front_power");
@@ -23,22 +20,10 @@ void Guard::_bind_methods() {
 Guard::Guard() {
 #line 4 "package/templates.gd++"
 	front_power = 10 * 2;
-#line 27 "Guard.cpp"
+#line 24 "Guard.cpp"
 #line 4 "package/templates.gd++"
 	back_power = 5 * 2;
-#line 30 "Guard.cpp"
-}
-
-Guard *Guard::gdpp_create() {
-	return gdpp::create<Guard>();
-}
-
-void Guard::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Guard::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 27 "Guard.cpp"
 }
 
 int64_t Guard::raise_front(int64_t times) {
@@ -50,13 +35,13 @@ int64_t Guard::raise_front(int64_t times) {
     }
     return total;
 
-#line 54 "Guard.cpp"
+#line 39 "Guard.cpp"
 }
 
 int64_t Guard::_gdpp_default_raise_front_times() {
 #line 6 "package/templates.gd++"
 	return 10 + 1;
-#line 60 "Guard.cpp"
+#line 45 "Guard.cpp"
 }
 
 int64_t Guard::raise_back(int64_t times) {
@@ -68,13 +53,13 @@ int64_t Guard::raise_back(int64_t times) {
     }
     return total;
 
-#line 72 "Guard.cpp"
+#line 57 "Guard.cpp"
 }
 
 int64_t Guard::_gdpp_default_raise_back_times() {
 #line 6 "package/templates.gd++"
 	return 5 + 1;
-#line 78 "Guard.cpp"
+#line 63 "Guard.cpp"
 }
 
 int64_t Guard::get_front_power() const {

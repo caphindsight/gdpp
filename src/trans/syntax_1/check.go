@@ -36,15 +36,16 @@ type classModel struct {
 	cls        *Class
 	base       string
 	refCounted bool
-	node       bool       // Whether it extends Node.
-	only       string     // Where guards keep all its code from running: "game" keeps it out of the editor, with @game_only, or as a non-runtime class without @tool. "editor" keeps it out of the game, with @editor_only. Else empty.
-	trace      bool       // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
-	profile    bool       // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
-	codes      []*Code    // decl and impl blocks inside the class.
-	globals    []*Code    // @global decl and impl blocks, outside the class and namespace godot.
-	pool       *poolModel // Its @pool, or nil.
-	scene      string     // The res:// path of its @scene, or "".
-	abstract   bool       // Whether @abstract keeps the editor and GD++ code from creating its objects.
+	node       bool              // Whether it extends Node.
+	only       string            // Where guards keep all its code from running: "game" keeps it out of the editor, with @game_only, or as a non-runtime class without @tool. "editor" keeps it out of the game, with @editor_only. Else empty.
+	trace      bool              // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
+	profile    bool              // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
+	codes      []*Code           // decl and impl blocks inside the class.
+	globals    []*Code           // @global decl and impl blocks, outside the class and namespace godot.
+	pool       *poolModel        // Its @pool, or nil.
+	scene      string            // The res:// path of its @scene, or "".
+	abstract   bool              // Whether @abstract keeps the editor and GD++ code from creating its objects.
+	factory    map[string]string // The methods its @factory, @factory_pool and @factory_scene declare: their names by role, e.g. "create". See factoryRoles.
 	ctor, dtor *Block
 	notifs     []*notifModel
 	funcs      []*funcModel
@@ -82,10 +83,9 @@ type externModel struct {
 	ext        *Extern
 	base       string
 	refCounted bool
-	trace      bool // Whether its @trace is on: it traces all its funcs and signals.
-	profile    bool // Whether its @profile is on: it profiles all its funcs, except deferred ones, and vars.
-	scene      bool // Whether it has @scene: its class has a scene, which create instantiates.
-	pool       bool // Whether it has @pool: its class has a pool, which create, destroy and queue_destroy use.
+	trace      bool              // Whether its @trace is on: it traces all its funcs and signals.
+	profile    bool              // Whether its @profile is on: it profiles all its funcs, except deferred ones, and vars.
+	factory    map[string]string // The methods of its class that its @factory names, by role. See factoryRoles.
 	funcs      []*funcModel
 	vars       []*varModel
 	signals    []*signalModel
@@ -1110,7 +1110,7 @@ func cppString(s string) string {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "game_only", "global", "icon", "noprofile", "notrace", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "game_only", "global", "icon", "noprofile", "notrace", "onready",
 	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -1132,7 +1132,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
+			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -1493,6 +1493,82 @@ func (u *unit) sceneOf(a *Annotation, owner string) (string, error) {
 		path = strings.TrimSuffix(cmp.Or(u.opts.PackagePath, "res://"), "/") + "/" + rest
 	}
 	return path, err
+}
+
+// factoryRoles are the methods that @factory, @factory_pool and @factory_scene can declare, in order. Each one's
+// default name is the role itself.
+var factoryRoles = []string{"create", "destroy", "queue_destroy", "pool_reserve", "pool_clear", "scene_cache", "scene_evict"}
+
+// factoryAnnotations are the annotations that declare methods, with their roles.
+var factoryAnnotations = map[string][]string{"factory": factoryRoles[:3], "factory_pool": factoryRoles[3:5], "factory_scene": factoryRoles[5:]}
+
+// factoryOf returns the names of the methods that the annotations a of the class m declare, by role. For an extern, m
+// only has its name, refCounted and node, and the methods are its class's. Without arguments,
+// an annotation declares its roles that apply to m, with their default names. Else it takes up to one name per role, in
+// order: an empty or missing one leaves that method out.
+func (u *unit) factoryOf(a map[string]*Annotation, m *classModel) (map[string]string, error) {
+	whyNot := map[string]string{}
+	if m.abstract {
+		whyNot["create"] = "abstract classes can't be created"
+	}
+	if m.refCounted {
+		whyNot["destroy"] = "refcounted objects free themselves"
+	}
+	if !m.node {
+		whyNot["queue_destroy"] = "only nodes are queued for destruction"
+	}
+	f, roleOf := map[string]string{}, map[string]string{}
+	for _, kind := range []string{"factory", "factory_pool", "factory_scene"} {
+		b, roles := a[kind], factoryAnnotations[kind]
+		needs := strings.TrimPrefix(kind, "factory_")
+		switch {
+		case b == nil:
+			continue
+		case needs == "pool" && m.pool == nil || needs == "scene" && m.scene == "":
+			return nil, u.errorAt(b.Pos, len(kind)+1, fmt.Sprintf("Annotation @%s needs @%s on the class.", kind, needs), fmt.Sprintf("Add @%s, or remove @%s.", needs, kind))
+		case len(b.Args) > len(roles):
+			extra := b.Args[len(roles)]
+			return nil, u.errorAt(extra.Pos, len(extra.Value), fmt.Sprintf("Annotation @%s takes at most %d names: for %s.", kind, len(roles), strings.Join(roles, ", ")), "")
+		}
+		for i, role := range roles {
+			name := role
+			if len(b.Args) == 0 && whyNot[role] != "" {
+				continue
+			}
+			if len(b.Args) > 0 {
+				if i >= len(b.Args) {
+					continue // Not generated, like an empty name.
+				}
+				arg := b.Args[i]
+				if !isString(arg.Value) {
+					return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @%s takes names as strings.", kind),
+						fmt.Sprintf("E.g. \"@%s(\\\"%s\\\")\".", kind, strings.Join(roles, "\\\", \\\"")))
+				}
+				var err error
+				if name, err = u.argValue(arg); err != nil {
+					return nil, err
+				}
+				fail := func(msg, hint string) (map[string]string, error) {
+					return nil, u.errorAt(arg.Pos, len(arg.Value), msg, hint)
+				}
+				switch {
+				case name == "":
+					continue
+				case !identRegexp.MatchString(name):
+					return fail(fmt.Sprintf("The method name %q isn't valid.", name), "Give a name, or an empty string \"\" to leave the method out.")
+				case strings.HasPrefix(name, "_gdpp_"):
+					return fail("Names that start with _gdpp_ are reserved for generated code.", "")
+				case whyNot[role] != "":
+					return fail(fmt.Sprintf("%s can't have a %s method: %s.", m.name, role, whyNot[role]), "Give an empty string \"\" instead.")
+				}
+			}
+			if other := roleOf[name]; other != "" {
+				return nil, u.errorAt(b.Pos, len(kind)+1, fmt.Sprintf("The methods %s and %s have the same name, %s.", other, role, name), "Give them different names.")
+			}
+			f[role], roleOf[name] = name, role
+		}
+	}
+	return f, nil
 }
 
 // checkNoDebug returns an error for a @notrace or @noprofile of member, a func, var or signal of owner, e.g. "class
@@ -1876,18 +1952,13 @@ func (u *unit) buildExterns() error {
 	for _, e := range externs {
 		s := u.symbols[e.Name]
 		m := &externModel{name: e.Name, ext: e, base: baseName(e.Extends), refCounted: s.kind == meta.RefCountedExtern}
-		a, err := u.annotations(e.Annotations, "an extern", "pool", "profile", "scene", "trace")
+		a, err := u.annotations(e.Annotations, "an extern", "factory", "profile", "trace")
 		if err != nil {
 			return err
 		}
-		for _, n := range [][2]string{{"pool", "A pool takes its objects out of the scene tree, so they must be nodes."}, {"scene", "A scene's root is a node."}} {
-			if b := a[n[0]]; b != nil && len(b.Args) > 0 {
-				return u.errorAt(b.Args[0].Pos, len(b.Args[0].Value), fmt.Sprintf("In externs, @%s takes no arguments: the class configures it.", n[0]), "")
-			} else if err := u.requireBase(b, e.Name, n[1], "Node"); err != nil {
-				return err
-			}
+		if m.factory, err = u.factoryOf(a, &classModel{name: e.Name, refCounted: m.refCounted, node: u.extends(e.Name, "Node")}); err != nil {
+			return err
 		}
-		m.pool, m.scene = a["pool"] != nil, a["scene"] != nil
 		if m.trace, err = u.debugOn(a["trace"], e.Name); err != nil {
 			return err
 		}
@@ -1946,7 +2017,7 @@ func (u *unit) unique(names map[string]bool, pos lexer.Position, keyword string,
 		}
 		if names[name] {
 			return u.errorAt(pos, len(keyword), fmt.Sprintf("The name %q is already used by another member.", name),
-				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create.")
+				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @factory declares methods, e.g. create.")
 		}
 		names[name] = true
 	}
@@ -1984,7 +2055,7 @@ func (u *unit) buildClasses() error {
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted,
 		node: u.extends(c.Name, "Node")}
-	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
+	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "factory", "factory_pool", "factory_scene", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
@@ -2017,12 +2088,12 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	if _, err := u.classIcon(c); err != nil {
 		return nil, err
 	}
-	names := map[string]bool{"gdpp_create": !m.abstract, "gdpp_destroy": !m.refCounted, "gdpp_queue_destroy": m.node} // Methods for scripts.
-	for _, name := range []string{"gdpp_pool_reserve", "gdpp_pool_clear"} {
-		names[name] = m.pool != nil
+	if m.factory, err = u.factoryOf(a, m); err != nil {
+		return nil, err
 	}
-	for _, name := range []string{"gdpp_scene_cache", "gdpp_scene_evict"} {
-		names[name] = m.scene != ""
+	names := map[string]bool{}
+	for _, name := range m.factory {
+		names[name] = true
 	}
 	// Enums declared in the class.
 	var declared []*symbol

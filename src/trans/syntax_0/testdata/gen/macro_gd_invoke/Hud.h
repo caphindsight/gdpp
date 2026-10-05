@@ -17,9 +17,6 @@ public:
 
 public:
 	Hud();
-	static Hud *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void refresh();
 	String get_score_text() const;
 	void set_score_text(const String &p_value);

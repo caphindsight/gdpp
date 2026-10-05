@@ -18,9 +18,6 @@ void Painter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bake"), &Painter::bake);
 	ClassDB::bind_method(D_METHOD("roll"), &Painter::roll);
 	ClassDB::bind_method(D_METHOD("preview"), &Painter::preview);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Painter::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Painter::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Painter::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_kind"), &Painter::_gdpp_get_kind);
 	ClassDB::bind_method(D_METHOD("set_kind", "value"), &Painter::_gdpp_set_kind);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Painter_Kind>("kind", PROPERTY_USAGE_NONE), "set_kind", "get_kind");
@@ -42,25 +39,13 @@ Painter::Painter() {
 	set_process(true);
 #line 7 "input.gd++"
 	kind = Kind::SMALL;
-#line 46 "Painter.cpp"
+#line 43 "Painter.cpp"
 #line 12 "input.gd++"
 	brush = 1.0;
-#line 49 "Painter.cpp"
+#line 46 "Painter.cpp"
 #line 13 "input.gd++"
 	radius = 1.0;
-#line 52 "Painter.cpp"
-}
-
-Painter *Painter::gdpp_create() {
-	return gdpp::create<Painter>();
-}
-
-void Painter::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Painter::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 49 "Painter.cpp"
 }
 
 void Painter::_notification(int WHAT) {
@@ -77,7 +62,7 @@ void Painter::_gdpp_body__process(double delta) {
 
   gd::print(delta);
 
-#line 81 "Painter.cpp"
+#line 66 "Painter.cpp"
 }
 
 int64_t Painter::paint(Kind kind) {
@@ -88,7 +73,7 @@ int64_t Painter::paint(Kind kind) {
 
   return 1;
 
-#line 92 "Painter.cpp"
+#line 77 "Painter.cpp"
 }
 
 int64_t Painter::_gdpp_paint(_gdpp_Painter_Kind kind) {
@@ -104,7 +89,7 @@ Kind Painter::_gdpp_default_paint_kind() {
 	}
 #line 21 "input.gd++"
 	return Kind::BIG;
-#line 108 "Painter.cpp"
+#line 93 "Painter.cpp"
 }
 
 int64_t Painter::total() {
@@ -115,7 +100,7 @@ int64_t Painter::total() {
 
   return 0;
 
-#line 119 "Painter.cpp"
+#line 104 "Painter.cpp"
 }
 
 int64_t Painter::_pick() {
@@ -130,7 +115,7 @@ int64_t Painter::_pick() {
 
   return 0;
 
-#line 134 "Painter.cpp"
+#line 119 "Painter.cpp"
 }
 
 int64_t Painter::pick() {
@@ -146,7 +131,7 @@ void Painter::sync() {
 	}
 #line 36 "input.gd++"
 
-#line 150 "Painter.cpp"
+#line 135 "Painter.cpp"
 }
 
 Error Painter::_gdpp_rpc_sync(int64_t p_peer) {
@@ -171,7 +156,7 @@ int64_t Painter::_gdpp_body_bake() {
 
   return 2;
 
-#line 175 "Painter.cpp"
+#line 160 "Painter.cpp"
 }
 
 void Painter::roll() {
@@ -182,13 +167,13 @@ void Painter::roll() {
 #endif
 #line 44 "input.gd++"
 
-#line 186 "Painter.cpp"
+#line 171 "Painter.cpp"
 }
 
 void Painter::preview() {
 #line 46 "input.gd++"
 
-#line 192 "Painter.cpp"
+#line 177 "Painter.cpp"
 }
 
 Kind Painter::get_kind() const {
@@ -217,7 +202,7 @@ int64_t Painter::get_count() const {
 	}
 #line 9 "input.gd++"
  return 10;
-#line 221 "Painter.cpp"
+#line 206 "Painter.cpp"
 }
 
 void Painter::set_count(int64_t v) {
@@ -227,7 +212,7 @@ void Painter::set_count(int64_t v) {
 	}
 #line 10 "input.gd++"
  gd::print(v);
-#line 231 "Painter.cpp"
+#line 216 "Painter.cpp"
 }
 
 double Painter::get_brush() const {

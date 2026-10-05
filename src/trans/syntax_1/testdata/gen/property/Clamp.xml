@@ -6,14 +6,6 @@
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="Clamp" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
-	</methods>
 	<members>
 		<member name="logged" type="float" setter="set_logged" getter="get_logged">
 		</member>

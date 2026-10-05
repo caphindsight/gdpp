@@ -7,11 +7,6 @@ namespace godot {
 #define This Bullet
 
 void Bullet::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Bullet::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Bullet::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Bullet::gdpp_queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_reserve", "count", "mode"), &Bullet::gdpp_pool_reserve, DEFVAL(String()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_clear", "keep_in_use"), &Bullet::gdpp_pool_clear, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_mesh"), &Bullet::get_mesh);
 	ClassDB::bind_method(D_METHOD("set_mesh", "value"), &Bullet::set_mesh);
 	ClassDB::add_property(get_class_static(), gdpp::info<MeshInstance3D *>("mesh", PROPERTY_USAGE_NONE), "set_mesh", "get_mesh");
@@ -44,43 +39,23 @@ void Bullet::_gdpp_recycle_ctor() {
 void Bullet::_gdpp_recycle_dtor() {
 }
 
-void Bullet::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {
-	_gdpp_pool.reserve(p_count, p_mode);
-}
-
-void Bullet::gdpp_pool_clear(bool p_keep_in_use) {
-	_gdpp_pool.clear(p_keep_in_use);
-}
-
-Bullet *Bullet::gdpp_create() {
-	return gdpp::create<Bullet>();
-}
-
-void Bullet::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Bullet::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
-}
-
 void Bullet::_notification(int WHAT) {
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
 		if (!_gdpp_pool_slot.readied) {
 #line 5 "input.gd++"
 			mesh = get_node<MeshInstance3D>("Mesh");
-#line 73 "Bullet.cpp"
+#line 48 "Bullet.cpp"
 #line 6 "input.gd++"
 			trail = get_node<Node3D>("Trail");
-#line 76 "Bullet.cpp"
+#line 51 "Bullet.cpp"
 		}
 #line 7 "input.gd++"
 		start = get_global_position();
-#line 80 "Bullet.cpp"
+#line 55 "Bullet.cpp"
 		if (!_gdpp_pool_slot.readied) {
 #line 8 "input.gd++"
 			sound = get_node<Node>("Sound");
-#line 84 "Bullet.cpp"
+#line 59 "Bullet.cpp"
 		}
 	}
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready() && !_gdpp_pool_slot.readied) {
@@ -97,7 +72,7 @@ void Bullet::_gdpp_body__ready() {
 
   gd::print("first ready");
 
-#line 101 "Bullet.cpp"
+#line 76 "Bullet.cpp"
 }
 
 void Bullet::_gdpp_body__notification(int64_t what) {
@@ -108,7 +83,7 @@ void Bullet::_gdpp_body__notification(int64_t what) {
     gd::print("ready in generation ", GENERATION);
   }
 
-#line 112 "Bullet.cpp"
+#line 87 "Bullet.cpp"
 }
 
 MeshInstance3D *Bullet::get_mesh() const {

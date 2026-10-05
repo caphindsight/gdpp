@@ -10,9 +10,6 @@ namespace godot {
 
 void Lamp::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_all", "setting", "other"), &Lamp::_gdpp_set_all, DEFVAL(static_cast<int64_t>(_gdpp_default_set_all_setting())), DEFVAL(static_cast<int64_t>(_gdpp_default_set_all_other())));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Lamp::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Lamp::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Lamp::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_casting"), &Lamp::_gdpp_get_casting);
 	ClassDB::bind_method(D_METHOD("set_casting", "value"), &Lamp::_gdpp_set_casting);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Lamp_ShadowCastingSetting>("casting", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_ENUM, "Off:0,On:1,Double Sided:2,Shadows Only:3"), "set_casting", "get_casting");
@@ -39,31 +36,19 @@ void Lamp::_bind_methods() {
 Lamp::Lamp() {
 #line 6 "input.gd++"
 	casting = ShadowCastingSetting::ON;
-#line 43 "Lamp.cpp"
+#line 40 "Lamp.cpp"
 #line 7 "input.gd++"
 	full = ShadowCastingSetting::DOUBLE_SIDED;
-#line 46 "Lamp.cpp"
+#line 43 "Lamp.cpp"
 #line 8 "input.gd++"
 	short_name = ShadowCastingSetting::SHADOWS_ONLY;
-#line 49 "Lamp.cpp"
+#line 46 "Lamp.cpp"
 #line 9 "input.gd++"
 	level = Level::HARD;
-#line 52 "Lamp.cpp"
+#line 49 "Lamp.cpp"
 #line 10 "input.gd++"
 	computed = static_cast<Level>(0);
-#line 55 "Lamp.cpp"
-}
-
-Lamp *Lamp::gdpp_create() {
-	return gdpp::create<Lamp>();
-}
-
-void Lamp::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Lamp::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 52 "Lamp.cpp"
 }
 
 void Lamp::set_all(ShadowCastingSetting setting, Level other) {
@@ -71,7 +56,7 @@ void Lamp::set_all(ShadowCastingSetting setting, Level other) {
 
   (void) static_cast<GeometryInstance3D::ShadowCastingSetting>(setting);
 
-#line 75 "Lamp.cpp"
+#line 60 "Lamp.cpp"
 }
 
 void Lamp::_gdpp_set_all(_gdpp_Lamp_ShadowCastingSetting setting, _gdpp_Lamp_Level other) {
@@ -81,13 +66,13 @@ void Lamp::_gdpp_set_all(_gdpp_Lamp_ShadowCastingSetting setting, _gdpp_Lamp_Lev
 ShadowCastingSetting Lamp::_gdpp_default_set_all_setting() {
 #line 12 "input.gd++"
 	return ShadowCastingSetting::OFF;
-#line 85 "Lamp.cpp"
+#line 70 "Lamp.cpp"
 }
 
 Level Lamp::_gdpp_default_set_all_other() {
 #line 12 "input.gd++"
 	return Level::EASY;
-#line 91 "Lamp.cpp"
+#line 76 "Lamp.cpp"
 }
 
 ShadowCastingSetting Lamp::get_casting() const {

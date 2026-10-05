@@ -11,13 +11,8 @@ namespace godot {
 
 void ItemFactory::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("make", "kind"), &ItemFactory::_gdpp_make);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &ItemFactory::gdpp_create);
 	ClassDB::bind_integer_constant(get_class_static(), "ItemKind", "ITEM_KIND_SWORD", static_cast<int64_t>(ItemKind::SWORD));
 	ClassDB::bind_integer_constant(get_class_static(), "ItemKind", "ITEM_KIND_BOW", static_cast<int64_t>(ItemKind::BOW));
-}
-
-Ref<ItemFactory> ItemFactory::gdpp_create() {
-	return gdpp::create<ItemFactory>();
 }
 
 Ref<Item> ItemFactory::make(ItemKind kind) {
@@ -31,7 +26,7 @@ case ItemKind::BOW: return gdpp::create<Bow>();
 }
 #line 1 "input.gd++"
 return nullptr;
-#line 35 "ItemFactory.cpp"
+#line 30 "ItemFactory.cpp"
 }
 
 Ref<Item> ItemFactory::_gdpp_make(_gdpp_ItemFactory_ItemKind kind) {

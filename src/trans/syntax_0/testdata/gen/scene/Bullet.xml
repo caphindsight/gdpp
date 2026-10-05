@@ -7,39 +7,27 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="fire">
-			<return type="void" />
-			<description>
-			</description>
-		</method>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="Bullet" />
-			<description>
-				Creates an instance of the class's scene, like [code]create[/code] in GD++ code, and returns its root. The scene is loaded once, by the first call. Returns [code]null[/code] if the scene fails to load, or if its root isn't an object of this class, so always check the result. [code]new()[/code] creates the node alone, without the scene.
-			</description>
-		</method>
-		<method name="gdpp_destroy">
+		<method name="despawn">
 			<return type="void" />
 			<description>
 				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
 			</description>
 		</method>
-		<method name="gdpp_queue_destroy">
+		<method name="evict_scene" qualifiers="static">
 			<return type="void" />
 			<description>
-				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+				Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next creation or cache loads it again. Objects created from it stay as they are. It's thread-safe.
 			</description>
 		</method>
-		<method name="gdpp_scene_cache" qualifiers="static">
+		<method name="fire">
 			<return type="void" />
 			<description>
-				Loads the class's scene and keeps it, so that [method gdpp_create] doesn't load it later, e.g. when a level loads. Does nothing if the scene is kept already. Prints an error if it fails to load. It's thread-safe.
 			</description>
 		</method>
-		<method name="gdpp_scene_evict" qualifiers="static">
-			<return type="void" />
+		<method name="spawn" qualifiers="static">
+			<return type="Bullet" />
 			<description>
-				Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next [method gdpp_create] or [method gdpp_scene_cache] loads it again. Objects created from it stay as they are. It's thread-safe.
+				Creates an instance of the class's scene, like [code]create[/code] in GD++ code, and returns its root. The scene is loaded once, by the first call. Returns [code]null[/code] if the scene fails to load, or if its root isn't an object of this class, so always check the result. [code]new()[/code] creates the node alone, without the scene.
 			</description>
 		</method>
 	</methods>

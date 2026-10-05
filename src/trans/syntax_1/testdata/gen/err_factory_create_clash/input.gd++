@@ -1,0 +1,6 @@
+@factory
+class_name A
+extends RefCounted
+
+func create() -> void {
+}

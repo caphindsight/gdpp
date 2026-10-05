@@ -12,9 +12,6 @@ class Button2 : public Node {
 	GDCLASS(Button2, Node)
 
 public:
-	static Button2 *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void click();
 	gdpp::Emitted pressed();
 	gdpp::Emitted toggled(bool on);

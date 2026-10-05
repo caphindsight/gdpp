@@ -1,7 +1,0 @@
-class_name A
-extends Node
-
-@pool(10)
-extern B {
-  extends Node
-}

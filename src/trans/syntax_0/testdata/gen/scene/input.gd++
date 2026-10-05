@@ -1,4 +1,6 @@
 @scene("pkg://scenes/bullet.tscn")
+@factory("spawn", "despawn")
+@factory_scene("", "evict_scene")
 class_name Bullet
 extends Node3D
 

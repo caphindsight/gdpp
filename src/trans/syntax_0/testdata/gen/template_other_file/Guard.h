@@ -17,9 +17,6 @@ public:
 
 public:
 	Guard();
-	static Guard *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t raise_front(int64_t times = _gdpp_default_raise_front_times());
 	int64_t raise_back(int64_t times = _gdpp_default_raise_back_times());
 	int64_t get_front_power() const;

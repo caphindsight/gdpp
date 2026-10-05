@@ -17,15 +17,10 @@ public:
 public:
 	Bullet();
 	~Bullet();
-	static Bullet *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	static inline gdpp::Pool<Bullet> _gdpp_pool{ 0, gdpp::PoolMode::GROW };
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static void gdpp_pool_reserve(int64_t p_count, const String &p_mode = String());
-	static void gdpp_pool_clear(bool p_keep_in_use = false);
 	void _ready() override;
 	Vector3 get_start() const;
 	void set_start(const Vector3 &p_value);

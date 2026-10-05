@@ -1,5 +1,0 @@
-class_name A
-extends Node
-
-func gdpp_queue_destroy() -> void {
-}

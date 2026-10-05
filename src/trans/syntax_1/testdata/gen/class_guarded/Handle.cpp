@@ -8,9 +8,6 @@ namespace godot {
 
 void Handle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("grab"), &Handle::grab);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Handle::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Handle::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Handle::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_size"), &Handle::get_size);
 	ClassDB::bind_method(D_METHOD("set_size", "value"), &Handle::set_size);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("size", PROPERTY_USAGE_DEFAULT), "set_size", "get_size");
@@ -24,34 +21,7 @@ void Handle::_bind_methods() {
 Handle::Handle() {
 #line 9 "input.gd++"
 	size = 1.0;
-#line 28 "Handle.cpp"
-}
-
-Handle *Handle::gdpp_create() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
-	return gdpp::create<Handle>();
-}
-
-void Handle::gdpp_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::destroy(this);
-}
-
-void Handle::gdpp_queue_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::queue_destroy(this);
+#line 25 "Handle.cpp"
 }
 
 void Handle::grab() {
@@ -62,7 +32,7 @@ void Handle::grab() {
 #endif
 #line 18 "input.gd++"
 
-#line 66 "Handle.cpp"
+#line 36 "Handle.cpp"
 }
 
 double Handle::get_size() const {
@@ -87,7 +57,7 @@ Color Handle::get_color() const {
 #endif
 #line 11 "input.gd++"
  return Color();
-#line 91 "Handle.cpp"
+#line 61 "Handle.cpp"
 }
 
 void Handle::set_color(const Color &c) {
@@ -99,7 +69,7 @@ void Handle::set_color(const Color &c) {
 #endif
 #line 12 "input.gd++"
  gd::print(c);
-#line 103 "Handle.cpp"
+#line 73 "Handle.cpp"
 }
 
 double Handle::get_area() const {
@@ -110,7 +80,7 @@ double Handle::get_area() const {
 #endif
 #line 15 "input.gd++"
  return size * size;
-#line 114 "Handle.cpp"
+#line 84 "Handle.cpp"
 }
 
 #undef This

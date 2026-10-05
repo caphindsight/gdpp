@@ -12,9 +12,6 @@ class Pool : public Node {
 	GDCLASS(Pool, Node)
 
 public:
-	static Pool *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body__postinitialize();
 	void _gdpp_body__predelete();
 	void _gdpp_body__notification();

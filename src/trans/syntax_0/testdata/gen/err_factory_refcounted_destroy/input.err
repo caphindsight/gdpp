@@ -1,0 +1,4 @@
+input.gd++:1:20: A can't have a destroy method: refcounted objects free themselves.
+ 1 | @factory("create", "destroy", "")
+   |                    ^^^^^^^^^
+Hint: Give an empty string "" instead.

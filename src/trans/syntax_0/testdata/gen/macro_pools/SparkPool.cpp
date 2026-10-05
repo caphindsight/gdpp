@@ -8,11 +8,6 @@ namespace godot {
 
 void SparkPool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("take"), &SparkPool::take);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &SparkPool::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &SparkPool::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &SparkPool::gdpp_queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_reserve", "count", "mode"), &SparkPool::gdpp_pool_reserve, DEFVAL(64), DEFVAL(String()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_clear", "keep_in_use"), &SparkPool::gdpp_pool_clear, DEFVAL(false));
 }
 
 SparkPool::SparkPool() {
@@ -29,30 +24,10 @@ void SparkPool::_gdpp_recycle_ctor() {
 void SparkPool::_gdpp_recycle_dtor() {
 }
 
-void SparkPool::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {
-	_gdpp_pool.reserve(p_count, p_mode);
-}
-
-void SparkPool::gdpp_pool_clear(bool p_keep_in_use) {
-	_gdpp_pool.clear(p_keep_in_use);
-}
-
-SparkPool *SparkPool::gdpp_create() {
-	return gdpp::create<SparkPool>();
-}
-
-void SparkPool::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void SparkPool::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
-}
-
 Spark *SparkPool::take() {
 #line 16 "input.gd++"
  return gdpp::create<Spark>();
-#line 56 "SparkPool.cpp"
+#line 31 "SparkPool.cpp"
 }
 
 #undef This

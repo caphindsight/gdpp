@@ -13,11 +13,9 @@ class Bullet : public Node3D {
 
 public:
 	static constexpr gdpp::Scene<Bullet> _gdpp_scene{ "res://addons/foo/scenes/bullet.tscn" };
-	static Bullet *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-	static void gdpp_scene_cache();
-	static void gdpp_scene_evict();
+	static Bullet *spawn();
+	void despawn();
+	static void evict_scene();
 	void fire();
 
 protected:

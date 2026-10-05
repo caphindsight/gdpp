@@ -1,0 +1,4 @@
+input.gd++:4:18: B can't have a destroy method: refcounted objects free themselves.
+ 4 | @factory("make", "free_now")
+   |                  ^^^^^^^^^^
+Hint: Give an empty string "" instead.

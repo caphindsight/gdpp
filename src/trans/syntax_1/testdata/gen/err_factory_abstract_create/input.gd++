@@ -1,0 +1,4 @@
+@abstract
+@factory("create", "", "")
+class_name A
+extends Node

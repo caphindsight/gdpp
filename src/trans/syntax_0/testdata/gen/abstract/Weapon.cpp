@@ -9,26 +9,6 @@ namespace godot {
 void Weapon::_bind_methods() {
 	GDVIRTUAL_BIND(_fire);
 	ClassDB::bind_method(D_METHOD("fire"), &Weapon::fire);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Weapon::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Weapon::gdpp_queue_destroy);
-}
-
-void Weapon::gdpp_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::destroy(this);
-}
-
-void Weapon::gdpp_queue_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::queue_destroy(this);
 }
 
 void Weapon::_fire() {
@@ -42,7 +22,7 @@ void Weapon::_fire() {
 	}
 #line 6 "input.gd++"
 
-#line 46 "Weapon.cpp"
+#line 26 "Weapon.cpp"
 }
 
 void Weapon::fire() {

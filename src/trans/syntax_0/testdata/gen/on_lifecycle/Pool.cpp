@@ -7,36 +7,6 @@ namespace godot {
 #define This Pool
 
 void Pool::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Pool::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Pool::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Pool::gdpp_queue_destroy);
-}
-
-Pool *Pool::gdpp_create() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
-	return gdpp::create<Pool>();
-}
-
-void Pool::gdpp_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::destroy(this);
-}
-
-void Pool::gdpp_queue_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::queue_destroy(this);
 }
 
 void Pool::_notification(int WHAT) {
@@ -64,7 +34,7 @@ void Pool::_gdpp_body__postinitialize() {
 
   gd::print("created");
 
-#line 68 "Pool.cpp"
+#line 38 "Pool.cpp"
 }
 
 void Pool::_gdpp_body__predelete() {
@@ -77,7 +47,7 @@ void Pool::_gdpp_body__predelete() {
 
   gd::print("deleted");
 
-#line 81 "Pool.cpp"
+#line 51 "Pool.cpp"
 }
 
 void Pool::_gdpp_body__notification() {
@@ -90,7 +60,7 @@ void Pool::_gdpp_body__notification() {
 
   gd::print("a notification");
 
-#line 94 "Pool.cpp"
+#line 64 "Pool.cpp"
 }
 
 #undef This

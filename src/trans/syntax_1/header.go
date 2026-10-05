@@ -201,6 +201,25 @@ func (c *classModel) createType() string {
 	return c.name + " *"
 }
 
+// factoryDecl returns the declaration of the method that @factory declares for role, named name.
+func factoryDecl(c *classModel, role, name string) string {
+	switch role {
+	case "create":
+		return fmt.Sprintf("static %s%s();", withSpace(c.createType()), name)
+	case "pool_reserve":
+		count := "int64_t p_count" // Defaults to the pool's size, if it has one.
+		if c.pool.size != "0" {
+			count += " = " + c.pool.size
+		}
+		return fmt.Sprintf("static void %s(%s, const String &p_mode = String());", name, count)
+	case "pool_clear":
+		return fmt.Sprintf("static void %s(bool p_keep_in_use = false);", name)
+	case "scene_cache", "scene_evict":
+		return fmt.Sprintf("static void %s();", name)
+	}
+	return fmt.Sprintf("void %s();", name)
+}
+
 func (c *classModel) needsDtor() bool {
 	return c.dtor != nil || c.trace || c.pool != nil
 }
@@ -300,27 +319,15 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	}
 	if c.abstract {
 		public = append(public, fmt.Sprintf("static constexpr gdpp::Abstract<%s> _gdpp_abstract{};", c.name))
-	} else {
-		public = append(public, fmt.Sprintf("static %sgdpp_create();", withSpace(c.createType())))
-	}
-	if !c.refCounted {
-		public = append(public, "void gdpp_destroy();")
-	}
-	if c.node {
-		public = append(public, "void gdpp_queue_destroy();")
-	}
-	if c.scene != "" {
-		public = append(public, "static void gdpp_scene_cache();", "static void gdpp_scene_evict();")
 	}
 	if p := c.pool; p != nil {
-		count := "int64_t p_count" // Defaults to the pool's size, if it has one.
-		if p.size != "0" {
-			count += " = " + p.size
-		}
 		public = append(public, fmt.Sprintf("static inline gdpp::Pool<%s> _gdpp_pool{ %s, gdpp::PoolMode::%s };", c.name, p.size, strings.ToUpper(p.mode)),
-			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();",
-			fmt.Sprintf("static void gdpp_pool_reserve(%s, const String &p_mode = String());", count),
-			"static void gdpp_pool_clear(bool p_keep_in_use = false);")
+			fmt.Sprintf("gdpp::PoolSlot<%s> _gdpp_pool_slot;", c.name), "void _gdpp_recycle_ctor();", "void _gdpp_recycle_dtor();")
+	}
+	for _, role := range factoryRoles {
+		if name, ok := c.factory[role]; ok {
+			public = append(public, factoryDecl(c, role, name))
+		}
 	}
 	for _, f := range c.funcs {
 		if f.virtual {
@@ -470,8 +477,16 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 		w.ln("\tusing Base = %s;", e.base)
 	}
 	w.ln("\tstatic constexpr const char *gdpp_name = %q;", e.name)
-	if e.scene || e.pool {
-		w.ln("\tstatic constexpr gdpp::ExtCreate<%s> gdpp_ext_create{ %t };", e.name, e.pool)
+	if len(e.factory) > 0 {
+		var names []string
+		for _, role := range factoryRoles[:3] {
+			name := "nullptr" // Keeps the default.
+			if n, ok := e.factory[role]; ok {
+				name = fmt.Sprintf("%q", n)
+			}
+			names = append(names, name)
+		}
+		w.ln("\tstatic constexpr gdpp::ExtFactory<%s> _gdpp_factory{ %s };", e.name, strings.Join(names, ", "))
 	}
 	w.ln("")
 	w.ln("\texplicit %s(Base *p_object) :", e.name)

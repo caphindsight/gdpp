@@ -18,12 +18,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="Game" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
 		<method name="pick">
 			<return type="int" enum="Game.Mode" />
 			<param index="0" name="options" type="int" />

@@ -1,0 +1,4 @@
+input.gd++:1:10: Annotation @factory takes names as strings.
+ 1 | @factory(spawn, "", "")
+   |          ^^^^^
+Hint: E.g. "@factory(\"create\", \"destroy\", \"queue_destroy\")".

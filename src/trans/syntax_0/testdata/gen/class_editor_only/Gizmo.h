@@ -25,9 +25,6 @@ private:
 public:
 	Gizmo();
 	~Gizmo();
-	static Gizmo *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t attack(Mood mood = _gdpp_default_attack_mood());
 	void sync();
 	Error _gdpp_rpc_sync(int64_t p_peer);

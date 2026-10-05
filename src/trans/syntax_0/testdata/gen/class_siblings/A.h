@@ -18,9 +18,6 @@ public:
 	B *b{};
 
 public:
-	static A *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	Ref<C> make_c();
 	B *get_b() const;
 	void set_b(B *p_value);

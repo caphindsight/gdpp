@@ -7,11 +7,6 @@ namespace godot {
 #define This Sword
 
 void Sword::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Sword::gdpp_create);
-}
-
-Ref<Sword> Sword::gdpp_create() {
-	return gdpp::create<Sword>();
 }
 
 int64_t Sword::_damage() {
@@ -21,7 +16,7 @@ int64_t Sword::_damage() {
 	}
 #line 1 "input.gd++"
 return 10;
-#line 25 "Sword.cpp"
+#line 20 "Sword.cpp"
 }
 
 #undef This

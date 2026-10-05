@@ -12,7 +12,6 @@ class Helper : public RefCounted {
 	GDCLASS(Helper, RefCounted)
 
 public:
-	static Ref<Helper> gdpp_create();
 	int64_t count();
 	void reset();
 

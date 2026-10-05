@@ -18,9 +18,6 @@ class Player : public Node {
 
 public:
 	Player();
-	static Player *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void ping();
 	Error _gdpp_rpc_ping(int64_t p_peer);
 	void take_damage(int64_t amount, Team from);

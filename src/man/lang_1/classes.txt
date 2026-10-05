@@ -115,24 +115,40 @@ In GDScript, use GD++ classes like built-in classes: `var s: Stats`, `extends Pl
 
 # In scripts
 
-Scripts can't write `create`, `destroy` and `queue_destroy`. So every GD++ class has methods for them, which do the same:
+Scripts can't write `create`, `destroy` and `queue_destroy`. `@factory` gives the class methods that do the same:
+
+```gd++
+@factory
+class_name Bullet
+extends Area3D
+```
 
 ```gdscript
-var bullet := Bullet.gdpp_create()  # create Bullet
+var bullet := Bullet.create()  # create Bullet
 if bullet:
     add_child(bullet)
 
-bullet.gdpp_destroy()               # destroy bullet
-bullet.gdpp_queue_destroy()         # queue_destroy bullet
+bullet.destroy()               # destroy bullet
+bullet.queue_destroy()         # queue_destroy bullet
 ```
 
-- `gdpp_create()`: a static method of every class but `@abstract` ones. It returns `null` if a `"fixed"` pool is full, or a scene fails to load, so check it for `@pool` and `@scene` classes.
-- `gdpp_destroy()`: a method of classes that aren't refcounted.
-- `gdpp_queue_destroy()`: a method of classes that extend `Node`.
+- `create()`: a static method. Not for `@abstract` classes. It returns `null` if a `"fixed"` pool is full, or a scene fails to load, so check it for `@pool` and `@scene` classes.
+- `destroy()`: not for refcounted classes.
+- `queue_destroy()`: only for classes that extend `Node`.
+- Without `@factory`, the class has none of these methods.
 - Prefer them to `new()`, `free()` and `queue_free()`: they keep working if the class gets `@pool` or `@scene` later. `new()` creates the object alone, outside the pool and without the scene.
-- They make and take objects of the GD++ class itself. Called on a script that extends the class, `gdpp_create()` still gives an object without the script.
-- GD++ code can call them too, e.g. `Bullet::gdpp_create()`, but `create Bullet` is shorter.
+- They make and take objects of the GD++ class itself. Called on a script that extends the class, `create()` still gives an object without the script.
+- GD++ code can call them too, e.g. `Bullet::create()`, but `create Bullet` is shorter.
 - A class can't have a member named like them.
+
+Other names: `@factory` takes up to three strings, for `create`, `destroy` and `queue_destroy`, in this order. An empty string `""`, or a missing name at the end, leaves that method out:
+
+```gd++
+@factory("spawn", "despawn")    # spawn() and despawn(), no queue_destroy()
+@factory("", "despawn")         # only despawn()
+```
+
+- Give `""` or no name for a method that doesn't apply, e.g. `destroy` in a refcounted class.
 
 # @abstract
 
@@ -155,7 +171,7 @@ class Sword {
 ```
 
 - The editor's "Create New Node" dialog doesn't show it.
-- It has no `gdpp_create()`, and `create Weapon` fails to compile: "Abstract classes can't be created. Create a subclass instead.".
+- `@factory` gives it no `create()`, and `create Weapon` fails to compile: "Abstract classes can't be created. Create a subclass instead.".
 - Its subclasses work as usual, GD++ classes and scripts alike. Scripts can also use it as a type.
 - Unlike in GDScript, `Weapon.new()` in a script still works: Godot registers the class as a virtual class, which only the editor doesn't create.
 - Not with `@pool` or `@scene`, since both are about creating objects. Put them on the subclasses.
@@ -362,28 +378,36 @@ The path:
 
 Loading the scene:
 
-- The scene stays kept until `gdpp_scene_evict()`, or until the library is unloaded.
-- `gdpp_scene_cache()` loads and keeps it ahead of time, e.g. when a level loads, so the first `create` doesn't pay for it. It does nothing if the scene is kept already.
-- `gdpp_scene_evict()` drops it, e.g. when the level is unloaded. The next `create` or `gdpp_scene_cache()` loads it again. Bullets created from it stay as they are.
+- The scene stays kept until the library is unloaded, or until `scene_evict()`, below.
+- `@factory_scene` gives the class two static methods to manage it:
+- `scene_cache()` loads and keeps it ahead of time, e.g. when a level loads, so the first `create` doesn't pay for it. It does nothing if the scene is kept already.
+- `scene_evict()` drops it, e.g. when the level is unloaded. The next `create` or `scene_cache()` loads it again. Bullets created from it stay as they are.
 - Both are thread-safe.
+
+```gd++
+@scene("res://bullet.tscn")
+@factory_scene
+class_name Bullet
+extends Area3D
+```
 
 ```gdscript
 func _ready():
-    Bullet.gdpp_scene_cache()    # loads bullet.tscn now
+    Bullet.scene_cache()    # loads bullet.tscn now
 
 func _exit_tree():
-    Bullet.gdpp_scene_evict()    # drops it
+    Bullet.scene_evict()    # drops it
 ```
 
-GD++ code calls them the same way: `Bullet::gdpp_scene_cache();`.
+- GD++ code calls them the same way: `Bullet::scene_cache();`.
+- Other names: `@factory_scene` takes up to two strings, for `scene_cache` and `scene_evict`, e.g. `@factory_scene("preload_bullet")`. An empty string `""`, or a missing name at the end, leaves that method out.
 
 Other facts:
 
 - `@scene` works on classes that extend `Node`, since a scene's root is a node.
 - A class that extends a `@scene` class doesn't use its scene, unless it has a `@scene` of its own.
 - With `@pool`, the pool instantiates the scene for each new object, and reuses objects without it.
-- Scripts call `Bullet.gdpp_create()`, which does the same. It returns the root of a new instance of the scene, or `null`, so check it. See "In scripts" above.
-- A `@scene` class can't have a member named like its methods.
+- With `@factory`, scripts call `Bullet.create()`, which does the same. It returns the root of a new instance of the scene, or `null`, so check it. See "In scripts" above.
 
 # @trace and @profile
 
@@ -448,7 +472,7 @@ Functions, variables, signals and constants share one namespace, since they all 
 - `var x` also declares its getter `get_x` and its setter `set_x`.
 - `signal s` also declares a C++ method `s`, which emits it.
 - `@virtual func _f` also declares `f`, which scripts call. See `gd++ man functions`.
-- The class has the methods `gdpp_create`, `gdpp_destroy` and `gdpp_queue_destroy` for scripts. See "In scripts" above.
+- `@factory`, `@factory_pool` and `@factory_scene` declare their methods, e.g. `create`. See "In scripts" above.
 - Names that start with `_gdpp_` are reserved for generated code.
 
 So `var x` and `func get_x()` can't be in the same class:
@@ -457,7 +481,7 @@ So `var x` and `func get_x()` can't be in the same class:
 [×] res://player.gd++:8:1: The name "get_x" is already used by another member.
      8 | func get_x() -> int {
        | ^^^^
-    Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create.
+    Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @factory declares methods, e.g. create.
 ```
 
 # This

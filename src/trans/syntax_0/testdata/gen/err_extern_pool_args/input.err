@@ -1,3 +1,0 @@
-input.gd++:4:7: In externs, @pool takes no arguments: the class configures it.
- 4 | @pool(10)
-   |       ^^

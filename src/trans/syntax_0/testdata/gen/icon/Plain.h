@@ -11,9 +11,6 @@ namespace godot {
 class Plain : public RefCounted {
 	GDCLASS(Plain, RefCounted)
 
-public:
-	static Ref<Plain> gdpp_create();
-
 protected:
 	static void _bind_methods();
 };

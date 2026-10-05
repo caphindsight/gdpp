@@ -7,11 +7,6 @@ namespace godot {
 #define This Helper
 
 void Helper::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Helper::gdpp_create);
-}
-
-Ref<Helper> Helper::gdpp_create() {
-	return gdpp::create<Helper>();
 }
 
 #undef This

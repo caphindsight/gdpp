@@ -12,9 +12,6 @@ class Sword : public Weapon {
 	GDCLASS(Sword, Weapon)
 
 public:
-	static Sword *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _fire() override;
 
 protected:

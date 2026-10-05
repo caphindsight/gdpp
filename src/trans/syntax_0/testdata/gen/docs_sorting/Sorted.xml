@@ -27,12 +27,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="Sorted" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
 	</methods>
 	<members>
 		<member name="Y" type="int" setter="set_Y" getter="get_Y">

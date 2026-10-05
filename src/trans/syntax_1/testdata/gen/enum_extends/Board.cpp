@@ -12,9 +12,6 @@ namespace godot {
 
 void Board::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("finish", "result"), &Board::_gdpp_finish);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Board::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Board::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Board::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_mode"), &Board::_gdpp_get_mode);
 	ClassDB::bind_method(D_METHOD("set_mode", "value"), &Board::_gdpp_set_mode);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Board_Mode>("mode", PROPERTY_USAGE_NONE), "set_mode", "get_mode");
@@ -49,24 +46,12 @@ void Board::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "Twice", "TWICE_F", static_cast<int64_t>(Twice::F));
 }
 
-Board *Board::gdpp_create() {
-	return gdpp::create<Board>();
-}
-
-void Board::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Board::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
-}
-
 void Board::finish(Result result) {
 #line 20 "input.gd++"
 
   set_process_mode(static_cast<Node::ProcessMode>(mode));
 
-#line 70 "Board.cpp"
+#line 55 "Board.cpp"
 }
 
 void Board::_gdpp_finish(_gdpp_Board_Result result) {

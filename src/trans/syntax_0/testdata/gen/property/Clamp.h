@@ -19,7 +19,6 @@ private:
 #line 20 "Clamp.h"
 
 public:
-	static Ref<Clamp> gdpp_create();
 	int64_t get_value() const;
 	void set_value(int64_t v);
 	String get_read_only() const;

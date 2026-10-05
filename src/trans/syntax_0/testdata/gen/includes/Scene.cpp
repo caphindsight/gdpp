@@ -11,21 +11,6 @@ namespace godot {
 
 void Scene::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("ready"), &Scene::ready);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Scene::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Scene::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Scene::gdpp_queue_destroy);
-}
-
-Scene *Scene::gdpp_create() {
-	return gdpp::create<Scene>();
-}
-
-void Scene::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Scene::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 void Scene::ready() {
@@ -35,7 +20,7 @@ void Scene::ready() {
   MeshInstance2D *m = nullptr;
   Texture2D *t = nullptr;
 
-#line 39 "Scene.cpp"
+#line 24 "Scene.cpp"
 }
 
 #undef This

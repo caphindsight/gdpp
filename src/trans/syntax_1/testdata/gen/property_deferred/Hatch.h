@@ -24,9 +24,6 @@ private:
 #line 25 "Hatch.h"
 
 public:
-	static Hatch *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body_set_state(State value);
 	void _gdpp_body_set_label(const String &text);
 	State get_state() const;

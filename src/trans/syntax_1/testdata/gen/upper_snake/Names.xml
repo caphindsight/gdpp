@@ -6,14 +6,6 @@
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="Names" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
-	</methods>
 	<constants>
 		<constant name="HTTP_CODE_OK" value="0" enum="HTTPCode">
 		</constant>

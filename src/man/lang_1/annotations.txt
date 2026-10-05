@@ -39,13 +39,29 @@ func _score() -> int
 @editor_only
   Run the class's code only in the editor, never in the game. Only with `@tool`. See `gd++ man classes`.
 
+@factory and @factory(CREATE, DESTROY, QUEUE_DESTROY)
+  Declare the class's methods that do what `create`, `destroy` and `queue_destroy` do, for scripts. See `gd++ man classes`.
+  - Without arguments, they're named `create()`, `destroy()` and `queue_destroy()`.
+  - With arguments: up to three names, as strings, e.g. `@factory("spawn", "despawn", "queue_despawn")`. An empty string `""`, or a missing name at the end, leaves that method out: `@factory("spawn")` declares only `spawn()`.
+  - Only the methods that apply: no `create()` for `@abstract` classes, no `destroy()` for refcounted classes, and no `queue_destroy()` for classes that don't extend `Node`.
+  - Without `@factory`, the class has none of them.
+  - On an extern, it makes `create`, `destroy` and `queue_destroy` call these methods of its class. See "Factory methods" in `gd++ man externs`.
+
+@factory_pool and @factory_pool(RESERVE, CLEAR)
+  Declare the class's static methods that fill and empty its pool: `pool_reserve()` and `pool_clear()` by default. Only with `@pool`. See `gd++ man pools`.
+  - With arguments: up to two names, as strings, e.g. `@factory_pool("prewarm")`. An empty string `""`, or a missing name at the end, leaves that method out.
+
+@factory_scene and @factory_scene(CACHE, EVICT)
+  Declare the class's static methods that load and drop its scene: `scene_cache()` and `scene_evict()` by default. Only with `@scene`. See `gd++ man classes`.
+  - With arguments: up to two names, as strings, e.g. `@factory_scene("preload_scene")`. An empty string `""`, or a missing name at the end, leaves that method out.
+
 @icon(PATH)
   The class's icon in the editor: a string with a `res://` or `pkg://` path. See `gd++ man classes`.
 
 @pool, @pool(SIZE), @pool(SIZE, "fixed") and @pool(SIZE, "grow")
   `destroy` keeps objects in a pool instead of deleting them, and `create` reuses them. Only for classes that extend `Node`. See `gd++ man pools`.
-  - Scripts call the class's methods `gdpp_create()`, `gdpp_destroy()` and `gdpp_queue_destroy()` for the same.
-  - The class gets the static methods `gdpp_pool_reserve()`, which makes objects ahead of time, and `gdpp_pool_clear()`, which drops them all.
+  - Scripts use the class's `@factory` methods for the same.
+  - `@factory_pool` declares methods that make objects ahead of time, and drop them all.
   - With SIZE, a positive integer: the pool holds up to SIZE objects. `create` returns `nullptr` once all of them are in use, so code must check its result. `"fixed"` is the same.
   - With `"grow"`: the pool makes more objects then. In debug builds, it logs an error when it grows past SIZE objects, and again past each double of that.
 
@@ -53,8 +69,8 @@ func _score() -> int
   Make `create` instantiate the class's scene: a string with a `res://` or `pkg://` path. Only for classes that extend `Node`. See `gd++ man classes`.
   - The scene is loaded once.
   - Its root must be an object of the class.
-  - Scripts call the class's static method `gdpp_create()` for the same.
-  - The class gets the static methods `gdpp_scene_cache()`, which loads the scene ahead of time, and `gdpp_scene_evict()`, which drops it.
+  - Scripts use the class's `@factory` methods for the same.
+  - `@factory_scene` declares methods that load the scene ahead of time, and drop it.
 
 @trace(GROUPS...)
   Trace all its functions, variables and signals, and print the creation and destruction of its objects. Except `on process`, `on physics_process` and overrides of `_process` and `_physics_process`. See "@trace and @profile" below.

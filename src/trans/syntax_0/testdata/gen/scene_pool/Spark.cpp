@@ -7,13 +7,12 @@ namespace godot {
 #define This Spark
 
 void Spark::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spark::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spark::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spark::gdpp_queue_destroy);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_scene_cache"), &Spark::gdpp_scene_cache);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_scene_evict"), &Spark::gdpp_scene_evict);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_reserve", "count", "mode"), &Spark::gdpp_pool_reserve, DEFVAL(10), DEFVAL(String()));
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_pool_clear", "keep_in_use"), &Spark::gdpp_pool_clear, DEFVAL(false));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Spark::create);
+	ClassDB::bind_method(D_METHOD("destroy"), &Spark::destroy);
+	ClassDB::bind_method(D_METHOD("queue_destroy"), &Spark::queue_destroy);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("prewarm", "count", "mode"), &Spark::prewarm, DEFVAL(10), DEFVAL(String()));
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_cache"), &Spark::scene_cache);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("scene_evict"), &Spark::scene_evict);
 }
 
 Spark::Spark() {
@@ -30,31 +29,27 @@ void Spark::_gdpp_recycle_ctor() {
 void Spark::_gdpp_recycle_dtor() {
 }
 
-void Spark::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {
-	_gdpp_pool.reserve(p_count, p_mode);
-}
-
-void Spark::gdpp_pool_clear(bool p_keep_in_use) {
-	_gdpp_pool.clear(p_keep_in_use);
-}
-
-Spark *Spark::gdpp_create() {
+Spark *Spark::create() {
 	return gdpp::create<Spark>();
 }
 
-void Spark::gdpp_destroy() {
+void Spark::destroy() {
 	gdpp::destroy(this);
 }
 
-void Spark::gdpp_queue_destroy() {
+void Spark::queue_destroy() {
 	gdpp::queue_destroy(this);
 }
 
-void Spark::gdpp_scene_cache() {
+void Spark::prewarm(int64_t p_count, const String &p_mode) {
+	_gdpp_pool.reserve(p_count, p_mode);
+}
+
+void Spark::scene_cache() {
 	gdpp::scene<Spark>();
 }
 
-void Spark::gdpp_scene_evict() {
+void Spark::scene_evict() {
 	gdpp::evict_scene<Spark>();
 }
 

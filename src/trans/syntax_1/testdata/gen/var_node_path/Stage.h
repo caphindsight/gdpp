@@ -23,9 +23,6 @@ public:
 	Stage *next{};
 
 public:
-	static Stage *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	Node *get_root() const;
 	void set_root(Node *p_value);
 	Camera3D *get_camera() const;

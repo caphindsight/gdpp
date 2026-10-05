@@ -13,9 +13,6 @@ class Base : public Node {
 
 public:
 	static constexpr int64_t NOTIFICATION_HIT = 2000;
-	static Base *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body__hit();
 
 protected:

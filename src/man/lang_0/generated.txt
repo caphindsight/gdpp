@@ -174,7 +174,7 @@ In order:
 
 The constructor, if needed, in order (see `gd++ man lifecycle`):
 
-- in a `@pool` class, `const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);`, which tells whether `gdpp_pool_reserve` makes the object,
+- in a `@pool` class, `const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);`, which tells whether `pool_reserve` makes the object,
 - the creation line of a class whose `@trace` is on,
 - RPC configurations,
 - `set_process(true)` and the like, for overrides and `on` blocks,
@@ -230,18 +230,18 @@ When `@trace` or `@profile` annotations are on, the functions they apply to star
 
 # Generated names
 
-GD++ names its helpers with the prefix `_gdpp_`, which is reserved: don't use it for your own names. Its methods for scripts start with `gdpp_`.
+GD++ names its helpers with the prefix `_gdpp_`, which is reserved: don't use it for your own names.
 
 ```
 get_NAME, set_NAME           a variable's getter and setter
 NAME (of a signal)           a signal's emit function, returning gdpp::Emitted
-gdpp_create                  a class's static method for scripts, which calls create, unless it's @abstract
-gdpp_destroy                 a class's method for scripts, which calls destroy
-gdpp_queue_destroy           a node class's method for scripts, which calls queue_destroy
-gdpp_pool_reserve            a @pool class's static method, which fills its pool
-gdpp_pool_clear              a @pool class's static method, which empties its pool
-gdpp_scene_cache             a @scene class's static method, which loads its scene
-gdpp_scene_evict             a @scene class's static method, which drops its scene
+create                       @factory's static method, which calls create
+destroy                      @factory's method, which calls destroy
+queue_destroy                @factory's method, which calls queue_destroy
+pool_reserve                 @factory_pool's static method, which fills the pool
+pool_clear                   @factory_pool's static method, which empties the pool
+scene_cache                  @factory_scene's static method, which loads the scene
+scene_evict                  @factory_scene's static method, which drops the scene
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
 _gdpp_body_FUNC              the body of a @deferred, @thread_safe or @onthread function, or set block, which its deferred call or task runs
@@ -298,8 +298,8 @@ protected:
 
 - Its methods are defined inline, after the classes they may use.
 - They call `_gdpp_base->call`, `call_deferred`, `get`, `set` or `emit_signal` with the member's name. See `gd++ man externs`.
-- An extern with `@pool` or `@scene` also has e.g. `static constexpr gdpp::ExtCreate<Bullet> gdpp_ext_create{ true };`, for a `@pool` extern `Bullet`. Then `create` calls the class's static method `gdpp_create()`, and the value tells whether `destroy` and `queue_destroy` call the object's methods `gdpp_destroy()` and `gdpp_queue_destroy()`.
 - The wrapper of an extern that extends another extern derives from that one's wrapper, e.g. `class Car : public Vehicle`, and shares its `Base` and `_gdpp_base`.
+- An extern with `@factory` also has e.g. `static constexpr gdpp::ExtFactory<Bullet> _gdpp_factory{ "create", "destroy", "queue_destroy" };`, which names the methods that `create`, `destroy` and `queue_destroy` call, with `nullptr` for the defaults. An extern that extends it doesn't use it, since its type names `Bullet`.
 
 If a `@trace` or `@profile` annotation of the extern is on, the header starts with `#define GDPP_DEBUGGING`. The methods start with the same lines as a class's functions, with `gdpp::via_extern` and "extern" names:
 

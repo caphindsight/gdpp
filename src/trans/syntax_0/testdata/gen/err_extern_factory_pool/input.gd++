@@ -1,0 +1,7 @@
+class_name A
+extends Node
+
+@factory_pool
+extern B {
+  extends Node
+}

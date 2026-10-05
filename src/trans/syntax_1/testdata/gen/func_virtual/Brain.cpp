@@ -21,21 +21,6 @@ void Brain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_super_react", "to"), &Brain::_super_react);
 	ClassDB::bind_method(D_METHOD("react", "to"), &Brain::react);
 	GDVIRTUAL_BIND(_secret);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Brain::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Brain::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Brain::gdpp_queue_destroy);
-}
-
-Brain *Brain::gdpp_create() {
-	return gdpp::create<Brain>();
-}
-
-void Brain::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Brain::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Brain::_think(double delta) {
@@ -47,7 +32,7 @@ int64_t Brain::_think(double delta) {
 
   return 0;
 
-#line 51 "Brain.cpp"
+#line 36 "Brain.cpp"
 }
 
 int64_t Brain::think(double delta) {
@@ -87,7 +72,7 @@ double Brain::_score() const {
 
   return 1.0;
 
-#line 91 "Brain.cpp"
+#line 76 "Brain.cpp"
 }
 
 double Brain::score() const {
@@ -100,7 +85,7 @@ void Brain::_done() {
 	}
 #line 21 "input.gd++"
 
-#line 104 "Brain.cpp"
+#line 89 "Brain.cpp"
 }
 
 void Brain::done() {
@@ -120,7 +105,7 @@ bool Brain::_super_react(const String &to) {
 
   return true;
 
-#line 124 "Brain.cpp"
+#line 109 "Brain.cpp"
 }
 
 bool Brain::react(const String &to) {

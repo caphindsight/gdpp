@@ -12,9 +12,6 @@ class Panel : public Control {
 	GDCLASS(Panel, Control)
 
 public:
-	static Panel *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body__resized();
 	void _gdpp_body__focus_enter();
 

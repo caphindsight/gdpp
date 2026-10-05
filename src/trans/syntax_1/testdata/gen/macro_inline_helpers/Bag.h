@@ -16,9 +16,6 @@ public:
 	int64_t arrows{};
 
 public:
-	static Bag *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t get_sword() const;
 	void set_sword(int64_t p_value);
 	int64_t get_arrows() const;

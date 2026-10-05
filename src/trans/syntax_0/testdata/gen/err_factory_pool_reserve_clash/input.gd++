@@ -1,0 +1,7 @@
+@pool
+@factory_pool("prewarm", "")
+class_name A
+extends Node
+
+func prewarm() -> void {
+}

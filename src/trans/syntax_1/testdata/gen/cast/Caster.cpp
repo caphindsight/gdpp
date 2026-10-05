@@ -14,9 +14,6 @@ namespace godot {
 
 void Caster::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("convert", "node", "resource", "value"), &Caster::convert);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Caster::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Caster::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Caster::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_mode"), &Caster::_gdpp_get_mode);
 	ClassDB::bind_method(D_METHOD("set_mode", "value"), &Caster::_gdpp_set_mode);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Caster_Mode>("mode", PROPERTY_USAGE_NONE), "set_mode", "get_mode");
@@ -39,18 +36,6 @@ void Caster::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_DISABLED", static_cast<int64_t>(Mode::DISABLED));
 	ClassDB::bind_integer_constant(get_class_static(), "Level", "LEVEL_EASY", static_cast<int64_t>(Level::EASY));
 	ClassDB::bind_integer_constant(get_class_static(), "Level", "LEVEL_HARD", static_cast<int64_t>(Level::HARD));
-}
-
-Caster *Caster::gdpp_create() {
-	return gdpp::create<Caster>();
-}
-
-void Caster::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Caster::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Caster::convert(Node *node, const Ref<Resource> &resource, const Variant &value) {
@@ -86,7 +71,7 @@ int64_t Caster::convert(Node *node, const Ref<Resource> &resource, const Variant
   return gdpp::cast<int64_t>(ratio) + stop + (constant_spatial != nullptr) + boxed.operator int64_t() + boxed_task.get_type() +
       nodes.size() + unwrapped.is_valid() + (road_node != nullptr) + (road_spatial != nullptr) + (settings_ptr != nullptr) + from_object.is_valid();
 
-#line 90 "Caster.cpp"
+#line 75 "Caster.cpp"
 }
 
 Mode Caster::get_mode() const {

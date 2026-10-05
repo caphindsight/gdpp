@@ -8,21 +8,6 @@ namespace godot {
 
 void Caller::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("call_twice", "f"), &Caller::call_twice);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Caller::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Caller::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Caller::gdpp_queue_destroy);
-}
-
-Caller *Caller::gdpp_create() {
-	return gdpp::create<Caller>();
-}
-
-void Caller::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Caller::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 void Caller::call_twice(const Callable &f) {
@@ -33,7 +18,7 @@ void Caller::call_twice(const Callable &f) {
   int invoke = 2;
   invoke *= 2;
 
-#line 37 "Caller.cpp"
+#line 22 "Caller.cpp"
 }
 
 #undef This

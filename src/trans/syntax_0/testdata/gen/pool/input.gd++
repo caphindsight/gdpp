@@ -1,4 +1,6 @@
 @pool(100, "fixed")
+@factory
+@factory_pool
 @trace
 class_name Bullet
 extends Node3D

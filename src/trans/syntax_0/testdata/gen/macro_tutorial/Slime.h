@@ -26,9 +26,6 @@ public:
 
 public:
 	Slime();
-	static Slime *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	bool can_change_state(SlimeState from, SlimeState to);
 	void change_state(SlimeState to);
 	void update_state(double delta);

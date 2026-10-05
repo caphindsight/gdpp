@@ -8,9 +8,6 @@ namespace godot {
 
 void Fighter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("hurt", "n"), &Fighter::hurt);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Fighter::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Fighter::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Fighter::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_health"), &Fighter::get_health);
 	ClassDB::bind_method(D_METHOD("set_health", "value"), &Fighter::set_health);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("health", PROPERTY_USAGE_NONE), "set_health", "get_health");
@@ -22,22 +19,10 @@ void Fighter::_bind_methods() {
 Fighter::Fighter() {
 #line 4 "input.gd++"
 	health = 100;
-#line 26 "Fighter.cpp"
+#line 23 "Fighter.cpp"
 #line 11 "input.gd++"
 	label = String("shooter: health = ") + String::num_int64(health);
-#line 29 "Fighter.cpp"
-}
-
-Fighter *Fighter::gdpp_create() {
-	return gdpp::create<Fighter>();
-}
-
-void Fighter::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Fighter::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 26 "Fighter.cpp"
 }
 
 void Fighter::hurt(int64_t n) {
@@ -46,7 +31,7 @@ void Fighter::hurt(int64_t n) {
   health -= n;
   UtilityFunctions::print("[Fighter] hurt:", " n=", n, ", health=", health);
 
-#line 50 "Fighter.cpp"
+#line 35 "Fighter.cpp"
 }
 
 int64_t Fighter::get_health() const {

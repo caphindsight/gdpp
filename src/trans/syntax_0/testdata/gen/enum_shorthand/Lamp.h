@@ -29,9 +29,6 @@ public:
 
 public:
 	Lamp();
-	static Lamp *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void set_all(ShadowCastingSetting setting = _gdpp_default_set_all_setting(), Level other = _gdpp_default_set_all_other());
 	ShadowCastingSetting get_casting() const;
 	void set_casting(ShadowCastingSetting p_value);

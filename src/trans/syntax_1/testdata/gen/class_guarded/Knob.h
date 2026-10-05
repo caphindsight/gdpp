@@ -11,11 +11,6 @@ namespace godot {
 class Knob : public Handle {
 	GDCLASS(Knob, Handle)
 
-public:
-	static Knob *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-
 protected:
 	static void _bind_methods();
 };

@@ -19,9 +19,6 @@ public:
 	String title{};
 
 public:
-	static Sections *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t get_plain() const;
 	void set_plain(int64_t p_value);
 	int64_t get_stat_hp() const;

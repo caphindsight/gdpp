@@ -8,25 +8,10 @@ namespace godot {
 
 void Spawner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("wave_size", "wave"), &Spawner::wave_size);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spawner::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spawner::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spawner::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "", "WAVE_1_SLIMES", WAVE_1_SLIMES);
 	ClassDB::bind_integer_constant(get_class_static(), "", "WAVE_2_SLIMES", WAVE_2_SLIMES);
 	ClassDB::bind_integer_constant(get_class_static(), "", "WAVE_3_SLIMES", WAVE_3_SLIMES);
 	ClassDB::bind_integer_constant(get_class_static(), "", "WAVE_4_SLIMES", WAVE_4_SLIMES);
-}
-
-Spawner *Spawner::gdpp_create() {
-	return gdpp::create<Spawner>();
-}
-
-void Spawner::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Spawner::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Spawner::wave_size(int64_t wave) {
@@ -44,7 +29,7 @@ case 4: return WAVE_4_SLIMES;
 }
 #line 4 "input.gd++"
 return 0;
-#line 48 "Spawner.cpp"
+#line 33 "Spawner.cpp"
 }
 
 #undef This

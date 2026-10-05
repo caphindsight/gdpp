@@ -9,9 +9,6 @@ namespace godot {
 void Score::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bump_points"), &Score::bump_points);
 	ClassDB::bind_method(D_METHOD("get_points_twice"), &Score::get_points_twice);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Score::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Score::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Score::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_points"), &Score::get_points);
 	ClassDB::bind_method(D_METHOD("set_points", "value"), &Score::set_points);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("points", PROPERTY_USAGE_NONE), "set_points", "get_points");
@@ -20,31 +17,19 @@ void Score::_bind_methods() {
 Score::Score() {
 #line 4 "input.gd++"
 	points = 10;
-#line 24 "Score.cpp"
-}
-
-Score *Score::gdpp_create() {
-	return gdpp::create<Score>();
-}
-
-void Score::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Score::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 21 "Score.cpp"
 }
 
 void Score::bump_points() {
 #line 4 "input.gd++"
 points++;
-#line 42 "Score.cpp"
+#line 27 "Score.cpp"
 }
 
 int64_t Score::get_points_twice() {
 #line 8 "macros.gd++"
  return points * 2;
-#line 48 "Score.cpp"
+#line 33 "Score.cpp"
 }
 
 int64_t Score::get_points() const {

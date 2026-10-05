@@ -12,7 +12,6 @@ class Plain : public RefCounted {
 	GDCLASS(Plain, RefCounted)
 
 public:
-	static Ref<Plain> gdpp_create();
 	void run();
 
 protected:

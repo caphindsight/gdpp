@@ -8,9 +8,6 @@ namespace godot {
 
 void Hud::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("refresh"), &Hud::refresh);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Hud::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Hud::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Hud::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_score_text"), &Hud::get_score_text);
 	ClassDB::bind_method(D_METHOD("set_score_text", "value"), &Hud::set_score_text);
 	ClassDB::add_property(get_class_static(), gdpp::info<String>("score_text", PROPERTY_USAGE_NONE), "set_score_text", "get_score_text");
@@ -22,22 +19,10 @@ void Hud::_bind_methods() {
 Hud::Hud() {
 #line 4 "input.gd++"
 	score_text = "Score:";
-#line 26 "Hud.cpp"
+#line 23 "Hud.cpp"
 #line 4 "input.gd++"
 	lives_text = "Lives:";
-#line 29 "Hud.cpp"
-}
-
-Hud *Hud::gdpp_create() {
-	return gdpp::create<Hud>();
-}
-
-void Hud::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Hud::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 26 "Hud.cpp"
 }
 
 void Hud::refresh() {
@@ -45,7 +30,7 @@ void Hud::refresh() {
 
   UtilityFunctions::print("REFRESHED");
 
-#line 49 "Hud.cpp"
+#line 34 "Hud.cpp"
 }
 
 String Hud::get_score_text() const {

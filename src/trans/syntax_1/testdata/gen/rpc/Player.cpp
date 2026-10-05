@@ -14,9 +14,6 @@ void Player::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("take_damage", "amount", "from"), &Player::_gdpp_take_damage);
 	ClassDB::bind_method(D_METHOD("sync_position", "pos"), &Player::sync_position);
 	ClassDB::bind_method(D_METHOD("hit", "peer", "other"), &Player::hit);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Player::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Player::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Player::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Team", "TEAM_RED", static_cast<int64_t>(Team::RED));
 	ClassDB::bind_integer_constant(get_class_static(), "Team", "TEAM_BLUE", static_cast<int64_t>(Team::BLUE));
 }
@@ -27,22 +24,10 @@ Player::Player() {
 	gdpp::rpc_config<This>(this, "sync_position", MultiplayerAPI::RPC_MODE_AUTHORITY, MultiplayerPeer::TRANSFER_MODE_UNRELIABLE_ORDERED, false, 0);
 }
 
-Player *Player::gdpp_create() {
-	return gdpp::create<Player>();
-}
-
-void Player::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Player::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
-}
-
 void Player::ping() {
 #line 7 "input.gd++"
 
-#line 46 "Player.cpp"
+#line 31 "Player.cpp"
 }
 
 Error Player::_gdpp_rpc_ping(int64_t p_peer) {
@@ -52,7 +37,7 @@ Error Player::_gdpp_rpc_ping(int64_t p_peer) {
 void Player::take_damage(int64_t amount, Team from) {
 #line 10 "input.gd++"
 
-#line 56 "Player.cpp"
+#line 41 "Player.cpp"
 }
 
 void Player::_gdpp_take_damage(int64_t amount, _gdpp_Player_Team from) {
@@ -68,7 +53,7 @@ int64_t Player::sync_position(const Vector3 &pos) {
 
   return 0;
 
-#line 72 "Player.cpp"
+#line 57 "Player.cpp"
 }
 
 Error Player::_gdpp_rpc_sync_position(int64_t p_peer, const Vector3 &pos) {
@@ -90,7 +75,7 @@ void Player::hit(int64_t peer, Player *other) {
   rpc("ping");
   take_damage(1, Team::RED);
 
-#line 94 "Player.cpp"
+#line 79 "Player.cpp"
 }
 
 #undef This

@@ -12,7 +12,6 @@ class Item : public Resource {
 	GDCLASS(Item, Resource)
 
 public:
-	static Ref<Item> gdpp_create();
 	GDVIRTUAL0R(int64_t, _damage)
 	virtual int64_t _damage();
 	int64_t damage();

@@ -1,0 +1,3 @@
+@factory("spawn", "despawn", "", "extra")
+class_name A
+extends Node

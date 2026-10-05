@@ -17,9 +17,6 @@ public:
 	gdpp::ExtPtr<Terrain> terrain{};
 
 public:
-	static User *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	gdpp::ExtPtr<Terrain> get_terrain() const;
 	void set_terrain(gdpp::ExtPtr<Terrain> p_value);
 

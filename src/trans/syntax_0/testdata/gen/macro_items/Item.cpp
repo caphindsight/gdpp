@@ -11,11 +11,6 @@ void Item::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("damage"), &Item::damage);
 	GDVIRTUAL_BIND(_range);
 	ClassDB::bind_method(D_METHOD("range"), &Item::range);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Item::gdpp_create);
-}
-
-Ref<Item> Item::gdpp_create() {
-	return gdpp::create<Item>();
 }
 
 int64_t Item::_damage() {
@@ -37,7 +32,7 @@ double Item::_range() {
 	}
 #line 9 "input.gd++"
  return 1.0;
-#line 41 "Item.cpp"
+#line 36 "Item.cpp"
 }
 
 double Item::range() {

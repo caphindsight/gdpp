@@ -11,11 +11,6 @@ namespace godot {
 class Gizmo : public Node3D {
 	GDCLASS(Gizmo, Node3D)
 
-public:
-	static Gizmo *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-
 protected:
 	static void _bind_methods();
 };

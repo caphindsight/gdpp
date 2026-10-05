@@ -7,11 +7,6 @@ namespace godot {
 #define This Bow
 
 void Bow::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Bow::gdpp_create);
-}
-
-Ref<Bow> Bow::gdpp_create() {
-	return gdpp::create<Bow>();
 }
 
 int64_t Bow::_damage() {
@@ -21,7 +16,7 @@ int64_t Bow::_damage() {
 	}
 #line 1 "input.gd++"
 return 6;
-#line 25 "Bow.cpp"
+#line 20 "Bow.cpp"
 }
 
 double Bow::_range() {
@@ -31,7 +26,7 @@ double Bow::_range() {
 	}
 #line 1 "input.gd++"
 return 20;
-#line 35 "Bow.cpp"
+#line 30 "Bow.cpp"
 }
 
 #undef This

@@ -7,24 +7,9 @@ namespace godot {
 #define This User
 
 void User::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &User::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &User::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &User::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_terrain"), &User::get_terrain);
 	ClassDB::bind_method(D_METHOD("set_terrain", "value"), &User::set_terrain);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Terrain>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
-}
-
-User *User::gdpp_create() {
-	return gdpp::create<User>();
-}
-
-void User::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void User::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 gdpp::ExtPtr<Terrain> User::get_terrain() const {

@@ -11,11 +11,6 @@ namespace godot {
 class Bullet : public Node {
 	GDCLASS(Bullet, Node)
 
-public:
-	static Bullet *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
-
 protected:
 	static void _bind_methods();
 };

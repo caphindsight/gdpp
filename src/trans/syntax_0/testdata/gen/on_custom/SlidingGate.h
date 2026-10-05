@@ -12,9 +12,6 @@ class SlidingGate : public Gate {
 	GDCLASS(SlidingGate, Gate)
 
 public:
-	static SlidingGate *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body__opened();
 
 protected:

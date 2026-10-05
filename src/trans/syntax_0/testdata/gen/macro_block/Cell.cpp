@@ -7,11 +7,6 @@ namespace godot {
 #define This Cell
 
 void Cell::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Cell::gdpp_create);
-}
-
-Ref<Cell> Cell::gdpp_create() {
-	return gdpp::create<Cell>();
 }
 
 #undef This

@@ -16,9 +16,6 @@ public:
 
 public:
 	Score();
-	static Score *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void bump_points();
 	int64_t get_points_twice();
 	int64_t get_points() const;

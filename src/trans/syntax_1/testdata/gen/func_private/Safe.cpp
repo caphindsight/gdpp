@@ -9,23 +9,8 @@ namespace godot {
 void Safe::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("open"), &Safe::open);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_flush"), &Safe::_gdpp_body_flush);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Safe::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Safe::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Safe::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Lock", "LOCK_OPEN", static_cast<int64_t>(Lock::OPEN));
 	ClassDB::bind_integer_constant(get_class_static(), "Lock", "LOCK_SHUT", static_cast<int64_t>(Lock::SHUT));
-}
-
-Safe *Safe::gdpp_create() {
-	return gdpp::create<Safe>();
-}
-
-void Safe::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Safe::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 void Safe::open() {
@@ -33,7 +18,7 @@ void Safe::open() {
 
   apply(Lock::OPEN);
 
-#line 37 "Safe.cpp"
+#line 22 "Safe.cpp"
 }
 
 bool Safe::apply(Lock lock, int64_t times) {
@@ -41,13 +26,13 @@ bool Safe::apply(Lock lock, int64_t times) {
 
   return lock == Lock::SHUT;
 
-#line 45 "Safe.cpp"
+#line 30 "Safe.cpp"
 }
 
 int64_t Safe::_gdpp_default_apply_times() {
 #line 12 "input.gd++"
 	return 1;
-#line 51 "Safe.cpp"
+#line 36 "Safe.cpp"
 }
 
 int64_t Safe::code() {
@@ -55,7 +40,7 @@ int64_t Safe::code() {
 
   return 42;
 
-#line 59 "Safe.cpp"
+#line 44 "Safe.cpp"
 }
 
 void Safe::flush() {
@@ -65,7 +50,7 @@ void Safe::flush() {
 void Safe::_gdpp_body_flush() {
 #line 22 "input.gd++"
 
-#line 69 "Safe.cpp"
+#line 54 "Safe.cpp"
 }
 
 #undef This

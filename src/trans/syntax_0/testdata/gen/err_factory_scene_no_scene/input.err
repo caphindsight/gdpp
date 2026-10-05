@@ -1,0 +1,4 @@
+input.gd++:1:1: Annotation @factory_scene needs @scene on the class.
+ 1 | @factory_scene("cache", "evict")
+   | ^^^^^^^^^^^^^^
+Hint: Add @scene, or remove @factory_scene.

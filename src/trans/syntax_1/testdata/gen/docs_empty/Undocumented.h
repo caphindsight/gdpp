@@ -12,7 +12,6 @@ class Undocumented : public RefCounted {
 	GDCLASS(Undocumented, RefCounted)
 
 public:
-	static Ref<Undocumented> gdpp_create();
 	void f();
 
 protected:

@@ -8,9 +8,6 @@ namespace godot {
 
 void Handle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("drag"), &Handle::drag);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Handle::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Handle::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Handle::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_size"), &Handle::get_size);
 	ClassDB::bind_method(D_METHOD("set_size", "value"), &Handle::set_size);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("size", PROPERTY_USAGE_NONE), "set_size", "get_size");
@@ -19,28 +16,7 @@ void Handle::_bind_methods() {
 Handle::Handle() {
 #line 5 "input.gd++"
 	size = 1.0;
-#line 23 "Handle.cpp"
-}
-
-Handle *Handle::gdpp_create() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-	return gdpp::create<Handle>();
-}
-
-void Handle::gdpp_destroy() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-	gdpp::destroy(this);
-}
-
-void Handle::gdpp_queue_destroy() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-	gdpp::queue_destroy(this);
+#line 20 "Handle.cpp"
 }
 
 void Handle::drag() {
@@ -51,7 +27,7 @@ void Handle::drag() {
 
   gd::print(size);
 
-#line 55 "Handle.cpp"
+#line 31 "Handle.cpp"
 }
 
 double Handle::get_size() const {

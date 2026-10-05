@@ -12,9 +12,6 @@ class Lid : public Vault {
 	GDCLASS(Lid, Vault)
 
 public:
-	static Lid *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void close();
 
 protected:

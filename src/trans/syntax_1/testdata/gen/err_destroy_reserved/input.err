@@ -1,4 +1,0 @@
-input.gd++:4:1: The name "gdpp_destroy" is already used by another member.
- 4 | var gdpp_destroy: int
-   | ^^^
-Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and classes declare methods for scripts, e.g. gdpp_create.

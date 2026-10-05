@@ -30,9 +30,6 @@ private:
 public:
 	Player();
 	~Player();
-	static Player *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	bool take_damage(int64_t amount, Mood mood = _gdpp_default_take_damage_mood());
 	static Player *create();
 	bool is_alive() const;

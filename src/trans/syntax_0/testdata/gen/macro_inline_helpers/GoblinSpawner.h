@@ -15,9 +15,6 @@ public:
 	static constexpr int64_t WAVE_1 = 3;
 	static constexpr int64_t WAVE_2 = 6;
 	static constexpr int64_t WAVE_3 = 9;
-	static GoblinSpawner *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 
 protected:
 	static void _bind_methods();

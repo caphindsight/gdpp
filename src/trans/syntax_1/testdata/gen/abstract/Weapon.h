@@ -13,8 +13,6 @@ class Weapon : public Node3D {
 
 public:
 	static constexpr gdpp::Abstract<Weapon> _gdpp_abstract{};
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	GDVIRTUAL0(_fire)
 	virtual void _fire();
 	void fire();

@@ -19,9 +19,6 @@ private:
 #line 20 "Table.h"
 
 public:
-	static Table *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t damage(int64_t level);
 
 protected:

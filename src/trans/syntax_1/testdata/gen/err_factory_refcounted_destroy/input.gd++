@@ -1,0 +1,3 @@
+@factory("create", "destroy", "")
+class_name A
+extends RefCounted

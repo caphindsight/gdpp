@@ -18,24 +18,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="A" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
-		<method name="gdpp_destroy">
-			<return type="void" />
-			<description>
-				Frees the object right away, like [code]destroy[/code] in GD++ code. It's thread-safe: on other threads than the main one, it leaves nodes in the scene tree to the main thread, which frees them at the end of the frame.
-			</description>
-		</method>
-		<method name="gdpp_queue_destroy">
-			<return type="void" />
-			<description>
-				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
-			</description>
-		</method>
 		<method name="pick">
 			<return type="int" enum="A.Suit" />
 			<param index="0" name="s" type="int" enum="A.Suit" />

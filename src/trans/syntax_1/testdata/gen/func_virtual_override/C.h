@@ -14,9 +14,6 @@ class C : public B {
 	GDCLASS(C, ::godot::B)
 
 public:
-	static C *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	Suit _pick(Suit s) override;
 	void _reset() override;
 

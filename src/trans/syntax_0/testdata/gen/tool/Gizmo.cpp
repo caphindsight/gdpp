@@ -8,25 +8,10 @@ namespace godot {
 
 void Gizmo::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("size"), &Gizmo::size);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Gizmo::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Gizmo::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Gizmo::gdpp_queue_destroy);
 }
 
 Gizmo::Gizmo() {
 	set_process(true);
-}
-
-Gizmo *Gizmo::gdpp_create() {
-	return gdpp::create<Gizmo>();
-}
-
-void Gizmo::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Gizmo::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 double Gizmo::size() {
@@ -34,13 +19,13 @@ double Gizmo::size() {
 
   return 1.0;
 
-#line 38 "Gizmo.cpp"
+#line 23 "Gizmo.cpp"
 }
 
 void Gizmo::_process(double delta) {
 #line 10 "input.gd++"
 
-#line 44 "Gizmo.cpp"
+#line 29 "Gizmo.cpp"
 }
 
 #undef This

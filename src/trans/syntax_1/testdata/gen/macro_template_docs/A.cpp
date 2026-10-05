@@ -7,9 +7,6 @@ namespace godot {
 #define This A
 
 void A::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &A::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &A::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &A::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_x"), &A::get_x);
 	ClassDB::bind_method(D_METHOD("set_x", "value"), &A::set_x);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("x", PROPERTY_USAGE_NONE), "set_x", "get_x");
@@ -27,28 +24,16 @@ void A::_bind_methods() {
 A::A() {
 #line 13 "input.gd++"
 	x = 0;
-#line 31 "A.cpp"
+#line 28 "A.cpp"
 #line 16 "input.gd++"
 	y = 0;
-#line 34 "A.cpp"
+#line 31 "A.cpp"
 #line 29 "input.gd++"
 	z = 0;
-#line 37 "A.cpp"
+#line 34 "A.cpp"
 #line 24 "input.gd++"
 	w = 0;
-#line 40 "A.cpp"
-}
-
-A *A::gdpp_create() {
-	return gdpp::create<A>();
-}
-
-void A::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void A::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 37 "A.cpp"
 }
 
 int64_t A::get_x() const {

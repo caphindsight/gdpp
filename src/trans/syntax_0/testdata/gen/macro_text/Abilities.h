@@ -18,7 +18,6 @@ public:
 
 public:
 	Abilities();
-	static Ref<Abilities> gdpp_create();
 	bool any();
 	bool get_can_jump() const;
 	void set_can_jump(bool p_value);

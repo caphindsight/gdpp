@@ -7,9 +7,6 @@ namespace godot {
 #define This Player
 
 void Player::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Player::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Player::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Player::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_health"), &Player::get_health);
 	ClassDB::bind_method(D_METHOD("set_health", "value"), &Player::set_health);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("health", PROPERTY_USAGE_NONE), "set_health", "get_health");
@@ -50,37 +47,25 @@ void Player::_bind_methods() {
 Player::Player() {
 #line 21 "input.gd++"
 	max_health = 100;
-#line 54 "Player.cpp"
+#line 51 "Player.cpp"
 #line 21 "input.gd++"
 	max_mana = 50;
-#line 57 "Player.cpp"
+#line 54 "Player.cpp"
 #line 21 "input.gd++"
 	max_focus = 10;
-#line 60 "Player.cpp"
+#line 57 "Player.cpp"
 #line 21 "input.gd++"
 	max_stamina = 80;
-#line 63 "Player.cpp"
+#line 60 "Player.cpp"
 #line 21 "input.gd++"
 	max_courage = 20;
-#line 66 "Player.cpp"
-}
-
-Player *Player::gdpp_create() {
-	return gdpp::create<Player>();
-}
-
-void Player::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Player::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 63 "Player.cpp"
 }
 
 int64_t Player::get_health() const {
 #line 14 "input.gd++"
  return health_;
-#line 84 "Player.cpp"
+#line 69 "Player.cpp"
 }
 
 void Player::set_health(int64_t value) {
@@ -89,7 +74,7 @@ void Player::set_health(int64_t value) {
       health_ = gd::clampi(value, 0, max_health);
       (void) health_changed(health_);
 
-#line 93 "Player.cpp"
+#line 78 "Player.cpp"
 }
 
 int64_t Player::get_max_health() const {
@@ -103,7 +88,7 @@ void Player::set_max_health(int64_t p_value) {
 int64_t Player::get_mana() const {
 #line 14 "input.gd++"
  return mana_;
-#line 107 "Player.cpp"
+#line 92 "Player.cpp"
 }
 
 void Player::set_mana(int64_t value) {
@@ -112,7 +97,7 @@ void Player::set_mana(int64_t value) {
       mana_ = gd::clampi(value, 0, max_mana);
       (void) mana_changed(mana_);
 
-#line 116 "Player.cpp"
+#line 101 "Player.cpp"
 }
 
 int64_t Player::get_max_mana() const {
@@ -126,7 +111,7 @@ void Player::set_max_mana(int64_t p_value) {
 int64_t Player::get_focus() const {
 #line 14 "input.gd++"
  return focus_;
-#line 130 "Player.cpp"
+#line 115 "Player.cpp"
 }
 
 void Player::set_focus(int64_t value) {
@@ -135,7 +120,7 @@ void Player::set_focus(int64_t value) {
       focus_ = gd::clampi(value, 0, max_focus);
       (void) focus_changed(focus_);
 
-#line 139 "Player.cpp"
+#line 124 "Player.cpp"
 }
 
 int64_t Player::get_max_focus() const {
@@ -149,7 +134,7 @@ void Player::set_max_focus(int64_t p_value) {
 int64_t Player::get_stamina() const {
 #line 14 "input.gd++"
  return stamina_;
-#line 153 "Player.cpp"
+#line 138 "Player.cpp"
 }
 
 void Player::set_stamina(int64_t value) {
@@ -158,7 +143,7 @@ void Player::set_stamina(int64_t value) {
       stamina_ = gd::clampi(value, 0, max_stamina);
       (void) stamina_changed(stamina_);
 
-#line 162 "Player.cpp"
+#line 147 "Player.cpp"
 }
 
 int64_t Player::get_max_stamina() const {
@@ -172,7 +157,7 @@ void Player::set_max_stamina(int64_t p_value) {
 int64_t Player::get_courage() const {
 #line 14 "input.gd++"
  return courage_;
-#line 176 "Player.cpp"
+#line 161 "Player.cpp"
 }
 
 void Player::set_courage(int64_t value) {
@@ -181,7 +166,7 @@ void Player::set_courage(int64_t value) {
       courage_ = gd::clampi(value, 0, max_courage);
       (void) courage_changed(courage_);
 
-#line 185 "Player.cpp"
+#line 170 "Player.cpp"
 }
 
 int64_t Player::get_max_courage() const {

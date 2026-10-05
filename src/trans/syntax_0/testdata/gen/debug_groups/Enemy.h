@@ -16,9 +16,6 @@ public:
 	double speed{};
 
 public:
-	static Enemy *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void think();
 	int64_t attack(Node *target);
 	void move();

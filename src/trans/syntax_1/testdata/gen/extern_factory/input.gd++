@@ -1,0 +1,34 @@
+class_name Gun
+extends Node3D
+
+@factory
+extern Bullet {
+  extends Node3D
+}
+
+@factory("spawn", "", "queue_despawn")
+extern Spark {
+  extends Node
+}
+
+extern Shard {
+  extends Spark
+}
+
+@factory("make")
+extern Stats {
+  extends RefCounted
+}
+
+func fire() -> void {
+  auto bullet = create Bullet;
+  if (bullet) {
+    add_child(bullet.base());
+  }
+  auto spark = create Spark;
+  auto shard = create Shard;
+  auto stats = create Stats;
+  queue_destroy spark;
+  destroy shard;
+  destroy bullet;
+}

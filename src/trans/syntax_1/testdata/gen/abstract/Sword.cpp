@@ -7,36 +7,6 @@ namespace godot {
 #define This Sword
 
 void Sword::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Sword::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Sword::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Sword::gdpp_queue_destroy);
-}
-
-Sword *Sword::gdpp_create() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
-	return gdpp::create<Sword>();
-}
-
-void Sword::gdpp_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::destroy(this);
-}
-
-void Sword::gdpp_queue_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::queue_destroy(this);
 }
 
 void Sword::_fire() {
@@ -50,7 +20,7 @@ void Sword::_fire() {
 	}
 #line 12 "input.gd++"
 
-#line 54 "Sword.cpp"
+#line 24 "Sword.cpp"
 }
 
 #undef This

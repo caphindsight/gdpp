@@ -83,7 +83,7 @@ signal
 
 The extern itself can have:
 
-- `@pool` and `@scene`. See "Pools and scenes" below.
+- `@factory`, to make `create`, `destroy` and `queue_destroy` call its class's methods. See "Factory methods" below.
 - `@trace` and `@profile`, for all its members. See "Externs" in `gd++ man debugging`.
 
 Facts:
@@ -164,39 +164,36 @@ destroy some_terrain;             // only for ExtPtr; refcounted objects delete 
 - deletes an `ExtPtr`'s object,
 - doesn't compile for an `ExtRef`: refcounted objects delete themselves when their last `ExtRef` goes away.
 
-They're the same `create` and `destroy` as for any class. See `gd++ man classes`. For a class with `@pool` or `@scene`, see the next section.
+They're the same `create` and `destroy` as for any class. See `gd++ man classes`. To call the class's own methods instead, see the next section.
 
-# Pools and scenes
+# Factory methods
 
-If the class is a GD++ class with `@pool` or `@scene`, give its extern the same annotations, without arguments:
+With `@factory`, `create`, `destroy` and `queue_destroy` call methods of the extern's class, by name, instead:
 
 ```gd++
-@scene
-@pool
+@factory
 extern Bullet {
   extends Area3D
 }
 ```
 
-Then `create`, `destroy` and `queue_destroy` call, by name, the class's methods for scripts. So they work like in the class's own package:
+- `create Bullet` calls the class's static method `create()`, and returns its result. It may be null, e.g. from a full `"fixed"` pool. Always check it.
+- `destroy bullet` calls the object's method `destroy()`.
+- `queue_destroy bullet` calls the object's method `queue_destroy()`.
 
-- `create Bullet` calls `Bullet.gdpp_create()`. With a `"fixed"` pool, it returns `nullptr` once all the objects are in use. Always check the result.
-- With `@pool`, `destroy bullet` calls `bullet.gdpp_destroy()`, which returns the bullet to its pool right away.
-- With `@pool`, `queue_destroy bullet` calls `bullet.gdpp_queue_destroy()`, which returns it at the end of the frame.
-- A bullet that the pool didn't make, e.g. one from a scene, is freed.
+That's how other packages use a GD++ class's pool or scene: give the class `@factory` too, and its methods do the work in the class's own package. See `gd++ man classes` and `gd++ man pools`.
 
-Without these annotations:
+Other names: `@factory` takes up to three strings, for `create`, `destroy` and `queue_destroy`, in this order, like on a class. An empty string `""`, or a missing name at the end, keeps the default for that one:
 
-- `create` makes a plain object, outside the pool and without the scene.
-- `destroy` deletes the object for good, so nothing is reused.
+```gd++
+@factory("spawn", "", "queue_despawn")    # create calls spawn(), destroy deletes, queue_destroy calls queue_despawn()
+```
 
-Rules:
+Facts:
 
-- The annotations take no arguments: the class configures its pool and names its scene.
-- They need an extern that extends `Node`, and a GD++ class, which has these methods.
-- An extern that extends a `@pool` or `@scene` extern doesn't use the pool or the scene, unless it has the annotations itself, like a class that extends a `@pool` or `@scene` class.
-
-See `gd++ man pools`.
+- Only the methods that apply: no `destroy` for refcounted externs, and no `queue_destroy` for externs that don't extend `Node`.
+- An extern that extends a `@factory` extern doesn't use its methods, unless it has `@factory` itself.
+- Externs can't have `@pool`, `@scene`, `@factory_pool` or `@factory_scene`. Declare the class's other methods as members, like any other.
 
 # @deferred
 
@@ -258,7 +255,6 @@ That's much slower than a C++ call, though the names are interned only once. Use
 - For each extern, GD++ generates a header, e.g. `Terrain.h`, with a small wrapper class in namespace `godot`.
 - The wrapper holds a pointer to the object. It has a method for each declared member, which calls the object's `call`, `call_deferred`, `get`, `set` or `emit_signal` with the member's name.
 - `ExtPtr<T>` and `ExtRef<T>` hold the object. Their `operator->` returns such a wrapper.
-- An extern with `@pool` or `@scene` also has `gdpp_ext_create`. It tells whether `destroy` and `queue_destroy` call the object's methods `gdpp_destroy()` and `gdpp_queue_destroy()`.
 - Externs aren't registered with Godot: they're only names for classes registered elsewhere.
 
 See `gd++ man runtime` and `gd++ man generated`.

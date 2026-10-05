@@ -9,26 +9,11 @@ namespace godot {
 
 void Mover::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("step"), &Mover::step);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Mover::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Mover::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Mover::gdpp_queue_destroy);
 }
 
 Mover::Mover() {
 	set_physics_process(true);
 	set_process(true);
-}
-
-Mover *Mover::gdpp_create() {
-	return gdpp::create<Mover>();
-}
-
-void Mover::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Mover::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 void Mover::_notification(int WHAT) {
@@ -43,7 +28,7 @@ void Mover::_gdpp_body__process(double delta) {
 
   gd::print(delta);
 
-#line 47 "Mover.cpp"
+#line 32 "Mover.cpp"
 }
 
 void Mover::_physics_process(double delta) {
@@ -53,13 +38,13 @@ void Mover::_physics_process(double delta) {
 
   gd::print(delta);
 
-#line 57 "Mover.cpp"
+#line 42 "Mover.cpp"
 }
 
 void Mover::step() {
 #line 16 "input.gd++"
 
-#line 63 "Mover.cpp"
+#line 48 "Mover.cpp"
 }
 
 #undef This

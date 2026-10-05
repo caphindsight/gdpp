@@ -16,9 +16,6 @@ class A : public Node {
 	GDCLASS(A, Node)
 
 public:
-	static A *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	GDVIRTUAL1R(_gdpp_A_Suit, _pick, _gdpp_A_Suit)
 	virtual Suit _pick(Suit s);
 	Suit pick(Suit s);

@@ -9,21 +9,6 @@ namespace godot {
 void Profiler::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("scaled", "n"), &Profiler::scaled);
 	ClassDB::bind_method(D_METHOD("halve", "n"), &Profiler::halve);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Profiler::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Profiler::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Profiler::gdpp_queue_destroy);
-}
-
-Profiler *Profiler::gdpp_create() {
-	return gdpp::create<Profiler>();
-}
-
-void Profiler::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Profiler::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Profiler::scaled(int64_t n) {
@@ -60,7 +45,7 @@ int64_t Profiler::scaled(int64_t n) {
 
   return TWICE(n) * SCALE + extra;
 
-#line 64 "Profiler.cpp"
+#line 49 "Profiler.cpp"
 }
 
 int64_t Profiler::halve(int64_t n) {
@@ -77,7 +62,7 @@ int64_t Profiler::halve(int64_t n) {
 
     return n / 2;
 
-#line 81 "Profiler.cpp"
+#line 66 "Profiler.cpp"
 }
 
 #undef This

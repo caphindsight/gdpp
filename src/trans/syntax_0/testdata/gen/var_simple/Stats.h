@@ -23,7 +23,6 @@ public:
 
 public:
 	Stats();
-	static Ref<Stats> gdpp_create();
 	int64_t get_hp() const;
 	void set_hp(int64_t p_value);
 	double get_speed() const;

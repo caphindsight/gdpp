@@ -1,0 +1,6 @@
+@factory
+class_name A
+extends Node
+
+func queue_destroy() -> void {
+}

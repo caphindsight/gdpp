@@ -38,9 +38,6 @@ public:
 	Hard hard{};
 
 public:
-	static Board *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void finish(Result result);
 	Mode get_mode() const;
 	void set_mode(Mode p_value);

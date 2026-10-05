@@ -1,6 +1,0 @@
-@pool
-class_name A
-extends Node
-
-func gdpp_pool_clear() -> void {
-}

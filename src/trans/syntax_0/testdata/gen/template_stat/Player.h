@@ -37,9 +37,6 @@ private:
 
 public:
 	Player();
-	static Player *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t get_health() const;
 	void set_health(int64_t value);
 	int64_t get_max_health() const;

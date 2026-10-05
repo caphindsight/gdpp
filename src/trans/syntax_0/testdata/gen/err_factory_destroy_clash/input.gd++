@@ -1,0 +1,5 @@
+@factory("spawn", "despawn", "")
+class_name A
+extends Node
+
+var despawn: int

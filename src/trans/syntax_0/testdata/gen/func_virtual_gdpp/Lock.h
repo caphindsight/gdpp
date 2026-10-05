@@ -14,9 +14,6 @@ class Lock : public Node {
 	GDCLASS(Lock, Node)
 
 public:
-	static Lock *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	GDVIRTUAL1R(Door *, _open, Ref<Key>)
 	virtual Door *_open(const Ref<Key> &key);
 	Door *open(const Ref<Key> &key);

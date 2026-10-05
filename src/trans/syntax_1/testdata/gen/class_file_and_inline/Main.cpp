@@ -7,24 +7,9 @@ namespace godot {
 #define This Main
 
 void Main::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Main::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Main::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Main::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_helper"), &Main::get_helper);
 	ClassDB::bind_method(D_METHOD("set_helper", "value"), &Main::set_helper);
 	ClassDB::add_property(get_class_static(), gdpp::info<Ref<Helper>>("helper", PROPERTY_USAGE_NONE), "set_helper", "get_helper");
-}
-
-Main *Main::gdpp_create() {
-	return gdpp::create<Main>();
-}
-
-void Main::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Main::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 Ref<Helper> Main::get_helper() const {

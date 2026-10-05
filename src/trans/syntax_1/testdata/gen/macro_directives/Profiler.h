@@ -29,9 +29,6 @@ private:
 #line 30 "Profiler.h"
 
 public:
-	static Profiler *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t scaled(int64_t n);
 	int64_t halve(int64_t n);
 

@@ -113,49 +113,30 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	if c.pool != nil {
 		recycler(w, c, "ctor", c.recycleCtor)
 		recycler(w, c, "dtor", c.recycleDtor)
-		w.ln("")
-		w.ln("void %s::gdpp_pool_reserve(int64_t p_count, const String &p_mode) {", c.name)
-		guard(w, c.only, "")
-		w.ln("\t_gdpp_pool.reserve(p_count, p_mode);")
-		w.ln("}")
-		w.ln("")
-		w.ln("void %s::gdpp_pool_clear(bool p_keep_in_use) {", c.name)
-		guard(w, c.only, "")
-		w.ln("\t_gdpp_pool.clear(p_keep_in_use);")
-		w.ln("}")
 	}
-	// What scripts call for create, destroy and queue_destroy.
-	if !c.abstract {
+	// The methods of @factory.
+	for _, role := range factoryRoles {
+		name, ok := c.factory[role]
+		if !ok {
+			continue
+		}
+		ret, params, guardRet := "void ", "", ""
+		body := map[string]string{"create": fmt.Sprintf("return gdpp::create<%s>();", c.name), "destroy": "gdpp::destroy(this);",
+			"queue_destroy": "gdpp::queue_destroy(this);", "pool_reserve": "_gdpp_pool.reserve(p_count, p_mode);",
+			"pool_clear": "_gdpp_pool.clear(p_keep_in_use);", "scene_cache": fmt.Sprintf("gdpp::scene<%s>();", c.name),
+			"scene_evict": fmt.Sprintf("gdpp::evict_scene<%s>();", c.name)}[role]
+		switch role {
+		case "create":
+			ret, guardRet = withSpace(c.createType()), c.createType()
+		case "pool_reserve":
+			params = "int64_t p_count, const String &p_mode"
+		case "pool_clear":
+			params = "bool p_keep_in_use"
+		}
 		w.ln("")
-		w.ln("%s%s::gdpp_create() {", withSpace(c.createType()), c.name)
-		guard(w, c.only, c.createType())
-		w.ln("\treturn gdpp::create<%s>();", c.name)
-		w.ln("}")
-	}
-	if !c.refCounted {
-		w.ln("")
-		w.ln("void %s::gdpp_destroy() {", c.name)
-		guard(w, c.only, "")
-		w.ln("\tgdpp::destroy(this);")
-		w.ln("}")
-	}
-	if c.node {
-		w.ln("")
-		w.ln("void %s::gdpp_queue_destroy() {", c.name)
-		guard(w, c.only, "")
-		w.ln("\tgdpp::queue_destroy(this);")
-		w.ln("}")
-	}
-	if c.scene != "" {
-		w.ln("")
-		w.ln("void %s::gdpp_scene_cache() {", c.name)
-		guard(w, c.only, "")
-		w.ln("\tgdpp::scene<%s>();", c.name)
-		w.ln("}")
-		w.ln("")
-		w.ln("void %s::gdpp_scene_evict() {", c.name)
-		guard(w, c.only, "")
-		w.ln("\tgdpp::evict_scene<%s>();", c.name)
+		w.ln("%s%s::%s(%s) {", ret, c.name, name, params)
+		guard(w, c.only, guardRet)
+		w.ln("\t%s", body)
 		w.ln("}")
 	}
 	if c.needsNotification() {
@@ -640,27 +621,26 @@ func (u *unit) bindings(w *writer, c *classModel) {
 			w.ln("\tClassDB::bind_method(%s, %s);", method(f.f.Name, names...), ref)
 		}
 	}
-	if !c.abstract {
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_create);", method("gdpp_create"), c.name)
-	}
-	if !c.refCounted {
-		w.ln("\tClassDB::bind_method(%s, &%s::gdpp_destroy);", method("gdpp_destroy"), c.name)
-	}
-	if c.node {
-		w.ln("\tClassDB::bind_method(%s, &%s::gdpp_queue_destroy);", method("gdpp_queue_destroy"), c.name)
-	}
-	if c.scene != "" {
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_scene_cache);", method("gdpp_scene_cache"), c.name)
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_scene_evict);", method("gdpp_scene_evict"), c.name)
-	}
-	if c.pool != nil {
-		// gdpp_pool_reserve's count defaults to the pool's size, if it has one.
-		defaults := "DEFVAL(String())"
-		if c.pool.size != "0" {
-			defaults = "DEFVAL(" + c.pool.size + "), " + defaults
+	for _, role := range factoryRoles {
+		name, ok := c.factory[role]
+		if !ok {
+			continue
 		}
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_pool_reserve, %s);", method("gdpp_pool_reserve", "count", "mode"), c.name, defaults)
-		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::gdpp_pool_clear, DEFVAL(false));", method("gdpp_pool_clear", "keep_in_use"), c.name)
+		switch role {
+		case "destroy", "queue_destroy":
+			w.ln("\tClassDB::bind_method(%s, &%s::%s);", method(name), c.name, name)
+		case "pool_reserve":
+			// The count defaults to the pool's size, if it has one.
+			defaults := "DEFVAL(String())"
+			if c.pool.size != "0" {
+				defaults = "DEFVAL(" + c.pool.size + "), " + defaults
+			}
+			w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s, %s);", method(name, "count", "mode"), c.name, name, defaults)
+		case "pool_clear":
+			w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s, DEFVAL(false));", method(name, "keep_in_use"), c.name, name)
+		default:
+			w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s);", method(name), c.name, name)
+		}
 	}
 	for _, v := range c.vars {
 		for _, s := range v.sections {

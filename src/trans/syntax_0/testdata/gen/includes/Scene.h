@@ -21,9 +21,6 @@ private:
 #line 22 "Scene.h"
 
 public:
-	static Scene *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void ready();
 
 protected:

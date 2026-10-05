@@ -12,7 +12,6 @@ class Sword : public Item {
 	GDCLASS(Sword, Item)
 
 public:
-	static Ref<Sword> gdpp_create();
 	int64_t _damage() override;
 
 protected:

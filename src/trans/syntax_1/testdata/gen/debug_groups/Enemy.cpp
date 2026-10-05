@@ -11,9 +11,6 @@ void Enemy::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("think"), &Enemy::think);
 	ClassDB::bind_method(D_METHOD("attack", "target"), &Enemy::attack);
 	ClassDB::bind_method(D_METHOD("move"), &Enemy::move);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Enemy::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Enemy::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Enemy::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_health"), &Enemy::get_health);
 	ClassDB::bind_method(D_METHOD("set_health", "value"), &Enemy::set_health);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("health", PROPERTY_USAGE_NONE), "set_health", "get_health");
@@ -24,23 +21,11 @@ void Enemy::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("ammo", PROPERTY_USAGE_NONE), "", "get_ammo");
 }
 
-Enemy *Enemy::gdpp_create() {
-	return gdpp::create<Enemy>();
-}
-
-void Enemy::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Enemy::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
-}
-
 void Enemy::think() {
 	gdpp::Watch _gdpp_watch(this, "think", "health", [&] { return health; });
 #line 8 "input.gd++"
 
-#line 44 "Enemy.cpp"
+#line 29 "Enemy.cpp"
 }
 
 int64_t Enemy::attack(Node *target) {
@@ -53,7 +38,7 @@ int64_t Enemy::attack(Node *target) {
 
   return 1;
 
-#line 57 "Enemy.cpp"
+#line 42 "Enemy.cpp"
 	}());
 }
 
@@ -63,7 +48,7 @@ void Enemy::move() {
 	gdpp::Watch _gdpp_watch(this, "move", "health", [&] { return health; });
 #line 17 "input.gd++"
 
-#line 67 "Enemy.cpp"
+#line 52 "Enemy.cpp"
 }
 
 int64_t Enemy::get_health() const {
@@ -91,7 +76,7 @@ void Enemy::set_speed(double p_value) {
 int64_t Enemy::get_ammo() const {
 #line 23 "input.gd++"
  return 3;
-#line 95 "Enemy.cpp"
+#line 80 "Enemy.cpp"
 }
 
 #undef This

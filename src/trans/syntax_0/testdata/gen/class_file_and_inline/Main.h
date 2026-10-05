@@ -17,9 +17,6 @@ public:
 	Ref<Helper> helper{};
 
 public:
-	static Main *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	Ref<Helper> get_helper() const;
 	void set_helper(const Ref<Helper> &p_value);
 

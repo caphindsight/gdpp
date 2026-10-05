@@ -21,9 +21,6 @@ public:
 	gdpp::ExtPtr<Road> other{};
 
 public:
-	static User *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void use();
 	gdpp::ExtPtr<Terrain2> get_terrain() const;
 	void set_terrain(gdpp::ExtPtr<Terrain2> p_value);

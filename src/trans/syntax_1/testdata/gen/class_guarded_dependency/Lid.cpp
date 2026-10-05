@@ -8,36 +8,6 @@ namespace godot {
 
 void Lid::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("close"), &Lid::close);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Lid::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Lid::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Lid::gdpp_queue_destroy);
-}
-
-Lid *Lid::gdpp_create() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return {};
-	}
-#endif
-	return gdpp::create<Lid>();
-}
-
-void Lid::gdpp_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::destroy(this);
-}
-
-void Lid::gdpp_queue_destroy() {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::queue_destroy(this);
 }
 
 void Lid::close() {
@@ -48,7 +18,7 @@ void Lid::close() {
 #endif
 #line 4 "input.gd++"
 
-#line 52 "Lid.cpp"
+#line 22 "Lid.cpp"
 }
 
 #undef This

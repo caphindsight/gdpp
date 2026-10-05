@@ -1,0 +1,3 @@
+@factory
+class_name Counter
+extends RefCounted

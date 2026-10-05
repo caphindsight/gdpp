@@ -21,7 +21,6 @@ public:
 
 public:
 	Game();
-	static Ref<Game> gdpp_create();
 	Mode set_mode_to(Mode m);
 	static Mode default_mode();
 	GDVIRTUAL1R(_gdpp_Game_Mode, _pick, int64_t)

@@ -19,9 +19,6 @@ public:
 
 public:
 	A();
-	static A *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	int64_t get_x() const;
 	void set_x(int64_t p_value);
 	int64_t get_y() const;

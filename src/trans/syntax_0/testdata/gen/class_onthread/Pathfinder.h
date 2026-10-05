@@ -21,9 +21,6 @@ public:
 	gdpp::Async<Variant> anything{};
 
 public:
-	static Pathfinder *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	gdpp::Async<PackedVector2Array> find_path(const Vector2 &from, const Vector2 &to, int64_t steps = _gdpp_default_find_path_steps());
 	PackedVector2Array _gdpp_body_find_path(const Vector2 &from, const Vector2 &to, int64_t steps);
 	gdpp::Async<Terrain> terrain_at(const Vector2i &at);

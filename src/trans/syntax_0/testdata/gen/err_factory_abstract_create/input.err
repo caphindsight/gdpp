@@ -1,0 +1,4 @@
+input.gd++:2:10: A can't have a create method: abstract classes can't be created.
+ 2 | @factory("create", "", "")
+   |          ^^^^^^^^
+Hint: Give an empty string "" instead.

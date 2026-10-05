@@ -17,9 +17,6 @@ class Spawner : public Node {
 	GDCLASS(Spawner, Node)
 
 public:
-	static Spawner *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void spawn(int64_t count, Mode mode = _gdpp_default_spawn_mode());
 	void _gdpp_body_spawn(int64_t count, Mode mode);
 	void report(const String &text);

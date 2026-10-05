@@ -16,9 +16,6 @@ GDPP_ENUM_TAG(_gdpp_Hud_Level, "Hud.Level")
 class Hud : public RefCounted {
 	GDCLASS(Hud, RefCounted)
 
-public:
-	static Ref<Hud> gdpp_create();
-
 protected:
 	static void _bind_methods();
 };

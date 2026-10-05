@@ -13,9 +13,6 @@ class Gizmo : public Node3D {
 
 public:
 	Gizmo();
-	static Gizmo *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	double size();
 	void _process(double delta) override;
 

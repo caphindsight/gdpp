@@ -20,9 +20,6 @@ GDPP_ENUM_TAG(_gdpp_Names_X, "Names.X")
 class Names : public RefCounted {
 	GDCLASS(Names, RefCounted)
 
-public:
-	static Ref<Names> gdpp_create();
-
 protected:
 	static void _bind_methods();
 };

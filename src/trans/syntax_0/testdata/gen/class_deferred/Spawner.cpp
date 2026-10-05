@@ -13,23 +13,8 @@ void Spawner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_gdpp_body_report", "text"), &Spawner::_gdpp_body_report);
 	ClassDB::bind_method(D_METHOD("log"), &Spawner::log);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_log"), &Spawner::_gdpp_body_log);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Spawner::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Spawner::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Spawner::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_ONE", static_cast<int64_t>(Mode::ONE));
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_MANY", static_cast<int64_t>(Mode::MANY));
-}
-
-Spawner *Spawner::gdpp_create() {
-	return gdpp::create<Spawner>();
-}
-
-void Spawner::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Spawner::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 void Spawner::spawn(int64_t count, Mode mode) {
@@ -43,7 +28,7 @@ void Spawner::_gdpp_spawn(int64_t count, _gdpp_Spawner_Mode mode) {
 Mode Spawner::_gdpp_default_spawn_mode() {
 #line 7 "input.gd++"
 	return Mode::ONE;
-#line 47 "Spawner.cpp"
+#line 32 "Spawner.cpp"
 }
 
 void Spawner::_gdpp_body_spawn(int64_t count, Mode mode) {
@@ -51,7 +36,7 @@ void Spawner::_gdpp_body_spawn(int64_t count, Mode mode) {
 
   gd::print(count);
 
-#line 55 "Spawner.cpp"
+#line 40 "Spawner.cpp"
 }
 
 void Spawner::_gdpp__gdpp_body_spawn(int64_t count, _gdpp_Spawner_Mode mode) {
@@ -67,7 +52,7 @@ void Spawner::_gdpp_body_report(const String &text) {
 
   gd::print(text);
 
-#line 71 "Spawner.cpp"
+#line 56 "Spawner.cpp"
 }
 
 void Spawner::log() const {
@@ -79,7 +64,7 @@ void Spawner::_gdpp_body_log() const {
 
   gd::print("log");
 
-#line 83 "Spawner.cpp"
+#line 68 "Spawner.cpp"
 }
 
 #undef This

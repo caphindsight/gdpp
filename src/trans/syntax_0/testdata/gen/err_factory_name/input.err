@@ -1,0 +1,4 @@
+input.gd++:1:10: The method name "2spawn" isn't valid.
+ 1 | @factory("2spawn", "", "")
+   |          ^^^^^^^^
+Hint: Give a name, or an empty string "" to leave the method out.

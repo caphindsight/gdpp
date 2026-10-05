@@ -14,12 +14,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="gdpp_create" qualifiers="static">
-			<return type="Math" />
-			<description>
-				Creates an object of the class, like [code]create[/code] in GD++ code.
-			</description>
-		</method>
 		<method name="identity">
 			<return type="Variant" />
 			<param index="0" name="value" type="Variant" />

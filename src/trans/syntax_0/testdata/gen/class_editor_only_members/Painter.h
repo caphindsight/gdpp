@@ -26,9 +26,6 @@ private:
 
 public:
 	Painter();
-	static Painter *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _gdpp_body__process(double delta);
 	int64_t paint(Kind kind = _gdpp_default_paint_kind());
 	static int64_t total();

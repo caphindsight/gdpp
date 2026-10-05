@@ -1,0 +1,8 @@
+@factory
+class_name Gem
+extends Node
+
+@factory("", "free_now")
+class Plain {
+  extends Object
+}

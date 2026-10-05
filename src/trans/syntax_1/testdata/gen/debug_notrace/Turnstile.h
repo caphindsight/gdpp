@@ -25,9 +25,6 @@ private:
 public:
 	Turnstile();
 	~Turnstile();
-	static Turnstile *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void open();
 	void tick();
 	void cheap();

@@ -1,5 +1,0 @@
-class_name A
-extends RefCounted
-
-func gdpp_create() -> void {
-}

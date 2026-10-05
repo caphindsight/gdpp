@@ -13,9 +13,6 @@ class Walker : public Player {
 
 public:
 	Walker();
-	static Walker *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void _process(double delta) override;
 
 protected:

@@ -1,0 +1,3 @@
+input.gd++:1:34: Annotation @factory takes at most 3 names: for create, destroy, queue_destroy.
+ 1 | @factory("spawn", "despawn", "", "extra")
+   |                                  ^^^^^^^

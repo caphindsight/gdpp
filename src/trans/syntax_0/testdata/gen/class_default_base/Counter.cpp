@@ -7,11 +7,6 @@ namespace godot {
 #define This Counter
 
 void Counter::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Counter::gdpp_create);
-}
-
-Ref<Counter> Counter::gdpp_create() {
-	return gdpp::create<Counter>();
 }
 
 #undef This

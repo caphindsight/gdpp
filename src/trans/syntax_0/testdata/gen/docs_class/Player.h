@@ -20,9 +20,6 @@ public:
 
 public:
 	static constexpr int64_t MAX_SPEED = 10;
-	static Player *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void jump(double height);
 	int64_t get_hp() const;
 	void set_hp(int64_t p_value);

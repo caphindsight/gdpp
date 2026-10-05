@@ -11,7 +11,6 @@ void Sorted::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("b2"), &Sorted::b2);
 	ClassDB::bind_method(D_METHOD("A"), &Sorted::A);
 	ClassDB::bind_method(D_METHOD("a"), &Sorted::a);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Sorted::gdpp_create);
 	ClassDB::bind_method(D_METHOD("get_z"), &Sorted::get_z);
 	ClassDB::bind_method(D_METHOD("set_z", "value"), &Sorted::set_z);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("z", PROPERTY_USAGE_NONE), "set_z", "get_z");
@@ -22,32 +21,28 @@ void Sorted::_bind_methods() {
 	ClassDB::add_signal(get_class_static(), MethodInfo("S1"));
 }
 
-Ref<Sorted> Sorted::gdpp_create() {
-	return gdpp::create<Sorted>();
-}
-
 void Sorted::b10() {
 #line 3 "input.gd++"
 
-#line 33 "Sorted.cpp"
+#line 28 "Sorted.cpp"
 }
 
 void Sorted::b2() {
 #line 4 "input.gd++"
 
-#line 39 "Sorted.cpp"
+#line 34 "Sorted.cpp"
 }
 
 void Sorted::A() {
 #line 5 "input.gd++"
 
-#line 45 "Sorted.cpp"
+#line 40 "Sorted.cpp"
 }
 
 void Sorted::a() {
 #line 6 "input.gd++"
 
-#line 51 "Sorted.cpp"
+#line 46 "Sorted.cpp"
 }
 
 int64_t Sorted::get_z() const {

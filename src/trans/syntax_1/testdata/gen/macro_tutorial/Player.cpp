@@ -21,9 +21,6 @@ void Player::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("enter_attack"), &Player::enter_attack);
 	ClassDB::bind_method(D_METHOD("update_attack", "delta"), &Player::_gdpp_update_attack);
 	ClassDB::bind_method(D_METHOD("exit_attack"), &Player::exit_attack);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Player::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Player::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Player::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_speed"), &Player::get_speed);
 	ClassDB::bind_method(D_METHOD("set_speed", "value"), &Player::set_speed);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("speed", PROPERTY_USAGE_DEFAULT), "set_speed", "get_speed");
@@ -60,44 +57,32 @@ Player::Player() {
 	set_physics_process(true);
 #line 6 "input.gd++"
 	speed = 200.0;
-#line 64 "Player.cpp"
+#line 61 "Player.cpp"
 #line 7 "input.gd++"
 	jump_speed = 400.0;
-#line 67 "Player.cpp"
+#line 64 "Player.cpp"
 #line 8 "input.gd++"
 	gravity = 980.0;
-#line 70 "Player.cpp"
+#line 67 "Player.cpp"
 #line 9 "input.gd++"
 	attack_time = 0.3;
-#line 73 "Player.cpp"
+#line 70 "Player.cpp"
 #line 143 "input.gd++"
 	state = PlayerState::IDLE;
-#line 76 "Player.cpp"
+#line 73 "Player.cpp"
 #line 146 "input.gd++"
 	state_time = 0.0;
-#line 79 "Player.cpp"
-}
-
-Player *Player::gdpp_create() {
-	return gdpp::create<Player>();
-}
-
-void Player::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Player::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 76 "Player.cpp"
 }
 
 void Player::_notification(int WHAT) {
 	if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) {
 #line 11 "input.gd++"
 		animation = get_node<AnimationPlayer>("AnimationPlayer");
-#line 98 "Player.cpp"
+#line 83 "Player.cpp"
 #line 12 "input.gd++"
 		hitbox = get_node<Area2D>("Hitbox");
-#line 101 "Player.cpp"
+#line 86 "Player.cpp"
 	}
 	if (WHAT == NOTIFICATION_PHYSICS_PROCESS) {
 		_gdpp_body__physics_process(get_physics_process_delta_time());
@@ -121,7 +106,7 @@ case PlayerState::RUN: return to == PlayerState::IDLE || to == PlayerState::JUMP
 }
 #line 14 "input.gd++"
 return false;
-#line 125 "Player.cpp"
+#line 110 "Player.cpp"
 }
 
 bool Player::_gdpp_can_change_state(_gdpp_Player_PlayerState from, _gdpp_Player_PlayerState to) {
@@ -157,7 +142,7 @@ default: break;
 }
 #line 14 "input.gd++"
 (void) state_changed(from, to);
-#line 161 "Player.cpp"
+#line 146 "Player.cpp"
 }
 
 void Player::_gdpp_change_state(_gdpp_Player_PlayerState to) {
@@ -189,7 +174,7 @@ if (next != state) {
   change_state(next);
 #line 14 "input.gd++"
 }
-#line 193 "Player.cpp"
+#line 178 "Player.cpp"
 }
 
 void Player::_gdpp_body__physics_process(double delta) {
@@ -201,7 +186,7 @@ void Player::_gdpp_body__physics_process(double delta) {
     update_state(delta);
     move_and_slide();
 
-#line 205 "Player.cpp"
+#line 190 "Player.cpp"
 }
 
 double Player::input_x() {
@@ -209,7 +194,7 @@ double Player::input_x() {
 
     return Input::get_singleton()->get_axis(GDPP_STRING_NAME("left"), GDPP_STRING_NAME("right"));
 
-#line 213 "Player.cpp"
+#line 198 "Player.cpp"
 }
 
 void Player::walk() {
@@ -217,7 +202,7 @@ void Player::walk() {
 
     set_velocity(Vector2(input_x() * speed, get_velocity().y));
 
-#line 221 "Player.cpp"
+#line 206 "Player.cpp"
 }
 
 PlayerState Player::ground_state() {
@@ -228,7 +213,7 @@ PlayerState Player::ground_state() {
     if (Input::get_singleton()->is_action_just_pressed(GDPP_STRING_NAME("attack"))) return PlayerState::ATTACK;
     return input_x() != 0 ? PlayerState::RUN : PlayerState::IDLE;
 
-#line 232 "Player.cpp"
+#line 217 "Player.cpp"
 }
 
 _gdpp_Player_PlayerState Player::_gdpp_ground_state() {
@@ -241,7 +226,7 @@ PlayerState Player::update_idle(double delta) {
     walk();
     return ground_state();
 
-#line 245 "Player.cpp"
+#line 230 "Player.cpp"
 }
 
 _gdpp_Player_PlayerState Player::_gdpp_update_idle(double delta) {
@@ -254,7 +239,7 @@ PlayerState Player::update_run(double delta) {
     walk();
     return ground_state();
 
-#line 258 "Player.cpp"
+#line 243 "Player.cpp"
 }
 
 _gdpp_Player_PlayerState Player::_gdpp_update_run(double delta) {
@@ -267,7 +252,7 @@ void Player::enter_jump() {
     set_velocity(Vector2(get_velocity().x, -jump_speed));
     animation->play(GDPP_STRING_NAME("jump"));
 
-#line 271 "Player.cpp"
+#line 256 "Player.cpp"
 }
 
 PlayerState Player::update_jump(double delta) {
@@ -276,7 +261,7 @@ PlayerState Player::update_jump(double delta) {
     walk();
     return get_velocity().y >= 0 ? PlayerState::FALL : PlayerState::JUMP;
 
-#line 280 "Player.cpp"
+#line 265 "Player.cpp"
 }
 
 _gdpp_Player_PlayerState Player::_gdpp_update_jump(double delta) {
@@ -289,7 +274,7 @@ PlayerState Player::update_fall(double delta) {
     walk();
     return ground_state();
 
-#line 293 "Player.cpp"
+#line 278 "Player.cpp"
 }
 
 _gdpp_Player_PlayerState Player::_gdpp_update_fall(double delta) {
@@ -302,7 +287,7 @@ void Player::enter_attack() {
     hitbox->set_deferred(GDPP_STRING_NAME("monitoring"), true);
     animation->play(GDPP_STRING_NAME("attack"));
 
-#line 306 "Player.cpp"
+#line 291 "Player.cpp"
 }
 
 PlayerState Player::update_attack(double delta) {
@@ -311,7 +296,7 @@ PlayerState Player::update_attack(double delta) {
     set_velocity(Vector2(0, get_velocity().y));
     return state_time >= attack_time ? PlayerState::IDLE : PlayerState::ATTACK;
 
-#line 315 "Player.cpp"
+#line 300 "Player.cpp"
 }
 
 _gdpp_Player_PlayerState Player::_gdpp_update_attack(double delta) {
@@ -323,7 +308,7 @@ void Player::exit_attack() {
 
     hitbox->set_deferred(GDPP_STRING_NAME("monitoring"), false);
 
-#line 327 "Player.cpp"
+#line 312 "Player.cpp"
 }
 
 double Player::get_speed() const {

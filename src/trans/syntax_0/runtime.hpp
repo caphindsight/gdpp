@@ -312,42 +312,45 @@ private:
 template <typename T>
 using Ext = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, ExtRef<T>, ExtPtr<T>>;
 
-// ExtCreate<T> is how create, destroy and queue_destroy treat the objects of the extern T with @scene or @pool:
-// create calls the static method gdpp_create of T's class, and with pool, destroy and queue_destroy call the methods
-// gdpp_destroy and gdpp_queue_destroy of the object.
+// ExtFactory<T> names the methods of the extern T's class that create, destroy and queue_destroy call, from the
+// extern's @factory. A null name keeps the default.
 template <typename T>
-struct ExtCreate {
-	// Whether the extern has @pool: destroy and queue_destroy return its objects to their pool.
-	bool pool;
+struct ExtFactory {
+	// The static method that create calls.
+	const char *create;
+	// The method that destroy calls.
+	const char *destroy;
+	// The method that queue_destroy calls.
+	const char *queue_destroy;
 };
 
-// has_ext_create<T> is true for the extern T with @scene or @pool, but not for externs that extend it.
+// has_ext_factory<T> is true for the extern T with @factory, but not for externs that extend it.
 template <typename T, typename = void>
-struct has_ext_create : std::false_type {};
+struct has_ext_factory : std::false_type {};
 template <typename T>
-struct has_ext_create<T, std::void_t<decltype(T::gdpp_ext_create)>> : std::is_same<std::remove_cv_t<decltype(T::gdpp_ext_create)>, ExtCreate<T>> {};
+struct has_ext_factory<T, std::void_t<decltype(T::_gdpp_factory)>> : std::is_same<std::remove_cv_t<decltype(T::_gdpp_factory)>, ExtFactory<T>> {};
 
-// has_ext_pool<T>() is true for the extern T with @pool.
+// ext_factory<T>() is the @factory of the extern T, with null names if it has none.
 template <typename T>
-constexpr bool has_ext_pool() {
-	if constexpr (has_ext_create<T>::value) {
-		return T::gdpp_ext_create.pool;
+constexpr ExtFactory<T> ext_factory() {
+	if constexpr (has_ext_factory<T>::value) {
+		return T::_gdpp_factory;
 	} else {
-		return false;
+		return {};
 	}
 }
 
 // create_ext creates an object of the extern T: an instance of the ClassDB class or global script class that T
-// names. For an extern with @scene or @pool, it's what the class's static method gdpp_create gives, which may be null,
-// e.g. from a full pool.
+// names. With @factory, it's what the class's static method of that name gives, which may be null, e.g. from a full
+// pool.
 template <typename T>
 Ext<T> create_ext() {
 	const StringName &name = GDPP_STRING_NAME(T::gdpp_name);
-	if constexpr (has_ext_create<T>::value) {
-		const StringName &method = GDPP_STRING_NAME("gdpp_create");
+	if constexpr (ext_factory<T>().create != nullptr) {
+		const StringName &method = GDPP_STRING_NAME(ext_factory<T>().create);
 		Ext<T> result = Object::cast_to<typename T::Base>(ClassDB::class_call_static(name, method).operator Object *());
 		ERR_FAIL_COND_V_MSG(!result && !ClassDB::class_has_method(name, method), nullptr,
-				String("Failed to create an object of the extern ") + T::gdpp_name + ": its class has no static method gdpp_create.");
+				String("Failed to create an object of the extern ") + T::gdpp_name + ": its class has no static method " + ext_factory<T>().create + ".");
 		return result;
 	}
 	Variant object;
@@ -1164,7 +1167,6 @@ bool defer_destroy(P p_object) {
 // deletes others. It does nothing for null. It's thread-safe: on other threads than the main one, it leaves nodes in
 // the scene tree to the main thread, which destroys them at the end of the frame. Refcounted objects free themselves,
 // so it doesn't take them. Destroying an object twice is a bug, except for an object that a pool made, which it keeps.
-// For an extern with @pool, it calls the object's method gdpp_destroy, which does all this in the object's own package.
 template <typename T>
 void destroy(T *p_object) {
 	if constexpr (std::is_base_of_v<Object, T>) {
@@ -1174,13 +1176,13 @@ void destroy(T *p_object) {
 	}
 	destroy_now(p_object);
 }
-// destroy of an extern: for one with @pool, it calls the object's method gdpp_destroy, else it deletes the object like
-// above.
+// destroy of an extern deletes the object like above. With @factory, it calls the object's method of that name, which
+// does what its class wants, e.g. returns the object to a pool.
 template <typename T>
 void destroy(ExtPtr<T> p_object) {
-	if constexpr (has_ext_pool<T>()) {
+	if constexpr (ext_factory<T>().destroy != nullptr) {
 		if (p_object) {
-			p_object.base()->call(GDPP_STRING_NAME("gdpp_destroy")); // Thread-safe, like destroy.
+			p_object.base()->call(GDPP_STRING_NAME(ext_factory<T>().destroy));
 		}
 	} else if (p_object && !defer_destroy(p_object)) {
 		destroy_now(p_object);
@@ -1190,8 +1192,7 @@ void destroy(ExtPtr<T> p_object) {
 // queue_destroy destroys a node at the end of the frame, on the main thread, like queue_free, which `queue_destroy x`
 // calls. For a @pool class, it returns the node to its pool then, unless it was returned or freed before, even if the
 // pool has reused it since. For other classes, it's queue_free, which also does nothing for a node freed before. It only
-// works on nodes, from any thread, and does nothing for null. For an extern with @pool, it calls the object's method
-// gdpp_queue_destroy.
+// works on nodes, from any thread, and does nothing for null.
 template <typename T>
 void queue_destroy(T *p_object) {
 	static_assert(std::is_base_of_v<Node, T>, "queue_destroy only works on nodes. Use destroy for other objects.");
@@ -1204,15 +1205,15 @@ void queue_destroy(T *p_object) {
 		p_object->queue_free();
 	}
 }
-// queue_destroy of an extern: for one with @pool, it calls the object's method gdpp_queue_destroy, else queue_free.
+// queue_destroy of an extern is queue_free. With @factory, it calls the object's method of that name.
 template <typename T>
 void queue_destroy(ExtPtr<T> p_object) {
 	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
 	if (!p_object) {
 		return;
 	}
-	if constexpr (has_ext_pool<T>()) {
-		p_object.base()->call(GDPP_STRING_NAME("gdpp_queue_destroy"));
+	if constexpr (ext_factory<T>().queue_destroy != nullptr) {
+		p_object.base()->call(GDPP_STRING_NAME(ext_factory<T>().queue_destroy));
 	} else {
 		p_object.base()->queue_free();
 	}

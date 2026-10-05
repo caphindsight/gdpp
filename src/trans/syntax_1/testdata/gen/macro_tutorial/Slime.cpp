@@ -13,9 +13,6 @@ void Slime::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("player_in_sight"), &Slime::player_in_sight);
 	ClassDB::bind_method(D_METHOD("update_patrol", "delta"), &Slime::_gdpp_update_patrol);
 	ClassDB::bind_method(D_METHOD("update_chase", "delta"), &Slime::_gdpp_update_chase);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Slime::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Slime::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Slime::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_speed"), &Slime::get_speed);
 	ClassDB::bind_method(D_METHOD("set_speed", "value"), &Slime::set_speed);
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("speed", PROPERTY_USAGE_DEFAULT), "set_speed", "get_speed");
@@ -40,31 +37,19 @@ Slime::Slime() {
 	set_physics_process(true);
 #line 90 "input.gd++"
 	speed = 60.0;
-#line 44 "Slime.cpp"
+#line 41 "Slime.cpp"
 #line 91 "input.gd++"
 	sight = 150.0;
-#line 47 "Slime.cpp"
+#line 44 "Slime.cpp"
 #line 93 "input.gd++"
 	direction = 1.0;
-#line 50 "Slime.cpp"
+#line 47 "Slime.cpp"
 #line 143 "input.gd++"
 	state = SlimeState::PATROL;
-#line 53 "Slime.cpp"
+#line 50 "Slime.cpp"
 #line 146 "input.gd++"
 	state_time = 0.0;
-#line 56 "Slime.cpp"
-}
-
-Slime *Slime::gdpp_create() {
-	return gdpp::create<Slime>();
-}
-
-void Slime::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Slime::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
+#line 53 "Slime.cpp"
 }
 
 void Slime::_notification(int WHAT) {
@@ -84,7 +69,7 @@ case SlimeState::PATROL: return to == SlimeState::CHASE;
 }
 #line 95 "input.gd++"
 return false;
-#line 88 "Slime.cpp"
+#line 73 "Slime.cpp"
 }
 
 bool Slime::_gdpp_can_change_state(_gdpp_Slime_SlimeState from, _gdpp_Slime_SlimeState to) {
@@ -114,7 +99,7 @@ default: break;
 }
 #line 95 "input.gd++"
 (void) state_changed(from, to);
-#line 118 "Slime.cpp"
+#line 103 "Slime.cpp"
 }
 
 void Slime::_gdpp_change_state(_gdpp_Slime_SlimeState to) {
@@ -140,7 +125,7 @@ if (next != state) {
   change_state(next);
 #line 95 "input.gd++"
 }
-#line 144 "Slime.cpp"
+#line 129 "Slime.cpp"
 }
 
 void Slime::_gdpp_body__physics_process(double delta) {
@@ -149,7 +134,7 @@ void Slime::_gdpp_body__physics_process(double delta) {
     update_state(delta);
     move_and_slide();
 
-#line 153 "Slime.cpp"
+#line 138 "Slime.cpp"
 }
 
 Node2D *Slime::player_in_sight() {
@@ -161,7 +146,7 @@ Node2D *Slime::player_in_sight() {
     }
     return nullptr;
 
-#line 165 "Slime.cpp"
+#line 150 "Slime.cpp"
 }
 
 SlimeState Slime::update_patrol(double delta) {
@@ -173,7 +158,7 @@ SlimeState Slime::update_patrol(double delta) {
     set_velocity(Vector2(direction * speed, 0));
     return player_in_sight() ? SlimeState::CHASE : SlimeState::PATROL;
 
-#line 177 "Slime.cpp"
+#line 162 "Slime.cpp"
 }
 
 _gdpp_Slime_SlimeState Slime::_gdpp_update_patrol(double delta) {
@@ -189,7 +174,7 @@ SlimeState Slime::update_chase(double delta) {
     set_velocity(Vector2(direction * speed * 2, 0));
     return SlimeState::CHASE;
 
-#line 193 "Slime.cpp"
+#line 178 "Slime.cpp"
 }
 
 _gdpp_Slime_SlimeState Slime::_gdpp_update_chase(double delta) {

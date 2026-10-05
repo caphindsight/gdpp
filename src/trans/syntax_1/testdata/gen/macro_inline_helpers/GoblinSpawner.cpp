@@ -7,24 +7,9 @@ namespace godot {
 #define This GoblinSpawner
 
 void GoblinSpawner::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &GoblinSpawner::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &GoblinSpawner::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &GoblinSpawner::gdpp_queue_destroy);
 	ClassDB::bind_integer_constant(get_class_static(), "", "WAVE_1", WAVE_1);
 	ClassDB::bind_integer_constant(get_class_static(), "", "WAVE_2", WAVE_2);
 	ClassDB::bind_integer_constant(get_class_static(), "", "WAVE_3", WAVE_3);
-}
-
-GoblinSpawner *GoblinSpawner::gdpp_create() {
-	return gdpp::create<GoblinSpawner>();
-}
-
-void GoblinSpawner::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void GoblinSpawner::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 #undef This

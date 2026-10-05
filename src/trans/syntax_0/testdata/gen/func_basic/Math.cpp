@@ -11,11 +11,6 @@ void Math::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("log", "message"), &Math::log);
 	ClassDB::bind_method(D_METHOD("identity", "value"), &Math::identity);
 	ClassDB::bind_method(D_METHOD("nothing"), &Math::nothing);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Math::gdpp_create);
-}
-
-Ref<Math> Math::gdpp_create() {
-	return gdpp::create<Math>();
 }
 
 int64_t Math::add(int64_t a, int64_t b) {
@@ -23,7 +18,7 @@ int64_t Math::add(int64_t a, int64_t b) {
 
   return a + b;
 
-#line 27 "Math.cpp"
+#line 22 "Math.cpp"
 }
 
 void Math::log(const String &message) {
@@ -31,7 +26,7 @@ void Math::log(const String &message) {
 
   gd::print(message);
 
-#line 35 "Math.cpp"
+#line 30 "Math.cpp"
 }
 
 Variant Math::identity(const Variant &value) {
@@ -39,13 +34,13 @@ Variant Math::identity(const Variant &value) {
 
   return value;
 
-#line 43 "Math.cpp"
+#line 38 "Math.cpp"
 }
 
 Variant Math::nothing() {
 #line 15 "input.gd++"
 
-#line 49 "Math.cpp"
+#line 44 "Math.cpp"
 }
 
 #undef This

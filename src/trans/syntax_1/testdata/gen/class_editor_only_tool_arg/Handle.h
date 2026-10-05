@@ -16,9 +16,6 @@ public:
 
 public:
 	Handle();
-	static Handle *gdpp_create();
-	void gdpp_destroy();
-	void gdpp_queue_destroy();
 	void drag();
 	double get_size() const;
 	void set_size(double p_value);

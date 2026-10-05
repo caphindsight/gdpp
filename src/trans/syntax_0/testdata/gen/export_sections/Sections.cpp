@@ -7,9 +7,6 @@ namespace godot {
 #define This Sections
 
 void Sections::_bind_methods() {
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Sections::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Sections::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Sections::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_plain"), &Sections::get_plain);
 	ClassDB::bind_method(D_METHOD("set_plain", "value"), &Sections::set_plain);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("plain", PROPERTY_USAGE_DEFAULT), "set_plain", "get_plain");
@@ -29,18 +26,6 @@ void Sections::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_title"), &Sections::get_title);
 	ClassDB::bind_method(D_METHOD("set_title", "value"), &Sections::set_title);
 	ClassDB::add_property(get_class_static(), gdpp::info<String>("title", PROPERTY_USAGE_DEFAULT), "set_title", "get_title");
-}
-
-Sections *Sections::gdpp_create() {
-	return gdpp::create<Sections>();
-}
-
-void Sections::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Sections::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Sections::get_plain() const {

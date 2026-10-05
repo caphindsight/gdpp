@@ -15,9 +15,6 @@ void Player::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("score"), &Player::score);
 	ClassDB::bind_method(D_METHOD("respawn"), &Player::respawn);
 	ClassDB::bind_method(D_METHOD("_gdpp_body_respawn"), &Player::_gdpp_body_respawn);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Player::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Player::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Player::gdpp_queue_destroy);
 	ClassDB::bind_method(D_METHOD("get_health"), &Player::get_health);
 	ClassDB::bind_method(D_METHOD("set_health", "value"), &Player::set_health);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("health", PROPERTY_USAGE_NONE), "set_health", "get_health");
@@ -37,28 +34,16 @@ Player::Player() {
 	set_process(true);
 #line 8 "input.gd++"
 	health = 100;
-#line 41 "Player.cpp"
+#line 38 "Player.cpp"
 #line 20 "input.gd++"
 	{
   gd::print("created");
 }
-#line 46 "Player.cpp"
+#line 43 "Player.cpp"
 }
 
 Player::~Player() {
 	gdpp::trace_lifetime("Player", this, false);
-}
-
-Player *Player::gdpp_create() {
-	return gdpp::create<Player>();
-}
-
-void Player::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Player::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 bool Player::take_damage(int64_t amount, Mood mood) {
@@ -72,7 +57,7 @@ bool Player::take_damage(int64_t amount, Mood mood) {
   health -= amount;
   return health <= 0;
 
-#line 76 "Player.cpp"
+#line 61 "Player.cpp"
 	}());
 }
 
@@ -83,7 +68,7 @@ bool Player::_gdpp_take_damage(int64_t amount, _gdpp_Player_Mood mood) {
 Mood Player::_gdpp_default_take_damage_mood() {
 #line 24 "input.gd++"
 	return Mood::ANGRY;
-#line 87 "Player.cpp"
+#line 72 "Player.cpp"
 }
 
 Player *Player::create() {
@@ -95,7 +80,7 @@ Player *Player::create() {
 
   return gdpp::create<Player>();
 
-#line 99 "Player.cpp"
+#line 84 "Player.cpp"
 	}());
 }
 
@@ -108,7 +93,7 @@ bool Player::is_alive() const {
 
   return health > 0;
 
-#line 112 "Player.cpp"
+#line 97 "Player.cpp"
 	}());
 }
 
@@ -126,7 +111,7 @@ int64_t Player::_score() {
 
   return health;
 
-#line 130 "Player.cpp"
+#line 115 "Player.cpp"
 	}());
 }
 
@@ -153,7 +138,7 @@ void Player::_gdpp_body_respawn() {
 
   health = 100;
 
-#line 157 "Player.cpp"
+#line 142 "Player.cpp"
 }
 
 void Player::_process(double delta) {
@@ -162,7 +147,7 @@ void Player::_process(double delta) {
 	gdpp::Watch _gdpp_watch(this, "_process", "health", [&] { return health; }, "items", [&] { return items; }, "ammo", [&] { return get_ammo(); });
 #line 50 "input.gd++"
 
-#line 166 "Player.cpp"
+#line 151 "Player.cpp"
 }
 
 int64_t Player::get_health() const {
@@ -188,7 +173,7 @@ int64_t Player::get_ammo() const {
 	gdpp::Profile _gdpp_profile(_gdpp_stats);
 #line 14 "input.gd++"
  return ammo_;
-#line 192 "Player.cpp"
+#line 177 "Player.cpp"
 }
 
 void Player::set_ammo(int64_t value) {
@@ -197,7 +182,7 @@ void Player::set_ammo(int64_t value) {
 	gdpp::Watch _gdpp_watch(this, "set_ammo", "health", [&] { return health; }, "items", [&] { return items; }, "ammo", [&] { return get_ammo(); });
 #line 15 "input.gd++"
  ammo_ = value;
-#line 201 "Player.cpp"
+#line 186 "Player.cpp"
 }
 
 gdpp::Emitted Player::died(Mood cause) {

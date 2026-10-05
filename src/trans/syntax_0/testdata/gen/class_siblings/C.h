@@ -14,7 +14,6 @@ class C : public RefCounted {
 	GDCLASS(C, RefCounted)
 
 public:
-	static Ref<C> gdpp_create();
 	A *a();
 
 protected:

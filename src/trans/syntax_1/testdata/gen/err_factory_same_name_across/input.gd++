@@ -1,0 +1,5 @@
+@pool
+@factory("pool_clear", "", "")
+@factory_pool
+class_name A
+extends Node

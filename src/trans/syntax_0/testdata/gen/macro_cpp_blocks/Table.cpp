@@ -8,21 +8,6 @@ namespace godot {
 
 void Table::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("damage", "level"), &Table::damage);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("gdpp_create"), &Table::gdpp_create);
-	ClassDB::bind_method(D_METHOD("gdpp_destroy"), &Table::gdpp_destroy);
-	ClassDB::bind_method(D_METHOD("gdpp_queue_destroy"), &Table::gdpp_queue_destroy);
-}
-
-Table *Table::gdpp_create() {
-	return gdpp::create<Table>();
-}
-
-void Table::gdpp_destroy() {
-	gdpp::destroy(this);
-}
-
-void Table::gdpp_queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 int64_t Table::damage(int64_t level) {
@@ -30,7 +15,7 @@ int64_t Table::damage(int64_t level) {
 
   return DAMAGE[level];
 
-#line 34 "Table.cpp"
+#line 19 "Table.cpp"
 }
 
 #line 8 "input.gd++"
@@ -39,7 +24,7 @@ static void enter_idle(This *self) { self->emit_signal(GDPP_STRING_NAME("Idle"))
 static void enter_run(This *self) { self->emit_signal(GDPP_STRING_NAME("Run")); }
 #line 8 "input.gd++"
 
-#line 43 "Table.cpp"
+#line 28 "Table.cpp"
 
 #undef This
 
