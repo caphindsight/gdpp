@@ -40,6 +40,7 @@ type expander struct {
 	filename, src string
 	opts          meta.Options
 	defs          map[string]*macroDef
+	libs          []*macroDef      // The package's macro libraries, in the order they run.
 	generated     map[int]string   // The offsets of invocations, with what each one invokes, e.g. "macro stat".
 	edits         []edit           // What the file's own invocations generated, where they are.
 	lineStarts    []int            // The offsets of src's lines, for posAt.
@@ -56,7 +57,8 @@ var cppKeywords = strings.Fields("alignas alignof and and_eq asm auto bitand bit
 	"static_assert static_cast struct switch template this thread_local throw true try typedef typeid typename union unsigned using " +
 	"virtual void volatile wchar_t while xor xor_eq")
 
-// newExpander returns an expander for file, with its macros and templates and those of the dependencies in opts.
+// newExpander returns an expander for file, with its macros, templates and macro libraries, and those of the
+// dependencies in opts.
 func newExpander(filename, src string, file *File, opts meta.Options) (*expander, error) {
 	x := &expander{filename: filename, src: src, opts: opts, defs: map[string]*macroDef{}, generated: map[int]string{},
 		done: map[*Class]bool{}, doneExterns: map[*Extern]bool{}}
@@ -81,9 +83,13 @@ func newExpander(filename, src string, file *File, opts meta.Options) (*expander
 		}
 		x.defs[m.Name] = &macroDef{m: m, file: filename, src: src, source: cmp.Or(opts.SourceName, filename)}
 	}
+	for _, m := range file.Libraries {
+		x.libs = append(x.libs, &macroDef{m: m, file: filename, src: src, source: x.source()})
+	}
 	parsed := map[string]*File{}
 	for _, d := range opts.Dependencies {
-		if d.Kind != meta.Macro && d.Kind != meta.Template || x.defs[d.Name] != nil {
+		library := d.Kind == meta.MacroLibrary && !slices.ContainsFunc(x.libs, func(l *macroDef) bool { return l.file == d.File })
+		if !library && (d.Kind != meta.Macro && d.Kind != meta.Template || x.defs[d.Name] != nil) {
 			continue
 		}
 		f := parsed[d.File]
@@ -94,12 +100,21 @@ func newExpander(filename, src string, file *File, opts meta.Options) (*expander
 			}
 			parsed[d.File] = f
 		}
+		if library {
+			for _, m := range f.Libraries {
+				x.libs = append(x.libs, &macroDef{m: m, file: d.File, src: d.Source, source: cmp.Or(d.SourceName, d.File)})
+			}
+			continue
+		}
 		for _, m := range append([]*Macro{f.FileMacro}, f.InlineMacros...) {
 			if m != nil && m.Name == d.Name {
 				x.defs[d.Name] = &macroDef{m: m, file: d.File, src: d.Source, source: cmp.Or(d.SourceName, d.File)}
 			}
 		}
 	}
+	slices.SortStableFunc(x.libs, func(a, b *macroDef) int {
+		return cmp.Or(strings.Compare(a.file, b.file), a.m.Pos.Offset-b.m.Pos.Offset)
+	})
 	return x, nil
 }
 
@@ -293,8 +308,11 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 		}
 	}()
 	sc = &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel} // Without what other invocations emitted.
-	r, free := x.newRun(def, inv, sc, depth)
+	r, free, err := x.newRun(def, inv, sc, depth)
 	defer free()
+	if err != nil {
+		return nil, err
+	}
 	values, err := r.args(def.m.Params)
 	if err != nil {
 		return nil, err
@@ -569,8 +587,11 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) 
 		}
 	}()
 	sc := &scope{kind: "cpp", owner: owner}
-	r, free := x.newRun(def, inv, sc, depth)
+	r, free, err := x.newRun(def, inv, sc, depth)
 	defer free()
+	if err != nil {
+		return "", err
+	}
 	values, err := r.args(def.m.Params)
 	if err != nil {
 		return "", err

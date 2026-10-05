@@ -18,15 +18,16 @@ package meta
 type Kind int
 
 const (
-	Object           Kind = 1 // A Godot class that isn't refcounted, used as T*.
-	RefCounted       Kind = 2 // A refcounted Godot class, used as Ref<T>.
-	Extern           Kind = 3 // A GD++ extern whose base isn't refcounted, used as ExtPtr<T>.
-	RefCountedExtern Kind = 4 // A GD++ extern whose base is refcounted, used as ExtRef<T>.
-	Enum             Kind = 5 // A GD++ enum.
-	Other            Kind = 6 // A name in namespace godot that isn't a class, e.g. TypedArray: code may use it, but not as a GD++ type.
-	GodotEnum        Kind = 7 // An enum of Godot's API, e.g. Node.ProcessMode or Error: GD++ enums may extend it, but it isn't a GD++ type.
-	Macro            Kind = 8 // A GD++ macro, which code invokes as "invoke name(...)". Source and File hold its file.
-	Template         Kind = 9 // A GD++ template, which code invokes as "invoke name(...)". Source and File hold its file.
+	Object           Kind = 1  // A Godot class that isn't refcounted, used as T*.
+	RefCounted       Kind = 2  // A refcounted Godot class, used as Ref<T>.
+	Extern           Kind = 3  // A GD++ extern whose base isn't refcounted, used as ExtPtr<T>.
+	RefCountedExtern Kind = 4  // A GD++ extern whose base is refcounted, used as ExtRef<T>.
+	Enum             Kind = 5  // A GD++ enum.
+	Other            Kind = 6  // A name in namespace godot that isn't a class, e.g. TypedArray: code may use it, but not as a GD++ type.
+	GodotEnum        Kind = 7  // An enum of Godot's API, e.g. Node.ProcessMode or Error: GD++ enums may extend it, but it isn't a GD++ type.
+	Macro            Kind = 8  // A GD++ macro, which code invokes as "invoke name(...)". Source and File hold its file.
+	Template         Kind = 9  // A GD++ template, which code invokes as "invoke name(...)". Source and File hold its file.
+	MacroLibrary     Kind = 10 // The macro libraries of a GD++ file, which every macro can use. It has no Name. Source and File hold its file.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -71,6 +72,7 @@ const (
 	EnumDecl     DeclKind = 3
 	MacroDecl    DeclKind = 4
 	TemplateDecl DeclKind = 5
+	LibraryDecl  DeclKind = 6 // The file's macro libraries, "macro { ... }" and macro_library. It has no Name.
 )
 
 // Declaration is a class, extern, enum type, macro or template declared in a GD++ file, which other files may use.

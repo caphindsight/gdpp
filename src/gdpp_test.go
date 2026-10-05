@@ -320,6 +320,20 @@ func TestTranspilePackageMacros(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageMacroLibraries(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"a.gd++":   "macro { function greeting() return \"Hi \" .. name() end }\n",
+		"b.gd++":   "macro_library\nfunction name() return \"there\" end\n",
+		"use.gd++": "class Crate {\n  func f() -> String { invoke { gd.text(\"return \" .. gd.quote(greeting()) .. \";\") } }\n}\n",
+	})
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	if gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/"); !strings.Contains(gen["Crate.cpp"], `return "Hi there";`) {
+		t.Errorf("Crate.cpp = %s\nwant it to contain the greeting", gen["Crate.cpp"])
+	}
+}
+
 func TestTranspilePackageFails(t *testing.T) {
 	cases := map[string]struct {
 		files map[string]string

@@ -2,6 +2,7 @@ package syntax_0
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -15,7 +16,8 @@ type parsedFile struct {
 	Class  *classHead  `parser:"( @@"`
 	Extern *externHead `parser:"| @@"`
 	Enum   *enumHead   `parser:"| @@"`
-	Macro  *macroHead  `parser:"| @@ )?"`
+	Macro  *macroHead  `parser:"| @@"`
+	Lib    *libHead    `parser:"| @@ )?"`
 	Items  []*topItem  `parser:"@@*"`
 }
 
@@ -56,6 +58,14 @@ type macroHead struct {
 	Body        *fileBody     `parser:"@@"`
 }
 
+// libHead is macro_library. Its body is the rest of the file.
+type libHead struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Body        *fileBody     `parser:"'macro_library' @@"`
+}
+
 // fileBody is the body of a file-level macro or template: the rest of the file.
 type fileBody MacroBody
 
@@ -91,6 +101,9 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 		h := pf.Macro
 		f.FileMacro = &Macro{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Template: h.Template, Name: h.Name, Params: h.Params,
 			Body: (*MacroBody)(h.Body)}
+	case pf.Lib != nil:
+		h := pf.Lib
+		f.Libraries = []*Macro{{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Body: (*MacroBody)(h.Body)}}
 	}
 	for _, item := range pf.Items {
 		m := item.Member
@@ -99,6 +112,8 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 			f.InlineClasses = append(f.InlineClasses, item.Class)
 		case item.Extern != nil:
 			f.InlineExterns = append(f.InlineExterns, item.Extern)
+		case item.Macro != nil && item.Macro.Name == "":
+			f.Libraries = append(f.Libraries, item.Macro)
 		case item.Macro != nil:
 			f.InlineMacros = append(f.InlineMacros, item.Macro)
 		case members != nil:
@@ -111,7 +126,7 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 			return nil, outsideClass(m)
 		}
 	}
-	macros := f.InlineMacros
+	macros := slices.Concat(f.Libraries, f.InlineMacros)
 	if f.FileMacro != nil {
 		macros = append([]*Macro{f.FileMacro}, macros...)
 	}
@@ -124,24 +139,34 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 	return f, nil
 }
 
-// check reports a doc comment or annotations on m: Godot never sees a macro, so they'd have no effect.
+// check reports a doc comment or annotations on m: Godot never sees a macro, so they'd have no effect. It also
+// reports a template without a name.
 func (m *Macro) check() *Error {
-	what := m.what()
+	what := capitalize(m.what()) + "s"
+	if m.Name == "" {
+		what = "Macro libraries"
+	}
 	switch {
+	case m.Template && m.Name == "":
+		return &Error{Pos: m.Pos, Len: len("template"), Msg: "Templates need a name and parameters: template name(...) { ... }.",
+			Hint: "Only macros can do without, as macro libraries: macro { ... }."}
 	case m.Doc != nil:
-		return &Error{Pos: m.Doc.Pos, Len: 3, Msg: fmt.Sprintf("%ss have no doc comments, since Godot never sees them.", capitalize(what)),
+		return &Error{Pos: m.Doc.Pos, Len: 3, Msg: fmt.Sprintf("%s have no doc comments, since Godot never sees them.", what),
 			Hint: "Use a plain comment: \"//\" or \"/* */\"."}
 	case len(m.Annotations) > 0:
 		a := m.Annotations[0]
-		return &Error{Pos: a.Pos, Len: len(a.Name) + 1, Msg: fmt.Sprintf("%ss take no annotations.", capitalize(what))}
+		return &Error{Pos: a.Pos, Len: len(a.Name) + 1, Msg: fmt.Sprintf("%s take no annotations.", what)}
 	}
 	return nil
 }
 
-// what returns "macro" or "template".
+// what returns "macro", "template" or "macro library".
 func (m *Macro) what() string {
-	if m.Template {
+	switch {
+	case m.Template:
 		return "template"
+	case m.Name == "":
+		return "macro library"
 	}
 	return "macro"
 }

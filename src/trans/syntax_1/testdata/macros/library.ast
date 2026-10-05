@@ -1,0 +1,28 @@
+File: @2:1
+  FileClass: @2:1
+    Name: Foo
+    Extends: @3:9 Node
+  InlineMacros:
+    - @7:3
+      Name: twice
+      Params:
+        - @7:15 n
+      Body: @7:18
+        Block: @7:18
+          TextPos: 7:19
+          Text: " gd.text(tostring(add(n, n)))"
+  Libraries:
+    - @5:1
+      Body: @5:7
+        Block: @5:7
+          TextPos: 5:8
+          Text: |
+
+              function add(a, b) return a + b end
+
+
+    - @9:1
+      Body: @9:7
+        Block: @9:7
+          TextPos: 9:8
+          Text: " local hidden = 1"

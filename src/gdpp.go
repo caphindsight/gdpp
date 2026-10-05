@@ -31,7 +31,7 @@ type gdppFile struct {
 	Rel    string // Relative to the package root, e.g. "src/player.gd++".
 	Src    string
 	Decls  []trans.Declaration // Its classes, externs and enums, with those that macros generate.
-	Macros []trans.Declaration // Its macros and templates.
+	Macros []trans.Declaration // Its macros, templates and macro libraries.
 	Err    error
 }
 
@@ -70,14 +70,15 @@ func packageOptions(pkg Package, deps []trans.Dependency) trans.Options {
 		PackagePrefix: pkg.Prefix(), CppStandard: pkg.Config.CppStandard, MacroDepth: pkg.MacroDepth()}
 }
 
-// macroDeps returns the macros and templates of files, except those of the
-// file whose path relative to the package root is self, as dependencies.
+// macroDeps returns the macros, templates and macro libraries of files,
+// except those of the file whose path relative to the package root is self,
+// as dependencies.
 func macroDeps(files []gdppFile, self string) []trans.Dependency {
 	var deps []trans.Dependency
 	for _, f := range files {
 		for _, m := range f.Macros {
 			if f.Rel != self {
-				kind := map[trans.DeclKind]trans.Kind{trans.MacroDecl: trans.Macro, trans.TemplateDecl: trans.Template}[m.Kind]
+				kind := map[trans.DeclKind]trans.Kind{trans.MacroDecl: trans.Macro, trans.TemplateDecl: trans.Template, trans.LibraryDecl: trans.MacroLibrary}[m.Kind]
 				deps = append(deps, trans.Dependency{Name: m.Name, Kind: kind, Source: f.Src, File: f.File.ToString()})
 			}
 		}
@@ -377,6 +378,9 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 			FailWithText(f.Err)
 		}
 		for _, d := range slices.Concat(f.Decls, f.Macros) {
+			if d.Kind == trans.LibraryDecl {
+				continue // No name.
+			}
 			if prev, ok := owner[d.Name]; ok {
 				LogFatal("The name %s is declared in both %s and %s.", d.Name, prev.File.ToString(), f.File.ToString())
 			}

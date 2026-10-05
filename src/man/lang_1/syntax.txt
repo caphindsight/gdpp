@@ -81,8 +81,8 @@ Keywords have a special meaning in declarations. Don't use them as names of clas
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  invoke  macro  macro_name  noimport  on  set  signal
-template  template_name  var
+func  get  impl  import  invoke  macro  macro_library  macro_name  noimport  on  set
+signal  template  template_name  var
 ```
 
 - `code` is a keyword only right before `{`, in a macro's arguments. See `gd++ man macros`.

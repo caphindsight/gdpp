@@ -106,3 +106,95 @@ func TestLuaDepth(t *testing.T) {
 		}
 	}
 }
+
+// expandPackage expands main.gd++ of a package of files, with the others' macros, templates and macro libraries as
+// dependencies, like the build does.
+func expandPackage(t *testing.T, files map[string]string) (string, error) {
+	t.Helper()
+	var opts meta.Options
+	for name, src := range files {
+		decls, err := ListMacros(name, src)
+		if err != nil {
+			return "", err
+		}
+		for _, d := range decls {
+			if name != "main.gd++" {
+				kind := map[meta.DeclKind]meta.Kind{meta.MacroDecl: meta.Macro, meta.TemplateDecl: meta.Template, meta.LibraryDecl: meta.MacroLibrary}[d.Kind]
+				opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Kind: kind, Source: src, File: name})
+			}
+		}
+	}
+	return Expand("main.gd++", files["main.gd++"], opts)
+}
+
+func TestLuaLibraries(t *testing.T) {
+	main := `class_name Foo
+extends Node
+
+var early: int = invoke { gd.text(add(2, 3)) }
+invoke getter("x")
+invoke counter()
+
+func f() -> void {
+  invoke { gd.text("print(" .. add(1, 1) .. ");") }
+  invoke twice(4);
+}
+
+macro { function add(a, b) return a + b end }
+macro twice(n) { gd.text("print(" .. add(n, n) .. ");") }
+macro counter(start = add(10, 1)) { gd.var { name = "count", type = "int", init = start } }
+template getter(name) {
+  func get_${name}() -> int { return ${add(1, 2)}; }
+}
+`
+	for _, tc := range []struct {
+		files map[string]string
+		want  []string
+	}{
+		// In main.gd++ itself, before and after the library: macro blocks, macros, templates and parameter defaults.
+		{map[string]string{"main.gd++": main},
+			[]string{"var early: int = 5", "return 3;", "var count: int = 11", "print(2);", "print(8);"}},
+		// Libraries in other files call each other's functions, whatever their order, and gd.invoke sees them too.
+		{map[string]string{
+			"main.gd++": "class_name Foo\nextends Node\nvar e: bool = invoke { gd.invoke(\"show\", { 10 }) }\n",
+			"a.gd++":    "macro { function is_even(n) if n == 0 then return true end return is_odd(n - 1) end }\nmacro show(n) { gd.text(tostring(is_even(n))) }\n",
+			"b.gd++":    "macro_library\nfunction is_odd(n) if n == 0 then return false end return is_even(n - 1) end\n",
+		}, []string{"var e: bool = true"}},
+	} {
+		got, err := expandPackage(t, tc.files)
+		if err != nil {
+			t.Errorf("%v failed: %v", tc.files, err)
+			continue
+		}
+		for _, w := range tc.want {
+			if !strings.Contains(got, w) {
+				t.Errorf("%v\n got: %s\nwant: %s", tc.files, got, w)
+			}
+		}
+	}
+}
+
+func TestLuaLibraryErrors(t *testing.T) {
+	use := "class_name Foo\nextends Node\nvar x: int = invoke { gd.text(1) }\n"
+	for _, tc := range []struct {
+		files map[string]string
+		want  string
+	}{
+		{map[string]string{"main.gd++": use + "macro { gd.text(\"x\") }\n"},
+			"main.gd++:4:1: Macro library failed: gd and ctx only work inside functions, since macro libraries only define functions."},
+		{map[string]string{"main.gd++": use + "macro { local f = ctx.file }\n"}, "gd and ctx only work inside functions"},
+		{map[string]string{"main.gd++": use + "macro {\n  error(\"broken\")\n}\n"}, "main.gd++:5:3: Macro library failed: broken."},
+		{map[string]string{"main.gd++": use + "macro { function pairs() end }\n"},
+			"main.gd++:4:1: This macro library redefines pairs, which Lua or GD++ already defines."},
+		{map[string]string{"main.gd++": use, "a.gd++": "macro { function f() end }\n", "b.gd++": "\n\nmacro { function f() end }\n"},
+			"b.gd++:3:1: This macro library redefines f, which the macro library at a.gd++:1 defines already."},
+		{map[string]string{"main.gd++": use + "template { }\n"}, "main.gd++:4:1: Templates need a name and parameters"},
+		{map[string]string{"main.gd++": use + "/// Doc.\nmacro { }\n"}, "Macro libraries have no doc comments"},
+		{map[string]string{"main.gd++": use, "lib.gd++": "macro_library\nlocal = 1\n"}, "lib.gd++:2:7: Macro library failed:"},
+		{map[string]string{"main.gd++": "class Foo {\n  macro { }\n}\n"}, "main.gd++:2:3:"},
+	} {
+		if _, err := expandPackage(t, tc.files); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%v gave %v, want %q.", tc.files, err, tc.want)
+		}
+	}
+}

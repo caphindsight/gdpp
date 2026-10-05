@@ -19,6 +19,9 @@ enum Rank { ... }        // an inline enum
 macro_name stat(name)    // a file-level macro: the rest of the file is its Lua code
 macro log(event) { ... } // an inline macro
 
+macro_library            // a file-level macro library: the rest of the file is its Lua code
+macro { ... }            // an inline macro library
+
 template_name pool(T)    // a file-level template: the rest of the file is its GD++ code
 template slot(n) { ... } // an inline template
 ```
@@ -129,7 +132,8 @@ Its top level can only hold inline classes, externs, enums, macros, templates, a
 # Macros and templates
 
 - Inline macros and templates can go anywhere an inline class can, also between the members of a file-level class.
-- With `macro_name` or `template_name`, the rest of the file is the body. Like after `enum_name`, nothing else can follow.
+- Macro libraries, `macro { ... }`, can go there too.
+- With `macro_name`, `template_name` or `macro_library`, the rest of the file is the body. Like after `enum_name`, nothing else can follow.
 - Their bodies may declare more macros and templates. Those are package-level declarations too.
 - See `gd++ man templates` and `gd++ man macros`. Prefer templates whenever they do the job: macros are more powerful, but also more advanced.
 

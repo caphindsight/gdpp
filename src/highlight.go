@@ -40,7 +40,7 @@ func highlightCode(code, lang string) string {
 
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
-	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import macro macro_name noimport " +
+	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import macro macro_library macro_name noimport " +
 		"set signal template_name var"
 	// GD++'s on blocks, e.g. on ready { ... }, whose keyword is also a name elsewhere: it's a keyword, with the
 	// notification's name, where it starts a block, at the start of a line or after annotations, and alone where
@@ -129,10 +129,14 @@ func highlightGdpp(code string, gdscript bool) string {
 			out.WriteString(highlightMacro(rest, &i))
 			continue
 		case !gdscript && macroBlockRegexp.MatchString(rest):
-			m := macroBlockRegexp.FindString(rest)
-			end := closingBrace(rest, len(m)-1)
-			out.WriteString(Styled("invoke", CodeKeyword) + m[len("invoke"):] + highlightLua(rest[len(m):end]) + rest[end:min(end+1, len(rest))])
+			m := macroBlockRegexp.FindStringSubmatch(rest)
+			end := closingBrace(rest, len(m[0])-1)
+			out.WriteString(Styled(m[1], CodeKeyword) + m[0][len(m[1]):] + highlightLua(rest[len(m[0]):end]) + rest[end:min(end+1, len(rest))])
 			i += min(end+1, len(rest))
+			continue
+		case !gdscript && macroLibraryRegexp.MatchString(rest): // The rest of the file is Lua.
+			out.WriteString(Styled("macro_library", CodeKeyword) + highlightLua(rest[len("macro_library"):]))
+			i += len(rest)
 			continue
 		case c == '$' || c == '%' && strings.HasSuffix(strings.TrimRight(code[:i], " \t"), "="):
 			n, style = nodePathLen(rest), []Style{CodeLiteral}
@@ -191,8 +195,11 @@ var invokeRegexp = regexp.MustCompile(`^(invoke)(\s+)(\w+)(\s*)`)
 // macroHeadRegexp matches the start of a macro or template: its keyword and name, up to "(".
 var macroHeadRegexp = regexp.MustCompile(`^(macro|template|macro_name|template_name)(\s+)(\w+)(\s*)\(`)
 
-// macroBlockRegexp matches the start of a macro block: "invoke" and "{".
-var macroBlockRegexp = regexp.MustCompile(`^invoke\s*\{`)
+// macroBlockRegexp matches the start of a macro block or macro library: "invoke" or "macro", and "{".
+var macroBlockRegexp = regexp.MustCompile(`^(invoke|macro)\s*\{`)
+
+// macroLibraryRegexp matches a file-level macro library's keyword.
+var macroLibraryRegexp = regexp.MustCompile(`^macro_library\b`)
 
 // highlightMacro highlights the macro or template that starts code[*i:], and moves *i past it: its head, and its
 // body, which is Lua for macros and GD++ for templates. A file-level one's body is the rest of the file.

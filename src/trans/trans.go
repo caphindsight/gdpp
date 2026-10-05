@@ -30,11 +30,13 @@ const (
 	GodotEnum        = meta.GodotEnum
 	Macro            = meta.Macro
 	Template         = meta.Template
+	MacroLibrary     = meta.MacroLibrary
 	ClassDecl        = meta.ClassDecl
 	ExternDecl       = meta.ExternDecl
 	EnumDecl         = meta.EnumDecl
 	MacroDecl        = meta.MacroDecl
 	TemplateDecl     = meta.TemplateDecl
+	LibraryDecl      = meta.LibraryDecl
 )
 
 // fork is what every syntax fork provides.

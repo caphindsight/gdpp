@@ -25,11 +25,12 @@ Whitespace, newlines and comments may appear between any two tokens, except insi
 
 ```
 File        = Code* FileHead? TopItem*
-FileHead    = ClassHead | ExternHead | EnumHead | MacroHead
+FileHead    = ClassHead | ExternHead | EnumHead | MacroHead | LibraryHead
 ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )?
 ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
 EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEntry*
 MacroHead   = ( 'macro_name' | 'template_name' ) Ident '(' MacroParams? ')' Body
+LibraryHead = 'macro_library' Body
 TopItem     = Class | Extern | Macro | Member
 ```
 
@@ -37,7 +38,7 @@ TopItem     = Class | Extern | Macro | Member
 - After `class_name` or `extern_name`, every `Member` belongs to that class or extern.
 - In a file without either, only enum types are allowed as members at the top level.
 - After `enum_name`, only an optional `extends` and enum values follow.
-- After `macro_name` or `template_name`, the rest of the file is the `Body`.
+- After `macro_name`, `template_name` or `macro_library`, the rest of the file is the `Body`.
 
 # Classes and externs
 
@@ -64,6 +65,7 @@ Externs only allow `Func`, `Signal` and `Var` members, without bodies, initial v
 
 ```
 Macro       = ( 'macro' | 'template' ) Ident '(' MacroParams? ')' '{' Body '}'
+            | 'macro' '{' Body '}'
 MacroParams = MacroParam ( ',' MacroParam )* ','?
 MacroParam  = Ident ( '=' Default )?
 Body        = Lua code (macros) or GD++ code with ${...} holes (templates), with Macro declarations at its top level
@@ -74,6 +76,7 @@ Value       = Number | '-' Number | String | Type | '[' ( Value ( ',' Value )* '
             | '{' ( MacroArg ( ',' MacroArg )* ','? )? '}' | 'code' Block | Expr
 ```
 
+- `'macro' '{' Body '}'` is a macro library, only at the top level of a file.
 - A `Default` is a Lua expression.
 - Positional `MacroArg`s come before named ones. In a dictionary, every `MacroArg` has a key.
 - `Ident '='` starts a named `MacroArg` only if another `=` doesn't follow, so `a == b` is a positional `Expr`.
@@ -184,8 +187,8 @@ Default     = Block | Expr
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  invoke  macro  macro_name  noimport  on  set  signal
-template  template_name  var
+func  get  impl  import  invoke  macro  macro_library  macro_name  noimport  on  set
+signal  template  template_name  var
 ```
 
 In C++ code, GD++ also reserves:

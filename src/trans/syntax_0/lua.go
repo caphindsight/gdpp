@@ -70,8 +70,9 @@ type run struct {
 	argLen map[string]int
 }
 
-// newRun returns a run of def for inv, with a sandboxed Lua state, and a function that frees it.
-func (x *expander) newRun(def *macroDef, inv *Invoke, sc *scope, depth int) (*run, func()) {
+// newRun returns a run of def for inv, with a sandboxed Lua state where the package's macro libraries ran, and a
+// function that frees it. The error is the libraries'.
+func (x *expander) newRun(def *macroDef, inv *Invoke, sc *scope, depth int) (*run, func(), error) {
 	L := lua.NewState(lua.Options{SkipOpenLibs: true})
 	for _, lib := range []struct {
 		name string
@@ -93,12 +94,55 @@ func (x *expander) newRun(def *macroDef, inv *Invoke, sc *scope, depth int) (*ru
 	r := &run{x: x, L: L, def: def, inv: inv, scopes: []*scope{sc}, depth: depth, values: map[string]lua.LValue{}, argPos: map[string]lexer.Position{},
 		argLen: map[string]int{}}
 	L.SetGlobal("pairs", L.NewFunction(r.pairs))
+	err := r.libraries()
 	L.SetGlobal("gd", r.gdTable())
 	L.SetGlobal("ctx", r.ctxTable(sc))
 	return r, func() {
 		cancel()
 		L.Close()
+	}, err
+}
+
+// libraries runs the package's macro libraries, which define functions for the run's code. Meanwhile, gd and ctx
+// fail: libraries emit nothing, and don't depend on the invocation. Two libraries can't define the same global.
+func (r *run) libraries() error {
+	L, globals := r.L, r.L.G.Global
+	guard := L.NewTable()
+	L.SetMetatable(guard, L.SetFuncs(L.NewTable(), map[string]lua.LGFunction{"__index": func(L *lua.LState) int {
+		L.RaiseError("gd and ctx only work inside functions, since macro libraries only define functions")
+		return 0
+	}}))
+	L.SetGlobal("gd", guard)
+	L.SetGlobal("ctx", guard)
+	owners := map[lua.LValue]*macroDef{} // The library that defined each global.
+	for _, lib := range r.x.libs {
+		before := map[lua.LValue]lua.LValue{}
+		globals.ForEach(func(k, v lua.LValue) { before[k] = v })
+		lr := *r
+		lr.def = lib
+		fn, err := lr.load(lib.m.Body.Text, lib.m.Body.TextPos, lib.file, nil)
+		if err == nil {
+			err = lr.call(fn)
+		}
+		if err != nil {
+			return err
+		}
+		for _, k := range sortedKeys(globals) {
+			old, ok := before[k]
+			switch {
+			case ok && old == globals.RawGet(k):
+			case ok:
+				msg := fmt.Sprintf("This macro library redefines %s, which Lua or GD++ already defines.", k)
+				if o := owners[k]; o != nil {
+					msg = fmt.Sprintf("This macro library redefines %s, which the macro library at %s:%d defines already.", k, o.file, o.m.Pos.Line)
+				}
+				return r.x.lineError(lib.file, lib.m.Pos.Line, msg, "Choose another name, or make it local.")
+			default:
+				owners[k] = lib
+			}
+		}
 	}
+	return nil
 }
 
 // ctxTable returns ctx: where and how the macro was invoked.
@@ -172,6 +216,11 @@ func (x *expander) sourceOf(file string) string {
 			return d.src
 		}
 	}
+	for _, d := range x.libs {
+		if d.file == file {
+			return d.src
+		}
+	}
 	return x.src
 }
 
@@ -222,7 +271,11 @@ func (r *run) luaError(err error) error {
 		line, _ = strconv.Atoi(m[2])
 	}
 	src := r.x.sourceOf(file)
-	msg = fmt.Sprintf("%s %s failed: %s", capitalize(r.def.m.what()), r.def.m.Name, strings.TrimSuffix(msg, "."))
+	what := "Macro library"
+	if r.def.m.Name != "" {
+		what = capitalize(r.def.m.what()) + " " + r.def.m.Name
+	}
+	msg = fmt.Sprintf("%s failed: %s", what, strings.TrimSuffix(msg, "."))
 	if line == 0 {
 		return r.invocationError(msg+".", "")
 	}

@@ -203,6 +203,41 @@ macro inventory(slots) {
 - They start a line of the body's top level: `macro NAME(` or `template NAME(`.
 - A template's body may declare them too. See `gd++ man templates`.
 
+# Macro libraries
+
+`macro { Lua }` is a macro library: Lua functions that every macro of the package can call.
+
+```gd++
+macro {
+  function getter_name(name) return "get_" .. gd.snake(name) end
+  local function is_even(n) return n % 2 == 0 end  // only this library sees it
+}
+```
+
+```gd++
+macro getter(name, type) {
+  gd.func { name = getter_name(name), ret = type, body = "return " .. name .. ";" }
+}
+```
+
+- It goes at the top level of any file of the package, like an inline class.
+- Macros, macro blocks, template holes and parameter defaults can all call its functions, in every file of the package.
+- All macro libraries run before each invocation. So their place doesn't matter: code before a library can use it too.
+- It emits nothing. It only defines functions and other values, as Lua globals.
+- `gd` and `ctx` only work inside its functions, which run when a macro calls them.
+- `local` names stay private to their library.
+- Libraries can call each other's functions inside functions, in any order. Calls at a library's top level to another library's functions may not work: libraries run in the order of their files' names.
+- Two libraries can't define the same global, and none can redefine one that Lua or GD++ defines, e.g. `pairs`.
+- It has no name, no parameters, no doc comment and no annotations. It may declare macros and templates, like a macro's body.
+
+Like `macro_name`, `macro_library` makes the whole file one macro library:
+
+```gd++
+macro_library
+
+function getter_name(name) return "get_" .. gd.snake(name) end
+```
+
 # Lua
 
 Lua code sees its parameters, Lua's `string`, `table` and `math` libraries, and two tables:
@@ -433,7 +468,7 @@ Lua code can only generate code:
 
 - No I/O, and no loading other code: no `io`, `os`, `require`, `dofile`, `load` or `print`.
 - Nothing random: no `math.random`. The same input always generates the same code.
-- An invocation may run for 20 seconds at most. `gd++ build --macro-timeout SECONDS` and `gd++ trans --macro-timeout SECONDS` change the limit.
+- An invocation may run for 20 seconds at most, the macro libraries included. `gd++ build --macro-timeout SECONDS` and `gd++ trans --macro-timeout SECONDS` change the limit.
 - Invocations nest at most 64 levels deep, e.g. a macro whose output invokes a macro, or a macro that calls `gd.invoke`. Each counts as one level. A package changes the limit with `macro_depth` in `gd++pkg.toml`, see `gd++ man packages`.
 
 # Errors

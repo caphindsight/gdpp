@@ -1,0 +1,4 @@
+macros/template_library.gd++:1:1: Templates need a name and parameters: template name(...) { ... }.
+ 1 | template {
+   | ^^^^^^^^
+Hint: Only macros can do without, as macro libraries: macro { ... }.

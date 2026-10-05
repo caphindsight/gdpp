@@ -1,0 +1,5 @@
+// A file-level macro library.
+macro_library
+
+function add(a, b) return a + b end
+macro twice(n) { gd.text(tostring(add(n, n))) }

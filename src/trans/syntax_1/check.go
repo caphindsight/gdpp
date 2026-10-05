@@ -539,7 +539,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 	}
 	u.opts = opts
 	for _, d := range opts.Dependencies {
-		if d.Kind == meta.Macro || d.Kind == meta.Template {
+		if d.Kind == meta.Macro || d.Kind == meta.Template || d.Kind == meta.MacroLibrary {
 			continue // Expanded already.
 		}
 		if s := u.symbols[d.Name]; s != nil {

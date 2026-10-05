@@ -1,0 +1,21 @@
+File: @2:1
+  InlineMacros:
+    - @5:1
+      Name: twice
+      Params:
+        - @5:13 n
+      Body: @5:16
+        Block: @5:16
+          TextPos: 5:17
+          Text: " gd.text(tostring(add(n, n)))"
+  Libraries:
+    - @2:1
+      Body: @2:14
+        Block: @2:14
+          TextPos: 2:14
+          Text: |
+
+
+            function add(a, b) return a + b end
+
+

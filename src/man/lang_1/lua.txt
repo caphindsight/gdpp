@@ -135,6 +135,7 @@ local first, last = bounds({ 3, 5, 8 })
 - A function sees the variables around it, also after they change.
 - `f{ ... }` and `f"text"` call `f` with one table or string, without parentheses. That's why the emitters read `gd.var { name = "hp", type = "int" }`.
 - `s:upper()` calls a method: it's `s.upper(s)`, i.e. `string.upper(s)`.
+- To share functions between macros, define them in a macro library: `macro { function f() ... end }`. See "Macro libraries" in `gd++ man macros`.
 
 # Strings
 

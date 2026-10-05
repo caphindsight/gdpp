@@ -1,0 +1,9 @@
+// Macro libraries define functions that every macro of the package can use.
+class_name Foo
+extends Node
+
+macro {
+  function add(a, b) return a + b end
+  macro twice(n) { gd.text(tostring(add(n, n))) }
+}
+macro { local hidden = 1 }

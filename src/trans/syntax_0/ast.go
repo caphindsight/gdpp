@@ -18,6 +18,7 @@ type File struct {
 	InlineEnums   []*Enum   // Enums in a file without a file-level class. (Otherwise they are class members.)
 	FileMacro     *Macro    // Declared with macro_name or template_name.
 	InlineMacros  []*Macro  // Declared with macro or template, also inside other macros and templates.
+	Libraries     []*Macro  // Macro libraries, declared with macro { ... } or macro_library: macros without a name.
 	Invokes       []*Invoke // Macro invocations in a file without a file-level class. Expansion replaces them.
 }
 
@@ -236,14 +237,15 @@ type Arg struct {
 
 // Macro is a macro: Lua code that generates GD++ or C++ where code invokes it. With Template, it's a template
 // instead: GD++ code with ${...} holes. Declared inline, or with macro_name or template_name (the rest of the file).
+// Without a Name, it's a macro library: Lua code that runs before every macro, to define functions for them.
 // Doc and Annotations are only parsed to report them: Godot never sees a macro.
 type Macro struct {
 	Pos         lexer.Position
 	Doc         *Doc          `parser:"@@?"`
 	Annotations []*Annotation `parser:"@@*"`
 	Template    bool          `parser:"( 'macro' | @'template' )"`
-	Name        string        `parser:"@Ident '('"`
-	Params      []*MacroParam `parser:"( @@ ( ',' @@ )* ','? )? ')'"`
+	Name        string        `parser:"( @Ident '('"`
+	Params      []*MacroParam `parser:"  ( @@ ( ',' @@ )* ','? )? ')' )?"`
 	Body        *MacroBody    `parser:"@@"`
 }
 

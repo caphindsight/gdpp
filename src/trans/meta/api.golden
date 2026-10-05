@@ -65,3 +65,5 @@ field Options.PackagePrefix string
 field Options.CppStandard string
 field Options.MacroTimeout int
 field Options.MacroDepth int
+const MacroLibrary Kind = 10
+const LibraryDecl DeclKind = 6
