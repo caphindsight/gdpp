@@ -28,6 +28,7 @@ const (
 	Macro            Kind = 8  // A GD++ macro, which code invokes as "invoke name(...)". Source and File hold its file.
 	Template         Kind = 9  // A GD++ template, which code invokes as "invoke name(...)". Source and File hold its file.
 	MacroLibrary     Kind = 10 // The macro libraries of a GD++ file, which every macro can use. It has no Name. Source and File hold its file.
+	Annotation       Kind = 11 // A user annotation that a GD++ file declares, which code writes as "@@name". Only its Name matters.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -73,6 +74,8 @@ const (
 	MacroDecl    DeclKind = 4
 	TemplateDecl DeclKind = 5
 	LibraryDecl  DeclKind = 6 // The file's macro libraries, "macro { ... }" and macro_library. It has no Name.
+	// A user annotation, "annotation name". Unlike other names, several files may declare the same one.
+	AnnotationDecl DeclKind = 7
 )
 
 // Declaration is a class, extern, enum type, macro or template declared in a GD++ file, which other files may use.

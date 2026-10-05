@@ -70,11 +70,12 @@ type libHead struct {
 type fileBody MacroBody
 
 type topItem struct {
-	Pos    lexer.Position
-	Class  *Class  `parser:"( @@"`
-	Extern *Extern `parser:"| @@"`
-	Macro  *Macro  `parser:"| @@"`
-	Member *Member `parser:"| @@ )"`
+	Pos        lexer.Position
+	Class      *Class          `parser:"( @@"`
+	Extern     *Extern         `parser:"| @@"`
+	Macro      *Macro          `parser:"| @@"`
+	Annotation *AnnotationDecl `parser:"| @@"`
+	Member     *Member         `parser:"| @@ )"`
 }
 
 // toFile converts the parse tree into a File. After class_name or extern_name, members go into that class;
@@ -116,6 +117,11 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 			f.Libraries = append(f.Libraries, item.Macro)
 		case item.Macro != nil:
 			f.InlineMacros = append(f.InlineMacros, item.Macro)
+		case item.Annotation != nil:
+			if e := item.Annotation.check(); e != nil {
+				return nil, e
+			}
+			f.UserAnnotations = append(f.UserAnnotations, item.Annotation)
 		case members != nil:
 			*members = append(*members, m)
 		case m.Enum != nil && m.Enum.Value == nil:
@@ -155,7 +161,7 @@ func (m *Macro) check() *Error {
 			Hint: "Use a plain comment: \"//\" or \"/* */\"."}
 	case len(m.Annotations) > 0:
 		a := m.Annotations[0]
-		return &Error{Pos: a.Pos, Len: len(a.Name) + 1, Msg: fmt.Sprintf("%s take no annotations.", what)}
+		return &Error{Pos: a.Pos, Len: len(a.label()), Msg: fmt.Sprintf("%s take no annotations.", what)}
 	}
 	return nil
 }
@@ -169,6 +175,19 @@ func (m *Macro) what() string {
 		return "macro library"
 	}
 	return "macro"
+}
+
+// check reports a doc comment or annotations on d: like macros, Godot never sees it.
+func (d *AnnotationDecl) check() *Error {
+	switch {
+	case d.Doc != nil:
+		return &Error{Pos: d.Doc.Pos, Len: 3, Msg: "Annotation declarations have no doc comments, since Godot never sees them.",
+			Hint: "Use a plain comment: \"//\" or \"/* */\"."}
+	case len(d.Annotations) > 0:
+		a := d.Annotations[0]
+		return &Error{Pos: a.Pos, Len: len(a.label()), Msg: "Annotation declarations take no annotations."}
+	}
+	return nil
 }
 
 // helpers moves the macros and templates declared in m's body, and in theirs, and so on, out of their bodies, and

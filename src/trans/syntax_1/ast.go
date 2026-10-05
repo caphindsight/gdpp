@@ -20,6 +20,8 @@ type File struct {
 	InlineMacros  []*Macro  // Declared with macro or template, also inside other macros and templates.
 	Libraries     []*Macro  // Macro libraries, declared with macro { ... } or macro_library: macros without a name.
 	Invokes       []*Invoke // Macro invocations in a file without a file-level class. Expansion replaces them.
+	// Declared with annotation Name: the user annotations, @@Name, that every file of the package may use.
+	UserAnnotations []*AnnotationDecl
 }
 
 // Member is one declaration in a class or extern. Exactly one field after Pos is set.
@@ -221,12 +223,31 @@ type Int struct {
 }
 
 // Annotation is @Name or @Name(Args...). Attributes such as @virtual are annotations too.
+// With User, it's a user annotation, @@Name: only macros read it, and later stages never see it.
 // A doc comment among annotations is parsed as one with only Doc set, which Parse moves to the declaration's Doc.
 type Annotation struct {
 	Pos  lexer.Position
 	Doc  *Doc   `parser:"( @@"`
-	Name string `parser:"| '@' @Ident"`
+	User bool   `parser:"| '@' @'@'?"`
+	Name string `parser:"  @Ident"`
 	Args []*Arg `parser:"  ( '(' ( @@ ( ',' @@ )* ','? )? ')' )? )"`
+}
+
+// label returns the annotation as written, without arguments: @Name or @@Name.
+func (a *Annotation) label() string {
+	if a.User {
+		return "@@" + a.Name
+	}
+	return "@" + a.Name
+}
+
+// AnnotationDecl declares a user annotation: annotation Name makes @@Name valid in every file of the package.
+// Doc and Annotations are only parsed to report them, like a macro's.
+type AnnotationDecl struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Name        string        `parser:"'annotation' @Ident"`
 }
 
 // Arg is an annotation argument, kept as source text (strings keep their quotes).

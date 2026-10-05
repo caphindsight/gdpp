@@ -70,7 +70,7 @@ func packageOptions(pkg Package, deps []trans.Dependency) trans.Options {
 		PackagePrefix: pkg.Prefix(), CppStandard: pkg.Config.CppStandard, MacroDepth: pkg.MacroDepth()}
 }
 
-// macroDeps returns the macros, templates and macro libraries of files,
+// macroDeps returns the macros, templates, macro libraries and annotations of files,
 // except those of the file whose path relative to the package root is self,
 // as dependencies.
 func macroDeps(files []gdppFile, self string) []trans.Dependency {
@@ -78,7 +78,8 @@ func macroDeps(files []gdppFile, self string) []trans.Dependency {
 	for _, f := range files {
 		for _, m := range f.Macros {
 			if f.Rel != self {
-				kind := map[trans.DeclKind]trans.Kind{trans.MacroDecl: trans.Macro, trans.TemplateDecl: trans.Template, trans.LibraryDecl: trans.MacroLibrary}[m.Kind]
+				kind := map[trans.DeclKind]trans.Kind{trans.MacroDecl: trans.Macro, trans.TemplateDecl: trans.Template, trans.LibraryDecl: trans.MacroLibrary,
+					trans.AnnotationDecl: trans.Annotation}[m.Kind]
 				deps = append(deps, trans.Dependency{Name: m.Name, Kind: kind, Source: f.Src, File: f.File.ToString()})
 			}
 		}
@@ -378,8 +379,8 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 			FailWithText(f.Err)
 		}
 		for _, d := range slices.Concat(f.Decls, f.Macros) {
-			if d.Kind == trans.LibraryDecl {
-				continue // No name.
+			if d.Kind == trans.LibraryDecl || d.Kind == trans.AnnotationDecl {
+				continue // No name, or one that files may share.
 			}
 			if prev, ok := owner[d.Name]; ok {
 				LogFatal("The name %s is declared in both %s and %s.", d.Name, prev.File.ToString(), f.File.ToString())

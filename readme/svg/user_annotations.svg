@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="537" height="509" viewBox="0 0 537 509">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#e3b341">class_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Player</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Node</tspan></text>
+  <text x="16" y="70"></text>
+  <text x="16" y="90"><tspan fill="#8b949e">// Declares @@save, for the macro below.</tspan></text>
+  <text x="16" y="110"><tspan fill="#e3b341">annotation</tspan><tspan fill="#e6edf3"> save</tspan></text>
+  <text x="16" y="130"></text>
+  <text x="16" y="150"><tspan fill="#79c0ff">@@save</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> health: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">100</tspan></text>
+  <text x="16" y="170"><tspan fill="#79c0ff">@@save</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"hp_max"</tspan><tspan fill="#e6edf3">) </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> max_health: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">100</tspan></text>
+  <text x="16" y="190"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> speed: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">300.0</tspan><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// not saved</tspan></text>
+  <text x="16" y="210"></text>
+  <text x="16" y="230"><tspan fill="#8b949e">// A save() with each @@save variable, under its key.</tspan></text>
+  <text x="16" y="250"><tspan fill="#e3b341">invoke</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">local</tspan><tspan fill="#e6edf3"> lines = { </tspan><tspan fill="#d2a8ff">"Dictionary d;"</tspan><tspan fill="#e6edf3"> }</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">for</tspan><tspan fill="#e6edf3"> _, m </tspan><tspan fill="#e3b341">in</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">ipairs</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">ctx</tspan><tspan fill="#e6edf3">.members) </tspan><tspan fill="#e3b341">do</tspan></text>
+  <text x="16" y="310"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">local</tspan><tspan fill="#e6edf3"> key = </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">annotation</tspan><tspan fill="#e6edf3">(m, </tspan><tspan fill="#d2a8ff">"@@save"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> m.kind == </tspan><tspan fill="#d2a8ff">"var"</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">and</tspan><tspan fill="#e6edf3"> key </tspan><tspan fill="#e3b341">then</tspan></text>
+  <text x="16" y="350"><tspan fill="#e6edf3">      table.</tspan><tspan fill="#56d4dd">insert</tspan><tspan fill="#e6edf3">(lines, </tspan><tspan fill="#d2a8ff">"d["</tspan><tspan fill="#e6edf3"> .. gd.</tspan><tspan fill="#56d4dd">quote</tspan><tspan fill="#e6edf3">(key[</tspan><tspan fill="#d2a8ff">1</tspan><tspan fill="#e6edf3">] </tspan><tspan fill="#e3b341">or</tspan><tspan fill="#e6edf3"> m.name)</tspan></text>
+  <text x="16" y="370"><tspan fill="#e6edf3">        .. </tspan><tspan fill="#d2a8ff">"] = "</tspan><tspan fill="#e6edf3"> .. m.name .. </tspan><tspan fill="#d2a8ff">";"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="390"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">end</tspan></text>
+  <text x="16" y="410"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">end</tspan></text>
+  <text x="16" y="430"><tspan fill="#e6edf3">  table.</tspan><tspan fill="#56d4dd">insert</tspan><tspan fill="#e6edf3">(lines, </tspan><tspan fill="#d2a8ff">"return d;"</tspan><tspan fill="#e6edf3">)</tspan></text>
+  <text x="16" y="450"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">func</tspan><tspan fill="#e6edf3"> { name = </tspan><tspan fill="#d2a8ff">"save"</tspan><tspan fill="#e6edf3">, ret = </tspan><tspan fill="#d2a8ff">"Dictionary"</tspan><tspan fill="#e6edf3">,</tspan></text>
+  <text x="16" y="470"><tspan fill="#e6edf3">    body = </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">.</tspan><tspan fill="#56d4dd">join</tspan><tspan fill="#e6edf3">(lines, </tspan><tspan fill="#d2a8ff">"\n"</tspan><tspan fill="#e6edf3">) }</tspan></text>
+  <text x="16" y="490"><tspan fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>

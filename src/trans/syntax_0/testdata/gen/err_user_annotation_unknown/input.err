@@ -1,0 +1,4 @@
+input.gd++:3:1: Unknown annotation @@sav.
+ 3 | @@sav
+   | ^^^^^
+Hint: Did you mean "@@save"?

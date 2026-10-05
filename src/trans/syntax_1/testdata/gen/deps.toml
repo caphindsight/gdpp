@@ -320,3 +320,7 @@ file = "stack_inner.gd++"
 name = "stack_template"
 kind = "Template"
 file = "stack_template.gd++"
+
+[[dep]]
+name = "shared"
+kind = "Annotation"

@@ -229,7 +229,7 @@ func (p *printer) head(doc *Doc, annotations []*Annotation) {
 		}
 	}
 	for _, a := range annotations {
-		p.write("@", a.Name)
+		p.write(a.label())
 		if len(a.Args) > 0 {
 			var args []string
 			for _, arg := range a.Args {

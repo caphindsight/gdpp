@@ -31,12 +31,14 @@ const (
 	Macro            = meta.Macro
 	Template         = meta.Template
 	MacroLibrary     = meta.MacroLibrary
+	Annotation       = meta.Annotation
 	ClassDecl        = meta.ClassDecl
 	ExternDecl       = meta.ExternDecl
 	EnumDecl         = meta.EnumDecl
 	MacroDecl        = meta.MacroDecl
 	TemplateDecl     = meta.TemplateDecl
 	LibraryDecl      = meta.LibraryDecl
+	AnnotationDecl   = meta.AnnotationDecl
 )
 
 // fork is what every syntax fork provides.

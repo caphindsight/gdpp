@@ -2,6 +2,8 @@ Annotations: the complete list
 
 Annotations attach information to a declaration, like in GDScript: `@export` on a variable, `@override` on a function, `@tool` on a class. This page lists all of them. The page of each topic explains them in full.
 
+Your own annotations start with `@@`, e.g. `@@save`, and are declared with `annotation save`. Only macros read them. See "User annotations" below.
+
 # Syntax
 
 ```gd++
@@ -357,11 +359,54 @@ Other facts:
 
 - An unknown annotation, with a suggestion if it looks like a typo: "Unknown annotation @exprot." with "Did you mean \"@export\"?".
 - An annotation in the wrong place, e.g. "Annotation @tool can't be used on a func.".
-- An annotation used twice on one declaration: "Annotation @export is used twice.".
+- An annotation used twice on one declaration: "Annotation @export is used twice.". User annotations too: "Annotation @@save is used twice.".
+- An undeclared user annotation: "Unknown annotation @@sav." with "Did you mean \"@@save\"?", or a hint to declare it.
 - Arguments for an annotation that takes none: "Annotation @const takes no arguments.".
 - `@trace` and `@profile` with anything but names in double quotes: "Annotation @trace takes names of groups in double quotes, e.g. @trace("combat").".
 - An annotation that needs a base class: "Annotation @onready can only be used in classes that extend Node, which Item doesn't.".
 - An annotation not followed by a declaration: "Expected a declaration after the annotation, ...".
+
+# User annotations
+
+`@@name` is your own annotation. GD++ ignores it, but macros see it, and generate code for it:
+
+```gd++
+class_name Player
+extends Node
+
+annotation save
+
+@@save
+@export var health: int = 100
+
+@@save("hp_max") var max_health: int = 100
+
+// A save function with each @@save variable, under its key.
+invoke {
+  local lines = { "Dictionary d;" }
+  for _, m in ipairs(ctx.members) do
+    local args = m.kind == "var" and gd.annotation(m, "@@save")
+    if args then
+      table.insert(lines, "d[" .. gd.quote(args[1] or m.name) .. "] = " .. m.name .. ";")
+    end
+  end
+  table.insert(lines, "return d;")
+  gd.func { name = "save", ret = "Dictionary", body = gd.join(lines, "\n") }
+}
+```
+
+Facts:
+
+- `@@` and a name, with arguments like a built-in annotation's: numbers, strings and names.
+- `annotation NAME` declares one, for every file of the package. It goes wherever an inline class can go. See `gd++ man files`.
+- Declaring a name more than once is fine, in one file or in several. So each macro's file can declare the annotations it reads.
+- A declaration only has a name: no parameters, no doc comment and no annotations. GD++ doesn't check the arguments. The macro does, and reports problems with `gd.error`. See "Lua: errors" in `gd++ man macros`.
+- They never clash with built-in annotations, or with other names of the package: `@@export` isn't `@export`.
+- They go on any declaration that takes annotations, enum values included. Not on macros, templates and invocations.
+- Each name only once per declaration.
+- GD++ generates nothing for them: Godot and the C++ code never see them. Without a macro that reads it, a user annotation does nothing.
+- Macros see them in `ctx.members` and `ctx.annotations`, with their `@@`, next to built-in ones with their `@`: `{ "@export", "@@save", { "@@key", "hp" } }`. `gd.annotation(m, "@@save")` returns their arguments. See "Lua: annotations" in `gd++ man macros`.
+- Emitters take them the same way: `gd.var { ..., annotations = { "@@save" } }`. They must be declared too.
 
 # Not in GD++
 

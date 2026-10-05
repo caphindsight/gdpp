@@ -1,0 +1,42 @@
+@@serializable("v1")
+class_name Stats
+extends Node
+
+@@save
+@export var health: int = 100
+
+@@save("hp_max") var max_health: int = 100
+
+@@note(skip) var label: String = "stats"
+
+// A save function that lists the @@save vars, with their keys.
+invoke {
+  local keys = {}
+  for _, m in ipairs(ctx.members) do
+    local args = m.kind == "var" and gd.annotation(m, "@@save")
+    if args then table.insert(keys, gd.quote(args[1] or m.name) .. ", " .. m.name) end
+  end
+  gd.func { name = "save", ret = "Dictionary", annotations = { "@@generated" }, body = function()
+    gd.text("// Format " .. gd.annotation(ctx, "@@serializable")[1] .. ".\nDictionary d;\n")
+    for _, k in ipairs(keys) do gd.text("d[" .. k:gsub(", ", "] = ", 1) .. ";\n") end
+    gd.text("return d;")
+  end }
+}
+
+// Declarations: once, or more than once, in any file of the package. @@shared is declared by a dependency.
+annotation serializable
+annotation save
+annotation save
+annotation note
+annotation generated
+
+@@shared var flags: int
+
+// Generated members keep their user annotations.
+var count: int = invoke {
+  local n = 0
+  for _, m in ipairs(ctx.members) do
+    if gd.annotation(m, "@@generated") then n = n + 1 end
+  end
+  gd.text(tostring(n))
+}

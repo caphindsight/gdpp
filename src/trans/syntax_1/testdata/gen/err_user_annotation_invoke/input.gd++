@@ -1,0 +1,8 @@
+class_name A
+extends Node
+
+@@save
+invoke stat(health)
+
+macro stat(name) {
+}

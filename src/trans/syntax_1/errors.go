@@ -89,7 +89,7 @@ func (e *Error) withSource(src string) *Error {
 var keywords = map[string]bool{
 	"class": true, "class_name": true, "ctor": true, "decl": true, "dtor": true, "enum": true, "enum_name": true,
 	"extends": true, "extern": true, "extern_name": true, "func": true, "get": true, "impl": true, "import": true,
-	"invoke": true, "macro": true, "macro_library": true, "macro_name": true, "noimport": true, "set": true, "signal": true, "template": true, "template_name": true, "var": true,
+	"invoke": true, "annotation": true, "macro": true, "macro_library": true, "macro_name": true, "noimport": true, "set": true, "signal": true, "template": true, "template_name": true, "var": true,
 }
 
 // declKeywords are the words that can start a declaration, in the order hints list them.

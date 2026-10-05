@@ -38,7 +38,7 @@ func TestGenerate(t *testing.T) {
 	}
 	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
 		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other, "GodotEnum": meta.GodotEnum, "Macro": meta.Macro,
-		"Template": meta.Template}
+		"Template": meta.Template, "Annotation": meta.Annotation}
 	var opts meta.Options
 	for _, d := range file.Dep {
 		source := ""

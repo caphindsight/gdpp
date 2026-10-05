@@ -334,6 +334,20 @@ func TestTranspilePackageMacroLibraries(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageAnnotations(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"a.gd++":   "annotation save\n",
+		"b.gd++":   "annotation save\nannotation key\n",
+		"use.gd++": "class Crate {\n  @@save @@key(\"k\") var x: int\n  var n: String = invoke { gd.text(gd.quote(gd.annotation(ctx.members[1], \"@@key\")[1])) }\n}\n",
+	})
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	if gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/"); !strings.Contains(gen["Crate.cpp"], `"k"`) {
+		t.Errorf("Crate.cpp = %s\nwant it to contain the key", gen["Crate.cpp"])
+	}
+}
+
 func TestTranspilePackageFails(t *testing.T) {
 	cases := map[string]struct {
 		files map[string]string
@@ -343,6 +357,8 @@ func TestTranspilePackageFails(t *testing.T) {
 			"[x] The name Twin is declared in both res://src/pkg/a.gd++ and res://src/pkg/b.gd++.\n"},
 		"duplicate macro": {map[string]string{"a.gd++": "macro twin() {\n}\n", "b.gd++": "template twin() {\n}\n"},
 			"[x] The name twin is declared in both res://src/pkg/a.gd++ and res://src/pkg/b.gd++.\n"},
+		"unknown annotation": {map[string]string{"a.gd++": "class Crate {\n  @@sav var x: int\n}\n", "b.gd++": "annotation save\n"},
+			"[x] res://src/pkg/a.gd++:2:3: Unknown annotation @@sav.\n     2 |   @@sav var x: int\n       |   ^^^^^\n    Hint: Did you mean \"@@save\"?\n"},
 		"config clash": {map[string]string{"enemy.gd++": "class Enemy {}\n"},
 			"[x] Class Enemy is declared in res://src/pkg/enemy.gd++ and in res://src/pkg/.gd++pkg.\n"},
 		"class of tasks clash": {map[string]string{"a.gd++": "class PkgAsync {\n  @onthread\n  func f() -> void {}\n}\n"},

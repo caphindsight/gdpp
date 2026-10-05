@@ -31,7 +31,7 @@ ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
 EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEntry*
 MacroHead   = ( 'macro_name' | 'template_name' ) Ident '(' MacroParams? ')' Body
 LibraryHead = 'macro_library' Body
-TopItem     = Class | Extern | Macro | Member
+TopItem     = Class | Extern | Macro | AnnotDecl | Member
 ```
 
 - `Code` before the file head is always an error: `decl` and `impl` blocks must be in a class.
@@ -66,6 +66,7 @@ Externs only allow `Func`, `Signal` and `Var` members, without bodies, initial v
 ```
 Macro       = ( 'macro' | 'template' ) Ident '(' MacroParams? ')' '{' Body '}'
             | 'macro' '{' Body '}'
+AnnotDecl   = 'annotation' Ident
 MacroParams = MacroParam ( ',' MacroParam )* ','?
 MacroParam  = Ident ( '=' Default )?
 Body        = Lua code (macros) or GD++ code with ${...} holes (templates), with Macro declarations at its top level
@@ -157,11 +158,11 @@ Only `Array`, `Dictionary`, `Async` and `Weak` take type arguments: `Array`, `As
 # Annotations
 
 ```
-Annotation  = '@' Ident ( '(' ( Arg ( ',' Arg )* ','? )? ')' )?
+Annotation  = '@' '@'? Ident ( '(' ( Arg ( ',' Arg )* ','? )? ')' )?
 Arg         = String | Char | '-'? Number | Ident
 ```
 
-A doc comment can also appear among a declaration's annotations.
+A doc comment can also appear among a declaration's annotations. `@@` starts a user annotation, see `gd++ man annotations`.
 
 # Doc comments
 

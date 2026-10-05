@@ -16,12 +16,12 @@ macro state_machine(initial, states) {
   // Each state's update returns the next state.
   for s, update in pairs(states) do
     gd.func { name = "update_" .. gd.snake(s),
-      ret = state_enum(), annotations = { "private" },
+      ret = state_enum(), annotations = { "@private" },
       body = update }
   end
   // Runs the current state's update.
   gd.func { name = "state_machine_tick", ret = "void",
-    annotations = { "private" },
+    annotations = { "@private" },
     body = function()
       gd.text("switch (state) {\n")
       for s in pairs(states) do

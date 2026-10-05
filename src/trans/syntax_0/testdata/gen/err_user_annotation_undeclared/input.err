@@ -1,0 +1,4 @@
+input.gd++:3:1: Unknown annotation @@save.
+ 3 | @@save
+   | ^^^^^^
+Hint: Declare it in a file of the package: "annotation save".

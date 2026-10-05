@@ -1,0 +1,3 @@
+macros/annotation_decl_annotated.gd++:1:1: Annotation declarations take no annotations.
+ 1 | @@save
+   | ^^^^^^

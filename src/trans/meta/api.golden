@@ -67,3 +67,5 @@ field Options.MacroTimeout int
 field Options.MacroDepth int
 const MacroLibrary Kind = 10
 const LibraryDecl DeclKind = 6
+const Annotation Kind = 11
+const AnnotationDecl DeclKind = 7

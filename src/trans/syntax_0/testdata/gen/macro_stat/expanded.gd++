@@ -21,7 +21,7 @@ var mana: int {
 // A clamped stat with a changed signal and an exported max.
 macro stat(name, max = 100, regen = 0) {
   gd.signal { name = name .. "_changed", params = { "value: int" } }
-  gd.var { name = "max_" .. name, type = "int", init = max, annotations = { "export" } }
+  gd.var { name = "max_" .. name, type = "int", init = max, annotations = { "@export" } }
   local field = name .. "_"
   gd.var { name = name, type = "int", doc = ctx.doc,
            decl = "int64_t " .. field .. " = " .. max .. ";",

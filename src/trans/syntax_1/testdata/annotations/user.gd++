@@ -1,0 +1,7 @@
+class_name Test
+@@save
+@export @@key("hp", 2, max) var health: int
+@@a /// Doc.
+@@b(1,) func f() -> void {}
+annotation save
+annotation key

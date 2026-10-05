@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Stats" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="save">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="count" type="int" setter="set_count" getter="get_count">
+		</member>
+		<member name="flags" type="int" setter="set_flags" getter="get_flags">
+		</member>
+		<member name="health" type="int" setter="set_health" getter="get_health">
+		</member>
+		<member name="label" type="String" setter="set_label" getter="get_label">
+		</member>
+		<member name="max_health" type="int" setter="set_max_health" getter="get_max_health">
+		</member>
+	</members>
+</class>

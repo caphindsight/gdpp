@@ -43,6 +43,14 @@ func TestHighlightCode(t *testing.T) {
 			Styled("on process", CodeKeyword) + "(dt: " + Styled("float", CodeType) + ") {\n  " + Styled("draw", CodeFunction) + "(dt);\n}\n" +
 			Styled("on ready", CodeKeyword) + " {}\n" + Styled("var", CodeKeyword) + " ready: " + Styled("int", CodeType) + "\n" +
 			Styled("var", CodeKeyword) + " on: " + Styled("int", CodeType)},
+		{"gd++", "@@save(\"a\") var x\n@@x on ready {}", Styled("@@save", CodePreProc) + "(" + Styled("\"a\"", CodeLiteral) + ") " + Styled("var", CodeKeyword) + " x\n" +
+			Styled("@@x", CodePreProc) + " " + Styled("on ready", CodeKeyword) + " {}"},
+		{"gd++", "annotation save", Styled("annotation", CodeKeyword) + " save"},
+		{"gd++", "// c\nmacro_library\nlocal x", Styled("// c", CodeComment) + "\n" + Styled("macro_library", CodeKeyword) + "\n" + Styled("local", CodeKeyword) + " x"},
+		{"gd++", "macro  macro_library  var", Styled("macro", CodeKeyword) + "  " + Styled("macro_library", CodeKeyword) + "  " + Styled("var", CodeKeyword)},
+		{"gd++", "template t(n) {\n  @@save var ${n}: int\n}", Styled("template", CodeKeyword) + " " + Styled("t", CodeFunction) + "(n) {\n  " +
+			Styled("@@save", CodePreProc) + " " + Styled("var", CodeKeyword) + " " + Styled("${", CodePreProc) + "n" + Styled("}", CodePreProc) + ": " +
+			Styled("int", CodeType) + "\n}"},
 		{"gd++", "noimport  on  set", Styled("noimport", CodeKeyword) + "  " + Styled("on", CodeKeyword) + "  " + Styled("set", CodeKeyword)},
 		{"gd++", "on = on || x;", "on = on || x;"},
 		{"gd++", "on(what: int) {}\non {}\nsignal s(on: int)", Styled("on", CodeKeyword) + "(what: " + Styled("int", CodeType) + ") {}\n" +

@@ -1,0 +1,4 @@
+macros/annotation_decl_doc.gd++:1:1: Annotation declarations have no doc comments, since Godot never sees them.
+ 1 | /// Saved.
+   | ^^^
+Hint: Use a plain comment: "//" or "/* */".

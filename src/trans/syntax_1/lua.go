@@ -44,11 +44,12 @@ type codeValue struct {
 // scope is where emitters put what they generate: the invocation's place, or the body of a gd.class, gd.extern or
 // C++ field function. Kind is "file", "class", "extern" or "cpp".
 type scope struct {
-	kind      string
-	owner     string // The class or extern, if any.
-	fileLevel bool   // Whether it's the body of the file-level class or extern, which may hold inline ones too.
-	members   []any  // What ctx.members shows: *Member, or at the file's top level, *Class, *Extern and *Enum.
-	chunks    []chunk
+	kind        string
+	owner       string        // The class or extern, if any.
+	annotations []*Annotation // The owner's annotations, which ctx.annotations shows.
+	fileLevel   bool          // Whether it's the body of the file-level class or extern, which may hold inline ones too.
+	members     []any         // What ctx.members shows: *Member, or at the file's top level, *Class, *Extern and *Enum.
+	chunks      []chunk
 }
 
 // chunk is a generated item, or text (gd.text) when item is nil.
@@ -159,6 +160,9 @@ func (r *run) ctxTable(sc *scope) *lua.LTable {
 		t.RawSetString("doc", lua.LString(inv.Doc.Text))
 	}
 	t.RawSetString("members", r.declTables(sc.members, ""))
+	if a := r.annotationTables(sc.annotations); a != lua.LNil {
+		t.RawSetString("annotations", a)
+	}
 	t.RawSetString("file", lua.LString(r.x.filename))
 	t.RawSetString("line", lua.LNumber(inv.Pos.Line))
 	if inv.Body == nil {
@@ -631,19 +635,20 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 }
 
 // annotationTables returns annotations as the annotations field of emitters: names, or lists of a name and its
-// arguments. It's nil if there are none.
+// arguments. Names keep their @, or @@ for user annotations. It's nil if there are none.
 func (r *run) annotationTables(annotations []*Annotation) lua.LValue {
 	if len(annotations) == 0 {
 		return lua.LNil
 	}
 	list := r.L.NewTable()
 	for _, a := range annotations {
+		name := lua.LString(a.label())
 		if len(a.Args) == 0 {
-			list.Append(lua.LString(a.Name))
+			list.Append(name)
 			continue
 		}
 		item := r.L.NewTable()
-		item.Append(lua.LString(a.Name))
+		item.Append(name)
 		for _, arg := range a.Args {
 			item.Append(r.argValue(arg.Value))
 		}
@@ -1080,6 +1085,33 @@ func (r *run) gdTable() *lua.LTable {
 		return lua.LString(s)
 	})
 
+	// Annotations: the arguments of t's annotation named name, e.g. "@export" or "@@save", or nil without it.
+	pure("annotation", func(L *lua.LState) lua.LValue {
+		t, name := L.CheckTable(1), L.CheckString(2)
+		if !strings.HasPrefix(name, "@") {
+			L.ArgError(2, fmt.Sprintf("annotation names start with @, or @@ for user annotations, e.g. \"@%s\"", name))
+		}
+		name = name[1:]
+		list, _ := t.RawGetString("annotations").(*lua.LTable)
+		for i := 1; list != nil && i <= list.Len(); i++ {
+			switch a := list.RawGetInt(i).(type) {
+			case lua.LString:
+				if strings.TrimPrefix(string(a), "@") == name {
+					return L.NewTable()
+				}
+			case *lua.LTable:
+				if strings.TrimPrefix(lua.LVAsString(a.RawGetInt(1)), "@") == name {
+					args := L.NewTable()
+					for j := 2; j <= a.Len(); j++ {
+						args.Append(a.RawGetInt(j))
+					}
+					return args
+				}
+			}
+		}
+		return lua.LNil
+	})
+
 	// Names and lookup.
 	pure("unique", func(L *lua.LState) lua.LValue {
 		r.x.uniques++
@@ -1291,9 +1323,14 @@ func (r *run) annotations(what string, t *lua.LTable) []*Annotation {
 		default:
 			r.L.RaiseError("%s: each annotation must be a name, or a list of a name and its arguments.", what)
 		}
-		a.Name = strings.TrimPrefix(a.Name, "@")
+		written := a.Name
+		if !strings.HasPrefix(written, "@") {
+			r.L.RaiseError("%s: annotation names start with @, or @@ for user annotations, e.g. \"@%s\".", what, written)
+		}
+		a.User = strings.HasPrefix(written, "@@")
+		a.Name = strings.TrimPrefix(written[1:], "@")
 		if !identRegexp.MatchString(a.Name) {
-			r.L.RaiseError("%s: %q isn't an annotation name.", what, a.Name)
+			r.L.RaiseError("%s: %q isn't an annotation name.", what, written)
 		}
 		out = append(out, a)
 	}
@@ -1370,8 +1407,8 @@ func (r *run) cpp(what string, t *lua.LTable, name string) (b *Block, expr bool)
 
 func (r *run) emitClass(kind string, t *lua.LTable) int {
 	what := "gd." + kind
-	name := r.name(what, t)
-	sc := &scope{kind: kind, owner: name}
+	name, annotations := r.name(what, t), r.annotations(what, t)
+	sc := &scope{kind: kind, owner: name, annotations: annotations}
 	if body := t.RawGetString("body"); body != lua.LNil {
 		f, ok := body.(*lua.LFunction)
 		if !ok {
@@ -1393,7 +1430,7 @@ func (r *run) emitClass(kind string, t *lua.LTable) int {
 		}
 		members = append(members, item.Member)
 	}
-	extends, doc, annotations := r.optType(what, t, "extends"), r.doc(what, t), r.annotations(what, t)
+	extends, doc := r.optType(what, t, "extends"), r.doc(what, t)
 	item := &topItem{Pos: r.inv.Pos}
 	if kind == "class" {
 		item.Class = &Class{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Members: members}
@@ -1612,7 +1649,7 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 		return 0
 	}
 	// A macro runs in this Lua state, so tables and functions pass as they are, with its own gd and ctx.
-	inner := &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel, members: sc.members}
+	inner := &scope{kind: sc.kind, owner: sc.owner, annotations: sc.annotations, fileLevel: sc.fileLevel, members: sc.members}
 	var site *Error
 	if m := luaWhere.FindStringSubmatch(L.Where(1)); m != nil {
 		line, _ := strconv.Atoi(m[2])

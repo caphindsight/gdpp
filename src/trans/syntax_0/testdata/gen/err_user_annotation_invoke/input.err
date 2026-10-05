@@ -1,0 +1,4 @@
+input.gd++:4:1: Invocations take no annotations.
+ 4 | @@save
+   | ^^^^^^
+Hint: Have the macro add them to what it generates.

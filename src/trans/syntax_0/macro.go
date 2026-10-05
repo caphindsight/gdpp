@@ -184,20 +184,20 @@ func (x *expander) expandFile(f *File) error {
 	f.Invokes = nil
 	var err error
 	if c := f.FileClass; c != nil {
-		if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name, fileLevel: true}, f, 0); err != nil {
+		if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name, annotations: c.Annotations, fileLevel: true}, f, 0); err != nil {
 			return err
 		}
 		x.done[c] = true
 	}
 	if e := f.FileExtern; e != nil {
-		if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name, fileLevel: true}, f, 0); err != nil {
+		if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name, annotations: e.Annotations, fileLevel: true}, f, 0); err != nil {
 			return err
 		}
 		x.doneExterns[e] = true
 	}
 	for i := 0; i < len(f.InlineClasses); i++ {
 		if c := f.InlineClasses[i]; !x.done[c] {
-			if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name}, nil, 0); err != nil {
+			if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name, annotations: c.Annotations}, nil, 0); err != nil {
 				return err
 			}
 			x.done[c] = true
@@ -205,15 +205,15 @@ func (x *expander) expandFile(f *File) error {
 	}
 	for i := 0; i < len(f.InlineExterns); i++ {
 		if e := f.InlineExterns[i]; !x.doneExterns[e] {
-			if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name}, nil, 0); err != nil {
+			if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name, annotations: e.Annotations}, nil, 0); err != nil {
 				return err
 			}
 			x.doneExterns[e] = true
 		}
 	}
 	// Then invocations in C++ code, which only generate C++.
-	expandIn := func(owner string, members []*Member, node any) error {
-		sc := &scope{owner: owner}
+	expandIn := func(owner string, annotations []*Annotation, members []*Member, node any) error {
+		sc := &scope{owner: owner, annotations: annotations}
 		for _, m := range members {
 			sc.members = append(sc.members, m)
 		}
@@ -249,12 +249,12 @@ func (x *expander) expandFile(f *File) error {
 		externs = append([]*Extern{f.FileExtern}, externs...)
 	}
 	for _, c := range classes {
-		if err := expandIn(c.Name, c.Members, c); err != nil {
+		if err := expandIn(c.Name, c.Annotations, c.Members, c); err != nil {
 			return err
 		}
 	}
 	for _, e := range externs {
-		if err := expandIn(e.Name, e.Members, e); err != nil {
+		if err := expandIn(e.Name, e.Annotations, e.Members, e); err != nil {
 			return err
 		}
 	}
@@ -338,7 +338,7 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 		return nil, x.unknown(inv)
 	case len(inv.Annotations) > 0:
 		a := inv.Annotations[0]
-		return nil, x.errorAt(a.Pos, len(a.Name)+1, "Invocations take no annotations.", "Have the macro add them to what it generates.")
+		return nil, x.errorAt(a.Pos, len(a.label()), "Invocations take no annotations.", "Have the macro add them to what it generates.")
 	case len(def.m.Body.Helpers) > 0:
 		return nil, x.helpersError(inv)
 	}
@@ -350,7 +350,7 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 			err = addFrame(err, x.frame(def, inv, depth))
 		}
 	}()
-	sc = &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel, members: sc.members} // Without what other invocations emitted.
+	sc = &scope{kind: sc.kind, owner: sc.owner, annotations: sc.annotations, fileLevel: sc.fileLevel, members: sc.members} // Without what other invocations emitted.
 	r, free, err := x.newRun(def, inv, sc, depth)
 	defer free()
 	if err != nil {
@@ -385,12 +385,12 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 			out = append(out, nested...)
 			continue
 		case item.Class != nil:
-			if item.Class.Members, err = x.expandMembers(item.Class.Members, &scope{kind: "class", owner: item.Class.Name}, nil, depth+1); err != nil {
+			if item.Class.Members, err = x.expandMembers(item.Class.Members, &scope{kind: "class", owner: item.Class.Name, annotations: item.Class.Annotations}, nil, depth+1); err != nil {
 				return nil, err
 			}
 			x.done[item.Class] = true
 		case item.Extern != nil:
-			if item.Extern.Members, err = x.expandMembers(item.Extern.Members, &scope{kind: "extern", owner: item.Extern.Name}, nil, depth+1); err != nil {
+			if item.Extern.Members, err = x.expandMembers(item.Extern.Members, &scope{kind: "extern", owner: item.Extern.Name, annotations: item.Extern.Annotations}, nil, depth+1); err != nil {
 				return nil, err
 			}
 			x.doneExterns[item.Extern] = true
@@ -650,7 +650,7 @@ func (x *expander) invokeCode(inv *Invoke, parent *scope, depth int, at *Origin)
 			err = addFrame(err, x.frame(def, inv, depth))
 		}
 	}()
-	sc := &scope{kind: "cpp", owner: parent.owner, members: parent.members}
+	sc := &scope{kind: "cpp", owner: parent.owner, annotations: parent.annotations, members: parent.members}
 	r, free, err := x.newRun(def, inv, sc, depth)
 	defer free()
 	if err != nil {

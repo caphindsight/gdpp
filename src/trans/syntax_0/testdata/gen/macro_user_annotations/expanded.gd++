@@ -1,0 +1,35 @@
+@@serializable("v1")
+class_name Stats
+extends Node
+
+@@save
+@export var health: int = 100
+
+@@save("hp_max") var max_health: int = 100
+
+@@note(skip) var label: String = "stats"
+
+// A save function that lists the @@save vars, with their keys.
+@@generated func save() -> Dictionary {// Format v1.
+Dictionary d;
+d["health"] = health;
+d["hp_max"] = max_health;
+return d;}
+
+// Declarations: once, or more than once, in any file of the package. @@shared is declared by a dependency.
+annotation serializable
+annotation save
+annotation save
+annotation note
+annotation generated
+
+@@shared var flags: int
+
+// Generated members keep their user annotations.
+var count: int = 1
+
+
+
+
+
+

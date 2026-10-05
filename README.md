@@ -306,6 +306,12 @@ See `gd++ man templates`.
 
 See `gd++ man macros`.
 
+### User annotations
+
+<a href="readme/svg/user_annotations.gd++"><img src="readme/svg/user_annotations.svg" alt="GD++ code: user_annotations"></a>
+
+See `gd++ man annotations`.
+
 ## The build tool
 
 - A **project** is a normal Godot project.

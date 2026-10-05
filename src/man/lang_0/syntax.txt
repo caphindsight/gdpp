@@ -80,14 +80,14 @@ All scopes share the same tokens, described below, and the same comments. So a C
 Keywords have a special meaning in declarations. Don't use them as names of classes, functions, variables and the like, since GD++ would misread them:
 
 ```gd++
-class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  invoke  macro  macro_library  macro_name  noimport  on  set
+annotation  class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern
+extern_name  func  get  impl  import  invoke  macro  macro_library  macro_name  noimport  on  set
 signal  template  template_name  var
 ```
 
 - `code` is a keyword only right before `{`, in a macro's arguments. See `gd++ man macros`.
 - GD++ has no other keywords. E.g. `const`, `static`, `pass`, `if` and `return` are not GD++ keywords.
-- Attributes such as `@static` are annotations. See `gd++ man annotations`.
+- Attributes such as `@static` are annotations. Your own annotations start with `@@`, e.g. `@@save`. See `gd++ man annotations`.
 
 In C++ code, GD++ reserves seventeen more names:
 

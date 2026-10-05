@@ -19,8 +19,8 @@ const RuntimeHeaderName = "gd++/syntax_1.hpp"
 //go:embed runtime.hpp
 var RuntimeHeader string
 
-// ListMacros returns the macros and templates that the GD++ source src declares, and a LibraryDecl if it has macro
-// libraries. Other files need them before ListClasses can expand their invocations.
+// ListMacros returns the macros, templates and user annotations that the GD++ source src declares, and a LibraryDecl
+// if it has macro libraries. Other files need them before ListClasses can expand their invocations.
 func ListMacros(filename, src string) ([]meta.Declaration, error) {
 	file, err := Parse(filename, src)
 	if err != nil {
@@ -34,6 +34,9 @@ func ListMacros(filename, src string) ([]meta.Declaration, error) {
 	}
 	if len(file.Libraries) > 0 {
 		decls = append(decls, meta.Declaration{Kind: meta.LibraryDecl})
+	}
+	for _, a := range file.UserAnnotations {
+		decls = append(decls, meta.Declaration{Name: a.Name, Kind: meta.AnnotationDecl})
 	}
 	return decls, nil
 }

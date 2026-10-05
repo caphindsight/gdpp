@@ -40,7 +40,7 @@ func highlightCode(code, lang string) string {
 
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
-	gdppWords = "class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import macro macro_library macro_name noimport " +
+	gdppWords = "annotation class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import macro macro_library macro_name noimport " +
 		"set signal template_name var"
 	// GD++'s on blocks, e.g. on ready { ... }, whose keyword is also a name elsewhere: it's a keyword, with the
 	// notification's name, where it starts a block, at the start of a line or after annotations, and alone where
@@ -120,6 +120,8 @@ func highlightGdpp(code string, gdscript bool) string {
 			n, style = min(n+1, lineEnd(rest)), []Style{CodeLiteral}
 		case c == '@' && identLen(rest[1:]) > 0:
 			n, style = 1+identLen(rest[1:]), []Style{CodePreProc}
+		case !gdscript && strings.HasPrefix(rest, "@@") && identLen(rest[2:]) > 0: // A user annotation.
+			n, style = 2+identLen(rest[2:]), []Style{CodePreProc}
 		case !gdscript && strings.HasPrefix(rest, "${"): // A template's hole, which holds Lua.
 			end := closingBrace(rest, 1)
 			out.WriteString(Styled("${", CodePreProc) + highlightLua(rest[2:end]) + styledLines(rest[end:min(end+1, len(rest))], CodePreProc))
@@ -134,7 +136,7 @@ func highlightGdpp(code string, gdscript bool) string {
 			out.WriteString(Styled(m[1], CodeKeyword) + m[0][len(m[1]):] + highlightLua(rest[len(m[0]):end]) + rest[end:min(end+1, len(rest))])
 			i += min(end+1, len(rest))
 			continue
-		case !gdscript && macroLibraryRegexp.MatchString(rest): // The rest of the file is Lua.
+		case !gdscript && macroLibraryRegexp.MatchString(rest) && onlyComments(code[:i]): // The rest of the file is Lua.
 			out.WriteString(Styled("macro_library", CodeKeyword) + highlightLua(rest[len("macro_library"):]))
 			i += len(rest)
 			continue
@@ -198,7 +200,7 @@ var macroHeadRegexp = regexp.MustCompile(`^(macro|template|macro_name|template_n
 // macroBlockRegexp matches the start of a macro block or macro library: "invoke" or "macro", and "{".
 var macroBlockRegexp = regexp.MustCompile(`^(invoke|macro)\s*\{`)
 
-// macroLibraryRegexp matches a file-level macro library's keyword.
+// macroLibraryRegexp matches a file-level macro library's keyword, which only starts one before any declaration.
 var macroLibraryRegexp = regexp.MustCompile(`^macro_library\b`)
 
 // highlightMacro highlights the macro or template that starts code[*i:], and moves *i past it: its head, and its
@@ -325,6 +327,24 @@ func blockCommentLen(s string) int {
 	return min(n, len(s))
 }
 
+// onlyComments reports whether s holds only whitespace and comments, like the code before a file's head, e.g.
+// macro_library.
+func onlyComments(s string) bool {
+	for i := 0; i < len(s); {
+		switch rest := s[i:]; {
+		case strings.HasPrefix(rest, "//"):
+			i += lineEnd(rest)
+		case strings.HasPrefix(rest, "/*"):
+			i += blockCommentLen(rest)
+		case strings.ContainsRune(" \t\r\n", rune(s[i])):
+			i++
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // longBracket returns the length of the Lua long bracket that opens s, e.g. 2 for "[[" or 4 for "[==[", or 0.
 func longBracket(s string) int {
 	n := 1
@@ -348,7 +368,7 @@ func longBracketEnd(s string) int {
 }
 
 var (
-	annotationsRegexp = regexp.MustCompile(`^\s*(@\w+(\([^)]*\))?\s*)*$`)
+	annotationsRegexp = regexp.MustCompile(`^\s*(@@?\w+(\([^)]*\))?\s*)*$`)
 	// What follows "on" in an on block's head: the notification's name, if any, then the parameter, if any, and "{".
 	onHeadRegexp = regexp.MustCompile(`^(\s+\w+)?\s*(\(\s*\w+\s*(:\s*\w+\s*)?\)\s*)?\{`)
 )

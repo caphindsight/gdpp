@@ -24,6 +24,8 @@ macro { ... }            // an inline macro library
 
 template_name pool(T)    // a file-level template: the rest of the file is its GD++ code
 template slot(n) { ... } // an inline template
+
+annotation save          // a user annotation, @@save, for macros
 ```
 
 - Both forms work the same.
@@ -115,7 +117,7 @@ extern Terrain {
 }
 ```
 
-Its top level can only hold inline classes, externs, enums, macros, templates, and invocations of macros and templates. Anything else, e.g. a `func`, a `var`, an integer constant or a `decl` block, belongs in a class:
+Its top level can only hold inline classes, externs, enums, macros, templates, annotation declarations, and invocations of macros and templates. Anything else, e.g. a `func`, a `var`, an integer constant or a `decl` block, belongs in a class:
 
 ```out
 [×] res://enemies.gd++:12:1: This func is outside of any class.
@@ -135,6 +137,7 @@ Its top level can only hold inline classes, externs, enums, macros, templates, a
 - Macro libraries, `macro { ... }`, can go there too.
 - With `macro_name`, `template_name` or `macro_library`, the rest of the file is the body. Like after `enum_name`, nothing else can follow.
 - Their bodies may declare more macros and templates. Those are package-level declarations too.
+- `annotation NAME` declarations can go there too. See "User annotations" in `gd++ man annotations`.
 - See `gd++ man templates` and `gd++ man macros`. Prefer templates whenever they do the job: macros are more powerful, but also more advanced.
 
 # Order

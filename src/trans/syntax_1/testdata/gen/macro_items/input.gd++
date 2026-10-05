@@ -14,16 +14,16 @@ macro items(list) {
   local kinds = {}
   for _, item in ipairs(list) do
     table.insert(kinds, gd.upper_snake(item.name))
-    gd.class { name = item.name, extends = "Item", annotations = { { "icon", item.icon } }, body = function()
-      gd.func { name = "_damage", annotations = { "override" }, ret = "int", body = "return " .. item.damage .. ";" }
+    gd.class { name = item.name, extends = "Item", annotations = { { "@icon", item.icon } }, body = function()
+      gd.func { name = "_damage", annotations = { "@override" }, ret = "int", body = "return " .. item.damage .. ";" }
       if item.range then
-        gd.func { name = "_range", annotations = { "override" }, ret = "float", body = "return " .. item.range .. ";" }
+        gd.func { name = "_range", annotations = { "@override" }, ret = "float", body = "return " .. item.range .. ";" }
       end
     end }
   end
   gd.enum { name = "ItemKind", values = kinds }
   gd.class { name = "ItemFactory", body = function()
-    gd.func { name = "make", annotations = { "static" }, params = { "kind: ItemKind" }, ret = "Item", body = function()
+    gd.func { name = "make", annotations = { "@static" }, params = { "kind: ItemKind" }, ret = "Item", body = function()
       gd.text("switch (kind) {\n")
       for _, item in ipairs(list) do
         gd.text("case ItemKind::" .. gd.upper_snake(item.name) .. ": return create " .. item.name .. ";\n")

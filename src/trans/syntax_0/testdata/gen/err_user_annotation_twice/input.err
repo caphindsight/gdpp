@@ -1,0 +1,3 @@
+input.gd++:3:8: Annotation @@save is used twice.
+ 3 | @@save @@save
+   |        ^^^^^^

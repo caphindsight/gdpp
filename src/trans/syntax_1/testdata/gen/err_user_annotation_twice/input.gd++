@@ -1,0 +1,6 @@
+class_name A
+
+@@save @@save
+var x: int
+
+annotation save

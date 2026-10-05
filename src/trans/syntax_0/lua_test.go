@@ -88,6 +88,7 @@ func TestLuaErrors(t *testing.T) {
 		`gd.error_at("nope", "bad input")`: "test.gd++:1:1: Bad input.",
 		`gd.func { name = "f" }`:           "gd.func can't be used in C++ code: only gd.text can.",
 		`gd.text({})`:                      "expected text",
+		`gd.annotation({}, "export")`:      `annotation names start with @, or @@ for user annotations, e.g. "@export"`,
 	} {
 		if _, err := runLua(t, code); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("%s gave %v, want %q.", code, err, want)
@@ -119,7 +120,7 @@ func expandPackage(t *testing.T, files map[string]string) (string, error) {
 		}
 		for _, d := range decls {
 			if name != "main.gd++" {
-				kind := map[meta.DeclKind]meta.Kind{meta.MacroDecl: meta.Macro, meta.TemplateDecl: meta.Template, meta.LibraryDecl: meta.MacroLibrary}[d.Kind]
+				kind := map[meta.DeclKind]meta.Kind{meta.MacroDecl: meta.Macro, meta.TemplateDecl: meta.Template, meta.LibraryDecl: meta.MacroLibrary, meta.AnnotationDecl: meta.Annotation}[d.Kind]
 				opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Kind: kind, Source: src, File: name})
 			}
 		}
@@ -274,7 +275,7 @@ invoke {
     m[7].kind, m[8].kind, m[8].name, m[8].param, m[8].param_type, m[9].kind, m[10].kind, m[10].type,
   }, "/")) }
 }
-`, []string{`var out: String = {"var/The health./export_range/0/number/suffix/true/10/var/ return 1;/v/` +
+`, []string{`var out: String = {"var/The health./@export_range/0/number/suffix/true/10/var/ return 1;/v/` +
 			`func/int/2/ a++;/void/signal/Node/enum/3/enum/HEARTS/HEARTS | 8/ctor/on/process/delta/float/decl_impl/import/Node3D"}`}},
 		// At the file's top level: classes and enum types, and copies made by emitting them again.
 		{`invoke {
@@ -288,11 +289,25 @@ invoke {
 }
 class Foo {
   extends Node
-  @export var x: int = 1
+  @export @@tag(1, "a") var x: int = 1
   func f(a: int) -> int { return a; }
 }
 enum Suit { HEARTS }
-`, []string{"class FooCopy {", "extends Node", "@export var x: int = 1", "func f(a: int) -> int { return a;}"}},
+`, []string{"class FooCopy {", "extends Node", `@export @@tag(1, "a") var x: int = 1`, "func f(a: int) -> int { return a;}"}},
+		// gd.annotation finds built-in and user annotations, of members and of ctx.
+		{`@@kind(item)
+class_name Foo
+extends Node
+@export @@save var x: int
+@@key("k", 2) var y: int
+invoke {
+  local x, y = ctx.members[1], ctx.members[2]
+  local function show(args) return args and (#args .. ":" .. gd.join(gd.map(args, tostring), ",")) or "nil" end
+  gd.var { name = "out", type = "String", annotations = { "@@made" }, init = gd.quote(gd.join({ show(gd.annotation(x, "@export")),
+    show(gd.annotation(x, "@@save")), show(gd.annotation(x, "@save")), show(gd.annotation(x, "@@export")), show(gd.annotation(y, "@@key")),
+    show(gd.annotation(ctx, "@@kind")), show(gd.annotation(y, "@@nope")) }, "/")) }
+}
+`, []string{`@@made var out: String = "0:/0:/nil/nil/2:k,2/1:item/nil"`}},
 	} {
 		got, err := expandPackage(t, map[string]string{"main.gd++": tc.src})
 		if err != nil {

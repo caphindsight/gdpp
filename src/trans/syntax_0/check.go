@@ -3,6 +3,7 @@ package syntax_0
 import (
 	"cmp"
 	"fmt"
+	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
@@ -187,6 +188,9 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 		}
 	}
 	u := &unit{src: src, file: file, symbols: map[string]*symbol{}, generated: x.generated}
+	if err := u.dropUserAnnotations(opts.Dependencies); err != nil {
+		return nil, err
+	}
 	declare := func(pos lexer.Position, name string, s *symbol) error {
 		if u.symbols[name] != nil || x.defs[name] != nil && x.defs[name].file == filename {
 			return u.errorAt(pos, 0, fmt.Sprintf("The name %q is declared twice in this file.", name),
@@ -539,7 +543,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 	}
 	u.opts = opts
 	for _, d := range opts.Dependencies {
-		if d.Kind == meta.Macro || d.Kind == meta.Template || d.Kind == meta.MacroLibrary {
+		if d.Kind == meta.Macro || d.Kind == meta.Template || d.Kind == meta.MacroLibrary || d.Kind == meta.Annotation {
 			continue // Expanded already.
 		}
 		if s := u.symbols[d.Name]; s != nil {
@@ -1149,6 +1153,48 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		}
 	}
 	return found, nil
+}
+
+// dropUserAnnotations removes the user annotations, @@name, from every declaration: only macros read them. Each must
+// be declared, in the file or in a dependency.
+func (u *unit) dropUserAnnotations(deps []meta.Dependency) (err error) {
+	var declared []string
+	for _, d := range u.file.UserAnnotations {
+		declared = append(declared, d.Name)
+	}
+	for _, d := range deps {
+		if d.Kind == meta.Annotation {
+			declared = append(declared, d.Name)
+		}
+	}
+	forEachNode(u.file, func(node any) {
+		v := reflect.ValueOf(node).Elem().FieldByName("Annotations")
+		if err != nil || !v.IsValid() {
+			return
+		}
+		var kept []*Annotation
+		seen := map[string]bool{}
+		for _, a := range v.Interface().([]*Annotation) {
+			switch {
+			case !a.User:
+				kept = append(kept, a)
+			case !slices.Contains(declared, a.Name):
+				hint := fmt.Sprintf("Declare it in a file of the package: \"annotation %s\".", a.Name)
+				if s := suggest(a.Name, declared...); s != "" {
+					hint = fmt.Sprintf("Did you mean \"@@%s\"?", s)
+				}
+				err = u.errorAt(a.Pos, len(a.label()), fmt.Sprintf("Unknown annotation %s.", a.label()), hint)
+				return
+			case seen[a.Name]:
+				err = u.errorAt(a.Pos, len(a.label()), fmt.Sprintf("Annotation %s is used twice.", a.label()), "")
+				return
+			default:
+				seen[a.Name] = true
+			}
+		}
+		v.Set(reflect.ValueOf(kept))
+	})
+	return err
 }
 
 // debugOn reports whether a, a @trace or @profile annotation in the class named class, is in a group that the

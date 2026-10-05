@@ -254,8 +254,8 @@ Each emitter takes a table, and adds a declaration where the macro was invoked. 
 gd.class { name, extends, doc, annotations, body }
   A class. `body` is a function, whose emitters add the class's members.
 ```lua
-gd.class { name = "Sword", extends = "Item", annotations = { { "icon", "res://sword.svg" } }, body = function()
-  gd.func { name = "_damage", annotations = { "override" }, ret = "int", body = "return 10;" }
+gd.class { name = "Sword", extends = "Item", annotations = { { "@icon", "res://sword.svg" } }, body = function()
+  gd.func { name = "_damage", annotations = { "@override" }, ret = "int", body = "return 10;" }
 end }
 ```
 
@@ -280,7 +280,7 @@ gd.func { name = "heal", params = { "amount: int = 1" }, ret = "void", body = "h
 gd.var { name, type, init, decl, get, set, set_param, doc, annotations }
   A variable with `init`, or a property with `decl`, `get` and `set`. `set_param` names the setter's parameter, `value` by default.
 ```lua
-gd.var { name = "speed", type = "float", init = 5.0, annotations = { "export" } }
+gd.var { name = "speed", type = "float", init = 5.0, annotations = { "@export" } }
 ```
 
 gd.signal { name, params, doc, annotations }
@@ -293,7 +293,7 @@ gd.on { name, param, param_type, body, annotations }
   An `on` block: `gd.on { name = "process", param = "delta", param_type = "float", body = "tick(delta);" }`.
 
 gd.decl { body, annotations }, gd.impl { ... } and gd.decl_impl { ... }
-  A `decl`, `impl` or `decl impl` block. `annotations = { "global" }` makes it `@global`.
+  A `decl`, `impl` or `decl impl` block. `annotations = { "@global" }` makes it `@global`.
 ```lua
 gd.impl { body = function()
   for _, s in ipairs(states) do
@@ -339,7 +339,7 @@ gd.text("}\n")
 - `name`: a name, e.g. `"health"`.
 - `type`, `ret` and `extends`: a type, written like in GD++, e.g. `"Array[int]"`.
 - `params`: a list of parameters, written like in GD++, e.g. `{ "x: float", "y: float = 0.0" }`, or as tables: `{ name = "x", type = "float", default = "0.0" }`.
-- `annotations`: a list of names, or lists of a name and its arguments: `{ "export", { "export_range", 0, 100, 1 } }`. Strings become GD++ strings. Numbers, booleans and Code values stay as written.
+- `annotations`: a list of names, or lists of a name and its arguments: `{ "@export", { "@export_range", 0, 100, 1 } }`. Names are written as in GD++: `"@export"`, or `"@@save"` for user annotations. Strings become GD++ strings. Numbers, booleans and Code values stay as written.
 - `doc`: the doc comment's text.
 
 # Lua: case conversion
@@ -403,6 +403,18 @@ gd.is_ident("max_hp")         -- true: whether it's a valid name
 gd.ident(s)                   -- s, or an error at the invocation if it isn't a valid name
 ```
 
+# Lua: annotations
+
+gd.annotation(t, name)
+  The arguments of `t`'s annotation `name`, as a list: `{}` for one without arguments, `nil` if `t` doesn't have it. `t` is anything with an `annotations` field, e.g. a table of `ctx.members`, or `ctx`. `name` is written as in GD++, with its `@` or `@@`.
+```lua
+gd.annotation(m, "@export")         -- {} for @export
+gd.annotation(m, "@@key")           -- { "hp", 2 } for @@key("hp", 2)
+gd.annotation(ctx, "@@saved")       -- the class's @@saved, or nil
+```
+
+User annotations, e.g. `@@save`, are made for macros: GD++ itself ignores them. `annotation save` declares one. Check their arguments in the macro. See "User annotations" in `gd++ man annotations`.
+
 # Lua: names and lookup
 
 ```lua
@@ -439,6 +451,7 @@ Messages become sentences: capitalized, ending with a period.
 FIELD            VALUE
 ctx.scope        "file", "class", "extern" or "cpp": where the invocation is
 ctx.class        the class or extern around the invocation, if any
+ctx.annotations  the annotations of that class or extern, if any, like the field of emitters
 ctx.doc          the invocation's doc comment, if any
 ctx.file         the GD++ file's name
 ctx.line         the invocation's line
@@ -515,7 +528,7 @@ Field values:
 - Types are strings, e.g. `"Array[int]"`.
 - C++ code, e.g. `init` or `body`, is a Code value.
 - `params` are tables: `{ name = "a", type = "int", default = ... }`.
-- Annotations are names or lists, e.g. `{ "export_range", 0, 100 }`. Their arguments are strings, numbers, booleans, or Code values for other C++.
+- Annotations are names or lists, e.g. `{ "@export_range", 0, 100 }`. Names are written as in GD++, e.g. `"@export"` or `"@@save"`. Their arguments are strings, numbers, booleans, or Code values for other C++. Read them with `gd.annotation`, see "Lua: annotations" above.
 - An enum value is a number, or a string with its expression.
 - An `import` or `noimport` has `type`.
 
@@ -607,8 +620,8 @@ macro items(list) {
   local kinds = {}
   for _, item in ipairs(list) do
     table.insert(kinds, gd.upper_snake(item.name))
-    gd.class { name = item.name, extends = "Item", annotations = { { "icon", item.icon } }, body = function()
-      gd.func { name = "_damage", annotations = { "override" }, ret = "int", body = "return " .. item.damage .. ";" }
+    gd.class { name = item.name, extends = "Item", annotations = { { "@icon", item.icon } }, body = function()
+      gd.func { name = "_damage", annotations = { "@override" }, ret = "int", body = "return " .. item.damage .. ";" }
     end }
   end
   gd.enum { name = "ItemKind", values = kinds }

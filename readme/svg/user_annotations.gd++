@@ -1,0 +1,24 @@
+class_name Player
+extends Node
+
+// Declares @@save, for the macro below.
+annotation save
+
+@@save var health: int = 100
+@@save("hp_max") var max_health: int = 100
+var speed: float = 300.0  // not saved
+
+// A save() with each @@save variable, under its key.
+invoke {
+  local lines = { "Dictionary d;" }
+  for _, m in ipairs(ctx.members) do
+    local key = gd.annotation(m, "@@save")
+    if m.kind == "var" and key then
+      table.insert(lines, "d[" .. gd.quote(key[1] or m.name)
+        .. "] = " .. m.name .. ";")
+    end
+  end
+  table.insert(lines, "return d;")
+  gd.func { name = "save", ret = "Dictionary",
+    body = gd.join(lines, "\n") }
+}
