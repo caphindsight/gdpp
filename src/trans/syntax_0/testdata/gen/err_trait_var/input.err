@@ -1,0 +1,4 @@
+input.gd++:3:3: Traits can't contain vars.
+ 3 |   var health: int
+   |   ^^^
+Hint: Traits only declare the funcs that their classes implement.

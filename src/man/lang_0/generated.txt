@@ -11,6 +11,7 @@ Each declaration of a GD++ file gets its own files, named after it:
 
 - a class NAME: `NAME.h`, its definition, and `NAME.cpp`, its methods and bindings,
 - an extern NAME: `NAME.h`, its wrapper class,
+- a trait NAME: `NAME.h`, its interface,
 - an enum NAME: `NAME.h`, its enum class.
 
 Plus, for the whole package:
@@ -145,14 +146,15 @@ In order:
 
 1. The `#include` lines: the runtime header, then the headers of the names the header uses, sorted. See `gd++ man includes`.
 2. `@global decl` blocks.
-3. In namespace `godot`: forward declarations of the package's GD++ classes, externs and enums that the header uses, e.g. `class Enemy;` or `enum class Suit : int64_t;`.
+3. In namespace `godot`: forward declarations of the package's GD++ classes, externs, traits and enums that the header uses, e.g. `class Enemy;` or `enum class Suit : int64_t;`.
 4. The enum stand-ins of the class, one per enum it exposes: `enum _gdpp_Counter_Suit : int64_t {};` and `GDPP_ENUM_TAG`, or `GDPP_BITFIELD_TAG` for a bitfield. See `gd++ man enums`.
 5. The class, between `#define This NAME` and `#undef This`:
+   - `class NAME : public BASE`, followed by `public TRAIT` for each trait it implements itself,
    - `GDCLASS(NAME, BASE)`,
    - each `decl` block, after `private:`,
    - `public:` the fields of simple variables, value-initialized with `{}`,
    - `private:` the `decl` blocks of properties,
-   - `public:` integer constants as `static constexpr int64_t`, the constructor and destructor if any, `GDVIRTUAL` declarations of `@virtual` functions, the functions except `@private` ones, RPC helpers, getters and setters, and the emit functions of signals,
+   - `public:` integer constants as `static constexpr int64_t`, the constructor and destructor if any, the hooks of traits if it implements any, `GDVIRTUAL` declarations of `@virtual` functions, the functions except `@private` ones, RPC helpers, getters and setters, and the emit functions of signals,
    - `protected:` `static void _bind_methods()`, and `void _notification(int WHAT)` if the class has `on` blocks or `@onready` variables,
    - `private:` the `@private` functions, and the generated helpers: enum wrappers, and default value functions.
 6. The `#include` lines of the GD++ names that were only forward-declared, at the end, after namespace `godot`.
@@ -250,6 +252,9 @@ _gdpp_get_NAME, _gdpp_set_NAME   the wrappers that bind a variable of an enum ty
 _gdpp_CLASS_ENUM             a class's stand-in type for an enum
 _gdpp_ret                    a local variable in @virtual functions
 _gdpp_base                   an extern wrapper's object
+_gdpp_traits                 a static function that records the traits of a class, which casts look up
+_gdpp_destroy                what destroy calls through a trait: destroy of the class
+_gdpp_queue_destroy          what queue_destroy calls through a trait: queue_destroy of the class
 _gdpp_pool                   a @pool class's pool, a static gdpp::Pool<T>
 _gdpp_pool_slot              where an object of a @pool class is in its pool
 _gdpp_recycle_ctor, _gdpp_recycle_dtor   what a @pool class runs when its pool reuses and keeps an object
@@ -314,6 +319,31 @@ inline double Terrain::height_at(double x, double z) const {
 
 See `gd++ man debugging`.
 
+# Trait headers
+
+A trait NAME gets a header with an interface NAME, in namespace `godot`:
+
+```cpp
+class Damageable {
+public:
+  using Base = Node3D;
+  virtual ~Damageable() = default;
+  virtual void take_damage(int64_t amount) = 0;
+  virtual bool is_dead() = 0;
+  virtual void _gdpp_destroy() = 0;
+  virtual void _gdpp_queue_destroy() = 0;
+};
+```
+
+- Each function is pure virtual, defaults too: the classes that implement the trait get a copy of each default.
+- `_gdpp_destroy` is left out for a refcounted base, and `_gdpp_queue_destroy` for a base that isn't a `Node`.
+- A class that implements the trait derives from the interface, after its base class.
+- Its functions are declared with `override`, and so are its hooks, defined like `void Crate::_gdpp_destroy() { gdpp::destroy(this); }`.
+- Its `static void _gdpp_traits(gdpp::TraitsOf<Crate>)` calls `gdpp::implement<Damageable, Crate>()` for each trait it implements, those of its bases included.
+- A trait's `@group` adds `add_to_group(GDPP_STRING_NAME("NAME"));` to the constructors of its classes.
+
+See `gd++ man traits`.
+
 # Enum headers
 
 An enum NAME gets a header with an enum class:
@@ -345,6 +375,7 @@ In a package with GD++ classes, `__register_types__.cpp` also:
 - includes the GD++ runtime,
 - calls `gdpp::uninitialize()` when the library is unloaded. It waits for the package's running tasks, and removes the engine's hooks into the package's code, e.g. signal connections. So the editor doesn't call the old code after a hot reload.
 - registers the class of tasks first, e.g. `FooAsync`, if the package's GD++ classes use `Async`. The GD++ runtime defines it.
+- records the traits of each class right after registering it, with `gdpp::register_traits`, which calls its `_gdpp_traits`. `gdpp::uninitialize()` forgets them.
 
 `SConstruct` defines, for all the package's C++:
 

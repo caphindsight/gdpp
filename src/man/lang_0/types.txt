@@ -52,6 +52,7 @@ RefCounted, Resource, ...     Ref<Resource>, ...             const Ref<T> &
 your GD++ classes             like their base: Player * or Ref<Stats>
 your GD++ enums               the C++ enum class             by value
 externs                       gdpp::ExtPtr<T> or ExtRef<T>   by value
+traits                        gdpp::Trait<T>                 by value
 Async[T], Async               gdpp::Async<T>, Async<Variant> by value
 Weak[T]                       gdpp::Weak<T>                  by value
 ```
@@ -118,7 +119,7 @@ var names: Dictionary[String, Node3D]      // TypedDictionary<String, Node3D>
 - `Dictionary[K, V]`: a dictionary with keys of type `K` and values of type `V`. Needs Godot 4.4 or newer.
 - In C++, they are godot-cpp's `TypedArray` and `TypedDictionary`, with element types spelled by name: `TypedArray<Node>`, not `TypedArray<Node *>`.
 - Only `Array` (one argument) and `Dictionary` (two) take type arguments, besides `Async` and `Weak` (see `gd++ man async` and `gd++ man weak`).
-- Element types can be built-in types and classes. Not enums, externs, `Async` or `Weak` types.
+- Element types can be built-in types and classes. Not enums, externs, traits, `Async` or `Weak` types.
 - No nesting: `Array[Array[int]]` is an error. Use `Array[Array]`.
 
 # Enums
@@ -161,6 +162,15 @@ An extern declared in any GD++ file of the package is a type.
 - In Godot: its base class.
 - See `gd++ man externs`.
 
+# Traits
+
+A trait declared in any GD++ file of the package is a type.
+
+- In C++: a `gdpp::TraitPtr<T>`, or a `gdpp::TraitRef<T>` if its base class is refcounted. `Trait<T>` is whichever fits.
+- It holds an object whose class implements the trait, and calls the trait's functions directly.
+- In Godot: its base class. An object whose class doesn't implement the trait arrives as null.
+- See `gd++ man traits`.
+
 # Async
 
 `Async[T]` is a task whose result has type `T`, e.g. a call of an `@onthread` function, which runs on another thread.
@@ -194,7 +204,7 @@ godot-cpp declares more than classes, e.g. `TypedArray`, `Ref`, `UtilityFunction
 [×] res://a.gd++:3:8: TypedArray is not a Godot type.
      3 | var x: TypedArray
        |        ^^^^^^^^^^
-    Hint: Types are Godot's built-in types and classes, and the package's classes, externs and enums.
+    Hint: Types are Godot's built-in types and classes, and the package's classes, externs, traits and enums.
 ```
 
 - Use `Array[T]` instead of `TypedArray<T>`, and a class name instead of `Ref<T>`.
@@ -225,4 +235,4 @@ See `gd++ man docs`.
 
 # See also
 
-`gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man enums`, `gd++ man externs`, `gd++ man async`, `gd++ man weak`.
+`gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man enums`, `gd++ man externs`, `gd++ man traits`, `gd++ man async`, `gd++ man weak`.

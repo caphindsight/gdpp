@@ -294,6 +294,22 @@ class Foo {
 }
 enum Suit { HEARTS }
 `, []string{"class FooCopy {", "extends Node", `@export @@tag(1, "a") var x: int = 1`, "func f(a: int) -> int { return a;}"}},
+		// A class's traits, read as implements, and passed on to a generated class.
+		{`invoke {
+  for _, c in ipairs(ctx.members) do
+    if c.kind == "class" then
+      gd.class { name = c.name .. "Copy", extends = c.extends, implements = c.implements, body = function()
+        for _, m in ipairs(c.members) do gd[m.kind](m) end
+      end }
+    end
+  end
+}
+class Foo {
+  extends Node
+  implements Saveable, Named
+  implements Labeled
+}
+`, []string{"class FooCopy {", "extends Node", "implements Saveable, Named, Labeled"}},
 		// gd.annotation finds built-in and user annotations, of members and of ctx.
 		{`@@kind(item)
 class_name Foo

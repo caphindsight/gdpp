@@ -40,8 +40,8 @@ func highlightCode(code, lang string) string {
 
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
-	gdppWords = "annotation class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl import macro macro_library macro_name noimport " +
-		"set signal template_name var"
+	gdppWords = "annotation class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl implements import macro macro_library macro_name noimport " +
+		"set signal template_name trait trait_name var"
 	// GD++'s on blocks, e.g. on ready { ... }, whose keyword is also a name elsewhere: it's a keyword, with the
 	// notification's name, where it starts a block, at the start of a line or after annotations, and alone where
 	// another identifier follows it, e.g. in a list of keywords, since a name never has one right after it.

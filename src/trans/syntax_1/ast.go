@@ -6,14 +6,16 @@ import "github.com/alecthomas/participle/v2/lexer"
 // For declarations with a Doc or Annotations, Pos is the position of the keyword (func, var, ...) instead.
 // Later stages use Pos to emit #line directives.
 
-// File is a whole .gd++ file. At most one of FileClass, FileExtern, FileEnum and FileMacro is set.
-// Inline classes and externs are always listed in File, even when they appear after class_name.
+// File is a whole .gd++ file. At most one of FileClass, FileExtern, FileTrait, FileEnum and FileMacro is set.
+// Inline classes, externs and traits are always listed in File, even when they appear after class_name.
 type File struct {
 	Pos           lexer.Position
 	FileClass     *Class    // Declared with class_name.
 	InlineClasses []*Class  // Declared with class Name { ... }.
 	FileExtern    *Extern   // Declared with extern_name.
 	InlineExterns []*Extern // Declared with extern Name { ... }.
+	FileTrait     *Trait    // Declared with trait_name.
+	InlineTraits  []*Trait  // Declared with trait Name { ... }.
 	FileEnum      *Enum     // Declared with enum_name.
 	InlineEnums   []*Enum   // Enums in a file without a file-level class. (Otherwise they are class members.)
 	FileMacro     *Macro    // Declared with macro_name or template_name.
@@ -86,12 +88,14 @@ type Code struct {
 }
 
 // Class is a class, declared with class_name (the rest of the file) or inline with class Name { ... }.
+// Implements lists the traits of every implements clause, in order.
 type Class struct {
 	Pos         lexer.Position
 	Doc         *Doc          `parser:"@@?"`
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"'class' @Ident '{'"`
 	Extends     *Type         `parser:"( 'extends' @@ )?"`
+	Implements  []*Type       `parser:"( 'implements' @@ ( ',' @@ )* )*"`
 	Members     []*Member     `parser:"@@* '}'"`
 }
 
@@ -101,6 +105,17 @@ type Extern struct {
 	Doc         *Doc          `parser:"@@?"`
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"'extern' @Ident '{'"`
+	Extends     *Type         `parser:"( 'extends' @@ )?"`
+	Members     []*Member     `parser:"@@* '}'"`
+}
+
+// Trait is a trait, declared with trait_name (the rest of the file) or inline with trait Name { ... }: functions
+// that classes implement, those with a body by default.
+type Trait struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Name        string        `parser:"'trait' @Ident '{'"`
 	Extends     *Type         `parser:"( 'extends' @@ )?"`
 	Members     []*Member     `parser:"@@* '}'"`
 }

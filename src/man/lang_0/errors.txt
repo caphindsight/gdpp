@@ -64,8 +64,8 @@ Structure:
 
 ```
 This func is outside of any class.
-  A file without class_name can only have inline classes, externs and enums at its top level.
-Classes and externs can't be nested, but found keyword "class" inside the body of class "A".
+  A file without class_name can only have inline classes, externs, traits and enums at its top level.
+Classes, externs and traits can't be nested, but found keyword "class" inside the body of class "A".
 A file has at most one "class_name", at the very top.
 This doc comment is not followed by a declaration.
 A declaration can have only one doc comment.
@@ -88,7 +88,7 @@ Declarations:
 ```
 The name "x" is declared twice in this file.
 The name "Node" is already declared by a dependency.
-  Names must differ from Godot's, and from those of the package's other classes, externs and enums.
+  Names must differ from Godot's, and from those of the package's other classes, externs, traits and enums.
 The name "get_x" is already used by another member.
   A var x also declares get_x and set_x, a signal declares its emit function, and a @virtual func _x declares x.
 Class A extends itself through its bases.

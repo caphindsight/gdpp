@@ -1,4 +1,4 @@
 input.gd++:2:9: Unknown base class "Spatial".
  2 | extends Spatial
    |         ^^^^^^^
-Hint: Types are Godot types, or classes, externs and enums from the dependencies or this file.
+Hint: Types are Godot types, or classes, externs, traits and enums from the dependencies or this file.

@@ -207,8 +207,9 @@ is_instance_valid(enemy)            Enemy *e = enemy, with enemy a Weak[Enemy]
 preload(PATH).instantiate()         create Bullet, with @scene(PATH) on Bullet
                                     (and with @factory, scripts call Bullet.create())
 assert(x > 0)                       assert x > 0;
+body.has_method("hit")              body as Trait<Hittable>, with a trait Hittable
 ```
 
 # See also
 
-`gd++ man lang`, `gd++ man types`, `gd++ man functions`, `gd++ man errors`, `gd++ man doc`.
+`gd++ man lang`, `gd++ man types`, `gd++ man functions`, `gd++ man traits`, `gd++ man errors`, `gd++ man doc`.

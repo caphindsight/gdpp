@@ -1,0 +1,4 @@
+input.gd++:3:26: Trait functions can't have default values.
+ 3 |   func hit(amount: int = 1) -> void
+   |                          ^
+Hint: Calls through a trait pass every argument.

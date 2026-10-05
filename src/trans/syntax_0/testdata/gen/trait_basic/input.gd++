@@ -1,0 +1,57 @@
+/// Something that takes damage.
+@group
+trait Damageable {
+  extends Node3D
+
+  /// Takes amount of damage.
+  func take_damage(amount: int) -> void
+  @const func health() -> int
+  func is_dead() -> bool {
+    return health() <= 0;
+  }
+}
+
+trait Labeled {
+  extends Node
+  @const func label() -> String
+}
+
+class Crate {
+  extends Node3D
+  implements Damageable, Labeled
+
+  var hp: int = 10
+  @export var target: Damageable
+
+  func take_damage(amount: int) -> void {
+    hp -= amount;
+  }
+
+  @const func health() -> int {
+    return hp;
+  }
+
+  @const func label() -> String {
+    return "crate";
+  }
+
+  func hit(body: Node3D) -> void {
+    Trait<Damageable> target = body as Trait<Damageable>;
+    if (target) {
+      target->take_damage(1);
+    }
+  }
+
+  func find(target: Damageable) -> Labeled {
+    return target as Trait<Labeled>;
+  }
+}
+
+class BigCrate {
+  extends Crate
+
+  @override
+  func take_damage(amount: int) -> void {
+    hp -= amount / 2;
+  }
+}

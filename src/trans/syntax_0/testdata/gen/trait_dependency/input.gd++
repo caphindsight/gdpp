@@ -1,0 +1,16 @@
+class_name Knight
+extends Hero
+
+@override
+func save() -> Dictionary {
+  return Dictionary();
+}
+
+class Chest {
+  extends Node
+  implements Saveable
+
+  func save() -> Dictionary {
+    return Dictionary();
+  }
+}

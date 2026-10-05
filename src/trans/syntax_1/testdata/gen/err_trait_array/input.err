@@ -1,0 +1,4 @@
+input.gd++:7:22: Type Damageable can't be used in a typed collection.
+ 7 |   var targets: Array[Damageable]
+   |                      ^^^^^^^^^^
+Hint: Typed collections can hold built-in types and classes, but not enums, externs or traits.

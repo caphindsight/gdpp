@@ -149,7 +149,7 @@ See `gd++ man generated` for all details.
 
 # Includes in C++ code
 
-- You don't write `#include` lines for Godot's classes, godot-cpp's names, or the package's GD++ classes, externs and enums.
+- You don't write `#include` lines for Godot's classes, godot-cpp's names, or the package's GD++ classes, externs, traits and enums.
 - GD++ finds every name that the C++ code uses, and includes its header. See `gd++ man includes`.
 - Write `#include` lines only for other code, e.g. `<vector>`, or the package's plain C++ headers, in `@global` blocks.
 

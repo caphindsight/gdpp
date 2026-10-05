@@ -29,6 +29,7 @@ func TestGenerate(t *testing.T) {
 			Values                     []meta.EnumValue
 			Gdpp, Bitfield, NonRuntime bool
 			Virtuals, Notifications    []string
+			Traits                     []string
 			File                       string // For macros and templates: their file in testdata/gen.
 			SourceName                 string `toml:"source_name"`
 		}
@@ -38,7 +39,7 @@ func TestGenerate(t *testing.T) {
 	}
 	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
 		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other, "GodotEnum": meta.GodotEnum, "Macro": meta.Macro,
-		"Template": meta.Template, "Annotation": meta.Annotation}
+		"Template": meta.Template, "Annotation": meta.Annotation, "Trait": meta.Trait, "RefCountedTrait": meta.RefCountedTrait}
 	var opts meta.Options
 	for _, d := range file.Dep {
 		source := ""
@@ -50,7 +51,7 @@ func TestGenerate(t *testing.T) {
 			source = string(data)
 		}
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals,
-			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName})
+			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits})
 	}
 	opts.PackageID, opts.PackagePrefix, opts.CppStandard = "shooter", "Shooter", "c++17"
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")

@@ -124,6 +124,10 @@ class ExtPtr;
 template <typename T>
 class ExtRef;
 template <typename T>
+class TraitPtr;
+template <typename T>
+class TraitRef;
+template <typename T>
 class Async;
 template <typename T>
 class Weak;
@@ -132,8 +136,8 @@ class Weak;
 template <typename T>
 using strong_t = std::conditional_t<std::is_base_of_v<RefCounted, T>, Ref<T>, T *>;
 
-// object_class<T>::type is the class of the object that T points to, for a pointer, Ref, extern, Async or Weak, and void
-// for other types.
+// object_class<T>::type is the class of the object that T points to, for a pointer, Ref, extern, trait, Async or Weak,
+// and void for other types.
 template <typename T>
 struct object_class {
 	// The class, or void.
@@ -153,6 +157,14 @@ struct object_class<ExtPtr<T>> {
 };
 template <typename T>
 struct object_class<ExtRef<T>> {
+	using type = typename T::Base;
+};
+template <typename T>
+struct object_class<TraitPtr<T>> {
+	using type = typename T::Base;
+};
+template <typename T>
+struct object_class<TraitRef<T>> {
 	using type = typename T::Base;
 };
 template <typename T>
@@ -176,15 +188,99 @@ auto object_ptr(const ExtPtr<T> &p_value) { return p_value.base(); }
 // object_ptr of an ExtRef: its object, as the extern's base class.
 template <typename T>
 auto object_ptr(const ExtRef<T> &p_value) { return p_value.base().ptr(); }
+// object_ptr of a TraitPtr: its object, as the trait's base class.
+template <typename T>
+auto object_ptr(const TraitPtr<T> &p_value) { return p_value.base(); }
+// object_ptr of a TraitRef: its object, as the trait's base class.
+template <typename T>
+auto object_ptr(const TraitRef<T> &p_value) { return p_value.base().ptr(); }
 // object_ptr of an Async: its task object.
 template <typename T>
 RefCounted *object_ptr(const Async<T> &p_value) { return p_value.object().ptr(); }
 
+// is_trait<T> is true for TraitPtr and TraitRef.
+template <typename T>
+struct is_trait : std::false_type {};
+template <typename T>
+struct is_trait<TraitPtr<T>> : std::true_type {};
+template <typename T>
+struct is_trait<TraitRef<T>> : std::true_type {};
+
+// TraitEntry says that the class named class_name implements a trait, identified by the address trait_id<T>: cast
+// turns one of its objects into a pointer to the trait.
+struct TraitEntry {
+	// The class.
+	StringName class_name;
+	// The trait's trait_id.
+	const void *trait;
+	// Returns an object of the class as a pointer to the trait.
+	void *(*cast)(Object *);
+};
+
+// trait_id<T>'s address identifies the trait T.
+template <typename T>
+inline constexpr char trait_id = 0;
+
+// trait_entries lists which classes of the package implement which traits. The registration of the package's classes
+// fills it, and uninitialize empties it. It doesn't change while the game runs.
+inline std::vector<TraitEntry> &trait_entries() {
+	static std::vector<TraitEntry> entries;
+	return entries;
+}
+
+// TraitsOf<T> is the parameter of the class T's _gdpp_traits, so a subclass doesn't count as having its base's.
+template <typename T>
+struct TraitsOf {};
+
+// implement records that class C implements trait T, so casts find T in its objects, and in those of its scripts.
+template <typename T, typename C>
+void implement() {
+	static_assert(std::is_base_of_v<T, C>, "A class can only implement a trait that it derives from.");
+	const StringName &name = C::get_class_static();
+	for (const TraitEntry &entry : trait_entries()) {
+		if (entry.trait == &trait_id<T> && entry.class_name == name) {
+			return;
+		}
+	}
+	trait_entries().push_back({ name, &trait_id<T>, [](Object *p_object) -> void * { return static_cast<T *>(static_cast<C *>(p_object)); } });
+}
+
+// has_traits<T> is true for a class T whose own _gdpp_traits registers its traits.
+template <typename T, typename = void>
+struct has_traits : std::false_type {};
+template <typename T>
+struct has_traits<T, std::void_t<decltype(T::_gdpp_traits(TraitsOf<T>{}))>> : std::true_type {};
+
+// register_traits records the traits that the class T implements, if any. The registration of classes calls it.
+template <typename T>
+void register_traits() {
+	if constexpr (has_traits<T>::value) {
+		T::_gdpp_traits(TraitsOf<T>{});
+	}
+}
+
+// find_trait returns p_object as a pointer to the trait T, or null if its class doesn't implement T. A script's object
+// counts as one of its native class.
+template <typename T>
+T *find_trait(Object *p_object) {
+	if (p_object == nullptr) {
+		return nullptr;
+	}
+	StringName name = p_object->get_class();
+	for (const TraitEntry &entry : trait_entries()) {
+		if (entry.trait == &trait_id<T> && entry.class_name == name) {
+			return static_cast<T *>(entry.cast(p_object));
+		}
+	}
+	return nullptr;
+}
+
 // cast converts p_value to T, picking the conversion at compile time:
 //   - from a Variant, as Godot's bindings do, with enums as ints,
 //   - to a Variant, with enums as ints,
-//   - between pointers, Refs, externs, Asyncs and Weaks: up casts are static, other casts check the object's class, and give
-//     null if it doesn't match; externs only check their base class,
+//   - between pointers, Refs, externs, traits, Asyncs and Weaks: up casts are static, other casts check the object's class,
+//     and give null if it doesn't match; externs only check their base class,
+//   - to a trait: statically from a class that implements it, else by looking up the object's class,
 //   - anything else with static_cast, e.g. numbers and enums.
 template <typename T, typename U>
 T cast(const U &p_value) {
@@ -203,6 +299,14 @@ T cast(const U &p_value) {
 			return static_cast<int64_t>(p_value);
 		} else {
 			return Variant(p_value);
+		}
+	} else if constexpr (is_trait<T>::value) {
+		static_assert(std::is_base_of_v<Object, From>, "Only objects can be cast to a trait.");
+		static_assert(!std::is_const_v<From>, "A const object can't be cast to a trait, since calls through the trait may change it.");
+		if constexpr (std::is_base_of_v<typename T::Trait, From>) {
+			return T{ object_ptr(p_value) };
+		} else {
+			return T::find(object_ptr(p_value));
 		}
 	} else if constexpr (std::is_base_of_v<Object, To> && std::is_base_of_v<Object, From>) {
 		// Braces, unlike T(...), don't cast a const pointer to a mutable one.
@@ -307,6 +411,99 @@ private:
 	friend class ExtRef;
 	Ref<RefCounted> object_;
 };
+
+// TraitPtr<T> points to an object that implements the trait T, whose base class isn't refcounted. ptr->foo() calls the
+// trait's function foo directly. Only its members need T to be complete.
+template <typename T>
+class TraitPtr {
+public:
+	// The trait.
+	using Trait = T;
+
+	// A null TraitPtr.
+	TraitPtr() = default;
+	// A null TraitPtr, from nullptr.
+	TraitPtr(std::nullptr_t) {}
+	// Points to p_object, of a class that implements T.
+	template <typename C, std::enable_if_t<std::is_base_of_v<T, C>, int> = 0>
+	TraitPtr(C *p_object) :
+			object_(p_object), trait_(p_object) {}
+
+	// find returns p_object as a TraitPtr, or null if its class doesn't implement T.
+	static TraitPtr find(Object *p_object) {
+		TraitPtr result;
+		if ((result.trait_ = find_trait<T>(p_object))) {
+			result.object_ = p_object;
+		}
+		return result;
+	}
+
+	// base returns the object as a pointer to the trait's base class.
+	auto base() const { return static_cast<typename T::Base *>(object_); }
+	// True if it isn't null.
+	explicit operator bool() const { return object_ != nullptr; }
+	// True if both point to the same object.
+	bool operator==(const TraitPtr &p_other) const { return object_ == p_other.object_; }
+	// The object, as a Variant.
+	operator Variant() const { return Variant(object_); }
+	// ptr->foo() calls the trait's function foo.
+	T *operator->() const { return trait_; }
+
+private:
+	Object *object_ = nullptr;
+	T *trait_ = nullptr;
+};
+
+// TraitRef<T> references an object that implements the trait T, whose base class is refcounted. Like TraitPtr<T>, but
+// it keeps the object alive.
+template <typename T>
+class TraitRef {
+public:
+	// The trait.
+	using Trait = T;
+
+	// A null TraitRef.
+	TraitRef() = default;
+	// A null TraitRef, from nullptr.
+	TraitRef(std::nullptr_t) {}
+	// References p_object, of a class that implements T.
+	template <typename C, std::enable_if_t<std::is_base_of_v<T, C>, int> = 0>
+	TraitRef(C *p_object) :
+			object_(p_object), trait_(p_object) {}
+	// References p_object, of a class that implements T.
+	template <typename C, std::enable_if_t<std::is_base_of_v<T, C>, int> = 0>
+	TraitRef(const Ref<C> &p_object) :
+			object_(p_object.ptr()), trait_(p_object.ptr()) {}
+
+	// find returns p_object as a TraitRef, or null if its class doesn't implement T.
+	static TraitRef find(Object *p_object) {
+		TraitRef result;
+		if ((result.trait_ = find_trait<T>(p_object))) {
+			result.object_ = Ref<RefCounted>(Object::cast_to<RefCounted>(p_object));
+		}
+		return result;
+	}
+
+	// base returns the object as a Ref of the trait's base class.
+	auto base() const { return Ref<typename T::Base>(static_cast<typename T::Base *>(object_.ptr())); }
+	// True if it isn't null.
+	explicit operator bool() const { return object_.is_valid(); }
+	// True if both reference the same object.
+	bool operator==(const TraitRef &p_other) const { return object_ == p_other.object_; }
+	// The object, as a Variant.
+	operator Variant() const { return Variant(object_); }
+	// ref->foo() calls the trait's function foo.
+	T *operator->() const { return trait_; }
+
+private:
+	Ref<RefCounted> object_;
+	T *trait_ = nullptr;
+};
+
+// Trait<T> is how code holds an object that implements the trait T: a TraitRef<T> if its base class is refcounted, else
+// a TraitPtr<T>.
+template <typename T>
+using Trait = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, TraitRef<T>, TraitPtr<T>>;
 
 // Ext<T> is how code holds an object of the extern T: an ExtRef<T> if its base class is refcounted, else an ExtPtr<T>.
 template <typename T>
@@ -1189,6 +1386,14 @@ void destroy(ExtPtr<T> p_object) {
 	}
 }
 
+// destroy of a trait destroys its object as its class does, e.g. with its pool.
+template <typename T>
+void destroy(TraitPtr<T> p_object) {
+	if (p_object) {
+		p_object->_gdpp_destroy();
+	}
+}
+
 // queue_destroy destroys a node at the end of the frame, on the main thread, like queue_free, which `queue_destroy x`
 // calls. For a @pool class, it returns the node to its pool then, unless it was returned or freed before, even if the
 // pool has reused it since. For other classes, it's queue_free, which also does nothing for a node freed before. It only
@@ -1218,6 +1423,14 @@ void queue_destroy(ExtPtr<T> p_object) {
 		p_object.base()->queue_free();
 	}
 }
+// queue_destroy of a trait queues its object as its class does, e.g. with its pool.
+template <typename T>
+void queue_destroy(TraitPtr<T> p_object) {
+	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
+	if (p_object) {
+		p_object->_gdpp_queue_destroy();
+	}
+}
 // queue_destroy of a Ref doesn't compile: refcounted objects free themselves.
 template <typename T>
 void queue_destroy(const Ref<T> &) {
@@ -1226,6 +1439,16 @@ void queue_destroy(const Ref<T> &) {
 // queue_destroy of an ExtRef doesn't compile: refcounted objects free themselves.
 template <typename T>
 void queue_destroy(const ExtRef<T> &) {
+	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
+}
+// queue_destroy of a TraitRef doesn't compile: refcounted objects free themselves.
+template <typename T>
+void queue_destroy(const TraitRef<T> &) {
+	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
+}
+// destroy of a TraitRef doesn't compile: refcounted objects free themselves.
+template <typename T>
+void destroy(const TraitRef<T> &) {
 	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
 // destroy of a Ref doesn't compile: refcounted objects free themselves.
@@ -1293,6 +1516,7 @@ inline void finish_tasks() {
 // its hooks. The package's generated registration code calls it.
 inline void uninitialize() {
 	finish_tasks();
+	trait_entries().clear();
 	std::lock_guard<std::mutex> lock(unhooks_mutex);
 	for (const std::function<void()> &unhook : unhooks) {
 		unhook();
@@ -1604,6 +1828,9 @@ using gdpp::Emitted;
 using gdpp::Ext;
 using gdpp::ExtPtr;
 using gdpp::ExtRef;
+using gdpp::Trait;
+using gdpp::TraitPtr;
+using gdpp::TraitRef;
 using gdpp::Weak;
 
 // GDPP_SIGNATURE is the signature of the function it's in, e.g. "int Player::fire(int)", on the compilers that have one.
@@ -1704,6 +1931,58 @@ template <typename T>
 struct VariantCaster<gdpp::ExtRef<T>> {
 	static _FORCE_INLINE_ gdpp::ExtRef<T> cast(const Variant &p_variant) {
 		return Ref<typename T::Base>(p_variant);
+	}
+};
+
+// Bindings see a trait as its base class. An object whose class doesn't implement the trait becomes null.
+
+template <typename T>
+struct GetTypeInfo<gdpp::TraitPtr<T>> {
+	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
+	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+	static inline PropertyInfo get_class_info() { return GetTypeInfo<typename T::Base *>::get_class_info(); }
+};
+
+template <typename T>
+struct GetTypeInfo<gdpp::TraitRef<T>> {
+	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
+	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+	static inline PropertyInfo get_class_info() { return GetTypeInfo<Ref<typename T::Base>>::get_class_info(); }
+};
+
+template <typename T>
+struct PtrToArg<gdpp::TraitPtr<T>> {
+	_FORCE_INLINE_ static gdpp::TraitPtr<T> convert(const void *p_ptr) {
+		return gdpp::TraitPtr<T>::find(PtrToArg<typename T::Base *>::convert(p_ptr));
+	}
+	typedef Object *EncodeT;
+	_FORCE_INLINE_ static void encode(gdpp::TraitPtr<T> p_val, void *p_ptr) {
+		PtrToArg<typename T::Base *>::encode(p_val.base(), p_ptr);
+	}
+};
+
+template <typename T>
+struct PtrToArg<gdpp::TraitRef<T>> {
+	_FORCE_INLINE_ static gdpp::TraitRef<T> convert(const void *p_ptr) {
+		return gdpp::TraitRef<T>::find(PtrToArg<Ref<typename T::Base>>::convert(p_ptr).ptr());
+	}
+	typedef Ref<typename T::Base> EncodeT;
+	_FORCE_INLINE_ static void encode(gdpp::TraitRef<T> p_val, void *p_ptr) {
+		PtrToArg<Ref<typename T::Base>>::encode(p_val.base(), p_ptr);
+	}
+};
+
+template <typename T>
+struct VariantCaster<gdpp::TraitPtr<T>> {
+	static _FORCE_INLINE_ gdpp::TraitPtr<T> cast(const Variant &p_variant) {
+		return gdpp::TraitPtr<T>::find(p_variant.operator Object *());
+	}
+};
+
+template <typename T>
+struct VariantCaster<gdpp::TraitRef<T>> {
+	static _FORCE_INLINE_ gdpp::TraitRef<T> cast(const Variant &p_variant) {
+		return gdpp::TraitRef<T>::find(p_variant.operator Object *());
 	}
 };
 

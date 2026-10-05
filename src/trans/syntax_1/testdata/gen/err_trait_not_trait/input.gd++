@@ -1,0 +1,4 @@
+class Crate {
+  extends Node
+  implements Node3D
+}

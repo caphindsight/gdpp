@@ -1,0 +1,4 @@
+input.gd++:14:3: Function hit overrides func hit of trait Damageable, which a base of BigCrate implements, so it needs @override.
+ 14 |   func hit() -> void {}
+    |   ^^^^
+Hint: Add @override, or rename the function.

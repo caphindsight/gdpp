@@ -1,0 +1,10 @@
+trait Damageable {
+  extends Node
+  func hit() -> void
+}
+
+class Crate {
+  extends Node
+  implements Damageable
+  @deferred func hit() -> void {}
+}

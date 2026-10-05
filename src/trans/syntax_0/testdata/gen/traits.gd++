@@ -1,0 +1,17 @@
+/// Something that a save file keeps.
+@group("saved")
+trait_name Saveable
+extends Node
+
+/// Returns what to save.
+func save() -> Dictionary
+
+/// The save slot.
+@const func slot() -> int {
+  return get_index();
+}
+
+trait Named {
+  extends RefCounted
+  @const func title() -> String
+}

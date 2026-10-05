@@ -227,7 +227,7 @@ gd++ build --clean
 - "Invalid arguments: --cc msvc cannot build for linux." The compiler doesn't support a target. See "Compilers" in `gd++ man building`.
 - "Invalid arguments: --cc clang cannot build for windows on this machine." MSVC and clang-cl only run on Windows. On Windows, godot-cpp only supports MinGW-w64's GCC.
 - An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
-- "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
+- "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern, trait or enum.
 - "Class X is declared in FILE and in .gd++pkg." A GD++ class and a C++ class have the same name.
 - The building task fails: the compiler or linker failed, and its whole output follows. Errors in the C++ code of GD++ files point to the GD++ files.
 

@@ -63,6 +63,22 @@ A class can't extend:
     Hint: Extend the extern's base class instead.
 ```
 
+# Traits
+
+A class has one base class, but it can implement any number of traits. `implements` comes after `extends`, or in its place:
+
+```gd++
+class_name Crate
+extends RigidBody3D
+implements Damageable, Saveable
+implements Named
+```
+
+- Commas and repeated `implements` mix freely.
+- The class defines the traits' functions, except those with a default.
+- Code can then use a `Crate` as a `Damageable`, and cast any object to one with `as`.
+- See `gd++ man traits`.
+
 # Objects and references
 
 Godot has two kinds of classes:
@@ -472,6 +488,7 @@ Functions, variables, signals and constants share one namespace, since they all 
 - `var x` also declares its getter `get_x` and its setter `set_x`.
 - `signal s` also declares a C++ method `s`, which emits it.
 - `@virtual func _f` also declares `f`, which scripts call. See `gd++ man functions`.
+- A trait's default function, which the class doesn't define, is a member too. See `gd++ man traits`.
 - `@factory`, `@factory_pool` and `@factory_scene` declare their methods, e.g. `create`. See "In scripts" above.
 - Names that start with `_gdpp_` are reserved for generated code.
 
@@ -553,4 +570,4 @@ class SpawnInfo {
 
 # See also
 
-`gd++ man files`, `gd++ man types`, `gd++ man generated`, `gd++ man externs`, `gd++ man debugging`.
+`gd++ man files`, `gd++ man types`, `gd++ man generated`, `gd++ man externs`, `gd++ man traits`, `gd++ man debugging`.

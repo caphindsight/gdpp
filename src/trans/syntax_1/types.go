@@ -21,7 +21,7 @@ var builtins = map[string]string{
 	"PackedVector4Array": "", "PackedColorArray": "",
 }
 
-// symbol is a class, extern or enum type that GD++ code can name: a dependency or a declaration in the file.
+// symbol is a class, extern, trait or enum type that GD++ code can name: a dependency or a declaration in the file.
 type symbol struct {
 	name          string
 	kind          meta.Kind
@@ -36,18 +36,32 @@ type symbol struct {
 	nonRuntime    bool     // For dependency classes: see meta.Dependency.
 	class         *Class   // Set for classes in the file.
 	extern        *Extern  // Set for externs in the file.
+	trait         *Trait   // Set for traits in the file.
+	depTrait      *Trait   // For dependency traits: the trait, parsed from its file.
+	traitSource   string   // For dependency traits: how #line names its file.
+	traits        []string // For dependency classes: the traits they implement themselves, see meta.Dependency.
 	enum          *Enum    // Set for enums in the file.
 	order         int      // For declarations in the file: how many came before, which orders those at the same position.
 }
 
 // local reports whether the file declares s.
 func (s *symbol) local() bool {
-	return s.class != nil || s.extern != nil || s.enum != nil
+	return s.class != nil || s.extern != nil || s.trait != nil || s.enum != nil
 }
 
 // isExtern reports whether s is an extern: of the file or a dependency.
 func (s *symbol) isExtern() bool {
 	return s.extern != nil || s.kind == meta.Extern || s.kind == meta.RefCountedExtern
+}
+
+// isTrait reports whether s is a trait: of the file or a dependency.
+func (s *symbol) isTrait() bool {
+	return s.trait != nil || s.kind == meta.Trait || s.kind == meta.RefCountedTrait
+}
+
+// traitDecl returns the trait s, of the file or parsed from a dependency's file, or nil.
+func (s *symbol) traitDecl() *Trait {
+	return cmp.Or(s.trait, s.depTrait)
 }
 
 // gtype is a resolved GD++ type.
@@ -139,6 +153,10 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		return &gtype{cpp: "gdpp::ExtPtr<" + s.name + ">", doc: s.name}, nil
 	case meta.RefCountedExtern:
 		return &gtype{cpp: "gdpp::ExtRef<" + s.name + ">", doc: s.name}, nil
+	case meta.Trait:
+		return &gtype{cpp: "gdpp::TraitPtr<" + s.name + ">", doc: u.baseOf(s.name)}, nil
+	case meta.RefCountedTrait:
+		return &gtype{cpp: "gdpp::TraitRef<" + s.name + ">", doc: u.baseOf(s.name)}, nil
 	case meta.Enum:
 		return &gtype{cpp: s.name, doc: "int", enum: s}, nil
 	case meta.GodotEnum:
@@ -146,7 +164,7 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 			fmt.Sprintf("Use int, or redefine it as a GD++ enum: \"enum My%s { extends %s }\".", t.Name, t.Name))
 	}
 	return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("%s is not a Godot type.", t.Name),
-		"Types are Godot's built-in types and classes, and the package's classes, externs and enums.")
+		"Types are Godot's built-in types and classes, and the package's classes, externs, traits and enums.")
 }
 
 // weak resolves t, a Weak type: a reference to an object of a class, which doesn't keep it alive.
@@ -189,7 +207,7 @@ func (u *unit) resolveElement(t *Type) (*gtype, error) {
 	_, builtin := builtins[t.Name]
 	if s := u.symbols[t.Name]; !builtin && s != nil && s.kind != meta.Object && s.kind != meta.RefCounted {
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Type %s can't be used in a typed collection.", t.Name),
-			"Typed collections can hold built-in types and classes, but not enums or externs.")
+			"Typed collections can hold built-in types and classes, but not enums, externs or traits.")
 	}
 	g, err := u.resolve(t, false)
 	if err != nil || builtin || u.symbols[t.Name] == nil {
@@ -212,7 +230,7 @@ func (u *unit) unknownName(t *Type, what string) error {
 	for name := range u.symbols {
 		names = append(names, name)
 	}
-	hint := "Types are Godot types, or classes, externs and enums from the dependencies or this file."
+	hint := "Types are Godot types, or classes, externs, traits and enums from the dependencies or this file."
 	if s := suggest(t.Name, names...); s != "" {
 		hint = fmt.Sprintf("Did you mean %q?", s)
 	}

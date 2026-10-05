@@ -1,0 +1,25 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Crate
+    Extends: @2:9 Node3D
+    Implements:
+      - @3:12 Damageable
+      - @3:24 Labeled
+      - @4:12 Saveable
+  InlineClasses:
+    - @6:1
+      Name: Box
+      Implements:
+        - @7:14 Labeled
+    - @10:1
+      Name: Barrel
+      Extends: @11:11 Node
+      Implements:
+        - @12:14 Damageable
+        - @13:14 Labeled
+        - @13:23 Saveable
+      Members:
+        - @14:3
+          Var: @14:3
+            Name: hp
+            Type: @14:11 int

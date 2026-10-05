@@ -1,4 +1,4 @@
-errors/heads/nested_class.gd++:2:3: Classes and externs can't be nested, but found keyword "class" inside the body of class "A".
+errors/heads/nested_class.gd++:2:3: Classes, externs and traits can't be nested, but found keyword "class" inside the body of class "A".
  2 |   class B {}
    |   ^^^^^
-Hint: Move it out to the top level of the file. Inline classes and externs are listed next to each other.
+Hint: Move it out to the top level of the file. Inline classes, externs and traits are listed next to each other.

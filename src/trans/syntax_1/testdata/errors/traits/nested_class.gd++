@@ -1,0 +1,4 @@
+trait A {
+  extends Node
+  class B {}
+}

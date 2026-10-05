@@ -1,0 +1,3 @@
+trait_name Titled
+extends Node {
+}

@@ -36,10 +36,11 @@ Variant                 any type                 as Godot's bindings do, an enum
 any type                Variant                  as Godot's bindings do, an enum as an int
 an object               its class, or a base     static: free
 an object               another class            dynamic: checks the object's class, null if it doesn't match
+an object               a trait                  static if its class implements it, else checked: null if it doesn't
 anything else           T                        static_cast, e.g. numbers, enums, Array to Array[T]
 ```
 
-- An object is a pointer (e.g. `Node3D *`), a `Ref` (e.g. `Ref<Mesh>`), an extern, or an `Async`.
+- An object is a pointer (e.g. `Node3D *`), a `Ref` (e.g. `Ref<Mesh>`), an extern, a trait, or an `Async`.
 - Any of them converts to any other that fits: a pointer to a `Ref`, a `Ref` to a pointer, an object to an extern, an extern to its base class, a `Ref<RefCounted>` to an `Async`, and so on.
 - A conversion that no row allows, e.g. from a `String` to a `Node3D *`, doesn't compile.
 
@@ -124,12 +125,31 @@ Facts:
 
 See `gd++ man externs` and `gd++ man async`.
 
+# Traits
+
+A trait is spelled `Trait<T>` in C++, e.g. `body as Trait<Damageable>`:
+
+- A cast to a trait checks the object's class, unless the class is known to implement it. It gives null if the class doesn't.
+- A trait value casts like an object of the trait's base class: free to the base, checked to any other class.
+- The check knows the package's classes only. An object with a script counts as one of its GD++ class.
+- A `const` object can't be cast to a trait.
+
+```gd++
+Trait<Damageable> target = body as Trait<Damageable>;
+if (target) {
+  target->take_damage(10);
+}
+```
+
+See `gd++ man traits`.
+
 # Cost
 
 - Static conversions cost nothing, like `static_cast`.
 - A downcast asks the object for its class: cheap, but not free. In hot loops, keep the result instead of casting again.
+- So does a checked cast to a trait, which also looks the class up among those that implement traits.
 - Converting to or from a `Variant` packs or unpacks the value.
 
 # See also
 
-`gd++ man types`, `gd++ man enums`, `gd++ man externs`, `gd++ man async`, `gd++ man runtime`.
+`gd++ man types`, `gd++ man enums`, `gd++ man externs`, `gd++ man traits`, `gd++ man async`, `gd++ man runtime`.

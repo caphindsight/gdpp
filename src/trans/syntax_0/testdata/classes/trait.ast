@@ -1,0 +1,36 @@
+File: @1:1
+  InlineTraits:
+    - @3:1
+      Doc: @1:1 Something that takes damage.
+      Annotations:
+        - @2:1
+          Name: group
+          Args:
+            - @2:8 "damageable"
+      Name: Damageable
+      Extends: @4:11 Node3D
+      Members:
+        - @5:3
+          Func: @5:3
+            Name: take_damage
+            Params:
+              - @5:20
+                Name: amount
+                Type: @5:28 int
+            Return: @5:36 void
+        - @6:3
+          Func: @6:10
+            Annotations:
+              - @6:3 const
+            Name: health
+            Return: @6:27 int
+        - @7:3
+          Func: @7:3
+            Name: is_dead
+            Return: @7:21 bool
+            Body: @7:26
+              TextPos: 7:27
+              Text: |
+
+                    return health() <= 0;
+

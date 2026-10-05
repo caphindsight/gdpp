@@ -1,0 +1,4 @@
+input.gd++:3:14: Unknown trait "Damagable".
+ 3 |   implements Damagable
+   |              ^^^^^^^^^
+Hint: Types are Godot types, or classes, externs, traits and enums from the dependencies or this file.

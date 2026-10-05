@@ -99,7 +99,7 @@ Classes, a table with a row per class:
 
 - The file declaring it, shown only on the file's first class.
 - Its name.
-- For a GD++ class, its base class.
+- For a GD++ class, its base class, and the traits it implements itself, e.g. "extends Node3D implements Damageable". See `gd++ man traits`.
 - Its tags:
   - `[ptr]` or `[ref]`: a C++ class that GD++ code can use. See `gd++ man cpp-classes`.
   - `@abstract`: it's only a base for other classes.

@@ -126,6 +126,12 @@ See `gd++ man types`.
 
 See `gd++ man cast`.
 
+### Traits
+
+<a href="readme/svg/traits.gd++"><img src="readme/svg/traits.svg" alt="GD++ code: traits"></a>
+
+See `gd++ man traits`.
+
 ### Exports
 
 <a href="readme/svg/exports.gd++"><img src="readme/svg/exports.svg" alt="GD++ code: exports"></a>

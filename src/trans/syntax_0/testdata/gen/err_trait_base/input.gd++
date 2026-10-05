@@ -1,0 +1,10 @@
+trait Damageable {
+  extends Node3D
+  func take_damage(amount: int) -> void
+}
+
+class Ghost {
+  extends Node
+  implements Damageable
+  func take_damage(amount: int) -> void {}
+}

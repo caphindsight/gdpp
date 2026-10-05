@@ -15,6 +15,7 @@ type parsedFile struct {
 	Code   []*Code     `parser:"@@*"` // Only parsed to report it: code must be in a class.
 	Class  *classHead  `parser:"( @@"`
 	Extern *externHead `parser:"| @@"`
+	Trait  *traitHead  `parser:"| @@"`
 	Enum   *enumHead   `parser:"| @@"`
 	Macro  *macroHead  `parser:"| @@"`
 	Lib    *libHead    `parser:"| @@ )?"`
@@ -27,6 +28,7 @@ type classHead struct {
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"'class_name' @Ident"`
 	Extends     *Type         `parser:"( 'extends' @@ )?"`
+	Implements  []*Type       `parser:"( 'implements' @@ ( ',' @@ )* )*"`
 }
 
 type externHead struct {
@@ -34,6 +36,14 @@ type externHead struct {
 	Doc         *Doc          `parser:"@@?"`
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"'extern_name' @Ident"`
+	Extends     *Type         `parser:"( 'extends' @@ )?"`
+}
+
+type traitHead struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Name        string        `parser:"'trait_name' @Ident"`
 	Extends     *Type         `parser:"( 'extends' @@ )?"`
 }
 
@@ -73,13 +83,14 @@ type topItem struct {
 	Pos        lexer.Position
 	Class      *Class          `parser:"( @@"`
 	Extern     *Extern         `parser:"| @@"`
+	Trait      *Trait          `parser:"| @@"`
 	Macro      *Macro          `parser:"| @@"`
 	Annotation *AnnotationDecl `parser:"| @@"`
 	Member     *Member         `parser:"| @@ )"`
 }
 
-// toFile converts the parse tree into a File. After class_name or extern_name, members go into that class;
-// in a file without either, only enums are allowed outside inline classes.
+// toFile converts the parse tree into a File. After class_name, extern_name or trait_name, members go into that
+// class, extern or trait; in a file without any, only enums are allowed outside inline classes.
 func (pf *parsedFile) toFile() (*File, *Error) {
 	if len(pf.Code) > 0 {
 		return nil, outsideClass(&Member{Pos: pf.Code[0].Pos, Code: pf.Code[0]})
@@ -89,12 +100,16 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 	switch {
 	case pf.Class != nil:
 		h := pf.Class
-		f.FileClass = &Class{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Extends: h.Extends}
+		f.FileClass = &Class{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Extends: h.Extends, Implements: h.Implements}
 		members = &f.FileClass.Members
 	case pf.Extern != nil:
 		h := pf.Extern
 		f.FileExtern = &Extern{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Extends: h.Extends}
 		members = &f.FileExtern.Members
+	case pf.Trait != nil:
+		h := pf.Trait
+		f.FileTrait = &Trait{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Extends: h.Extends}
+		members = &f.FileTrait.Members
 	case pf.Enum != nil:
 		h := pf.Enum
 		f.FileEnum = &Enum{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Name: h.Name, Extends: h.Extends, Entries: h.Entries}
@@ -113,6 +128,8 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 			f.InlineClasses = append(f.InlineClasses, item.Class)
 		case item.Extern != nil:
 			f.InlineExterns = append(f.InlineExterns, item.Extern)
+		case item.Trait != nil:
+			f.InlineTraits = append(f.InlineTraits, item.Trait)
 		case item.Macro != nil && item.Macro.Name == "":
 			f.Libraries = append(f.Libraries, item.Macro)
 		case item.Macro != nil:

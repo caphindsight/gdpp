@@ -25,26 +25,29 @@ Whitespace, newlines and comments may appear between any two tokens, except insi
 
 ```
 File        = Code* FileHead? TopItem*
-FileHead    = ClassHead | ExternHead | EnumHead | MacroHead | LibraryHead
-ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )?
+FileHead    = ClassHead | ExternHead | TraitHead | EnumHead | MacroHead | LibraryHead
+ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )? Implements*
 ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
+TraitHead   = Doc? Annotation* 'trait_name' Ident ( 'extends' Type )?
 EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEntry*
 MacroHead   = ( 'macro_name' | 'template_name' ) Ident '(' MacroParams? ')' Body
 LibraryHead = 'macro_library' Body
-TopItem     = Class | Extern | Macro | AnnotDecl | Member
+TopItem     = Class | Extern | Trait | Macro | AnnotDecl | Member
 ```
 
 - `Code` before the file head is always an error: `decl` and `impl` blocks must be in a class.
-- After `class_name` or `extern_name`, every `Member` belongs to that class or extern.
-- In a file without either, only enum types are allowed as members at the top level.
+- After `class_name`, `extern_name` or `trait_name`, every `Member` belongs to that class, extern or trait.
+- In a file without any of them, only enum types are allowed as members at the top level.
 - After `enum_name`, only an optional `extends` and enum values follow.
 - After `macro_name`, `template_name` or `macro_library`, the rest of the file is the `Body`.
 
-# Classes and externs
+# Classes, externs and traits
 
 ```
-Class       = Doc? Annotation* 'class' Ident '{' ( 'extends' Type )? Member* '}'
+Class       = Doc? Annotation* 'class' Ident '{' ( 'extends' Type )? Implements* Member* '}'
+Implements  = 'implements' Type ( ',' Type )*
 Extern      = Doc? Annotation* 'extern' Ident '{' ( 'extends' Type )? Member* '}'
+Trait       = Doc? Annotation* 'trait' Ident '{' ( 'extends' Type )? Member* '}'
 
 Member      = Code
             | Annotation* 'ctor' Block
@@ -60,6 +63,9 @@ Member      = Code
 ```
 
 Externs only allow `Func`, `Signal` and `Var` members, without bodies, initial values or default values.
+
+- Traits only allow `Func` members, without default values. A trait needs `extends`. See `gd++ man traits`.
+- `Implements` comes after `extends`, and any number of times.
 
 # Macros and templates
 
@@ -188,8 +194,8 @@ Default     = Block | Expr
 
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
-func  get  impl  import  invoke  macro  macro_library  macro_name  noimport  on  set
-signal  template  template_name  var
+func  get  impl  implements  import  invoke  macro  macro_library  macro_name  noimport  on  set
+signal  template  template_name  trait  trait_name  var
 ```
 
 In C++ code, GD++ also reserves:

@@ -1,0 +1,253 @@
+Traits: functions that classes share
+
+A class has one base class. A trait lets classes with different bases promise the same functions, so code can use any of them through the trait:
+
+- A trait extends a class, e.g. `Node3D`, and lists functions.
+- A class implements traits: it defines their functions.
+- `as` casts an object to a trait while the game runs. The cast gives null if the object's class doesn't implement it.
+
+```gd++
+/// Something that takes damage.
+trait Damageable {
+  extends Node3D
+  func take_damage(amount: int) -> void
+  @const func health() -> int
+  func is_dead() -> bool {
+    return health() <= 0;
+  }
+}
+
+class Crate {
+  extends RigidBody3D
+  implements Damageable
+
+  var hp: int = 10
+
+  func take_damage(amount: int) -> void {
+    hp -= amount;
+  }
+
+  @const func health() -> int {
+    return hp;
+  }
+}
+
+func _on_body_entered(body: Node3D) -> void {
+  Trait<Damageable> target = body as Trait<Damageable>;
+  if (target) {
+    target->take_damage(10);
+  }
+}
+```
+
+Traits are fast: a call through a trait is a plain C++ virtual call, with no lookup by name. They only work inside a package. Other packages and scripts don't see them.
+
+# Declaring a trait
+
+A file-level trait takes the rest of the file:
+
+```gd++
+trait_name Damageable
+extends Node3D
+
+func take_damage(amount: int) -> void
+```
+
+An inline trait takes a pair of braces, with `extends` first inside them:
+
+```gd++
+trait Damageable {
+  extends Node3D
+  func take_damage(amount: int) -> void
+}
+```
+
+- Both are the same kind of trait. Files can mix them with classes, externs and other traits. See `gd++ man files`.
+- `extends` is required. It names a Godot class or a GD++ class of the package.
+- A trait can't extend an extern, an enum or another trait.
+- A trait takes a doc comment. Its one annotation is `@group`, see below.
+
+# Functions
+
+A trait only contains functions:
+
+- A function without a body is required: every class that implements the trait defines it.
+- A function with a body is a default: a class that doesn't define it gets a copy.
+- Functions can have a doc comment and `@const`. No other annotations, and no default values for parameters.
+- Anything else, e.g. `var` or `signal`, is an error: "Traits can't contain vars.".
+- A trait can't invoke macros or templates, neither as a member nor in a default's code. Classes in other files copy defaults as they're written.
+
+A default's code runs as the class's own code:
+
+- It can call the trait's other functions, and the class's members.
+- It can call the members of the trait's base class, e.g. `get_global_position()` for a trait that extends `Node3D`.
+- `This` is the class. See `gd++ man code`.
+- Its `#line` directives point to the trait's file, so compiler errors do too.
+
+# Implementing traits
+
+`implements` comes after `extends`, or in its place. It lists traits, with commas, and can come any number of times:
+
+```gd++
+class_name Player
+extends CharacterBody3D
+implements Damageable, Saveable
+implements Named
+```
+
+```gd++
+class Barrel {
+  extends RigidBody3D
+  implements Damageable
+}
+```
+
+- The class must extend the trait's base class: "Class Ghost implements trait Damageable, so it must extend Node3D.".
+- It defines each required function, with the same signature: the same parameter types, the same return type, and `@const` if the trait has it.
+- Implementations can't have default values, `@static`, `@virtual`, `@override`, `@deferred`, `@thread_safe`, `@onthread` or `@private`, since those change the call.
+- Other annotations work, e.g. `@trace`, `@rpc` or `@game_only`.
+- Two traits may have a function of the same name. One function then implements both, if their signatures match.
+- Naming a trait twice is an error, and so is naming one that a base class implements already.
+
+```out
+[×] res://crate.gd++:8:14: Class Crate doesn't implement func take_damage of trait Damageable.
+     8 |   implements Damageable
+       |              ^^^^^^^^^^
+    Hint: Add it to the class: "func take_damage(amount: int) -> void { ... }".
+```
+
+The class's functions:
+
+- The trait's functions are the class's own functions. Godot binds them like the others, so scripts call them, e.g. `crate.take_damage(5)`.
+- A function without a doc comment takes the trait's.
+- Their names share the class's namespace, like all members. See `gd++ man classes`.
+
+# Subclasses
+
+- A subclass implements the traits of its bases. It doesn't name them again.
+- To replace a trait function of a base, a subclass needs `@override`, like for `@virtual` functions:
+
+```gd++
+class BigCrate {
+  extends Crate
+
+  @override
+  func take_damage(amount: int) -> void {
+    hp -= amount / 2;
+  }
+}
+```
+
+- A call through the trait runs the subclass's function.
+- Scripts can't replace a trait function: a call through the trait is a C++ call. To let scripts change what it does, call a `@virtual` function from it. See `gd++ man functions`.
+
+# Using traits
+
+A trait is a type, like a class:
+
+```gd++
+@export var target: Damageable
+
+func pick(targets: Array) -> Damageable {
+  ...
+}
+```
+
+In C++ code, `Trait<Damageable>` names the type:
+
+- It's a `TraitPtr<Damageable>`, or a `TraitRef<Damageable>` if the trait's base is refcounted, which keeps the object alive.
+- `target->take_damage(5)` calls the trait's function.
+- `target.base()` gives the object as its base class, e.g. `Node3D *`, or a `Ref` of a refcounted base.
+- It starts as null, tests as a bool, compares with `==`, and converts to `Variant`.
+- `destroy target` and `queue_destroy target` do what they do for the object's class, e.g. use its pool. See `gd++ man pools`.
+
+Not allowed:
+
+- `create Damageable`, since a trait isn't a class.
+- `Array[Damageable]` and `Dictionary` types with traits. Use a plain `Array`, and cast its values.
+- `Weak[Damageable]`. Use a `Weak` of the base class, and cast it.
+
+What Godot sees:
+
+- A trait value is an object of the trait's base class, in bound functions, signals and properties.
+- `@export var target: Damageable` lets the inspector pick any `Node3D`. One whose class doesn't implement `Damageable` becomes null.
+- A script passes any object. Its class's traits decide what arrives: the object, or null.
+
+# Casts
+
+`as` casts to and from traits:
+
+```
+FROM                         TO               CONVERSION
+a class that implements T    T                static: free
+a trait value                its base class   static: free
+another object or trait      T                checked: null if the object's class doesn't implement T
+a trait value                another class    checked, like any downcast
+Variant                      T                checked
+T                            Variant          the object
+```
+
+```gd++
+Trait<Saveable> saved = target as Trait<Saveable>;   // null if target's class isn't Saveable
+Node3D *node = target as Node3D *;                     // the object
+```
+
+- The check looks up the object's class among the package's classes that implement the trait. It's cheap, but not free: in hot loops, keep the result.
+- An object with a script counts as an object of its GD++ class.
+- A `const` object can't be cast to a trait, since calls through the trait may change it.
+
+See `gd++ man cast`.
+
+# @group
+
+```gd++
+@group("enemies")
+trait Hostile {
+  extends Node3D
+  func attack() -> void
+}
+```
+
+- Every class that implements the trait adds its objects to a group, when they're created.
+- `@group` without a name names the group like the trait, e.g. `Hostile`.
+- Subclasses add theirs too, through the base class's constructor.
+- The group isn't saved in scenes: the constructor adds it each time.
+- Only for traits that extend `Node`, since only nodes are in groups.
+
+```gd++
+TypedArray<Node> enemies = get_tree()->get_nodes_in_group(string_name "enemies");
+for (int64_t i = 0; i < enemies.size(); i++) {
+  Trait<Hostile> enemy = enemies[i] as Trait<Hostile>;
+  if (enemy) {
+    enemy->attack();
+  }
+}
+```
+
+# What GD++ generates
+
+For a trait `Damageable`, GD++ generates `Damageable.h`, with a C++ interface in namespace `godot`:
+
+```cpp
+class Damageable {
+public:
+	using Base = Node3D;
+	virtual ~Damageable() = default;
+	virtual void take_damage(int64_t amount) = 0;
+	virtual int64_t health() const = 0;
+	virtual bool is_dead() = 0;
+	virtual void _gdpp_destroy() = 0;
+	virtual void _gdpp_queue_destroy() = 0;
+};
+```
+
+- A class that implements it derives from it too: `class Crate : public RigidBody3D, public Damageable`.
+- Its functions override the interface's, and a default's copy is one of them.
+- `_gdpp_destroy` and `_gdpp_queue_destroy` let `destroy` and `queue_destroy` reach the class.
+- When Godot loads the library, the registration of each class records its traits, for the checks of `as`.
+
+See `gd++ man generated`.
+
+# See also
+
+`gd++ man classes`, `gd++ man cast`, `gd++ man types`, `gd++ man externs`.

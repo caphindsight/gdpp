@@ -13,8 +13,8 @@ This page covers the lexical structure of GD++: tokens, comments, literals and s
 A file has four kinds of scope:
 
 1. The class declaration scope.
-   - Where: the top of a file, the rest of a file after `class_name` or `extern_name`, and the inside of `class Name { ... }` and `extern Name { ... }`.
-   - Holds: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, `import` and `noimport`, and at the top level, classes and externs.
+   - Where: the top of a file, the rest of a file after `class_name`, `extern_name` or `trait_name`, and the inside of `class Name { ... }`, `extern Name { ... }` and `trait Name { ... }`.
+   - Holds: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, `import` and `noimport`, and at the top level, classes, externs and traits.
    - The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
 2. The property declaration scope.
    - Where: the braces after `var name: type { ... }`.
@@ -81,8 +81,8 @@ Keywords have a special meaning in declarations. Don't use them as names of clas
 
 ```gd++
 annotation  class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern
-extern_name  func  get  impl  import  invoke  macro  macro_library  macro_name  noimport  on  set
-signal  template  template_name  var
+extern_name  func  get  impl  implements  import  invoke  macro  macro_library  macro_name  noimport
+on  set  signal  template  template_name  trait  trait_name  var
 ```
 
 - `code` is a keyword only right before `{`, in a macro's arguments. See `gd++ man macros`.

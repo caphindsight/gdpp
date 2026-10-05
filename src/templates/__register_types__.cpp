@@ -58,6 +58,10 @@ static void gdpp_register_class() {
 	} else {
 		GDREGISTER_CLASS(T);
 	}
+{{- if .Runtime}}
+	// Records the traits that T implements, which casts look up.
+	gdpp::register_traits<T>();
+{{- end}}
 }
 
 static void gdpp_initialize(ModuleInitializationLevel p_level) {

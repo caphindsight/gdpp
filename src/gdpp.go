@@ -321,8 +321,12 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 	for _, f := range files {
 		for _, d := range f.Decls {
 			if f.Rel != self {
-				deps = append(deps, trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, Notifications: d.Notifications,
-					NonRuntime: nonRuntime[d.Name]})
+				dep := trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, Notifications: d.Notifications,
+					NonRuntime: nonRuntime[d.Name], Traits: d.Traits}
+				if d.Kind == trans.TraitDecl { // Its classes check and copy its functions.
+					dep.Source, dep.File = f.Src, f.File.ToString()
+				}
+				deps = append(deps, dep)
 			}
 		}
 	}
@@ -330,7 +334,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 }
 
 // gdppKinds returns the kinds of the declarations in files, following the
-// bases of classes and externs through the files and godot-cpp's names. A
+// bases of classes, externs and traits through the files and godot-cpp's names. A
 // base that can't be resolved counts as Object: transpiling its file then
 // reports it.
 func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Kind {
@@ -357,6 +361,8 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 			kinds[name] = classKind(name, 0)
 		case trans.ExternDecl:
 			kinds[name] = map[trans.Kind]trans.Kind{trans.Object: trans.Extern, trans.RefCounted: trans.RefCountedExtern}[classKind(d.Base, 0)]
+		case trans.TraitDecl:
+			kinds[name] = map[trans.Kind]trans.Kind{trans.Object: trans.Trait, trans.RefCounted: trans.RefCountedTrait}[classKind(d.Base, 0)]
 		default:
 			kinds[name] = trans.Enum
 		}

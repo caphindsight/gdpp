@@ -524,10 +524,17 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 		set("annotations", r.annotationTables(annotations))
 	}
 	// A class or extern, with its members, without invocations.
-	body := func(kind string, doc *Doc, annotations []*Annotation, name string, extends *Type, members []*Member) {
+	body := func(kind string, doc *Doc, annotations []*Annotation, name string, extends *Type, implements []*Type, members []*Member) {
 		head(kind, doc, annotations)
 		setStr("name", name)
 		setType("extends", extends)
+		if len(implements) > 0 {
+			list := r.L.NewTable()
+			for _, i := range implements {
+				list.Append(lua.LString(typeText(i)))
+			}
+			t.RawSetString("implements", list)
+		}
 		var nodes []any
 		for _, m := range members {
 			if m.Invoke == nil {
@@ -625,9 +632,9 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 		}
 		t.RawSetString("values", values)
 	case *Class:
-		body("class", n.Doc, n.Annotations, n.Name, n.Extends, n.Members)
+		body("class", n.Doc, n.Annotations, n.Name, n.Extends, n.Implements, n.Members)
 	case *Extern:
-		body("extern", n.Doc, n.Annotations, n.Name, n.Extends, n.Members)
+		body("extern", n.Doc, n.Annotations, n.Name, n.Extends, nil, n.Members)
 	}
 	t.RawSetString("generated", lua.LBool(by != ""))
 	setStr("generated_by", by)
@@ -1433,12 +1440,36 @@ func (r *run) emitClass(kind string, t *lua.LTable) int {
 	extends, doc := r.optType(what, t, "extends"), r.doc(what, t)
 	item := &topItem{Pos: r.inv.Pos}
 	if kind == "class" {
-		item.Class = &Class{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Members: members}
+		item.Class = &Class{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Implements: r.implements(what, t), Members: members}
 	} else {
+		if t.RawGetString("implements") != lua.LNil {
+			r.L.RaiseError("%s: externs don't implement traits.", what)
+		}
 		item.Extern = &Extern{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Members: members}
 	}
 	r.emit(what, item)
 	return 0
+}
+
+// implements returns the traits in the implements field of t, a list of names.
+func (r *run) implements(what string, t *lua.LTable) []*Type {
+	v := t.RawGetString("implements")
+	if v == lua.LNil {
+		return nil
+	}
+	list, ok := v.(*lua.LTable)
+	if !ok {
+		r.L.RaiseError("%s: implements must be a list of trait names.", what)
+	}
+	var types []*Type
+	for i := 1; i <= list.Len(); i++ {
+		s, ok := list.RawGetInt(i).(lua.LString)
+		if !ok {
+			r.L.RaiseError("%s: implements must be a list of trait names.", what)
+		}
+		types = append(types, r.parseType(what, string(s)))
+	}
+	return types
 }
 
 // enumInt returns v as an integer value.

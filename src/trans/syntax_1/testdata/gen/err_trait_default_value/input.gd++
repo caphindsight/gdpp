@@ -1,0 +1,4 @@
+trait Damageable {
+  extends Node
+  func hit(amount: int = 1) -> void
+}

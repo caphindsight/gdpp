@@ -114,6 +114,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
   - `@onthread` runs a function on a worker thread, and returns an `Async` task with its result.
   - `@onthread("detached")` returns nothing, for work that nobody waits for.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
+- Traits: `trait Name { extends Base ... }` lists functions that classes with any base share, with `implements Name`. `as` casts objects to them. See `gd++ man traits`.
 - Debugging: `@trace` prints calls and changes, and `@profile` times code. See `gd++ man debugging`.
 - Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: `decl`, `impl` and `@global` blocks. See `gd++ man code`.

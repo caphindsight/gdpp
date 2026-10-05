@@ -25,6 +25,7 @@ GD++ has GDScript's export annotations. Each one exports the variable, and most 
 - GD++ enums: a drop-down list of their values. Names are spelled like the editor spells enums: `DIAMONDS` becomes "Diamonds", and `NOT_SET` becomes "Not Set".
 - GD++ bitfields: a checkbox for each value that is a single flag, spelled the same way. See `gd++ man enums`.
 - Externs: a picker that only accepts objects of the extern's class. See `gd++ man externs`.
+- Traits: a picker of the trait's base class. An object whose class doesn't implement the trait becomes null. See `gd++ man traits`.
 
 # Numbers
 

@@ -192,10 +192,10 @@ func (p *printer) items(items []*topItem) {
 		switch {
 		case item.Class != nil:
 			c := item.Class
-			p.body("class", c.Doc, c.Annotations, c.Name, c.Extends, c.Members)
+			p.body("class", c.Doc, c.Annotations, c.Name, c.Extends, c.Implements, c.Members)
 		case item.Extern != nil:
 			e := item.Extern
-			p.body("extern", e.Doc, e.Annotations, e.Name, e.Extends, e.Members)
+			p.body("extern", e.Doc, e.Annotations, e.Name, e.Extends, nil, e.Members)
 		default:
 			p.member(item.Member)
 		}
@@ -203,13 +203,22 @@ func (p *printer) items(items []*topItem) {
 }
 
 // body writes a class or an extern.
-func (p *printer) body(keyword string, doc *Doc, annotations []*Annotation, name string, extends *Type, members []*Member) {
+func (p *printer) body(keyword string, doc *Doc, annotations []*Annotation, name string, extends *Type, implements []*Type, members []*Member) {
 	p.head(doc, annotations)
 	p.write(keyword, " ", name, " {")
 	p.depth++
 	if extends != nil {
 		p.nl()
 		p.write("extends ", typeText(extends))
+	}
+	for i, t := range implements {
+		if i == 0 {
+			p.nl()
+			p.write("implements ")
+		} else {
+			p.write(", ")
+		}
+		p.write(typeText(t))
 	}
 	for _, m := range members {
 		p.nl()

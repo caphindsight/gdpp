@@ -1,0 +1,4 @@
+input.gd++:9:3: Function take_damage doesn't match func take_damage of trait Damageable.
+ 9 |   func take_damage(amount: float) -> void {}
+   |   ^^^^
+Hint: Write it like the trait: "func take_damage(amount: int) -> void".

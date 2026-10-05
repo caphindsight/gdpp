@@ -1,0 +1,4 @@
+input.gd++:6:11: Breakable can't extend Damageable, which is a trait.
+ 6 |   extends Damageable
+   |           ^^^^^^^^^^
+Hint: Traits extend a class, and can't extend each other.

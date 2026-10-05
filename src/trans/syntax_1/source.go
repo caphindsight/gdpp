@@ -45,6 +45,26 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	w.ln("void %s::_bind_methods() {", c.name)
 	u.bindings(w, c)
 	w.ln("}")
+	if len(c.allTraits) > 0 {
+		w.ln("")
+		w.ln("void %s::_gdpp_traits(gdpp::TraitsOf<%s>) {", c.name, c.name)
+		for _, t := range c.allTraits {
+			w.ln("	gdpp::implement<%s, %s>();", t, c.name)
+		}
+		w.ln("}")
+		if !c.refCounted {
+			w.ln("")
+			w.ln("void %s::_gdpp_destroy() {", c.name)
+			w.ln("	gdpp::destroy(this);")
+			w.ln("}")
+		}
+		if u.traitsNeedQueue(c) {
+			w.ln("")
+			w.ln("void %s::_gdpp_queue_destroy() {", c.name)
+			w.ln("	gdpp::queue_destroy(this);")
+			w.ln("}")
+		}
+	}
 	if c.needsCtor() {
 		w.ln("")
 		w.ln("%s::%s() {", c.name, c.name)
@@ -54,6 +74,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		}
 		if c.trace {
 			w.ln("\tgdpp::trace_lifetime(%q, this, true);", c.name)
+		}
+		for _, g := range c.groups {
+			w.ln("\tadd_to_group(GDPP_STRING_NAME(%q));", g)
 		}
 		for _, f := range c.funcs {
 			if r := f.rpc; r != nil {
@@ -730,8 +753,12 @@ func (u *unit) headerNames() (names, complete []string) {
 		complete = append(complete, e.base)
 		addFuncs(e.funcs, e.vars, e.signals)
 	}
+	for _, t := range u.traits {
+		complete = append(complete, t.base)
+		addFuncs(t.funcs, nil, nil)
+	}
 	for _, c := range u.classes {
-		complete = append(complete, c.base)
+		complete = append(append(complete, c.base), c.traits...)
 		add(c.imports...)
 		addFuncs(c.funcs, c.vars, c.signals)
 		for _, f := range c.funcs {

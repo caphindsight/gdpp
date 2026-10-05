@@ -1,1 +1,1 @@
-{Name:Lid Kind:1 Base:Vault Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Lid Kind:1 Base:Vault Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}

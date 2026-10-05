@@ -1,0 +1,9 @@
+trait Damageable {
+  extends Node
+}
+
+class Crate {
+  extends Node
+  implements Damageable
+  implements Damageable
+}

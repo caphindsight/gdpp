@@ -1,0 +1,16 @@
+File: @1:1
+  FileTrait: @2:1
+    Doc: @1:1 Something with a name.
+    Name: Titled
+    Extends: @3:9 Resource
+    Members:
+      - @5:1
+        Func: @5:8
+          Annotations:
+            - @5:1 const
+          Name: title
+          Return: @5:24 String
+  InlineTraits:
+    - @7:1
+      Name: Inner
+      Extends: @8:11 Node

@@ -91,7 +91,7 @@ func (c *CmdTrans) Run() {
 		FailWithText(err)
 	}
 	if len(generated) == 0 {
-		LogInfo("The file declares no classes, externs or enums.")
+		LogInfo("The file declares no classes, externs, traits or enums.")
 	}
 	var text strings.Builder
 	for i, f := range generated {

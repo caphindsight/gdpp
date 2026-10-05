@@ -19,9 +19,18 @@ var stubs = map[string]string{
 	"Difficulty.h": "enum class Difficulty : int64_t {\n\tEASY = 0,\n\tHARD = 5,\n\tINSANE = 6,\n\tCUSTOM = 100,\n};\n",
 	"Road.h": "class Road {\npublic:\n\tusing Base = Node;\n\tstatic constexpr const char *gdpp_name = \"Road\";\n" +
 		"\texplicit Road(Base *p_object) :\n\t\t\t_gdpp_base(p_object) {}\n\nprotected:\n\tBase *_gdpp_base;\n};\n",
+	"Saveable.h": saveableStub,
+	"Named.h":    "class Named {\npublic:\n\tusing Base = RefCounted;\n\tvirtual ~Named() = default;\n\tvirtual String title() const = 0;\n};\n",
+	"Hero.h": saveableStub + "class Hero : public Node3D, public Saveable {\n\tGDCLASS(Hero, Node3D)\n\npublic:\n\tstatic void _gdpp_traits(gdpp::TraitsOf<Hero>) {}\n" +
+		"\tvoid _gdpp_destroy() override {}\n\tvoid _gdpp_queue_destroy() override {}\n\tDictionary save() override { return Dictionary(); }\n" +
+		"\tint64_t slot() const override { return 0; }\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
 	"Settings.h": "class Settings {\npublic:\n\tusing Base = Resource;\n\tstatic constexpr const char *gdpp_name = \"Settings\";\n" +
 		"\texplicit Settings(Base *p_object) :\n\t\t\t_gdpp_base(p_object) {}\n\nprotected:\n\tBase *_gdpp_base;\n};\n",
 }
+
+// saveableStub stands in for the trait Saveable, which Hero.h needs too.
+const saveableStub = "#ifndef GDPP_STUB_SAVEABLE\n#define GDPP_STUB_SAVEABLE\nclass Saveable {\npublic:\n\tusing Base = Node;\n\tvirtual ~Saveable() = default;\n" +
+	"\tvirtual Dictionary save() = 0;\n\tvirtual int64_t slot() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n#endif\n"
 
 // TestCompile checks that the generated goldens compile. It needs a godot-cpp checkout with generated bindings
 // (gen/include), named by GDPP_GODOT_CPP; the compiler is $CXX, or c++.

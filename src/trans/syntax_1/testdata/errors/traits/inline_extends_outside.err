@@ -1,0 +1,4 @@
+errors/traits/inline_extends_outside.gd++:1:14: Expected "{" after the trait name, but found keyword "extends".
+ 1 | trait Titled extends Node {
+   |              ^^^^^^^
+Hint: In an inline trait, "extends" goes inside the braces: "trait Titled { extends ... }".

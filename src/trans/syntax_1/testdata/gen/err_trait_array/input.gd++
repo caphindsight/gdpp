@@ -1,0 +1,8 @@
+trait Damageable {
+  extends Node
+}
+
+class Crate {
+  extends Node
+  var targets: Array[Damageable]
+}

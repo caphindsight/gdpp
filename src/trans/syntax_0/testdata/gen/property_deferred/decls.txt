@@ -1,2 +1,2 @@
-{Name:Hatch Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
-{Name:State Kind:3 Base: Values:[{Name:OPEN Value:0 Doc: Implicit:true Expr:} {Name:CLOSED Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Hatch Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
+{Name:State Kind:3 Base: Values:[{Name:OPEN Value:0 Doc: Implicit:true Expr:} {Name:CLOSED Value:0 Doc: Implicit:true Expr:}] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}

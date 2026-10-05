@@ -1,0 +1,15 @@
+class_name Crate
+extends Node3D
+implements Damageable, Labeled
+implements Saveable
+
+class Box {
+  implements Labeled
+}
+
+class Barrel {
+  extends Node
+  implements Damageable
+  implements Labeled, Saveable
+  var hp: int
+}

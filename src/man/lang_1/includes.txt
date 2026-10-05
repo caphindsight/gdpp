@@ -19,7 +19,7 @@ UtilityFunctions <godot_cpp/variant/utility_functions.hpp>
 memnew           <godot_cpp/core/memory.hpp>
 ```
 
-- It adds the classes, externs and enums of the package's GD++ files, each with its generated header, e.g. `"Player.h"`.
+- It adds the classes, externs, traits and enums of the package's GD++ files, each with its generated header, e.g. `"Player.h"`.
 - The list is cached in the package's build cache.
 - `gd++ doc NAME` shows a name's header.
 
@@ -47,7 +47,7 @@ Facts:
 
 GD++ files can use each other freely, even in cycles: `Player` can have a `var` of type `Enemy`, and `Enemy` one of type `Player`.
 
-- In headers, GD++ declares other GD++ classes, externs and enums ahead (`class Enemy;` or `enum class Suit : int64_t;`), and includes their headers at the end. That breaks the cycle.
+- In headers, GD++ declares other GD++ classes, externs, traits and enums ahead (`class Enemy;` or `enum class Suit : int64_t;`), and includes their headers at the end. That breaks the cycle.
 - A name is included at the top when the header needs its definition: the base class, the types of `@virtual` functions, and names in `decl` blocks.
 - So fields of GD++ class types in `decl` blocks can create include cycles that don't compile. Prefer pointers, and variables declared with `var`.
 
@@ -73,13 +73,13 @@ func tint(mesh: MeshInstance3D) -> void {
 
 - Here, `StandardMaterial3D` is written, so it's included anyway. `Material` is only used through `auto`. Without `import Material`, the compiler may complain about an incomplete type.
 - For an enum, `import` also makes the class expose the enum to Godot. See `gd++ man enums`.
-- Only classes, externs, enums and godot-cpp's other names can be imported. Built-in types, e.g. `int` or `Vector3`, can't, since their headers are always included:
+- Only classes, externs, traits, enums and godot-cpp's other names can be imported. Built-in types, e.g. `int` or `Vector3`, can't, since their headers are always included:
 
 ```out
 [×] res://a.gd++:3:8: Built-in type Vector3 can't be imported.
      3 | import Vector3
        |        ^^^^^^^
-    Hint: Only classes, externs and enums have includes.
+    Hint: Only classes, externs, traits and enums have includes.
 ```
 
 # noimport

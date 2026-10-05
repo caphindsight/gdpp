@@ -1,0 +1,9 @@
+/// Something with a name.
+trait_name Titled
+extends Resource
+
+@const func title() -> String
+
+trait Inner {
+  extends Node
+}

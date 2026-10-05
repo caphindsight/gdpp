@@ -1,0 +1,10 @@
+/// Something that takes damage.
+@group("damageable")
+trait Damageable {
+  extends Node3D
+  func take_damage(amount: int) -> void
+  @const func health() -> int
+  func is_dead() -> bool {
+    return health() <= 0;
+  }
+}

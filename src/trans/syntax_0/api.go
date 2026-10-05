@@ -41,7 +41,7 @@ func ListMacros(filename, src string) ([]meta.Declaration, error) {
 	return decls, nil
 }
 
-// ListClasses returns the classes, externs and enum types that the GD++ source src declares, with what its
+// ListClasses returns the classes, externs, traits and enum types that the GD++ source src declares, with what its
 // invocations of the macros and templates in opts.Dependencies generate.
 func ListClasses(filename, src string, opts meta.Options) ([]meta.Declaration, error) {
 	u, err := parseUnit(filename, src, opts)
@@ -86,6 +86,7 @@ func (u *unit) only(s *symbol) *unit {
 	d.enums = slices.DeleteFunc(slices.Clone(u.enums), func(e *symbol) bool { return e != s })
 	d.classes = slices.DeleteFunc(slices.Clone(u.classes), func(c *classModel) bool { return c.name != s.name })
 	d.externs = slices.DeleteFunc(slices.Clone(u.externs), func(e *externModel) bool { return e.name != s.name })
+	d.traits = slices.DeleteFunc(slices.Clone(u.traits), func(t *traitModel) bool { return t.name != s.name })
 	return &d
 }
 

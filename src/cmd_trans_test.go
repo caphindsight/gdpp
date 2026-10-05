@@ -46,7 +46,7 @@ func TestTrans(t *testing.T) {
 	}
 	var stdout string
 	stderr := captureStderr(t, func() { stdout = captureStdout(t, (&CmdTrans{File: filepath.Join(dir, "empty.gd++")}).Run) })
-	if want := "[-] The file declares no classes, externs or enums.\n"; stdout != "" || stderr != want {
+	if want := "[-] The file declares no classes, externs, traits or enums.\n"; stdout != "" || stderr != want {
 		t.Errorf("stdout, stderr = %q, %q, want \"\", %q", stdout, stderr, want)
 	}
 }
@@ -250,7 +250,7 @@ func TestTransFails(t *testing.T) {
 			"[x] bad.gd++:1:1: Expected a declaration, but found name \"fun\".\n     1 | fun f() {}\n       | ^^^\n    Hint: Did you mean \"func\"?\n"},
 		"semantic error": {CmdTrans{File: "player.gd++"},
 			"[x] player.gd++:3:9: Unknown base class \"Node\".\n     3 | extends Node\n       |         ^^^^\n" +
-				"    Hint: Types are Godot types, or classes, externs and enums from the dependencies or this file.\n"},
+				"    Hint: Types are Godot types, or classes, externs, traits and enums from the dependencies or this file.\n"},
 		"runtime and file":          {CmdTrans{File: "player.gd++", Runtime: true}, "[x] Invalid arguments: --runtime cannot be used with a file.\n"},
 		"no file":                   {CmdTrans{}, "[x] Invalid arguments: missing the GD++ file.\n"},
 		"missing file":              {CmdTrans{File: "missing.gd++"}, "[x] There is no file at missing.gd++.\n"},

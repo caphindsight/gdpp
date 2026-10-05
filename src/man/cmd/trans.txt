@@ -26,7 +26,7 @@ gd++ trans player.gd++
 In a package, the file sees what it would see in a build:
 
 - Godot's classes and enums, from the package's spec and bindings,
-- the classes, externs and enums of the package's other GD++ files,
+- the classes, externs, traits and enums of the package's other GD++ files,
 - the package's C++ classes marked `[ptr]` or `[ref]` (see `gd++ man cpp-classes`).
 
 So the output is what the build compiles, apart from the `#line` directives, which name the file as you passed it.
@@ -40,7 +40,7 @@ Outside of a package:
 Other facts:
 
 - Errors are shown like in a build.
-- If the file declares nothing, it says "The file declares no classes, externs or enums.".
+- If the file declares nothing, it says "The file declares no classes, externs, traits or enums.".
 - With `--invoke`, it only expands the file's macros and templates, and prints the GD++ source that GD++ then parses, instead of the C++.
 
 # Options

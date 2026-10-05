@@ -26,7 +26,10 @@ type unit struct {
 	enums   []*symbol          // Enum types declared in the file.
 	classes []*classModel      // Bases first.
 	externs []*externModel
-	tracing bool // Whether the unit's header defines GDPP_TRACING, so that failed assertions print trace lines.
+	traits  []*traitModel // Traits declared in the file.
+	// Every trait that the file's classes use, by name: those of the file, and of dependencies.
+	traitModels map[string]*traitModel
+	tracing     bool // Whether the unit's header defines GDPP_TRACING, so that failed assertions print trace lines.
 	// The offsets of macro and template invocations, with what each one invokes, e.g. "macro stat". Everything
 	// that an invocation generates is at its offset.
 	generated map[int]string
@@ -56,6 +59,9 @@ type classModel struct {
 	enums      []*symbol // Enums the class exposes its own copy of.
 	imports    []*Type
 	noimports  []*Type
+	traits     []string // The traits it implements itself.
+	allTraits  []string // The traits it implements, those of its bases included, which casts look up.
+	groups     []string // The groups that the @group of its own traits add its objects to.
 
 	// A @pool class's @recycle ctor and dtor blocks, which run when its pool reuses and keeps an object, and also right
 	// after the constructor and before the destructor, unless they have @recycle("only").
@@ -92,6 +98,17 @@ type externModel struct {
 	signals    []*signalModel
 }
 
+// traitModel is a trait: of the file, or of a dependency, which the file's classes implement.
+type traitModel struct {
+	name       string
+	trait      *Trait
+	base       string
+	refCounted bool
+	group      string       // With @group: the group that its classes add their objects to. Else empty.
+	funcs      []*funcModel // Those with a body are defaults.
+	source     string       // For a dependency's trait: how #line names its file.
+}
+
 type funcModel struct {
 	f                                  *Func
 	params                             []*gtype
@@ -112,6 +129,7 @@ type funcModel struct {
 	// The class whose GDVIRTUAL lets scripts override the function: its own for @virtual, a base's for an
 	// @override of a @virtual function. Empty for others.
 	virtualOf string
+	trait     string // For a class's function: the trait whose function it implements, or copies as a default. Else empty.
 }
 
 // rpcModel is the configuration from @rpc, as C++ values. Empty in externs, whose defining class configures it.
@@ -175,6 +193,9 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := checkInvokes(file, src); err != nil {
+		return nil, err
+	}
 	x, err := newExpander(filename, src, file, opts)
 	if err != nil {
 		return nil, err
@@ -194,7 +215,7 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 	declare := func(pos lexer.Position, name string, s *symbol) error {
 		if u.symbols[name] != nil || x.defs[name] != nil && x.defs[name].file == filename {
 			return u.errorAt(pos, 0, fmt.Sprintf("The name %q is declared twice in this file.", name),
-				"Class, extern, enum, macro and template names must be unique in the package.")
+				"Class, extern, trait, enum, macro and template names must be unique in the package.")
 		}
 		s.name, s.include, s.gdpp, s.order = name, `"`+name+`.h"`, true, len(u.symbols)
 		u.symbols[name] = s
@@ -215,6 +236,11 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 	}
 	for _, e := range externs {
 		if err := declare(e.Pos, e.Name, &symbol{extern: e}); err != nil {
+			return nil, err
+		}
+	}
+	for _, t := range fileTraits(file) {
+		if err := declare(t.Pos, t.Name, &symbol{trait: t}); err != nil {
 			return nil, err
 		}
 	}
@@ -290,9 +316,11 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
 				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c),
-				Virtuals: classVirtuals(c), Notifications: ownNotifications(c.Members)})
+				Virtuals: classVirtuals(c), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements)})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
+		case s.trait != nil:
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.TraitDecl, Base: baseName(s.trait.Extends)})
 		default:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.EnumDecl, Base: s.base, Values: s.values, Bitfield: s.bitfield})
 		}
@@ -440,6 +468,14 @@ func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
 			hint = fmt.Sprintf("To add code that runs at its notification, write \"%s\" instead. Only to replace the base's %s, which a script replaces in turn, add @override.", onExample(f.f.Name[1:]), f.f.Name)
 		}
 		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s overrides a virtual function of %s, so it needs @override.", f.f.Name, owner), hint)
+	case !f.virtual && !f.override && owner == "" && u.traitFuncOwner(base, f.f.Name) != "":
+		trait := u.traitFuncOwner(base, f.f.Name)
+		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s overrides func %s of trait %s, which a base of %s implements, so it needs @override.", f.f.Name, f.f.Name, trait, class),
+			"Add @override, or rename the function.")
+	case f.virtual && u.traitFuncOwner(base, f.f.Name) != "":
+		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "virtual" })]
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already a function of trait %s, which a base of %s implements.", f.f.Name, u.traitFuncOwner(base, f.f.Name), class),
+			"Use @override to override it.")
 	case f.final && !gdpp:
 		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "override" })]
 		arg := a.Args[slices.IndexFunc(a.Args, func(arg *Arg) bool { return arg.Value == `"final"` })]
@@ -521,8 +557,78 @@ func (s *symbol) pos() lexer.Position {
 		return s.class.Pos
 	case s.extern != nil:
 		return s.extern.Pos
+	case s.trait != nil:
+		return s.trait.Pos
 	}
 	return s.enum.Pos
+}
+
+// fileTraits returns the traits that file declares: the file-level one first.
+func fileTraits(file *File) []*Trait {
+	if file.FileTrait != nil {
+		return append([]*Trait{file.FileTrait}, file.InlineTraits...)
+	}
+	return file.InlineTraits
+}
+
+// typeNamesOf returns the names of types.
+func typeNamesOf(types []*Type) []string {
+	var names []string
+	for _, t := range types {
+		names = append(names, t.Name)
+	}
+	return names
+}
+
+// checkInvokes reports the invocations in the traits of file, before expansion: a trait's default functions are
+// copied into classes of other files, as plain code.
+func checkInvokes(file *File, src string) error {
+	for _, t := range fileTraits(file) {
+		for _, m := range t.Members {
+			pos := m.Pos
+			switch {
+			case m.Invoke != nil:
+				pos = m.Invoke.Pos
+			case m.Func != nil && m.Func.Body != nil:
+				p, ok := findInvoke(m.Func.Body)
+				if !ok {
+					continue
+				}
+				pos = p
+			default:
+				continue
+			}
+			e := &Error{Pos: pos, Len: len("invoke"), Msg: fmt.Sprintf("Traits can't invoke macros or templates, but trait %s does.", t.Name),
+				Hint: "Classes of other files copy a trait's default functions as they're written. Call a function of the class instead."}
+			return e.withSource(src)
+		}
+	}
+	return nil
+}
+
+// findInvoke returns where the C++ code of b invokes a macro or template: "invoke" followed by "{", or by a name and
+// "(" or "{". Members and scopes, e.g. std::invoke(f), don't count.
+func findInvoke(b *Block) (lexer.Position, bool) {
+	if !strings.Contains(b.Text, "invoke") {
+		return lexer.Position{}, false
+	}
+	l, err := gdppLexer.LexString(b.Pos.Filename, b.Text)
+	if err != nil {
+		return lexer.Position{}, false
+	}
+	tokens, err := lexer.ConsumeAll(l)
+	if err != nil {
+		return lexer.Position{}, false
+	}
+	tokens = significant(tokens)
+	for i, t := range tokens {
+		next, after := at(tokens, i+1), at(tokens, i+2)
+		if t.Type == tokIdent && t.Value == "invoke" && !isPunct(at(tokens, i-1), ".") && !isPunct(at(tokens, i-1), ">") && !isPunct(at(tokens, i-1), ":") &&
+			(isPunct(next, "{") || next.Type == tokIdent && (isPunct(after, "(") || isPunct(after, "{"))) {
+			return shift(t.Pos, b.TextPos, ""), true
+		}
+	}
+	return lexer.Position{}, false
 }
 
 func baseName(t *Type) string {
@@ -551,12 +657,21 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				continue // A duplicate dependency.
 			}
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
-				"Names must differ from Godot's, and from those of the package's other classes, externs and enums.")
+				"Names must differ from Godot's, and from those of the package's other classes, externs, traits and enums.")
 		}
 		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
-			virtuals: d.Virtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime}
+			virtuals: d.Virtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
+		}
+		if d.Kind == meta.Trait || d.Kind == meta.RefCountedTrait {
+			// Its own file reports its errors, so here a broken file counts as a trait without functions.
+			s.depTrait, s.traitSource = &Trait{Name: d.Name}, cmp.Or(d.SourceName, d.File)
+			if f, err := Parse(d.File, d.Source); err == nil {
+				if i := slices.IndexFunc(fileTraits(f), func(t *Trait) bool { return t.Name == d.Name }); i >= 0 {
+					s.depTrait = fileTraits(f)[i]
+				}
+			}
 		}
 		u.symbols[d.Name] = s
 	}
@@ -576,6 +691,14 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 	if err := u.buildExterns(); err != nil {
 		return nil, err
 	}
+	u.traitModels = map[string]*traitModel{}
+	for _, t := range fileTraits(u.file) {
+		m, err := u.traitModel(t.Name)
+		if err != nil {
+			return nil, err
+		}
+		u.traits = append(u.traits, m)
+	}
 	if err := u.buildClasses(); err != nil {
 		return nil, err
 	}
@@ -587,11 +710,14 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	if s.kind != 0 {
 		return s.kind, nil
 	}
-	ext := s.extern != nil
+	ext, trait := s.extern != nil, s.trait != nil
 	what, extends := "Class", (*Type)(nil)
-	if ext {
+	switch {
+	case ext:
 		what, extends = "Extern", s.extern.Extends
-	} else {
+	case trait:
+		what, extends = "Trait", s.trait.Extends
+	default:
 		extends = s.class.Extends
 	}
 	name := baseName(extends)
@@ -603,6 +729,9 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	switch {
 	case slices.Contains(seen, s):
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s %s extends itself through its bases.", what, s.name), "")
+	case trait && extends == nil:
+		return 0, u.errorAt(pos, len("trait"), fmt.Sprintf("Trait %s needs a base class: \"extends Base\".", s.name),
+			"Classes that implement the trait extend its base class, e.g. Node3D. Calls through the trait can use it too.")
 	case b == nil:
 		t := &Type{Pos: pos, Name: name}
 		if extends == nil {
@@ -611,6 +740,9 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 		return 0, u.unknownName(t, "base class")
 	case b.kind == meta.Enum:
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is an enum.", s.name, name), "")
+	case b.isTrait():
+		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is a trait.", s.name, name),
+			map[bool]string{true: "Traits extend a class, and can't extend each other.", false: "Write \"implements " + name + "\" instead."}[trait])
 	case !ext && b.isExtern():
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is an extern.", s.name, name),
 			"Extend the extern's base class instead.")
@@ -626,6 +758,10 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 		kind = meta.RefCountedExtern
 	case ext:
 		kind = meta.Extern
+	case trait && kind == meta.RefCounted:
+		kind = meta.RefCountedTrait
+	case trait:
+		kind = meta.Trait
 	}
 	s.kind = kind
 	return kind, nil
@@ -1114,7 +1250,7 @@ func cppString(s string) string {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "game_only", "global", "icon", "noprofile", "notrace", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "game_only", "global", "group", "icon", "noprofile", "notrace", "onready",
 	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -1136,7 +1272,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
+			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -1467,25 +1603,35 @@ func (u *unit) requireBase(a *Annotation, owner, hint string, bases ...string) e
 	return nil
 }
 
-// extends reports whether the class or extern named owner is one of bases or extends one of them. False if a base
-// along the way isn't known.
+// extends reports whether the class, extern or trait named owner is one of bases or extends one of them. False if
+// a base along the way isn't known.
 func (u *unit) extends(owner string, bases ...string) bool {
 	for name, seen := owner, 0; seen < 100; seen++ {
-		s := u.symbols[name]
 		switch {
 		case slices.Contains(bases, name):
 			return true
-		case s == nil: // Also a dependency whose base isn't known.
+		case u.symbols[name] == nil: // Also a dependency whose base isn't known.
 			return false
-		case s.class != nil:
-			name = baseName(s.class.Extends)
-		case s.extern != nil:
-			name = baseName(s.extern.Extends)
-		default:
-			name = s.base
 		}
+		name = u.baseOf(name)
 	}
 	return true // A cycle, which kindOf reports.
+}
+
+// baseOf returns the base class of the class, extern or trait named name, or "" if it isn't known.
+func (u *unit) baseOf(name string) string {
+	switch s := u.symbols[name]; {
+	case s == nil:
+		return ""
+	case s.class != nil:
+		return baseName(s.class.Extends)
+	case s.extern != nil:
+		return baseName(s.extern.Extends)
+	case s.trait != nil:
+		return baseName(s.trait.Extends)
+	default:
+		return s.base
+	}
 }
 
 // lifecycle adds member, a ctor or dtor block, to class m: the body of its constructor or destructor, or with
@@ -2055,6 +2201,220 @@ func (u *unit) buildExterns() error {
 	return nil
 }
 
+// traitModel returns the trait named name, of the file or of a dependency, checked. A dependency's own file reports
+// its errors, so here the functions with errors are left out.
+func (u *unit) traitModel(name string) (*traitModel, error) {
+	if m := u.traitModels[name]; m != nil {
+		return m, nil
+	}
+	s := u.symbols[name]
+	t, local := s.traitDecl(), s.trait != nil
+	m := &traitModel{name: name, trait: t, base: u.baseOf(name), refCounted: s.kind == meta.RefCountedTrait, source: s.traitSource}
+	u.traitModels[name] = m
+	fail := func(err error) (*traitModel, error) {
+		if local {
+			return nil, err
+		}
+		return m, nil
+	}
+	a, err := u.annotations(slices.DeleteFunc(slices.Clone(t.Annotations), func(a *Annotation) bool { return a.User }), "a trait", "group")
+	if err != nil {
+		return fail(err)
+	}
+	if g := a["group"]; g != nil {
+		m.group = name
+		switch {
+		case len(g.Args) > 1 || len(g.Args) == 1 && !isString(g.Args[0].Value):
+			return fail(u.errorAt(g.Pos, len(g.Name)+1, "Annotation @group takes one group name, in double quotes, e.g. @group(\"enemies\").",
+				"Without a name, the group is named like the trait."))
+		case len(g.Args) == 1:
+			if m.group, err = strconv.Unquote(g.Args[0].Value); err != nil || m.group == "" {
+				return fail(u.errorAt(g.Args[0].Pos, len(g.Args[0].Value), "Annotation @group takes a group name, in double quotes, e.g. @group(\"enemies\").", ""))
+			}
+		}
+		if !u.extends(name, "Node") {
+			return fail(u.errorAt(g.Pos, len(g.Name)+1, fmt.Sprintf("Annotation @group can only be used in traits that extend Node, which %s doesn't.", name),
+				"Only nodes are in groups."))
+		}
+	}
+	names := map[string]bool{}
+	for _, member := range t.Members {
+		if member.Func == nil {
+			if !local {
+				continue
+			}
+			keyword, pos := member.keyword()
+			return nil, u.errorAt(pos, len(keyword), fmt.Sprintf("Traits can't contain %s.", map[string]string{"decl": "decl or impl blocks", "impl": "decl or impl blocks",
+				"ctor": "a ctor", "dtor": "a dtor", "on": "on blocks", "enum": "enums", "import": "imports", "noimport": "imports", "var": "vars", "signal": "signals"}[keyword]),
+				"Traits only declare the funcs that their classes implement.")
+		}
+		f, err := u.buildTraitFunc(member.Func, name)
+		if err == nil {
+			err = u.unique(names, f.f.Pos, "func", f.f.Name)
+		}
+		if err != nil {
+			if local {
+				return nil, err
+			}
+			continue
+		}
+		m.funcs = append(m.funcs, f)
+	}
+	return m, nil
+}
+
+// buildTraitFunc checks f, a function of the trait named owner: only @const, and no default values.
+func (u *unit) buildTraitFunc(f *Func, owner string) (*funcModel, error) {
+	if _, err := u.annotations(f.Annotations, "a trait func", "const"); err != nil {
+		return nil, err
+	}
+	for _, p := range f.Params {
+		if p.Default != nil {
+			return nil, u.errorAt(p.Default.Pos, 1, "Trait functions can't have default values.", "Calls through a trait pass every argument.")
+		}
+	}
+	return u.buildFunc(f, owner, false)
+}
+
+// implement checks that class m implements the traits of its implements clauses, and copies the default functions
+// that it doesn't define. names holds the names of its members.
+func (u *unit) implement(m *classModel, names map[string]bool) error {
+	c := m.cls
+	for i, t := range c.Implements {
+		s := u.symbols[t.Name]
+		_, builtin := builtins[t.Name]
+		switch {
+		case s == nil && !builtin:
+			return u.unknownName(t, "trait")
+		case s == nil || !s.isTrait() || len(t.Args) > 0:
+			return u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Class %s can't implement %s, which is not a trait.", c.Name, typeString(t)),
+				"Only traits are implemented. A class extends one base class.")
+		case slices.ContainsFunc(c.Implements[:i], func(p *Type) bool { return p.Name == t.Name }):
+			return u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Class %s implements trait %s twice.", c.Name, t.Name), "Remove one of them.")
+		}
+		if owner := u.traitOwner(m.base, t.Name); owner != "" {
+			return u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Class %s already implements trait %s through its base class %s.", c.Name, t.Name, owner),
+				"Remove it here: subclasses implement the traits of their bases.")
+		}
+		tm, err := u.traitModel(t.Name)
+		if err != nil {
+			return err
+		}
+		if !u.extends(c.Name, tm.base) {
+			return u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Class %s implements trait %s, so it must extend %s.", c.Name, t.Name, tm.base),
+				fmt.Sprintf("Trait %s extends %s, and so must the classes that implement it.", t.Name, tm.base))
+		}
+		for _, tf := range tm.funcs {
+			i := slices.IndexFunc(m.funcs, func(f *funcModel) bool { return f.f.Name == tf.f.Name && f.hidden == "" && f.calls == nil })
+			if i < 0 && tf.f.Body == nil {
+				return u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Class %s doesn't implement func %s of trait %s.", c.Name, tf.f.Name, t.Name),
+					fmt.Sprintf("Add it to the class: \"%s { ... }\".", signature(tf)))
+			}
+			if i < 0 {
+				// A default: the class gets a copy, whose code runs as its own.
+				f := *tf.f
+				body := *f.Body
+				if tm.source != "" {
+					body.Origin = Origin{Source: tm.source, Line: body.TextPos.Line}
+				}
+				f.Body, f.Pos = &body, t.Pos
+				m.funcs = append(m.funcs, &funcModel{f: &f, params: tf.params, ret: tf.ret, isConst: tf.isConst, trait: t.Name})
+				if err := u.unique(names, t.Pos, "implements", f.Name); err != nil {
+					return err
+				}
+				continue
+			}
+			f := m.funcs[i]
+			banned := slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool {
+				return slices.Contains([]string{"static", "virtual", "override", "deferred", "thread_safe", "onthread", "private"}, a.Name)
+			})
+			same := len(f.params) == len(tf.params) && f.ret.cpp == tf.ret.cpp && f.isConst == tf.isConst &&
+				!slices.ContainsFunc(f.f.Params, func(p *Param) bool { return p.Default != nil })
+			for j := 0; same && j < len(f.params); j++ {
+				same = f.params[j].cpp == tf.params[j].cpp
+			}
+			switch {
+			case banned >= 0:
+				a := f.f.Annotations[banned]
+				return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s implements func %s of trait %s, so it can't have @%s.", f.f.Name, f.f.Name, t.Name, a.Name),
+					"Calls through the trait call it directly. To let scripts override it, call a @virtual function from it.")
+			case !same:
+				return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s doesn't match func %s of trait %s.", f.f.Name, f.f.Name, t.Name),
+					fmt.Sprintf("Write it like the trait: \"%s\".", signature(tf)))
+			}
+			f.trait = cmp.Or(f.trait, t.Name)
+			if f.f.Doc == nil && tf.f.Doc != nil { // Documented like the trait's function.
+				doc := *f.f
+				doc.Doc = tf.f.Doc
+				f.f = &doc
+			}
+		}
+		m.traits = append(m.traits, t.Name)
+		if tm.group != "" {
+			m.groups = append(m.groups, tm.group)
+		}
+	}
+	m.allTraits = slices.Concat(u.traitsOf(m.base), m.traits)
+	return nil
+}
+
+// signature returns how the function f is declared, e.g. "@const func health() -> int".
+func signature(f *funcModel) string {
+	var ps []string
+	for _, p := range f.f.Params {
+		ps = append(ps, p.Name+": "+typeString(p.Type))
+	}
+	s := fmt.Sprintf("func %s(%s) -> %s", f.f.Name, strings.Join(ps, ", "), typeString(f.f.Return))
+	if f.isConst {
+		s = "@const " + s
+	}
+	return s
+}
+
+// traitsOf returns the traits that the class named class implements, those of its bases first.
+func (u *unit) traitsOf(class string) []string {
+	var chain [][]string
+	for name, seen := class, 0; seen < 100; seen++ {
+		s := u.symbols[name]
+		switch {
+		case s == nil:
+			seen = 100
+		case s.class != nil:
+			chain = append(chain, typeNamesOf(s.class.Implements))
+		default:
+			chain = append(chain, s.traits)
+		}
+		name = u.baseOf(name)
+	}
+	slices.Reverse(chain)
+	return slices.Concat(chain...)
+}
+
+// traitOwner returns the class that implements trait: the class named class or one of its bases, or "" if none.
+func (u *unit) traitOwner(class, trait string) string {
+	for name, seen := class, 0; seen < 100 && u.symbols[name] != nil; seen++ {
+		if s := u.symbols[name]; s.class != nil && slices.ContainsFunc(s.class.Implements, func(t *Type) bool { return t.Name == trait }) ||
+			s.class == nil && slices.Contains(s.traits, trait) {
+			return name
+		}
+		name = u.baseOf(name)
+	}
+	return ""
+}
+
+// traitFuncOwner returns the trait with a function named name that the class named class implements, itself or
+// through a base, or "" if none.
+func (u *unit) traitFuncOwner(class, name string) string {
+	for _, t := range u.traitsOf(class) {
+		if s := u.symbols[t]; s != nil && s.traitDecl() != nil && slices.ContainsFunc(s.traitDecl().Members, func(m *Member) bool {
+			return m.Func != nil && m.Func.Name == name
+		}) {
+			return t
+		}
+	}
+	return ""
+}
+
 // unique records the names a member declares, and fails if one is taken.
 func (u *unit) unique(names map[string]bool, pos lexer.Position, keyword string, declared ...string) error {
 	for _, name := range declared {
@@ -2310,6 +2670,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			return nil, err
 		}
 	}
+	if err := u.implement(m, names); err != nil {
+		return nil, err
+	}
 	// The class's @trace leaves out the functions called every frame, which would flood the output. Those are
 	// always in the implicit group named after them without the underscore, process or physics_process.
 	for _, f := range m.funcs {
@@ -2344,7 +2707,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	for _, list := range [][]*Type{m.imports, m.noimports} {
 		for _, t := range list {
 			if _, builtin := builtins[t.Name]; len(t.Args) > 0 || builtin {
-				return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Built-in type %s can't be imported.", typeString(t)), "Only classes, externs and enums have includes.")
+				return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Built-in type %s can't be imported.", typeString(t)), "Only classes, externs, traits and enums have includes.")
 			}
 			if u.symbols[t.Name] == nil {
 				return nil, u.unknownType(t)

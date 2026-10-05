@@ -1,0 +1,4 @@
+errors/traits/trait_name_braces.gd++:2:14: Unexpected "{".
+ 2 | extends Node {
+   |              ^
+Hint: The file-level trait declared with "trait_name" has no braces: its body is the rest of the file. Use "trait Name { ... }" for an inline trait.

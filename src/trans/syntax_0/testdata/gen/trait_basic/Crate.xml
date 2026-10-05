@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Crate" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="find">
+			<return type="Node" />
+			<param index="0" name="target" type="Node3D" />
+			<description>
+			</description>
+		</method>
+		<method name="health" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="hit">
+			<return type="void" />
+			<param index="0" name="body" type="Node3D" />
+			<description>
+			</description>
+		</method>
+		<method name="is_dead">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="label" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="take_damage">
+			<return type="void" />
+			<param index="0" name="amount" type="int" />
+			<description>
+				Takes amount of damage.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="hp" type="int" setter="set_hp" getter="get_hp">
+		</member>
+		<member name="target" type="Node3D" setter="set_target" getter="get_target">
+		</member>
+	</members>
+</class>

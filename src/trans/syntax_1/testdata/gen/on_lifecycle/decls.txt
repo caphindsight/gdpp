@@ -1,1 +1,1 @@
-{Name:Pool Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:true EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[]}
+{Name:Pool Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:true EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}

@@ -1,0 +1,25 @@
+// Functions that classes with any base share.
+@group("damageable")
+trait Damageable {
+  extends Node3D
+  func take_damage(amount: int) -> void
+  func is_alive() -> bool { return true; }
+}
+
+class_name Crate
+extends RigidBody3D
+implements Damageable, Named
+implements Saveable
+
+func take_damage(amount: int) -> void {
+  apply_impulse(Vector3(0, amount, 0));
+}
+
+func _on_body_entered(body: Node3D) -> void {
+  // Checked at runtime: null if the body's
+  // class doesn't implement Damageable.
+  Trait<Damageable> target = body as Trait<Damageable>;
+  if (target) {
+    target->take_damage(10);
+  }
+}

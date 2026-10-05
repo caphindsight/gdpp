@@ -32,10 +32,11 @@ type lsPackage struct {
 // GD++ file with errors.
 type lsClass struct {
 	Name                                 string
-	File, Icon                           Path   // The header of a C++ class, or the GD++ file of a GD++ class.
-	FileText                             string // For GD++ classes, the file's pkg:// path; if empty, File's.
-	Base                                 string // For GD++ classes.
-	Kind                                 string // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
+	File, Icon                           Path     // The header of a C++ class, or the GD++ file of a GD++ class.
+	FileText                             string   // For GD++ classes, the file's pkg:// path; if empty, File's.
+	Base                                 string   // For GD++ classes.
+	Traits                               []string // For GD++ classes: the traits it implements itself.
+	Kind                                 string   // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
 	Gdpp                                 bool
 	Abstract, Tool, GameOnly, EditorOnly bool
 	Clash                                bool // Another class has the same name.
@@ -79,7 +80,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 		for _, d := range f.Decls {
 			if d.Kind == trans.ClassDecl {
 				class := file
-				class.Name, class.Base, class.Icon = d.Name, d.Base, pkg.ClassPath(d.Icon)
+				class.Name, class.Base, class.Traits, class.Icon = d.Name, d.Base, d.Traits, pkg.ClassPath(d.Icon)
 				class.Abstract, class.Tool, class.GameOnly, class.EditorOnly = d.Abstract, d.Tool, d.GameOnly, d.EditorOnly
 				classes = append(classes, class)
 			}
@@ -261,6 +262,9 @@ func lsClassTable(classes []lsClass) string {
 		file, base := lsClassPath(class.File, ""), ""
 		if class.Gdpp {
 			file, base = class.FileText, "extends "+class.Base
+			if len(class.Traits) > 0 {
+				base += " implements " + strings.Join(class.Traits, ", ")
+			}
 		}
 		if i > 0 && class.File == classes[i-1].File {
 			file = ""

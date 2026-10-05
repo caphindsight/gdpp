@@ -1,0 +1,4 @@
+input.gd++:9:3: Function hit implements func hit of trait Damageable, so it can't have @deferred.
+ 9 |   @deferred func hit() -> void {}
+   |   ^^^^^^^^^
+Hint: Calls through the trait call it directly. To let scripts override it, call a @virtual function from it.

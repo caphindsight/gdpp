@@ -1,0 +1,2 @@
+trait Titled extends Node {
+}

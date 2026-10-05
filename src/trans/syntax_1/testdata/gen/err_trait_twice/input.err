@@ -1,0 +1,4 @@
+input.gd++:8:14: Class Crate implements trait Damageable twice.
+ 8 |   implements Damageable
+   |              ^^^^^^^^^^
+Hint: Remove one of them.

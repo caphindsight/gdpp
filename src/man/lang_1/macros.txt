@@ -46,7 +46,7 @@ Facts:
 
 - `macro NAME(params) { Lua }` goes wherever an inline class can go. See `gd++ man files`.
 - Every file of the package can invoke it.
-- Its name shares the package's namespace with classes, externs, enums and templates. It can't be a GD++ or C++ keyword.
+- Its name shares the package's namespace with classes, externs, traits, enums and templates. It can't be a GD++ or C++ keyword.
 - A macro has no doc comment and no annotations: Godot never sees a macro. Use `//` comments.
 - The body is Lua 5.1 code. New to Lua? See `gd++ man lua`.
 - Its braces must balance, also in Lua comments and long strings.
@@ -251,8 +251,8 @@ For the basics of Lua itself: values, tables, loops, functions and strings, see 
 
 Each emitter takes a table, and adds a declaration where the macro was invoked. Fields that hold C++ take a string, a Code value, or a function that writes the C++ with `gd.text`.
 
-gd.class { name, extends, doc, annotations, body }
-  A class. `body` is a function, whose emitters add the class's members.
+gd.class { name, extends, implements, doc, annotations, body }
+  A class. `body` is a function, whose emitters add the class's members. `implements` is a list of trait names, e.g. `{ "Damageable", "Named" }`.
 ```lua
 gd.class { name = "Sword", extends = "Item", annotations = { { "@icon", "res://sword.svg" } }, body = function()
   gd.func { name = "_damage", annotations = { "@override" }, ret = "int", body = "return 10;" }
@@ -260,7 +260,7 @@ end }
 ```
 
 gd.extern { name, extends, doc, annotations, body }
-  An extern, like `gd.class`.
+  An extern, like `gd.class`, without `implements`.
 
 gd.enum { name, extends, doc, annotations, values }
   An enum type. Each value is a name, `{ name, value }`, or `{ name = ..., value = ..., doc = ... }`. A value is an integer, or a string with an expression.
@@ -515,6 +515,7 @@ Facts:
 - In C++ code, it lists all members, generated ones included: C++ code expands after all declarations.
 - Invocations themselves aren't listed.
 - A class or extern at the file's top level has `members` too. Only the written ones: its own invocations expand later.
+- Traits aren't listed. Macros can't generate traits, and can't be invoked in them. See `gd++ man traits`.
 
 Each table has:
 
@@ -531,6 +532,7 @@ Field values:
 - Annotations are names or lists, e.g. `{ "@export_range", 0, 100 }`. Names are written as in GD++, e.g. `"@export"` or `"@@save"`. Their arguments are strings, numbers, booleans, or Code values for other C++. Read them with `gd.annotation`, see "Lua: annotations" above.
 - An enum value is a number, or a string with its expression.
 - An `import` or `noimport` has `type`.
+- A class's `implements` is a list of trait names, in the order of its `implements` clauses, or `nil` if it has none.
 
 The tables have the emitters' fields, so `gd[m.kind](m)` emits a copy of a member. Except:
 

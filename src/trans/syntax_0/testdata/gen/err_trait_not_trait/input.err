@@ -1,0 +1,4 @@
+input.gd++:3:14: Class Crate can't implement Node3D, which is not a trait.
+ 3 |   implements Node3D
+   |              ^^^^^^
+Hint: Only traits are implemented. A class extends one base class.

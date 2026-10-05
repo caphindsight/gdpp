@@ -1,0 +1,5 @@
+class Crate {
+  extends Node
+  implements
+  var x: int
+}

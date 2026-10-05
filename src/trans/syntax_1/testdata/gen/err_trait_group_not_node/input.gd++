@@ -1,0 +1,4 @@
+@group
+trait Saved {
+  extends Resource
+}

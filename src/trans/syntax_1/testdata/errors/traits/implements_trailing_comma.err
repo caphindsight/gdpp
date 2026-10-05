@@ -1,0 +1,4 @@
+errors/traits/implements_trailing_comma.gd++:4:1: Expected a trait name after ",", but found "}".
+ 4 | }
+   | ^
+Hint: Write "implements A, B", without a "," at the end.

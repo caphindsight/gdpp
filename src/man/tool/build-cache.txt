@@ -20,7 +20,7 @@ my_package/.gd++build/
   gdpp/                     the C++ that GD++ generates from the GD++ files
     gd++/syntax_N.hpp       the GD++ runtime header, for syntax N
     Player.h, Player.cpp    a header and a source per class
-    Suit.h                  a header per enum and extern
+    Suit.h                  a header per enum, extern and trait
     doc_classes/Player.xml  a class's documentation, in debug builds
   build/                    what SCons builds: godot-cpp and object files
     godot-cpp/              godot-cpp, compiled, with its generated bindings
@@ -64,7 +64,7 @@ To transpile GD++ code, GD++ must know every name that godot-cpp declares, e.g. 
 
 Each build transpiles every GD++ file of the package into the `gdpp` directory:
 
-- a header per class, extern and enum,
+- a header per class, extern, trait and enum,
 - a source per class,
 - the runtime header.
 

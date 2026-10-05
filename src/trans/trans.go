@@ -32,6 +32,8 @@ const (
 	Template         = meta.Template
 	MacroLibrary     = meta.MacroLibrary
 	Annotation       = meta.Annotation
+	Trait            = meta.Trait
+	RefCountedTrait  = meta.RefCountedTrait
 	ClassDecl        = meta.ClassDecl
 	ExternDecl       = meta.ExternDecl
 	EnumDecl         = meta.EnumDecl
@@ -39,6 +41,7 @@ const (
 	TemplateDecl     = meta.TemplateDecl
 	LibraryDecl      = meta.LibraryDecl
 	AnnotationDecl   = meta.AnnotationDecl
+	TraitDecl        = meta.TraitDecl
 )
 
 // fork is what every syntax fork provides.

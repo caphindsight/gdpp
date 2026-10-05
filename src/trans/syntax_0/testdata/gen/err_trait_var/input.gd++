@@ -1,0 +1,4 @@
+trait Damageable {
+  extends Node
+  var health: int
+}

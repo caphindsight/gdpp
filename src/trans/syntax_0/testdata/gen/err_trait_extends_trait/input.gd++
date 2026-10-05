@@ -1,0 +1,7 @@
+trait Damageable {
+  extends Node
+}
+
+trait Breakable {
+  extends Damageable
+}

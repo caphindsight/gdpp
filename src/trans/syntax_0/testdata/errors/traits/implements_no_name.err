@@ -1,0 +1,4 @@
+errors/traits/implements_no_name.gd++:4:3: Expected a trait name after "implements", but found keyword "var".
+ 4 |   var x: int
+   |   ^^^
+Hint: "var" is a keyword, so it can't be used as a name.

@@ -324,3 +324,29 @@ file = "stack_template.gd++"
 [[dep]]
 name = "shared"
 kind = "Annotation"
+
+[[dep]]
+name = "Saveable"
+include = "\"Saveable.h\""
+kind = "Trait"
+base = "Node"
+gdpp = true
+file = "traits.gd++"
+source_name = "package/traits.gd++"
+
+[[dep]]
+name = "Named"
+include = "\"Named.h\""
+kind = "RefCountedTrait"
+base = "RefCounted"
+gdpp = true
+file = "traits.gd++"
+source_name = "package/traits.gd++"
+
+[[dep]]
+name = "Hero"
+include = "\"Hero.h\""
+kind = "Object"
+base = "Node3D"
+gdpp = true
+traits = ["Saveable"]

@@ -204,6 +204,13 @@ Externs also take `@trace` and `@profile`, which work like a class's on their fu
 
 See `gd++ man externs`.
 
+# Traits
+
+@group(NAME)
+  Every class that implements the trait adds its objects to the group NAME, a string, when they're created. Without NAME, the group is named like the trait. Only for traits that extend `Node`. See "@group" in `gd++ man traits`.
+
+Functions of traits only take `@const`. The functions of a class that implement them can't have `@static`, `@virtual`, `@override`, `@deferred`, `@thread_safe`, `@onthread` or `@private`. See `gd++ man traits`.
+
 # Variables of classes
 
 @onready
@@ -354,6 +361,7 @@ Other facts:
 
 - Enum values, integer constants, `ctor`, `dtor`, `import` and `noimport` take no annotations.
 - Externs themselves only take `@pool`, `@scene`, `@trace` and `@profile`. See "Externs" above.
+- Traits themselves only take `@group`. See "Traits" above.
 
 # Errors
 
@@ -418,4 +426,4 @@ Some GDScript annotations have no GD++ version, since GD++ does the same another
 
 # See also
 
-`gd++ man classes`, `gd++ man functions`, `gd++ man variables`, `gd++ man exports`, `gd++ man externs`, `gd++ man debugging`.
+`gd++ man classes`, `gd++ man functions`, `gd++ man variables`, `gd++ man exports`, `gd++ man externs`, `gd++ man traits`, `gd++ man debugging`.

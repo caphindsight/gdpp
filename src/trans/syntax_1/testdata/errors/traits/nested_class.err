@@ -1,0 +1,4 @@
+errors/traits/nested_class.gd++:3:3: Classes, externs and traits can't be nested, but found keyword "class" inside the body of trait "A".
+ 3 |   class B {}
+   |   ^^^^^
+Hint: Move it out to the top level of the file. Inline classes, externs and traits are listed next to each other.

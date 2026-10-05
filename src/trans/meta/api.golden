@@ -69,3 +69,8 @@ const MacroLibrary Kind = 10
 const LibraryDecl DeclKind = 6
 const Annotation Kind = 11
 const AnnotationDecl DeclKind = 7
+const Trait Kind = 12
+const RefCountedTrait Kind = 13
+field Dependency.Traits []string
+const TraitDecl DeclKind = 8
+field Declaration.Traits []string

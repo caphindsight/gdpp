@@ -1,0 +1,4 @@
+input.gd++:8:14: Class Crate doesn't implement func take_damage of trait Damageable.
+ 8 |   implements Damageable
+   |              ^^^^^^^^^^
+Hint: Add it to the class: "func take_damage(amount: int) -> void { ... }".

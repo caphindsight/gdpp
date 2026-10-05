@@ -1,0 +1,8 @@
+macro log(text) { gd.text("") }
+
+trait Damageable {
+  extends Node
+  func hit() -> void {
+    invoke log("hit");
+  }
+}

@@ -48,7 +48,7 @@ Facts:
 
 - `template NAME(params) { GD++ }` goes wherever an inline class can go. See `gd++ man files`.
 - Every file of the package can invoke it.
-- Its name shares the package's namespace with classes, externs, enums and macros. It can't be a GD++ or C++ keyword.
+- Its name shares the package's namespace with classes, externs, traits, enums and macros. It can't be a GD++ or C++ keyword.
 - A template has no doc comment and no annotations: Godot never sees a template. Use `//` comments.
 - Its braces must balance.
 

@@ -1,0 +1,4 @@
+input.gd++:12:14: Class BigCrate already implements trait Damageable through its base class Crate.
+ 12 |   implements Damageable
+    |              ^^^^^^^^^^
+Hint: Remove it here: subclasses implement the traits of their bases.
