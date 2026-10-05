@@ -74,3 +74,4 @@ const RefCountedTrait Kind = 13
 field Dependency.Traits []string
 const TraitDecl DeclKind = 8
 field Declaration.Traits []string
+field Options.Implementers map[string][]string

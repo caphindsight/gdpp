@@ -333,6 +333,33 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 	return append(deps, macroDeps(files, self)...)
 }
 
+// traitImplementers returns, for each trait of files, the sorted names of the
+// classes of files that implement it, themselves or through a base.
+func traitImplementers(files []gdppFile) map[string][]string {
+	classes := map[string]trans.Declaration{}
+	for _, d := range fileDecls(files) {
+		if d.Kind == trans.ClassDecl {
+			classes[d.Name] = d
+		}
+	}
+	implementers := map[string][]string{}
+	for name := range classes {
+		seen := map[string]bool{} // Also stops at cycles, which transpiling reports.
+		for d, ok := classes[name]; ok && !seen[d.Name]; d, ok = classes[d.Base] {
+			seen[d.Name] = true
+			for _, t := range d.Traits {
+				if !slices.Contains(implementers[t], name) {
+					implementers[t] = append(implementers[t], name)
+				}
+			}
+		}
+	}
+	for _, names := range implementers {
+		slices.Sort(names)
+	}
+	return implementers
+}
+
 // gdppKinds returns the kinds of the declarations in files, following the
 // bases of classes, externs and traits through the files and godot-cpp's names. A
 // base that can't be resolved counts as Object: transpiling its file then
@@ -403,7 +430,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	syntax := pkg.Config.Syntax
 	spec := readSpec(pkg.BuildCache.Cd("extension_api.json"))
 	names = append(slices.Clip(names), cppClassNames(pkg)...)
-	nonRuntime := nonRuntimeClasses(pkg, fileDecls(files))
+	nonRuntime, implementers := nonRuntimeClasses(pkg, fileDecls(files)), traitImplementers(files)
 	check := func(text string, err error) string {
 		if err != nil {
 			FailWithText(err)
@@ -418,6 +445,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 		// #line names the GD++ file's copy, relative to the build cache, where SCons runs, like it names C++ sources.
 		// So do the templates of other files, whose C++ code keeps its lines.
 		opts := packageOptions(pkg, packageDeps(files, names, spec, f.Rel, nonRuntime))
+		opts.Implementers = implementers
 		opts.SourceName = copies[f.File.ToString()]
 		for i, d := range opts.Dependencies {
 			if d.Source != "" {

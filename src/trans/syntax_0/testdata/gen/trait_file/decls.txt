@@ -1,1 +1,2 @@
 {Name:Titled Kind:8 Base:Resource Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
+{Name:Book Kind:1 Base:Resource Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[Titled]}

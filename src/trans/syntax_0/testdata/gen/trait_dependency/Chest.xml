@@ -20,4 +20,10 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="label" type="RefCounted" setter="set_label" getter="get_label">
+		</member>
+		<member name="next" type="Node" setter="set_next" getter="get_next">
+		</member>
+	</members>
 </class>

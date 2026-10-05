@@ -2056,6 +2056,16 @@ func (u *unit) exportHint(m *varModel) error {
 				m.hint = "PROPERTY_HINT_FLAGS"
 			}
 		}
+		// The inspector only offers the classes that implement the trait. With none, it offers any of its base class.
+		if t := m.t.trait; t != "" && len(u.implementers(t)) > 0 {
+			switch {
+			case u.extends(t, "Node"):
+				m.hint = "PROPERTY_HINT_NODE_TYPE"
+			case u.extends(t, "Resource"):
+				m.hint = "PROPERTY_HINT_RESOURCE_TYPE"
+			}
+			m.hintString = strings.Join(u.implementers(t), ",")
+		}
 	case "export_storage":
 		m.usage = "PROPERTY_USAGE_STORAGE"
 	case "export_range":
@@ -2356,6 +2366,19 @@ func (u *unit) implement(m *classModel, names map[string]bool) error {
 	}
 	m.allTraits = slices.Concat(u.traitsOf(m.base), m.traits)
 	return nil
+}
+
+// implementers returns the sorted names of the classes that implement trait, themselves or through a base: those of
+// the package, from opts.Implementers, and those of the file.
+func (u *unit) implementers(trait string) []string {
+	names := slices.Clone(u.opts.Implementers[trait])
+	for _, s := range u.symbols {
+		if s.class != nil && slices.Contains(u.traitsOf(s.name), trait) {
+			names = append(names, s.name)
+		}
+	}
+	slices.Sort(names)
+	return slices.Compact(names)
 }
 
 // signature returns how the function f is declared, e.g. "@const func health() -> int".

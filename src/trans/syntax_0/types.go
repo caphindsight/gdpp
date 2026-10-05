@@ -72,6 +72,7 @@ type gtype struct {
 	enum  *symbol // Set for enums.
 	async *gtype  // For Async types: the type of the result.
 	weak  bool    // Whether it's a Weak type.
+	trait string  // For traits: the trait's name.
 	void  bool
 }
 
@@ -154,9 +155,9 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 	case meta.RefCountedExtern:
 		return &gtype{cpp: "gdpp::ExtRef<" + s.name + ">", doc: s.name}, nil
 	case meta.Trait:
-		return &gtype{cpp: "gdpp::TraitPtr<" + s.name + ">", doc: u.baseOf(s.name)}, nil
+		return &gtype{cpp: "gdpp::TraitPtr<" + s.name + ">", doc: u.baseOf(s.name), trait: s.name}, nil
 	case meta.RefCountedTrait:
-		return &gtype{cpp: "gdpp::TraitRef<" + s.name + ">", doc: u.baseOf(s.name)}, nil
+		return &gtype{cpp: "gdpp::TraitRef<" + s.name + ">", doc: u.baseOf(s.name), trait: s.name}, nil
 	case meta.Enum:
 		return &gtype{cpp: s.name, doc: "int", enum: s}, nil
 	case meta.GodotEnum:

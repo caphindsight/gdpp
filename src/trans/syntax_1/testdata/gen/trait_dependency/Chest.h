@@ -8,9 +8,15 @@
 
 namespace godot {
 
+class Named;
+
 #define This Chest
 class Chest : public Node, public Saveable {
 	GDCLASS(Chest, Node)
+
+public:
+	gdpp::TraitPtr<Saveable> next{};
+	gdpp::TraitRef<Named> label{};
 
 public:
 	Chest();
@@ -19,6 +25,10 @@ public:
 	void _gdpp_queue_destroy() override;
 	Dictionary save() override;
 	int64_t slot() const override;
+	gdpp::TraitPtr<Saveable> get_next() const;
+	void set_next(gdpp::TraitPtr<Saveable> p_value);
+	gdpp::TraitRef<Named> get_label() const;
+	void set_label(gdpp::TraitRef<Named> p_value);
 
 protected:
 	static void _bind_methods();
@@ -26,3 +36,5 @@ protected:
 #undef This
 
 } // namespace godot
+
+#include "Named.h"

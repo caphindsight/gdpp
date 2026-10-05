@@ -18,7 +18,7 @@ void Crate::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("hp", PROPERTY_USAGE_NONE), "set_hp", "get_hp");
 	ClassDB::bind_method(D_METHOD("get_target"), &Crate::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Crate::set_target);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::TraitPtr<Damageable>>("target", PROPERTY_USAGE_DEFAULT), "set_target", "get_target");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::TraitPtr<Damageable>>("target", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_NODE_TYPE, "BigCrate,Crate"), "set_target", "get_target");
 }
 
 void Crate::_gdpp_traits(gdpp::TraitsOf<Crate>) {

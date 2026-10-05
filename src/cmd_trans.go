@@ -78,6 +78,7 @@ func (c *CmdTrans) Run() {
 	}
 	// Flags come first, so they win over other dependencies of the same name.
 	opts.Dependencies = append(c.flagDependencies(), packageDeps(files, append(names, cppClasses...), spec, self, nonRuntime)...)
+	opts.Implementers = traitImplementers(files)
 	if c.Invoke {
 		text, err := trans.Expand(c.File, file.ReadString(), c.transOptions(opts), syntax)
 		if err != nil {

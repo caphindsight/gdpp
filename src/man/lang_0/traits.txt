@@ -170,7 +170,11 @@ Not allowed:
 What Godot sees:
 
 - A trait value is an object of the trait's base class, in bound functions, signals and properties.
-- `@export var target: Damageable` lets the inspector pick any `Node3D`. One whose class doesn't implement `Damageable` becomes null.
+- `@export var target: Damageable` lets the inspector pick only objects of the package's classes that implement `Damageable`, their subclasses included, and of scripts that extend them.
+  - For a trait that extends `Node`, the node picker accepts only those nodes. For one that extends `Resource`, the resource picker offers only those classes.
+  - With no class that implements the trait yet, it accepts any object of the trait's base class.
+  - The build lists the classes from all the package's files. Adding `implements` in one file changes the inspector of the others.
+  - An object set another way, e.g. by a script, still becomes null if its class doesn't implement the trait.
 - A script passes any object. Its class's traits decide what arrives: the object, or null.
 
 # Casts

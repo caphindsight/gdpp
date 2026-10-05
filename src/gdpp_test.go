@@ -246,6 +246,30 @@ func TestTranspilePackageExternBases(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageTraits(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"a.gd++": "trait_name Damageable\nextends Node\nfunc hit() -> void\nfunc alive() -> bool {\n  return true;\n}\n",
+		"b.gd++": "class_name Crate\nextends Node\nimplements Damageable\nfunc hit() -> void {}\n",
+		"c.gd++": "class_name BigCrate\nextends Crate\n",
+		"d.gd++": "class_name Gun\nextends Node\n@export var target: Damageable\n",
+	})
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
+	for file, want := range map[string]string{
+		"Damageable.h": "virtual bool alive() = 0;",
+		"Crate.h":      "class Crate : public Node, public Damageable {",
+		"Crate.cpp":    "return true;",
+		"BigCrate.cpp": "gdpp::implement<Damageable, BigCrate>();",
+		"Gun.cpp":      `PROPERTY_HINT_NODE_TYPE, "BigCrate,Crate")`,
+	} {
+		if !strings.Contains(gen[file], want) {
+			t.Errorf("%s = %s\nwant it to contain %q", file, gen[file], want)
+		}
+	}
+}
+
 func TestTranspilePackageCppClasses(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
 		"boss.gd++":     "class_name Boss\nextends Enemy\non ready {}\n",

@@ -10,6 +10,11 @@ class Chest {
   extends Node
   implements Saveable
 
+  // Chest and Knight, and the package's other classes that implement Saveable.
+  @export var next: Saveable
+  // No class implements Named: any RefCounted.
+  @export var label: Named
+
   func save() -> Dictionary {
     return Dictionary();
   }

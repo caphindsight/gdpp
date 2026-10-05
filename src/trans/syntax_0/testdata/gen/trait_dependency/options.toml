@@ -1,0 +1,2 @@
+[implementers]
+Saveable = ["Vault", "Hero"]
