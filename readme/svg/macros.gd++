@@ -7,18 +7,25 @@ on physics_process(delta: float) {
 
 // Lua code that generates code. An advanced
 // feature: use it sparingly.
-macro state_machine(states) {
-  // An enum of the states.
-  gd.enum { name = "State",
-    values = gd.map(states, gd.upper_snake) }
-  gd.var { name = "state", type = "State" }
+macro state_machine(initial, states) {
+  // An enum of the states, and the current one.
+  gd.enum { name = state_enum(),
+    values = gd.keys(states) }
+  gd.var { name = "state", type = state_enum(),
+    init = state_value(initial) }
+  // Each state's update returns the next state.
+  for s, update in pairs(states) do
+    gd.func { name = "update_" .. gd.snake(s),
+      ret = state_enum(), annotations = { "private" },
+      body = update }
+  end
   // Runs the current state's update.
   gd.func { name = "state_machine_tick", ret = "void",
     annotations = { "private" },
     body = function()
       gd.text("switch (state) {\n")
-      for _, s in ipairs(states) do
-        gd.text("case State::" .. gd.upper_snake(s)
+      for s in pairs(states) do
+        gd.text("case " .. state_value(s)
           .. ": state = update_" .. gd.snake(s)
           .. "(); break;\n")
       end
@@ -26,16 +33,27 @@ macro state_machine(states) {
     end }
 }
 
-invoke state_machine([Patrol, Chase])
-
-// Wanders until it sees the player.
-@private
-func update_patrol() -> State {
-  return sees_player() ? State::CHASE : State::PATROL;
+// A macro library: Lua functions for every macro.
+macro {
+  // E.g. "SlimeState" in class Slime.
+  function state_enum()
+    return ctx.class .. "State"
+  end
+  // E.g. "SlimeState::CHASE" for CHASE.
+  function state_value(s)
+    return state_enum() .. "::" .. s
+  end
 }
 
-// Follows the player until it loses sight of them.
-@private
-func update_chase() -> State {
-  return sees_player() ? State::CHASE : State::PATROL;
-}
+invoke state_machine(PATROL, {
+  // Wanders until it sees the player.
+  PATROL = code {
+    return sees_player()
+      ? SlimeState::CHASE : SlimeState::PATROL;
+  },
+  // Follows the player until it loses sight of them.
+  CHASE = code {
+    return sees_player()
+      ? SlimeState::CHASE : SlimeState::PATROL;
+  },
+})
