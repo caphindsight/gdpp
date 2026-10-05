@@ -193,13 +193,13 @@ func (p Path) IsProjectRoot() bool {
 }
 
 // IsPackageRoot reports whether the path is a directory containing a
-// gd++pkg.toml file.
+// .gd++pkg.toml file.
 func (p Path) IsPackageRoot() bool {
 	return p.IsDir() && p.Cd(packageFileName).IsFile()
 }
 
 // IsCacheDir reports whether the path is one of GD++'s cache directories: a
-// project's res://_gd++proj or res://.gd++proj, or a package's build cache.
+// project's res://_gd++ or res://.gd++proj, or a package's build cache.
 func (p Path) IsCacheDir() bool {
 	switch p.Name() {
 	case checkedInDepsDirName, ephemeralDepsDirName:

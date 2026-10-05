@@ -42,9 +42,9 @@ func TestLoadProject(t *testing.T) {
 		GodotVersion: "4.3",
 		Config:       DefaultProjectConfig(),
 		Caches: []ProjectDepCache{
-			{DepKind{"bind", "Godot C++ bindings", "Godot C++ bindings"}, root.Cd("_gd++proj/bind"), root.Cd(".gd++proj/bind")},
-			{DepKind{"spec", "Godot API spec", "Godot API specs"}, root.Cd("_gd++proj/spec"), root.Cd(".gd++proj/spec")},
-			{DepKind{"engine", "Godot engine", "Godot engines"}, root.Cd("_gd++proj/engine"), root.Cd(".gd++proj/engine")},
+			{DepKind{"bind", "Godot C++ bindings", "Godot C++ bindings"}, root.Cd("_gd++/bind"), root.Cd(".gd++proj/bind")},
+			{DepKind{"spec", "Godot API spec", "Godot API specs"}, root.Cd("_gd++/spec"), root.Cd(".gd++proj/spec")},
+			{DepKind{"engine", "Godot engine", "Godot engines"}, root.Cd("_gd++/engine"), root.Cd(".gd++proj/engine")},
 		},
 	}
 	if got := LoadProject(NewPath("/games/my_game/src")); !reflect.DeepEqual(got, want) {
@@ -84,7 +84,7 @@ func TestLoadProjectConfigUnknownKey(t *testing.T) {
 		return
 	}
 	out, code := runFailHelper(t, "TestLoadProjectConfigUnknownKey")
-	if want := "[x] Unknown key build in res://gd++proj.toml.\n"; code != 1 || out != want {
+	if want := "[x] Unknown key build in res://.gd++proj.toml.\n"; code != 1 || out != want {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }

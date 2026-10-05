@@ -28,7 +28,7 @@ func TestParseDepIndex(t *testing.T) {
 func TestDepIndexTable(t *testing.T) {
 	withTTY(t, false)
 	withMemFS(t, "/", map[string]string{
-		"/p/_gd++proj/spec/4.9-stable/a":  "a",
+		"/p/_gd++/spec/4.9-stable/a":      "a",
 		"/p/.gd++proj/spec/4.10-stable/b": "b",
 	})
 	cache := newProjectDepCache(NewPath("/p"), DepKind{"spec", "spec", "spec"})
@@ -159,11 +159,11 @@ func TestFetchDeps(t *testing.T) {
 
 	captureStderr(t, (&CmdFetch{Url: url, Branch: "main", Spec: []string{"latest", "4.4-stable"}, CheckIn: true}).Run)
 
-	got, err := os.ReadFile(filepath.Join(root, "_gd++proj/spec/4.4-stable/a.json"))
+	got, err := os.ReadFile(filepath.Join(root, "_gd++/spec/4.4-stable/a.json"))
 	if err != nil || string(got) != "4.4" {
 		t.Errorf("a.json = %q, %v, want %q", got, err, "4.4")
 	}
-	for _, p := range []string{stale, filepath.Join(root, "_gd++proj/spec/4.3-stable"), filepath.Join(root, ".gd++proj/temp")} {
+	for _, p := range []string{stale, filepath.Join(root, "_gd++/spec/4.3-stable"), filepath.Join(root, ".gd++proj/temp")} {
 		if _, err := os.Stat(p); err == nil {
 			t.Errorf("%s exists, want it gone", p)
 		}

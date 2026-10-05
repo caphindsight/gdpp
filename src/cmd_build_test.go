@@ -200,7 +200,7 @@ func TestGenerateBuildCacheState(t *testing.T) {
 
 	// Same id and config but classes: nothing is cleaned or synced, even if the bindings changed.
 	NewPath("/games/my_game/.gd++proj/bind/4.3/SConstruct").WriteString("edited")
-	m.nodes["/games/my_game/src/pkg/gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `name = "Hidden"`, `name = "Shown"`, 1))
+	m.nodes["/games/my_game/src/pkg/.gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `name = "Hidden"`, `name = "Shown"`, 1))
 	m.nodes["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"] = &memNode{}
 	generate()
 	tree := m.tree()
@@ -214,7 +214,7 @@ func TestGenerateBuildCacheState(t *testing.T) {
 	// Other config: cleaned, libraries included, and synced again.
 	m.nodes["/games/my_game/.gd++proj/spec/4.4/extension_api.json"] = &memNode{data: []byte("{4.4}")}
 	m.nodes["/games/my_game/.gd++proj/spec/4.4"] = &memNode{dir: true}
-	m.nodes["/games/my_game/src/pkg/gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `spec = "4.3"`, `spec = "4.4"`, 1))
+	m.nodes["/games/my_game/src/pkg/.gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `spec = "4.3"`, `spec = "4.4"`, 1))
 	m.nodes["/games/my_game/src/pkg/.gd++pkg/a.o"] = &memNode{}
 	generate()
 	tree = m.tree()

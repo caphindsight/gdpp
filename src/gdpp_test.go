@@ -344,7 +344,7 @@ func TestTranspilePackageFails(t *testing.T) {
 		"duplicate macro": {map[string]string{"a.gd++": "macro twin() {\n}\n", "b.gd++": "template twin() {\n}\n"},
 			"[x] The name twin is declared in both res://src/pkg/a.gd++ and res://src/pkg/b.gd++.\n"},
 		"config clash": {map[string]string{"enemy.gd++": "class Enemy {}\n"},
-			"[x] Class Enemy is declared in res://src/pkg/enemy.gd++ and in res://src/pkg/gd++pkg.toml.\n"},
+			"[x] Class Enemy is declared in res://src/pkg/enemy.gd++ and in res://src/pkg/.gd++pkg.toml.\n"},
 		"class of tasks clash": {map[string]string{"a.gd++": "class PkgAsync {\n  @onthread\n  func f() -> void {}\n}\n"},
 			"[x] Class PkgAsync is declared in res://src/pkg/a.gd++, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res://src/pkg --prefix NAME`.\n"},
 		"syntax error": {map[string]string{"bad.gd++": "fun f() {}\n"},

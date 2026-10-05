@@ -455,7 +455,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 
 // packageFiles returns the paths of the package's files with the given
 // extensions, relative to its root. Like ListPackages, it skips hidden
-// directories, res://_gd++proj and nested Godot projects, and also nested
+// directories, res://_gd++ and nested Godot projects, and also nested
 // packages, whose files are their own.
 func packageFiles(p Project, pkg Package, exts ...string) []string {
 	var sources []string

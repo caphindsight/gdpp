@@ -42,7 +42,7 @@ func TestEditExcludeFilter(t *testing.T) {
 		{"*.txt, " + all, false, "*.txt"},
 		{"*.cpp, *.txt,docs/*", false, "*.txt,docs/*"},
 		{"*.txt,, *.cpp,  docs/* ", false, "*.txt,,  docs/*"}, // others keep their formatting
-		{"*.cpp,*.txt,, gd++pkg.toml", false, "*.txt,"},
+		{"*.cpp,*.txt,, .gd++pkg.toml", false, "*.txt,"},
 	}
 	for _, tc := range cases {
 		if got := editExcludeFilter(tc.value, tc.want); got != tc.out {

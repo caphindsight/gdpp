@@ -28,7 +28,7 @@ gd++ vendor --spec my-4.7 --from my-4.7 --checkin
 ```
 
 - `gd++ vendor` copies the directory into the project's cache, as the spec `my-4.7`.
-- `--checkin` puts it in the checked in cache, `res://_gd++proj`, which you commit.
+- `--checkin` puts it in the checked in cache, `res://_gd++`, which you commit.
 - Nobody can download this spec. So the repository is where your team gets it.
 
 See `gd++ man vendor` and `gd++ man dependencies`.
@@ -72,7 +72,7 @@ and a teammate adds them with `gd++ vendor --bind my-godot-cpp --from ~/my-godot
 # 5. Share it
 
 ```sh
-git add _gd++proj gd++pkg.toml
+git add _gd++ .gd++pkg.toml
 ```
 
 A teammate who pulls gets the spec with the repository. So `gd++ fetch --missing` only downloads what's left, e.g. official bindings. See `gd++ man team-git`.

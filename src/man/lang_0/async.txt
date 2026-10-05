@@ -362,7 +362,7 @@ Godot sees every `Async` as an object of one class of the package: the class of 
 - Its name is the package's prefix followed by `Async`.
 - GD++ provides it: you don't write it.
 - A package gets one when its GD++ classes use `Async`: an `@onthread` function, or an `Async` type in a variable, a signal, or a function's parameters or return type. Other packages don't register it.
-- The prefix is set in `gd++pkg.toml`. It defaults to the package's id in PascalCase, e.g. `MyGame` for `my_game`, giving `MyGameAsync`.
+- The prefix is set in `.gd++pkg.toml`. It defaults to the package's id in PascalCase, e.g. `MyGame` for `my_game`, giving `MyGameAsync`.
 - Set it with `gd++ init PATH --update --prefix NAME`. See `gd++ man packages`.
 
 ```toml

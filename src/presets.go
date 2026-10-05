@@ -11,7 +11,9 @@ import (
 
 // presetExcludes are GD++'s exclude filters. Godot matches a filter against
 // the whole res:// path, with or without "res://", and its * matches "/" too.
-// The caches need none: Godot skips hidden and .gdignore'd directories.
+// The caches need none: Godot skips directories that are hidden or have a
+// .gdignore file. The config files do: on Windows, Godot only skips files
+// with the hidden attribute, not those whose name starts with ".".
 var presetExcludes = func() []string {
 	var filters []string
 	for _, ext := range slices.Concat(gdppExtensions, cppExtensions) {

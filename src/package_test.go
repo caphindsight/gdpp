@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// withPackages returns testProjectTree plus the given gd++pkg.toml files,
+// withPackages returns testProjectTree plus the given .gd++pkg.toml files,
 // keyed by package directory relative to the project root.
 func withPackages(pkgs map[string]string) map[string]string {
 	tree := maps.Clone(testProjectTree)
@@ -91,16 +91,16 @@ func TestLoadPackageFails(t *testing.T) {
 	tests := []struct {
 		name, config, want string
 	}{
-		{"MissingBind", `spec = "b"`, "[x] Missing key bind in res://pkg/gd++pkg.toml.\n"},
-		{"MissingSpec", `bind = "a"`, "[x] Missing key spec in res://pkg/gd++pkg.toml.\n"},
-		{"UnknownKey", "bind = \"a\"\nspec = \"b\"\njobs = 4\n", "[x] Unknown key jobs in res://pkg/gd++pkg.toml.\n"},
-		{"ClassName", classes(`name = "a-b"`), "[x] Invalid class name \"a-b\" in res://pkg/gd++pkg.toml.\n"},
-		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[x] Duplicate class A in res://pkg/gd++pkg.toml.\n"},
-		{"QuitTimeout", "bind = \"a\"\nspec = \"b\"\nquit_timeout = -1.5\n", "[x] Invalid quit_timeout -1.5 in res://pkg/gd++pkg.toml: it can't be negative.\n"},
-		{"MacroDepth", "bind = \"a\"\nspec = \"b\"\nmacro_depth = 0\n", "[x] Invalid macro_depth 0 in res://pkg/gd++pkg.toml: it must be positive.\n"},
-		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[x] Path a.svg of class A in res://pkg/gd++pkg.toml must start with pkg:// or res://.\n"},
-		{"ClassKind", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nkind = \"val\""), "[x] Invalid kind \"val\" of class A in res://pkg/gd++pkg.toml: it must be ptr or ref.\n"},
-		{"ClassKindInclude", classes(`name = "A"` + "\nkind = \"ptr\""), "[x] Class A in res://pkg/gd++pkg.toml has kind ptr, which requires an include.\n"},
+		{"MissingBind", `spec = "b"`, "[x] Missing key bind in res://pkg/.gd++pkg.toml.\n"},
+		{"MissingSpec", `bind = "a"`, "[x] Missing key spec in res://pkg/.gd++pkg.toml.\n"},
+		{"UnknownKey", "bind = \"a\"\nspec = \"b\"\njobs = 4\n", "[x] Unknown key jobs in res://pkg/.gd++pkg.toml.\n"},
+		{"ClassName", classes(`name = "a-b"`), "[x] Invalid class name \"a-b\" in res://pkg/.gd++pkg.toml.\n"},
+		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[x] Duplicate class A in res://pkg/.gd++pkg.toml.\n"},
+		{"QuitTimeout", "bind = \"a\"\nspec = \"b\"\nquit_timeout = -1.5\n", "[x] Invalid quit_timeout -1.5 in res://pkg/.gd++pkg.toml: it can't be negative.\n"},
+		{"MacroDepth", "bind = \"a\"\nspec = \"b\"\nmacro_depth = 0\n", "[x] Invalid macro_depth 0 in res://pkg/.gd++pkg.toml: it must be positive.\n"},
+		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[x] Path a.svg of class A in res://pkg/.gd++pkg.toml must start with pkg:// or res://.\n"},
+		{"ClassKind", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nkind = \"val\""), "[x] Invalid kind \"val\" of class A in res://pkg/.gd++pkg.toml: it must be ptr or ref.\n"},
+		{"ClassKindInclude", classes(`name = "A"` + "\nkind = \"ptr\""), "[x] Class A in res://pkg/.gd++pkg.toml has kind ptr, which requires an include.\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -152,12 +152,12 @@ func TestListPackagesRoot(t *testing.T) {
 func TestListPackages(t *testing.T) {
 	config := "bind = \"a\"\nspec = \"b\"\n"
 	withMemFS(t, "/", withPackages(map[string]string{
-		"b":             config,
-		"a/deep/pkg":    config,
-		"b/nested":      config, // inside a package: listed too
-		".hidden":       config, // hidden: skipped
-		"_gd++proj/pkg": config, // checked in caches: skipped
-		"other":         config, // gets a project.godot below: skipped
+		"b":          config,
+		"a/deep/pkg": config,
+		"b/nested":   config, // inside a package: listed too
+		".hidden":    config, // hidden: skipped
+		"_gd++/pkg":  config, // checked in caches: skipped
+		"other":      config, // gets a project.godot below: skipped
 	}))
 	NewPath("/games/my_game/other").Cd(projectFileName).WriteString("")
 

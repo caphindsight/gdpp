@@ -215,8 +215,8 @@ Package-wide, from `gd++ build`:
 
 ```
 The name Player is declared in both res://a.gd++ and res://b.gd++.
-Class Spinner is declared in res://spinner.gd++ and in res://gd++pkg.toml.
-Class MyGameAsync is declared in res://gd++pkg.toml, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res:// --prefix NAME`.
+Class Spinner is declared in res://spinner.gd++ and in res://.gd++pkg.toml.
+Class MyGameAsync is declared in res://.gd++pkg.toml, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res:// --prefix NAME`.
 ```
 
 # C++ compiler errors

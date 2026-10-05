@@ -176,7 +176,7 @@ template inventory(first, second) {
 
 - Holes run in the same sandbox as macros: no I/O, nothing random.
 - An invocation may run for 20 seconds at most. `gd++ build --macro-timeout SECONDS` and `gd++ trans --macro-timeout SECONDS` change the limit.
-- Invocations nest at most 64 levels deep, e.g. a template whose output invokes a template. A package changes the limit with `macro_depth` in `gd++pkg.toml`, see `gd++ man packages`.
+- Invocations nest at most 64 levels deep, e.g. a template whose output invokes a template. A package changes the limit with `macro_depth` in `.gd++pkg.toml`, see `gd++ man packages`.
 
 # Errors
 

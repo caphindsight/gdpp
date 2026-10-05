@@ -95,7 +95,7 @@ Sometimes you want a Godot class written the usual godot-cpp way, e.g. code port
 gd++ init . --class Spinner --include pkg://src/spinner.h
 ```
 
-- This lists the class in `gd++pkg.toml`. The next build registers it with Godot, next to the GD++ classes.
+- This lists the class in `.gd++pkg.toml`. The next build registers it with Godot, next to the GD++ classes.
 - Don't register it yourself, and don't define an entry point: GD++ does both.
 - Add `--tool` if its code must run in the editor too.
 - Add `--ptr` or `--ref` to use it from GD++ code. See section 5.

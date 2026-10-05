@@ -36,17 +36,17 @@ Facts:
 
 # 2. Keep sources out of the export
 
-GD++ keeps your GD++ and C++ sources, `gd++pkg.toml` and `gd++proj.toml` out of the exported game. It adds these to "Filters to exclude files/folders from project" of every preset in `res://export_presets.cfg`:
+GD++ keeps your GD++ and C++ sources, `.gd++pkg.toml` and `.gd++proj.toml` out of the exported game. It adds these to "Filters to exclude files/folders from project" of every preset in `res://export_presets.cfg`:
 
 ```
-*.gd++, *.gdpp, *.gg, *.c, *.cc, *.cpp, *.cxx, *.c++, *.h, *.hh, *.hpp, *.hxx, *.h++, *.inl, gd++proj.toml, gd++pkg.toml, */gd++pkg.toml
+*.gd++, *.gdpp, *.gg, *.c, *.cc, *.cpp, *.cxx, *.c++, *.h, *.hh, *.hpp, *.hxx, *.h++, *.inl, .gd++proj.toml, .gd++pkg.toml, */.gd++pkg.toml
 ```
 
 - `gd++ build` and `gd++ fix` do it, and log "Updated res://export_presets.cfg." when they change the file.
 - They only add and remove GD++'s own filters. The rest of the list is yours.
 - You build before you export (step 1), so new presets get the filters too.
 - After you create a preset without building, run `gd++ fix`.
-- The caches never get in: Godot doesn't see hidden directories, like `.gd++proj` and `.gd++pkg`, or directories with a `.gdignore` file, like `_gd++proj`.
+- The caches never get in: Godot skips directories whose name starts with ".", like `.gd++proj` and `.gd++pkg`, or directories with a `.gdignore` file, like `_gd++`.
 
 To manage the filters yourself:
 

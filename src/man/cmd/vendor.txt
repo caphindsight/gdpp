@@ -34,7 +34,7 @@ See `gd++ man dependencies`.
   Copy out of the cache to PATH: a directory, or with `--tar` or `--zip`, an archive. Exactly one of `--from` and `--to` is required.
 
 --checkin
-  With `--from`, copy into the checked in cache, `res://_gd++proj`, instead of the ephemeral one.
+  With `--from`, copy into the checked in cache, `res://_gd++`, instead of the ephemeral one.
 
 --tar
   PATH is a gzip-compressed tarball (`.tar.gz` or `.tgz`) instead of a directory.

@@ -57,14 +57,14 @@ func TestVendorFromDirCheckIn(t *testing.T) {
 	m := withVendorFS(t, extra)
 	withForce(t, true)
 	(&CmdVendor{Bind: "4.3", From: "/src", CheckIn: true}).Run()
-	wantDep(t, m, "/games/my_game/_gd++proj/bind/4.3/")
+	wantDep(t, m, "/games/my_game/_gd++/bind/4.3/")
 	if NewPath("/games/my_game/.gd++proj/bind/4.3").Exists() {
 		t.Errorf("ephemeral copy of the dep was not moved")
 	}
 }
 
 func TestVendorToExistingDir(t *testing.T) {
-	extra := withPrefix("/games/my_game/_gd++proj/engine/4.3/", testDep)
+	extra := withPrefix("/games/my_game/_gd++/engine/4.3/", testDep)
 	extra["/out/stale"] = "x"
 	m := withVendorFS(t, extra)
 	withForce(t, true)
@@ -86,7 +86,7 @@ func TestVendorArchiveRoundTrip(t *testing.T) {
 			out.Run()
 			in.Spec, in.From, in.CheckIn = "4.4", file, true
 			in.Run()
-			wantDep(t, m, "/games/my_game/_gd++proj/spec/4.4/")
+			wantDep(t, m, "/games/my_game/_gd++/spec/4.4/")
 		})
 	}
 }

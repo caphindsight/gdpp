@@ -290,7 +290,7 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 	switch {
 	case depth >= x.maxDepth():
 		return nil, x.invocationError(inv, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
-			"A macro or template probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in gd++pkg.toml.")
+			"A macro or template probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in .gd++pkg.toml.")
 	case def == nil:
 		return nil, x.unknown(inv)
 	case len(inv.Annotations) > 0:
@@ -574,7 +574,7 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) 
 	switch {
 	case depth >= x.maxDepth():
 		return "", x.invocationError(inv, fmt.Sprintf("Invocations are nested more than %d levels deep here.", x.maxDepth()),
-			"A macro probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in gd++pkg.toml.")
+			"A macro probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in .gd++pkg.toml.")
 	case def.m.Template:
 		return "", x.invocationError(inv, fmt.Sprintf("Template %s can't be used in C++ code, since templates generate declarations.", inv.Name),
 			"Invoke it where declarations go, or use a macro that generates C++ with gd.text.")

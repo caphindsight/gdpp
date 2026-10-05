@@ -11,7 +11,7 @@ import (
 )
 
 // DepKind is a kind of dep. Its Name is both its cache directory name and
-// its command line flag, e.g. "spec" for res://_gd++proj/spec and --spec.
+// its command line flag, e.g. "spec" for res://_gd++/spec and --spec.
 type DepKind struct {
 	Name, Desc, Plural string // e.g. "spec", "Godot API spec", "Godot API specs"
 }
@@ -34,7 +34,7 @@ type ProjectDepCache struct {
 }
 
 // newProjectDepCache returns the cache of kind's deps stored under
-// res://_gd++proj/<name> (checked in) and res://.gd++proj/<name> (ephemeral).
+// res://_gd++/<name> (checked in) and res://.gd++proj/<name> (ephemeral).
 func newProjectDepCache(root Path, kind DepKind) ProjectDepCache {
 	return ProjectDepCache{
 		DepKind:      kind,

@@ -23,7 +23,7 @@ gd++ vendor --spec my-4.7 --from ~/specs/my-4.7
 
 # Paths in config files
 
-`gd++pkg.toml` and the `@icon` annotation store paths too. They must be `res://` or `pkg://` paths, so they don't depend on where you run `gd++`:
+`.gd++pkg.toml` and the `@icon` annotation store paths too. They must be `res://` or `pkg://` paths, so they don't depend on where you run `gd++`:
 
 - `res://`: the root of the project that contains the package.
 - `pkg://`: the root of the package itself.
@@ -45,7 +45,7 @@ A project is a directory with a `project.godot` file.
 
 # Finding the package
 
-A package is a directory with a `gd++pkg.toml` file. It must be inside a project.
+A package is a directory with a `.gd++pkg.toml` file. It must be inside a project.
 
 - Commands that work on one package, e.g. `build`, `clean` and `doc`, take an optional path.
 - They use the package that contains it: the path itself if it's a package root, or else its nearest parent that is one.
@@ -72,6 +72,6 @@ Otherwise, they fail with "There is no GD++ package at ...".
 When `gd++` walks a project, to find packages or source files, it skips:
 
 - Hidden files and directories, whose names start with ".", e.g. `.godot`, `.git` and `.gd++proj`.
-- The checked in dependency cache, `res://_gd++proj`.
+- The checked in dependency cache, `res://_gd++`.
 - Nested Godot projects: directories with their own `project.godot` file, and everything in them.
 - When it collects one package's files: nested packages, since their files belong to them.

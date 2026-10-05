@@ -10,7 +10,7 @@ gd++ checkin -a [--undo]
 
 # Description
 
-- Moves dependencies from the ephemeral cache, `res://.gd++proj`, to the checked in cache, `res://_gd++proj`, which you commit to version control.
+- Moves dependencies from the ephemeral cache, `res://.gd++proj`, to the checked in cache, `res://_gd++`, which you commit to version control.
 - With `--undo`, moves them back, so they're ephemeral again.
 - Packages find their dependencies in either cache, so builds don't change.
 - A dependency already in the right cache stays there, with a warning. Its copy in the other cache, if any, is deleted.
@@ -55,7 +55,7 @@ Commit the spec of a custom Godot build, so your team gets it with the repositor
 
 ```sh
 gd++ checkin --spec my-4.7
-git add _gd++proj
+git add _gd++
 ```
 
 Check in all the project's dependencies:

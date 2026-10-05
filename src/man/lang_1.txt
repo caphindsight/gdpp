@@ -8,7 +8,7 @@ SYNTAX   STATUS
 
 - Syntax 1 is the first stable version. It's not meant to change, but the language is young, so treat it as experimental.
 - Later syntax versions are expected to be stable in practice, not just in theory.
-- A package chooses its syntax version with `syntax` in its `gd++pkg.toml`. See "Syntax versions" below.
+- A package chooses its syntax version with `syntax` in its `.gd++pkg.toml`. See "Syntax versions" below.
 
 GD++ is a small language that compiles to plain C++. Its one goal: make C++ for Godot easy. This page is an overview. Each part has its own page, listed at the end.
 
@@ -128,7 +128,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 
 # Syntax versions
 
-A package's `gd++pkg.toml` says which language version its GD++ files use, e.g. `syntax = 1`.
+A package's `.gd++pkg.toml` says which language version its GD++ files use, e.g. `syntax = 1`.
 
 - Stable versions, 1 and up, never change. Language changes come in a new version, and you choose when to upgrade.
 - Syntax 0, the nightly version, may break your code with any new `gd++`. Never use it in production.

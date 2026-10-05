@@ -76,8 +76,8 @@ Project:
 
 - The name from `project.godot`, and the project's id (its directory name) in brackets.
 - The Godot version from `project.godot`.
-- The `vcs` setting from `gd++proj.toml`.
-- With `-a`, also "Manage presets": the `presets` setting from `gd++proj.toml`, "yes" or "no". See `gd++ man projects`.
+- The `vcs` setting from `.gd++proj.toml`.
+- With `-a`, also "Manage presets": the `presets` setting from `.gd++proj.toml`, "yes" or "no". See `gd++ man projects`.
 
 Dependencies:
 
@@ -104,9 +104,9 @@ Classes, a table with a row per class:
   - `@abstract`: it's only a base for other classes.
   - `@tool`: it runs in the editor too. Without it, it's a runtime class.
   - `@game_only`, `@editor_only` and `@icon`.
-  - For GD++ classes, tags come from annotations. For C++ classes, from `gd++pkg.toml`.
+  - For GD++ classes, tags come from annotations. For C++ classes, from `.gd++pkg.toml`.
   - Debugging annotations, like `@trace` and `@profile`, aren't shown.
-- Order: the C++ classes from `gd++pkg.toml` first, those without a header first, then the classes of each GD++ file, in order.
+- Order: the C++ classes from `.gd++pkg.toml` first, those without a header first, then the classes of each GD++ file, in order.
 - A missing header or icon is marked "(missing)".
 - A class declared twice is marked "declared twice".
 - A GD++ file with errors gets its own row at the end, marked "has errors", since its classes can't be read. Run `gd++ build`, or `gd++ trans` on the file, to see the error.

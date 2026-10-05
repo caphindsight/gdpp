@@ -19,7 +19,7 @@ Targets:
 
 The Godot version:
 
-- Each library needs at least the Godot version of its package's API spec, the `spec` in `gd++pkg.toml`.
+- Each library needs at least the Godot version of its package's API spec, the `spec` in `.gd++pkg.toml`.
 - Export with that Godot version, or a newer one.
 - To reach players on older Godot versions, e.g. for an addon, build against an older spec. See `gd++ man upgrade`.
 

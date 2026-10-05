@@ -25,7 +25,7 @@ func runInit(t *testing.T, c CmdInit, pkgs map[string]string) (out string, after
 func TestInitProject(t *testing.T) {
 	out, after := runInit(t, CmdInit{Vcs: "git"}, nil)
 	want := "" +
-		"[-] Created res://gd++proj.toml.\n" +
+		"[-] Created res://.gd++proj.toml.\n" +
 		"[-] Set the VCS to git.\n" +
 		"[-] Created res://.gitignore.\n" +
 		"[-] Success!\n"
@@ -68,7 +68,7 @@ func TestInitProjectVcsNone(t *testing.T) {
 func TestInitProjectNoVcsChange(t *testing.T) {
 	// Only a change of VCS touches the .gitignore files.
 	out, after := runInit(t, CmdInit{Vcs: "none"}, nil)
-	if want := "[-] Created res://gd++proj.toml.\n[-] Success!\n"; out != want {
+	if want := "[-] Created res://.gd++proj.toml.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if _, ok := after[gitignoreFileName]; ok {
@@ -99,7 +99,7 @@ func TestInitProjectPresets(t *testing.T) {
 		want   string
 		config string
 	}{
-		{CmdInit{NoPresets: true}, "[-] Created res://gd++proj.toml.\n[-] Set the export preset filters to off.\n[-] Success!\n", "vcs = \"none\"\npresets = false\n"},
+		{CmdInit{NoPresets: true}, "[-] Created res://.gd++proj.toml.\n[-] Set the export preset filters to off.\n[-] Success!\n", "vcs = \"none\"\npresets = false\n"},
 		{CmdInit{Presets: true}, "[-] Set the export preset filters to on.\n[-] Success!\n", "vcs = \"none\"\npresets = true\n"},
 	} {
 		if out := captureStderr(t, tc.c.Run); out != tc.want {
@@ -118,7 +118,7 @@ func TestInitProjectPresets(t *testing.T) {
 func TestInitNewPackage(t *testing.T) {
 	out, after := runInit(t, CmdInit{Path: "src/pkg", Bind: "4.3", Spec: "4.3", Std: "c++17"}, nil)
 	want := "" +
-		"[-] Created res://src/pkg/gd++pkg.toml.\n" +
+		"[-] Created res://src/pkg/.gd++pkg.toml.\n" +
 		"[!] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n" +
 		"[-] Success!\n"
 	if out != want {
@@ -148,7 +148,7 @@ func TestInitNewPackageGit(t *testing.T) {
 func TestInitRootPackage(t *testing.T) {
 	out, after := runInit(t, CmdInit{Path: ".", Bind: "4.3", Spec: "4.3"}, nil)
 	want := "" +
-		"[-] Created res://gd++pkg.toml.\n" +
+		"[-] Created res://.gd++pkg.toml.\n" +
 		"[!] Missing Godot API spec 4.3, run `gd++ fetch --missing` to fix this.\n" +
 		"[-] Success!\n"
 	if out != want {

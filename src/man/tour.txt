@@ -35,7 +35,7 @@ A package is a directory whose code builds into one GDExtension library. For a s
 gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
 ```
 
-This writes `gd++pkg.toml`:
+This writes `.gd++pkg.toml`:
 
 ```toml
 bind = "10.0.0-stable"

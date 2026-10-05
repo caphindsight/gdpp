@@ -61,13 +61,13 @@ See `gd++ man packages`.
 
 # Registering it
 
-Godot can only use a registered class. List the class in `gd++pkg.toml` with `gd++ init`:
+Godot can only use a registered class. List the class in `.gd++pkg.toml` with `gd++ init`:
 
 ```sh
 gd++ init . --class Spinner --include pkg://src/spinner.h --icon pkg://icons/spinner.svg
 ```
 
-This adds to `gd++pkg.toml`:
+This adds to `.gd++pkg.toml`:
 
 ```toml
 [[class]]
@@ -178,8 +178,8 @@ The class of tasks:
 # Mixing C++ and GD++
 
 - C++ and GD++ classes live side by side in one package, and are registered together.
-- Their names must differ, or the build fails with "Class Spinner is declared in ... and in ...gd++pkg.toml.".
-- A GD++ class can't be added to `gd++pkg.toml`: it's declared in its GD++ file. `gd++ init --class` refuses it.
+- Their names must differ, or the build fails with "Class Spinner is declared in ... and in .../.gd++pkg.toml.".
+- A GD++ class can't be added to `.gd++pkg.toml`: it's declared in its GD++ file. `gd++ init --class` refuses it.
 - GD++ code knows Godot's classes and the package's GD++ classes. It knows a C++ class only if it's marked `[ptr]` or `[ref]`. See "Using a C++ class from GD++" below.
 
 An unmarked C++ class:

@@ -1,4 +1,4 @@
-// package.go: Package, a GD++ package described by its gd++pkg.toml file.
+// package.go: Package, a GD++ package described by its .gd++pkg.toml file.
 
 package main
 
@@ -10,7 +10,7 @@ import (
 )
 
 // Package is a GD++ package: a directory inside a project with a
-// gd++pkg.toml file.
+// .gd++pkg.toml file.
 type Package struct {
 	Root       Path
 	Id         string // name of the root directory
@@ -18,7 +18,7 @@ type Package struct {
 	BuildCache Path // <root>/.gd++pkg
 }
 
-// PackageConfig holds the settings from a package's gd++pkg.toml.
+// PackageConfig holds the settings from a package's .gd++pkg.toml.
 type PackageConfig struct {
 	Bindings    string         `toml:"bind"` // mandatory
 	ApiSpec     string         `toml:"spec"` // mandatory
@@ -273,7 +273,7 @@ func LoadPackageAt(root Path) Package {
 
 // ListPackages returns all packages in the project, including the root and
 // packages nested in other packages, sorted by path. It skips hidden
-// directories, res://_gd++proj, and nested Godot projects.
+// directories, res://_gd++, and nested Godot projects.
 func (p *Project) ListPackages() []Package {
 	var pkgs []Package
 	var walk func(dir Path)

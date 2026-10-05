@@ -24,13 +24,13 @@ The example game has three packages:
 ```
 res://
   project.godot
-  gd++pkg.toml             the game: player, enemies, UI
+  .gd++pkg.toml            the game: player, enemies, UI
   player.gd++
   world/
-    gd++pkg.toml           terrain generation
+    .gd++pkg.toml          terrain generation
     terrain.gd++
   addons/inventory/
-    gd++pkg.toml           an inventory, shared with other games
+    .gd++pkg.toml          an inventory, shared with other games
     inventory.gd++
 ```
 

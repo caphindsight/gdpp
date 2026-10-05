@@ -13,8 +13,8 @@ gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noic
 
 `gd++ init` does one of three things, depending on its arguments:
 
-- Without PATH, it sets up GD++ in the project that contains the current directory: it writes `res://gd++proj.toml`.
-- With PATH, it creates or updates the package at PATH: it writes `PATH/gd++pkg.toml`.
+- Without PATH, it sets up GD++ in the project that contains the current directory: it writes `res://.gd++proj.toml`.
+- With PATH, it creates or updates the package at PATH: it writes `PATH/.gd++pkg.toml`.
 - With PATH and `--class`, it adds or updates a C++ class of the package at PATH.
 
 Output:
@@ -28,7 +28,7 @@ Output:
 gd++ init [--vcs none|git] [--presets | --nopresets]
 ```
 
-Writes `res://gd++proj.toml`, with the project's settings. See `gd++ man projects`.
+Writes `res://.gd++proj.toml`, with the project's settings. See `gd++ man projects`.
 
 --vcs none|git
   The project's version control system.
@@ -42,7 +42,7 @@ Writes `res://gd++proj.toml`, with the project's settings. See `gd++ man project
 --nopresets
   Make the next `gd++ build` or `gd++ fix` remove GD++'s exclude filters from every preset. After that, GD++ doesn't touch `res://export_presets.cfg`.
 
-- Without options, it creates `gd++proj.toml` with the defaults, or reformats it.
+- Without options, it creates `.gd++proj.toml` with the defaults, or reformats it.
 - The file is optional. You only need this step to change a setting.
 
 # Creating a package
@@ -51,7 +51,7 @@ Writes `res://gd++proj.toml`, with the project's settings. See `gd++ man project
 gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS]
 ```
 
-- Creates the directory PATH if needed, and writes `PATH/gd++pkg.toml`.
+- Creates the directory PATH if needed, and writes `PATH/.gd++pkg.toml`.
 - PATH must be inside a project.
 - `.` makes the current directory a package, e.g. the project root.
 - If the project uses git, it also writes the package-level block into `PATH/.gitignore`.
@@ -114,7 +114,7 @@ gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--abstract | --noabstract] [--ptr | --ref | --nogdpp] [--update]
 ```
 
-- Adds the plain C++ class NAME to the `gd++pkg.toml` of the package at PATH, so the package registers it with Godot.
+- Adds the plain C++ class NAME to the `.gd++pkg.toml` of the package at PATH, so the package registers it with Godot.
 - Updates the class if it's there already.
 - GD++ classes don't need this: GD++ finds them in the GD++ files, and refuses to add them here.
 

@@ -10,9 +10,9 @@ import (
 
 func TestProjectDepCache(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
-		"/p/_gd++proj/bind/1.0/a.h": "a",
+		"/p/_gd++/bind/1.0/a.h":     "a",
 		"/p/.gd++proj/bind/2.0/b.h": "b",
-		"/p/_gd++proj/bind/stray":   "not a dep",
+		"/p/_gd++/bind/stray":       "not a dep",
 	})
 	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})
 
@@ -31,7 +31,7 @@ func TestProjectDepCache(t *testing.T) {
 	if !c.IsCheckedIn("2.0") || c.IsEphemeral("2.0") {
 		t.Errorf("CheckIn() did not move 2.0")
 	}
-	if got := NewPath("/p/_gd++proj/bind/2.0/b.h").ReadString(); got != "b" {
+	if got := NewPath("/p/_gd++/bind/2.0/b.h").ReadString(); got != "b" {
 		t.Errorf("b.h = %q, want %q", got, "b")
 	}
 
@@ -70,9 +70,9 @@ func TestCompareDepNames(t *testing.T) {
 
 func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
-		"/p/_gd++proj/bind/1.0/a.h": "checked in",
+		"/p/_gd++/bind/1.0/a.h":     "checked in",
 		"/p/.gd++proj/bind/1.0/a.h": "ephemeral",
-		"/p/_gd++proj/bind/2.0/a.h": "checked in",
+		"/p/_gd++/bind/2.0/a.h":     "checked in",
 		"/p/.gd++proj/bind/2.0/a.h": "ephemeral",
 	})
 	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})
@@ -82,7 +82,7 @@ func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 	if c.IsEphemeral("1.0") || c.IsCheckedIn("2.0") {
 		t.Errorf("copy in the wrong cache was not deleted")
 	}
-	for path, want := range map[string]string{"/p/_gd++proj/bind/1.0/a.h": "checked in", "/p/.gd++proj/bind/2.0/a.h": "ephemeral"} {
+	for path, want := range map[string]string{"/p/_gd++/bind/1.0/a.h": "checked in", "/p/.gd++proj/bind/2.0/a.h": "ephemeral"} {
 		if got := NewPath(path).ReadString(); got != want {
 			t.Errorf("%s = %q, want %q", path, got, want)
 		}
@@ -90,7 +90,7 @@ func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 }
 
 func TestProjectDepCacheCreatesMissingDirs(t *testing.T) {
-	withMemFS(t, "/", map[string]string{"/p/_gd++proj/spec/4.3/api.json": "{}"})
+	withMemFS(t, "/", map[string]string{"/p/_gd++/spec/4.3/api.json": "{}"})
 	c := newProjectDepCache(NewPath("/p"), DepKind{"spec", "spec", "spec"})
 
 	c.MakeEphemeral("4.3")

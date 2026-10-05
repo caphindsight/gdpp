@@ -19,13 +19,13 @@ type Project struct {
 	Caches       []ProjectDepCache // one per kind of dep, in the order of depKinds
 }
 
-// ProjectConfig holds the GD++ settings from res://gd++proj.toml.
+// ProjectConfig holds the GD++ settings from res://.gd++proj.toml.
 type ProjectConfig struct {
 	VCS     string `toml:"vcs"`
 	Presets bool   `toml:"presets"` // whether GD++'s exclude filters are kept in the export presets
 }
 
-// DefaultProjectConfig returns the config used when res://gd++proj.toml
+// DefaultProjectConfig returns the config used when res://.gd++proj.toml
 // doesn't exist.
 func DefaultProjectConfig() ProjectConfig {
 	return ProjectConfig{VCS: "none", Presets: true}

@@ -10,10 +10,10 @@ Dependencies are big, versioned downloads from Godot that packages build with.
 Each kind has a short name, used in directory names and command options, e.g. `gd++ fetch --spec 4.7.2-stable`.
 
 bind: Godot C++ bindings
-  godot-cpp, the C++ library that GDExtensions are built with: its source code, and its tools that generate the C++ API from a spec. Every package names its bindings in `gd++pkg.toml`, e.g. `bind = "10.0.0-stable"`.
+  godot-cpp, the C++ library that GDExtensions are built with: its source code, and its tools that generate the C++ API from a spec. Every package names its bindings in `.gd++pkg.toml`, e.g. `bind = "10.0.0-stable"`.
 
 spec: Godot API specs
-  `extension_api.json`: every class, method, property and constant of one Godot version, as written by Godot's `--dump-extension-api` option. Every package names its spec in `gd++pkg.toml`, e.g. `spec = "4.7.2-stable"`. The spec decides:
+  `extension_api.json`: every class, method, property and constant of one Godot version, as written by Godot's `--dump-extension-api` option. Every package names its spec in `.gd++pkg.toml`, e.g. `spec = "4.7.2-stable"`. The spec decides:
   - which Godot classes your code can use,
   - the oldest Godot version that can load the library.
 
@@ -35,7 +35,7 @@ res://.gd++proj/ (the ephemeral cache)
   - Keep it out of version control: anyone can download it again with `gd++ fetch --missing`.
   - With `vcs = "git"`, GD++ adds it to `.gitignore`.
 
-res://_gd++proj/ (the checked in cache)
+res://_gd++/ (the checked in cache)
   For dependencies you commit to version control. Then everyone on your team builds with exactly the same files, even:
   - offline,
   - when a dependency can't be downloaded, e.g. a spec from a custom build of Godot.
@@ -47,7 +47,7 @@ Facts:
 - `gd++ checkin` and `gd++ checkin --undo` move dependencies between the caches. See `gd++ man checkin`.
 
 ```
-res://_gd++proj/spec/4.7.2-stable/extension_api.json
+res://_gd++/spec/4.7.2-stable/extension_api.json
 res://.gd++proj/bind/10.0.0-stable/...
 ```
 

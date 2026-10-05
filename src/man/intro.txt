@@ -98,7 +98,7 @@ Facts about pages:
 # Glossary
 
 - Project: a Godot project, i.e. a directory with a `project.godot` file. See `gd++ man projects`.
-- Package: a directory in a project with a `gd++pkg.toml` file. It builds into one GDExtension library. See `gd++ man packages`.
+- Package: a directory in a project with a `.gd++pkg.toml` file. It builds into one GDExtension library. See `gd++ man packages`.
 - Dependency: a versioned download that packages need: Godot C++ bindings, a Godot API spec or a Godot engine. See `gd++ man dependencies`.
 - Bindings: godot-cpp, the C++ library that GDExtensions are written against.
 - API spec: `extension_api.json`, the description of every class of one Godot version.

@@ -45,17 +45,17 @@ func wantFiles(t *testing.T, m *memFS, want ...string) {
 
 func TestRmDeps(t *testing.T) {
 	m := withRmFS(t, map[string]string{
-		"_gd++proj/bind/4.3/a.h": "", ".gd++proj/bind/4.3/a.h": "", ".gd++proj/bind/4.4/a.h": "",
-		"_gd++proj/spec/4.3/a.h": "", ".gd++proj/spec/4.3/a.h": "", ".gd++proj/spec/4.4/a.h": "",
+		"_gd++/bind/4.3/a.h": "", ".gd++proj/bind/4.3/a.h": "", ".gd++proj/bind/4.4/a.h": "",
+		"_gd++/spec/4.3/a.h": "", ".gd++proj/spec/4.3/a.h": "", ".gd++proj/spec/4.4/a.h": "",
 		".gd++proj/engine/4.3/a.h": "",
 	})
 	(&CmdRm{Bind: []string{"4.3", "4.3"}, SpecEphemeral: true}).Run()
-	wantFiles(t, m, ".gd++proj/bind/4.4/a.h", "_gd++proj/spec/4.3/a.h", ".gd++proj/engine/4.3/a.h")
+	wantFiles(t, m, ".gd++proj/bind/4.4/a.h", "_gd++/spec/4.3/a.h", ".gd++proj/engine/4.3/a.h")
 	(&CmdRm{DepCheckedIn: true}).Run()
 	wantFiles(t, m, ".gd++proj/bind/4.4/a.h", ".gd++proj/engine/4.3/a.h")
 	(&CmdRm{DepAll: true}).Run()
 	wantFiles(t, m)
-	for _, dir := range []string{"_gd++proj/", ".gd++proj/"} {
+	for _, dir := range []string{"_gd++/", ".gd++proj/"} {
 		if _, ok := m.tree()["/games/my_game/"+dir]; ok {
 			t.Errorf("%s still exists, want the empty cache directories deleted", dir)
 		}
@@ -64,15 +64,15 @@ func TestRmDeps(t *testing.T) {
 
 func TestRmUnusedDeps(t *testing.T) {
 	m := withRmFS(t, map[string]string{
-		packageFileName:          testRmPackage,
-		"a/" + packageFileName:   "bind = \"4.4\"\nspec = \"4.3\"\n",
-		"_gd++proj/bind/4.3/a.h": "", ".gd++proj/bind/4.4/a.h": "", ".gd++proj/bind/4.5/a.h": "",
-		"_gd++proj/spec/4.2/a.h": "", ".gd++proj/spec/4.3/a.h": "",
+		packageFileName:        testRmPackage,
+		"a/" + packageFileName: "bind = \"4.4\"\nspec = \"4.3\"\n",
+		"_gd++/bind/4.3/a.h":   "", ".gd++proj/bind/4.4/a.h": "", ".gd++proj/bind/4.5/a.h": "",
+		"_gd++/spec/4.2/a.h": "", ".gd++proj/spec/4.3/a.h": "",
 		".gd++proj/engine/4.3/a.h": "",
 	})
-	files := []string{packageFileName, "a/" + packageFileName, "_gd++proj/bind/4.3/a.h", ".gd++proj/bind/4.4/a.h", ".gd++proj/spec/4.3/a.h"}
+	files := []string{packageFileName, "a/" + packageFileName, "_gd++/bind/4.3/a.h", ".gd++proj/bind/4.4/a.h", ".gd++proj/spec/4.3/a.h"}
 	(&CmdRm{BindUnused: true}).Run()
-	wantFiles(t, m, append(files, "_gd++proj/spec/4.2/a.h", ".gd++proj/engine/4.3/a.h")...)
+	wantFiles(t, m, append(files, "_gd++/spec/4.2/a.h", ".gd++proj/engine/4.3/a.h")...)
 	(&CmdRm{DepUnused: true}).Run()
 	wantFiles(t, m, files...)
 }
@@ -161,8 +161,8 @@ func TestRmFails(t *testing.T) {
 func TestRmPrompts(t *testing.T) {
 	m := withRmFS(t, map[string]string{
 		".gd++proj/bind/4.3/a.h": "", ".gd++proj/bind/4.4/a.h": "", ".gd++proj/bind/4.5/a.h": "",
-		"_gd++proj/spec/4.3/a.h": "", ".gd++proj/spec/4.4/a.h": "",
-		".gd++proj/engine/4.3/a.h": "", "_gd++proj/engine/4.4/a.h": "",
+		"_gd++/spec/4.3/a.h": "", ".gd++proj/spec/4.4/a.h": "",
+		".gd++proj/engine/4.3/a.h": "", "_gd++/engine/4.4/a.h": "",
 		packageFileName: testRmPackage, "a/" + packageFileName: testRmPackage, "d/" + packageFileName: testRmPackage,
 	})
 	withForce(t, false)
@@ -192,30 +192,30 @@ func TestRmPrompts(t *testing.T) {
 	if !strings.Contains(out, Styled("and delete its whole directory", Bold, Blink, Red)) {
 		t.Errorf("output = %q, want the --dir warning to blink", out)
 	}
-	wantFiles(t, m, "_gd++proj/engine/4.4/a.h")
+	wantFiles(t, m, "_gd++/engine/4.4/a.h")
 }
 
 func TestRmLogs(t *testing.T) {
 	block := packageGitignore.marker + "\n" + packageGitignore.text + "\n"
 	withRmFS(t, map[string]string{
-		"_gd++proj/bind/4.3/a.h": "",
-		"a/" + packageFileName:   testRmPackage,
-		"a/.gitignore":           block,
-		"a/.gd++pkg/b.o":         "",
-		"a/a.gdextension":        "",
-		"a/liba.so":              "",
-		"d/" + packageFileName:   testRmPackage,
+		"_gd++/bind/4.3/a.h":   "",
+		"a/" + packageFileName: testRmPackage,
+		"a/.gitignore":         block,
+		"a/.gd++pkg/b.o":       "",
+		"a/a.gdextension":      "",
+		"a/liba.so":            "",
+		"d/" + packageFileName: testRmPackage,
 	})
 	withQuiet(t, false)
 	withTTY(t, false)
 	out := captureStderr(t, (&CmdRm{BindAll: true}).Run)
 	out += captureStderr(t, (&CmdRm{Pkg: []string{"a"}}).Run)
 	out += captureStderr(t, (&CmdRm{Pkg: []string{"d"}, Dir: true}).Run)
-	want := "[-] Deleted res://_gd++proj/bind/4.3.\n" +
-		"[-] Deleted the empty directory res://_gd++proj/bind.\n" +
-		"[-] Deleted the empty directory res://_gd++proj.\n" +
+	want := "[-] Deleted res://_gd++/bind/4.3.\n" +
+		"[-] Deleted the empty directory res://_gd++/bind.\n" +
+		"[-] Deleted the empty directory res://_gd++.\n" +
 		"[-] Success!\n" +
-		"[-] Deleted res://a/gd++pkg.toml.\n" +
+		"[-] Deleted res://a/.gd++pkg.toml.\n" +
 		"[-] Deleted res://a/.gd++pkg.\n" +
 		"[-] Deleted res://a/a.gdextension.\n" +
 		"[-] Deleted res://a/liba.so.\n" +
