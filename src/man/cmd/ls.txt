@@ -40,13 +40,13 @@ PATH
 
 ```
 Project: My Game [my_game]
-  Godot:  4.7
-  VCS:    git
+  Godot:           4.7
+  VCS:             git
+  Manage presets:  yes
 
 Dependencies:
   Godot C++ bindings:  1 checked in  •  1 cached  •  1 unused
   Godot API specs:     1 cached
-  Godot engines:       none
 
 Package: res://gameplay
   Godot C++ bindings:  10.0.0-stable
@@ -77,12 +77,13 @@ Project:
 - The name from `project.godot`, and the project's id (its directory name) in brackets.
 - The Godot version from `project.godot`.
 - The `vcs` setting from `.gd++proj`.
-- With `-a`, also "Manage presets": the `presets` setting from `.gd++proj`, "yes" or "no". See `gd++ man projects`.
+- "Manage presets": the `presets` setting from `.gd++proj`, "yes" or "no". See `gd++ man projects`.
 
 Dependencies:
 
 - Per kind: how many are checked in, cached (in the ephemeral cache) and unused (named by no package).
 - With `--deps`: one row per dependency, newest first, with its cache and whether it's unused.
+- Godot engines are shown only with `-a`.
 
 Package:
 

@@ -112,18 +112,16 @@ func lsSep() string             { return Styled(unicodeOr("  •  ", "  *  "), B
 func lsMissing(s string) string { return Styled(s, Red) }
 
 // lsProject renders the overview of p and its packages. With deps, it lists
-// every dependency instead of counting them. With all, it shows all settings.
+// every dependency instead of counting them. With all, it shows the engines.
 func lsProject(p Project, pkgs []lsPackage, deps, all bool) string {
-	return lsSummary(p, all) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(p.Caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
+	caches := slices.DeleteFunc(slices.Clone(p.Caches), func(c ProjectDepCache) bool { return !all && c.Name == "engine" })
+	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
 }
 
-// lsSummary renders the project's name and settings. Only with all, it shows
-// the rarely changed ones.
-func lsSummary(p Project, all bool) string {
-	rows := [][]string{{lsKey("Godot"), p.GodotVersion}, {lsKey("VCS"), p.Config.VCS}}
-	if all {
-		rows = append(rows, []string{lsKey("Manage presets"), map[bool]string{true: "yes", false: "no"}[p.Config.Presets]})
-	}
+// lsSummary renders the project's name and settings.
+func lsSummary(p Project) string {
+	rows := [][]string{{lsKey("Godot"), p.GodotVersion}, {lsKey("VCS"), p.Config.VCS},
+		{lsKey("Manage presets"), map[bool]string{true: "yes", false: "no"}[p.Config.Presets]}}
 	return Styled("Project:", Bold, BrightBlue) + " " + Styled(p.Name, Bold, Cyan) + " " + Styled("["+p.Id+"]", Gray) + "\n" +
 		AlignColumns(rows, "  ")
 }

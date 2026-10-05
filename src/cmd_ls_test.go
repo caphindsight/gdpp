@@ -26,8 +26,9 @@ func withLsProject(t *testing.T) {
 // lsHeader is the output of ls before the dependencies, in withLsProject.
 const lsHeader = "" +
 	"Project: My \"Game\" [my_game]\n" +
-	"  Godot:  4.3\n" +
-	"  VCS:    none\n" +
+	"  Godot:           4.3\n" +
+	"  VCS:             none\n" +
+	"  Manage presets:  yes\n" +
 	"\n" +
 	"Dependencies:\n"
 
@@ -36,8 +37,7 @@ func TestLsCmd(t *testing.T) {
 	out := captureStdout(t, (&CmdLs{}).Run)
 	want := lsHeader +
 		"  Godot C++ bindings:  1 checked in  *  1 cached\n" +
-		"  Godot API specs:     1 cached\n" +
-		"  Godot engines:       none\n"
+		"  Godot API specs:     1 cached\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
@@ -47,19 +47,11 @@ func TestLsCmdDeps(t *testing.T) {
 	deps := "" +
 		"  Godot C++ bindings:  10.0.0-stable  cached\n" +
 		"                       9.1.0-stable   checked in\n" +
-		"  Godot API specs:     4.3-stable     cached\n" +
-		"  Godot engines:       none\n"
-	allHeader := "" +
-		"Project: My \"Game\" [my_game]\n" +
-		"  Godot:           4.3\n" +
-		"  VCS:             none\n" +
-		"  Manage presets:  yes\n" +
-		"\n" +
-		"Dependencies:\n"
+		"  Godot API specs:     4.3-stable     cached\n"
 	for name, c := range map[string]struct {
 		cmd  CmdLs
 		want string
-	}{"deps": {CmdLs{Deps: true}, lsHeader + deps}, "all": {CmdLs{All: true}, allHeader + deps}} {
+	}{"deps": {CmdLs{Deps: true}, lsHeader + deps}, "all": {CmdLs{All: true}, lsHeader + deps + "  Godot engines:       none\n"}} {
 		t.Run(name, func(t *testing.T) {
 			withLsProject(t)
 			if out := captureStdout(t, c.cmd.Run); out != c.want {
@@ -73,7 +65,7 @@ func TestLsCmdVCS(t *testing.T) {
 	withLsProject(t)
 	NewPath("/games/my_game").Cd(projectConfigFileName).WriteString(`vcs = "git"`)
 	out := captureStdout(t, (&CmdLs{}).Run)
-	if want := "  Godot:  4.3\n  VCS:    git\n"; !strings.Contains(out, want) {
+	if want := "  Godot:           4.3\n  VCS:             git\n"; !strings.Contains(out, want) {
 		t.Errorf("output = %q, want it to contain %q", out, want)
 	}
 }
@@ -81,7 +73,7 @@ func TestLsCmdVCS(t *testing.T) {
 func TestLsCmdPresets(t *testing.T) {
 	withLsProject(t)
 	NewPath("/games/my_game").Cd(projectConfigFileName).WriteString("presets = false")
-	out := captureStdout(t, (&CmdLs{All: true}).Run)
+	out := captureStdout(t, (&CmdLs{}).Run)
 	if want := "  Manage presets:  no\n"; !strings.Contains(out, want) {
 		t.Errorf("output = %q, want it to contain %q", out, want)
 	}
@@ -101,8 +93,7 @@ func withLsPackages(t *testing.T) {
 // lsDepsOut is the dependencies section of ls in withLsPackages.
 const lsDepsOut = lsHeader +
 	"  Godot C++ bindings:  1 checked in  *  1 cached  *  1 unused\n" +
-	"  Godot API specs:     1 cached\n" +
-	"  Godot engines:       none\n"
+	"  Godot API specs:     1 cached\n"
 
 // lsFooOut is res://foo, expanded.
 const lsFooOut = "" +
@@ -279,12 +270,12 @@ func TestLsPackages(t *testing.T) {
 		{false, lsHeader +
 			"  Godot C++ bindings:  1 checked in  *  1 cached  *  2 unused\n" +
 			"  Godot API specs:     1 cached\n" +
-			"  Godot engines:       none\n" + pkgWant},
+			pkgWant},
 		{true, lsHeader +
 			"  Godot C++ bindings:  10.0.0-stable  cached      unused\n" +
 			"                       9.1.0-stable   checked in  unused\n" +
 			"  Godot API specs:     4.3-stable     cached\n" +
-			"  Godot engines:       none\n" + pkgWant},
+			pkgWant},
 	} {
 		if got := lsProject(LoadProject(Cwd()), pkgs, c.deps, false); got != c.want {
 			t.Errorf("deps %v: output = %q, want %q", c.deps, got, c.want)
