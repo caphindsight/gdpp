@@ -1,0 +1,16 @@
+class_name Counter
+extends Node
+
+// Code passed to a macro keeps its lines, so #line names them.
+var count: int {
+  get {
+    return 42;
+}
+  set(value) {
+    UtilityFunctions::print(value);
+}
+}
+
+macro property(name, type, getter, setter) {
+  gd.var {["name"] = name, ["type"] = type, get = getter, set = setter, set_param = "value"}
+}

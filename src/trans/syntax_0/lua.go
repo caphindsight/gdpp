@@ -1130,6 +1130,10 @@ func (r *run) cpp(what string, t *lua.LTable, name string) (b *Block, expr bool)
 	default:
 		if c, ok := asCode(v); ok {
 			b := *c.block
+			if !b.Generated && b.Origin.Source == "" && b.Pos.Filename == r.x.filename { // The user's code keeps its lines.
+				start := b.TextPos
+				b.Origin = Origin{r.x.source(), start.Line, &start, r.x.src}
+			}
 			return &b, c.expr
 		}
 		s, ok := str(v)
