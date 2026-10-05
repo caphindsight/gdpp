@@ -29,6 +29,7 @@ type CmdInit struct {
 	HotReload   bool     `arg:"--hotreload" help:"make the editor reload the package's library when it changes (default)"`
 	NoHotReload bool     `arg:"--nohotreload" help:"make the editor load the package's library only once, e.g. to work around Godot crashing on reload"`
 	MacroDepth  *int     `arg:"--macro-depth" placeholder:"LEVELS" help:"how deeply the package's macro and template invocations may nest [default: 64]"`
+	Hide        []string `arg:"--hide" placeholder:"DIR" help:"hide these directories of the package from Godot, e.g. src, with a .gdignore file in each"`
 	Class       string   `arg:"--class" placeholder:"NAME" help:"the name of a class to add or update in the package"`
 	Include     string   `arg:"--include" placeholder:"PATH" help:"the class's header, e.g. pkg://my_node.h"`
 	NoInclude   bool     `arg:"--noinclude" help:"remove the class's header, or create the class without one"`
@@ -46,16 +47,16 @@ type CmdInit struct {
 func (c *CmdInit) Run() {
 	c.Syntax = chosenSyntax(c.Syntax, c.Nightly)
 	if c.Path == "" {
-		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && c.Class == "",
-			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --class require a package path.")
+		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0 && c.Class == "",
+			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path.")
 		c.assertNoClassFlags()
 		c.initProject()
 		return
 	}
 	Assert(c.Vcs == "" && !c.Presets && !c.NoPresets, "Invalid arguments: --vcs, --presets and --nopresets cannot be used with a package path.")
 	if c.Class != "" {
-		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil,
-			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --macro-depth cannot be used with --class.")
+		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0,
+			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class.")
 		c.initClass(ParsePath(c.Path))
 		return
 	}
@@ -79,6 +80,7 @@ func (c *CmdInit) Run() {
 	}
 	root := ParsePath(c.Path)
 	p := LoadProject(root)
+	c.checkHide(root)
 	switch {
 	case c.Update:
 		c.updatePackage(p, root)
@@ -143,6 +145,24 @@ func (c *CmdInit) initProject() {
 
 // Package-level inits.
 
+// checkHide turns --hide's directories into hide setting entries, asserting
+// they are inside the package at root, and confirms those that don't exist
+// or contain other packages, which Godot then can't load.
+func (c *CmdInit) checkHide(root Path) {
+	for i, s := range c.Hide {
+		d := hiddenDir(s)
+		Assert(d != "", "Invalid arguments: %s is not a directory inside the package.", s)
+		c.Hide[i] = d
+		dir := root.Cd(d)
+		Assert(!dir.IsFile(), "Path %s is a file, not a directory.", dir.ToString())
+		if !dir.Exists() {
+			Confirm("Directory %s doesn't exist. Hide it anyway?", dir.ToString())
+		} else if pkgs := packageRootsIn(dir); len(pkgs) > 0 {
+			Confirm("Directory %s contains the package %s, which Godot can't load if it's hidden. Hide it anyway?", dir.ToString(), pkgs[0].ToString())
+		}
+	}
+}
+
 func (c *CmdInit) newPackage(p Project, root Path) {
 	Assert(c.Bind != "" && c.Spec != "", "Invalid arguments: --bind and --spec are required for a new package.")
 	config := DefaultPackageConfig()
@@ -152,6 +172,7 @@ func (c *CmdInit) newPackage(p Project, root Path) {
 		root.CreateDirectory()
 	}
 	writeConfig(root.Cd(packageFileName), config.Encode(), nil)
+	LoadPackage(root).HideInGodot()
 	if p.Config.VCS == "git" {
 		EditGitignore(root, func(text string) string { return packageGitignore.set(text, true) })
 	}
@@ -163,6 +184,7 @@ func (c *CmdInit) updatePackage(p Project, root Path) {
 	config := LoadPackageAt(root).Config
 	changes := c.setPackageFlags(&config)
 	changed := writeConfig(root.Cd(packageFileName), config.Encode(), changes)
+	changed = LoadPackage(root).HideInGodot() || changed
 	warnMissingDeps(p, config)
 	if changed {
 		LogInfo("Success!")
@@ -221,7 +243,7 @@ func (c *CmdInit) initClass(root Path) {
 	}
 	Assert(class.Kind == "" || class.Include != "", "Invalid arguments: GD++ code can only use class %s if it has an include.", c.Class)
 	config.Classes[i] = class
-	config.SortClasses()
+	config.Sort()
 	var changes []string
 	for _, f := range []struct{ desc, old, new string }{{"include path", old.Include, class.Include}, {"icon", old.Icon, class.Icon}} {
 		if isNew || f.new != f.old {
@@ -270,6 +292,13 @@ func (c *CmdInit) setPackageFlags(config *PackageConfig) (changes []string) {
 		}
 		changes = append(changes, "hot reload to "+onOff(c.HotReload))
 	}
+	for _, d := range c.Hide {
+		if !slices.Contains(config.Hidden, d) {
+			config.Hidden = append(config.Hidden, d)
+			changes = append(changes, "directory "+d+" to hidden from Godot")
+		}
+	}
+	slices.Sort(config.Hidden)
 	if d := c.MacroDepth; d != nil && *d != (Package{Config: *config}).MacroDepth() {
 		config.MacroDepth = nil // the default
 		if *d != defaultPackageMacroDepth {

@@ -304,22 +304,24 @@ func TestInitInvalidArgs(t *testing.T) {
 		c    CmdInit
 		want string
 	}{
-		"project_bind":        {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --class require a package path"},
-		"project_update":      {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --class require a package path"},
-		"project_prefix":      {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --class require a package path"},
+		"project_bind":        {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"project_update":      {CmdInit{Update: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"project_prefix":      {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
 		"package_prefix":      {CmdInit{Path: "src/pkg", Prefix: "my pkg"}, `"my pkg" is not a valid class name prefix`},
 		"negative_quit":       {CmdInit{Path: "src/pkg", QuitTimeout: ptr(-1.0)}, "--quit-timeout cannot be negative"},
 		"hotreload_both":      {CmdInit{Path: "src/pkg", HotReload: true, NoHotReload: true}, "--hotreload and --nohotreload cannot be used together"},
 		"zero_macro_depth":    {CmdInit{Path: "src/pkg", MacroDepth: ptr(0)}, "--macro-depth must be positive"},
-		"project_reload":      {CmdInit{NoHotReload: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --class require a package path"},
-		"class_reload":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", HotReload: true}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --macro-depth cannot be used with --class"},
+		"project_reload":      {CmdInit{NoHotReload: true}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"class_reload":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", HotReload: true}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
+		"hide_outside":        {CmdInit{Path: "src/pkg", Hide: []string{"../x"}}, "../x is not a directory inside the package"},
+		"hide_res":            {CmdInit{Path: "src/pkg", Hide: []string{"res://x"}}, "res://x is not a directory inside the package"},
 		"negative_syntax":     {CmdInit{Path: "src/pkg", Syntax: ptr(-1)}, "--syntax cannot be negative"},
 		"syntax_nightly":      {CmdInit{Path: "src/pkg", Syntax: ptr(1), Nightly: true}, "--syntax and --nightly cannot be used together"},
-		"project_quit":        {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --class require a package path"},
-		"class_prefix":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --macro-depth cannot be used with --class"},
+		"project_quit":        {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"class_prefix":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
 		"project_icon":        {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
 		"package_icon":        {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
-		"class_bind":          {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload and --macro-depth cannot be used with --class"},
+		"class_bind":          {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
 		"class_name":          {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
 		"class_include":       {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
 		"class_noinclude":     {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},
@@ -551,5 +553,50 @@ func TestInitClassSorted(t *testing.T) {
 	want := classPkgConfig + "\n[[class]]\n  name = \"A\"\n\n[[class]]\n  name = \"B\"\n\n[[class]]\n  name = \"C\"\n"
 	if got := after["src/pkg/"+packageFileName]; got != want {
 		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
+func TestInitPackageHide(t *testing.T) {
+	tree := withPackages(map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\nhide = [\"b\"]\n"})
+	tree["/games/my_game/.gd++cache/bind/4.3/a.h"] = "a"
+	tree["/games/my_game/.gd++cache/spec/4.3/a.json"] = "a"
+	tree["/games/my_game/src/pkg/src/"] = ""
+	tree["/games/my_game/src/pkg/b/"] = ""
+	m := withMemFS(t, "/games/my_game", tree)
+	withQuiet(t, false)
+	withTTY(t, false)
+	withForce(t, true)
+	out := captureStderr(t, (&CmdInit{Path: "src/pkg", Update: true, Hide: []string{"pkg://src/", "b", "./a"}}).Run)
+	want := "" +
+		"[-] Set directory src to hidden from Godot.\n" +
+		"[-] Set directory a to hidden from Godot.\n" +
+		"[-] Created res://src/pkg/b/.gdignore.\n" +
+		"[-] Created res://src/pkg/src/.gdignore.\n" +
+		"[-] Success!\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	after := subtree(m.tree(), "/games/my_game/src/pkg/")
+	if got, want := after[packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\nhide = [\"a\", \"b\", \"src\"]\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+	if _, ok := after["a/"]; ok {
+		t.Errorf("a/ was created")
+	}
+}
+
+func TestInitPackageHideConfirms(t *testing.T) {
+	tree := withPackages(map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\n", "src/pkg/addons/inv": "bind = \"4.3\"\nspec = \"4.3\"\n"})
+	withMemFS(t, "/games/my_game", tree)
+	withForce(t, false)
+	withQuiet(t, false)
+	withTTY(t, true)
+	withStdin(t, "y\ny\n")
+	out := stripStyles(captureStderr(t, (&CmdInit{Path: "src/pkg", Update: true, Hide: []string{"gen", "addons"}}).Run))
+	want := "" +
+		"[?] Directory res://src/pkg/gen doesn't exist. Hide it anyway? [y/n] " +
+		"[?] Directory res://src/pkg/addons contains the package res://src/pkg/addons/inv, which Godot can't load if it's hidden. Hide it anyway? [y/n] "
+	if !strings.HasPrefix(out, want) {
+		t.Errorf("output = %q, want prefix %q", out, want)
 	}
 }

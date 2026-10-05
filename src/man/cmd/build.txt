@@ -14,6 +14,7 @@ gd++ build [PATH...] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
 - Builds the package that contains each PATH into GDExtension libraries, one per target.
 - Builds the packages one after another, in the order of the paths.
 - Writes them into the package root, with the package's `.gdextension` file. Godot loads them from there.
+- Writes a missing `.gdignore` file into each package's hidden directories. See `hide` in `gd++ man packages`.
 - To build the whole project, run `gd++ build res://...`.
 - Keeps GD++'s exclude filters in the project's export presets up to date, as the `presets` setting in `.gd++proj` says. See `gd++ man shipping`.
 
@@ -104,6 +105,7 @@ PATH...
 
 --clean
   Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files. The build starts from scratch.
+  - Skips packages without a build cache: they build from scratch anyway.
 
 Rules:
 

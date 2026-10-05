@@ -10,9 +10,9 @@ import (
 
 func TestProjectDepCache(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
-		"/p/_gd++/bind/1.0/a.h":     "a",
+		"/p/_gd++/bind/1.0/a.h":      "a",
 		"/p/.gd++cache/bind/2.0/b.h": "b",
-		"/p/_gd++/bind/stray":       "not a dep",
+		"/p/_gd++/bind/stray":        "not a dep",
 	})
 	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})
 
@@ -70,9 +70,9 @@ func TestCompareDepNames(t *testing.T) {
 
 func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
-		"/p/_gd++/bind/1.0/a.h":     "checked in",
+		"/p/_gd++/bind/1.0/a.h":      "checked in",
 		"/p/.gd++cache/bind/1.0/a.h": "ephemeral",
-		"/p/_gd++/bind/2.0/a.h":     "checked in",
+		"/p/_gd++/bind/2.0/a.h":      "checked in",
 		"/p/.gd++cache/bind/2.0/a.h": "ephemeral",
 	})
 	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})

@@ -1,11 +1,11 @@
 package main
 
 // CmdFix brings the project into its canonical state: it reformats the config
-// files of the project and its packages (sorting their classes), writes or
+// files of the project and its packages (sorting their lists), writes or
 // removes the GD++ blocks in their .gitignore files to match the VCS, and
 // GD++'s filters in the export presets to match the config, deletes
 // leftover temporary files and empty cache directories, and writes missing
-// .gdignore files into the caches.
+// .gdignore files into the caches and the packages' hidden directories.
 type CmdFix struct{}
 
 func (c *CmdFix) Run() {
@@ -21,7 +21,7 @@ func (c *CmdFix) Run() {
 
 	format(p.Root.Cd(projectConfigFileName), p.Config.Encode())
 	for _, pkg := range p.ListPackages() {
-		pkg.Config.SortClasses()
+		pkg.Config.Sort()
 		format(pkg.Root.Cd(packageFileName), pkg.Config.Encode())
 	}
 	changed = SyncGitignores(p) || changed
@@ -31,15 +31,14 @@ func (c *CmdFix) Run() {
 		changed = true
 	}
 	changed = p.RemoveEmptyCacheDirs() || changed
-	caches := []Path{p.Root.Cd(checkedInDepsDirName), p.Root.Cd(ephemeralDepsDirName)}
-	for _, pkg := range p.ListPackages() {
-		caches = append(caches, pkg.BuildCache)
-	}
-	for _, dir := range caches {
+	for _, dir := range []Path{p.Root.Cd(checkedInDepsDirName), p.Root.Cd(ephemeralDepsDirName)} {
 		if dir.IsDir() && dir.IgnoreInGodot() {
 			LogInfo("Created %s.", dir.Cd(gdignoreFileName).ToString())
 			changed = true
 		}
+	}
+	for _, pkg := range p.ListPackages() {
+		changed = pkg.HideInGodot() || changed
 	}
 
 	if !changed {

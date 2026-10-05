@@ -14,6 +14,7 @@ gd++ clean [PATH...] [--bin]
 - Always safe: build caches only hold generated files.
 - `gd++` checks every path before it deletes anything.
 - With nothing to delete, it says "Nothing to clean.".
+- Writes a missing `.gdignore` file into each package's hidden directories. See `hide` in `gd++ man packages`.
 
 Clean when builds fail in ways that make no sense, e.g. after a crash during a build, or when `gd++` tells you to. See `gd++ man build-cache`.
 

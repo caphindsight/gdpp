@@ -41,14 +41,14 @@ func withBuildFS(t *testing.T) *memFS {
 		".gd++cache/bind/4.3/SConstruct":         "bind",
 		".gd++cache/bind/4.3/src/godot.cpp":      "godot",
 		".gd++cache/spec/4.3/extension_api.json": "{}",
-		"src/pkg/main.cpp":                      "",
-		"src/pkg/util.c++":                      "",
-		"src/pkg/enemy/enemy.cc":                "",
-		"src/pkg/enemy/enemy.h":                 "",
-		"src/pkg/enemy/notes.txt":               "",
-		"src/pkg/.hidden/skip.cpp":              "",
-		"src/pkg/nested/skip.cpp":               "",
-		"src/pkg/.gd++build/godot-cpp/stale.cpp":  "",
+		"src/pkg/main.cpp":                       "",
+		"src/pkg/util.c++":                       "",
+		"src/pkg/enemy/enemy.cc":                 "",
+		"src/pkg/enemy/enemy.h":                  "",
+		"src/pkg/enemy/notes.txt":                "",
+		"src/pkg/.hidden/skip.cpp":               "",
+		"src/pkg/nested/skip.cpp":                "",
+		"src/pkg/.gd++build/godot-cpp/stale.cpp": "",
 	} {
 		tree["/games/my_game/"+file] = text
 	}

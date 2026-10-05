@@ -28,7 +28,7 @@ func TestParseDepIndex(t *testing.T) {
 func TestDepIndexTable(t *testing.T) {
 	withTTY(t, false)
 	withMemFS(t, "/", map[string]string{
-		"/p/_gd++/spec/4.9-stable/a":      "a",
+		"/p/_gd++/spec/4.9-stable/a":       "a",
 		"/p/.gd++cache/spec/4.10-stable/b": "b",
 	})
 	cache := newProjectDepCache(NewPath("/p"), DepKind{"spec", "spec", "spec"})

@@ -16,6 +16,7 @@ Brings the project into its canonical state. It takes no options, and is always 
 - Deletes `res://.gd++cache/temp`, the temporary files that an interrupted command may have left.
 - Deletes empty dependency cache directories, e.g. `res://_gd++/engine` after the last engine was removed.
 - Writes a missing `.gdignore` file into `res://_gd++`, `res://.gd++cache` and every package's build cache, so Godot skips them. `gd++` writes it whenever it creates these directories, so this is a last resort, e.g. if you deleted it by hand.
+- Writes a missing `.gdignore` file into every package's hidden directories. See `hide` in `gd++ man packages`.
 
 Output:
 

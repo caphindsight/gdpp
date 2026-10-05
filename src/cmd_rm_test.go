@@ -81,12 +81,12 @@ func TestRmPackages(t *testing.T) {
 	block := packageGitignore.marker + "\n" + packageGitignore.text + "\n"
 	m := withRmFS(t, map[string]string{
 		".gd++cache/bind/4.3/a.h": "",
-		packageFileName:          testRmPackage,
-		".gitignore":             "/x\n\n" + block,
-		"a/" + packageFileName:   testRmPackage,
-		"a/.gitignore":           block,
-		"a/.gd++build/b.o":         "",
-		"a/src/a.cpp":            "",
+		packageFileName:           testRmPackage,
+		".gitignore":              "/x\n\n" + block,
+		"a/" + packageFileName:    testRmPackage,
+		"a/.gitignore":            block,
+		"a/.gd++build/b.o":        "",
+		"a/src/a.cpp":             "",
 	})
 	(&CmdRm{Bind: []string{"4.3"}}).Run()
 	(&CmdRm{PkgAll: true}).Run()
@@ -113,14 +113,14 @@ func TestRmFails(t *testing.T) {
 		c    CmdRm
 		want string
 	}{
-		"nothing":           {CmdRm{}, "Invalid arguments: a --bind, --spec, --engine, --dep, --pkg or --class option is required."},
-		"dep_and_pkg":       {CmdRm{BindAll: true, Pkg: []string{"a"}}, "Invalid arguments: dependencies, packages and classes cannot be removed in the same run."},
-		"pkg_and_class":     {CmdRm{Path: "a", Class: []string{"A"}, PkgAll: true}, "Invalid arguments: dependencies, packages and classes cannot be removed in the same run."},
+		"nothing":           {CmdRm{}, "Invalid arguments: a --bind, --spec, --engine, --dep, --pkg, --class or --hide option is required."},
+		"dep_and_pkg":       {CmdRm{BindAll: true, Pkg: []string{"a"}}, "Invalid arguments: dependencies, packages, classes and hidden directories cannot be removed in the same run."},
+		"pkg_and_class":     {CmdRm{Path: "a", Class: []string{"A"}, PkgAll: true}, "Invalid arguments: dependencies, packages, classes and hidden directories cannot be removed in the same run."},
 		"path_alone":        {CmdRm{Path: "a"}, "Invalid arguments: the syntax for removing a package is `gd++ rm --pkg a`."},
-		"class_alone":       {CmdRm{Class: []string{"A"}}, "Invalid arguments: --class and --class-all require a package path."},
-		"class_all_alone":   {CmdRm{ClassAll: true}, "Invalid arguments: --class and --class-all require a package path."},
+		"class_alone":       {CmdRm{Class: []string{"A"}}, "Invalid arguments: --class, --class-all, --hide and --hide-all require a package path."},
+		"class_all_alone":   {CmdRm{ClassAll: true}, "Invalid arguments: --class, --class-all, --hide and --hide-all require a package path."},
 		"class_and_all":     {CmdRm{Path: "a", Class: []string{"A"}, ClassAll: true}, "Invalid arguments: --class and --class-all cannot be used together."},
-		"pkg_and_class_all": {CmdRm{Path: "a", ClassAll: true, Pkg: []string{"a"}}, "Invalid arguments: dependencies, packages and classes cannot be removed in the same run."},
+		"pkg_and_class_all": {CmdRm{Path: "a", ClassAll: true, Pkg: []string{"a"}}, "Invalid arguments: dependencies, packages, classes and hidden directories cannot be removed in the same run."},
 		"missing_class":     {CmdRm{Path: "a", Class: []string{"A", "B"}}, "There is no class B in res://a."},
 		"names_and_all":     {CmdRm{Engine: []string{"a"}, EngineAll: true}, "Invalid arguments: only one of --engine, --engine-all, --engine-checked-in, --engine-ephemeral and --engine-unused can be used."},
 		"kind_both":         {CmdRm{SpecCheckedIn: true, SpecEphemeral: true}, "Invalid arguments: only one of --spec, --spec-all, --spec-checked-in, --spec-ephemeral and --spec-unused can be used."},
@@ -138,10 +138,10 @@ func TestRmFails(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			files := map[string]string{
 				".gd++cache/bind/4.3/a.h": "",
-				packageFileName:          testRmPackage,
-				"a/" + packageFileName:   testRmPackage + "\n[[class]]\nname = \"A\"\n",
-				"n/" + projectFileName:   testProjectTree["/games/my_game/"+projectFileName],
-				"n/" + packageFileName:   testRmPackage,
+				packageFileName:           testRmPackage,
+				"a/" + packageFileName:    testRmPackage + "\n[[class]]\nname = \"A\"\n",
+				"n/" + projectFileName:    testProjectTree["/games/my_game/"+projectFileName],
+				"n/" + packageFileName:    testRmPackage,
 			}
 			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 				isTTY = false
@@ -201,7 +201,7 @@ func TestRmLogs(t *testing.T) {
 		"_gd++/bind/4.3/a.h":   "",
 		"a/" + packageFileName: testRmPackage,
 		"a/.gitignore":         block,
-		"a/.gd++build/b.o":       "",
+		"a/.gd++build/b.o":     "",
 		"a/a.gdextension":      "",
 		"a/liba.so":            "",
 		"d/" + packageFileName: testRmPackage,
@@ -308,5 +308,64 @@ func TestRmClassAll(t *testing.T) {
 	}
 	if out, want := stripStyles(captureStderr(t, (&CmdRm{Path: "b", ClassAll: true}).Run)), "[!] Nothing to remove.\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
+	}
+}
+
+func TestRmHidden(t *testing.T) {
+	m := withRmFS(t, map[string]string{
+		"a/" + packageFileName: testRmPackage + "hide = [\"gen\", \"src\", \"tools\"]\n",
+		"a/src/.gdignore":      "",
+		"a/gen/.gdignore":      "",
+	})
+	withForce(t, false)
+	withQuiet(t, false)
+	withTTY(t, true)
+	withStdin(t, "y\ny\n")
+	out := stripStyles(captureStderr(t, (&CmdRm{Path: "a", Hide: []string{"src/", "tools", "pkg://src"}}).Run))
+	want := "" +
+		"[?] Stop hiding res://a/src from Godot? [y/n] " +
+		"[?] Stop hiding res://a/tools from Godot? [y/n] " +
+		"[•] Stopped hiding res://a/src.\n" +
+		"[•] Deleted res://a/src/.gdignore.\n" +
+		"[•] Stopped hiding res://a/tools.\n" +
+		"[•] Success!\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if got, want := m.tree()["/games/my_game/a/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\nhide = [\"gen\"]\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+	wantFiles(t, m, "a/"+packageFileName, "a/gen/.gdignore")
+}
+
+func TestRmHideAll(t *testing.T) {
+	m := withRmFS(t, map[string]string{"a/" + packageFileName: testRmPackage + "hide = [\"gen\", \"src\"]\n", "a/src/.gdignore": ""})
+	withForce(t, false)
+	withQuiet(t, false)
+	withTTY(t, true)
+	withStdin(t, "y\n")
+	out := stripStyles(captureStderr(t, (&CmdRm{Path: "a", HideAll: true}).Run))
+	want := "" +
+		"[?] Stop hiding all directories res://a/gen, res://a/src from Godot? [y/n] " +
+		"[•] Stopped hiding res://a/gen.\n" +
+		"[•] Stopped hiding res://a/src.\n" +
+		"[•] Deleted res://a/src/.gdignore.\n" +
+		"[•] Success!\n"
+	if out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	wantFiles(t, m, "a/"+packageFileName)
+}
+
+func TestRmHiddenNotHidden(t *testing.T) {
+	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+		isTTY = false
+		withRmFS(t, map[string]string{"a/" + packageFileName: testRmPackage + "hide = [\"gen\"]\n"})
+		(&CmdRm{Path: "a", Hide: []string{"src"}}).Run()
+		return
+	}
+	out, code := runFailHelper(t, t.Name())
+	if want := "[x] Directory res://a/src is not hidden in res://a.\n"; code != 1 || out != want {
+		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }

@@ -35,7 +35,7 @@ my_package/.gd++build/
 
 At the start of every build, and of `gd++ doc` and `gd++ trans` in a package, `gd++` syncs the build cache with the package:
 
-1. It compares the package's id and settings (all of `.gd++pkg` but its classes) with `build.toml`. If they differ, or `build.toml` is missing, it:
+1. It compares the package's id and settings (all of `.gd++pkg` but its classes and hidden directories) with `build.toml`. If they differ, or `build.toml` is missing, it:
    - cleans the package, like `gd++ clean --bin`,
    - copies the bindings and the spec into the cache,
    - writes the new `build.toml`.

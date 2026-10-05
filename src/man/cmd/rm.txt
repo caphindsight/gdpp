@@ -1,4 +1,4 @@
-gd++ rm: remove dependencies, packages or classes
+gd++ rm: remove dependencies, packages, classes or hidden directories
 
 # Synopsis
 
@@ -9,15 +9,17 @@ gd++ rm [--bind NAME... | --bind-all | --bind-checked-in | --bind-ephemeral | --
 gd++ rm --dep-all | --dep-checked-in | --dep-ephemeral | --dep-unused
 gd++ rm (--pkg PATH... | --pkg-all) [--dir]
 gd++ rm PATH (--class NAME... | --class-all)
+gd++ rm PATH (--hide DIR... | --hide-all)
 ```
 
 # Description
 
-Removes one of three things per run:
+Removes one of four things per run:
 
 - dependencies from the project's caches,
 - packages from the project,
-- C++ classes from a package.
+- C++ classes from a package,
+- hidden directories from a package.
 
 Facts:
 
@@ -103,6 +105,24 @@ See `gd++ man cpp-classes`.
 --class-all
   Remove all C++ classes of the package. Confirmed once. If there are none, it says "Nothing to remove.".
 
+# Removing hidden directories
+
+```sh
+gd++ rm PATH --hide DIR...
+gd++ rm PATH --hide-all
+```
+
+- Removes directories from the `hide` list in the `.gd++pkg` of the package at PATH, so Godot sees them again.
+- Deletes their `.gdignore` files.
+
+See `hide` in `gd++ man packages`.
+
+--hide DIR...
+  Stop hiding these directories. Each DIR is relative to the package root, e.g. `src`. Each one is confirmed on its own.
+
+--hide-all
+  Stop hiding all directories of the package. Confirmed once. If there are none, it says "Nothing to remove.".
+
 # Examples
 
 ```sh
@@ -113,16 +133,18 @@ gd++ rm --dep-all -f                       # all dependencies, without asking
 gd++ rm --pkg tools                        # make res://tools a plain directory again
 gd++ rm --pkg old_stuff --dir              # delete res://old_stuff entirely
 gd++ rm . --class Spinner                  # stop registering a C++ class
+gd++ rm . --hide src                       # show res://src in Godot again
 ```
 
 # Errors
 
-- "Invalid arguments: dependencies, packages and classes cannot be removed in the same run."
-- "Invalid arguments: the syntax for removing a package is `gd++ rm --pkg PATH`." A path was given without `--class`.
+- "Invalid arguments: dependencies, packages, classes and hidden directories cannot be removed in the same run."
+- "Invalid arguments: the syntax for removing a package is `gd++ rm --pkg PATH`." A path was given without `--class` or `--hide`.
 - "The Godot API spec NAME is not in the project cache."
 - "There is no GD++ package at PATH."
 - "The package PATH is not in this project."
 - "Class NAME is declared in FILE, so it can only be changed there." It's a GD++ class.
+- "Directory DIR is not hidden in PATH."
 
 # See also
 

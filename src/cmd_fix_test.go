@@ -25,16 +25,16 @@ func runFix(t *testing.T, extra map[string]string) (out string, before, after ma
 
 func TestFix(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
-		"/games/my_game/.gd++cache/.gdignore":        "",
-		"/games/my_game/.gd++cache/temp/abc/x":       "x",
-		"/games/my_game/.gd++cache/bind/":            "",
-		"/games/my_game/.gd++cache/spec/":            "",
+		"/games/my_game/.gd++cache/.gdignore":       "",
+		"/games/my_game/.gd++cache/temp/abc/x":      "x",
+		"/games/my_game/.gd++cache/bind/":           "",
+		"/games/my_game/.gd++cache/spec/":           "",
 		"/games/my_game/_gd++/bind/":                "",
 		"/games/my_game/_gd++/spec/.keep":           "",
 		"/games/my_game/_gd++/engine/":              "",
 		"/games/my_game/src/pkg/":                   "",
 		"/games/my_game/src/pkg/" + packageFileName: "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n",
-		"/games/my_game/src/pkg/.gd++build/":          "",
+		"/games/my_game/src/pkg/.gd++build/":        "",
 	})
 	want := "" +
 		"[-] Deleted the temporary directory res://.gd++cache/temp.\n" +
@@ -74,8 +74,8 @@ func TestFixConfig(t *testing.T) {
 
 func TestFixNothingToDo(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
-		"/games/my_game/.gd++cache/.gdignore":      "",
-		"/games/my_game/.gd++cache/bind/4.3/a.h":   "a",
+		"/games/my_game/.gd++cache/.gdignore":     "",
+		"/games/my_game/.gd++cache/bind/4.3/a.h":  "a",
 		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\npresets = true\n",
 		"/games/my_game/.gitignore":               projectBlock,
 		"/games/my_game/" + exportPresetsFileName: testExportPresets(strings.Join(presetExcludes, ", ")),
@@ -134,5 +134,19 @@ func TestFixPackageClasses(t *testing.T) {
 	want := config + "\n[[class]]\n  name = \"A\"\n\n[[class]]\n  name = \"B\"\n"
 	if got := after["src/pkg/"+packageFileName]; got != want {
 		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
+func TestFixHidden(t *testing.T) {
+	config := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\nhide = [\"gen\", \"src\"]\n"
+	out, _, after := runFix(t, map[string]string{
+		"/games/my_game/src/pkg/" + packageFileName: config,
+		"/games/my_game/src/pkg/src/a.h":            "",
+	})
+	if want := "[-] Created res://src/pkg/src/.gdignore.\n[-] Success!\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+	if _, ok := after["src/pkg/gen/"]; ok {
+		t.Errorf("src/pkg/gen/ was created")
 	}
 }

@@ -98,9 +98,9 @@ func TestTransDebug(t *testing.T) {
 
 // transSpecProject is a project with a cached API spec, in writeTransFiles format.
 var transSpecProject = map[string]string{
-	"project.godot":                         testProjectTree["/games/my_game/"+projectFileName],
+	"project.godot":                          testProjectTree["/games/my_game/"+projectFileName],
 	".gd++cache/spec/4.3/extension_api.json": `{"classes": [{"name": "RefCounted", "is_refcounted": true}, {"name": "Node3D", "is_refcounted": false}]}`,
-	"src/a.gd++":                            "class A {}\nclass B {\n  extends Node3D\n}\n",
+	"src/a.gd++":                             "class A {}\nclass B {\n  extends Node3D\n}\n",
 }
 
 // chdir changes the working directory for the duration of a test.

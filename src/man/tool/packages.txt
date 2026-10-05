@@ -33,6 +33,7 @@ prefix = "Foo"
 quit_timeout = 2.5
 hot_reload = false
 macro_depth = 100
+hide = ["src"]
 
 [[class]]
 name = "Foo"
@@ -85,6 +86,14 @@ macro_depth (optional, default 64)
   - Raise it only if an invocation really needs to nest that deep. A macro that invokes itself forever hits the limit, which then stops it.
   - `gd++ init --macro-depth 64` removes the key, since 64 is the default.
   - See "Limits" in `gd++ man templates`, and "The sandbox" in `gd++ man macros`.
+
+hide (optional, default none)
+  Directories of the package that Godot skips, e.g. `["src"]`.
+  - Each entry is relative to the package root, e.g. `src` or `src/gen`.
+  - `gd++ build`, `gd++ clean`, `gd++ fix` and `gd++ init --hide` put an empty `.gdignore` file into each one that exists. Godot skips every directory with one.
+  - Use it for files Godot has no use for, e.g. C++ sources and headers, or assets your code generates from.
+  - Don't hide what Godot loads, e.g. class icons. Godot also can't load a package inside a hidden directory.
+  - `gd++ init PATH --hide DIR...` adds entries, and `gd++ rm PATH --hide DIR...` removes them.
 
 [[class]] (optional, any number)
   A plain C++ class that the package registers with Godot. Its keys:

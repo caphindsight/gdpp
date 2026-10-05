@@ -4,6 +4,8 @@ package main
 
 import (
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -29,6 +31,7 @@ type PackageConfig struct {
 	QuitTimeout *float64       `toml:"quit_timeout,omitempty"` // seconds; default: 1
 	HotReload   *bool          `toml:"hot_reload,omitempty"`   // default: true
 	MacroDepth  *int           `toml:"macro_depth,omitempty"`  // default: defaultPackageMacroDepth
+	Hidden      []string       `toml:"hide,omitempty"`         // package-relative directories Godot skips
 	Classes     []PackageClass `toml:"class,omitempty"`
 }
 
@@ -164,9 +167,45 @@ func DefaultPackageConfig() PackageConfig {
 	return PackageConfig{Syntax: defaultPackageSyntax, CppStandard: defaultPackageCppStandard}
 }
 
-// SortClasses sorts c's classes by name.
-func (c *PackageConfig) SortClasses() {
+// Sort sorts c's classes by name, and its hidden directories.
+func (c *PackageConfig) Sort() {
 	slices.SortFunc(c.Classes, func(a, b PackageClass) int { return strings.Compare(a.Name, b.Name) })
+	slices.Sort(c.Hidden)
+}
+
+// hiddenDir returns s, a directory inside a package, as the hide setting
+// stores it: a clean relative path such as "src/gen", without "pkg://". It
+// returns "" if s is not inside the package, e.g. is absolute, a res:// path
+// or starts with "..".
+func hiddenDir(s string) string {
+	s = path.Clean(strings.TrimPrefix(filepath.ToSlash(s), "pkg://"))
+	if s == "." || s == ".." || strings.HasPrefix(s, "../") || path.IsAbs(s) || strings.Contains(s, ":") {
+		return ""
+	}
+	return s
+}
+
+// HideInGodot writes a .gdignore file into the package's build cache and
+// hidden directories, where they exist and lack one, and logs each. Returns
+// whether it wrote any.
+func (pkg Package) HideInGodot() bool {
+	changed := false
+	for _, dir := range append([]Path{pkg.BuildCache}, pkg.HiddenDirs()...) {
+		if dir.IsDir() && dir.IgnoreInGodot() {
+			LogInfo("Created %s.", dir.Cd(gdignoreFileName).ToString())
+			changed = true
+		}
+	}
+	return changed
+}
+
+// HiddenDirs returns the paths of the package's hidden directories.
+func (pkg Package) HiddenDirs() []Path {
+	var dirs []Path
+	for _, d := range pkg.Config.Hidden {
+		dirs = append(dirs, pkg.Root.Cd(d))
+	}
+	return dirs
 }
 
 // Encode returns c in TOML format.
@@ -202,6 +241,10 @@ func LoadPackage(p Path) Package {
 		}
 		Assert(class.Kind == "" || class.Kind == "ptr" || class.Kind == "ref", "Invalid kind %q of class %s in %s: it must be ptr or ref.", class.Kind, class.Name, file.ToString())
 		Assert(class.Kind == "" || class.Include != "", "Class %s in %s has kind %s, which requires an include.", class.Name, file.ToString(), class.Kind)
+	}
+	for i, d := range config.Hidden {
+		Assert(hiddenDir(d) == d, "Invalid hidden directory %q in %s: it must be a relative path inside the package, e.g. src.", d, file.ToString())
+		Assert(!slices.Contains(config.Hidden[:i], d), "Duplicate hidden directory %s in %s.", d, file.ToString())
 	}
 
 	return Package{

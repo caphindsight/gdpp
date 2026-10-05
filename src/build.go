@@ -307,7 +307,7 @@ func buildExtension(p Project, pkg Package, o BuildOptions, targets []string) {
 // generateBuildCache syncs the package's bindings and API spec into its build
 // cache, and writes the generated files there. The cache's build.toml records
 // the package's id and config, except classes, which only affect the generated
-// files; if they changed, e.g. because the package was
+// files, and hidden directories, which don't affect the build; if they changed, e.g. because the package was
 // moved or its dependencies changed, the package is cleaned like `gd++ clean
 // --bin` does and synced again.
 func generateBuildCache(p Project, pkg Package) {
@@ -320,7 +320,7 @@ func generateBuildCache(p Project, pkg Package) {
 	cache := pkg.BuildCache
 	state := cache.Cd("build.toml")
 	config := pkg.Config
-	config.Classes = nil
+	config.Classes, config.Hidden = nil, nil
 	stateText := encodeToml(struct {
 		Id     string        `toml:"id"`
 		Config PackageConfig `toml:"config"`
@@ -454,7 +454,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 }
 
 // packageFiles returns the paths of the package's files with the given
-// extensions, relative to its root. Like ListPackages, it skips hidden
+// extensions, relative to its root. Like packageRootsIn, it skips hidden
 // directories, res://_gd++ and nested Godot projects, and also nested
 // packages, whose files are their own.
 func packageFiles(p Project, pkg Package, exts ...string) []string {

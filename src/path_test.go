@@ -347,13 +347,13 @@ func TestCreateDirectoryIgnoresCaches(t *testing.T) {
 		NewPath(dir).CreateDirectory()
 	}
 	for path, want := range map[string]bool{
-		"/proj/_gd++/.gdignore":                 true,
-		"/proj/.gd++cache/.gdignore":             true,
-		"/proj/pkg/.gd++build/.gdignore":          true,
-		"/proj/.gd++build/.gdignore":              false, // not in a package
-		"/proj/pkg/_gd++/.gdignore":             false, // not in a project
+		"/proj/_gd++/.gdignore":                     true,
+		"/proj/.gd++cache/.gdignore":                true,
+		"/proj/pkg/.gd++build/.gdignore":            true,
+		"/proj/.gd++build/.gdignore":                false, // not in a package
+		"/proj/pkg/_gd++/.gdignore":                 false, // not in a project
 		"/proj/pkg/.gd++build/.gd++build/.gdignore": false,
-		"/proj/_gd++/spec/.gdignore":            false,
+		"/proj/_gd++/spec/.gdignore":                false,
 	} {
 		if _, got := m.tree()[path]; got != want {
 			t.Errorf("%s exists = %v, want %v", path, got, want)

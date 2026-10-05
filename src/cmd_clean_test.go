@@ -122,3 +122,13 @@ func TestCleanNothing(t *testing.T) {
 		t.Errorf("tree changed, want it unchanged")
 	}
 }
+
+func TestCleanHidden(t *testing.T) {
+	m := withCleanFS(t, "/games/my_game")
+	m.nodes["/games/my_game/src/other/"+packageFileName] = &memNode{data: []byte(testRmPackage + "hide = [\"src\"]\n")}
+	m.nodes["/games/my_game/src/other/src"] = &memNode{dir: true}
+	out := captureStderr(t, (&CmdClean{Paths: []string{"src/other"}}).Run)
+	if want := "[-] Nothing to clean.\n[-] Created res://src/other/src/.gdignore.\n"; out != want {
+		t.Errorf("output = %q, want %q", out, want)
+	}
+}

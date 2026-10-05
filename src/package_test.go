@@ -211,3 +211,37 @@ func TestParsePackagePathsNotDir(t *testing.T) {
 		t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, want)
 	}
 }
+
+func TestHiddenDir(t *testing.T) {
+	for s, want := range map[string]string{
+		"src": "src", "src/": "src", "./src/gen": "src/gen", "pkg://src": "src", "a/../b": "b",
+		".": "", "..": "", "../x": "", "a/../..": "", "/abs": "", "res://x": "", "C:/x": "", "pkg://": "",
+	} {
+		if got := hiddenDir(s); got != want {
+			t.Errorf("hiddenDir(%q) = %q, want %q", s, got, want)
+		}
+	}
+}
+
+func TestLoadPackageHiddenFails(t *testing.T) {
+	tests := []struct{ name, hide, want string }{
+		{"Outside", `"../x"`, "[x] Invalid hidden directory \"../x\" in res://pkg/.gd++pkg: it must be a relative path inside the package, e.g. src.\n"},
+		{"Unclean", `"src/"`, "[x] Invalid hidden directory \"src/\" in res://pkg/.gd++pkg: it must be a relative path inside the package, e.g. src.\n"},
+		{"Duplicate", `"src", "src"`, "[x] Duplicate hidden directory src in res://pkg/.gd++pkg.\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
+				isTTY = false
+				withMemFS(t, "/games/my_game", withPackages(map[string]string{"pkg": "bind = \"a\"\nspec = \"b\"\nhide = [" + tt.hide + "]\n"}))
+				withQuiet(t, false)
+				LoadPackage(NewPath("/games/my_game/pkg"))
+				return
+			}
+			out, code := runFailHelper(t, "TestLoadPackageHiddenFails/"+tt.name)
+			if code != 1 || out != tt.want {
+				t.Errorf("exit code = %d, output = %q, want 1, %q", code, out, tt.want)
+			}
+		})
+	}
+}

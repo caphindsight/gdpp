@@ -6,10 +6,10 @@ import (
 )
 
 // CmdRm removes deps from the project's caches, packages from the project, or
-// classes from a package; one of these per run. Every removal is confirmed
+// classes or hidden directories from a package; one of these per run. Every removal is confirmed
 // first.
 type CmdRm struct {
-	Path            string   `arg:"positional" help:"the package to remove classes from"`
+	Path            string   `arg:"positional" help:"the package to remove classes or hidden directories from"`
 	Bind            []string `arg:"--bind" placeholder:"NAME" help:"remove these Godot C++ bindings"`
 	BindAll         bool     `arg:"--bind-all" help:"remove all Godot C++ bindings"`
 	BindCheckedIn   bool     `arg:"--bind-checked-in" help:"remove all checked in Godot C++ bindings"`
@@ -34,6 +34,8 @@ type CmdRm struct {
 	Dir             bool     `arg:"--dir" help:"delete the package directories with everything inside, instead of just the GD++ files"`
 	Class           []string `arg:"--class" placeholder:"NAME" help:"remove these classes from the package"`
 	ClassAll        bool     `arg:"--class-all" help:"remove all classes from the package"`
+	Hide            []string `arg:"--hide" placeholder:"DIR" help:"stop hiding these directories of the package from Godot, deleting their .gdignore files"`
+	HideAll         bool     `arg:"--hide-all" help:"stop hiding all directories of the package from Godot"`
 }
 
 // rmKind is what to remove of one kind of dep: the named deps, or with no
@@ -77,6 +79,10 @@ func (c *CmdRm) Run() {
 	kinds := c.validate()
 	if len(c.Class) > 0 || c.ClassAll {
 		c.removeClasses(ParsePath(c.Path))
+		return
+	}
+	if len(c.Hide) > 0 || c.HideAll {
+		c.removeHidden(ParsePath(c.Path))
 		return
 	}
 	p := LoadProject(Cwd())
@@ -168,11 +174,13 @@ func (c *CmdRm) confirmPackages(what string, plural bool) {
 // remove of each kind of dep, without the caches.
 func (c *CmdRm) validate() []rmKind {
 	classes := len(c.Class) > 0 || c.ClassAll
-	if c.Path != "" && !classes {
+	hidden := len(c.Hide) > 0 || c.HideAll
+	if c.Path != "" && !classes && !hidden {
 		LogFatal("Invalid arguments: the syntax for removing a package is `gd++ rm --pkg %s`.", c.Path)
 	}
-	Assert(c.Path != "" || !classes, "Invalid arguments: --class and --class-all require a package path.")
+	Assert(c.Path != "" || !classes && !hidden, "Invalid arguments: --class, --class-all, --hide and --hide-all require a package path.")
 	Assert(len(c.Class) == 0 || !c.ClassAll, "Invalid arguments: --class and --class-all cannot be used together.")
+	Assert(len(c.Hide) == 0 || !c.HideAll, "Invalid arguments: --hide and --hide-all cannot be used together.")
 	kinds := []rmKind{ // in the order of depKinds
 		{names: c.Bind, checkedIn: c.BindAll || c.BindCheckedIn, ephemeral: c.BindAll || c.BindEphemeral, unused: c.BindUnused},
 		{names: c.Spec, checkedIn: c.SpecAll || c.SpecCheckedIn, ephemeral: c.SpecAll || c.SpecEphemeral, unused: c.SpecUnused},
@@ -202,11 +210,11 @@ func (c *CmdRm) validate() []rmKind {
 	}
 	Assert(len(c.Pkg) == 0 || !c.PkgAll, "Invalid arguments: --pkg and --pkg-all cannot be used together.")
 	Assert(!c.Dir || len(c.Pkg) > 0 || c.PkgAll, "Invalid arguments: --dir can only be used with --pkg or --pkg-all.")
-	switch countTrue(slices.Max(counts) > 0 || depFlags > 0, len(c.Pkg) > 0 || c.PkgAll, classes) {
-	case 0:
-		LogFatal("Invalid arguments: a --bind, --spec, --engine, --dep, --pkg or --class option is required.")
-	case 2, 3:
-		LogFatal("Invalid arguments: dependencies, packages and classes cannot be removed in the same run.")
+	switch n := countTrue(slices.Max(counts) > 0 || depFlags > 0, len(c.Pkg) > 0 || c.PkgAll, classes, hidden); {
+	case n == 0:
+		LogFatal("Invalid arguments: a --bind, --spec, --engine, --dep, --pkg, --class or --hide option is required.")
+	case n > 1:
+		LogFatal("Invalid arguments: dependencies, packages, classes and hidden directories cannot be removed in the same run.")
 	}
 	return kinds
 }
@@ -263,6 +271,47 @@ func (c *CmdRm) removeClasses(root Path) {
 	root.Cd(packageFileName).WriteString(config.Encode())
 	for _, name := range names {
 		LogInfo("Removed the class %s.", name)
+	}
+	LogInfo("Success!")
+}
+
+// removeHidden removes the directories given by --hide or --hide-all from
+// the package's hidden directories, and deletes their .gdignore files.
+func (c *CmdRm) removeHidden(root Path) {
+	pkg := LoadPackageAt(root)
+	var dirs []string
+	for _, s := range c.Hide {
+		d := hiddenDir(s)
+		Assert(d != "", "Invalid arguments: %s is not a directory inside the package.", s)
+		Assert(slices.Contains(pkg.Config.Hidden, d), "Directory %s is not hidden in %s.", root.Cd(d).ToString(), root.ToString())
+		if !slices.Contains(dirs, d) {
+			dirs = append(dirs, d)
+		}
+	}
+	slices.Sort(dirs) // so each is confirmed once, in order
+	for _, d := range dirs {
+		Confirm("Stop hiding %s from Godot?", root.Cd(d).ToString())
+	}
+	if c.HideAll {
+		dirs = pkg.Config.Hidden
+		if len(dirs) == 0 {
+			LogWarn("Nothing to remove.")
+			return
+		}
+		var names []string
+		for _, dir := range pkg.HiddenDirs() {
+			names = append(names, dir.ToString())
+		}
+		Confirm("Stop hiding all directories %s from Godot?", strings.Join(names, ", "))
+	}
+	pkg.Config.Hidden = slices.DeleteFunc(slices.Clone(pkg.Config.Hidden), func(d string) bool { return slices.Contains(dirs, d) })
+	root.Cd(packageFileName).WriteString(pkg.Config.Encode())
+	for _, d := range dirs {
+		dir := root.Cd(d)
+		LogInfo("Stopped hiding %s.", dir.ToString())
+		if ignore := dir.Cd(gdignoreFileName); ignore.IsFile() {
+			rmPath(ignore)
+		}
 	}
 	LogInfo("Success!")
 }
