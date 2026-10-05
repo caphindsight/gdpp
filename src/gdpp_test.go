@@ -117,7 +117,7 @@ func TestTranspilePackage(t *testing.T) {
 		t.Errorf("icons = %q, want %q", icons, want)
 	}
 
-	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	var files []string
 	for file := range gen {
 		files = append(files, file)
@@ -144,7 +144,7 @@ func TestTranspilePackage(t *testing.T) {
 			}
 		}
 	}
-	register := m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
+	register := m.tree()[pkgDir+".gd++build/__register_types__.cpp"]
 	for _, want := range []string{`#include "Hitbox.h"`, `#include "Player.h"`, `#include "Weapon.h"`, "gdpp_register_class<Hidden>();\n\tgdpp_register_class<Blade>();\n\tgdpp_register_class<Hitbox>();",
 		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper> || std::is_same_v<T, Hidden> || std::is_same_v<T, Player> || std::is_same_v<T, Weapon>;",
 		"gdpp_is_abstract_class = false || std::is_same_v<T, Hitbox>;",
@@ -161,7 +161,7 @@ func TestTranspilePackage(t *testing.T) {
 	}
 	delete(m.nodes, pkgDir+"misc.gg")
 	transpileTestPackage(t, false)
-	gen = subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	gen = subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	for _, file := range []string{"Tiny.h", "Tiny.cpp", "doc_classes/", "doc_classes/Player.xml", "doc_classes/PkgAsync.xml"} {
 		if _, ok := gen[file]; ok {
 			t.Errorf("%s wasn't deleted.", file)
@@ -171,7 +171,7 @@ func TestTranspilePackage(t *testing.T) {
 		t.Error("Player.h was deleted.")
 	}
 	// Without Async, the package has no class of tasks, but still unloads its GD++ code.
-	register = m.tree()[pkgDir+".gd++pkg/__register_types__.cpp"]
+	register = m.tree()[pkgDir+".gd++build/__register_types__.cpp"]
 	if strings.Contains(register, "GDPP_ASYNC_CLASS") || !strings.Contains(register, "\tgdpp::uninitialize();\n") {
 		t.Errorf("__register_types__.cpp = %s\nwant gdpp::uninitialize() and no GDPP_ASYNC_CLASS", register)
 	}
@@ -183,7 +183,7 @@ func TestTranspilePackageEnumBases(t *testing.T) {
 		"b.gd++": "enum Small { extends Node.ProcessMode TINY }\nenum Result { extends Error }\n",
 		"c.gd++": "class Code {\n  func f() -> void { Error e = OK; }\n}\n",
 	})
-	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{
+	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{
 		"global_enums": [{"name": "Error", "values": [{"name": "OK", "value": 0}, {"name": "FAILED", "value": 1}]}],
 		"classes": [{"name": "Node", "enums": [{"name": "ProcessMode", "values": [{"name": "PROCESS_MODE_INHERIT", "value": 0}]}]}]}`)
 	old := testGodotNames
@@ -192,7 +192,7 @@ func TestTranspilePackageEnumBases(t *testing.T) {
 	withTTY(t, false)
 	withQuiet(t, false)
 	transpileTestPackage(t, false)
-	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	for file, want := range map[string]string{
 		"Big.h":    "\tINHERIT = 0,\n\tTINY = 1,\n\tHUGE = 2,\n",
 		"Small.h":  "\tINHERIT = 0,\n\tTINY = 1,\n",
@@ -210,12 +210,12 @@ func TestTranspilePackageEnumBitfields(t *testing.T) {
 		"a.gd++": "@bitfield enum Sizes { extends Control.SizeFlags HUGE }\n",
 		"b.gd++": "@bitfield enum More { extends Sizes BIG }\n",
 	})
-	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Control", "enums": [
+	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Control", "enums": [
 		{"name": "SizeFlags", "is_bitfield": true, "values": [{"name": "SIZE_FILL", "value": 1}, {"name": "SIZE_SHRINK_END", "value": 8}]}]}]}`)
 	withTTY(t, false)
 	withQuiet(t, false)
 	transpileTestPackage(t, false)
-	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	for file, want := range map[string]string{
 		"Sizes.h": "\tHUGE = 16,\n};\nGDPP_BITFIELD(Sizes)\n",
 		"More.h":  "\tBIG = 32,\n};\nGDPP_BITFIELD(More)\n",
@@ -235,7 +235,7 @@ func TestTranspilePackageExternBases(t *testing.T) {
 	withTTY(t, false)
 	withQuiet(t, false)
 	transpileTestPackage(t, false)
-	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	for file, want := range map[string]string{
 		"Big.h":  "class Big : public Small {",
 		"User.h": "gdpp::ExtRef<Big> big",
@@ -255,13 +255,13 @@ func TestTranspilePackageCppClasses(t *testing.T) {
 		"enemy/enemy.h": "#pragma once\nnamespace godot {\nclass Enemy : public Node3D {\n  GDCLASS(Enemy, Node3D)\n};\n}\n",
 	})
 	// Enemy's base, from its header, makes it a node, whose notifications come from the spec.
-	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Node", "constants": [{"name": "NOTIFICATION_READY", "value": 13}]}]}`)
+	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Node", "constants": [{"name": "NOTIFICATION_READY", "value": 13}]}]}`)
 	config := strings.Replace(buildPkgConfig, `icon = "pkg://enemy/enemy.svg"`, `icon = "pkg://enemy/enemy.svg"`+"\n  kind = \"ptr\"", 1)
 	m.nodes[pkgDir+packageFileName].data = []byte(strings.Replace(config, "tool = true", "tool = true\n  kind = \"ref\"", 1))
 	withTTY(t, false)
 	withQuiet(t, false)
 	transpileTestPackage(t, false)
-	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	for file, want := range map[string]string{
 		"Boss.h":   "class Boss : public Enemy {",
 		"Boss.cpp": "_gdpp_body__ready();",
@@ -283,18 +283,18 @@ func TestTranspilePackageCppClasses(t *testing.T) {
 func TestLoadGodotNamesOutdated(t *testing.T) {
 	m := withBuildFS(t)
 	pkg := LoadPackage(Cwd())
-	m.nodes[pkgDir+".gd++pkg/godot_names.toml"] = &memNode{data: []byte("version = 0\n")}
-	if err := m.MkdirAll(pkgDir+".gd++pkg/godot-cpp/include/godot_cpp/classes", 0o755); err != nil {
+	m.nodes[pkgDir+".gd++build/godot_names.toml"] = &memNode{data: []byte("version = 0\n")}
+	if err := m.MkdirAll(pkgDir+".gd++build/godot-cpp/include/godot_cpp/classes", 0o755); err != nil {
 		t.Fatal(err)
 	}
-	m.nodes[pkgDir+".gd++pkg/godot-cpp/include/godot_cpp/classes/ref.hpp"] = &memNode{data: []byte("namespace godot { template <typename T> class Ref {}; }")}
+	m.nodes[pkgDir+".gd++build/godot-cpp/include/godot_cpp/classes/ref.hpp"] = &memNode{data: []byte("namespace godot { template <typename T> class Ref {}; }")}
 	generated := false
 	var names []godotName
 	captureStderr(t, func() { names = loadGodotNames(pkg, func() { generated = true }) })
 	if want := []godotName{{"Ref", "<godot_cpp/classes/ref.hpp>", trans.Other, "template class", ""}}; !generated || !reflect.DeepEqual(names, want) {
 		t.Errorf("generated, names = %v, %v, want true, %v", generated, names, want)
 	}
-	if cache := m.tree()[pkgDir+".gd++pkg/godot_names.toml"]; !strings.HasPrefix(cache, fmt.Sprintf("version = %d\n", godotNamesVersion)) || !strings.Contains(cache, `name = "Ref"`) {
+	if cache := m.tree()[pkgDir+".gd++build/godot_names.toml"]; !strings.HasPrefix(cache, fmt.Sprintf("version = %d\n", godotNamesVersion)) || !strings.Contains(cache, `name = "Ref"`) {
 		t.Errorf("godot_names.toml = %q, want the new names", cache)
 	}
 }
@@ -311,7 +311,7 @@ func TestTranspilePackageMacros(t *testing.T) {
 	if len(classes) != 1 || classes[0].Name != "Crate" {
 		t.Fatalf("classes = %+v, want Crate", classes)
 	}
-	gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/")
+	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	// The template's C++ keeps its line in macros.gd++, which #line names by its copy, like the invoking file's.
 	for _, want := range []string{`return "Pkg/pkg";`, `#line 7 "package/macros.gd++"`} {
 		if !strings.Contains(gen["Crate.cpp"], want) {
@@ -329,7 +329,7 @@ func TestTranspilePackageMacroLibraries(t *testing.T) {
 	withTTY(t, false)
 	withQuiet(t, false)
 	transpileTestPackage(t, false)
-	if gen := subtree(m.tree(), pkgDir+".gd++pkg/gdpp/"); !strings.Contains(gen["Crate.cpp"], `return "Hi there";`) {
+	if gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/"); !strings.Contains(gen["Crate.cpp"], `return "Hi there";`) {
 		t.Errorf("Crate.cpp = %s\nwant it to contain the greeting", gen["Crate.cpp"])
 	}
 }
@@ -344,7 +344,7 @@ func TestTranspilePackageFails(t *testing.T) {
 		"duplicate macro": {map[string]string{"a.gd++": "macro twin() {\n}\n", "b.gd++": "template twin() {\n}\n"},
 			"[x] The name twin is declared in both res://src/pkg/a.gd++ and res://src/pkg/b.gd++.\n"},
 		"config clash": {map[string]string{"enemy.gd++": "class Enemy {}\n"},
-			"[x] Class Enemy is declared in res://src/pkg/enemy.gd++ and in res://src/pkg/.gd++pkg.toml.\n"},
+			"[x] Class Enemy is declared in res://src/pkg/enemy.gd++ and in res://src/pkg/.gd++pkg.\n"},
 		"class of tasks clash": {map[string]string{"a.gd++": "class PkgAsync {\n  @onthread\n  func f() -> void {}\n}\n"},
 			"[x] Class PkgAsync is declared in res://src/pkg/a.gd++, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res://src/pkg --prefix NAME`.\n"},
 		"syntax error": {map[string]string{"bad.gd++": "fun f() {}\n"},

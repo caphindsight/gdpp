@@ -309,7 +309,7 @@ See `gd++ man macros`.
 ## The build tool
 
 - A **project** is a normal Godot project.
-- A **package** is a directory with a `.gd++pkg.toml` file. It builds into one GDExtension library.
+- A **package** is a directory with a `.gd++pkg` file. It builds into one GDExtension library.
 - **Dependencies** are the Godot C++ bindings (godot-cpp) and the Godot API specs.
 
 ```sh
@@ -347,7 +347,7 @@ GD++ is ready to be used, but it's still experimental, and comes with **absolute
 | 0 | Nightly: the language as it's being developed. Never use it in production. |
 | 1 | Stable in theory, but experimental in practice. |
 
-Each package chooses its syntax version in its `.gd++pkg.toml`.
+Each package chooses its syntax version in its `.gd++pkg`.
 
 ## See also
 

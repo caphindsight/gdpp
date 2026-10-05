@@ -34,7 +34,7 @@ type ProjectDepCache struct {
 }
 
 // newProjectDepCache returns the cache of kind's deps stored under
-// res://_gd++/<name> (checked in) and res://.gd++proj/<name> (ephemeral).
+// res://_gd++/<name> (checked in) and res://.gd++cache/<name> (ephemeral).
 func newProjectDepCache(root Path, kind DepKind) ProjectDepCache {
 	return ProjectDepCache{
 		DepKind:      kind,

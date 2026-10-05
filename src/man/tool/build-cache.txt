@@ -1,6 +1,6 @@
-Build caches: the .gd++pkg directory
+Build caches: the .gd++build directory
 
-Every package has a build cache: the directory `.gd++pkg` at its root.
+Every package has a build cache: the directory `.gd++build` at its root.
 
 - Builds happen there.
 - It keeps everything builds can reuse, so the next build only compiles what changed.
@@ -9,7 +9,7 @@ Every package has a build cache: the directory `.gd++pkg` at its root.
 # What's inside
 
 ```
-my_package/.gd++pkg/
+my_package/.gd++build/
   build.toml                the package settings of the last sync
   godot-cpp/                a copy of the package's bindings
   extension_api.json        a copy of the package's API spec
@@ -35,7 +35,7 @@ my_package/.gd++pkg/
 
 At the start of every build, and of `gd++ doc` and `gd++ trans` in a package, `gd++` syncs the build cache with the package:
 
-1. It compares the package's id and settings (all of `.gd++pkg.toml` but its classes) with `build.toml`. If they differ, or `build.toml` is missing, it:
+1. It compares the package's id and settings (all of `.gd++pkg` but its classes) with `build.toml`. If they differ, or `build.toml` is missing, it:
    - cleans the package, like `gd++ clean --bin`,
    - copies the bindings and the spec into the cache,
    - writes the new `build.toml`.
@@ -73,7 +73,7 @@ Facts:
 - Files whose contents didn't change are left alone, so the C++ compiler doesn't recompile them.
 - Files that no GD++ file generates any more, e.g. after you rename a class, are deleted.
 - In debug builds, `gdpp/doc_classes` holds each class's documentation, in Godot's XML format, including the classes that GD++ adds, e.g. the class of tasks. Release builds delete it. See `gd++ man docs`.
-- The generated C++ is meant to be read. When the compiler reports an error in generated code, open the file it names, e.g. `my_package/.gd++pkg/gdpp/Player.cpp`.
+- The generated C++ is meant to be read. When the compiler reports an error in generated code, open the file it names, e.g. `my_package/.gd++build/gdpp/Player.cpp`.
 - `gd++ trans` shows it without building. See `gd++ man generated`.
 
 # Object files

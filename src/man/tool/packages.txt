@@ -1,6 +1,6 @@
-Packages: .gd++pkg.toml and source files
+Packages: .gd++pkg and source files
 
-A package is a directory in a project with a `.gd++pkg.toml` file.
+A package is a directory in a project with a `.gd++pkg` file.
 
 - It builds into one GDExtension library, with all the classes of its GD++ and C++ files.
 - A project can have many packages.
@@ -12,7 +12,7 @@ A package is a directory in a project with a `.gd++pkg.toml` file.
 gd++ init my_package --bind 10.0.0-stable --spec 4.7.2-stable
 ```
 
-This creates the directory `my_package` if needed, and writes `my_package/.gd++pkg.toml`. For a small game, put the package at the project root:
+This creates the directory `my_package` if needed, and writes `my_package/.gd++pkg`. For a small game, put the package at the project root:
 
 ```sh
 gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
@@ -20,7 +20,9 @@ gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
 
 See `gd++ man init` for all options.
 
-# .gd++pkg.toml
+# .gd++pkg
+
+A TOML file. It has no `.toml` extension, so the Godot editor doesn't show it.
 
 ```toml
 bind = "10.0.0-stable"
@@ -96,7 +98,7 @@ macro_depth (optional, default 64)
 
 Facts:
 
-- Missing required keys and unknown keys are errors, e.g. "Missing key spec in res://my_package/.gd++pkg.toml.".
+- Missing required keys and unknown keys are errors, e.g. "Missing key spec in res://my_package/.gd++pkg.".
 - Change the file with `gd++ init PATH --update`, or by hand.
 - `gd++ fix` reformats it and sorts its classes by name.
 
@@ -137,7 +139,7 @@ Every file in the package with one of these extensions is part of it. You don't 
 Files can be at any depth in the package directory, except in:
 
 - hidden directories, whose names start with ".",
-- nested packages (subdirectories with their own `.gd++pkg.toml`), whose files belong to them,
+- nested packages (subdirectories with their own `.gd++pkg`), whose files belong to them,
 - nested Godot projects (subdirectories with their own `project.godot`),
 - `res://_gd++`.
 
@@ -172,11 +174,11 @@ Godot finds and loads `.gdextension` files anywhere in a project. So once a pack
 A package registers with Godot:
 
 - every class declared in its GD++ files, see `gd++ man classes`,
-- every C++ class listed in its `.gd++pkg.toml`, see `gd++ man cpp-classes`.
+- every C++ class listed in its `.gd++pkg`, see `gd++ man cpp-classes`.
 
 Class names:
 
-- Must be unique in the package. GD++ fails if two files declare the same name, or if a GD++ class has the name of a class in `.gd++pkg.toml`.
+- Must be unique in the package. GD++ fails if two files declare the same name, or if a GD++ class has the name of a class in `.gd++pkg`.
 - Should be unique in the whole project, and differ from Godot's classes, since Godot has one namespace for all classes.
 - `gd++ ls` shows every package's classes, and marks names that are declared twice.
 
@@ -198,7 +200,7 @@ Class names:
 gd++ rm --pkg my_package
 ```
 
-- Deletes the package's `.gd++pkg.toml`, build cache, libraries and `.gdextension` files.
+- Deletes the package's `.gd++pkg`, build cache, libraries and `.gdextension` files.
 - Keeps its source files.
 - `--dir` deletes the whole directory.
 

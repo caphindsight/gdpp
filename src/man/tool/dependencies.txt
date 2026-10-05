@@ -10,10 +10,10 @@ Dependencies are big, versioned downloads from Godot that packages build with.
 Each kind has a short name, used in directory names and command options, e.g. `gd++ fetch --spec 4.7.2-stable`.
 
 bind: Godot C++ bindings
-  godot-cpp, the C++ library that GDExtensions are built with: its source code, and its tools that generate the C++ API from a spec. Every package names its bindings in `.gd++pkg.toml`, e.g. `bind = "10.0.0-stable"`.
+  godot-cpp, the C++ library that GDExtensions are built with: its source code, and its tools that generate the C++ API from a spec. Every package names its bindings in `.gd++pkg`, e.g. `bind = "10.0.0-stable"`.
 
 spec: Godot API specs
-  `extension_api.json`: every class, method, property and constant of one Godot version, as written by Godot's `--dump-extension-api` option. Every package names its spec in `.gd++pkg.toml`, e.g. `spec = "4.7.2-stable"`. The spec decides:
+  `extension_api.json`: every class, method, property and constant of one Godot version, as written by Godot's `--dump-extension-api` option. Every package names its spec in `.gd++pkg`, e.g. `spec = "4.7.2-stable"`. The spec decides:
   - which Godot classes your code can use,
   - the oldest Godot version that can load the library.
 
@@ -30,7 +30,7 @@ Names:
 
 Dependencies live in the project, in one of two caches. Each cache has a subdirectory per kind.
 
-res://.gd++proj/ (the ephemeral cache)
+res://.gd++cache/ (the ephemeral cache)
   - `gd++ fetch` puts dependencies here by default.
   - Keep it out of version control: anyone can download it again with `gd++ fetch --missing`.
   - With `vcs = "git"`, GD++ adds it to `.gitignore`.
@@ -48,7 +48,7 @@ Facts:
 
 ```
 res://_gd++/spec/4.7.2-stable/extension_api.json
-res://.gd++proj/bind/10.0.0-stable/...
+res://.gd++cache/bind/10.0.0-stable/...
 ```
 
 # Version order

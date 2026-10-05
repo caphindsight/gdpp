@@ -72,7 +72,7 @@ and a teammate adds them with `gd++ vendor --bind my-godot-cpp --from ~/my-godot
 # 5. Share it
 
 ```sh
-git add _gd++ .gd++pkg.toml
+git add _gd++ .gd++pkg
 ```
 
 A teammate who pulls gets the spec with the repository. So `gd++ fetch --missing` only downloads what's left, e.g. official bindings. See `gd++ man team-git`.

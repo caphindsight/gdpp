@@ -1,4 +1,4 @@
-/.gd++pkg/**
+/.gd++build/**
 /lib*.dll
 /lib*.so
 /lib*.dylib

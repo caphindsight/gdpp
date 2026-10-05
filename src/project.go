@@ -19,13 +19,13 @@ type Project struct {
 	Caches       []ProjectDepCache // one per kind of dep, in the order of depKinds
 }
 
-// ProjectConfig holds the GD++ settings from res://.gd++proj.toml.
+// ProjectConfig holds the GD++ settings from res://.gd++proj.
 type ProjectConfig struct {
 	VCS     string `toml:"vcs"`
 	Presets bool   `toml:"presets"` // whether GD++'s exclude filters are kept in the export presets
 }
 
-// DefaultProjectConfig returns the config used when res://.gd++proj.toml
+// DefaultProjectConfig returns the config used when res://.gd++proj
 // doesn't exist.
 func DefaultProjectConfig() ProjectConfig {
 	return ProjectConfig{VCS: "none", Presets: true}
@@ -50,7 +50,7 @@ var (
 )
 
 // CreateTempDir creates a new, randomly named, empty directory inside
-// res://.gd++proj/temp, creating that directory too if needed. The directory
+// res://.gd++cache/temp, creating that directory too if needed. The directory
 // is deleted by Cleanup, which also runs if the program exits via Fail.
 func (p *Project) CreateTempDir() Path {
 	Cleanup(p.Cleanup)
@@ -67,7 +67,7 @@ func (p *Project) Cleanup() {
 	p.tempDir().RemoveIfExists()
 }
 
-// tempDir returns res://.gd++proj/temp, which holds temporary directories.
+// tempDir returns res://.gd++cache/temp, which holds temporary directories.
 func (p *Project) tempDir() Path {
 	return p.Root.Cd(ephemeralDepsDirName, tempDirName)
 }

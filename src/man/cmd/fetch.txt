@@ -13,7 +13,7 @@ Any of these with [--url URL] [--branch BRANCH].
 # Description
 
 - Downloads dependencies from the GD++ dependency repository, a git repository.
-- They go into the ephemeral cache, `res://.gd++proj`, or with `--checkin` into the checked in cache, `res://_gd++`.
+- They go into the ephemeral cache, `res://.gd++cache`, or with `--checkin` into the checked in cache, `res://_gd++`.
 - With an `--index` option, it lists the repository's dependencies instead.
 - It makes a shallow, sparse clone of the repository into a temporary directory, checks out only the index and the chosen dependencies, and moves them into the cache.
 - It needs git.
@@ -23,7 +23,7 @@ See `gd++ man dependencies`.
 # Options
 
 --missing
-  Fetch the bindings and specs that the project's packages name in their `.gd++pkg.toml` files, but that neither cache has.
+  Fetch the bindings and specs that the project's packages name in their `.gd++pkg` files, but that neither cache has.
   - The usual way to set up a project after cloning it.
   - If nothing is missing, it says "No dependencies are missing." and doesn't touch the network.
   - Combines with the options below, to fetch more.

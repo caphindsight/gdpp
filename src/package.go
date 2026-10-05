@@ -1,4 +1,4 @@
-// package.go: Package, a GD++ package described by its .gd++pkg.toml file.
+// package.go: Package, a GD++ package described by its .gd++pkg file.
 
 package main
 
@@ -11,15 +11,15 @@ import (
 )
 
 // Package is a GD++ package: a directory inside a project with a
-// .gd++pkg.toml file.
+// .gd++pkg file.
 type Package struct {
 	Root       Path
 	Id         string // name of the root directory
 	Config     PackageConfig
-	BuildCache Path // <root>/.gd++pkg
+	BuildCache Path // <root>/.gd++build
 }
 
-// PackageConfig holds the settings from a package's .gd++pkg.toml.
+// PackageConfig holds the settings from a package's .gd++pkg.
 type PackageConfig struct {
 	Bindings    string         `toml:"bind"` // mandatory
 	ApiSpec     string         `toml:"spec"` // mandatory

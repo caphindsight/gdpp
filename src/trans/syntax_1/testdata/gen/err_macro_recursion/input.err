@@ -1,7 +1,7 @@
 input.gd++:4:1: Invocations are nested more than 64 levels deep here.
  4 | invoke forever()
    | ^^^^^^^^^^^^^^
-Hint: A macro or template probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in .gd++pkg.toml.
+Hint: A macro or template probably invokes itself, directly or through others. If it only needs to nest deeper, raise macro_depth in .gd++pkg.
 Macro call stack:
   macro forever, invoked in generated code
   macro forever, invoked in generated code

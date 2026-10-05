@@ -5,7 +5,7 @@ The build tool: an overview
 # The pieces
 
 - Project: a normal Godot project, i.e. a directory with a `project.godot` file. GD++ needs nothing more. See `gd++ man projects`.
-- Package: a directory in the project with a `.gd++pkg.toml` file.
+- Package: a directory in the project with a `.gd++pkg` file.
   - It builds into one GDExtension library, from all its GD++ and C++ files.
   - A project has any number of packages, or just one at its root.
   - See `gd++ man packages`.
@@ -20,10 +20,10 @@ The build tool: an overview
 ```
 my_game/                     a project
   project.godot
-  .gd++pkg.toml              the package at the project root
+  .gd++pkg                   the package at the project root
   player.gd++                its GD++ code
-  .gd++proj/                 downloaded dependencies
-  .gd++pkg/                  the package's build cache
+  .gd++cache/                downloaded dependencies
+  .gd++build/                the package's build cache
   my_game.gdextension        what Godot loads
   libmy_game.linux.debug.x86_64.so
 ```

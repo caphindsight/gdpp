@@ -15,7 +15,7 @@ gd++ build [PATH...] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
 - Builds the packages one after another, in the order of the paths.
 - Writes them into the package root, with the package's `.gdextension` file. Godot loads them from there.
 - To build the whole project, run `gd++ build res://...`.
-- Keeps GD++'s exclude filters in the project's export presets up to date, as the `presets` setting in `.gd++proj.toml` says. See `gd++ man shipping`.
+- Keeps GD++'s exclude filters in the project's export presets up to date, as the `presets` setting in `.gd++proj` says. See `gd++ man shipping`.
 
 For how builds work, targets, and debug and release builds in depth, see `gd++ man building`.
 
@@ -226,7 +226,7 @@ gd++ build --clean
 - "Invalid arguments: --cc clang cannot build for windows on this machine." MSVC and clang-cl only run on Windows. On Windows, godot-cpp only supports MinGW-w64's GCC.
 - An error in a GD++ file, with its location and a hint. See `gd++ man errors`.
 - "The name X is declared in both A and B." Two GD++ files of the package declare the same class, extern or enum.
-- "Class X is declared in FILE and in .gd++pkg.toml." A GD++ class and a C++ class have the same name.
+- "Class X is declared in FILE and in .gd++pkg." A GD++ class and a C++ class have the same name.
 - The building task fails: the compiler or linker failed, and its whole output follows. Errors in the C++ code of GD++ files point to the GD++ files.
 
 # See also

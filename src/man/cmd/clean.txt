@@ -8,7 +8,7 @@ gd++ clean [PATH...] [--bin]
 
 # Description
 
-- Deletes the build cache, `.gd++pkg`, of the package that contains each PATH.
+- Deletes the build cache, `.gd++build`, of the package that contains each PATH.
 - The next build starts from scratch: it copies the dependencies again, and compiles godot-cpp and all code again.
 - With `--bin`, also deletes the package's built files: every library and `.gdextension` file in its root.
 - Always safe: build caches only hold generated files.

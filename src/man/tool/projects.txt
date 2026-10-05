@@ -15,13 +15,14 @@ Facts:
 - `gd++` never writes `project.godot`.
 - The project's id is the name of its root directory. The package at the project root has the same id.
 
-# .gd++proj.toml
+# .gd++proj
 
-`res://.gd++proj.toml` holds the project's GD++ settings.
+`res://.gd++proj` holds the project's GD++ settings.
 
+- It's a TOML file. It has no `.toml` extension, so the Godot editor doesn't show it.
 - It's optional: without it, every setting has its default.
 - `gd++ init` without a path creates it.
-- Unknown keys are an error: "Unknown key ... in res://.gd++proj.toml.".
+- Unknown keys are an error: "Unknown key ... in res://.gd++proj.".
 - `gd++ fix` reformats it to its canonical form.
 
 ```toml
@@ -44,17 +45,17 @@ presets
 res://
   project.godot        Godot's, never changed by GD++
   export_presets.cfg   Godot's, GD++ adds its exclude filters to every preset
-  .gd++proj.toml       the project's GD++ settings (optional)
-  .gd++proj/           the ephemeral dependency cache
+  .gd++proj            the project's GD++ settings (optional)
+  .gd++cache/          the ephemeral dependency cache
     bind/NAME/         Godot C++ bindings
     spec/NAME/         Godot API specs
     engine/NAME/       Godot engines
     temp/              temporary files of running commands
   _gd++/               the checked in dependency cache
     bind/NAME/  spec/NAME/  engine/NAME/
-  some_package/        a package (any directory with a .gd++pkg.toml)
-    .gd++pkg.toml
-    .gd++pkg/          the package's build cache
+  some_package/        a package (any directory with a .gd++pkg)
+    .gd++pkg
+    .gd++build/        the package's build cache
     some_package.gdextension, .gdextension.uid, lib*.so/.dll/.dylib
 ```
 
@@ -66,12 +67,12 @@ Facts:
 
 - `gd++` creates directories only when it first needs them. A fresh project has none of them.
 - It deletes cache directories that become empty, e.g. after you remove the last dependency.
-- When it creates `res://_gd++`, `res://.gd++proj` or a package's `.gd++pkg`, it writes an empty `.gdignore` file into it. So Godot never imports the files in the caches.
+- When it creates `res://_gd++`, `res://.gd++cache` or a package's `.gd++build`, it writes an empty `.gdignore` file into it. So Godot never imports the files in the caches.
 - Commit `res://_gd++/.gdignore` with the rest of `res://_gd++`.
 
 # Temporary files
 
-- `gd++ fetch` and `gd++ vendor` work in a randomly named directory in `res://.gd++proj/temp`.
+- `gd++ fetch` and `gd++ vendor` work in a randomly named directory in `res://.gd++cache/temp`.
 - They delete it when they finish or fail.
 - If `gd++` is killed, e.g. with Ctrl+C, the directory may stay behind. `gd++ fix` deletes it.
 
@@ -97,14 +98,14 @@ A project with two packages:
 ```
 my_game/
   project.godot
-  .gd++proj.toml       vcs = "git", presets = true
+  .gd++proj            vcs = "git", presets = true
   .gitignore
   gameplay/
-    .gd++pkg.toml
+    .gd++pkg
     player.gd++
     enemy.gd++
   tools/
-    .gd++pkg.toml
+    .gd++pkg
     level_editor.gd++
 ```
 
@@ -112,7 +113,7 @@ Set up with:
 
 ```sh
 cd my_game
-gd++ init --vcs git                                              # creates .gd++proj.toml
+gd++ init --vcs git                                              # creates .gd++proj
 gd++ init gameplay --bind 10.0.0-stable --spec 4.7.2-stable
 gd++ init tools --bind 10.0.0-stable --spec 4.7.2-stable
 gd++ fetch --missing

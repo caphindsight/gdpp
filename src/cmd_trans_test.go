@@ -99,7 +99,7 @@ func TestTransDebug(t *testing.T) {
 // transSpecProject is a project with a cached API spec, in writeTransFiles format.
 var transSpecProject = map[string]string{
 	"project.godot":                         testProjectTree["/games/my_game/"+projectFileName],
-	".gd++proj/spec/4.3/extension_api.json": `{"classes": [{"name": "RefCounted", "is_refcounted": true}, {"name": "Node3D", "is_refcounted": false}]}`,
+	".gd++cache/spec/4.3/extension_api.json": `{"classes": [{"name": "RefCounted", "is_refcounted": true}, {"name": "Node3D", "is_refcounted": false}]}`,
 	"src/a.gd++":                            "class A {}\nclass B {\n  extends Node3D\n}\n",
 }
 
@@ -133,9 +133,9 @@ func withTransPackage(t *testing.T) {
 	m := withGdppFS(t, gdppTestFiles)
 	withTTY(t, false)
 	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
-	m.nodes[pkgDir+".gd++pkg/godot_names.toml"] = &memNode{data: []byte(encodeToml(godotNamesCache{godotNamesVersion, testGodotNames}))}
-	m.MkdirAll("/games/my_game/.gd++proj/spec/4.4", 0o755)
-	m.nodes["/games/my_game/.gd++proj/spec/4.4/extension_api.json"] = &memNode{data: []byte(`{"classes": [{"name": "Node3D"}, {"name": "Resource"}]}`)}
+	m.nodes[pkgDir+".gd++build/godot_names.toml"] = &memNode{data: []byte(encodeToml(godotNamesCache{godotNamesVersion, testGodotNames}))}
+	m.MkdirAll("/games/my_game/.gd++cache/spec/4.4", 0o755)
+	m.nodes["/games/my_game/.gd++cache/spec/4.4/extension_api.json"] = &memNode{data: []byte(`{"classes": [{"name": "Node3D"}, {"name": "Resource"}]}`)}
 }
 
 func TestTransPackage(t *testing.T) {

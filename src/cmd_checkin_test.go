@@ -41,36 +41,36 @@ func wantDeps(t *testing.T, m *memFS, from []string, to ...string) {
 }
 
 func TestCheckInNames(t *testing.T) {
-	from := []string{".gd++proj/bind/4.3", ".gd++proj/bind/4.4", "_gd++/spec/4.3", ".gd++proj/engine/4.3"}
+	from := []string{".gd++cache/bind/4.3", ".gd++cache/bind/4.4", "_gd++/spec/4.3", ".gd++cache/engine/4.3"}
 	m := withCheckInFS(t, from...)
 	(&CmdCheckIn{Bind: []string{"4.3"}, Spec: []string{"4.3"}, Engine: []string{"4.3"}}).Run()
-	wantDeps(t, m, from, "_gd++/bind/4.3", ".gd++proj/bind/4.4", "_gd++/spec/4.3", "_gd++/engine/4.3")
+	wantDeps(t, m, from, "_gd++/bind/4.3", ".gd++cache/bind/4.4", "_gd++/spec/4.3", "_gd++/engine/4.3")
 }
 
 func TestCheckInKindAll(t *testing.T) {
-	from := []string{".gd++proj/bind/4.3", "_gd++/bind/4.4", ".gd++proj/spec/4.3"}
+	from := []string{".gd++cache/bind/4.3", "_gd++/bind/4.4", ".gd++cache/spec/4.3"}
 	m := withCheckInFS(t, from...)
 	(&CmdCheckIn{BindAll: true}).Run()
-	wantDeps(t, m, from, "_gd++/bind/4.3", "_gd++/bind/4.4", ".gd++proj/spec/4.3")
+	wantDeps(t, m, from, "_gd++/bind/4.3", "_gd++/bind/4.4", ".gd++cache/spec/4.3")
 }
 
 func TestCheckInAllUndo(t *testing.T) {
-	from := []string{"_gd++/bind/4.3", ".gd++proj/bind/4.4", "_gd++/spec/4.3", "_gd++/engine/4.3"}
+	from := []string{"_gd++/bind/4.3", ".gd++cache/bind/4.4", "_gd++/spec/4.3", "_gd++/engine/4.3"}
 	m := withCheckInFS(t, from...)
 	(&CmdCheckIn{All: true, Undo: true}).Run()
-	wantDeps(t, m, from, ".gd++proj/bind/4.3", ".gd++proj/bind/4.4", ".gd++proj/spec/4.3", ".gd++proj/engine/4.3")
+	wantDeps(t, m, from, ".gd++cache/bind/4.3", ".gd++cache/bind/4.4", ".gd++cache/spec/4.3", ".gd++cache/engine/4.3")
 }
 
 func TestCheckInDuplicate(t *testing.T) {
-	from := []string{"_gd++/bind/4.3", ".gd++proj/bind/4.3", "_gd++/spec/4.3", ".gd++proj/spec/4.3"}
+	from := []string{"_gd++/bind/4.3", ".gd++cache/bind/4.3", "_gd++/spec/4.3", ".gd++cache/spec/4.3"}
 	m := withCheckInFS(t, from...)
 	(&CmdCheckIn{BindAll: true}).Run()
 	(&CmdCheckIn{Spec: []string{"4.3"}, Undo: true}).Run()
-	wantDeps(t, m, []string{from[0], from[3]}, "_gd++/bind/4.3", ".gd++proj/spec/4.3")
+	wantDeps(t, m, []string{from[0], from[3]}, "_gd++/bind/4.3", ".gd++cache/spec/4.3")
 }
 
 func TestCheckInWarnsIfDone(t *testing.T) {
-	withCheckInFS(t, "_gd++/bind/4.3", ".gd++proj/bind/4.4", ".gd++proj/engine/4.3")
+	withCheckInFS(t, "_gd++/bind/4.3", ".gd++cache/bind/4.4", ".gd++cache/engine/4.3")
 	withQuiet(t, false)
 	withTTY(t, false)
 	out := captureStderr(t, (&CmdCheckIn{Engine: []string{"4.3"}, Undo: true}).Run)
@@ -88,7 +88,7 @@ func TestCheckInWarnsIfDone(t *testing.T) {
 func TestCheckInMissing(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
-		withCheckInFS(t, ".gd++proj/bind/4.3")
+		withCheckInFS(t, ".gd++cache/bind/4.3")
 		withQuiet(t, false)
 		(&CmdCheckIn{Bind: []string{"4.3"}, Spec: []string{"4.4"}}).Run()
 		return

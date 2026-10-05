@@ -21,16 +21,16 @@ func withDocFS(t *testing.T) *memFS {
 		m.MkdirAll(path.Dir(file), 0o755)
 		m.nodes[file] = &memNode{data: []byte(text)}
 	}
-	write("/games/my_game/.gd++proj/bind/4.3/include/godot_cpp/variant/typed_array.hpp",
+	write("/games/my_game/.gd++cache/bind/4.3/include/godot_cpp/variant/typed_array.hpp",
 		"namespace godot {\n// An array of T.\ntemplate <typename T>\nclass TypedArray : public Array {\npublic:\n\t// Makes one.\n\tTypedArray();\n\tvoid assign(const Array &p_array);\n};\n}\n")
-	write("/games/my_game/.gd++proj/bind/4.3/include/godot_cpp/variant/char_string.hpp",
+	write("/games/my_game/.gd++cache/bind/4.3/include/godot_cpp/variant/char_string.hpp",
 		"namespace godot {\ntemplate <typename T>\nclass CharStringT {\npublic:\n\tconst T *get_data() const;\n};\n// A string of chars.\nusing CharString = CharStringT<char>;\n}\n")
 	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
-	write(pkgDir+".gd++pkg/build/godot-cpp/gen/include/godot_cpp/variant/array.hpp",
+	write(pkgDir+".gd++build/build/godot-cpp/gen/include/godot_cpp/variant/array.hpp",
 		"namespace godot {\nclass Array : public Object {\npublic:\n\tvoid push_back(const Variant &p_value);\n\tvoid push_back(int p_value);\n};\n}\n")
-	write(pkgDir+".gd++pkg/build/godot-cpp/gen/include/godot_cpp/classes/object.hpp",
+	write(pkgDir+".gd++build/build/godot-cpp/gen/include/godot_cpp/classes/object.hpp",
 		"namespace godot {\nclass Object {\npublic:\n\t// Frees it.\n\tvoid free();\n};\nenum Error {\n\tOK,\n\tFAILED = 1\n};\n}\n")
-	write(pkgDir+".gd++pkg/godot_names.toml", encodeToml(godotNamesCache{godotNamesVersion, []godotName{
+	write(pkgDir+".gd++build/godot_names.toml", encodeToml(godotNamesCache{godotNamesVersion, []godotName{
 		{"Array", "<godot_cpp/variant/array.hpp>", trans.Other, "class", "Object"},
 		{"CharString", "<godot_cpp/variant/char_string.hpp>", trans.Other, "alias", "CharStringT<char>"},
 		{"CharStringT", "<godot_cpp/variant/char_string.hpp>", trans.Other, "template class", ""},
@@ -79,7 +79,7 @@ func TestDoc(t *testing.T) {
 
 func TestDocNotifications(t *testing.T) {
 	m := withDocFS(t)
-	m.nodes[pkgDir+".gd++pkg/extension_api.json"] = &memNode{data: []byte(`{"classes": [
+	m.nodes[pkgDir+".gd++build/extension_api.json"] = &memNode{data: []byte(`{"classes": [
 		{"name": "Object", "constants": [{"name": "NOTIFICATION_PREDELETE", "value": 1}, {"name": "NOTIFICATION_POSTINITIALIZE", "value": 0}]},
 		{"name": "Array"},
 		{"name": "CanvasItem", "constants": [{"name": "NOTIFICATION_DRAW", "value": 30}, {"name": "MARGIN", "value": 3}]}]}`)}

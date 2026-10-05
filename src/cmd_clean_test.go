@@ -15,8 +15,8 @@ import (
 func withCleanFS(t *testing.T, cwd string) *memFS {
 	tree := withPackages(map[string]string{"src/pkg": testRmPackage, "src/other": testRmPackage})
 	tree["/games/my_game/"+packageFileName] = testRmPackage
-	tree["/games/my_game/.gd++pkg/a.o"] = ""
-	tree["/games/my_game/src/pkg/.gd++pkg/a.o"] = ""
+	tree["/games/my_game/.gd++build/a.o"] = ""
+	tree["/games/my_game/src/pkg/.gd++build/a.o"] = ""
 	tree["/games/my_game/src/pkg/main.cpp"] = ""
 	withQuiet(t, false)
 	withTTY(t, false)
@@ -27,7 +27,7 @@ func withCleanFS(t *testing.T, cwd string) *memFS {
 func buildCaches(m *memFS) []string {
 	var caches []string
 	for path := range subtree(m.tree(), "/games/my_game/") {
-		if strings.HasSuffix(path, ".gd++pkg/") {
+		if strings.HasSuffix(path, ".gd++build/") {
 			caches = append(caches, path)
 		}
 	}
@@ -41,7 +41,7 @@ func TestClean(t *testing.T) {
 	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
-	if got, want := buildCaches(m), []string{".gd++pkg/"}; !reflect.DeepEqual(got, want) {
+	if got, want := buildCaches(m), []string{".gd++build/"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("caches = %v, want %v", got, want)
 	}
 	if _, ok := m.tree()["/games/my_game/src/pkg/main.cpp"]; !ok {
@@ -106,7 +106,7 @@ func TestCleanRecursiveSubdir(t *testing.T) {
 	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
-	if got, want := buildCaches(m), []string{".gd++pkg/"}; !reflect.DeepEqual(got, want) {
+	if got, want := buildCaches(m), []string{".gd++build/"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("caches = %v, want %v", got, want)
 	}
 }

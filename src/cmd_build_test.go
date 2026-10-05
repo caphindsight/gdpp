@@ -38,9 +38,9 @@ spec = "4.3"
 func withBuildFS(t *testing.T) *memFS {
 	tree := withPackages(map[string]string{"src/pkg": buildPkgConfig, "src/pkg/nested": syncPkgConfig})
 	for file, text := range map[string]string{
-		".gd++proj/bind/4.3/SConstruct":         "bind",
-		".gd++proj/bind/4.3/src/godot.cpp":      "godot",
-		".gd++proj/spec/4.3/extension_api.json": "{}",
+		".gd++cache/bind/4.3/SConstruct":         "bind",
+		".gd++cache/bind/4.3/src/godot.cpp":      "godot",
+		".gd++cache/spec/4.3/extension_api.json": "{}",
 		"src/pkg/main.cpp":                      "",
 		"src/pkg/util.c++":                      "",
 		"src/pkg/enemy/enemy.cc":                "",
@@ -48,7 +48,7 @@ func withBuildFS(t *testing.T) *memFS {
 		"src/pkg/enemy/notes.txt":               "",
 		"src/pkg/.hidden/skip.cpp":              "",
 		"src/pkg/nested/skip.cpp":               "",
-		"src/pkg/.gd++pkg/godot-cpp/stale.cpp":  "",
+		"src/pkg/.gd++build/godot-cpp/stale.cpp":  "",
 	} {
 		tree["/games/my_game/"+file] = text
 	}
@@ -62,7 +62,7 @@ func TestGenerateBuildCache(t *testing.T) {
 		generateBuildCache(p, LoadPackage(Cwd()))
 		generateRegisterTypes(LoadPackage(Cwd()), nil)
 	})
-	after := subtree(m.tree(), "/games/my_game/src/pkg/.gd++pkg/")
+	after := subtree(m.tree(), "/games/my_game/src/pkg/.gd++build/")
 
 	for file, want := range map[string]string{"godot-cpp/SConstruct": "bind", "godot-cpp/src/godot.cpp": "godot", "extension_api.json": "{}"} {
 		if after[file] != want {
@@ -107,13 +107,13 @@ func TestGenerateBuildCache(t *testing.T) {
 func TestSyncSources(t *testing.T) {
 	m := withBuildFS(t)
 	NewPath("/games/my_game/src/pkg/main.cpp").WriteString("int main;")
-	stale := NewPath("/games/my_game/src/pkg/.gd++pkg/package/gone/gone.cpp")
+	stale := NewPath("/games/my_game/src/pkg/.gd++build/package/gone/gone.cpp")
 	stale.CreateParentDirectory()
 	stale.WriteString("stale")
 	// The GD++ file's copy is the text read for transpiling, not what's on disk.
 	NewPath("/games/my_game/src/pkg/player.gd++").WriteString("edited")
 	syncSources(LoadProject(Cwd()), LoadPackage(Cwd()), []gdppFile{{Rel: "player.gd++", Src: "read"}})
-	got := subtree(m.tree(), "/games/my_game/src/pkg/.gd++pkg/package/")
+	got := subtree(m.tree(), "/games/my_game/src/pkg/.gd++build/package/")
 	want := map[string]string{"main.cpp": "int main;", "util.c++": "", "enemy/": "", "enemy/enemy.cc": "", "enemy/enemy.h": "", "player.gd++": "read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("package/ = %v, want %v", got, want)
@@ -122,7 +122,7 @@ func TestSyncSources(t *testing.T) {
 
 func TestGenerateGdextension(t *testing.T) {
 	m := withBuildFS(t)
-	m.nodes["/games/my_game/.gd++proj/spec/4.3/extension_api.json"].data = []byte(`{"header": {"version_major": 4, "version_minor": 5, "version_patch": 1}}`)
+	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{"header": {"version_major": 4, "version_minor": 5, "version_patch": 1}}`)
 	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
 	withTTY(t, false)
 	withQuiet(t, false)
@@ -189,7 +189,7 @@ func TestGenerateBuildCacheState(t *testing.T) {
 		captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
 	}
 	generate()
-	state := "/games/my_game/src/pkg/.gd++pkg/build.toml"
+	state := "/games/my_game/src/pkg/.gd++build/build.toml"
 	if got, want := m.tree()[state], "id = \"pkg\"\n\n[config]\n  bind = \"4.3\"\n  spec = \"4.3\"\n"; !strings.HasPrefix(got, want) {
 		t.Errorf("build.toml = %q, want it to start with %q", got, want)
 	}
@@ -199,12 +199,12 @@ func TestGenerateBuildCacheState(t *testing.T) {
 	}
 
 	// Same id and config but classes: nothing is cleaned or synced, even if the bindings changed.
-	NewPath("/games/my_game/.gd++proj/bind/4.3/SConstruct").WriteString("edited")
-	m.nodes["/games/my_game/src/pkg/.gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `name = "Hidden"`, `name = "Shown"`, 1))
+	NewPath("/games/my_game/.gd++cache/bind/4.3/SConstruct").WriteString("edited")
+	m.nodes["/games/my_game/src/pkg/.gd++pkg"].data = []byte(strings.Replace(buildPkgConfig, `name = "Hidden"`, `name = "Shown"`, 1))
 	m.nodes["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"] = &memNode{}
 	generate()
 	tree := m.tree()
-	if got := tree["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "bind" {
+	if got := tree["/games/my_game/src/pkg/.gd++build/godot-cpp/SConstruct"]; got != "bind" {
 		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "bind")
 	}
 	if _, ok := tree["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"]; !ok {
@@ -212,22 +212,22 @@ func TestGenerateBuildCacheState(t *testing.T) {
 	}
 
 	// Other config: cleaned, libraries included, and synced again.
-	m.nodes["/games/my_game/.gd++proj/spec/4.4/extension_api.json"] = &memNode{data: []byte("{4.4}")}
-	m.nodes["/games/my_game/.gd++proj/spec/4.4"] = &memNode{dir: true}
-	m.nodes["/games/my_game/src/pkg/.gd++pkg.toml"].data = []byte(strings.Replace(buildPkgConfig, `spec = "4.3"`, `spec = "4.4"`, 1))
-	m.nodes["/games/my_game/src/pkg/.gd++pkg/a.o"] = &memNode{}
+	m.nodes["/games/my_game/.gd++cache/spec/4.4/extension_api.json"] = &memNode{data: []byte("{4.4}")}
+	m.nodes["/games/my_game/.gd++cache/spec/4.4"] = &memNode{dir: true}
+	m.nodes["/games/my_game/src/pkg/.gd++pkg"].data = []byte(strings.Replace(buildPkgConfig, `spec = "4.3"`, `spec = "4.4"`, 1))
+	m.nodes["/games/my_game/src/pkg/.gd++build/a.o"] = &memNode{}
 	generate()
 	tree = m.tree()
 	if !strings.Contains(tree[state], "spec = \"4.4\"") {
 		t.Errorf("build.toml = %q, want it to contain spec 4.4", tree[state])
 	}
-	if got := tree["/games/my_game/src/pkg/.gd++pkg/extension_api.json"]; got != "{4.4}" {
+	if got := tree["/games/my_game/src/pkg/.gd++build/extension_api.json"]; got != "{4.4}" {
 		t.Errorf("extension_api.json = %q, want %q", got, "{4.4}")
 	}
-	if got := tree["/games/my_game/src/pkg/.gd++pkg/godot-cpp/SConstruct"]; got != "edited" {
+	if got := tree["/games/my_game/src/pkg/.gd++build/godot-cpp/SConstruct"]; got != "edited" {
 		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "edited")
 	}
-	for _, file := range []string{".gd++pkg/a.o", "libpkg.linux.debug.x86_64.so"} {
+	for _, file := range []string{".gd++build/a.o", "libpkg.linux.debug.x86_64.so"} {
 		if _, ok := tree["/games/my_game/src/pkg/"+file]; ok {
 			t.Errorf("%s was not deleted", file)
 		}
@@ -238,8 +238,8 @@ func TestBuildMissingDep(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
 		m := withBuildFS(t)
-		delete(m.nodes, "/games/my_game/.gd++proj/spec/4.3/extension_api.json")
-		delete(m.nodes, "/games/my_game/.gd++proj/spec/4.3")
+		delete(m.nodes, "/games/my_game/.gd++cache/spec/4.3/extension_api.json")
+		delete(m.nodes, "/games/my_game/.gd++cache/spec/4.3")
 		generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd()))
 		return
 	}
@@ -346,7 +346,7 @@ func TestBuildDocs(t *testing.T) {
 func TestGenerateBuildCacheGdpp(t *testing.T) {
 	m := withGdppFS(t, map[string]string{"player.gd++": "class_name Player\n", "items/sword.gg": "class Sword {}\n"})
 	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
-	sconstruct := m.tree()[pkgDir+".gd++pkg/SConstruct"]
+	sconstruct := m.tree()[pkgDir+".gd++build/SConstruct"]
 	for _, want := range []string{
 		`AddOption("--gdpp-bindings"`,
 		"if GetOption(\"gdpp_bindings\"):\n    Default(None)\n    Default(Dir(\"build/godot-cpp/gen\"))\nelse:",
@@ -410,7 +410,7 @@ func TestGenerateBuildCacheColor(t *testing.T) {
 		m := withBuildFS(t)
 		withTTY(t, tty)
 		captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
-		sconstruct := m.tree()["/games/my_game/src/pkg/.gd++pkg/SConstruct"]
+		sconstruct := m.tree()["/games/my_game/src/pkg/.gd++build/SConstruct"]
 		if got := strings.Contains(sconstruct, `"-fdiagnostics-color=always"`); got != tty {
 			t.Errorf("with a terminal = %v, SConstruct forces colors = %v, want %v", tty, got, tty)
 		}
@@ -422,7 +422,7 @@ func TestGenerateRegisterTypesAbstract(t *testing.T) {
 	pkg := NewPath("/games/my_game/src/pkg")
 	pkg.Cd(packageFileName).WriteString(strings.Replace(buildPkgConfig, "name = \"Hidden\"", "name = \"Hidden\"\n  abstract = true", 1))
 	captureStderr(t, func() { generateRegisterTypes(LoadPackage(Cwd()), nil) })
-	register := pkg.Cd(".gd++pkg", "__register_types__.cpp").ReadString()
+	register := pkg.Cd(".gd++build", "__register_types__.cpp").ReadString()
 	for _, want := range []string{
 		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper>;",
 		"gdpp_is_abstract_class = false || std::is_same_v<T, Hidden>;",

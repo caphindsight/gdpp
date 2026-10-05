@@ -13,9 +13,9 @@ import (
 func withLsProject(t *testing.T) {
 	tree := maps.Clone(testProjectTree)
 	maps.Copy(tree, map[string]string{
-		"/games/my_game/.gd++proj/bind/10.0.0-stable/a.h": "a",
+		"/games/my_game/.gd++cache/bind/10.0.0-stable/a.h": "a",
 		"/games/my_game/_gd++/bind/9.1.0-stable/a.h":      "a",
-		"/games/my_game/.gd++proj/spec/4.3-stable/a.json": "a",
+		"/games/my_game/.gd++cache/spec/4.3-stable/a.json": "a",
 		"/games/my_game/foo/icons/tree.svg":               "svg",
 		"/games/my_game/foo/tree.h":                       "h",
 	})

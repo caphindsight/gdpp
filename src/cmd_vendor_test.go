@@ -45,20 +45,20 @@ func wantDep(t *testing.T, m *memFS, prefix string) {
 func TestVendorFromDir(t *testing.T) {
 	m := withVendorFS(t, withPrefix("/src/", testDep))
 	(&CmdVendor{Bind: "4.3", From: "/src"}).Run()
-	wantDep(t, m, "/games/my_game/.gd++proj/bind/4.3/")
-	if NewPath("/games/my_game/.gd++proj/temp").Exists() {
+	wantDep(t, m, "/games/my_game/.gd++cache/bind/4.3/")
+	if NewPath("/games/my_game/.gd++cache/temp").Exists() {
 		t.Errorf("temp directory was not cleaned up")
 	}
 }
 
 func TestVendorFromDirCheckIn(t *testing.T) {
 	extra := withPrefix("/src/", testDep)
-	extra["/games/my_game/.gd++proj/bind/4.3/old.h"] = "old"
+	extra["/games/my_game/.gd++cache/bind/4.3/old.h"] = "old"
 	m := withVendorFS(t, extra)
 	withForce(t, true)
 	(&CmdVendor{Bind: "4.3", From: "/src", CheckIn: true}).Run()
 	wantDep(t, m, "/games/my_game/_gd++/bind/4.3/")
-	if NewPath("/games/my_game/.gd++proj/bind/4.3").Exists() {
+	if NewPath("/games/my_game/.gd++cache/bind/4.3").Exists() {
 		t.Errorf("ephemeral copy of the dep was not moved")
 	}
 }
@@ -80,7 +80,7 @@ func TestVendorArchiveRoundTrip(t *testing.T) {
 	}
 	for file, c := range cases {
 		t.Run(file, func(t *testing.T) {
-			m := withVendorFS(t, withPrefix("/games/my_game/.gd++proj/spec/4.3/", testDep))
+			m := withVendorFS(t, withPrefix("/games/my_game/.gd++cache/spec/4.3/", testDep))
 			out, in := c, c
 			out.Spec, out.To = "4.3", file
 			out.Run()
@@ -92,17 +92,17 @@ func TestVendorArchiveRoundTrip(t *testing.T) {
 }
 
 func TestVendorWrongExtensionConfirmed(t *testing.T) {
-	m := withVendorFS(t, withPrefix("/games/my_game/.gd++proj/spec/4.3/", testDep))
+	m := withVendorFS(t, withPrefix("/games/my_game/.gd++cache/spec/4.3/", testDep))
 	withForce(t, true)
 	(&CmdVendor{Spec: "4.3", To: "/out/dep.zip", Tar: true}).Run()
 	(&CmdVendor{Spec: "4.4", From: "/out/dep.zip", Tar: true}).Run()
-	wantDep(t, m, "/games/my_game/.gd++proj/spec/4.4/")
+	wantDep(t, m, "/games/my_game/.gd++cache/spec/4.4/")
 }
 
 func TestVendorWrongExtensionDeclined(t *testing.T) {
 	if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 		isTTY = false
-		withVendorFS(t, withPrefix("/games/my_game/.gd++proj/spec/4.3/", testDep))
+		withVendorFS(t, withPrefix("/games/my_game/.gd++cache/spec/4.3/", testDep))
 		withForceNo(t, true)
 		Cleanup(func() { fmt.Println("created:", NewPath("/out/dep.tar.gz").Exists()) })
 		(&CmdVendor{Spec: "4.3", To: "/out/dep.tar.gz", Zip: true}).Run()

@@ -215,8 +215,8 @@ Package-wide, from `gd++ build`:
 
 ```
 The name Player is declared in both res://a.gd++ and res://b.gd++.
-Class Spinner is declared in res://spinner.gd++ and in res://.gd++pkg.toml.
-Class MyGameAsync is declared in res://.gd++pkg.toml, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res:// --prefix NAME`.
+Class Spinner is declared in res://spinner.gd++ and in res://.gd++pkg.
+Class MyGameAsync is declared in res://.gd++pkg, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init res:// --prefix NAME`.
 ```
 
 # C++ compiler errors
@@ -242,7 +242,7 @@ Some compiler errors are about the generated code, but caused by the GD++ declar
 - "queue_destroy only works on nodes.": `queue_destroy` on an object that isn't a node. Use `destroy`.
 - "'claim' was not declared in this scope", or the same for `is_done` or `cancel`: what follows doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
 - "expected unqualified-id before 'gdpp'", or a similar error at a declaration: a variable or field is named `is_cancelled`, which GD++ reserves and rewrites to `gdpp::is_cancelled()`. Rename it. See `gd++ man rewrites`.
-- Errors in a file `NAME.h` or `NAME.cpp` of the build cache point to generated code. Open the file, e.g. `res://.gd++pkg/gdpp/Player.cpp`, to see what GD++ generated, and which declaration it came from.
+- Errors in a file `NAME.h` or `NAME.cpp` of the build cache point to generated code. Open the file, e.g. `res://.gd++build/gdpp/Player.cpp`, to see what GD++ generated, and which declaration it came from.
 
 # See also
 

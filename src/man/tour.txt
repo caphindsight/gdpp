@@ -35,7 +35,7 @@ A package is a directory whose code builds into one GDExtension library. For a s
 gd++ init . --bind 10.0.0-stable --spec 4.7.2-stable
 ```
 
-This writes `.gd++pkg.toml`:
+This writes `.gd++pkg`:
 
 ```toml
 bind = "10.0.0-stable"
@@ -57,7 +57,7 @@ See `gd++ man packages` and `gd++ man init`.
 gd++ fetch --missing
 ```
 
-This downloads the bindings and the spec that your packages name, into the project's `.gd++proj` directory. See `gd++ man dependencies` and `gd++ man fetch`.
+This downloads the bindings and the spec that your packages name, into the project's `.gd++cache` directory. See `gd++ man dependencies` and `gd++ man fetch`.
 
 # 5. Write a class
 

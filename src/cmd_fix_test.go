@@ -25,38 +25,38 @@ func runFix(t *testing.T, extra map[string]string) (out string, before, after ma
 
 func TestFix(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
-		"/games/my_game/.gd++proj/.gdignore":        "",
-		"/games/my_game/.gd++proj/temp/abc/x":       "x",
-		"/games/my_game/.gd++proj/bind/":            "",
-		"/games/my_game/.gd++proj/spec/":            "",
+		"/games/my_game/.gd++cache/.gdignore":        "",
+		"/games/my_game/.gd++cache/temp/abc/x":       "x",
+		"/games/my_game/.gd++cache/bind/":            "",
+		"/games/my_game/.gd++cache/spec/":            "",
 		"/games/my_game/_gd++/bind/":                "",
 		"/games/my_game/_gd++/spec/.keep":           "",
 		"/games/my_game/_gd++/engine/":              "",
 		"/games/my_game/src/pkg/":                   "",
 		"/games/my_game/src/pkg/" + packageFileName: "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n",
-		"/games/my_game/src/pkg/.gd++pkg/":          "",
+		"/games/my_game/src/pkg/.gd++build/":          "",
 	})
 	want := "" +
-		"[-] Deleted the temporary directory res://.gd++proj/temp.\n" +
+		"[-] Deleted the temporary directory res://.gd++cache/temp.\n" +
 		"[-] Deleted the empty directory res://_gd++/bind.\n" +
-		"[-] Deleted the empty directory res://.gd++proj/bind.\n" +
-		"[-] Deleted the empty directory res://.gd++proj/spec.\n" +
+		"[-] Deleted the empty directory res://.gd++cache/bind.\n" +
+		"[-] Deleted the empty directory res://.gd++cache/spec.\n" +
 		"[-] Deleted the empty directory res://_gd++/engine.\n" +
-		"[-] Deleted the empty directory res://.gd++proj.\n" +
+		"[-] Deleted the empty directory res://.gd++cache.\n" +
 		"[-] Created res://_gd++/.gdignore.\n" +
-		"[-] Created res://src/pkg/.gd++pkg/.gdignore.\n" +
+		"[-] Created res://src/pkg/.gd++build/.gdignore.\n" +
 		"[-] Success!\n"
 	if out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	wantTree := maps.Clone(before)
 	for path := range wantTree {
-		if strings.HasPrefix(path, ".gd++proj/") || path == "_gd++/bind/" || path == "_gd++/engine/" {
+		if strings.HasPrefix(path, ".gd++cache/") || path == "_gd++/bind/" || path == "_gd++/engine/" {
 			delete(wantTree, path)
 		}
 	}
 	wantTree["_gd++/.gdignore"] = ""
-	wantTree["src/pkg/.gd++pkg/.gdignore"] = ""
+	wantTree["src/pkg/.gd++build/.gdignore"] = ""
 	if !reflect.DeepEqual(after, wantTree) {
 		t.Errorf("tree = %v, want %v", after, wantTree)
 	}
@@ -64,7 +64,7 @@ func TestFix(t *testing.T) {
 
 func TestFixConfig(t *testing.T) {
 	out, _, after := runFix(t, map[string]string{"/games/my_game/" + projectConfigFileName: `vcs="git"`})
-	if want := "[-] Reformatted res://.gd++proj.toml.\n[-] Created res://.gitignore.\n[-] Success!\n"; out != want {
+	if want := "[-] Reformatted res://.gd++proj.\n[-] Created res://.gitignore.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got, want := after[projectConfigFileName], "vcs = \"git\"\npresets = true\n"; got != want {
@@ -74,8 +74,8 @@ func TestFixConfig(t *testing.T) {
 
 func TestFixNothingToDo(t *testing.T) {
 	out, before, after := runFix(t, map[string]string{
-		"/games/my_game/.gd++proj/.gdignore":      "",
-		"/games/my_game/.gd++proj/bind/4.3/a.h":   "a",
+		"/games/my_game/.gd++cache/.gdignore":      "",
+		"/games/my_game/.gd++cache/bind/4.3/a.h":   "a",
 		"/games/my_game/" + projectConfigFileName: "vcs = \"git\"\npresets = true\n",
 		"/games/my_game/.gitignore":               projectBlock,
 		"/games/my_game/" + exportPresetsFileName: testExportPresets(strings.Join(presetExcludes, ", ")),
@@ -100,7 +100,7 @@ func TestFixExportPresets(t *testing.T) {
 
 func TestFixPackageConfig(t *testing.T) {
 	out, _, after := runFix(t, map[string]string{"/games/my_game/src/pkg/" + packageFileName: `bind="4.3"` + "\n" + `spec="4.3"`})
-	if want := "[-] Reformatted res://src/pkg/.gd++pkg.toml.\n[-] Success!\n"; out != want {
+	if want := "[-] Reformatted res://src/pkg/.gd++pkg.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	want := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
@@ -128,7 +128,7 @@ func TestFixPackageClasses(t *testing.T) {
 	config := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
 	out, _, after := runFix(t, map[string]string{"/games/my_game/src/pkg/" + packageFileName: config +
 		"\n[[class]]\n  name = \"B\"\n\n[[class]]\n  name = \"A\"\n"})
-	if want := "[-] Reformatted res://src/pkg/.gd++pkg.toml.\n[-] Success!\n"; out != want {
+	if want := "[-] Reformatted res://src/pkg/.gd++pkg.\n[-] Success!\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	want := config + "\n[[class]]\n  name = \"A\"\n\n[[class]]\n  name = \"B\"\n"

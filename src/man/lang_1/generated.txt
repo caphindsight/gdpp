@@ -3,7 +3,7 @@ Generated code: the C++ that GD++ writes
 GD++ turns each GD++ file into ordinary C++, which you can read, debug and include. This page describes that C++: the files, what's in them, and the names of the helpers GD++ adds.
 
 - `gd++ trans FILE` shows the C++ of a file. See `gd++ man trans`.
-- In a build, it's in the package's build cache, in `.gd++pkg/gdpp`. See `gd++ man build-cache`.
+- In a build, it's in the package's build cache, in `.gd++build/gdpp`. See `gd++ man build-cache`.
 
 # Files
 

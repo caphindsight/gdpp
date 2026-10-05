@@ -29,7 +29,7 @@ func TestDepIndexTable(t *testing.T) {
 	withTTY(t, false)
 	withMemFS(t, "/", map[string]string{
 		"/p/_gd++/spec/4.9-stable/a":      "a",
-		"/p/.gd++proj/spec/4.10-stable/b": "b",
+		"/p/.gd++cache/spec/4.10-stable/b": "b",
 	})
 	cache := newProjectDepCache(NewPath("/p"), DepKind{"spec", "spec", "spec"})
 	idx := parseDepIndex("latest=4.10-stable\nstable=4.10-stable\n4.10-stable\n4.9-stable\n4.8\n")
@@ -154,8 +154,8 @@ func withFetchFixture(t *testing.T) (url, root string) {
 func TestFetchDeps(t *testing.T) {
 	url, root := withFetchFixture(t)
 	withForce(t, true)
-	stale := filepath.Join(root, ".gd++proj/spec/4.4-stable/stale.json")
-	writeTree(t, root, map[string]string{".gd++proj/spec/4.4-stable/stale.json": "x"})
+	stale := filepath.Join(root, ".gd++cache/spec/4.4-stable/stale.json")
+	writeTree(t, root, map[string]string{".gd++cache/spec/4.4-stable/stale.json": "x"})
 
 	captureStderr(t, (&CmdFetch{Url: url, Branch: "main", Spec: []string{"latest", "4.4-stable"}, CheckIn: true}).Run)
 
@@ -163,7 +163,7 @@ func TestFetchDeps(t *testing.T) {
 	if err != nil || string(got) != "4.4" {
 		t.Errorf("a.json = %q, %v, want %q", got, err, "4.4")
 	}
-	for _, p := range []string{stale, filepath.Join(root, "_gd++/spec/4.3-stable"), filepath.Join(root, ".gd++proj/temp")} {
+	for _, p := range []string{stale, filepath.Join(root, "_gd++/spec/4.3-stable"), filepath.Join(root, ".gd++cache/temp")} {
 		if _, err := os.Stat(p); err == nil {
 			t.Errorf("%s exists, want it gone", p)
 		}
@@ -173,8 +173,8 @@ func TestFetchDeps(t *testing.T) {
 func TestFetchAllSkipsCached(t *testing.T) {
 	url, root := withFetchFixture(t)
 	withQuiet(t, false)
-	cached := filepath.Join(root, ".gd++proj/spec/4.4-stable/cached.json")
-	writeTree(t, root, map[string]string{".gd++proj/spec/4.4-stable/cached.json": "x"})
+	cached := filepath.Join(root, ".gd++cache/spec/4.4-stable/cached.json")
+	writeTree(t, root, map[string]string{".gd++cache/spec/4.4-stable/cached.json": "x"})
 
 	out := captureStderr(t, (&CmdFetch{Url: url, Branch: "main", SpecAll: true}).Run)
 
@@ -184,7 +184,7 @@ func TestFetchAllSkipsCached(t *testing.T) {
 	if _, err := os.Stat(cached); err != nil {
 		t.Errorf("cached dep was overwritten: %v", err)
 	}
-	if got, err := os.ReadFile(filepath.Join(root, ".gd++proj/spec/4.3-stable/a.json")); err != nil || string(got) != "4.3" {
+	if got, err := os.ReadFile(filepath.Join(root, ".gd++cache/spec/4.3-stable/a.json")); err != nil || string(got) != "4.3" {
 		t.Errorf("a.json = %q, %v, want %q", got, err, "4.3")
 	}
 }
@@ -202,7 +202,7 @@ func TestFetchIndex(t *testing.T) {
 	if strings.Contains(out, "bindings") || strings.Contains(out, "Success") {
 		t.Errorf("output = %q, want only the chosen indexes and no success message", out)
 	}
-	if _, err := os.Stat(filepath.Join(root, ".gd++proj/temp")); err == nil {
+	if _, err := os.Stat(filepath.Join(root, ".gd++cache/temp")); err == nil {
 		t.Errorf("temp directory was not cleaned up")
 	}
 }

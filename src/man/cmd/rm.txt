@@ -38,7 +38,7 @@ Facts:
   Remove all checked in Godot C++ bindings, from `res://_gd++`.
 
 --bind-ephemeral
-  Remove all ephemeral Godot C++ bindings, from `res://.gd++proj`.
+  Remove all ephemeral Godot C++ bindings, from `res://.gd++cache`.
 
 --bind-unused
   Remove all Godot C++ bindings that no package of the project uses, from both caches. Confirmed once. Packages don't choose engines, so `--engine-unused` removes all engines.
@@ -74,7 +74,7 @@ Facts:
 
 Without `--dir`, removing a package deletes:
 
-- its `.gd++pkg.toml`,
+- its `.gd++pkg`,
 - its build cache,
 - its libraries and `.gdextension` files, like `gd++ clean --bin`,
 - its block in `.gitignore`.
@@ -91,7 +91,7 @@ gd++ rm PATH --class NAME...
 gd++ rm PATH --class-all
 ```
 
-- Removes C++ classes from the `.gd++pkg.toml` of the package at PATH. The package no longer registers them with Godot.
+- Removes C++ classes from the `.gd++pkg` of the package at PATH. The package no longer registers them with Godot.
 - Their files stay.
 - GD++ classes can't be removed this way: delete them from their GD++ files instead.
 

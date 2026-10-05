@@ -50,11 +50,11 @@ FILE...
 # Examples
 
 ```sh
-gd++ cat src/player.gd++                      # a GD++ file
-gd++ cat my_package/.gd++pkg/gdpp/Player.cpp  # the C++ that GD++ generated
-gd++ cat notes.txt                            # any other file, as it is
-gd++ cat src/*.gd++                           # all GD++ files in src
-gd++ cat --svg src/player.gd++ > player.svg   # an image of a GD++ file
+gd++ cat src/player.gd++                        # a GD++ file
+gd++ cat my_package/.gd++build/gdpp/Player.cpp  # the C++ that GD++ generated
+gd++ cat notes.txt                              # any other file, as it is
+gd++ cat src/*.gd++                             # all GD++ files in src
+gd++ cat --svg src/player.gd++ > player.svg     # an image of a GD++ file
 ```
 
 # See also

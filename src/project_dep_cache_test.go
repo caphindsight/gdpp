@@ -11,7 +11,7 @@ import (
 func TestProjectDepCache(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
 		"/p/_gd++/bind/1.0/a.h":     "a",
-		"/p/.gd++proj/bind/2.0/b.h": "b",
+		"/p/.gd++cache/bind/2.0/b.h": "b",
 		"/p/_gd++/bind/stray":       "not a dep",
 	})
 	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})
@@ -71,9 +71,9 @@ func TestCompareDepNames(t *testing.T) {
 func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 	withMemFS(t, "/", map[string]string{
 		"/p/_gd++/bind/1.0/a.h":     "checked in",
-		"/p/.gd++proj/bind/1.0/a.h": "ephemeral",
+		"/p/.gd++cache/bind/1.0/a.h": "ephemeral",
 		"/p/_gd++/bind/2.0/a.h":     "checked in",
-		"/p/.gd++proj/bind/2.0/a.h": "ephemeral",
+		"/p/.gd++cache/bind/2.0/a.h": "ephemeral",
 	})
 	c := newProjectDepCache(NewPath("/p"), DepKind{"bind", "bind", "bind"})
 
@@ -82,7 +82,7 @@ func TestProjectDepCacheDeletesDuplicate(t *testing.T) {
 	if c.IsEphemeral("1.0") || c.IsCheckedIn("2.0") {
 		t.Errorf("copy in the wrong cache was not deleted")
 	}
-	for path, want := range map[string]string{"/p/_gd++/bind/1.0/a.h": "checked in", "/p/.gd++proj/bind/2.0/a.h": "ephemeral"} {
+	for path, want := range map[string]string{"/p/_gd++/bind/1.0/a.h": "checked in", "/p/.gd++cache/bind/2.0/a.h": "ephemeral"} {
 		if got := NewPath(path).ReadString(); got != want {
 			t.Errorf("%s = %q, want %q", path, got, want)
 		}

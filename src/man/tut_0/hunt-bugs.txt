@@ -102,7 +102,7 @@ gdb --args godot --path .
 
 Facts:
 
-- Frames of your code point to the copies of your files in the package's build cache, e.g. `.gd++pkg/package/enemy.gd++`, with the same line numbers as your files.
+- Frames of your code point to the copies of your files in the package's build cache, e.g. `.gd++build/package/enemy.gd++`, with the same line numbers as your files.
 - Set breakpoints by function, e.g. `break godot::Enemy::take_damage`.
 - Other debuggers, e.g. those of IDEs, LLDB or Visual Studio's, work the same way.
 

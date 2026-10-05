@@ -13,13 +13,13 @@ gd++ init --vcs git
 
 `gd++ init --vcs git`:
 
-- writes `res://.gd++proj.toml` with `vcs = "git"`,
+- writes `res://.gd++proj` with `vcs = "git"`,
 - adds GD++'s blocks of ignores to the `.gitignore` files of the project root and of each package.
 
 They keep out everything that `gd++` can make again:
 
-- `res://.gd++proj`, the downloaded dependencies,
-- each package's build cache, `.gd++pkg`,
+- `res://.gd++cache`, the downloaded dependencies,
+- each package's build cache, `.gd++build`,
 - the built libraries and `.gdextension` files in package roots,
 - the swap and backup files of editors.
 
@@ -38,7 +38,7 @@ git add .
 git status
 ```
 
-- Check that `git status` lists your sources, `.gd++pkg.toml` and `.gd++proj.toml`.
+- Check that `git status` lists your sources, `.gd++pkg` and `.gd++proj`.
 - Check that it lists no `.so`, `.dll` or `.gdextension` files.
 - Then commit.
 
@@ -51,7 +51,7 @@ gd++ fetch --missing
 gd++ build res://...
 ```
 
-- `gd++ fetch --missing` downloads the bindings and the specs that the packages name in their `.gd++pkg.toml` files.
+- `gd++ fetch --missing` downloads the bindings and the specs that the packages name in their `.gd++pkg` files.
 - `gd++ build res://...` builds every package.
 - Then the project opens in Godot as usual.
 - On a new machine, run `gd++ install` first, to get a C++ compiler and SCons. See `gd++ man install`.
@@ -81,7 +81,7 @@ See `gd++ man checkin` and `gd++ man dependencies`.
 
 # 5. Keep the project tidy
 
-Run `gd++ fix` after upgrading `gd++`, after editing `.gd++pkg.toml` by hand, or after moving packages around:
+Run `gd++ fix` after upgrading `gd++`, after editing `.gd++pkg` by hand, or after moving packages around:
 
 ```sh
 gd++ fix
@@ -101,8 +101,8 @@ See `gd++ man ls`.
 # What a teammate does day to day
 
 - After pulling changes: `gd++ fetch --missing`, in case a package now names a new dependency, then `gd++ build res://...`.
-- After adding a package: commit its `.gd++pkg.toml` and `.gitignore`.
-- After a merge conflict in `.gd++pkg.toml`: resolve it like any file, then run `gd++ fix`.
+- After adding a package: commit its `.gd++pkg` and `.gitignore`.
+- After a merge conflict in `.gd++pkg`: resolve it like any file, then run `gd++ fix`.
 
 # See also
 

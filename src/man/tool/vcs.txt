@@ -8,7 +8,7 @@ GD++ projects work with any version control system. With git, GD++ can also keep
 gd++ init --vcs git
 ```
 
-- Sets `vcs = "git"` in `res://.gd++proj.toml`.
+- Sets `vcs = "git"` in `res://.gd++proj`.
 - Writes GD++'s blocks of ignores into the `.gitignore` files of the project root and of each package root.
 - `gd++ init --vcs none` turns it off, and removes the blocks.
 - The default is `none`: GD++ doesn't touch `.gitignore` files unless you ask.
@@ -26,7 +26,7 @@ The project root's `.gitignore` gets the project-level block:
 
 ```
 # GD++ project-level ignores
-/.gd++proj/**
+/.gd++cache/**
 **.swo
 **.swp
 **.tmp
@@ -40,7 +40,7 @@ Each package root's `.gitignore` gets the package-level block:
 
 ```
 # GD++ package-level ignores
-/.gd++pkg/**
+/.gd++build/**
 /lib*.dll
 /lib*.so
 /lib*.dylib
@@ -67,13 +67,13 @@ Facts:
 Commit:
 
 - your GD++, C++ and other source files,
-- `.gd++pkg.toml` and `.gd++proj.toml`,
+- `.gd++pkg` and `.gd++proj`,
 - `res://_gd++`, the checked in dependency cache, if you use it.
 
 Don't commit:
 
-- `res://.gd++proj`, the ephemeral dependency cache: `gd++ fetch --missing` downloads it again.
-- `.gd++pkg`, the build caches.
+- `res://.gd++cache`, the ephemeral dependency cache: `gd++ fetch --missing` downloads it again.
+- `.gd++build`, the build caches.
 - the libraries and `.gdextension` files in package roots: `gd++ build` makes them again.
 
 A teammate who clones the repository runs:

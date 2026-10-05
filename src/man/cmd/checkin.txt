@@ -10,7 +10,7 @@ gd++ checkin -a [--undo]
 
 # Description
 
-- Moves dependencies from the ephemeral cache, `res://.gd++proj`, to the checked in cache, `res://_gd++`, which you commit to version control.
+- Moves dependencies from the ephemeral cache, `res://.gd++cache`, to the checked in cache, `res://_gd++`, which you commit to version control.
 - With `--undo`, moves them back, so they're ephemeral again.
 - Packages find their dependencies in either cache, so builds don't change.
 - A dependency already in the right cache stays there, with a warning. Its copy in the other cache, if any, is deleted.

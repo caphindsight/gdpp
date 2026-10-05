@@ -343,16 +343,16 @@ func TestCreateDirectoryIgnoresCaches(t *testing.T) {
 		"/proj/" + projectFileName:     "",
 		"/proj/pkg/" + packageFileName: "",
 	})
-	for _, dir := range []string{"/proj/_gd++/spec/4.3", "/proj/.gd++proj/temp/x", "/proj/pkg/.gd++pkg/gdpp", "/proj/.gd++pkg", "/proj/pkg/_gd++", "/proj/pkg/.gd++pkg/.gd++pkg"} {
+	for _, dir := range []string{"/proj/_gd++/spec/4.3", "/proj/.gd++cache/temp/x", "/proj/pkg/.gd++build/gdpp", "/proj/.gd++build", "/proj/pkg/_gd++", "/proj/pkg/.gd++build/.gd++build"} {
 		NewPath(dir).CreateDirectory()
 	}
 	for path, want := range map[string]bool{
 		"/proj/_gd++/.gdignore":                 true,
-		"/proj/.gd++proj/.gdignore":             true,
-		"/proj/pkg/.gd++pkg/.gdignore":          true,
-		"/proj/.gd++pkg/.gdignore":              false, // not in a package
+		"/proj/.gd++cache/.gdignore":             true,
+		"/proj/pkg/.gd++build/.gdignore":          true,
+		"/proj/.gd++build/.gdignore":              false, // not in a package
 		"/proj/pkg/_gd++/.gdignore":             false, // not in a project
-		"/proj/pkg/.gd++pkg/.gd++pkg/.gdignore": false,
+		"/proj/pkg/.gd++build/.gd++build/.gdignore": false,
 		"/proj/_gd++/spec/.gdignore":            false,
 	} {
 		if _, got := m.tree()[path]; got != want {
