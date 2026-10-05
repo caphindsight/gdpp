@@ -443,6 +443,7 @@ ctx.doc          the invocation's doc comment, if any
 ctx.file         the GD++ file's name
 ctx.line         the invocation's line
 ctx.macro        the macro's name, or nil in a macro block
+ctx.members      the declarations around the invocation, see "Lua: ctx.members" below
 ctx.package      the package's settings, see below
 ```
 
@@ -461,6 +462,78 @@ ctx.package.std      the package's C++ standard: std in .gd++pkg, e.g. "c++20"
 - `path` doesn't end with `/`, except `"res://"`.
 - E.g. a macro can name a class after the package: `ctx.package.prefix .. "Stats"`.
 - See `gd++ man packages` for the settings.
+
+# Lua: ctx.members
+
+`ctx.members` lists the declarations around the invocation, as tables. A macro can read them, e.g. to generate code for each `int` variable of its class:
+
+```gd++
+class_name Player
+extends Node
+
+var health: int = 100
+var name: String
+
+// A reset function for each int variable.
+invoke {
+  for _, m in ipairs(ctx.members) do
+    if m.kind == "var" and m.type == "int" and not m.generated then
+      gd.func { name = "reset_" .. m.name, ret = "void", body = m.name .. " = 0;" }
+    end
+  end
+}
+
+var mana: int = 50   // seen too: it's written after the invocation
+```
+
+What it holds, by `ctx.scope`:
+
+```
+SCOPE              ctx.members
+"class", "extern"  the members of the class or extern
+"file"             the file's inline classes, externs and enum types
+"cpp"              the members of the class or extern around the C++ code
+```
+
+Facts:
+
+- It lists every declaration written in the scope, before or after the invocation, in their order.
+- It also lists what earlier invocations in the scope generated, in their place. What later ones generate isn't there yet.
+- In C++ code, it lists all members, generated ones included: C++ code expands after all declarations.
+- Invocations themselves aren't listed.
+- A class or extern at the file's top level has `members` too. Only the written ones: its own invocations expand later.
+
+Each table has:
+
+- `kind`: the emitter's name: `"var"`, `"func"`, `"signal"`, `"enum"`, `"ctor"`, `"dtor"`, `"on"`, `"decl"`, `"impl"`, `"decl_impl"`, `"import"`, `"noimport"`, `"class"` or `"extern"`.
+- The emitter's fields, in the formats of "Lua: field formats" above. E.g. a `var` has `name`, `type`, `init`, `doc` and `annotations`.
+- `generated`: whether an invocation generated it.
+- `generated_by`: the name of the macro or template whose invocation generated it, `"{ ... }"` for a macro block, or `nil`.
+
+Field values:
+
+- Types are strings, e.g. `"Array[int]"`.
+- C++ code, e.g. `init` or `body`, is a Code value.
+- `params` are tables: `{ name = "a", type = "int", default = ... }`.
+- Annotations are names or lists, e.g. `{ "export_range", 0, 100 }`. Their arguments are strings, numbers, booleans, or Code values for other C++.
+- An enum value is a number, or a string with its expression.
+- An `import` or `noimport` has `type`.
+
+The tables have the emitters' fields, so `gd[m.kind](m)` emits a copy of a member. Except:
+
+- `import` and `noimport`: `gd.import(m.type)`.
+- `class` and `extern`: their emitters take a `body` function, not `members`. See below.
+
+```lua
+-- A copy of each class's members, in a class of its own, at the file's top level.
+for _, c in ipairs(ctx.members) do
+  if c.kind == "class" then
+    gd.class { name = c.name .. "Copy", extends = c.extends, body = function()
+      for _, m in ipairs(c.members) do gd[m.kind](m) end
+    end }
+  end
+end
+```
 
 # The sandbox
 

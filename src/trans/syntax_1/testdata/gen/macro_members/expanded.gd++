@@ -1,0 +1,32 @@
+class_name Stats
+extends Node
+
+var health: int = 100
+var label: String = "stats"
+
+// A reset function for each int var, written before or after the invocation.
+func reset_health() -> void {health = 0;}
+func reset_mana() -> void {mana = 0;}
+
+var mana: int = 50
+
+func total() -> int {
+  return health + mana;
+}
+
+macro resets() {
+  for _, m in ipairs(ctx.members) do
+    if m.kind == "var" and m.type == "int" and not m.generated then
+      gd.func { name = "reset_" .. m.name, ret = "void", body = m.name .. " = 0;" }
+    end
+  end
+}
+
+// The sum of the int vars.
+macro sum_ints() {
+  local names = {}
+  for _, m in ipairs(ctx.members) do
+    if m.kind == "var" and m.type == "int" then table.insert(names, m.name) end
+  end
+  gd.text("return " .. gd.join(names, " + ") .. ";")
+}

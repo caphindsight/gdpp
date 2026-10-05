@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Stats" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="reset_health">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="reset_mana">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="total">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="health" type="int" setter="set_health" getter="get_health">
+		</member>
+		<member name="label" type="String" setter="set_label" getter="get_label">
+		</member>
+		<member name="mana" type="int" setter="set_mana" getter="get_mana">
+		</member>
+	</members>
+</class>

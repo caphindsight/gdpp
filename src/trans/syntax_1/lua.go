@@ -1,6 +1,7 @@
 package syntax_1
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -46,6 +47,7 @@ type scope struct {
 	kind      string
 	owner     string // The class or extern, if any.
 	fileLevel bool   // Whether it's the body of the file-level class or extern, which may hold inline ones too.
+	members   []any  // What ctx.members shows: *Member, or at the file's top level, *Class, *Extern and *Enum.
 	chunks    []chunk
 }
 
@@ -156,6 +158,7 @@ func (r *run) ctxTable(sc *scope) *lua.LTable {
 	if inv.Doc != nil {
 		t.RawSetString("doc", lua.LString(inv.Doc.Text))
 	}
+	t.RawSetString("members", r.declTables(sc.members, ""))
 	t.RawSetString("file", lua.LString(r.x.filename))
 	t.RawSetString("line", lua.LNumber(inv.Pos.Line))
 	if inv.Body == nil {
@@ -474,6 +477,227 @@ func asCode(v lua.LValue) (*codeValue, bool) {
 		return c, ok
 	}
 	return nil, false
+}
+
+// declTables returns nodes as ctx.members: a list of tables, shaped like the fields of the emitter that kind names.
+// by is the macro or template that generated nodes, or empty: otherwise each node's own, from x.generatedBy.
+func (r *run) declTables(nodes []any, by string) *lua.LTable {
+	list := r.L.NewTable()
+	for _, n := range nodes {
+		list.Append(r.declTable(n, cmp.Or(by, r.x.generatedBy[n])))
+	}
+	return list
+}
+
+// declTable returns n, a *Member, *Class, *Extern or *Enum, as a table of ctx.members.
+func (r *run) declTable(n any, by string) *lua.LTable {
+	t := r.L.NewTable()
+	set := func(k string, v lua.LValue) {
+		if v != lua.LNil {
+			t.RawSetString(k, v)
+		}
+	}
+	setStr := func(k, v string) {
+		if v != "" {
+			t.RawSetString(k, lua.LString(v))
+		}
+	}
+	setType := func(k string, v *Type) {
+		if v != nil {
+			t.RawSetString(k, lua.LString(typeText(v)))
+		}
+	}
+	setCode := func(k string, b *Block) {
+		if b != nil {
+			t.RawSetString(k, r.code(&codeValue{block: b}))
+		}
+	}
+	head := func(kind string, doc *Doc, annotations []*Annotation) {
+		t.RawSetString("kind", lua.LString(kind))
+		if doc != nil {
+			t.RawSetString("doc", lua.LString(doc.Text))
+		}
+		set("annotations", r.annotationTables(annotations))
+	}
+	// A class or extern, with its members, without invocations.
+	body := func(kind string, doc *Doc, annotations []*Annotation, name string, extends *Type, members []*Member) {
+		head(kind, doc, annotations)
+		setStr("name", name)
+		setType("extends", extends)
+		var nodes []any
+		for _, m := range members {
+			if m.Invoke == nil {
+				nodes = append(nodes, m)
+			}
+		}
+		t.RawSetString("members", r.declTables(nodes, by))
+	}
+	if m, ok := n.(*Member); ok {
+		switch {
+		case m.Var != nil:
+			n = m.Var
+		case m.Func != nil:
+			n = m.Func
+		case m.Signal != nil:
+			n = m.Signal
+		case m.Enum != nil:
+			n = m.Enum
+		case m.Ctor != nil:
+			head("ctor", nil, m.Ctor.Annotations)
+			setCode("body", m.Ctor.Body)
+		case m.Dtor != nil:
+			head("dtor", nil, m.Dtor.Annotations)
+			setCode("body", m.Dtor.Body)
+		case m.On != nil:
+			head("on", nil, m.On.Annotations)
+			setStr("name", m.On.Name)
+			if m.On.Param != nil {
+				setStr("param", m.On.Param.Name)
+			}
+			setType("param_type", m.On.ParamType)
+			setCode("body", m.On.Body)
+		case m.Code != nil:
+			head(map[[2]bool]string{{true, false}: "decl", {false, true}: "impl", {true, true}: "decl_impl"}[[2]bool{m.Code.Decl, m.Code.Impl}], nil, m.Code.Annotations)
+			setCode("body", m.Code.Body)
+		case m.Import != nil:
+			head("import", nil, nil)
+			setType("type", m.Import)
+		case m.NoImport != nil:
+			head("noimport", nil, nil)
+			setType("type", m.NoImport)
+		}
+	}
+	switch n := n.(type) {
+	case *Var:
+		head("var", n.Doc, n.Annotations)
+		setStr("name", n.Name)
+		setType("type", n.Type)
+		set("init", r.initCode((*Default)(n.Init)))
+		if n.Property != nil {
+			for _, a := range n.Property.Accessors {
+				setCode("decl", a.Decl)
+				setCode("get", a.Get)
+				if a.Set != nil {
+					setCode("set", a.Set.Body)
+					setStr("set_param", a.Set.Param.Name)
+				}
+			}
+		}
+	case *Func:
+		head("func", n.Doc, n.Annotations)
+		setStr("name", n.Name)
+		set("params", r.paramTables(n.Params))
+		setType("ret", n.Return)
+		setCode("body", n.Body)
+	case *Signal:
+		head("signal", n.Doc, n.Annotations)
+		setStr("name", n.Name)
+		set("params", r.paramTables(n.Params))
+	case *Enum:
+		head("enum", n.Doc, n.Annotations)
+		setStr("name", n.Name)
+		if n.Value != nil {
+			t.RawSetString("value", lua.LNumber(n.Value.Value))
+			break
+		}
+		if n.Extends != nil {
+			setStr("extends", n.Extends.Name)
+		}
+		values := r.L.NewTable()
+		for _, e := range n.Entries {
+			v := r.L.NewTable()
+			v.RawSetString("name", lua.LString(e.Name))
+			switch {
+			case e.Value == nil:
+			case e.Value.Int != nil:
+				v.RawSetString("value", lua.LNumber(e.Value.Int.Value))
+			default:
+				v.RawSetString("value", lua.LString(enumExprText(e.Value)))
+			}
+			if e.Doc != nil {
+				v.RawSetString("doc", lua.LString(e.Doc.Text))
+			}
+			values.Append(v)
+		}
+		t.RawSetString("values", values)
+	case *Class:
+		body("class", n.Doc, n.Annotations, n.Name, n.Extends, n.Members)
+	case *Extern:
+		body("extern", n.Doc, n.Annotations, n.Name, n.Extends, n.Members)
+	}
+	t.RawSetString("generated", lua.LBool(by != ""))
+	setStr("generated_by", by)
+	return t
+}
+
+// annotationTables returns annotations as the annotations field of emitters: names, or lists of a name and its
+// arguments. It's nil if there are none.
+func (r *run) annotationTables(annotations []*Annotation) lua.LValue {
+	if len(annotations) == 0 {
+		return lua.LNil
+	}
+	list := r.L.NewTable()
+	for _, a := range annotations {
+		if len(a.Args) == 0 {
+			list.Append(lua.LString(a.Name))
+			continue
+		}
+		item := r.L.NewTable()
+		item.Append(lua.LString(a.Name))
+		for _, arg := range a.Args {
+			item.Append(r.argValue(arg.Value))
+		}
+		list.Append(item)
+	}
+	return list
+}
+
+// argValue returns an annotation argument as the annotations field of emitters takes it back: a string, a number,
+// a boolean, or else code.
+func (r *run) argValue(s string) lua.LValue {
+	switch {
+	case s == "true" || s == "false":
+		return lua.LBool(s == "true")
+	case strings.HasPrefix(s, `"`):
+		v, _ := r.toLua(&Value{Kind: "string", Text: s})
+		return v
+	}
+	if v, err := r.toLua(&Value{Kind: "number", Text: s}); err == nil {
+		return v
+	}
+	return r.code(&codeValue{block: &Block{Text: s}, expr: true})
+}
+
+// paramTables returns params as the params field of emitters: tables with a name, and maybe a type and a default.
+// It's nil if there are none.
+func (r *run) paramTables(params []*Param) lua.LValue {
+	if len(params) == 0 {
+		return lua.LNil
+	}
+	list := r.L.NewTable()
+	for _, p := range params {
+		t := r.L.NewTable()
+		t.RawSetString("name", lua.LString(p.Name))
+		if p.Type != nil {
+			t.RawSetString("type", lua.LString(typeText(p.Type)))
+		}
+		if v := r.initCode(p.Default); v != lua.LNil {
+			t.RawSetString("default", v)
+		}
+		list.Append(t)
+	}
+	return list
+}
+
+// initCode returns an initial or default value as a Code value, or nil if there's none.
+func (r *run) initCode(d *Default) lua.LValue {
+	switch {
+	case d == nil:
+		return lua.LNil
+	case d.Block != nil:
+		return r.code(&codeValue{block: d.Block})
+	}
+	return r.code(&codeValue{block: &Block{Pos: d.Pos, TextPos: d.Pos, Text: d.Expr, Generated: d.Generated, Origin: d.Origin}, expr: true})
 }
 
 // str returns v as text: a string, a number, a boolean or code.
@@ -1388,7 +1612,7 @@ func (r *run) emitInvoke(name string, args *lua.LTable) int {
 		return 0
 	}
 	// A macro runs in this Lua state, so tables and functions pass as they are, with its own gd and ctx.
-	inner := &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel}
+	inner := &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel, members: sc.members}
 	var site *Error
 	if m := luaWhere.FindStringSubmatch(L.Where(1)); m != nil {
 		line, _ := strconv.Atoi(m[2])

@@ -47,6 +47,7 @@ type expander struct {
 	done          map[*Class]bool  // Classes whose members are expanded already.
 	doneExterns   map[*Extern]bool // The same for externs.
 	uniques       int              // How many names gd.unique made.
+	generatedBy   map[any]string   // Generated declarations, with the macro or template whose invocation generated them.
 }
 
 // cppKeywords are C++'s keywords, which macros can't be named after.
@@ -61,7 +62,7 @@ var cppKeywords = strings.Fields("alignas alignof and and_eq asm auto bitand bit
 // dependencies in opts.
 func newExpander(filename, src string, file *File, opts meta.Options) (*expander, error) {
 	x := &expander{filename: filename, src: src, opts: opts, defs: map[string]*macroDef{}, generated: map[int]string{},
-		done: map[*Class]bool{}, doneExterns: map[*Extern]bool{}}
+		generatedBy: map[any]string{}, done: map[*Class]bool{}, doneExterns: map[*Extern]bool{}}
 	local := file.InlineMacros
 	if file.FileMacro != nil {
 		local = append([]*Macro{file.FileMacro}, local...)
@@ -135,26 +136,50 @@ func (x *expander) invocationError(inv *Invoke, msg, hint string) *Error {
 
 // expandFile replaces every invocation in f with what it generates, in declarations and in C++ code.
 func (x *expander) expandFile(f *File) error {
+	// The file's declarations, in source order, with what each invocation generated in its place.
+	var decls []any
+	for _, c := range f.InlineClasses {
+		decls = append(decls, c)
+	}
+	for _, e := range f.InlineExterns {
+		decls = append(decls, e)
+	}
+	for _, e := range f.InlineEnums {
+		decls = append(decls, e)
+	}
+	slices.SortFunc(decls, func(a, b any) int { return reflectPos(a).Offset - reflectPos(b).Offset })
 	for _, inv := range f.Invokes {
-		items, err := x.invoke(inv, &scope{kind: "file"}, 0)
+		items, err := x.invoke(inv, &scope{kind: "file", members: slices.Clone(decls)}, 0)
 		if err != nil {
 			return err
 		}
 		x.addDeclEdit(inv, items)
+		at := slices.IndexFunc(decls, func(d any) bool { return x.generatedBy[d] == "" && reflectPos(d).Offset > inv.Pos.Offset })
+		if at < 0 {
+			at = len(decls)
+		}
+		var added []any
 		for _, item := range items {
 			switch {
 			case item.Class != nil:
 				f.InlineClasses = append(f.InlineClasses, item.Class)
+				added = append(added, item.Class)
 			case item.Extern != nil:
 				f.InlineExterns = append(f.InlineExterns, item.Extern)
+				added = append(added, item.Extern)
 			case item.Member.Enum != nil && item.Member.Enum.Value == nil:
 				f.InlineEnums = append(f.InlineEnums, item.Member.Enum)
+				added = append(added, item.Member.Enum)
 			default:
 				keyword, _ := item.Member.keyword()
 				return x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("%s generated a %s outside of any class.", x.what(inv), keyword),
 					"Invoke it inside a class, or have it generate a class.")
 			}
 		}
+		for _, d := range added {
+			x.markGenerated(d, inv.label())
+		}
+		decls = slices.Insert(decls, at, added...)
 	}
 	f.Invokes = nil
 	var err error
@@ -187,7 +212,11 @@ func (x *expander) expandFile(f *File) error {
 		}
 	}
 	// Then invocations in C++ code, which only generate C++.
-	expandIn := func(owner string, node any) error {
+	expandIn := func(owner string, members []*Member, node any) error {
+		sc := &scope{owner: owner}
+		for _, m := range members {
+			sc.members = append(sc.members, m)
+		}
 		var err error
 		forEachNode(node, func(n any) {
 			if err != nil {
@@ -199,14 +228,14 @@ func (x *expander) expandFile(f *File) error {
 				if lines.Source == "" {
 					lines = Origin{Source: x.source(), Line: n.TextPos.Line}
 				}
-				n.Text, err = x.expandCode(n.Text, n.TextPos, owner, 0, &lines, x.codeErrors(n.Origin, n.Generated, n.TextPos))
+				n.Text, err = x.expandCode(n.Text, n.TextPos, sc, 0, &lines, x.codeErrors(n.Origin, n.Generated, n.TextPos))
 			case *Init:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, n.Generated, n.Pos))
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, sc, 0, nil, x.codeErrors(n.Origin, n.Generated, n.Pos))
 				}
 			case *Default:
 				if n.Expr != "" {
-					n.Expr, err = x.expandCode(n.Expr, n.Pos, owner, 0, nil, x.codeErrors(n.Origin, n.Generated, n.Pos))
+					n.Expr, err = x.expandCode(n.Expr, n.Pos, sc, 0, nil, x.codeErrors(n.Origin, n.Generated, n.Pos))
 				}
 			}
 		})
@@ -220,12 +249,12 @@ func (x *expander) expandFile(f *File) error {
 		externs = append([]*Extern{f.FileExtern}, externs...)
 	}
 	for _, c := range classes {
-		if err := expandIn(c.Name, c); err != nil {
+		if err := expandIn(c.Name, c.Members, c); err != nil {
 			return err
 		}
 	}
 	for _, e := range externs {
-		if err := expandIn(e.Name, e); err != nil {
+		if err := expandIn(e.Name, e.Members, e); err != nil {
 			return err
 		}
 	}
@@ -255,12 +284,23 @@ func (x *expander) what(inv *Invoke) string {
 // they generate go into f, if sc is the body of the file-level class or extern.
 func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth int) ([]*Member, error) {
 	var out []*Member
-	for _, m := range members {
+	for i, m := range members {
 		if m.Invoke == nil {
 			out = append(out, m)
 			continue
 		}
-		items, err := x.invoke(m.Invoke, sc, depth)
+		// It sees the members before it, generated ones included, and those written after it.
+		visible := *sc
+		visible.members = nil
+		for _, o := range out {
+			visible.members = append(visible.members, o)
+		}
+		for _, o := range members[i+1:] {
+			if o.Invoke == nil {
+				visible.members = append(visible.members, o)
+			}
+		}
+		items, err := x.invoke(m.Invoke, &visible, depth)
 		if err != nil {
 			return nil, err
 		}
@@ -271,10 +311,13 @@ func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth in
 			switch {
 			case item.Member != nil:
 				out = append(out, item.Member)
+				x.markGenerated(item.Member, m.Invoke.label())
 			case f != nil && item.Class != nil:
 				f.InlineClasses = append(f.InlineClasses, item.Class)
+				x.markGenerated(item.Class, m.Invoke.label())
 			case f != nil && item.Extern != nil:
 				f.InlineExterns = append(f.InlineExterns, item.Extern)
+				x.markGenerated(item.Extern, m.Invoke.label())
 			default:
 				return nil, x.errorAt(m.Invoke.Pos, m.Invoke.span(), fmt.Sprintf("%s generated a class or extern inside %s %s, but they can't be nested.",
 					x.what(m.Invoke), sc.kind, sc.owner), "Invoke it at the top level of the file.")
@@ -307,7 +350,7 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 			err = addFrame(err, x.frame(def, inv, depth))
 		}
 	}()
-	sc = &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel} // Without what other invocations emitted.
+	sc = &scope{kind: sc.kind, owner: sc.owner, fileLevel: sc.fileLevel, members: sc.members} // Without what other invocations emitted.
 	r, free, err := x.newRun(def, inv, sc, depth)
 	defer free()
 	if err != nil {
@@ -374,6 +417,27 @@ func addFrame(err error, frame string) error {
 	return err
 }
 
+// markGenerated records that the invocation of by generated node, a *Member, *Class, *Extern or *Enum, and the
+// members of a class or extern.
+func (x *expander) markGenerated(node any, by string) {
+	x.generatedBy[node] = by
+	var members []*Member
+	switch n := node.(type) {
+	case *Class:
+		members = n.Members
+	case *Extern:
+		members = n.Members
+	}
+	for _, m := range members {
+		x.generatedBy[m] = by
+	}
+}
+
+// label names what inv invokes, for ctx.members' generated_by: the macro or template, or "{ ... }" for a macro block.
+func (inv *Invoke) label() string {
+	return cmp.Or(inv.Name, anonymous)
+}
+
 // span returns how many characters an error about the invocation underlines: "invoke NAME", or "invoke".
 func (inv *Invoke) span() int {
 	if inv.Body != nil {
@@ -418,7 +482,7 @@ func (x *expander) unknown(inv *Invoke) *Error {
 //
 // For code that isn't in the expanded file, pos is the invocation that put it there, and errorAt makes the errors
 // about the invocations in it, at their positions in code.
-func (x *expander) expandCode(code string, pos lexer.Position, owner string, depth int, block *Origin, errorAt errorFunc) (_ string, err error) {
+func (x *expander) expandCode(code string, pos lexer.Position, parent *scope, depth int, block *Origin, errorAt errorFunc) (_ string, err error) {
 	if depth == 0 && errorAt != nil { // Code that an invocation in the file generated: its errors end with that one.
 		defer func() {
 			if err != nil {
@@ -527,7 +591,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 		if block != nil {
 			at = &Origin{Source: block.Source, Line: block.Line + strings.Count(code[:t.Pos.Offset], "\n")}
 		}
-		text, err := x.invokeCode(inv, owner, depth, at)
+		text, err := x.invokeCode(inv, parent, depth, at)
 		if err != nil {
 			return "", err
 		}
@@ -569,7 +633,7 @@ func (x *expander) expandCode(code string, pos lexer.Position, owner string, dep
 
 // invokeCode runs the macro that inv invokes in C++ code, and returns the C++ it generates, expanded. In a block,
 // at says how #line names inv's line. In an expression, it's nil.
-func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) (_ string, err error) {
+func (x *expander) invokeCode(inv *Invoke, parent *scope, depth int, at *Origin) (_ string, err error) {
 	def := x.def(inv)
 	switch {
 	case depth >= x.maxDepth():
@@ -586,7 +650,7 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) 
 			err = addFrame(err, x.frame(def, inv, depth))
 		}
 	}()
-	sc := &scope{kind: "cpp", owner: owner}
+	sc := &scope{kind: "cpp", owner: parent.owner, members: parent.members}
 	r, free, err := x.newRun(def, inv, sc, depth)
 	defer free()
 	if err != nil {
@@ -608,7 +672,7 @@ func (x *expander) invokeCode(inv *Invoke, owner string, depth int, at *Origin) 
 		sb.WriteString(c.text)
 	}
 	// Its own invocations are statements, or expressions, like it. All its lines come from inv.
-	text, err := x.expandCode(sb.String(), inv.Pos, owner, depth+1, at, func(_ lexer.Position, _ int, msg, hint string) *Error {
+	text, err := x.expandCode(sb.String(), inv.Pos, parent, depth+1, at, func(_ lexer.Position, _ int, msg, hint string) *Error {
 		return x.invocationError(inv, msg, hint)
 	})
 	if err != nil {

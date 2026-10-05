@@ -23,7 +23,7 @@ func runLuaWith(t *testing.T, code string, opts meta.Options) (string, error) {
 	opts.PackageID, opts.PackagePrefix = "foo", "Foo"
 	x := &expander{filename: "test.gd++", src: code, opts: opts,
 		defs: map[string]*macroDef{"test": {m: m, file: "test.gd++", src: code}}, generated: map[int]string{}}
-	text, err := x.invokeCode(&Invoke{Pos: pos, Name: "test", Args: &ArgList{}}, "Owner", 0, &Origin{Source: "test.gd++", Line: 1})
+	text, err := x.invokeCode(&Invoke{Pos: pos, Name: "test", Args: &ArgList{}}, &scope{owner: "Owner"}, 0, &Origin{Source: "test.gd++", Line: 1})
 	return oneLine(text), err
 }
 
@@ -195,6 +195,114 @@ func TestLuaLibraryErrors(t *testing.T) {
 	} {
 		if _, err := expandPackage(t, tc.files); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%v gave %v, want %q.", tc.files, err, tc.want)
+		}
+	}
+}
+
+func TestLuaMembers(t *testing.T) {
+	// describe is a Lua function that lists ctx.members as text, e.g. "var health int gen=false".
+	const describe = `macro {
+  function describe()
+    local out = {}
+    for _, m in ipairs(ctx.members) do
+      table.insert(out, m.kind .. " " .. (m.name or m.type or "") .. " " .. (m.type or m.ret or "") .. " gen=" .. tostring(m.generated) .. (m.generated_by or ""))
+    end
+    return gd.quote(gd.join(out, "/"))
+  end
+}
+`
+	for _, tc := range []struct {
+		src  string
+		want []string
+	}{
+		// Reset functions for the int vars: written before and after the invocation, but not generated.
+		{`class_name Foo
+extends Node
+var health: int = 100
+var label: String
+invoke extra()
+invoke {
+  for _, m in ipairs(ctx.members) do
+    if m.kind == "var" and m.type == "int" and not m.generated then
+      gd.func { name = "reset_" .. m.name, ret = "void", body = m.name .. " = 0;" }
+    end
+  end
+}
+var mana: int = 50
+macro extra() { gd.var { name = "bonus", type = "int" } }
+`, []string{"func reset_health() -> void {health = 0;}", "func reset_mana() -> void {mana = 0;}"}},
+		// What earlier invocations generated is visible, with who generated it, and later ones' isn't.
+		{`class_name Foo
+extends Node
+var a: int
+invoke extra()
+var all: String = invoke { gd.text(describe()) }
+invoke { gd.var { name = "seen", type = "String", init = describe() } }
+invoke extra2()
+var b: float
+macro extra() { gd.var { name = "x", type = "int" } }
+macro extra2() { gd.var { name = "y", type = "int" } }
+` + describe, []string{
+			`var seen: String = "var a int gen=false/var x int gen=trueextra/var all String gen=false/var b float gen=false"`,
+			`var all: String = "var a int gen=false/var x int gen=trueextra/var all String gen=false/` +
+				`var seen String gen=true{ ... }/var y int gen=trueextra2/var b float gen=false"`,
+		}},
+		// Every kind of member, with its fields.
+		{`class_name Foo
+extends Node
+/// The health.
+@export_range(0, 100, "suffix", true) var health: int = 10
+var p: int { get { return 1; } set(v) { } }
+func f(a: int, b = 2) -> void { a++; }
+signal hit(by: Node)
+enum MAX = 3
+enum Suit { HEARTS, SPADES = HEARTS | 8 }
+ctor { }
+on process(delta: float) { }
+decl impl { }
+import Node3D
+invoke {
+  local m = ctx.members
+  local h = m[1]
+  local a = h.annotations[1]
+  gd.var { name = "out", type = "String", init = gd.quote(gd.join({
+    h.kind, h.doc, a[1], a[2], type(a[2]), a[4], tostring(a[5]), tostring(h.init),
+    m[2].kind, tostring(m[2].get), m[2].set_param,
+    m[3].kind, m[3].params[1].type, tostring(m[3].params[2].default), tostring(m[3].body), m[3].ret,
+    m[4].kind, m[4].params[1].type,
+    m[5].kind, m[5].value, m[6].kind, m[6].values[1].name, m[6].values[2].value,
+    m[7].kind, m[8].kind, m[8].name, m[8].param, m[8].param_type, m[9].kind, m[10].kind, m[10].type,
+  }, "/")) }
+}
+`, []string{`var out: String = {"var/The health./export_range/0/number/suffix/true/10/var/ return 1;/v/` +
+			`func/int/2/ a++;/void/signal/Node/enum/3/enum/HEARTS/HEARTS | 8/ctor/on/process/delta/float/decl_impl/import/Node3D"}`}},
+		// At the file's top level: classes and enum types, and copies made by emitting them again.
+		{`invoke {
+  for _, c in ipairs(ctx.members) do
+    if c.kind == "class" then
+      gd.class { name = c.name .. "Copy", extends = c.extends, body = function()
+        for _, m in ipairs(c.members) do gd[m.kind](m) end
+      end }
+    end
+  end
+}
+class Foo {
+  extends Node
+  @export var x: int = 1
+  func f(a: int) -> int { return a; }
+}
+enum Suit { HEARTS }
+`, []string{"class FooCopy {", "extends Node", "@export var x: int = 1", "func f(a: int) -> int { return a;}"}},
+	} {
+		got, err := expandPackage(t, map[string]string{"main.gd++": tc.src})
+		if err != nil {
+			t.Errorf("%s\nfailed: %v", tc.src, err)
+			continue
+		}
+		for _, w := range tc.want {
+			if !strings.Contains(got, w) {
+				t.Errorf("%s\n got: %s\nwant: %s", tc.src, got, w)
+			}
 		}
 	}
 }
