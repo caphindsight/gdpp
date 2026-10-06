@@ -49,11 +49,11 @@ var toolManPages = []string{
 var tutManPages = map[int][]string{
 	0: {
 		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
-		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/state-machine", "tut/upgrade", "tut/custom-godot",
+		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/state-machine", "tut/pickups", "tut/upgrade", "tut/custom-godot",
 	},
 	1: {
 		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
-		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/state-machine", "tut/upgrade", "tut/custom-godot",
+		"tut/threads", "tut/multiplayer", "tut/editor-tool", "tut/state-machine", "tut/pickups", "tut/upgrade", "tut/custom-godot",
 	},
 }
 

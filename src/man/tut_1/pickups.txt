@@ -1,0 +1,241 @@
+Tutorial: items that the player picks up, with a trait
+
+Games have many kinds of items that the player picks up: coins, health packs, keys. They behave differently, and may even have different base classes, but the player treats them all the same: touch it, take it. A trait states what all items have in common, so the player's code works with any of them.
+
+This tutorial makes a trait for items, three items that implement it, and a player that picks them up. It assumes a project that builds, as in `gd++ man tour`.
+
+# The example
+
+A 3D game:
+
+- A coin adds to the player's coins.
+- A health pack heals the player, but only if they're hurt. Otherwise it stays.
+- A key falls out of a chest, so it's a physics body that rolls. It adds to the player's keys.
+- The player picks up whatever item they touch, and a magnet pulls nearby items towards them.
+- A HUD shows the name of the last item.
+
+Coins and health packs are `Area3D`s, and the key is a `RigidBody3D`. A class has one base class, so no base class of theirs can hold the items' shared functions. A trait can.
+
+# 1. Declare the trait
+
+Make a file `pickup.gd++` in the package:
+
+```gd++
+/// An item that the player picks up by touching it.
+@group("pickups")
+trait_name Pickup
+extends Node3D
+
+/// Gives the item to the player. Returns false if the player can't take it now, so the item stays.
+func apply(player: Player) -> bool
+
+/// The item's name, for the HUD.
+@const func label() -> String
+
+/// Moves the item towards the player's magnet at point to.
+func attract(to: Vector3, delta: float) -> void {
+  set_global_position(get_global_position().move_toward(to, 8.0 * delta));
+}
+```
+
+- `trait_name` makes the whole file one trait, like `class_name` makes it a class.
+- `extends Node3D` is the base class that all items share. Each item's class must extend it: `Area3D` and `RigidBody3D` both do.
+- `apply` and `label` have no body: each item must define them.
+- `attract` has a body: it's a default. An item that doesn't define it gets a copy, which runs as the item's own code. So it can call `set_global_position`, a function of `Node3D`.
+- `@group("pickups")` adds every item to the group `pickups` when it's created. The magnet uses it in step 4.
+
+`Player` is the player's class, a `CharacterBody3D` from your game. For this tutorial it needs these members:
+
+```gd++
+@export var max_health: int = 100
+
+var health: int = 100
+var coins: int = 0
+var keys: int = 0
+```
+
+# 2. Implement the items
+
+A coin. Make a scene `coin.tscn`: an `Area3D` with a `MeshInstance3D` and a `CollisionShape3D` as children. Then write `coin.gd++`:
+
+```gd++
+class_name Coin
+extends Area3D
+implements Pickup
+
+@export var value: int = 1
+
+func apply(player: Player) -> bool {
+  player->coins += value;
+  return true;
+}
+
+@const func label() -> String {
+  return "Coin";
+}
+```
+
+- `implements Pickup` comes after `extends`.
+- Each function has the trait's signature: the same parameter types, the same return type, and `@const` where the trait has it.
+- The functions need no doc comments: they take the trait's.
+- The coin doesn't define `attract`, so it gets the default.
+
+A health pack, in `health_pack.gd++`, with a scene like the coin's:
+
+```gd++
+class_name HealthPack
+extends Area3D
+implements Pickup
+
+@export var amount: int = 25
+
+func apply(player: Player) -> bool {
+  if (player->health >= player->max_health) {
+    return false;
+  }
+  player->health = MIN(player->health + amount, player->max_health);
+  return true;
+}
+
+@const func label() -> String {
+  return "Health pack";
+}
+```
+
+`apply` returns false for a player with full health, so the pack stays for later.
+
+A key, in `key.gd++`. Its scene is a `RigidBody3D`, with a mesh and a collision shape:
+
+```gd++
+class_name Key
+extends RigidBody3D
+implements Pickup
+
+func apply(player: Player) -> bool {
+  player->keys += 1;
+  return true;
+}
+
+@const func label() -> String {
+  return "Key";
+}
+
+func attract(to: Vector3, delta: float) -> void {
+  apply_central_force((to - get_global_position()).normalized() * 20.0);
+}
+```
+
+- The key defines `attract` itself. Moving a physics body by setting its position fights the physics engine, so it pushes the body with a force instead.
+- That's what defaults are for: most items share the code, and the odd one replaces it.
+
+Leave out a function, and the build tells you:
+
+```out
+[×] res://key.gd++:3:12: Class Key doesn't implement func label of trait Pickup.
+     3 | implements Pickup
+       |            ^^^^^^
+    Hint: Add it to the class: "@const func label() -> String { ... }".
+```
+
+Build the package, and set the roots of the three scenes to `Coin`, `HealthPack` and `Key`.
+
+# 3. Pick up items
+
+The player finds out which item it touched with a cast. In `player.tscn`, add an `Area3D` named `Grabber` as a child of the player, with a `CollisionShape3D` a bit larger than the player's. Then add to `Player`:
+
+```gd++
+/// Emitted when the player picks up an item.
+signal picked_up(item: Pickup)
+
+func _on_grabber_entered(node: Node3D) -> void {
+  Trait<Pickup> item = node as Trait<Pickup>;
+  if (item && item->apply(this)) {
+    emit picked_up(item);
+    queue_destroy item;
+  }
+}
+```
+
+In the Node dock, connect both of the grabber's signals, `area_entered` and `body_entered`, to `_on_grabber_entered`. Coins and health packs are areas, and keys are bodies.
+
+- In C++ code, `Trait<Pickup>` is the type of a trait value.
+- `node as Trait<Pickup>` gives the item, or null if the node's class doesn't implement `Pickup`, e.g. for a wall.
+- `item->apply(this)` calls the item's own `apply`, whatever its class.
+- `queue_destroy item` does what it does for the item's class, e.g. returns it to its pool if it has one. See `gd++ man pools`.
+- The player's code doesn't name `Coin`, `HealthPack` or `Key`. A new item needs no change here.
+
+Build, place a few items in a level, and play.
+
+# 4. Pull items with a magnet
+
+The magnet pulls every item near the player towards them. The `@group` from step 1 finds the items, without searching the whole scene tree. Add to `Player`:
+
+```gd++
+@export var magnet_radius: float = 4.0
+
+func pull_items(delta: float) -> void {
+  TypedArray<Node> items = get_tree()->get_nodes_in_group(string_name "pickups");
+  for (int64_t i = 0; i < items.size(); i++) {
+    Trait<Pickup> item = items[i] as Trait<Pickup>;
+    if (item && item.base()->get_global_position().distance_to(get_global_position()) <= magnet_radius) {
+      item->attract(get_global_position(), delta);
+    }
+  }
+}
+```
+
+Call `pull_items(delta)` from the player's `on physics_process`.
+
+- The cast from the array's `Variant` is checked. It's cheap, but not free: a loop like this is fine for a few dozen items.
+- `item.base()` gives the item as its base class, `Node3D *`, for the functions of `Node3D`.
+- Coins and health packs move with the default `attract`, and keys with their own.
+
+# 5. Use items from scripts
+
+The trait's functions are bound like any other function of a class. So scripts call them, e.g. a HUD that shows the last item. Add a `Label` to the HUD, with this script, and connect the player's `picked_up` signal to it:
+
+```gdscript
+extends Label
+
+func _on_player_picked_up(item: Node3D) -> void:
+    text = "Picked up: " + item.label()
+```
+
+- Godot doesn't know traits: it sees a trait value as an object of the trait's base class, here `Node3D`.
+- `item.label()` works because every item's class binds `label`.
+- The signal is emitted before `queue_destroy` frees the item, so the object is still valid.
+
+# 6. Add a new item
+
+Each new item is one class:
+
+1. Extend `Node3D` or one of its subclasses.
+2. Add `implements Pickup`.
+3. Define `apply` and `label`, and `attract` if the default doesn't fit.
+
+The player, the magnet and the HUD work with it unchanged.
+
+Variants of an item are subclasses. They implement `Pickup` through their base class, and replace its functions without `@override`:
+
+```gd++
+class_name GoldCoin
+extends Coin
+
+func apply(player: Player) -> bool {
+  player->coins += value * 10;
+  return true;
+}
+```
+
+# Going further
+
+- A trait is a type, also for exports. E.g. `@export var reward: Pickup` on a chest lets the inspector pick only nodes whose class implements `Pickup`.
+- A class can implement several traits, e.g. `implements Pickup, Saveable`.
+- Calls through a trait are plain C++ virtual calls, so they're fast.
+- Traits only work inside a package. Other packages and scripts see the base class.
+
+See `gd++ man traits` for all the details.
+
+# See also
+
+`gd++ man traits`, `gd++ man cast`, `gd++ man classes`, `gd++ man signals`, `gd++ man pools`.
