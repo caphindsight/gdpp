@@ -1,0 +1,4 @@
+input.gd++:4:1: Function attack doesn't override a virtual function, so it can't have @override.
+ 4 | @override
+   | ^^^^^^^^^
+Hint: Only @virtual functions and the engine's virtual functions, e.g. Node's _process, take overrides.

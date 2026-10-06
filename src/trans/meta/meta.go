@@ -44,6 +44,8 @@ type Dependency struct {
 	Gdpp     bool        // Whether another GD++ file declares it. That file may depend on this one in turn.
 	Bitfield bool        // For Kind Enum and GodotEnum: whether it's a bitfield, whose values are flags.
 	Virtuals []string    // For classes: the names of its virtual functions, which subclasses override with @override: a GD++ class's @virtual functions, or a Godot class's own virtual methods, e.g. Node's _input.
+	// For classes: the names of its @virtual("noscript") functions, which subclasses override with @override("noscript").
+	NoscriptVirtuals []string
 	// For classes: the names of its own notifications, without NOTIFICATION_, which on blocks handle: a GD++ class's
 	// constants named NOTIFICATION_..., or a Godot class's, e.g. Node's READY.
 	Notifications []string
@@ -96,7 +98,9 @@ type Declaration struct {
 	EditorOnly bool        // For classes: whether @editor_only, or @tool("editor_only"), keeps its code from running in the game.
 	Abstract   bool        // For classes: whether @abstract keeps the editor and GD++ code from creating its objects.
 	Async      bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
-	Virtuals   []string    // For classes: the names of its @virtual functions, which subclasses can override.
+	Virtuals   []string    // For classes: the names of its @virtual functions, without "noscript", which subclasses can override.
+	// For classes: the names of its @virtual("noscript") functions, which subclasses can override.
+	NoscriptVirtuals []string
 	// For classes: the names of its own notifications, without NOTIFICATION_: its constants named NOTIFICATION_....
 	Notifications []string
 	Traits        []string // For classes: the traits it implements itself, without those of its bases.

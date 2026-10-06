@@ -1,0 +1,3 @@
+input.gd++:11:3: Function open overrides a @virtual("noscript") function of Portal, so it needs @override("noscript").
+ 11 |   @override
+    |   ^^^^^^^^^

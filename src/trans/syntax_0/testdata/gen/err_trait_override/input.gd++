@@ -1,0 +1,16 @@
+trait Damageable {
+  extends Node
+  func hit() -> void
+}
+
+class Crate {
+  extends Node
+  implements Damageable
+  func hit() -> void {}
+}
+
+class BigCrate {
+  extends Crate
+  @override
+  func hit() -> void {}
+}

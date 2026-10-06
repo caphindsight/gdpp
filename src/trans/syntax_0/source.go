@@ -481,7 +481,7 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t}());")
 	}
 	w.ln("}")
-	if f.virtual || f.override || !f.trampolined() {
+	if f.scripted() || f.override || !f.trampolined() {
 		return
 	}
 	w.ln("")
@@ -632,7 +632,7 @@ func (u *unit) bindings(w *writer, c *classModel) {
 		}
 		switch {
 		case f.override:
-		case f.virtual:
+		case f.scripted():
 			quoted := []string{f.f.Name}
 			for _, n := range names {
 				quoted = append(quoted, fmt.Sprintf("%q", n))
@@ -762,7 +762,7 @@ func (u *unit) headerNames() (names, complete []string) {
 		add(c.imports...)
 		addFuncs(c.funcs, c.vars, c.signals)
 		for _, f := range c.funcs {
-			if f.virtual {
+			if f.scripted() {
 				complete = append(complete, typeNames(f.f.Return)...)
 				for _, p := range f.f.Params {
 					complete = append(complete, typeNames(p.Type)...)

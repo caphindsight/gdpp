@@ -1,0 +1,4 @@
+input.gd++:14:3: Function hit overrides func hit of trait Damageable, which a base of BigCrate implements, so it can't have @override.
+ 14 |   @override
+    |   ^^^^^^^^^
+Hint: Trait function implementations are always implicitly virtual functions. Remove @override.

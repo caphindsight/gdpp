@@ -346,7 +346,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		}
 	}
 	for _, f := range c.funcs {
-		if f.virtual {
+		if f.scripted() {
 			public = append(public, gdvirtual(c, f))
 		}
 		prefix, suffix := "", ""
@@ -399,7 +399,7 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		w.ln("\tvoid _notification(int WHAT);")
 	}
 	for _, f := range c.funcs {
-		if !f.virtual && !f.override && f.trampolined() {
+		if !f.scripted() && !f.override && f.trampolined() {
 			private = append(private, trampolineDecl(c, f))
 		}
 		for i, p := range f.f.Params {

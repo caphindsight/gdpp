@@ -34,7 +34,7 @@ Chest::Chest() {
 }
 
 Dictionary Chest::save() {
-#line 18 "input.gd++"
+#line 17 "input.gd++"
 
     return Dictionary();
 

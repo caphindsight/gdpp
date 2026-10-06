@@ -1,1 +1,1 @@
-{Name:Handle Kind:1 Base:Node Values:[] Icon: Tool:true Bitfield:false GameOnly:false EditorOnly:true Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
+{Name:Handle Kind:1 Base:Node Values:[] Icon: Tool:true Bitfield:false GameOnly:false EditorOnly:true Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}

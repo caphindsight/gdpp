@@ -1,0 +1,4 @@
+input.gd++:11:13: Function _open overrides a virtual function of Portal that scripts can override, so it can't take "noscript".
+ 11 |   @override("noscript")
+    |             ^^^^^^^^^^
+Hint: Only overrides of a @virtual("noscript") function take "noscript".

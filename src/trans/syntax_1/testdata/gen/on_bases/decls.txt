@@ -1,4 +1,4 @@
-{Name:Panel Kind:1 Base:Control Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
-{Name:Spot Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
-{Name:Mid Kind:1 Base:Node2D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
-{Name:Leaf Kind:1 Base:Mid Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
+{Name:Panel Kind:1 Base:Control Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:Spot Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:Mid Kind:1 Base:Node2D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:Leaf Kind:1 Base:Mid Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}

@@ -1,7 +1,6 @@
 class_name Knight
 extends Hero
 
-@override
 func save() -> Dictionary {
   return Dictionary();
 }

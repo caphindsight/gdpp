@@ -1,0 +1,4 @@
+input.gd++:4:11: Function _input overrides a virtual function of Node that scripts can override, so it can't take "noscript".
+ 4 | @override("noscript")
+   |           ^^^^^^^^^^
+Hint: Only overrides of a @virtual("noscript") function take "noscript".

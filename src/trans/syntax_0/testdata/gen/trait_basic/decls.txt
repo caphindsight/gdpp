@@ -1,4 +1,4 @@
-{Name:Damageable Kind:8 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
-{Name:Labeled Kind:8 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
-{Name:Crate Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[Damageable Labeled]}
-{Name:BigCrate Kind:1 Base:Crate Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] Notifications:[] Traits:[]}
+{Name:Damageable Kind:8 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:Labeled Kind:8 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:Crate Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[Damageable Labeled]}
+{Name:BigCrate Kind:1 Base:Crate Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}

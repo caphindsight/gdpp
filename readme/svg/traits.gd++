@@ -18,6 +18,8 @@ class Crate {
     // class doesn't implement Damageable.
     Trait<Damageable> target = body as Trait<Damageable>;
     if (target) {
+      // A C++ virtual call, not an engine
+      // call, so it's much faster.
       target->take_damage(10);
     }
   }

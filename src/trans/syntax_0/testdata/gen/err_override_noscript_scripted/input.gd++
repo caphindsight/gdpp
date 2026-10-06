@@ -1,0 +1,15 @@
+class Portal {
+  extends Node
+
+  @virtual
+  func _open() -> bool
+}
+
+class Hatchway {
+  extends Portal
+
+  @override("noscript")
+  func _open() -> bool {
+    return true;
+  }
+}

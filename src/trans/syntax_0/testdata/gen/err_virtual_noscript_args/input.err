@@ -1,0 +1,4 @@
+input.gd++:3:22: Annotation @virtual can't take "noscript" with other arguments.
+ 3 | @virtual("noscript", "private")
+   |                      ^^^^^^^^^
+Hint: "private" and "super" only shape how scripts override the function, which "noscript" rules out.

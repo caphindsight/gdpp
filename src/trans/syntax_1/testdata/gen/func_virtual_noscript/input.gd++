@@ -1,0 +1,22 @@
+// A's @virtual("noscript") functions are C++ virtual functions: scripts can call them, but not override them.
+enum Suit { HEARTS, SPADES }
+
+class A {
+  extends Node
+  @virtual("noscript")
+  func pick(s: Suit) -> Suit {
+    return s;
+  }
+  @virtual("noscript")
+  func reset() -> void
+}
+
+class B {
+  extends A
+  @override("noscript")
+  func pick(s: Suit) -> Suit {
+    return Suit::SPADES;
+  }
+  @override("noscript", "final")
+  func reset() -> void {}
+}

@@ -49,6 +49,7 @@ func not_done_yet() -> int
   - plain functions: with `ClassDB::bind_method`, with parameter names and default values,
   - `@static`: with `ClassDB::bind_static_method`,
   - `@virtual`: with `GDVIRTUAL_BIND`, next to a function that calls them,
+  - `@virtual("noscript")`: like plain functions,
   - `@override`: not at all, since the engine binds them,
   - `@private`: not at all, so only C++ code calls them.
 - With `@game_only`, or in a `@game_only` class, starts the body with a check that returns right away in the editor, in debug builds. See `gd++ man classes`.
@@ -114,10 +115,13 @@ func _get_configuration_warnings() -> PackedStringArray {
 
 - a virtual function of the engine, i.e. of the base class, e.g. `_input`, `_unhandled_input`, `_gui_input` or `_get_configuration_warnings`. The engine calls it, like in GDScript.
 - a `@virtual` function of a GD++ base class. See "@virtual" below.
+- a `@virtual("noscript")` function of a GD++ base class, with `@override("noscript")`. See "@virtual(\"noscript\")" below.
 
 Rules:
 
 - A function named like a virtual function of the base class must have `@override`. So a function never overrides one by accident.
+- Other functions can't have `@override`: a plain function isn't virtual, so there's nothing to override.
+- Functions that implement or override a trait's function never take `@override` or `@virtual`. They're always implicitly virtual. See `gd++ man traits`.
 - GD++ knows the engine's virtual functions from the package's API spec. See `gd++ man dependencies`.
 - The signature must match the engine's exactly, in C++ terms, including the return type. Without `-> void`, the function returns a `Variant`, and the C++ compiler reports that it doesn't override anything.
 - `gd++ doc Node._input` shows a signature.
@@ -263,6 +267,41 @@ func _can_pick(item):
     return item.price < 10 and _super_can_pick(item)
 ```
 
+# @virtual("noscript")
+
+```gd++
+@virtual("noscript")
+func damage_of(item: Item) -> int {
+  return 1;
+}
+```
+
+`"noscript"` makes a virtual function for C++ only:
+
+- In C++, it's a virtual method, like with plain `@virtual`.
+- GD++ generates no `GDVIRTUAL`: scripts can't override it.
+- Its name doesn't need to start with `_`.
+- GD++ binds it like a plain function, so scripts can still call it, by its own name.
+- It takes no other arguments: `"private"` and `"super"` are about scripts' overrides.
+- Faster than plain `@virtual`: a call is a plain C++ virtual call, without a check for a script's version.
+
+A GD++ subclass overrides it with `@override("noscript")`:
+
+```gd++
+class_name Hero
+extends Player
+
+@override("noscript")
+func damage_of(item: Item) -> int {
+  return item->get_weight() * 2;
+}
+```
+
+- The override must say `"noscript"`, and only overrides of a `@virtual("noscript")` function take it.
+- In C++, it's `override`.
+- Combines with `"final"`: `@override("noscript", "final")`. In C++, it's `override final`.
+- Not with `"super"`, which is for scripts.
+
 # @override("final")
 
 ```gd++
@@ -272,7 +311,7 @@ func _can_pick(item: Item) -> bool {
 }
 ```
 
-On an `@override` of a GD++ `@virtual` function, `"final"` makes it the last version:
+On an `@override` of a GD++ `@virtual` function, plain or `"noscript"`, `"final"` makes it the last version:
 
 - Subclasses can't override it. In C++, it's `override final`.
 - C++ calls never run a script's version.
@@ -427,9 +466,13 @@ Annotations combine where it makes sense, e.g. `@virtual @const`. These are erro
 ```
 @static with @virtual, @override, @const, @rpc, @deferred or @thread_safe
 @virtual with @override, @rpc, @deferred, @thread_safe or @onthread
+@override on a function that overrides no virtual function
 @override("final") without a GD++ @virtual function to override
-@virtual on a function whose name doesn't start with _
+@override("noscript") without a @virtual("noscript") function to override, and @override without "noscript" with one
+"noscript" with "private" or "super"
+@virtual without "noscript", on a function whose name doesn't start with _
 A function with the name of a virtual function of the base class, without @override
+@virtual or @override on a function that implements or overrides a trait's function
 @recycle on a function other than an @override _ready
 @override with @rpc, @deferred, @thread_safe or @onthread
 @rpc with @onthread

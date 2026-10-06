@@ -1,0 +1,4 @@
+input.gd++:9:3: Function hit implements func hit of trait Damageable, so it can't have @virtual.
+ 9 |   @virtual("noscript")
+   |   ^^^^^^^^
+Hint: Trait function implementations are always implicitly virtual functions. Remove @virtual.

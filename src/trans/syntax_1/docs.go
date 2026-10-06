@@ -345,7 +345,7 @@ func (u *unit) document(c *classModel) string {
 		for _, q := range []struct {
 			on   bool
 			name string
-		}{{f.virtual, "virtual"}, {f.isConst, "const"}, {f.static, "static"}} {
+		}{{f.scripted(), "virtual"}, {f.isConst, "const"}, {f.static, "static"}} {
 			if q.on {
 				qualifiers = append(qualifiers, q.name)
 			}

@@ -115,6 +115,7 @@ type funcModel struct {
 	ret                                *gtype
 	virtual, override, isConst, static bool
 	final, super, private              bool        // With @override("final"), "super" on @override or @virtual, and @virtual("private").
+	noscript                           bool        // With "noscript" on @virtual or @override: a C++ virtual function, which scripts can't override.
 	isPrivate                          bool        // With @private: a private method, which isn't bound.
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string      // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
@@ -137,6 +138,11 @@ type rpcModel struct {
 	mode, transfer string // E.g. "MultiplayerAPI::RPC_MODE_ANY_PEER".
 	callLocal      bool
 	channel        string
+}
+
+// scripted reports whether the function is @virtual, and scripts can override it.
+func (f *funcModel) scripted() bool {
+	return f.virtual && !f.noscript
 }
 
 // trampolined reports whether the function's signature mentions an enum, so it's bound through a trampoline. The
@@ -316,7 +322,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
 				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c),
-				Virtuals: classVirtuals(c), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements)})
+				Virtuals: classVirtuals(c, false), NoscriptVirtuals: classVirtuals(c, true), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements)})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
 		case s.trait != nil:
@@ -396,11 +402,13 @@ func (u *unit) nonRuntime(name string) bool {
 	}
 }
 
-// classVirtuals returns the names of the @virtual functions of class c.
-func classVirtuals(c *Class) []string {
+// classVirtuals returns the names of the @virtual functions of class c: those with "noscript", or those without.
+func classVirtuals(c *Class, noscript bool) []string {
 	var names []string
 	for _, m := range c.Members {
-		if m.Func != nil && slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "virtual" }) {
+		if m.Func != nil && slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool {
+			return a.Name == "virtual" && slices.ContainsFunc(a.Args, func(arg *Arg) bool { return arg.Value == `"noscript"` }) == noscript
+		}) {
 			names = append(names, m.Func.Name)
 		}
 	}
@@ -453,64 +461,87 @@ func (u *unit) notificationOf(class, name string) (string, []string) {
 	return "", all
 }
 
-// setVirtualOf sets f.virtualOf for f, a function of the class named class with base base.
+// setVirtualOf sets f.virtualOf for f, a function of the class named class with base base. It checks that f has
+// @override if and only if it overrides a virtual function, and the same "noscript". Overrides of a trait's
+// functions are implicit.
 func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
-	owner, gdpp := u.virtualOwner(base, f.f.Name)
+	owner, kind := u.virtualOwner(base, f.f.Name)
 	notifOwner, _ := u.notificationOf(class, strings.ToUpper(strings.TrimPrefix(f.f.Name, "_")))
 	isNotif := strings.HasPrefix(f.f.Name, "_") && notifOwner != "" // E.g. _ready, for which on ready is better.
-	switch {
+	override := `@override`
+	if kind == "noscript" {
+		override = `@override("noscript")`
+	}
+	switch trait := u.traitFuncOwner(base, f.f.Name); {
+	case owner == "" && trait != "":
+		tm, err := u.traitModel(trait)
+		if err != nil {
+			return err
+		}
+		tf := tm.funcs[slices.IndexFunc(tm.funcs, func(tf *funcModel) bool { return tf.f.Name == f.f.Name })]
+		f.override = true
+		return u.checkTraitFunc(f, tf, trait, fmt.Sprintf("overrides func %s of trait %s, which a base of %s implements", f.f.Name, trait, class))
 	case f.virtual && owner != "":
-		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "virtual" })]
-		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already virtual in %s.", f.f.Name, owner), "Use @override to override it.")
+		a := annotationNamed(f.f, "virtual")
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already virtual in %s.", f.f.Name, owner), fmt.Sprintf("Use %s to override it.", override))
 	case !f.virtual && !f.override && owner != "":
-		hint := "Add @override, or rename the function."
+		hint := fmt.Sprintf("Add %s, or rename the function.", override)
 		if isNotif {
 			hint = fmt.Sprintf("To add code that runs at its notification, write \"%s\" instead. Only to replace the base's %s, which a script replaces in turn, add @override.", onExample(f.f.Name[1:]), f.f.Name)
 		}
-		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s overrides a virtual function of %s, so it needs @override.", f.f.Name, owner), hint)
-	case !f.virtual && !f.override && owner == "" && u.traitFuncOwner(base, f.f.Name) != "":
-		trait := u.traitFuncOwner(base, f.f.Name)
-		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s overrides func %s of trait %s, which a base of %s implements, so it needs @override.", f.f.Name, f.f.Name, trait, class),
-			"Add @override, or rename the function.")
-	case f.virtual && u.traitFuncOwner(base, f.f.Name) != "":
-		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "virtual" })]
-		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s is already a function of trait %s, which a base of %s implements.", f.f.Name, u.traitFuncOwner(base, f.f.Name), class),
-			"Use @override to override it.")
-	case f.final && !gdpp:
-		a := f.f.Annotations[slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool { return a.Name == "override" })]
-		arg := a.Args[slices.IndexFunc(a.Args, func(arg *Arg) bool { return arg.Value == `"final"` })]
+		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s overrides a virtual function of %s, so it needs %s.", f.f.Name, owner, override), hint)
+	case f.override && kind == "":
+		a := annotationNamed(f.f, "override")
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s doesn't override a virtual function, so it can't have @override.", f.f.Name),
+			"Only @virtual functions and the engine's virtual functions, e.g. Node's _process, take overrides.")
+	case f.override && f.noscript && kind != "noscript" && kind != "unknown":
+		args := annotationNamed(f.f, "override").Args
+		arg := args[slices.IndexFunc(args, func(arg *Arg) bool { return arg.Value == `"noscript"` })]
+		return u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Function %s overrides a virtual function of %s that scripts can override, so it can't take \"noscript\".", f.f.Name, owner),
+			"Only overrides of a @virtual(\"noscript\") function take \"noscript\".")
+	case f.override && !f.noscript && kind == "noscript":
+		a := annotationNamed(f.f, "override")
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s overrides a @virtual(\"noscript\") function of %s, so it needs @override(\"noscript\").", f.f.Name, owner), "")
+	case f.final && kind != "script" && kind != "noscript":
+		args := annotationNamed(f.f, "override").Args
+		arg := args[slices.IndexFunc(args, func(arg *Arg) bool { return arg.Value == `"final"` })]
 		return u.errorAt(arg.Pos, len(arg.Value), "Annotation @override(\"final\") only works on overrides of a GD++ @virtual function.",
 			"The engine lets scripts override its own virtual functions, so GD++ can't stop that.")
-	case f.virtual:
+	case f.scripted():
 		f.virtualOf = class
-	case f.override && !f.final && gdpp: // Without a GDVIRTUAL_CALL, scripts' overrides never run.
+	case f.override && !f.final && kind == "script": // Without a GDVIRTUAL_CALL, scripts' overrides never run.
 		f.virtualOf = owner
 	}
 	return nil
 }
 
+// annotationNamed returns f's annotation named name, or nil.
+func annotationNamed(f *Func, name string) *Annotation {
+	if i := slices.IndexFunc(f.Annotations, func(a *Annotation) bool { return a.Name == name }); i >= 0 {
+		return f.Annotations[i]
+	}
+	return nil
+}
+
 // virtualOwner returns the class that declares the virtual function name, the class named class or one of its
-// bases, and whether it's a GD++ class, whose @virtual declares it, rather than an engine class. Empty if there's
-// none. Bases don't cycle: kindOf rejects that first.
-func (u *unit) virtualOwner(class, name string) (string, bool) {
-	for class != "" {
+// bases, and its kind: "script" for a GD++ @virtual function, "noscript" for a @virtual("noscript") one, or
+// "engine". It returns "", "" if there's none, and "", "unknown" if a base isn't known. Bases don't cycle: kindOf
+// rejects that first.
+func (u *unit) virtualOwner(class, name string) (string, string) {
+	for ; class != ""; class = u.baseOf(class) {
 		s := u.symbols[class]
 		switch {
 		case s == nil:
-			return "", false
-		case s.class != nil:
-			if slices.Contains(classVirtuals(s.class), name) {
-				return class, true
-			}
-			class = baseName(s.class.Extends)
-		default:
-			if slices.Contains(s.virtuals, name) {
-				return class, s.gdpp
-			}
-			class = s.base
+			return "", "unknown"
+		case s.class != nil && slices.Contains(classVirtuals(s.class, false), name), s.class == nil && s.gdpp && slices.Contains(s.virtuals, name):
+			return class, "script"
+		case s.class != nil && slices.Contains(classVirtuals(s.class, true), name), s.class == nil && slices.Contains(s.noscriptVirtuals, name):
+			return class, "noscript"
+		case s.class == nil && slices.Contains(s.virtuals, name):
+			return class, "engine"
 		}
 	}
-	return "", false
+	return "", ""
 }
 
 // classIcon returns the path from the @icon annotation of class c, or "" if it has none.
@@ -660,7 +691,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				"Names must differ from Godot's, and from those of the package's other classes, externs, traits and enums.")
 		}
 		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
-			virtuals: d.Virtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits}
+			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}
@@ -1380,13 +1411,17 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		case name == "engine":
 			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override no longer takes \"engine\".",
 				fmt.Sprintf("Drop it: a plain @override already makes %s a plain override.", f.Name))
-		case name != "final" && name != "super":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override takes \"final\" or \"super\".", "E.g. @override(\"final\").")
-		case name == "final" && m.final, name == "super" && m.super:
+		case name != "final" && name != "super" && name != "noscript":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override takes \"final\", \"super\" or \"noscript\".", "E.g. @override(\"final\").")
+		case name == "final" && m.final, name == "super" && m.super, name == "noscript" && m.noscript:
 			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @override takes %s only once.", arg.Value), "")
+		case name == "super" && m.noscript, name == "noscript" && m.super:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @override can't take both \"noscript\" and \"super\".",
+				"Only scripts' overrides call a \"super\" function, and scripts can't override a \"noscript\" one.")
 		}
 		m.final = m.final || name == "final"
 		m.super = m.super || name == "super"
+		m.noscript = m.noscript || name == "noscript"
 	}
 	for _, arg := range argsOf(a["onthread"]) {
 		name, _ := strconv.Unquote(arg.Value)
@@ -1401,15 +1436,19 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	for _, arg := range argsOf(a["virtual"]) {
 		name, _ := strconv.Unquote(arg.Value)
 		switch {
-		case name != "private" && name != "super":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @virtual takes \"private\" or \"super\".", "E.g. @virtual(\"private\").")
-		case name == "private" && m.private, name == "super" && m.super:
+		case name != "private" && name != "super" && name != "noscript":
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @virtual takes \"private\", \"super\" or \"noscript\".", "E.g. @virtual(\"private\").")
+		case name == "private" && m.private, name == "super" && m.super, name == "noscript" && m.noscript:
 			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @virtual takes %s only once.", arg.Value), "")
+		case name == "noscript" && (m.private || m.super), name != "noscript" && m.noscript:
+			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @virtual can't take \"noscript\" with other arguments.",
+				"\"private\" and \"super\" only shape how scripts override the function, which \"noscript\" rules out.")
 		}
 		m.private = m.private || name == "private"
 		m.super = m.super || name == "super"
+		m.noscript = m.noscript || name == "noscript"
 	}
-	if m.virtual && (!strings.HasPrefix(f.Name, "_") || f.Name == "_") {
+	if m.scripted() && (!strings.HasPrefix(f.Name, "_") || f.Name == "_") {
 		hint := fmt.Sprintf("Like Godot's virtual functions. Scripts call it without the \"_\", e.g. _%s as %s.", f.Name, f.Name)
 		if m.private {
 			hint = "Like Godot's virtual functions."
@@ -2335,22 +2374,8 @@ func (u *unit) implement(m *classModel, names map[string]bool) error {
 				continue
 			}
 			f := m.funcs[i]
-			banned := slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool {
-				return slices.Contains([]string{"static", "virtual", "override", "deferred", "thread_safe", "onthread", "private"}, a.Name)
-			})
-			same := len(f.params) == len(tf.params) && f.ret.cpp == tf.ret.cpp && f.isConst == tf.isConst &&
-				!slices.ContainsFunc(f.f.Params, func(p *Param) bool { return p.Default != nil })
-			for j := 0; same && j < len(f.params); j++ {
-				same = f.params[j].cpp == tf.params[j].cpp
-			}
-			switch {
-			case banned >= 0:
-				a := f.f.Annotations[banned]
-				return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s implements func %s of trait %s, so it can't have @%s.", f.f.Name, f.f.Name, t.Name, a.Name),
-					"Calls through the trait call it directly. To let scripts override it, call a @virtual function from it.")
-			case !same:
-				return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s doesn't match func %s of trait %s.", f.f.Name, f.f.Name, t.Name),
-					fmt.Sprintf("Write it like the trait: \"%s\".", signature(tf)))
+			if err := u.checkTraitFunc(f, tf, t.Name, fmt.Sprintf("implements func %s of trait %s", f.f.Name, t.Name)); err != nil {
+				return err
 			}
 			f.trait = cmp.Or(f.trait, t.Name)
 			if f.f.Doc == nil && tf.f.Doc != nil { // Documented like the trait's function.
@@ -2423,6 +2448,32 @@ func (u *unit) traitOwner(class, trait string) string {
 		name = u.baseOf(name)
 	}
 	return ""
+}
+
+// checkTraitFunc checks f, a class's function that implements or overrides tf, a function of trait. what says
+// which, e.g. "implements func hit of trait Damageable".
+func (u *unit) checkTraitFunc(f, tf *funcModel, trait, what string) error {
+	banned := slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool {
+		return slices.Contains([]string{"static", "virtual", "override", "deferred", "thread_safe", "onthread", "private"}, a.Name)
+	})
+	same := len(f.params) == len(tf.params) && f.ret.cpp == tf.ret.cpp && f.isConst == tf.isConst &&
+		!slices.ContainsFunc(f.f.Params, func(p *Param) bool { return p.Default != nil })
+	for j := 0; same && j < len(f.params); j++ {
+		same = f.params[j].cpp == tf.params[j].cpp
+	}
+	switch {
+	case banned >= 0:
+		a := f.f.Annotations[banned]
+		hint := "Calls through the trait call it directly. To let scripts override it, call a @virtual function from it."
+		if a.Name == "virtual" || a.Name == "override" {
+			hint = fmt.Sprintf("Trait function implementations are always implicitly virtual functions. Remove @%s.", a.Name)
+		}
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s %s, so it can't have @%s.", f.f.Name, what, a.Name), hint)
+	case !same:
+		return u.errorAt(f.f.Pos, 4, fmt.Sprintf("Function %s doesn't match func %s of trait %s.", f.f.Name, f.f.Name, trait),
+			fmt.Sprintf("Write it like the trait: \"%s\".", signature(tf)))
+	}
+	return nil
 }
 
 // traitFuncOwner returns the trait with a function named name that the class named class implements, itself or
@@ -2611,7 +2662,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			default:
 				m.funcs = append(m.funcs, f)
 			}
-			if err == nil && f.virtual && !f.private {
+			if err == nil && f.scripted() && !f.private {
 				// GDVIRTUAL_BIND doesn't make the function callable, so scripts call it through this one.
 				caller := *f.f
 				caller.Name, caller.Annotations = f.f.Name[1:], nil

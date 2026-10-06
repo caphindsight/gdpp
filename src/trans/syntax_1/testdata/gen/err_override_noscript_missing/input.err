@@ -1,0 +1,4 @@
+input.gd++:11:3: Function open overrides a virtual function of Portal, so it needs @override("noscript").
+ 11 |   func open() -> bool {
+    |   ^^^^
+Hint: Add @override("noscript"), or rename the function.

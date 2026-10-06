@@ -321,7 +321,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 	for _, f := range files {
 		for _, d := range f.Decls {
 			if f.Rel != self {
-				dep := trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, Notifications: d.Notifications,
+				dep := trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals, Notifications: d.Notifications,
 					NonRuntime: nonRuntime[d.Name], Traits: d.Traits}
 				if d.Kind == trans.TraitDecl { // Its classes check and copy its functions.
 					dep.Source, dep.File = f.Src, f.File.ToString()

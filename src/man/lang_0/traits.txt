@@ -40,7 +40,7 @@ func _on_body_entered(body: Node3D) -> void {
 }
 ```
 
-Traits are fast: a call through a trait is a plain C++ virtual call, with no lookup by name. They only work inside a package. Other packages and scripts don't see them.
+Traits are fast: a call through a trait is a plain C++ virtual call, not an engine call, so it's much faster. They only work inside a package. Other packages and scripts don't see them.
 
 # Declaring a trait
 
@@ -104,7 +104,8 @@ class Barrel {
 
 - The class must extend the trait's base class: "Class Ghost implements trait Damageable, so it must extend Node3D.".
 - It defines each required function, with the same signature: the same parameter types, the same return type, and `@const` if the trait has it.
-- Implementations can't have default values, `@static`, `@virtual`, `@override`, `@deferred`, `@thread_safe`, `@onthread` or `@private`, since those change the call.
+- Implementations are always implicitly virtual functions, so they can't have `@virtual` or `@override`, not even with `"noscript"`.
+- They can't have default values, `@static`, `@deferred`, `@thread_safe`, `@onthread` or `@private` either, since those change the call.
 - Other annotations work, e.g. `@trace`, `@rpc` or `@game_only`.
 - Two traits may have a function of the same name. One function then implements both, if their signatures match.
 - Naming a trait twice is an error, and so is naming one that a base class implements already.
@@ -125,13 +126,12 @@ The class's functions:
 # Subclasses
 
 - A subclass implements the traits of its bases. It doesn't name them again.
-- To replace a trait function of a base, a subclass needs `@override`, like for `@virtual` functions:
+- To replace a trait function of a base, a subclass defines a function of the same name. It's implicitly an override, so it takes no `@override`:
 
 ```gd++
 class BigCrate {
   extends Crate
 
-  @override
   func take_damage(amount: int) -> void {
     hp -= amount / 2;
   }
@@ -139,6 +139,7 @@ class BigCrate {
 ```
 
 - A call through the trait runs the subclass's function.
+- The same rules as for implementations apply: the same signature, and no `@virtual` or `@override`.
 - Scripts can't replace a trait function: a call through the trait is a C++ call. To let scripts change what it does, call a `@virtual` function from it. See `gd++ man functions`.
 
 # Using traits

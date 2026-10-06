@@ -1,0 +1,5 @@
+class_name Mob
+extends Node
+
+@override("noscript")
+func _input(event: InputEvent) -> void {}

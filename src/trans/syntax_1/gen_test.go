@@ -30,8 +30,9 @@ func TestGenerate(t *testing.T) {
 			Gdpp, Bitfield, NonRuntime bool
 			Virtuals, Notifications    []string
 			Traits                     []string
-			File                       string // For macros and templates: their file in testdata/gen.
-			SourceName                 string `toml:"source_name"`
+			NoscriptVirtuals           []string `toml:"noscript_virtuals"`
+			File                       string   // For macros and templates: their file in testdata/gen.
+			SourceName                 string   `toml:"source_name"`
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
@@ -50,7 +51,7 @@ func TestGenerate(t *testing.T) {
 			}
 			source = string(data)
 		}
-		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals,
+		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals,
 			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits})
 	}
 	opts.PackageID, opts.PackagePrefix, opts.CppStandard = "shooter", "Shooter", "c++17"

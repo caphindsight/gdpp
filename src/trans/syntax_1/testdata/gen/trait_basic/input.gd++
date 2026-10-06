@@ -50,7 +50,6 @@ class Crate {
 class BigCrate {
   extends Crate
 
-  @override
   func take_damage(amount: int) -> void {
     hp -= amount / 2;
   }

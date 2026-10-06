@@ -23,7 +23,7 @@ void BigCrate::_gdpp_queue_destroy() {
 }
 
 void BigCrate::take_damage(int64_t amount) {
-#line 54 "input.gd++"
+#line 53 "input.gd++"
 
     hp -= amount / 2;
 

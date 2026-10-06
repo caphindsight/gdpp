@@ -6,10 +6,6 @@ trait Damageable {
 class Crate {
   extends Node
   implements Damageable
-  func hit() -> void {}
-}
-
-class BigCrate {
-  extends Crate
+  @virtual("noscript")
   func hit() -> void {}
 }

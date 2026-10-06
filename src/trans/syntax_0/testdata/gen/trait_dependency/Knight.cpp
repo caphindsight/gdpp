@@ -22,7 +22,7 @@ void Knight::_gdpp_queue_destroy() {
 }
 
 Dictionary Knight::save() {
-#line 5 "input.gd++"
+#line 4 "input.gd++"
 
   return Dictionary();
 

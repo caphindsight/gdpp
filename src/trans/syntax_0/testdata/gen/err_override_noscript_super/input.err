@@ -1,0 +1,4 @@
+input.gd++:11:25: Annotation @override can't take both "noscript" and "super".
+ 11 |   @override("noscript", "super")
+    |                         ^^^^^^^
+Hint: Only scripts' overrides call a "super" function, and scripts can't override a "noscript" one.

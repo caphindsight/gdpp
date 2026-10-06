@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="A" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="pick">
+			<return type="int" enum="A.Suit" />
+			<param index="0" name="s" type="int" enum="A.Suit" />
+			<description>
+			</description>
+		</method>
+		<method name="reset">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="SUIT_HEARTS" value="0" enum="Suit">
+		</constant>
+		<constant name="SUIT_SPADES" value="1" enum="Suit">
+		</constant>
+	</constants>
+</class>
