@@ -115,7 +115,7 @@ func _get_configuration_warnings() -> PackedStringArray {
 
 - a virtual function of the engine, i.e. of the base class, e.g. `_input`, `_unhandled_input`, `_gui_input` or `_get_configuration_warnings`. The engine calls it, like in GDScript.
 - a `@virtual` function of a GD++ base class. See "@virtual" below.
-- a `@virtual("noscript")` function of a GD++ base class, with `@override("noscript")`. See "@virtual(\"noscript\")" below.
+- a `@virtual("noscript")` function of a GD++ base class, with `@override("noscript")`. See the `@virtual("noscript")` section below.
 
 Rules:
 
@@ -158,7 +158,7 @@ func _unhandled_input(event: InputEvent) -> void {
 
 - GD++ also binds the body as a function of its own, `_super_NAME`, which a script calls in place of `super`. Here: `_super_unhandled_input(event)`.
 - Works on every `@override` function, of the engine or of a GD++ `@virtual` function.
-- Works on `@virtual` functions too. See "@virtual(\"super\")" below.
+- Works on `@virtual` functions too. See the `@virtual("super")` section below.
 - The bound function's name, e.g. `_super_unhandled_input`, must be free.
 
 ```gdscript
