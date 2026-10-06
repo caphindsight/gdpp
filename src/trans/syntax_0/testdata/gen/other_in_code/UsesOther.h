@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class UsesOther;
+gdpp::kind::RefCounted gdpp_kind(UsesOther *);
+
 #define This UsesOther
 class UsesOther : public RefCounted {
 	GDCLASS(UsesOther, RefCounted)

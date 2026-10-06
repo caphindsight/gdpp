@@ -39,7 +39,7 @@ For objects that need arguments, write a `@static` function that creates and set
 ```gd++
 @static
 func with_health(hp: int) -> Enemy {
-  Enemy *enemy = create Enemy;
+  Gd<Enemy> enemy = create Enemy;
   enemy->health = hp;
   return enemy;
 }

@@ -9,16 +9,16 @@ namespace godot {
 void Bullet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_mesh"), &Bullet::get_mesh);
 	ClassDB::bind_method(D_METHOD("set_mesh", "value"), &Bullet::set_mesh);
-	ClassDB::add_property(get_class_static(), gdpp::info<MeshInstance3D *>("mesh", PROPERTY_USAGE_NONE), "set_mesh", "get_mesh");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<MeshInstance3D>>("mesh", PROPERTY_USAGE_NONE), "set_mesh", "get_mesh");
 	ClassDB::bind_method(D_METHOD("get_trail"), &Bullet::get_trail);
 	ClassDB::bind_method(D_METHOD("set_trail", "value"), &Bullet::set_trail);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node3D *>("trail", PROPERTY_USAGE_NONE), "set_trail", "get_trail");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node3D>>("trail", PROPERTY_USAGE_NONE), "set_trail", "get_trail");
 	ClassDB::bind_method(D_METHOD("get_start"), &Bullet::get_start);
 	ClassDB::bind_method(D_METHOD("set_start", "value"), &Bullet::set_start);
 	ClassDB::add_property(get_class_static(), gdpp::info<Vector3>("start", PROPERTY_USAGE_NONE), "set_start", "get_start");
 	ClassDB::bind_method(D_METHOD("get_sound"), &Bullet::get_sound);
 	ClassDB::bind_method(D_METHOD("set_sound", "value"), &Bullet::set_sound);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node *>("sound", PROPERTY_USAGE_NONE), "set_sound", "get_sound");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node>>("sound", PROPERTY_USAGE_NONE), "set_sound", "get_sound");
 	ClassDB::bind_method(D_METHOD("get_hits"), &Bullet::get_hits);
 	ClassDB::bind_method(D_METHOD("set_hits", "value"), &Bullet::set_hits);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("hits", PROPERTY_USAGE_NONE), "set_hits", "get_hits");
@@ -86,19 +86,19 @@ void Bullet::_gdpp_body__notification(int64_t what) {
 #line 87 "Bullet.cpp"
 }
 
-MeshInstance3D *Bullet::get_mesh() const {
+gdpp::Gd<MeshInstance3D> Bullet::get_mesh() const {
 	return mesh;
 }
 
-void Bullet::set_mesh(MeshInstance3D *p_value) {
+void Bullet::set_mesh(gdpp::Gd<MeshInstance3D> p_value) {
 	mesh = p_value;
 }
 
-Node3D *Bullet::get_trail() const {
+gdpp::Gd<Node3D> Bullet::get_trail() const {
 	return trail;
 }
 
-void Bullet::set_trail(Node3D *p_value) {
+void Bullet::set_trail(gdpp::Gd<Node3D> p_value) {
 	trail = p_value;
 }
 
@@ -110,11 +110,11 @@ void Bullet::set_start(const Vector3 &p_value) {
 	start = p_value;
 }
 
-Node *Bullet::get_sound() const {
+gdpp::Gd<Node> Bullet::get_sound() const {
 	return sound;
 }
 
-void Bullet::set_sound(Node *p_value) {
+void Bullet::set_sound(gdpp::Gd<Node> p_value) {
 	sound = p_value;
 }
 

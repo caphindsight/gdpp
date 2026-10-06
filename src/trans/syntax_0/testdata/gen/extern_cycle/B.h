@@ -8,6 +8,9 @@
 namespace godot {
 
 class A;
+gdpp::kind::Extern gdpp_kind(A *);
+class B;
+gdpp::kind::RefCountedExtern gdpp_kind(B *);
 
 class B {
 public:
@@ -17,8 +20,8 @@ public:
 	explicit B(Base *p_object) :
 			_gdpp_base(p_object) {}
 
-	gdpp::ExtPtr<A> a(gdpp::ExtPtr<A> x) const;
-	gdpp::Emitted found(gdpp::ExtPtr<A> a) const;
+	gdpp::Gd<A> a(gdpp::Gd<A> x) const;
+	gdpp::Emitted found(gdpp::Gd<A> a) const;
 
 protected:
 	Base *_gdpp_base;
@@ -30,11 +33,11 @@ protected:
 
 namespace godot {
 
-inline gdpp::ExtPtr<A> B::a(gdpp::ExtPtr<A> x) const {
-	return gdpp::cast<gdpp::ExtPtr<A>>(_gdpp_base->call(GDPP_STRING_NAME("a"), x));
+inline gdpp::Gd<A> B::a(gdpp::Gd<A> x) const {
+	return gdpp::cast<gdpp::Gd<A>>(_gdpp_base->call(GDPP_STRING_NAME("a"), x));
 }
 
-inline gdpp::Emitted B::found(gdpp::ExtPtr<A> a) const {
+inline gdpp::Emitted B::found(gdpp::Gd<A> a) const {
 	return gdpp::Emitted{ _gdpp_base->emit_signal(GDPP_STRING_NAME("found"), a) };
 }
 

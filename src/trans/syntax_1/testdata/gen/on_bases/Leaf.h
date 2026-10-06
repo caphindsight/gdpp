@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Leaf;
+gdpp::kind::Object gdpp_kind(Leaf *);
+
 #define This Leaf
 class Leaf : public Mid {
 	GDCLASS(Leaf, Mid)

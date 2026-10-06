@@ -25,11 +25,11 @@ func regenerate() -> void {
   for (int64_t i = get_child_count() - 1; i >= 0; i--) {
     queue_destroy get_child(i);
   }
-  if (mesh.is_null()) {
+  if (!mesh) {
     return;
   }
   for (int64_t i = 0; i < 20; i++) {
-    MeshInstance3D *rock = create MeshInstance3D;
+    Gd<MeshInstance3D> rock = create MeshInstance3D;
     rock->set_mesh(mesh);
     rock->set_position(Vector3(gd::randf_range(-5, 5), 0, gd::randf_range(-5, 5)));
     add_child(rock);
@@ -98,7 +98,7 @@ The editor shows a warning icon next to nodes whose configuration warnings aren'
 @const @override
 func _get_configuration_warnings() -> PackedStringArray {
   PackedStringArray warnings;
-  if (mesh.is_null()) {
+  if (!mesh) {
     warnings.push_back("Set a mesh to scatter.");
   }
   return warnings;

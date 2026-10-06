@@ -8,7 +8,10 @@
 namespace godot {
 
 class Item;
+gdpp::kind::RefCounted gdpp_kind(Item *);
 enum class ItemKind : int64_t;
+class ItemFactory;
+gdpp::kind::RefCounted gdpp_kind(ItemFactory *);
 
 enum _gdpp_ItemFactory_ItemKind : int64_t {};
 GDPP_ENUM_TAG(_gdpp_ItemFactory_ItemKind, "ItemFactory.ItemKind")
@@ -18,13 +21,13 @@ class ItemFactory : public RefCounted {
 	GDCLASS(ItemFactory, RefCounted)
 
 public:
-	static Ref<Item> make(ItemKind kind);
+	static gdpp::Gd<Item> make(ItemKind kind);
 
 protected:
 	static void _bind_methods();
 
 private:
-	static Ref<Item> _gdpp_make(_gdpp_ItemFactory_ItemKind kind);
+	static gdpp::Gd<Item> _gdpp_make(_gdpp_ItemFactory_ItemKind kind);
 };
 #undef This
 

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class BigCrate;
+gdpp::kind::Object gdpp_kind(BigCrate *);
+
 #define This BigCrate
 class BigCrate : public Crate {
 	GDCLASS(BigCrate, Crate)

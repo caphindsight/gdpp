@@ -71,11 +71,11 @@ Mood Player::_gdpp_default_take_damage_mood() {
 #line 72 "Player.cpp"
 }
 
-Player *Player::create() {
+gdpp::Gd<Player> Player::create() {
 	static gdpp::ProfileStats _gdpp_stats("Player.create", 10, 144);
 	gdpp::Profile _gdpp_profile(_gdpp_stats);
 	gdpp::Trace _gdpp_trace("Player", nullptr, "create");
-	return _gdpp_trace.ret([&]() -> Player * {
+	return _gdpp_trace.ret([&]() -> gdpp::Gd<Player> {
 #line 30 "input.gd++"
 
   return gdpp::create<Player>();

@@ -155,10 +155,10 @@ See `gd++ man cpp-classes`.
   Make the class concrete again. Removes `abstract = true` from its `[[class]]` table.
 
 --ptr
-  Let GD++ code use the class by name, as a pointer, e.g. `Spinner *`: for classes that aren't refcounted. Sets `kind = "ptr"` in its `[[class]]` table, shown as `[ptr]` by `gd++ ls`. The class needs an include.
+  Let GD++ code use the class by name, e.g. as a `Gd<Spinner>`: for classes that aren't refcounted. Sets `kind = "ptr"` in its `[[class]]` table, shown as `[ptr]` by `gd++ ls`. The class needs an include.
 
 --ref
-  Let GD++ code use the class by name, as a reference, e.g. `Ref<Spinner>`: for refcounted classes. Sets `kind = "ref"`, shown as `[ref]`. The class needs an include.
+  Let GD++ code use the class by name, e.g. as a `Gd<Spinner>` that keeps it alive: for refcounted classes. Sets `kind = "ref"`, shown as `[ref]`. The class needs an include.
 
 --nogdpp
   Stop GD++ code from using the class by name. Removes `kind` from its `[[class]]` table.

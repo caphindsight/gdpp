@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Deck;
+gdpp::kind::RefCounted gdpp_kind(Deck *);
+
 enum _gdpp_Deck_Suit : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Deck_Suit, "Deck.Suit")
 

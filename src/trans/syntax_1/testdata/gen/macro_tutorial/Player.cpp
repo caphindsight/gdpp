@@ -35,10 +35,10 @@ void Player::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<double>("attack_time", PROPERTY_USAGE_DEFAULT), "set_attack_time", "get_attack_time");
 	ClassDB::bind_method(D_METHOD("get_animation"), &Player::get_animation);
 	ClassDB::bind_method(D_METHOD("set_animation", "value"), &Player::set_animation);
-	ClassDB::add_property(get_class_static(), gdpp::info<AnimationPlayer *>("animation", PROPERTY_USAGE_NONE), "set_animation", "get_animation");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<AnimationPlayer>>("animation", PROPERTY_USAGE_NONE), "set_animation", "get_animation");
 	ClassDB::bind_method(D_METHOD("get_hitbox"), &Player::get_hitbox);
 	ClassDB::bind_method(D_METHOD("set_hitbox", "value"), &Player::set_hitbox);
-	ClassDB::add_property(get_class_static(), gdpp::info<Area2D *>("hitbox", PROPERTY_USAGE_NONE), "set_hitbox", "get_hitbox");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Area2D>>("hitbox", PROPERTY_USAGE_NONE), "set_hitbox", "get_hitbox");
 	ClassDB::bind_method(D_METHOD("get_state"), &Player::_gdpp_get_state);
 	ClassDB::bind_method(D_METHOD("set_state", "value"), &Player::_gdpp_set_state);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Player_PlayerState>("state", PROPERTY_USAGE_NONE), "set_state", "get_state");
@@ -343,19 +343,19 @@ void Player::set_attack_time(double p_value) {
 	attack_time = p_value;
 }
 
-AnimationPlayer *Player::get_animation() const {
+gdpp::Gd<AnimationPlayer> Player::get_animation() const {
 	return animation;
 }
 
-void Player::set_animation(AnimationPlayer *p_value) {
+void Player::set_animation(gdpp::Gd<AnimationPlayer> p_value) {
 	animation = p_value;
 }
 
-Area2D *Player::get_hitbox() const {
+gdpp::Gd<Area2D> Player::get_hitbox() const {
 	return hitbox;
 }
 
-void Player::set_hitbox(Area2D *p_value) {
+void Player::set_hitbox(gdpp::Gd<Area2D> p_value) {
 	hitbox = p_value;
 }
 

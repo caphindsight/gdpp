@@ -1102,7 +1102,7 @@ func (u *unit) nodeShorthand(m *varModel) error {
 	if v.Type == nil {
 		return u.errorAt(init.Pos, len(init.Expr), fmt.Sprintf(need, v.Name, "has no type"), needHint)
 	}
-	if m.t.cpp != v.Type.Name+" *" || !u.extends(v.Type.Name, "Node") {
+	if s := u.symbols[v.Type.Name]; len(v.Type.Args) > 0 || s == nil || s.kind != meta.Object || !u.extends(v.Type.Name, "Node") {
 		return u.errorAt(v.Type.Pos, len(v.Type.Name), fmt.Sprintf(need, v.Name, "has type "+m.t.doc), needHint)
 	}
 	init.Expr = fmt.Sprintf("get_node<%s>(%s)", v.Type.Name, cppString(path))

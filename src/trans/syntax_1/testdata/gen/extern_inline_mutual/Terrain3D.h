@@ -8,6 +8,9 @@
 namespace godot {
 
 class Terrain3DData;
+gdpp::kind::Extern gdpp_kind(Terrain3DData *);
+class Terrain3D;
+gdpp::kind::Extern gdpp_kind(Terrain3D *);
 
 class Terrain3D {
 public:
@@ -17,8 +20,8 @@ public:
 	explicit Terrain3D(Base *p_object) :
 			_gdpp_base(p_object) {}
 
-	gdpp::ExtPtr<Terrain3DData> get_data() const;
-	void set_data(gdpp::ExtPtr<Terrain3DData> p_value) const;
+	gdpp::Gd<Terrain3DData> get_data() const;
+	void set_data(gdpp::Gd<Terrain3DData> p_value) const;
 
 protected:
 	Base *_gdpp_base;
@@ -30,11 +33,11 @@ protected:
 
 namespace godot {
 
-inline gdpp::ExtPtr<Terrain3DData> Terrain3D::get_data() const {
-	return gdpp::cast<gdpp::ExtPtr<Terrain3DData>>(_gdpp_base->get(GDPP_STRING_NAME("data")));
+inline gdpp::Gd<Terrain3DData> Terrain3D::get_data() const {
+	return gdpp::cast<gdpp::Gd<Terrain3DData>>(_gdpp_base->get(GDPP_STRING_NAME("data")));
 }
 
-inline void Terrain3D::set_data(gdpp::ExtPtr<Terrain3DData> p_value) const {
+inline void Terrain3D::set_data(gdpp::Gd<Terrain3DData> p_value) const {
 	_gdpp_base->set(GDPP_STRING_NAME("data"), p_value);
 }
 

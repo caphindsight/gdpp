@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Hatch;
+gdpp::kind::Object gdpp_kind(Hatch *);
+
 #define This Hatch
 class Hatch : public Gate {
 	GDCLASS(Hatch, Gate)

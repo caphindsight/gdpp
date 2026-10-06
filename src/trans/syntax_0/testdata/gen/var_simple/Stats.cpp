@@ -21,10 +21,10 @@ void Stats::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<Variant>("anything", PROPERTY_USAGE_NONE), "set_anything", "get_anything");
 	ClassDB::bind_method(D_METHOD("get_target"), &Stats::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Stats::set_target);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node3D *>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node3D>>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
 	ClassDB::bind_method(D_METHOD("get_texture"), &Stats::get_texture);
 	ClassDB::bind_method(D_METHOD("set_texture", "value"), &Stats::set_texture);
-	ClassDB::add_property(get_class_static(), gdpp::info<Ref<Texture2D>>("texture", PROPERTY_USAGE_NONE), "set_texture", "get_texture");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Texture2D>>("texture", PROPERTY_USAGE_NONE), "set_texture", "get_texture");
 }
 
 Stats::Stats() {
@@ -68,19 +68,19 @@ void Stats::set_anything(const Variant &p_value) {
 	anything = p_value;
 }
 
-Node3D *Stats::get_target() const {
+gdpp::Gd<Node3D> Stats::get_target() const {
 	return target;
 }
 
-void Stats::set_target(Node3D *p_value) {
+void Stats::set_target(gdpp::Gd<Node3D> p_value) {
 	target = p_value;
 }
 
-Ref<Texture2D> Stats::get_texture() const {
+gdpp::Gd<Texture2D> Stats::get_texture() const {
 	return texture;
 }
 
-void Stats::set_texture(const Ref<Texture2D> &p_value) {
+void Stats::set_texture(const gdpp::Gd<Texture2D> &p_value) {
 	texture = p_value;
 }
 

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Cell;
+gdpp::kind::RefCounted gdpp_kind(Cell *);
+
 #define This Cell
 class Cell : public RefCounted {
 	GDCLASS(Cell, RefCounted)

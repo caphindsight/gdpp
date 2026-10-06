@@ -108,7 +108,7 @@ void Bullet::_gdpp_recycle_dtor() {
 #line 109 "Bullet.cpp"
 }
 
-Bullet *Bullet::create() {
+gdpp::Gd<Bullet> Bullet::create() {
 	return gdpp::create<Bullet>();
 }
 

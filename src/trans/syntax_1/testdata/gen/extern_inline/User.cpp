@@ -10,13 +10,13 @@ void User::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("use"), &User::use);
 	ClassDB::bind_method(D_METHOD("get_terrain"), &User::get_terrain);
 	ClassDB::bind_method(D_METHOD("set_terrain", "value"), &User::set_terrain);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Terrain2>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Terrain2>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
 	ClassDB::bind_method(D_METHOD("get_settings"), &User::get_settings);
 	ClassDB::bind_method(D_METHOD("set_settings", "value"), &User::set_settings);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtRef<Settings>>("settings", PROPERTY_USAGE_NONE), "set_settings", "get_settings");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Settings>>("settings", PROPERTY_USAGE_NONE), "set_settings", "get_settings");
 	ClassDB::bind_method(D_METHOD("get_other"), &User::get_other);
 	ClassDB::bind_method(D_METHOD("set_other", "value"), &User::set_other);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Road>>("other", PROPERTY_USAGE_NONE), "set_other", "get_other");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Road>>("other", PROPERTY_USAGE_NONE), "set_other", "get_other");
 }
 
 void User::use() {
@@ -31,27 +31,27 @@ void User::use() {
 #line 32 "User.cpp"
 }
 
-gdpp::ExtPtr<Terrain2> User::get_terrain() const {
+gdpp::Gd<Terrain2> User::get_terrain() const {
 	return terrain;
 }
 
-void User::set_terrain(gdpp::ExtPtr<Terrain2> p_value) {
+void User::set_terrain(gdpp::Gd<Terrain2> p_value) {
 	terrain = p_value;
 }
 
-gdpp::ExtRef<Settings> User::get_settings() const {
+gdpp::Gd<Settings> User::get_settings() const {
 	return settings;
 }
 
-void User::set_settings(gdpp::ExtRef<Settings> p_value) {
+void User::set_settings(const gdpp::Gd<Settings> &p_value) {
 	settings = p_value;
 }
 
-gdpp::ExtPtr<Road> User::get_other() const {
+gdpp::Gd<Road> User::get_other() const {
 	return other;
 }
 
-void User::set_other(gdpp::ExtPtr<Road> p_value) {
+void User::set_other(gdpp::Gd<Road> p_value) {
 	other = p_value;
 }
 

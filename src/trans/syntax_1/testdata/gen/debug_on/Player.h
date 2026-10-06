@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Mood : int64_t;
+class Player;
+gdpp::kind::Object gdpp_kind(Player *);
 
 enum _gdpp_Player_Mood : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Player_Mood, "Player.Mood")
@@ -25,13 +27,13 @@ private:
 
     int64_t ammo_ = 0;
 
-#line 29 "Player.h"
+#line 31 "Player.h"
 
 public:
 	Player();
 	~Player();
 	bool take_damage(int64_t amount, Mood mood = _gdpp_default_take_damage_mood());
-	static Player *create();
+	static gdpp::Gd<Player> create();
 	bool is_alive() const;
 	GDVIRTUAL0R(int64_t, _score)
 	virtual int64_t _score();

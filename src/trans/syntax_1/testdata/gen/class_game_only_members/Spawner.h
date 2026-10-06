@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Kind : int64_t;
+class Spawner;
+gdpp::kind::Object gdpp_kind(Spawner *);
 
 enum _gdpp_Spawner_Kind : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Spawner_Kind, "Spawner.Kind")

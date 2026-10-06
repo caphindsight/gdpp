@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Spark;
+gdpp::kind::Object gdpp_kind(Spark *);
+
 #define This Spark
 class Spark : public Node {
 	GDCLASS(Spark, Node)
@@ -19,7 +22,7 @@ public:
 	gdpp::PoolSlot<Spark> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static Spark *create();
+	static gdpp::Gd<Spark> create();
 	void destroy();
 	void queue_destroy();
 	static void prewarm(int64_t p_count = 10, const String &p_mode = String());

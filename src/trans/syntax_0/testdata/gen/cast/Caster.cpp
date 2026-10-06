@@ -2,7 +2,6 @@
 
 #include "Caster.h"
 
-#include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
@@ -13,7 +12,7 @@ namespace godot {
 #define This Caster
 
 void Caster::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("convert", "node", "resource", "value"), &Caster::convert);
+	ClassDB::bind_method(D_METHOD("convert", "node", "resource", "value", "hero", "weak"), &Caster::convert);
 	ClassDB::bind_method(D_METHOD("get_mode"), &Caster::_gdpp_get_mode);
 	ClassDB::bind_method(D_METHOD("set_mode", "value"), &Caster::_gdpp_set_mode);
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Caster_Mode>("mode", PROPERTY_USAGE_NONE), "set_mode", "get_mode");
@@ -22,13 +21,19 @@ void Caster::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<_gdpp_Caster_Level>("level", PROPERTY_USAGE_NONE), "set_level", "get_level");
 	ClassDB::bind_method(D_METHOD("get_road"), &Caster::get_road);
 	ClassDB::bind_method(D_METHOD("set_road", "value"), &Caster::set_road);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Road>>("road", PROPERTY_USAGE_NONE), "set_road", "get_road");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Road>>("road", PROPERTY_USAGE_NONE), "set_road", "get_road");
 	ClassDB::bind_method(D_METHOD("get_settings"), &Caster::get_settings);
 	ClassDB::bind_method(D_METHOD("set_settings", "value"), &Caster::set_settings);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtRef<Settings>>("settings", PROPERTY_USAGE_NONE), "set_settings", "get_settings");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Settings>>("settings", PROPERTY_USAGE_NONE), "set_settings", "get_settings");
 	ClassDB::bind_method(D_METHOD("get_task"), &Caster::get_task);
 	ClassDB::bind_method(D_METHOD("set_task", "value"), &Caster::set_task);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Async<int64_t>>("task", PROPERTY_USAGE_NONE), "set_task", "get_task");
+	ClassDB::bind_method(D_METHOD("get_saved"), &Caster::get_saved);
+	ClassDB::bind_method(D_METHOD("set_saved", "value"), &Caster::set_saved);
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Saveable>>("saved", PROPERTY_USAGE_NONE), "set_saved", "get_saved");
+	ClassDB::bind_method(D_METHOD("get_named"), &Caster::get_named);
+	ClassDB::bind_method(D_METHOD("set_named", "value"), &Caster::set_named);
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Named>>("named", PROPERTY_USAGE_NONE), "set_named", "get_named");
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_INHERIT", static_cast<int64_t>(Mode::INHERIT));
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_PAUSABLE", static_cast<int64_t>(Mode::PAUSABLE));
 	ClassDB::bind_integer_constant(get_class_static(), "Mode", "MODE_WHEN_PAUSED", static_cast<int64_t>(Mode::WHEN_PAUSED));
@@ -38,40 +43,51 @@ void Caster::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "Level", "LEVEL_HARD", static_cast<int64_t>(Level::HARD));
 }
 
-int64_t Caster::convert(Node *node, const Ref<Resource> &resource, const Variant &value) {
-#line 12 "input.gd++"
+int64_t Caster::convert(gdpp::Gd<Node> node, const gdpp::Gd<Resource> &resource, const Variant &value, gdpp::Gd<Hero> hero, gdpp::Weak<Node3D> weak) {
+#line 14 "input.gd++"
 
   mode = gdpp::cast<Mode>(value);
   level = gdpp::cast<Level>(int64_t(5));
   set_process_mode(gdpp::cast<Node::ProcessMode>(mode));
   Variant boxed = gdpp::cast<Variant>(level);
-  Node3D *spatial = gdpp::cast<Node3D *>(node);
-  const Node *constant = node;
-  const Node3D *constant_spatial = gdpp::cast<const Node3D *>(constant);
-  Node *up = gdpp::cast<Node *>(spatial);
-  Object *object = gdpp::cast<Object *>(up);
-  Ref<Texture2D> texture = gdpp::cast<Ref<Texture2D>>(resource);
-  Ref<RefCounted> counted = gdpp::cast<Ref<RefCounted>>(texture);
-  Ref<Resource> from_object = gdpp::cast<Ref<Resource>>(object);
-  road = gdpp::cast<Ext<Road>>(value);
-  road = gdpp::cast<Ext<Road>>(node);
-  settings = gdpp::cast<Ext<Settings>>(resource);
-  Ref<Resource> unwrapped = gdpp::cast<Ref<Resource>>(settings);
-  Node *road_node = gdpp::cast<Node *>(road);
-  Node3D *road_spatial = gdpp::cast<Node3D *>(road);
-  Resource *settings_ptr = gdpp::cast<Resource *>(settings);
+  Gd<Node3D> spatial = gdpp::cast<Gd<Node3D>>(node);
+  Gd<const Node> constant = node;
+  Gd<const Node3D> constant_spatial = gdpp::cast<Gd<const Node3D>>(constant);
+  Gd<Node> up = gdpp::cast<Gd<Node>>(spatial);
+  Gd<Object> object = gdpp::cast<Gd<Object>>(up);
+  Gd<Texture2D> texture = gdpp::cast<Gd<Texture2D>>(resource);
+  Gd<RefCounted> counted = gdpp::cast<Gd<RefCounted>>(texture);
+  Gd<Resource> from_object = gdpp::cast<Gd<Resource>>(object);
+  road = gdpp::cast<Gd<Road>>(value);
+  road = gdpp::cast<Gd<Road>>(node);
+  settings = gdpp::cast<Gd<Settings>>(resource);
+  Gd<Resource> unwrapped = gdpp::cast<Gd<Resource>>(settings);
+  Gd<Node> road_node = gdpp::cast<Gd<Node>>(road);
+  Gd<Node3D> road_spatial = gdpp::cast<Gd<Node3D>>(road);
+  Gd<Resource> settings_resource = settings;
+  saved = hero;
+  saved = gdpp::cast<Gd<Saveable>>(hero);
+  saved = gdpp::cast<Gd<Saveable>>(node);
+  saved = gdpp::cast<Gd<Saveable>>(value);
+  Gd<Node> saved_node = gdpp::cast<Gd<Node>>(saved);
+  Gd<Hero> saved_hero = gdpp::cast<Gd<Hero>>(saved);
+  named = gdpp::cast<Gd<Named>>(counted);
+  Variant boxed_saved = gdpp::cast<Variant>(saved);
   task = gdpp::cast<Async<int64_t>>(value);
   task = gdpp::cast<Async<int64_t>>(counted);
+  Gd<RefCounted> task_object = gdpp::cast<Gd<RefCounted>>(task);
   Variant boxed_task = gdpp::cast<Variant>(task);
-  ExtPtr<Road> road_ptr = road;
-  ExtRef<Settings> settings_ref = settings;
-  bool stop = gdpp::is_cancelled() || !road_ptr || !settings_ref;
+  Gd<Node3D> from_weak = weak;
+  Gd<Node> weak_node = gdpp::cast<Gd<Node>>(weak);
+  Node3D *raw = gdpp::cast<Node3D *>(node);
+  bool stop = gdpp::is_cancelled() || !road || !settings;
   float64_t ratio = gdpp::cast<float64_t>(value);
   TypedArray<Node> nodes = gdpp::cast<TypedArray<Node>>(Array());
-  return gdpp::cast<int64_t>(ratio) + stop + (constant_spatial != nullptr) + boxed.operator int64_t() + boxed_task.get_type() +
-      nodes.size() + unwrapped.is_valid() + (road_node != nullptr) + (road_spatial != nullptr) + (settings_ptr != nullptr) + from_object.is_valid();
+  return gdpp::cast<int64_t>(ratio) + stop + bool(constant_spatial) + boxed.operator int64_t() + boxed_task.get_type() + nodes.size() +
+      bool(unwrapped) + bool(road_node) + bool(road_spatial) + bool(settings_resource) + bool(from_object) + bool(saved_node) +
+      bool(saved_hero) + bool(named) + boxed_saved.get_type() + bool(task_object) + bool(from_weak) + bool(weak_node) + (raw != nullptr);
 
-#line 75 "Caster.cpp"
+#line 91 "Caster.cpp"
 }
 
 Mode Caster::get_mode() const {
@@ -106,19 +122,19 @@ void Caster::_gdpp_set_level(_gdpp_Caster_Level p_value) {
 	set_level(static_cast<Level>(p_value));
 }
 
-gdpp::ExtPtr<Road> Caster::get_road() const {
+gdpp::Gd<Road> Caster::get_road() const {
 	return road;
 }
 
-void Caster::set_road(gdpp::ExtPtr<Road> p_value) {
+void Caster::set_road(gdpp::Gd<Road> p_value) {
 	road = p_value;
 }
 
-gdpp::ExtRef<Settings> Caster::get_settings() const {
+gdpp::Gd<Settings> Caster::get_settings() const {
 	return settings;
 }
 
-void Caster::set_settings(gdpp::ExtRef<Settings> p_value) {
+void Caster::set_settings(const gdpp::Gd<Settings> &p_value) {
 	settings = p_value;
 }
 
@@ -128,6 +144,22 @@ gdpp::Async<int64_t> Caster::get_task() const {
 
 void Caster::set_task(gdpp::Async<int64_t> p_value) {
 	task = p_value;
+}
+
+gdpp::Gd<Saveable> Caster::get_saved() const {
+	return saved;
+}
+
+void Caster::set_saved(gdpp::Gd<Saveable> p_value) {
+	saved = p_value;
+}
+
+gdpp::Gd<Named> Caster::get_named() const {
+	return named;
+}
+
+void Caster::set_named(const gdpp::Gd<Named> &p_value) {
+	named = p_value;
 }
 
 #undef This

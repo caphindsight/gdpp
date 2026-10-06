@@ -8,6 +8,9 @@
 
 namespace godot {
 
+class Asserted;
+gdpp::kind::Object gdpp_kind(Asserted *);
+
 #define This Asserted
 class Asserted : public Node {
 	GDCLASS(Asserted, Node)
@@ -17,16 +20,16 @@ private:
 
   void reset();
 
-#line 21 "Asserted.h"
+#line 24 "Asserted.h"
 
 public:
-	Node3D *target{};
+	gdpp::Gd<Node3D> target{};
 
 public:
 	int64_t fire(int64_t count);
 	void aim();
-	Node3D *get_target() const;
-	void set_target(Node3D *p_value);
+	gdpp::Gd<Node3D> get_target() const;
+	void set_target(gdpp::Gd<Node3D> p_value);
 
 protected:
 	static void _bind_methods();

@@ -12,6 +12,8 @@
 			<param index="0" name="node" type="Node" />
 			<param index="1" name="resource" type="Resource" />
 			<param index="2" name="value" type="Variant" />
+			<param index="3" name="hero" type="Hero" />
+			<param index="4" name="weak" type="Node3D" />
 			<description>
 			</description>
 		</method>
@@ -21,7 +23,11 @@
 		</member>
 		<member name="mode" type="int" enum="Caster.Mode" setter="set_mode" getter="get_mode">
 		</member>
+		<member name="named" type="RefCounted" setter="set_named" getter="get_named">
+		</member>
 		<member name="road" type="Road" setter="set_road" getter="get_road">
+		</member>
+		<member name="saved" type="Node" setter="set_saved" getter="get_saved">
 		</member>
 		<member name="settings" type="Settings" setter="set_settings" getter="get_settings">
 		</member>

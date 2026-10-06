@@ -9,14 +9,17 @@
 
 namespace godot {
 
+class Stage;
+gdpp::kind::Object gdpp_kind(Stage *);
+
 #define This Stage
 class Stage : public Node {
 	GDCLASS(Stage, Node)
 
 public:
 	int64_t count{};
-	Camera3D *camera{};
-	MeshInstance3D *mesh{};
+	gdpp::Gd<Camera3D> camera{};
+	gdpp::Gd<MeshInstance3D> mesh{};
 	TypedArray<int64_t> ids{};
 
 public:
@@ -24,10 +27,10 @@ public:
 	int64_t compute(int64_t a, int64_t b);
 	int64_t get_count() const;
 	void set_count(int64_t p_value);
-	Camera3D *get_camera() const;
-	void set_camera(Camera3D *p_value);
-	MeshInstance3D *get_mesh() const;
-	void set_mesh(MeshInstance3D *p_value);
+	gdpp::Gd<Camera3D> get_camera() const;
+	void set_camera(gdpp::Gd<Camera3D> p_value);
+	gdpp::Gd<MeshInstance3D> get_mesh() const;
+	void set_mesh(gdpp::Gd<MeshInstance3D> p_value);
 	TypedArray<int64_t> get_ids() const;
 	void set_ids(const TypedArray<int64_t> &p_value);
 

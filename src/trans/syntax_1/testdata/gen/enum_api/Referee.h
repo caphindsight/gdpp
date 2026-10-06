@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Mode : int64_t;
+class Referee;
+gdpp::kind::RefCounted gdpp_kind(Referee *);
 
 enum _gdpp_Referee_Mode : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Referee_Mode, "Referee.Mode")

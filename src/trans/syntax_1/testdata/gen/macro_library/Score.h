@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Score;
+gdpp::kind::Object gdpp_kind(Score *);
+
 #define This Score
 class Score : public Node {
 	GDCLASS(Score, Node)

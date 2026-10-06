@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Grid;
+gdpp::kind::Object gdpp_kind(Grid *);
+
 #define This Grid
 class Grid : public Node {
 	GDCLASS(Grid, Node)

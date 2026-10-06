@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Vehicle;
+gdpp::kind::Extern gdpp_kind(Vehicle *);
+
 class Vehicle {
 public:
 	using Base = Node3D;

@@ -28,7 +28,7 @@ void Enemy::think() {
 #line 29 "Enemy.cpp"
 }
 
-int64_t Enemy::attack(Node *target) {
+int64_t Enemy::attack(gdpp::Gd<Node> target) {
 	static gdpp::ProfileStats _gdpp_stats("Enemy.attack");
 	gdpp::Profile _gdpp_profile(_gdpp_stats);
 	gdpp::Trace _gdpp_trace("Enemy", this, "attack", "target", target);

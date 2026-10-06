@@ -5,5 +5,5 @@ class_name Bullet
 extends Node3D
 
 func fire() -> void {
-  Bullet *b = create Bullet;
+  Gd<Bullet> b = create Bullet;
 }

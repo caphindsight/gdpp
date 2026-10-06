@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Clamp;
+gdpp::kind::RefCounted gdpp_kind(Clamp *);
+
 #define This Clamp
 class Clamp : public RefCounted {
 	GDCLASS(Clamp, RefCounted)
@@ -16,7 +19,7 @@ private:
 
     int64_t value_ = 0;
 
-#line 20 "Clamp.h"
+#line 23 "Clamp.h"
 
 public:
 	int64_t get_value() const;

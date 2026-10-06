@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Config;
+gdpp::kind::RefCountedExtern gdpp_kind(Config *);
+
 class Config {
 public:
 	using Base = Resource;

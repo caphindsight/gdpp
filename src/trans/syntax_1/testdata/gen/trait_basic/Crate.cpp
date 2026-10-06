@@ -18,7 +18,7 @@ void Crate::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("hp", PROPERTY_USAGE_NONE), "set_hp", "get_hp");
 	ClassDB::bind_method(D_METHOD("get_target"), &Crate::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Crate::set_target);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::TraitPtr<Damageable>>("target", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_NODE_TYPE, "BigCrate,Crate"), "set_target", "get_target");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Damageable>>("target", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_NODE_TYPE, "BigCrate,Crate"), "set_target", "get_target");
 }
 
 void Crate::_gdpp_traits(gdpp::TraitsOf<Crate>) {
@@ -65,23 +65,22 @@ String Crate::label() const {
 #line 66 "Crate.cpp"
 }
 
-void Crate::hit(Node3D *body) {
+void Crate::hit(gdpp::Gd<Node3D> body) {
 #line 38 "input.gd++"
 
-    Trait<Damageable> target = gdpp::cast<Trait<Damageable>>(body);
-    if (target) {
+    if (auto target = gdpp::cast<Gd<Damageable>>(body)) {
       target->take_damage(1);
     }
 
-#line 77 "Crate.cpp"
+#line 76 "Crate.cpp"
 }
 
-gdpp::TraitPtr<Labeled> Crate::find(gdpp::TraitPtr<Damageable> target) {
-#line 45 "input.gd++"
+gdpp::Gd<Labeled> Crate::find(gdpp::Gd<Damageable> target) {
+#line 44 "input.gd++"
 
-    return gdpp::cast<Trait<Labeled>>(target);
+    return gdpp::cast<Gd<Labeled>>(target);
 
-#line 85 "Crate.cpp"
+#line 84 "Crate.cpp"
 }
 
 bool Crate::is_dead() {
@@ -89,7 +88,7 @@ bool Crate::is_dead() {
 
     return health() <= 0;
 
-#line 93 "Crate.cpp"
+#line 92 "Crate.cpp"
 }
 
 int64_t Crate::get_hp() const {
@@ -100,11 +99,11 @@ void Crate::set_hp(int64_t p_value) {
 	hp = p_value;
 }
 
-gdpp::TraitPtr<Damageable> Crate::get_target() const {
+gdpp::Gd<Damageable> Crate::get_target() const {
 	return target;
 }
 
-void Crate::set_target(gdpp::TraitPtr<Damageable> p_value) {
+void Crate::set_target(gdpp::Gd<Damageable> p_value) {
 	target = p_value;
 }
 

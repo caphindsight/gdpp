@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Level : int64_t;
+class Menu;
+gdpp::kind::RefCounted gdpp_kind(Menu *);
 
 enum _gdpp_Menu_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Menu_Level, "Menu.Level")

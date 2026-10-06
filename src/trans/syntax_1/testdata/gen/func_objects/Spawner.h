@@ -10,12 +10,15 @@
 
 namespace godot {
 
+class Spawner;
+gdpp::kind::Object gdpp_kind(Spawner *);
+
 #define This Spawner
 class Spawner : public Node {
 	GDCLASS(Spawner, Node)
 
 public:
-	Node3D *spawn(Node *parent, const Ref<Texture2D> &tex);
+	gdpp::Gd<Node3D> spawn(gdpp::Gd<Node> parent, const gdpp::Gd<Texture2D> &tex);
 	TypedArray<int64_t> items(const TypedArray<String> &names, const TypedArray<Node> &nodes, const TypedDictionary<String, Resource> &map);
 
 protected:

@@ -14,6 +14,8 @@
 namespace godot {
 
 enum class Shared : int64_t;
+class A;
+gdpp::kind::RefCounted gdpp_kind(A *);
 
 enum _gdpp_A_Shared : int64_t {};
 GDPP_ENUM_TAG(_gdpp_A_Shared, "A.Shared")

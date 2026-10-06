@@ -104,10 +104,10 @@ See `gd++ man cpp-classes` and `gd++ man init`.
 
 # 5. Use a C++ class from GD++
 
-GD++ code can use `Spinner` by name, like a Godot class, once you tell GD++ how it's used:
+GD++ code can use `Spinner` by name, like a Godot class, once you tell GD++ whether it's refcounted, so a `Gd<Spinner>` knows how to hold it:
 
-- `--ptr`: through pointers, for classes that aren't refcounted, like `Spinner`.
-- `--ref`: through references, for refcounted classes.
+- `--ptr`: for classes that aren't refcounted, like `Spinner`.
+- `--ref`: for refcounted classes.
 
 ```sh
 gd++ init . --class Spinner --update --ptr
@@ -141,15 +141,14 @@ extends Node
 @export var spinner: Node3D
 
 on ready {
-  Spinner *s = spinner as Spinner *;
-  if (s) {
+  if (auto s = spinner as Gd<Spinner>) {
     s->set_speed(2.0);
   }
   add_child(create Spinner);
 }
 ```
 
-The downcast gives `nullptr` if the node isn't a `Spinner`. See `gd++ man cast`.
+The downcast gives null if the node isn't a `Spinner`. See `gd++ man cast`.
 
 # 6. Use a GD++ class from C++
 
@@ -158,7 +157,7 @@ A C++ file includes a GD++ class's generated header, named after the class:
 ```cpp
 #include "Level.h"
 
-int64_t count_walls(godot::Level *level) {
+int64_t count_walls(Gd<godot::Level> level) {
   int64_t count = 0;
   for (int64_t i = 0; i < level->walls.size(); i++) {
     count += level->walls[i] != 0;
@@ -168,6 +167,7 @@ int64_t count_walls(godot::Level *level) {
 ```
 
 - GD++ classes are in namespace `godot`.
+- `Gd`, the type that holds objects, is at global scope, like the runtime's other names. See `gd++ man gd`.
 - Their functions, getters and setters are public methods. The fields of simple variables are public too.
 - A C++ class can extend a GD++ class.
 - A GD++ class can only extend a C++ class marked `[ptr]` or `[ref]`. See section 5.

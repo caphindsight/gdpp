@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Sub;
+gdpp::kind::Object gdpp_kind(Sub *);
+
 #define This Sub
 class Sub : public Base {
 	GDCLASS(Sub, Base)

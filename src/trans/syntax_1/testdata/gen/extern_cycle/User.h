@@ -8,19 +8,23 @@
 namespace godot {
 
 class A;
+gdpp::kind::Extern gdpp_kind(A *);
 class B;
+gdpp::kind::RefCountedExtern gdpp_kind(B *);
+class User;
+gdpp::kind::Object gdpp_kind(User *);
 
 #define This User
 class User : public Node {
 	GDCLASS(User, Node)
 
 public:
-	gdpp::ExtPtr<A> a{};
+	gdpp::Gd<A> a{};
 
 public:
-	gdpp::ExtRef<B> b();
-	gdpp::ExtPtr<A> get_a() const;
-	void set_a(gdpp::ExtPtr<A> p_value);
+	gdpp::Gd<B> b();
+	gdpp::Gd<A> get_a() const;
+	void set_a(gdpp::Gd<A> p_value);
 
 protected:
 	static void _bind_methods();

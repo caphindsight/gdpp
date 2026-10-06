@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Turnstile;
+gdpp::kind::Object gdpp_kind(Turnstile *);
+
 #define This Turnstile
 class Turnstile : public Node {
 	GDCLASS(Turnstile, Node)
@@ -20,7 +23,7 @@ private:
 
     int64_t cost_ = 0;
 
-#line 24 "Turnstile.h"
+#line 27 "Turnstile.h"
 
 public:
 	Turnstile();
@@ -35,7 +38,7 @@ public:
 	int64_t get_ticks() const;
 	void set_ticks(int64_t p_value);
 	int64_t get_cost() const;
-	gdpp::Emitted passed(Node *by);
+	gdpp::Emitted passed(gdpp::Gd<Node> by);
 	gdpp::Emitted ticked();
 
 protected:

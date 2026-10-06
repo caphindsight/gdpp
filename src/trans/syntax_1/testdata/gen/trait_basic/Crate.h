@@ -9,13 +9,16 @@
 
 namespace godot {
 
+class Crate;
+gdpp::kind::Object gdpp_kind(Crate *);
+
 #define This Crate
 class Crate : public Node3D, public Damageable, public Labeled {
 	GDCLASS(Crate, Node3D)
 
 public:
 	int64_t hp{};
-	gdpp::TraitPtr<Damageable> target{};
+	gdpp::Gd<Damageable> target{};
 
 public:
 	Crate();
@@ -25,13 +28,13 @@ public:
 	void take_damage(int64_t amount) override;
 	int64_t health() const override;
 	String label() const override;
-	void hit(Node3D *body);
-	gdpp::TraitPtr<Labeled> find(gdpp::TraitPtr<Damageable> target);
+	void hit(gdpp::Gd<Node3D> body);
+	gdpp::Gd<Labeled> find(gdpp::Gd<Damageable> target);
 	bool is_dead() override;
 	int64_t get_hp() const;
 	void set_hp(int64_t p_value);
-	gdpp::TraitPtr<Damageable> get_target() const;
-	void set_target(gdpp::TraitPtr<Damageable> p_value);
+	gdpp::Gd<Damageable> get_target() const;
+	void set_target(gdpp::Gd<Damageable> p_value);
 
 protected:
 	static void _bind_methods();

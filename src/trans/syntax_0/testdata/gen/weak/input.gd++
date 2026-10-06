@@ -8,10 +8,10 @@ signal locked(on: Weak[Node3D])
 
 func aim(at: Weak[Node3D]) -> Weak[Node3D] {
   target = at;
-  if (Node3D *t = target) {
+  if (Gd<Node3D> t = target) {
     look_at(t->get_global_position());
   }
-  Ref<Resource> a = ammo;
-  auto b = ammo as Ref<Resource>;
+  Gd<Resource> a = ammo;
+  auto b = ammo as Gd<Resource>;
   return target;
 }

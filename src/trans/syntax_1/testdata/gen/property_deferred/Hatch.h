@@ -8,6 +8,9 @@
 
 namespace godot {
 
+class Hatch;
+gdpp::kind::Object gdpp_kind(Hatch *);
+
 enum _gdpp_Hatch_State : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Hatch_State, "Hatch.State")
 
@@ -18,10 +21,10 @@ class Hatch : public Node {
 private:
 #line 8 "input.gd++"
  State state_ = State::OPEN;
-#line 22 "Hatch.h"
+#line 25 "Hatch.h"
 #line 17 "input.gd++"
  String label_;
-#line 25 "Hatch.h"
+#line 28 "Hatch.h"
 
 public:
 	void _gdpp_body_set_state(State value);

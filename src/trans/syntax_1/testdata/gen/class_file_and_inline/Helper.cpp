@@ -9,14 +9,14 @@ namespace godot {
 void Helper::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_main"), &Helper::get_main);
 	ClassDB::bind_method(D_METHOD("set_main", "value"), &Helper::set_main);
-	ClassDB::add_property(get_class_static(), gdpp::info<Main *>("main", PROPERTY_USAGE_NONE), "set_main", "get_main");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Main>>("main", PROPERTY_USAGE_NONE), "set_main", "get_main");
 }
 
-Main *Helper::get_main() const {
+gdpp::Gd<Main> Helper::get_main() const {
 	return main;
 }
 
-void Helper::set_main(Main *p_value) {
+void Helper::set_main(gdpp::Gd<Main> p_value) {
 	main = p_value;
 }
 

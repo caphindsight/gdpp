@@ -10,7 +10,7 @@ void C::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("a"), &C::a);
 }
 
-A *C::a() {
+gdpp::Gd<A> C::a() {
 #line 17 "input.gd++"
 
     return nullptr;

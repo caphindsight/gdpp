@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Spawner;
+gdpp::kind::Object gdpp_kind(Spawner *);
+
 #define This Spawner
 class Spawner : public Node {
 	GDCLASS(Spawner, Node)

@@ -417,7 +417,7 @@ File: @36:1
               TextPos: 383:29
               Text: |
 
-                  Node3D* res = create Node3D;
+                  Gd<Node3D> res = create Node3D;
                   add_child(res);
                   return res;
 

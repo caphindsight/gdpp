@@ -39,7 +39,7 @@ GD++ reads every identifier in a class, and includes the header of each one it k
 
 Facts:
 
-- Using a class anywhere, even only in code, e.g. `node as MeshInstance3D *` or `memnew(Timer)`, includes it.
+- Using a class anywhere, even only in code, e.g. `node as Gd<MeshInstance3D>` or `memnew(Timer)`, includes it.
 - The match is by name only. A variable of yours named like a Godot class includes that class too, which is harmless.
 - Every generated file also includes the GD++ runtime header. It includes godot-cpp's core headers and a few basic classes, e.g. `Object`, `Node`, `RefCounted`, `Resource` and `Engine`. See `gd++ man runtime`.
 
@@ -48,8 +48,9 @@ Facts:
 GD++ files can use each other freely, even in cycles: `Player` can have a `var` of type `Enemy`, and `Enemy` one of type `Player`.
 
 - In headers, GD++ declares other GD++ classes, externs, traits and enums ahead (`class Enemy;` or `enum class Suit : int64_t;`), and includes their headers at the end. That breaks the cycle.
+- With a class, extern or trait, it also declares its kind, so a `Gd<Enemy>` works before `Enemy` is defined. See `gd++ man gd`.
 - A name is included at the top when the header needs its definition: the base class, the types of `@virtual` functions, and names in `decl` blocks.
-- So fields of GD++ class types in `decl` blocks can create include cycles that don't compile. Prefer pointers, and variables declared with `var`.
+- So fields of GD++ class types in `decl` blocks can create include cycles that don't compile. Prefer variables declared with `var`.
 
 # import
 
@@ -65,8 +66,8 @@ import MeshInstance3D
 import Material
 
 func tint(mesh: MeshInstance3D) -> void {
-  auto material = mesh->get_active_material(0);                    // Ref<Material>
-  auto standard = material as Ref<StandardMaterial3D>;
+  auto material = mesh->get_active_material(0);                    // a Ref<Material>, from godot-cpp
+  auto standard = material as Gd<StandardMaterial3D>;
   ...
 }
 ```

@@ -11,15 +11,15 @@ void Lock::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("open", "key"), &Lock::open);
 }
 
-Door *Lock::_open(const Ref<Key> &key) {
-	Door * _gdpp_ret;
+gdpp::Gd<Door> Lock::_open(const gdpp::Gd<Key> &key) {
+	gdpp::Gd<Door> _gdpp_ret;
 	if (GDVIRTUAL_CALL(_open, key, _gdpp_ret)) {
 		return _gdpp_ret;
 	}
 	return {};
 }
 
-Door *Lock::open(const Ref<Key> &key) {
+gdpp::Gd<Door> Lock::open(const gdpp::Gd<Key> &key) {
 	return _open(key);
 }
 

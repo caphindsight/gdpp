@@ -21,11 +21,11 @@ gdpp::Weak<Node3D> Turret::aim(gdpp::Weak<Node3D> at) {
 #line 9 "input.gd++"
 
   target = at;
-  if (Node3D *t = target) {
+  if (Gd<Node3D> t = target) {
     look_at(t->get_global_position());
   }
-  Ref<Resource> a = ammo;
-  auto b = gdpp::cast<Ref<Resource>>(ammo);
+  Gd<Resource> a = ammo;
+  auto b = gdpp::cast<Gd<Resource>>(ammo);
   return target;
 
 #line 32 "Turret.cpp"

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class GoblinSpawner;
+gdpp::kind::Object gdpp_kind(GoblinSpawner *);
+
 #define This GoblinSpawner
 class GoblinSpawner : public Node {
 	GDCLASS(GoblinSpawner, Node)

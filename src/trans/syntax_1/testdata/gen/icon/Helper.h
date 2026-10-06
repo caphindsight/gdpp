@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Helper;
+gdpp::kind::RefCounted gdpp_kind(Helper *);
+
 #define This Helper
 class Helper : public RefCounted {
 	GDCLASS(Helper, RefCounted)

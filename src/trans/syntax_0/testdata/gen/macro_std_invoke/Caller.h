@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Caller;
+gdpp::kind::Object gdpp_kind(Caller *);
+
 #define This Caller
 class Caller : public Node {
 	GDCLASS(Caller, Node)

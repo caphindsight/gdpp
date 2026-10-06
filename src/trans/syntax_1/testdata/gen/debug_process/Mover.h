@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Mover;
+gdpp::kind::Object gdpp_kind(Mover *);
+
 #define This Mover
 class Mover : public Node {
 	GDCLASS(Mover, Node)

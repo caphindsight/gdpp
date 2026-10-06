@@ -487,7 +487,7 @@ on physics_process(delta: float) {
 
 // The player, if it's in sight.
 func player_in_sight() -> Node2D {
-  Node2D *player = get_tree()->get_first_node_in_group(string_name "player") as Node2D *;
+  Gd<Node2D> player = get_tree()->get_first_node_in_group(string_name "player") as Gd<Node2D>;
   if (player && player->get_global_position().distance_to(get_global_position()) <= sight) {
     return player;
   }
@@ -503,7 +503,7 @@ func update_patrol(delta: float) -> SlimeState {
 }
 
 func update_chase(delta: float) -> SlimeState {
-  Node2D *player = player_in_sight();
+  Gd<Node2D> player = player_in_sight();
   if (!player) return SlimeState::PATROL;
   direction = player->get_global_position().x < get_global_position().x ? -1.0 : 1.0;
   set_velocity(Vector2(direction * speed * 2, 0));

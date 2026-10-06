@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Lid;
+gdpp::kind::Object gdpp_kind(Lid *);
+
 #define This Lid
 class Lid : public Vault {
 	GDCLASS(Lid, Vault)

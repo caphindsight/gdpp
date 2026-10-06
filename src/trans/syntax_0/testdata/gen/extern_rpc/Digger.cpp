@@ -10,7 +10,7 @@ void Digger::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("use", "peer"), &Digger::use);
 	ClassDB::bind_method(D_METHOD("get_terrain"), &Digger::get_terrain);
 	ClassDB::bind_method(D_METHOD("set_terrain", "value"), &Digger::set_terrain);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Terrain2>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Terrain2>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
 }
 
 void Digger::use(int64_t peer) {
@@ -23,11 +23,11 @@ void Digger::use(int64_t peer) {
 #line 24 "Digger.cpp"
 }
 
-gdpp::ExtPtr<Terrain2> Digger::get_terrain() const {
+gdpp::Gd<Terrain2> Digger::get_terrain() const {
 	return terrain;
 }
 
-void Digger::set_terrain(gdpp::ExtPtr<Terrain2> p_value) {
+void Digger::set_terrain(gdpp::Gd<Terrain2> p_value) {
 	terrain = p_value;
 }
 

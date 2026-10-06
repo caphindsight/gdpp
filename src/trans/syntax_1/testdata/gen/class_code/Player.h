@@ -19,6 +19,9 @@
 
 namespace godot {
 
+class Player;
+gdpp::kind::Object gdpp_kind(Player *);
+
 #define This Player
 class Player : public Node {
 	GDCLASS(Player, Node)
@@ -28,7 +31,7 @@ private:
 
   std::vector<int> scores_;
 
-#line 32 "Player.h"
+#line 35 "Player.h"
 
 private:
 #line 20 "input.gd++"
@@ -36,14 +39,14 @@ private:
  public:
   void reset();
 
-#line 40 "Player.h"
+#line 43 "Player.h"
 
 private:
 #line 32 "input.gd++"
 
   #define PLAYER_TAG "player"
 
-#line 47 "Player.h"
+#line 50 "Player.h"
 
 protected:
 	static void _bind_methods();

@@ -9,6 +9,9 @@
 
 namespace godot {
 
+class Settings2;
+gdpp::kind::Object gdpp_kind(Settings2 *);
+
 #define This Settings2
 class Settings2 : public Node {
 	GDCLASS(Settings2, Node)
@@ -25,8 +28,8 @@ public:
 	String text{};
 	String nick{};
 	int64_t hidden{};
-	Node3D *target{};
-	Ref<Texture2D> tex{};
+	gdpp::Gd<Node3D> target{};
+	gdpp::Gd<Texture2D> tex{};
 
 public:
 	int64_t get_plain() const;
@@ -51,10 +54,10 @@ public:
 	void set_nick(const String &p_value);
 	int64_t get_hidden() const;
 	void set_hidden(int64_t p_value);
-	Node3D *get_target() const;
-	void set_target(Node3D *p_value);
-	Ref<Texture2D> get_tex() const;
-	void set_tex(const Ref<Texture2D> &p_value);
+	gdpp::Gd<Node3D> get_target() const;
+	void set_target(gdpp::Gd<Node3D> p_value);
+	gdpp::Gd<Texture2D> get_tex() const;
+	void set_tex(const gdpp::Gd<Texture2D> &p_value);
 
 protected:
 	static void _bind_methods();

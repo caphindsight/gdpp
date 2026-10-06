@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Bag;
+gdpp::kind::Object gdpp_kind(Bag *);
+
 #define This Bag
 class Bag : public Node {
 	GDCLASS(Bag, Node)

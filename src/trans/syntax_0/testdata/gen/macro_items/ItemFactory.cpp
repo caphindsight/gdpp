@@ -15,7 +15,7 @@ void ItemFactory::_bind_methods() {
 	ClassDB::bind_integer_constant(get_class_static(), "ItemKind", "ITEM_KIND_BOW", static_cast<int64_t>(ItemKind::BOW));
 }
 
-Ref<Item> ItemFactory::make(ItemKind kind) {
+gdpp::Gd<Item> ItemFactory::make(ItemKind kind) {
 #line 1 "input.gd++"
 switch (kind) {
 #line 1 "input.gd++"
@@ -29,7 +29,7 @@ return nullptr;
 #line 30 "ItemFactory.cpp"
 }
 
-Ref<Item> ItemFactory::_gdpp_make(_gdpp_ItemFactory_ItemKind kind) {
+gdpp::Gd<Item> ItemFactory::_gdpp_make(_gdpp_ItemFactory_ItemKind kind) {
 	return make(static_cast<ItemKind>(kind));
 }
 

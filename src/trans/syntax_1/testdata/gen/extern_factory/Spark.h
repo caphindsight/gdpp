@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Spark;
+gdpp::kind::Extern gdpp_kind(Spark *);
+
 class Spark {
 public:
 	using Base = Node;

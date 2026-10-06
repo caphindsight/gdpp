@@ -8,19 +8,22 @@
 
 namespace godot {
 
+class Book;
+gdpp::kind::RefCounted gdpp_kind(Book *);
+
 #define This Book
 class Book : public Resource, public Titled {
 	GDCLASS(Book, Resource)
 
 public:
-	gdpp::TraitRef<Titled> sequel{};
+	gdpp::Gd<Titled> sequel{};
 
 public:
 	static void _gdpp_traits(gdpp::TraitsOf<Book>);
 	String title() const override;
 	void rename(const String &name) override;
-	gdpp::TraitRef<Titled> get_sequel() const;
-	void set_sequel(gdpp::TraitRef<Titled> p_value);
+	gdpp::Gd<Titled> get_sequel() const;
+	void set_sequel(const gdpp::Gd<Titled> &p_value);
 
 protected:
 	static void _bind_methods();

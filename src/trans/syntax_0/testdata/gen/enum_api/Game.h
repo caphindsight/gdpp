@@ -8,6 +8,9 @@
 
 namespace godot {
 
+class Game;
+gdpp::kind::RefCounted gdpp_kind(Game *);
+
 enum _gdpp_Game_Mode : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Game_Mode, "Game.Mode")
 

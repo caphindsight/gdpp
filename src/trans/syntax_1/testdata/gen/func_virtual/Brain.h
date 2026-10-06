@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Brain;
+gdpp::kind::Object gdpp_kind(Brain *);
+
 #define This Brain
 class Brain : public Node {
 	GDCLASS(Brain, Node)

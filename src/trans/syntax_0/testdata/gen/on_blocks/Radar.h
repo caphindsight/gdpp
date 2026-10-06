@@ -8,12 +8,15 @@
 
 namespace godot {
 
+class Radar;
+gdpp::kind::Object gdpp_kind(Radar *);
+
 #define This Radar
 class Radar : public Node2D {
 	GDCLASS(Radar, Node2D)
 
 public:
-	Camera3D *camera{};
+	gdpp::Gd<Camera3D> camera{};
 
 public:
 	Radar();
@@ -24,8 +27,8 @@ public:
 	void _gdpp_body__enter_tree();
 	void _gdpp_body__exit_tree();
 	void _gdpp_body__draw();
-	Camera3D *get_camera() const;
-	void set_camera(Camera3D *p_value);
+	gdpp::Gd<Camera3D> get_camera() const;
+	void set_camera(gdpp::Gd<Camera3D> p_value);
 
 protected:
 	static void _bind_methods();

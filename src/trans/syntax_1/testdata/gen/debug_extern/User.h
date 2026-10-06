@@ -8,17 +8,20 @@
 namespace godot {
 
 class Terrain;
+gdpp::kind::Extern gdpp_kind(Terrain *);
+class User;
+gdpp::kind::Object gdpp_kind(User *);
 
 #define This User
 class User : public Node {
 	GDCLASS(User, Node)
 
 public:
-	gdpp::ExtPtr<Terrain> terrain{};
+	gdpp::Gd<Terrain> terrain{};
 
 public:
-	gdpp::ExtPtr<Terrain> get_terrain() const;
-	void set_terrain(gdpp::ExtPtr<Terrain> p_value);
+	gdpp::Gd<Terrain> get_terrain() const;
+	void set_terrain(gdpp::Gd<Terrain> p_value);
 
 protected:
 	static void _bind_methods();

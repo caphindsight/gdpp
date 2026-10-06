@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Bullet;
+gdpp::kind::Object gdpp_kind(Bullet *);
+
 #define This Bullet
 class Bullet : public Node3D {
 	GDCLASS(Bullet, Node3D)

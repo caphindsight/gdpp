@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Abilities;
+gdpp::kind::RefCounted gdpp_kind(Abilities *);
+
 #define This Abilities
 class Abilities : public RefCounted {
 	GDCLASS(Abilities, RefCounted)

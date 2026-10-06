@@ -8,17 +8,20 @@
 namespace godot {
 
 class Main;
+gdpp::kind::Object gdpp_kind(Main *);
+class Helper;
+gdpp::kind::RefCounted gdpp_kind(Helper *);
 
 #define This Helper
 class Helper : public RefCounted {
 	GDCLASS(Helper, RefCounted)
 
 public:
-	Main *main{};
+	gdpp::Gd<Main> main{};
 
 public:
-	Main *get_main() const;
-	void set_main(Main *p_value);
+	gdpp::Gd<Main> get_main() const;
+	void set_main(gdpp::Gd<Main> p_value);
 
 protected:
 	static void _bind_methods();

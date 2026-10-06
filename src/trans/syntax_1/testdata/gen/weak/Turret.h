@@ -8,6 +8,9 @@
 
 namespace godot {
 
+class Turret;
+gdpp::kind::Object gdpp_kind(Turret *);
+
 #define This Turret
 class Turret : public Node3D {
 	GDCLASS(Turret, Node3D)

@@ -18,10 +18,10 @@ package meta
 type Kind int
 
 const (
-	Object           Kind = 1  // A Godot class that isn't refcounted, used as T*.
-	RefCounted       Kind = 2  // A refcounted Godot class, used as Ref<T>.
-	Extern           Kind = 3  // A GD++ extern whose base isn't refcounted, used as ExtPtr<T>.
-	RefCountedExtern Kind = 4  // A GD++ extern whose base is refcounted, used as ExtRef<T>.
+	Object           Kind = 1  // A Godot class that isn't refcounted, held as Gd<T>, which costs what a T* does.
+	RefCounted       Kind = 2  // A refcounted Godot class, held as Gd<T>, which keeps it alive like a Ref<T>.
+	Extern           Kind = 3  // A GD++ extern whose base isn't refcounted, held as Gd<T>.
+	RefCountedExtern Kind = 4  // A GD++ extern whose base is refcounted, held as Gd<T>.
 	Enum             Kind = 5  // A GD++ enum.
 	Other            Kind = 6  // A name in namespace godot that isn't a class, e.g. TypedArray: code may use it, but not as a GD++ type.
 	GodotEnum        Kind = 7  // An enum of Godot's API, e.g. Node.ProcessMode or Error: GD++ enums may extend it, but it isn't a GD++ type.
@@ -29,8 +29,8 @@ const (
 	Template         Kind = 9  // A GD++ template, which code invokes as "invoke name(...)". Source and File hold its file.
 	MacroLibrary     Kind = 10 // The macro libraries of a GD++ file, which every macro can use. It has no Name. Source and File hold its file.
 	Annotation       Kind = 11 // A user annotation that a GD++ file declares, which code writes as "@@name". Only its Name matters.
-	Trait            Kind = 12 // A GD++ trait whose base isn't refcounted, used as TraitPtr<T>. Source and File hold its file.
-	RefCountedTrait  Kind = 13 // A GD++ trait whose base is refcounted, used as TraitRef<T>. Source and File hold its file.
+	Trait            Kind = 12 // A GD++ trait whose base isn't refcounted, held as Gd<T>. Source and File hold its file.
+	RefCountedTrait  Kind = 13 // A GD++ trait whose base is refcounted, held as Gd<T>. Source and File hold its file.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.

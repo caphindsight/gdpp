@@ -67,7 +67,7 @@ func (s *symbol) traitDecl() *Trait {
 
 // gtype is a resolved GD++ type.
 type gtype struct {
-	cpp   string  // The C++ type, e.g. "Ref<Resource>".
+	cpp   string  // The C++ type, e.g. "gdpp::Gd<Resource>".
 	doc   string  // Godot's doc spelling, e.g. "Resource" or "int[]".
 	byRef bool    // Whether parameters take it as const &.
 	enum  *symbol // Set for enums.
@@ -147,18 +147,12 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		return nil, u.unknownType(t)
 	}
 	switch s.kind {
-	case meta.Object:
-		return &gtype{cpp: s.name + " *", doc: s.name}, nil
-	case meta.RefCounted:
-		return &gtype{cpp: "Ref<" + s.name + ">", doc: s.name, byRef: true}, nil
-	case meta.Extern:
-		return &gtype{cpp: "gdpp::ExtPtr<" + s.name + ">", doc: s.name}, nil
-	case meta.RefCountedExtern:
-		return &gtype{cpp: "gdpp::ExtRef<" + s.name + ">", doc: s.name}, nil
-	case meta.Trait:
-		return &gtype{cpp: "gdpp::TraitPtr<" + s.name + ">", doc: u.baseOf(s.name), trait: s.name}, nil
-	case meta.RefCountedTrait:
-		return &gtype{cpp: "gdpp::TraitRef<" + s.name + ">", doc: u.baseOf(s.name), trait: s.name}, nil
+	case meta.Object, meta.Extern:
+		return &gtype{cpp: gd(s.name), doc: s.name}, nil
+	case meta.RefCounted, meta.RefCountedExtern:
+		return &gtype{cpp: gd(s.name), doc: s.name, byRef: true}, nil
+	case meta.Trait, meta.RefCountedTrait:
+		return &gtype{cpp: gd(s.name), doc: u.baseOf(s.name), trait: s.name, byRef: s.kind == meta.RefCountedTrait}, nil
 	case meta.Enum:
 		return &gtype{cpp: s.name, doc: "int", enum: s}, nil
 	case meta.GodotEnum:
@@ -167,6 +161,13 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 	}
 	return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("%s is not a Godot type.", t.Name),
 		"Types are Godot's built-in types and classes, and the package's classes, externs, traits and enums.")
+}
+
+// gd returns the C++ type that holds an object of the class, extern or trait name: gdpp::Gd<name>. Parameters take it
+// by value, as a pointer costs, or as a const reference for a refcounted object, like a Ref, so calls don't touch its
+// refcount.
+func gd(name string) string {
+	return "gdpp::Gd<" + name + ">"
 }
 
 // weak resolves t, a Weak type: a reference to an object of a class, which doesn't keep it alive.

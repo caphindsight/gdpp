@@ -8,6 +8,9 @@
 namespace godot {
 
 class B;
+gdpp::kind::Object gdpp_kind(B *);
+class Far;
+gdpp::kind::Extern gdpp_kind(Far *);
 
 class Far {
 public:
@@ -17,7 +20,7 @@ public:
 	explicit Far(Base *p_object) :
 			_gdpp_base(p_object) {}
 
-	B *b() const;
+	gdpp::Gd<B> b() const;
 
 protected:
 	Base *_gdpp_base;
@@ -29,8 +32,8 @@ protected:
 
 namespace godot {
 
-inline B *Far::b() const {
-	return gdpp::cast<B *>(_gdpp_base->call(GDPP_STRING_NAME("b")));
+inline gdpp::Gd<B> Far::b() const {
+	return gdpp::cast<gdpp::Gd<B>>(_gdpp_base->call(GDPP_STRING_NAME("b")));
 }
 
 } // namespace godot

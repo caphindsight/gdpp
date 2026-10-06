@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Labeled;
+gdpp::kind::Trait gdpp_kind(Labeled *);
+
 class Labeled {
 public:
 	using Base = Node;

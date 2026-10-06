@@ -12,7 +12,7 @@ void Gem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("queue_destroy"), &Gem::queue_destroy);
 }
 
-Gem *Gem::create() {
+gdpp::Gd<Gem> Gem::create() {
 	return gdpp::create<Gem>();
 }
 

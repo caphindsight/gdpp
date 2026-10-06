@@ -59,7 +59,7 @@ Their operands:
 - OBJECT and NODE are like TASK, e.g. `bullet` or `this->bullets[i]`.
 - VALUE is like TASK, but may also be in parentheses, e.g. `body`, `get_node("Mesh")` or `(a + b)`.
   - `as` binds it like a C++ postfix operator: `a + b as float` converts `b` only.
-  - T is a type, e.g. `int`, `Node3D *` or `Ref<Mesh>`.
+  - T is a type, e.g. `int`, `Gd<Node3D>` or `Node3D *`.
   - `as` is only rewritten where both are clear. In `x as int * y` or `(int) x as float`, it stays, and the code doesn't compile. Parentheses fix it, e.g. `(x as int) * y`. See `gd++ man cast`.
 
 Other facts:

@@ -13,10 +13,10 @@ void Stage::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("count", PROPERTY_USAGE_NONE), "set_count", "get_count");
 	ClassDB::bind_method(D_METHOD("get_camera"), &Stage::get_camera);
 	ClassDB::bind_method(D_METHOD("set_camera", "value"), &Stage::set_camera);
-	ClassDB::add_property(get_class_static(), gdpp::info<Camera3D *>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Camera3D>>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
 	ClassDB::bind_method(D_METHOD("get_mesh"), &Stage::get_mesh);
 	ClassDB::bind_method(D_METHOD("set_mesh", "value"), &Stage::set_mesh);
-	ClassDB::add_property(get_class_static(), gdpp::info<MeshInstance3D *>("mesh", PROPERTY_USAGE_NONE), "set_mesh", "get_mesh");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<MeshInstance3D>>("mesh", PROPERTY_USAGE_NONE), "set_mesh", "get_mesh");
 	ClassDB::bind_method(D_METHOD("get_ids"), &Stage::get_ids);
 	ClassDB::bind_method(D_METHOD("set_ids", "value"), &Stage::set_ids);
 	ClassDB::add_property(get_class_static(), gdpp::info<TypedArray<int64_t>>("ids", PROPERTY_USAGE_NONE), "set_ids", "get_ids");
@@ -41,7 +41,7 @@ void Stage::_notification(int WHAT) {
 		camera = get_node<Camera3D>("Camera");
 #line 43 "Stage.cpp"
 #line 11 "input.gd++"
-		mesh = [&]() -> MeshInstance3D * {
+		mesh = [&]() -> gdpp::Gd<MeshInstance3D> {
   MeshInstance3D* mesh = gdpp::create<MeshInstance3D>();
   add_child(mesh);
   return mesh;
@@ -66,19 +66,19 @@ void Stage::set_count(int64_t p_value) {
 	count = p_value;
 }
 
-Camera3D *Stage::get_camera() const {
+gdpp::Gd<Camera3D> Stage::get_camera() const {
 	return camera;
 }
 
-void Stage::set_camera(Camera3D *p_value) {
+void Stage::set_camera(gdpp::Gd<Camera3D> p_value) {
 	camera = p_value;
 }
 
-MeshInstance3D *Stage::get_mesh() const {
+gdpp::Gd<MeshInstance3D> Stage::get_mesh() const {
 	return mesh;
 }
 
-void Stage::set_mesh(MeshInstance3D *p_value) {
+void Stage::set_mesh(gdpp::Gd<MeshInstance3D> p_value) {
 	mesh = p_value;
 }
 

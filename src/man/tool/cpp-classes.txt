@@ -184,7 +184,7 @@ The class of tasks:
 
 An unmarked C++ class:
 
-- Can't be a type in a GD++ class's API, e.g. the type of a `var` or a parameter. Use its Godot base class instead, e.g. `Node3D`, and convert in code with `node as Spinner *`. See `gd++ man cast`.
+- Can't be a type in a GD++ class's API, e.g. the type of a `var` or a parameter. Use its Godot base class instead, e.g. `Node3D`, and convert in code with `node as Gd<Spinner>`. See `gd++ man cast`.
 - Can be used in a GD++ class's code if you include its header yourself, with a `@global` block:
 
 ```gd++
@@ -196,7 +196,7 @@ extends Node
 }
 
 on ready {
-  Spinner *spinner = memnew(Spinner);
+  Gd<Spinner> spinner = memnew(Spinner);
   add_child(spinner);
 }
 ```
@@ -215,12 +215,12 @@ Inheritance:
 
 # Using a C++ class from GD++
 
-GD++ code uses Godot's classes in two ways:
+GD++ holds every class as a `Gd<T>`, in two ways:
 
-- refcounted classes through references, e.g. `Ref<Resource>`,
-- the others through pointers, e.g. `Node3D *`.
+- refcounted classes as a reference, which keeps the object alive, e.g. `Gd<Resource>`,
+- the others as a plain pointer, e.g. `Gd<Node3D>`.
 
-See "Objects and references" in `gd++ man classes`. GD++ can't tell which way a C++ class takes, so you say it with `gd++ init`:
+See `gd++ man gd`. GD++ can't tell which way a C++ class takes before reading its header, so you say it with `gd++ init`:
 
 ```sh
 gd++ init . --class Spinner --update --ptr

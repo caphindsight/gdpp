@@ -8,18 +8,21 @@
 namespace godot {
 
 class Terrain2;
+gdpp::kind::Extern gdpp_kind(Terrain2 *);
+class Digger;
+gdpp::kind::Object gdpp_kind(Digger *);
 
 #define This Digger
 class Digger : public Node {
 	GDCLASS(Digger, Node)
 
 public:
-	gdpp::ExtPtr<Terrain2> terrain{};
+	gdpp::Gd<Terrain2> terrain{};
 
 public:
 	void use(int64_t peer);
-	gdpp::ExtPtr<Terrain2> get_terrain() const;
-	void set_terrain(gdpp::ExtPtr<Terrain2> p_value);
+	gdpp::Gd<Terrain2> get_terrain() const;
+	void set_terrain(gdpp::Gd<Terrain2> p_value);
 
 protected:
 	static void _bind_methods();

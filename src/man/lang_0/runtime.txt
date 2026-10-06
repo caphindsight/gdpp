@@ -38,7 +38,7 @@ See `gd++ man debugging`.
 
 # For your code
 
-- `gd++ doc NAME` shows the declaration of any of these, with its comments, e.g. `gd++ doc Ext` or `gd++ doc Async.claim`.
+- `gd++ doc NAME` shows the declaration of any of these, with its comments, e.g. `gd++ doc Gd` or `gd++ doc Async.claim`.
 - Your code writes these without a prefix.
 - Generated code spells most of them with `gdpp::`, e.g. `gdpp::Async`, the namespace where the runtime defines them. So a name of yours can't hide them there.
 
@@ -52,7 +52,7 @@ gdpp::cast<T>(VALUE)
   Converts VALUE to T, whatever the two types are: numbers, enums, `Variant`s, and objects. Upcasts are static. Downcasts are checked, giving null if the class doesn't match. Your code writes it `VALUE as T`, which GD++ rewrites into this, so it keeps its prefix. See `gd++ man cast`.
 
 ```gd++
-Node3D *node = scene->instantiate() as Node3D *;
+Gd<Node3D> node = scene->instantiate() as Gd<Node3D>;
 ```
 
 GDPP_ASSERT(TEXT, CONDITION), GDPP_ASSERT_VOID(TEXT, CONDITION), GDPP_ASSERT_VALUE(TEXT, CONDITION) and GDPP_ASSERT_REFERENCE(TEXT, CONDITION)
@@ -74,35 +74,34 @@ assert target != nullptr;
 
 gdpp::create<T>(), gdpp::destroy(OBJECT) and gdpp::queue_destroy(NODE)
   What `create T`, `destroy OBJECT` and `queue_destroy NODE` become. All three are thread-safe. See `gd++ man classes`.
-  - `create` creates an object of the class `T`. For a `@pool` class, it takes one from the pool. It returns:
-  - an `Ext<T>` for an extern, which comes from the class's static method for an extern with `@factory`,
-  - a `Ref<T>` for a refcounted class,
-  - a `T *` for other classes, an instance of the class's scene for a `@scene` class.
-  - `destroy` gives an object that a pool made back to its pool, and deletes other objects. It does nothing with null, and doesn't compile for a `Ref` or an `ExtRef`.
+  - `create` creates an object of the class or extern `T`, and returns a `Gd<T>`. For a `@pool` class, it takes one from the pool. For a `@scene` class, it's an instance of the class's scene. For an extern with `@factory`, it comes from the class's static method.
+  - `destroy` gives an object that a pool made back to its pool, and deletes other objects. It does nothing with null.
+  - Both take a `Gd`, or a plain pointer. Neither compiles for a refcounted object, which deletes itself, and `queue_destroy` doesn't compile for an object that isn't a node.
   - On threads other than the main one, `destroy` leaves nodes in the scene tree to the main thread, at the end of the frame.
   - `queue_destroy` returns a node of a `@pool` class to its pool at the end of the frame, on the main thread, unless it was returned or freed before. For other classes, it calls `queue_free()`.
   - For an extern with `@factory`, `destroy` and `queue_destroy` call the object's methods that it names.
   - For a trait, `destroy` and `queue_destroy` do what they do for the object's class, through its `_gdpp_destroy` and `_gdpp_queue_destroy`.
 
-gdpp::Pool<T>
+Pool<T>
   The pool of the `@pool` class `T`, which `create` and `destroy` use: a static member of `T`. See `gd++ man pools`.
   - `create` and `destroy` are thread-safe, and take constant time.
-  - Its `gdpp::PoolMode`, `FIXED` or `GROW`, says what it does once it has made as many objects as its size, like the arguments of `@pool`.
+  - Its `PoolMode`, `FIXED` or `GROW`, says what it does once it has made as many objects as its size, like the arguments of `@pool`.
   - `reserve` and `clear` do what the methods `pool_reserve` and `pool_clear` of `@factory_pool` do. Like those, they must be called from the main thread.
 
-ExtPtr<T>, ExtRef<T> and Ext<T>
-  The C++ types of externs: a pointer or a reference to an object of an extern's class, whose members are called by name. `Ext<T>` is `ExtRef<T>` if `T`'s base is refcounted, and `ExtPtr<T>` otherwise. See `gd++ man externs`.
-
-TraitPtr<T>, TraitRef<T> and Trait<T>
-  The C++ types of traits: a pointer or a reference to an object whose class implements the trait `T`. `->` calls the trait's functions directly. `Trait<T>` is `TraitRef<T>` if `T`'s base is refcounted, and `TraitPtr<T>` otherwise. See `gd++ man traits`.
-  - `base()` gives the object as `T`'s base class.
-  - `TraitPtr<T>::find(object)` gives the object as a `TraitPtr<T>`, or null if its class doesn't implement `T`. Casts with `as` call it.
+Gd<T>
+  The C++ type of every class, extern and trait: it holds an object of `T`, with the same API for every kind of `T`. See `gd++ man gd`.
+  - It's null by default, and tests as a `bool`.
+  - `->` calls the object's members: directly for a class or a trait, by name for an extern.
+  - `ptr()` gives the object as a plain pointer to its class, or to the base class of a trait or an extern.
+  - It converts from the pointers, `Ref`s and `Gd`s that are surely a `T`, and to pointers and `Ref`s of its class and its bases, but not to `Object *`.
+  - It keeps a refcounted object alive. For other classes, it costs what a pointer does.
+  - `Gd<T>::is_class()`, `is_trait()`, `is_extern()`, `is_refcounted()` and `is_node()` tell the kind of `T` at compile time.
 
 Weak<T>
   The C++ type of `Weak[T]`: a reference to an object of the class `T` that holds its ID, and doesn't keep it alive. See `gd++ man weak`.
-  - It converts to a `Ref<T>` for a refcounted class, and to a `T *` otherwise.
+  - It converts to a `Gd<T>`, and to what a `Gd<T>` converts to.
   - That's null once the object is freed, or for a `@pool` class, once it's returned to its pool.
-  - Where a conversion is ambiguous, `ptr()` gives the `T *`, and `ref()` the `Ref<T>`.
+  - Where a conversion is ambiguous, `ptr()` gives a plain `T *`.
   - In a condition, it's true while the object is there.
 
 Async<T>
@@ -139,7 +138,7 @@ node->call(GDPP_STRING_NAME("update"));
 
 The code that GD++ generates uses these. Your code rarely needs them:
 
-- `gdpp::info<T>(name, ...)` returns the `PropertyInfo` of a value of type T, for bindings. A pointer to a node class gets a node-type hint, so the inspector only accepts nodes of that class.
+- `gdpp::info<T>(name, ...)` returns the `PropertyInfo` of a value of type T, for bindings. A `Gd` of a node class gets a node-type hint, so the inspector only accepts nodes of that class.
 - `gdpp::add_property_category(class, name)` adds an inspector category, for `@export_category`.
 - `gdpp::rpc_config<T>(node, method, ...)` configures an RPC, for `@rpc`. It fails to compile if `T` doesn't extend `Node`.
 - `gdpp::call_thread_safe(node, method, args...)` calls a method with `call_thread_safe`, for `@thread_safe`. It fails to compile if the node's class doesn't extend `Node`.
@@ -157,6 +156,9 @@ The code that GD++ generates uses these. Your code rarely needs them:
   - `gdpp::uninitialize()` prepares the package's library to be unloaded. It calls `gdpp::finish_tasks()`, and removes the hooks that `gdpp::on_unload(unhook)` added.
   - `gdpp::connect_until_unload(object, signal, callable)` connects a signal until then.
   - The package's generated registration code calls `gdpp::uninitialize()`.
+- Objects. See `gd++ man gd`.
+  - `gdpp::kind::Object`, `RefCounted`, `Extern`, `RefCountedExtern`, `Trait` and `RefCountedTrait` are the kinds of `T` that pick how a `Gd<T>` holds its object.
+  - Generated headers declare the kind of each class, extern and trait next to its forward declaration, e.g. `gdpp::kind::Object gdpp_kind(Player *);`, so a `Gd<Player>` works while `Player` is incomplete. Other types get their kind from their definition.
 - Traits. See `gd++ man traits`.
   - `gdpp::implement<T, C>()` records that class `C` implements trait `T`. A class's `_gdpp_traits` calls it, for each of its traits.
   - `gdpp::register_traits<C>()` calls `C`'s `_gdpp_traits`, if it has one. The generated registration code calls it for each class.
@@ -164,10 +166,9 @@ The code that GD++ generates uses these. Your code rarely needs them:
   - `gdpp::uninitialize()` forgets the recorded traits.
 - Enums. See `gd++ man enums`.
   - `GDPP_ENUM_TAG(TAG, NAME)` makes a class's stand-in type for an enum bind as the enum NAME, e.g. `"Player.Suit"`. `GDPP_BITFIELD_TAG` does the same for a bitfield.
-  - `GDPP_BITFIELD(ENUM)` gives the enum class of a bitfield the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`. `&` returns a `gdpp::Masked<ENUM>`, which converts to `ENUM`, and to `bool` in conditions: true if any flag is set.
+  - `GDPP_BITFIELD(ENUM)` gives the enum class of a bitfield the operators `|`, `&`, `^`, `~`, `|=`, `&=` and `^=`. `&` returns a `Masked<ENUM>`, which converts to `ENUM`, and to `bool` in conditions: true if any flag is set.
 - Specializations of godot-cpp's `GetTypeInfo`, `PtrToArg` and `VariantCaster`:
-  - for `ExtPtr` and `ExtRef`, so bindings see externs as their base classes,
-  - for `TraitPtr` and `TraitRef`, so bindings see traits as their base classes, and give null for objects whose class doesn't implement the trait,
+  - for `Gd`, so bindings see a class as itself, and a trait or an extern as its base class, and give null for objects whose class doesn't implement the trait,
   - for `Async`, so bindings see it as the package's class of tasks.
 
 With `GDPP_DEBUGGING`, for `@trace` and `@profile` (see `gd++ man debugging`):

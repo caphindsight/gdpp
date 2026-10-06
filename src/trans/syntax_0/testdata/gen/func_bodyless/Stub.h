@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Stub;
+gdpp::kind::RefCounted gdpp_kind(Stub *);
+
 #define This Stub
 class Stub : public RefCounted {
 	GDCLASS(Stub, RefCounted)

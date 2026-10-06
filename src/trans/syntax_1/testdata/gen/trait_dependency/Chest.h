@@ -9,14 +9,17 @@
 namespace godot {
 
 class Named;
+gdpp::kind::RefCountedTrait gdpp_kind(Named *);
+class Chest;
+gdpp::kind::Object gdpp_kind(Chest *);
 
 #define This Chest
 class Chest : public Node, public Saveable {
 	GDCLASS(Chest, Node)
 
 public:
-	gdpp::TraitPtr<Saveable> next{};
-	gdpp::TraitRef<Named> label{};
+	gdpp::Gd<Saveable> next{};
+	gdpp::Gd<Named> label{};
 
 public:
 	Chest();
@@ -25,10 +28,10 @@ public:
 	void _gdpp_queue_destroy() override;
 	Dictionary save() override;
 	int64_t slot() const override;
-	gdpp::TraitPtr<Saveable> get_next() const;
-	void set_next(gdpp::TraitPtr<Saveable> p_value);
-	gdpp::TraitRef<Named> get_label() const;
-	void set_label(gdpp::TraitRef<Named> p_value);
+	gdpp::Gd<Saveable> get_next() const;
+	void set_next(gdpp::Gd<Saveable> p_value);
+	gdpp::Gd<Named> get_label() const;
+	void set_label(const gdpp::Gd<Named> &p_value);
 
 protected:
 	static void _bind_methods();

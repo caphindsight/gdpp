@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Bystander;
+gdpp::kind::RefCounted gdpp_kind(Bystander *);
+
 #define This Bystander
 class Bystander : public RefCounted {
 	GDCLASS(Bystander, RefCounted)

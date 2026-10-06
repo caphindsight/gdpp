@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Names;
+gdpp::kind::RefCounted gdpp_kind(Names *);
+
 enum _gdpp_Names_HTTPCode : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Names_HTTPCode, "Names.HTTPCode")
 

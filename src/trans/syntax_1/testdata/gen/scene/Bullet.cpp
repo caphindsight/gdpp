@@ -13,7 +13,7 @@ void Bullet::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("evict_scene"), &Bullet::evict_scene);
 }
 
-Bullet *Bullet::spawn() {
+gdpp::Gd<Bullet> Bullet::spawn() {
 	return gdpp::create<Bullet>();
 }
 
@@ -28,7 +28,7 @@ void Bullet::evict_scene() {
 void Bullet::fire() {
 #line 7 "input.gd++"
 
-  Bullet *b = gdpp::create<Bullet>();
+  Gd<Bullet> b = gdpp::create<Bullet>();
 
 #line 34 "Bullet.cpp"
 }

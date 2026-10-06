@@ -528,7 +528,7 @@ func add(item: Item, max_size: int = 20) -> bool {
 func total_price() -> int {
   int64_t total = 0;
   for (int64_t i = 0; i < items.size(); i++) {
-    Ref<Item> item = items[i];
+    Gd<Item> item = items[i];
     total += item->get_price();
   }
   return total;

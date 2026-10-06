@@ -26,7 +26,7 @@ For each simple variable, GD++ generates:
 
 Facts:
 
-- Without an initial value, a field starts as its type's default: `0`, `0.0`, `false`, an empty `String`, a zero vector, `nullptr`, a null reference, and so on.
+- Without an initial value, a field starts as its type's default: `0`, `0.0`, `false`, an empty `String`, a zero vector, a null `Gd`, and so on.
 - In GDScript, `player.health = 50` calls `set_health`, and `player.health` calls `get_health`.
 
 ```gd++
@@ -72,7 +72,7 @@ var camera: Camera3D = $Camera
 
 @onready
 var marker: Node3D = {
-  Node3D *res = create Node3D;
+  Gd<Node3D> res = create Node3D;
   add_child(res);
   return res;
 }

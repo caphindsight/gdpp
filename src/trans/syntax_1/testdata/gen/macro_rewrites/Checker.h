@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Checker;
+gdpp::kind::RefCounted gdpp_kind(Checker *);
+
 #define This Checker
 class Checker : public RefCounted {
 	GDCLASS(Checker, RefCounted)

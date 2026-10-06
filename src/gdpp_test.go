@@ -130,9 +130,9 @@ func TestTranspilePackage(t *testing.T) {
 	}
 	for file, wants := range map[string][]string{
 		"Player.h": {`#include "Weapon.h"`, `#include "Power.h"`, "#include <godot_cpp/classes/node3d.hpp>",
-			"Ref<Weapon> weapon{};", "void hit(Power power);", `GDPP_ENUM_TAG(_gdpp_Player_Power, "Player.Power")`},
+			"gdpp::Gd<Weapon> weapon{};", "void hit(Power power);", `GDPP_ENUM_TAG(_gdpp_Player_Power, "Player.Power")`},
 		"Player.cpp":               {`#include "Player.h"`, "#include <godot_cpp/variant/typed_array.hpp>", `#line 8 "package/player.gd++"`},
-		"Weapon.h":                 {`#include "Player.h"`, "Player *owner{};"},
+		"Weapon.h":                 {`#include "Player.h"`, "gdpp::Gd<Player> owner{};"},
 		"Blade.cpp":                {"Engine::get_singleton()->is_editor_hint()"}, // Guarded, since it extends the abstract Hitbox.
 		"Power.h":                  {"enum class Power : int64_t {"},
 		"doc_classes/Player.xml":   {"A player."},
@@ -238,7 +238,7 @@ func TestTranspilePackageExternBases(t *testing.T) {
 	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	for file, want := range map[string]string{
 		"Big.h":  "class Big : public Small {",
-		"User.h": "gdpp::ExtRef<Big> big",
+		"User.h": "gdpp::Gd<Big> big",
 	} {
 		if !strings.Contains(gen[file], want) {
 			t.Errorf("%s = %s\nwant it to contain %q", file, gen[file], want)
@@ -291,13 +291,13 @@ func TestTranspilePackageCppClasses(t *testing.T) {
 		"Boss.cpp": "_gdpp_body__ready();",
 		"Tot.cpp":  "_gdpp_body__hit();", // Kid's notification, from another file.
 		"User.h":   "#include \"enemy/enemy.h\"\n#include <common/actor.h>\n",
-		"User.cpp": "Ref<Kid>",
+		"User.cpp": "gdpp::Gd<Kid>",
 	} {
 		if !strings.Contains(gen[file], want) {
 			t.Errorf("%s = %s\nwant it to contain %q", file, gen[file], want)
 		}
 	}
-	for _, want := range []string{"Ref<Actor> actor", "Enemy *enemy"} {
+	for _, want := range []string{"gdpp::Gd<Actor> actor", "gdpp::Gd<Enemy> enemy", "gdpp::kind::RefCounted gdpp_kind(Kid *);"} {
 		if !strings.Contains(gen["User.h"], want) {
 			t.Errorf("User.h = %s\nwant it to contain %q", gen["User.h"], want)
 		}

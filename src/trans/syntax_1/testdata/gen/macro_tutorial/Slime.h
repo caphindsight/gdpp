@@ -9,6 +9,8 @@
 namespace godot {
 
 enum class SlimeState : int64_t;
+class Slime;
+gdpp::kind::Object gdpp_kind(Slime *);
 
 enum _gdpp_Slime_SlimeState : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Slime_SlimeState, "Slime.SlimeState")
@@ -30,7 +32,7 @@ public:
 	void change_state(SlimeState to);
 	void update_state(double delta);
 	void _gdpp_body__physics_process(double delta);
-	Node2D *player_in_sight();
+	gdpp::Gd<Node2D> player_in_sight();
 	SlimeState update_patrol(double delta);
 	SlimeState update_chase(double delta);
 	double get_speed() const;

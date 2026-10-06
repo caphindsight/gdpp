@@ -70,25 +70,6 @@ struct [[nodiscard]] Emitted {
 	Error error;
 };
 
-// info returns the PropertyInfo of a value of type T named p_name, as bindings expose it.
-template <typename T>
-PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DEFAULT,
-		PropertyHint p_hint = PROPERTY_HINT_NONE, const String &p_hint_string = "") {
-	PropertyInfo result = GetTypeInfo<T>::get_class_info();
-	result.name = p_name;
-	result.usage = p_usage | (result.usage & (PROPERTY_USAGE_NIL_IS_VARIANT | PROPERTY_USAGE_CLASS_IS_ENUM | PROPERTY_USAGE_CLASS_IS_BITFIELD));
-	if constexpr (std::is_pointer_v<T>) {
-		if constexpr (std::is_base_of_v<Node, std::remove_pointer_t<T>>) {
-			result.hint = PROPERTY_HINT_NODE_TYPE;
-		}
-	}
-	if (p_hint != PROPERTY_HINT_NONE) {
-		result.hint = p_hint;
-		result.hint_string = p_hint_string;
-	}
-	return result;
-}
-
 // add_property_category starts a category named p_name in the inspector, like GDScript's @export_category. Godot has
 // no function for it, so it's a property without setter and getter, which godot-cpp's ClassDB doesn't allow.
 inline void add_property_category(const StringName &p_class, const String &p_name) {
@@ -120,24 +101,130 @@ void call_thread_safe(T *p_node, const StringName &p_method, const Args &...p_ar
 }
 
 template <typename T>
-class ExtPtr;
-template <typename T>
-class ExtRef;
-template <typename T>
-class TraitPtr;
-template <typename T>
-class TraitRef;
+class Gd;
 template <typename T>
 class Async;
 template <typename T>
 class Weak;
 
-// strong_t<T> is what a Weak<T> converts to: a Ref<T> for a refcounted class T, and a T * otherwise.
-template <typename T>
-using strong_t = std::conditional_t<std::is_base_of_v<RefCounted, T>, Ref<T>, T *>;
+// always_false<T> is false for any T, for a static_assert that only fails when a template is used.
+template <typename>
+inline constexpr bool always_false = false;
 
-// object_class<T>::type is the class of the object that T points to, for a pointer, Ref, extern, trait, Async or Weak,
-// and void for other types.
+// The kinds of objects that a Gd holds, which pick how it holds them. They mirror the transpiler's meta.Kind.
+namespace kind {
+// A class that isn't refcounted.
+struct Object {};
+// A refcounted class.
+struct RefCounted {};
+// An extern whose base class isn't refcounted.
+struct Extern {};
+// An extern whose base class is refcounted.
+struct RefCountedExtern {};
+// A trait whose base class isn't refcounted.
+struct Trait {};
+// A trait whose base class is refcounted.
+struct RefCountedTrait {};
+// No kind declared: Gd deduces it from the complete type.
+struct Deduce {};
+} // namespace kind
+
+// gdpp_kind(T *) declares the kind of T. GD++ declares it next to the forward declarations of its classes, externs
+// and traits, e.g. `gdpp::kind::Object gdpp_kind(Player *);`, so a Gd<Player> works while Player is incomplete.
+// Repeating a function declaration is fine, and argument-dependent lookup finds it. Other types get this one.
+template <typename T>
+kind::Deduce gdpp_kind(T *);
+
+// has_gdpp_name<T> is true for externs.
+template <typename T, typename = void>
+struct has_gdpp_name : std::false_type {};
+template <typename T>
+struct has_gdpp_name<T, std::void_t<decltype(T::gdpp_name)>> : std::true_type {};
+
+// has_base<T> is true for externs and traits, which name their class's base as Base.
+template <typename T, typename = void>
+struct has_base : std::false_type {};
+template <typename T>
+struct has_base<T, std::void_t<typename T::Base>> : std::true_type {};
+
+// deduce_kind returns the kind of the complete type T, for types without a gdpp_kind declaration.
+template <typename T>
+auto deduce_kind() {
+	if constexpr (std::is_base_of_v<Object, T>) {
+		return std::conditional_t<std::is_base_of_v<RefCounted, T>, kind::RefCounted, kind::Object>{};
+	} else if constexpr (has_gdpp_name<T>::value) {
+		return std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, kind::RefCountedExtern, kind::Extern>{};
+	} else if constexpr (has_base<T>::value) {
+		return std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, kind::RefCountedTrait, kind::Trait>{};
+	} else {
+		static_assert(always_false<T>, "Gd<T> holds objects: T must be a class, an extern or a trait.");
+	}
+}
+
+// kind_t<T> is the kind of T: declared, or deduced.
+template <typename T, typename K = decltype(gdpp_kind(static_cast<T *>(nullptr)))>
+struct kind_of {
+	// The kind.
+	using type = K;
+};
+template <typename T>
+struct kind_of<T, kind::Deduce> {
+	using type = decltype(deduce_kind<T>());
+};
+// kind_t<T> is the kind of T, e.g. kind::Object for Node.
+template <typename T>
+using kind_t = typename kind_of<std::remove_cv_t<T>>::type;
+
+// gd_object<T>::type is the class of the objects that a Gd<T> holds: T for a class, the base class of a trait or an
+// extern, const if T is.
+template <typename T, typename K = kind_t<T>>
+struct gd_object {
+	// The class.
+	using type = T;
+};
+template <typename T>
+struct gd_object<T, kind::Extern> {
+	using type = std::conditional_t<std::is_const_v<T>, const typename T::Base, typename T::Base>;
+};
+template <typename T>
+struct gd_object<T, kind::RefCountedExtern> : gd_object<T, kind::Extern> {};
+template <typename T>
+struct gd_object<T, kind::Trait> : gd_object<T, kind::Extern> {};
+template <typename T>
+struct gd_object<T, kind::RefCountedTrait> : gd_object<T, kind::Extern> {};
+// gd_object_t<T> is the class of the objects that a Gd<T> holds.
+template <typename T>
+using gd_object_t = typename gd_object<T>::type;
+
+// is_gd<T> is true for Gd types.
+template <typename T>
+struct is_gd : std::false_type {};
+template <typename T>
+struct is_gd<Gd<T>> : std::true_type {};
+
+// is_gd_trait<T> is true for Gds of traits.
+template <typename T>
+struct is_gd_trait : std::false_type {};
+template <typename T>
+struct is_gd_trait<Gd<T>> : std::bool_constant<Gd<T>::is_trait()> {};
+
+// gd_arg<G>::type is T for G = Gd<T>.
+template <typename G>
+struct gd_arg;
+template <typename T>
+struct gd_arg<Gd<T>> {
+	// T.
+	using type = T;
+};
+
+// is_ref<T> is true for Ref types.
+template <typename T>
+struct is_ref : std::false_type {};
+template <typename T>
+struct is_ref<Ref<T>> : std::true_type {};
+
+// object_class<T>::type is the class of the object that T points to, for a pointer, Ref, Gd, Async or Weak, and void
+// for other types.
 template <typename T>
 struct object_class {
 	// The class, or void.
@@ -152,20 +239,8 @@ struct object_class<Ref<T>> {
 	using type = T;
 };
 template <typename T>
-struct object_class<ExtPtr<T>> {
-	using type = typename T::Base;
-};
-template <typename T>
-struct object_class<ExtRef<T>> {
-	using type = typename T::Base;
-};
-template <typename T>
-struct object_class<TraitPtr<T>> {
-	using type = typename T::Base;
-};
-template <typename T>
-struct object_class<TraitRef<T>> {
-	using type = typename T::Base;
+struct object_class<Gd<T>> {
+	using type = gd_object_t<T>;
 };
 template <typename T>
 struct object_class<Async<T>> {
@@ -182,29 +257,12 @@ T *object_ptr(T *p_value) { return p_value; }
 // object_ptr of a Ref: the object it references.
 template <typename T>
 T *object_ptr(const Ref<T> &p_value) { return p_value.ptr(); }
-// object_ptr of an ExtPtr: its object, as the extern's base class.
+// object_ptr of a Gd: its object.
 template <typename T>
-auto object_ptr(const ExtPtr<T> &p_value) { return p_value.base(); }
-// object_ptr of an ExtRef: its object, as the extern's base class.
-template <typename T>
-auto object_ptr(const ExtRef<T> &p_value) { return p_value.base().ptr(); }
-// object_ptr of a TraitPtr: its object, as the trait's base class.
-template <typename T>
-auto object_ptr(const TraitPtr<T> &p_value) { return p_value.base(); }
-// object_ptr of a TraitRef: its object, as the trait's base class.
-template <typename T>
-auto object_ptr(const TraitRef<T> &p_value) { return p_value.base().ptr(); }
+auto object_ptr(const Gd<T> &p_value) { return p_value.ptr(); }
 // object_ptr of an Async: its task object.
 template <typename T>
 RefCounted *object_ptr(const Async<T> &p_value) { return p_value.object().ptr(); }
-
-// is_trait<T> is true for TraitPtr and TraitRef.
-template <typename T>
-struct is_trait : std::false_type {};
-template <typename T>
-struct is_trait<TraitPtr<T>> : std::true_type {};
-template <typename T>
-struct is_trait<TraitRef<T>> : std::true_type {};
 
 // TraitEntry says that the class named class_name implements a trait, identified by the address trait_id<T>: cast
 // turns one of its objects into a pointer to the trait.
@@ -275,11 +333,229 @@ T *find_trait(Object *p_object) {
 	return nullptr;
 }
 
+// GdTrait holds the pointer to the trait of a Gd of a trait. Other Gds derive from the empty one, so it costs nothing.
+template <typename T, bool>
+struct GdTrait {};
+template <typename T>
+struct GdTrait<T, true> {
+	// The object, as the trait.
+	T *trait_ = nullptr;
+};
+
+// Gd<T> holds an object of T: a class, a trait or an extern, refcounted or not. It's the one way that GD++ code holds
+// objects, whatever their kind, and has the same API for all of them:
+//   - it's null by default, and tests as a bool,
+//   - -> calls the object's members: directly for a class or a trait, by name for an extern,
+//   - ptr() returns the object, as a pointer to its class: T, or the base class of a trait or an extern,
+//   - it converts implicitly from the pointers, Refs and Gds that are surely a T, e.g. of a subclass, and to the
+//     pointers and Refs of its class and its bases, so it passes to godot-cpp's functions. Not to Object *, since
+//     Variant's constructors would then be ambiguous: write ptr() for that,
+//   - == tells whether two hold the same object, and it converts to a Variant,
+//   - `as` casts it, see gd++ man cast.
+// It keeps a refcounted object alive, like a Ref. Otherwise, it costs what a pointer does: Gd<Node> is a Node *.
+// Its kind comes from gdpp_kind, so T may be incomplete wherever a pointer to it may be: its declarations never need
+// more of T than that.
+template <typename T>
+class Gd : private GdTrait<T, std::is_same_v<kind_t<T>, kind::Trait> || std::is_same_v<kind_t<T>, kind::RefCountedTrait>> {
+	using K = kind_t<T>;
+	// Copies const from T to U.
+	template <typename U>
+	using as_const = std::conditional_t<std::is_const_v<T>, const U, U>;
+
+	// accepts<U>() reports whether a U * is surely a T, so that a Gd<T> takes it implicitly.
+	template <typename U>
+	static constexpr bool accepts() {
+		using From = std::remove_cv_t<U>;
+		using To = std::remove_cv_t<T>;
+		if constexpr (std::is_const_v<U> && !std::is_const_v<T>) {
+			return false;
+		} else if constexpr (is_trait()) {
+			return std::is_base_of_v<To, From> && std::is_base_of_v<Object, From>;
+		} else if constexpr (is_extern()) {
+			return std::is_base_of_v<typename To::Base, From>;
+		} else {
+			return std::is_base_of_v<To, From>;
+		}
+	}
+	// accepts_gd<U>() reports whether a Gd<U> is surely a T: like its object, except that a trait only converts to
+	// the same trait, and an extern to an extern it extends.
+	template <typename U>
+	static constexpr bool accepts_gd() {
+		if constexpr (std::is_const_v<U> && !std::is_const_v<T>) {
+			return false;
+		} else if constexpr (Gd<U>::is_trait() && is_trait()) {
+			return std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>;
+		} else if constexpr (Gd<U>::is_extern() && is_extern()) {
+			return std::is_base_of_v<std::remove_cv_t<T>, std::remove_cv_t<U>>;
+		} else {
+			return accepts<gd_object_t<U>>();
+		}
+	}
+	// Accepts<U> is accepts_gd<U>(), as a type for std::conjunction.
+	template <typename U>
+	struct Accepts : std::bool_constant<accepts_gd<U>()> {};
+
+	// is_comparable<P>() reports whether == compares a Gd with a P.
+	template <typename P>
+	static constexpr bool is_comparable() {
+		return std::is_null_pointer_v<P> || std::is_pointer_v<P> || is_gd<P>::value || is_ref<P>::value;
+	}
+
+public:
+	// is_class reports whether T is a class: Godot's, the package's, or a C++ class.
+	static constexpr bool is_class() { return std::is_same_v<K, kind::Object> || std::is_same_v<K, kind::RefCounted>; }
+	// is_trait reports whether T is a trait.
+	static constexpr bool is_trait() { return std::is_same_v<K, kind::Trait> || std::is_same_v<K, kind::RefCountedTrait>; }
+	// is_extern reports whether T is an extern.
+	static constexpr bool is_extern() { return std::is_same_v<K, kind::Extern> || std::is_same_v<K, kind::RefCountedExtern>; }
+	// is_refcounted reports whether the object's class is refcounted, so that the Gd keeps it alive.
+	static constexpr bool is_refcounted() {
+		return std::is_same_v<K, kind::RefCounted> || std::is_same_v<K, kind::RefCountedExtern> || std::is_same_v<K, kind::RefCountedTrait>;
+	}
+	// is_node reports whether the object's class is a Node, so that queue_destroy works.
+	static constexpr bool is_node() { return std::is_base_of_v<Node, std::remove_cv_t<gd_object_t<T>>>; }
+
+	// A null Gd.
+	Gd() = default;
+	// A null Gd, from nullptr.
+	Gd(std::nullptr_t) {}
+	// Holds p_object, which is surely a T: of T or a subclass, of a class that implements the trait T, or of the base
+	// class of the extern T, which isn't checked.
+	template <typename U, std::enable_if_t<accepts<U>(), int> = 0>
+	Gd(U *p_object) {
+		if (p_object == nullptr) {
+			return;
+		}
+		if constexpr (is_trait()) {
+			this->trait_ = static_cast<T *>(p_object);
+		}
+		if constexpr (is_refcounted()) {
+			object_ = Ref<RefCounted>(const_cast<RefCounted *>(static_cast<const RefCounted *>(p_object)));
+		} else {
+			object_ = p_object;
+		}
+	}
+	// Holds the object of p_object, like the pointer.
+	template <typename U, std::enable_if_t<accepts<U>(), int> = 0>
+	Gd(const Ref<U> &p_object) :
+			Gd(p_object.ptr()) {}
+	// Holds the object of p_variant, or is null if it's not a T, as bindings convert it, e.g. from an Array's item.
+	// A template, so that only a Variant converts, not what converts to one.
+	template <typename V, std::enable_if_t<std::is_same_v<V, Variant>, int> = 0>
+	Gd(const V &p_variant) :
+			Gd(VariantCaster<Gd<std::remove_cv_t<T>>>::cast(p_variant)) {}
+	// Holds the object of p_other, like the pointer, e.g. a Gd of a subclass, or of a class that implements the trait.
+	// std::conjunction skips Accepts for a copy, which must work while T is incomplete.
+	template <typename U, std::enable_if_t<std::conjunction_v<std::negation<std::is_same<U, T>>, Accepts<U>>, int> = 0>
+	Gd(const Gd<U> &p_other) {
+		if constexpr (Gd<U>::is_trait() && is_trait()) {
+			object_ = p_other.object_;
+			this->trait_ = p_other.trait_;
+		} else {
+			*this = Gd(p_other.ptr());
+		}
+	}
+
+	// ptr returns the object, as a pointer to its class: T, or the base class of a trait or an extern.
+	auto ptr() const {
+		if constexpr (is_refcounted()) {
+			return static_cast<gd_object_t<T> *>(object_.ptr());
+		} else {
+			return static_cast<gd_object_t<T> *>(object_);
+		}
+	}
+	// True if it holds an object.
+	explicit operator bool() const { return object_ != nullptr; }
+
+	// Arrow is what -> returns for an extern: it holds the T that calls the object's members by name.
+	struct Arrow {
+		T wrapper;
+		T *operator->() { return &wrapper; }
+	};
+	// -> calls a member of the object: of the class, of the trait, or by name for an extern.
+	auto operator->() const {
+		if constexpr (is_extern()) {
+			static_assert(!std::is_const_v<T>, "A const extern can't call members: calls by name may change the object.");
+			return Arrow{ T(ptr()) };
+		} else if constexpr (is_trait()) {
+			return this->trait_;
+		} else {
+			return ptr();
+		}
+	}
+
+	// Converts to a pointer to the object's class, or to one of its bases but Object. D delays T's class until T is
+	// complete, like in the members below.
+	template <typename C, typename D = T, std::enable_if_t<!std::is_same_v<std::remove_cv_t<C>, Object> &&
+								  std::is_base_of_v<std::remove_cv_t<C>, std::remove_cv_t<gd_object_t<D>>> && (std::is_const_v<C> || !std::is_const_v<D>), int> = 0>
+	operator C *() const { return ptr(); }
+	// Converts to a Ref of the object's class, or of one of its bases, for a refcounted object.
+	template <typename C, typename D = T, std::enable_if_t<Gd<D>::is_refcounted() && std::is_base_of_v<C, std::remove_cv_t<gd_object_t<D>>>, int> = 0>
+	operator Ref<C>() const { return Ref<C>(const_cast<std::remove_cv_t<gd_object_t<T>> *>(ptr())); }
+	// The object, as a Variant.
+	operator Variant() const { return Variant(object()); }
+
+	// True if both hold the same object, or are both null. p_other is a Gd, a pointer, a Ref or nullptr.
+	template <typename P, std::enable_if_t<is_comparable<P>(), int> = 0>
+	bool operator==(const P &p_other) const { return object() == object_of(p_other); }
+	// True unless both hold the same object, or are both null.
+	template <typename P, std::enable_if_t<is_comparable<P>(), int> = 0>
+	bool operator!=(const P &p_other) const { return !operator==(p_other); }
+	// The same, with the Gd on the right.
+	template <typename P, std::enable_if_t<is_comparable<P>() && !is_gd<P>::value, int> = 0>
+	friend bool operator==(const P &p_a, const Gd &p_b) { return p_b.operator==(p_a); }
+	// The same, with the Gd on the right.
+	template <typename P, std::enable_if_t<is_comparable<P>() && !is_gd<P>::value, int> = 0>
+	friend bool operator!=(const P &p_a, const Gd &p_b) { return !p_b.operator==(p_a); }
+
+	// _gdpp_find returns p_object as a Gd of the trait T, or null if its class doesn't implement T. `as` casts with it.
+	static Gd _gdpp_find(Object *p_object) {
+		static_assert(is_trait(), "Only a Gd of a trait finds the trait in an object.");
+		Gd result;
+		if ((result.trait_ = find_trait<T>(p_object))) {
+			if constexpr (is_refcounted()) {
+				result.object_ = Ref<RefCounted>(Object::cast_to<RefCounted>(p_object));
+			} else {
+				result.object_ = p_object;
+			}
+		}
+		return result;
+	}
+
+private:
+	template <typename>
+	friend class Gd;
+
+	// object returns the object, as an Object.
+	const Object *object() const {
+		if constexpr (is_refcounted()) {
+			return object_.ptr();
+		} else {
+			return static_cast<const Object *>(object_);
+		}
+	}
+	// object_of returns the object of what == compares a Gd with, as an Object.
+	static const Object *object_of(std::nullptr_t) { return nullptr; }
+	template <typename U>
+	static const Object *object_of(const U *p_object) { return p_object; }
+	template <typename U>
+	static const Object *object_of(const Ref<U> &p_object) { return p_object.ptr(); }
+	template <typename U>
+	static const Object *object_of(const Gd<U> &p_object) { return p_object.object(); }
+
+	// The object: a Ref for a refcounted one, so that the Gd keeps it alive; a pointer to its class for a class, and an
+	// Object for a trait or an extern, whose base class may be unknown here.
+	using Hold = std::conditional_t<is_refcounted(), Ref<RefCounted>, std::conditional_t<is_class(), T *, as_const<Object> *>>;
+	Hold object_ = Hold();
+};
+
+static_assert(sizeof(Gd<Node>) == sizeof(Node *) && std::is_trivially_copyable_v<Gd<Node>>, "Gd of a class that isn't refcounted must cost what a pointer does.");
+
 // cast converts p_value to T, picking the conversion at compile time:
 //   - from a Variant, as Godot's bindings do, with enums as ints,
 //   - to a Variant, with enums as ints,
-//   - between pointers, Refs, externs, traits, Asyncs and Weaks: up casts are static, other casts check the object's class,
-//     and give null if it doesn't match; externs only check their base class,
+//   - between pointers, Refs, Gds, Asyncs and Weaks: up casts are static, other casts check the object's class, and
+//     give null if it doesn't match; externs only check their base class,
 //   - to a trait: statically from a class that implements it, else by looking up the object's class,
 //   - anything else with static_cast, e.g. numbers and enums.
 template <typename T, typename U>
@@ -300,13 +576,13 @@ T cast(const U &p_value) {
 		} else {
 			return Variant(p_value);
 		}
-	} else if constexpr (is_trait<T>::value) {
-		static_assert(std::is_base_of_v<Object, From>, "Only objects can be cast to a trait.");
+	} else if constexpr (is_gd_trait<T>::value) {
+		static_assert(std::is_base_of_v<Object, std::remove_cv_t<From>>, "Only objects can be cast to a trait.");
 		static_assert(!std::is_const_v<From>, "A const object can't be cast to a trait, since calls through the trait may change it.");
-		if constexpr (std::is_base_of_v<typename T::Trait, From>) {
-			return T{ object_ptr(p_value) };
+		if constexpr (std::is_base_of_v<typename gd_arg<T>::type, From>) {
+			return T(object_ptr(p_value));
 		} else {
-			return T::find(object_ptr(p_value));
+			return T::_gdpp_find(object_ptr(p_value));
 		}
 	} else if constexpr (std::is_base_of_v<Object, To> && std::is_base_of_v<Object, From>) {
 		// Braces, unlike T(...), don't cast a const pointer to a mutable one.
@@ -321,193 +597,26 @@ T cast(const U &p_value) {
 }
 // cast of a Weak converts what it converts to, i.e. its object, or null once it's gone.
 template <typename T, typename U>
-T cast(const Weak<U> &p_value) { return cast<T>(strong_t<U>(p_value.ptr())); }
+T cast(const Weak<U> &p_value) { return cast<T>(Gd<U>(p_value.ptr())); }
 
-// ExtPtr<T> points to an object of the extern T, whose base class isn't refcounted. Its members are called by
-// name: ptr->foo() is ptr.base()->call("foo"). Only its members need T to be complete, so a field of type ExtPtr<T>
-// only needs T to be declared.
+// info returns the PropertyInfo of a value of type T named p_name, as bindings expose it.
 template <typename T>
-class ExtPtr {
-public:
-	// A null ExtPtr.
-	ExtPtr() = default;
-	// A null ExtPtr, from nullptr.
-	ExtPtr(std::nullptr_t) {}
-	// Points to p_object, which must be an object of the extern: it isn't checked.
-	template <typename U = T>
-	ExtPtr(typename U::Base *p_object) :
-			object_(p_object) {}
-	// Converts from an extern that extends T.
-	template <typename U, std::enable_if_t<std::is_base_of_v<T, U>, int> = 0>
-	ExtPtr(const ExtPtr<U> &p_other) :
-			object_(p_other.object_) {}
-
-	// base returns the object as a pointer to the extern's base class.
-	auto base() const { return static_cast<typename T::Base *>(object_); }
-	// True if it isn't null.
-	explicit operator bool() const { return object_ != nullptr; }
-	// True if both point to the same object.
-	bool operator==(const ExtPtr &p_other) const { return object_ == p_other.object_; }
-	// The object, as a Variant.
-	operator Variant() const { return Variant(object_); }
-
-	// Arrow is what -> returns: it holds the T that calls the object's members by name.
-	struct Arrow {
-		T wrapper;
-		T *operator->() { return &wrapper; }
-	};
-	// ptr->foo() calls foo on the object, by name.
-	Arrow operator->() const { return Arrow{ T(base()) }; }
-
-private:
-	template <typename>
-	friend class ExtPtr;
-	Object *object_ = nullptr;
-};
-
-// ExtRef<T> references an object of the extern T, whose base class is refcounted. Its members are called by
-// name: ref->foo() is ref.base()->call("foo"). Like ExtPtr<T>, only its members need T to be complete.
-template <typename T>
-class ExtRef {
-public:
-	// A null ExtRef.
-	ExtRef() = default;
-	// A null ExtRef, from nullptr.
-	ExtRef(std::nullptr_t) {}
-
-	// References p_object, which must be an object of the extern: it isn't checked.
-	template <typename U = T>
-	ExtRef(const Ref<typename U::Base> &p_object) :
-			object_(p_object.ptr()) {}
-	// References p_object, like the Ref, keeping it alive.
-	template <typename U = T>
-	ExtRef(typename U::Base *p_object) :
-			object_(p_object) {}
-	// Converts from an extern that extends T.
-	template <typename U, std::enable_if_t<std::is_base_of_v<T, U>, int> = 0>
-	ExtRef(const ExtRef<U> &p_other) :
-			object_(p_other.object_) {}
-
-	// base returns the object as a Ref of the extern's base class.
-	auto base() const { return Ref<typename T::Base>(static_cast<typename T::Base *>(object_.ptr())); }
-	// True if it isn't null.
-	explicit operator bool() const { return object_.is_valid(); }
-	// True if both reference the same object.
-	bool operator==(const ExtRef &p_other) const { return object_ == p_other.object_; }
-	// The object, as a Variant.
-	operator Variant() const { return Variant(object_); }
-
-	// Arrow is what -> returns: it holds the T that calls the object's members by name.
-	struct Arrow {
-		T wrapper;
-		T *operator->() { return &wrapper; }
-	};
-	// ref->foo() calls foo on the object, by name.
-	Arrow operator->() const { return Arrow{ T(static_cast<typename T::Base *>(object_.ptr())) }; }
-
-
-private:
-	template <typename>
-	friend class ExtRef;
-	Ref<RefCounted> object_;
-};
-
-// TraitPtr<T> points to an object that implements the trait T, whose base class isn't refcounted. ptr->foo() calls the
-// trait's function foo directly. Only its members need T to be complete.
-template <typename T>
-class TraitPtr {
-public:
-	// The trait.
-	using Trait = T;
-
-	// A null TraitPtr.
-	TraitPtr() = default;
-	// A null TraitPtr, from nullptr.
-	TraitPtr(std::nullptr_t) {}
-	// Points to p_object, of a class that implements T.
-	template <typename C, std::enable_if_t<std::is_base_of_v<T, C>, int> = 0>
-	TraitPtr(C *p_object) :
-			object_(p_object), trait_(p_object) {}
-
-	// find returns p_object as a TraitPtr, or null if its class doesn't implement T.
-	static TraitPtr find(Object *p_object) {
-		TraitPtr result;
-		if ((result.trait_ = find_trait<T>(p_object))) {
-			result.object_ = p_object;
+PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DEFAULT,
+		PropertyHint p_hint = PROPERTY_HINT_NONE, const String &p_hint_string = "") {
+	PropertyInfo result = GetTypeInfo<T>::get_class_info();
+	result.name = p_name;
+	result.usage = p_usage | (result.usage & (PROPERTY_USAGE_NIL_IS_VARIANT | PROPERTY_USAGE_CLASS_IS_ENUM | PROPERTY_USAGE_CLASS_IS_BITFIELD));
+	if constexpr (is_gd<T>::value) {
+		if constexpr (T::is_class() && T::is_node()) {
+			result.hint = PROPERTY_HINT_NODE_TYPE;
 		}
-		return result;
 	}
-
-	// base returns the object as a pointer to the trait's base class.
-	auto base() const { return static_cast<typename T::Base *>(object_); }
-	// True if it isn't null.
-	explicit operator bool() const { return object_ != nullptr; }
-	// True if both point to the same object.
-	bool operator==(const TraitPtr &p_other) const { return object_ == p_other.object_; }
-	// The object, as a Variant.
-	operator Variant() const { return Variant(object_); }
-	// ptr->foo() calls the trait's function foo.
-	T *operator->() const { return trait_; }
-
-private:
-	Object *object_ = nullptr;
-	T *trait_ = nullptr;
-};
-
-// TraitRef<T> references an object that implements the trait T, whose base class is refcounted. Like TraitPtr<T>, but
-// it keeps the object alive.
-template <typename T>
-class TraitRef {
-public:
-	// The trait.
-	using Trait = T;
-
-	// A null TraitRef.
-	TraitRef() = default;
-	// A null TraitRef, from nullptr.
-	TraitRef(std::nullptr_t) {}
-	// References p_object, of a class that implements T.
-	template <typename C, std::enable_if_t<std::is_base_of_v<T, C>, int> = 0>
-	TraitRef(C *p_object) :
-			object_(p_object), trait_(p_object) {}
-	// References p_object, of a class that implements T.
-	template <typename C, std::enable_if_t<std::is_base_of_v<T, C>, int> = 0>
-	TraitRef(const Ref<C> &p_object) :
-			object_(p_object.ptr()), trait_(p_object.ptr()) {}
-
-	// find returns p_object as a TraitRef, or null if its class doesn't implement T.
-	static TraitRef find(Object *p_object) {
-		TraitRef result;
-		if ((result.trait_ = find_trait<T>(p_object))) {
-			result.object_ = Ref<RefCounted>(Object::cast_to<RefCounted>(p_object));
-		}
-		return result;
+	if (p_hint != PROPERTY_HINT_NONE) {
+		result.hint = p_hint;
+		result.hint_string = p_hint_string;
 	}
-
-	// base returns the object as a Ref of the trait's base class.
-	auto base() const { return Ref<typename T::Base>(static_cast<typename T::Base *>(object_.ptr())); }
-	// True if it isn't null.
-	explicit operator bool() const { return object_.is_valid(); }
-	// True if both reference the same object.
-	bool operator==(const TraitRef &p_other) const { return object_ == p_other.object_; }
-	// The object, as a Variant.
-	operator Variant() const { return Variant(object_); }
-	// ref->foo() calls the trait's function foo.
-	T *operator->() const { return trait_; }
-
-private:
-	Ref<RefCounted> object_;
-	T *trait_ = nullptr;
-};
-
-// Trait<T> is how code holds an object that implements the trait T: a TraitRef<T> if its base class is refcounted, else
-// a TraitPtr<T>.
-template <typename T>
-using Trait = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, TraitRef<T>, TraitPtr<T>>;
-
-// Ext<T> is how code holds an object of the extern T: an ExtRef<T> if its base class is refcounted, else an ExtPtr<T>.
-template <typename T>
-using Ext = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, ExtRef<T>, ExtPtr<T>>;
+	return result;
+}
 
 // ExtFactory<T> names the methods of the extern T's class that create, destroy and queue_destroy call, from the
 // extern's @factory. A null name keeps the default.
@@ -541,11 +650,11 @@ constexpr ExtFactory<T> ext_factory() {
 // names. With @factory, it's what the class's static method of that name gives, which may be null, e.g. from a full
 // pool.
 template <typename T>
-Ext<T> create_ext() {
+Gd<T> create_ext() {
 	const StringName &name = GDPP_STRING_NAME(T::gdpp_name);
 	if constexpr (ext_factory<T>().create != nullptr) {
 		const StringName &method = GDPP_STRING_NAME(ext_factory<T>().create);
-		Ext<T> result = Object::cast_to<typename T::Base>(ClassDB::class_call_static(name, method).operator Object *());
+		Gd<T> result = Object::cast_to<typename T::Base>(ClassDB::class_call_static(name, method).operator Object *());
 		ERR_FAIL_COND_V_MSG(!result && !ClassDB::class_has_method(name, method), nullptr,
 				String("Failed to create an object of the extern ") + T::gdpp_name + ": its class has no static method " + ext_factory<T>().create + ".");
 		return result;
@@ -563,8 +672,8 @@ Ext<T> create_ext() {
 			}
 		}
 	}
-	// A refcounted object is freed with the last reference to it, so the ExtRef must take it before object goes.
-	Ext<T> result = Object::cast_to<typename T::Base>(object.operator Object *());
+	// A refcounted object is freed with the last reference to it, so the Gd must take it before object goes.
+	Gd<T> result = Object::cast_to<typename T::Base>(object.operator Object *());
 	ERR_FAIL_COND_V_MSG(!result, nullptr, String("Failed to create an object of the extern ") + T::gdpp_name + ".");
 	return result;
 }
@@ -1180,16 +1289,6 @@ struct has_pool : std::false_type {};
 template <typename T>
 struct has_pool<T, std::void_t<decltype(T::_gdpp_pool)>> : std::is_same<decltype(T::_gdpp_pool), Pool<T>> {};
 
-// is_extern<T> is true for externs.
-template <typename T, typename = void>
-struct is_extern : std::false_type {};
-template <typename T>
-struct is_extern<T, std::void_t<decltype(T::gdpp_name)>> : std::true_type {};
-
-// always_false<T> is false for any T, for a static_assert that only fails when a template is used.
-template <typename>
-inline constexpr bool always_false = false;
-
 // Abstract<T> is the type of the @abstract class T's _gdpp_abstract.
 template <typename T>
 struct Abstract {};
@@ -1200,18 +1299,18 @@ struct has_abstract : std::false_type {};
 template <typename T>
 struct has_abstract<T, std::void_t<decltype(T::_gdpp_abstract)>> : std::is_same<std::remove_cv_t<decltype(T::_gdpp_abstract)>, Abstract<T>> {};
 
-// create creates an object of the class T, which `create T` calls: it takes one from T's pool for a @pool class, and
-// returns an Ext<T> for an extern, a Ref<T> for a refcounted class, and a T * otherwise, an instance of T's scene for
-// a @scene class.
+// create creates an object of the class or extern T, which `create T` calls: it takes one from T's pool for a @pool
+// class, and is an instance of T's scene for a @scene class.
 template <typename T>
-auto create() {
+Gd<T> create() {
+	static_assert(!Gd<T>::is_trait(), "A trait isn't a class, so it can't be created. Create a class that implements it.");
 	static_assert(!has_abstract<T>::value, "Abstract classes can't be created. Create a subclass instead.");
 	if constexpr (has_pool<T>::value) {
 		return T::_gdpp_pool.take();
-	} else if constexpr (is_extern<T>::value) {
+	} else if constexpr (Gd<T>::is_extern()) {
 		return create_ext<T>();
-	} else if constexpr (std::is_base_of_v<RefCounted, T>) {
-		return Ref<T>(memnew(T));
+	} else if constexpr (Gd<T>::is_refcounted()) {
+		return memnew(T);
 	} else {
 		return make<T>();
 	}
@@ -1219,17 +1318,17 @@ auto create() {
 
 // destroy deletes an object, see below.
 template <typename T>
-void destroy(T *p_object);
-// destroy deletes an object of an extern, see below.
+void destroy(Gd<T> p_object);
+// destroy of a pointer destroys its object like a Gd, see below.
 template <typename T>
-void destroy(ExtPtr<T> p_object);
+void destroy(T *p_object);
 
 // Weak<T> is the C++ type of Weak[T]: a reference to an object of the class T that doesn't keep it alive, and knows
 // when it's gone. It holds the object's ID, so it's safe to keep after the object is freed, and to share between
-// threads. It converts to a strong_t<T>, or anything that converts from one: a Ref<T>, which keeps the object alive, or
-// a T *, which doesn't. Both are null once the object is freed, and for a @pool class, also once it's given back to its
-// pool, even though the object lives on there. Where a conversion is ambiguous, ptr() and ref() give the same. Weaks
-// equal when they refer to the same object, or are both null.
+// threads. It converts to a Gd<T>, which keeps a refcounted object alive, or anything that a Gd<T> converts to. It's
+// null once the object is freed, and for a @pool class, also once it's given back to its pool, even though the object
+// lives on there. Where a conversion is ambiguous, ptr() gives the object. Weaks equal when they refer to the same
+// object, or are both null.
 template <typename T>
 class Weak {
 public:
@@ -1248,8 +1347,12 @@ public:
 	template <typename U>
 	Weak(const Ref<U> &p_object) :
 			Weak(p_object.ptr()) {}
+	// Refers to the object of p_object, or is null if it's null.
+	template <typename U>
+	Weak(const Gd<U> &p_object) :
+			Weak(p_object.ptr()) {}
 
-	// ptr returns the object, or null once it's gone. It doesn't keep a refcounted object alive: use ref for that.
+	// ptr returns the object, or null once it's gone. It doesn't keep a refcounted object alive: a Gd<T> does.
 	T *ptr() const {
 		T *object = Object::cast_to<T>(ObjectDB::get_instance(id_));
 		if constexpr (has_pool<T>::value) {
@@ -1259,19 +1362,15 @@ public:
 		}
 		return object;
 	}
-	// ref returns the object of a refcounted class, which it keeps alive, or null once it's gone.
-	Ref<T> ref() const {
-		static_assert(std::is_base_of_v<RefCounted, T>, "Only a Weak of a refcounted class has ref(). Use ptr().");
-		return Ref<T>(ptr());
-	}
 
-	// The template parameter U delays strong_t<T> until T is complete, so that a class can hold a Weak of itself.
-	template <typename R, typename U = T, std::enable_if_t<!std::is_same_v<R, bool> && std::is_convertible_v<strong_t<U>, R>, int> = 0>
-	operator R() const { return strong_t<U>(ptr()); }
+	// The template parameter U delays the conversion's check until T is complete, so that a class can hold a Weak of
+	// itself.
+	template <typename R, typename U = T, std::enable_if_t<!std::is_same_v<R, bool> && std::is_convertible_v<Gd<U>, R>, int> = 0>
+	operator R() const { return Gd<U>(ptr()); }
 	// True while the object is there.
-	explicit operator bool() const { return object_ptr(strong_t<T>(ptr())) != nullptr; }
+	explicit operator bool() const { return ptr() != nullptr; }
 
-	// Templates, so that comparing with a pointer or a Ref matches them exactly, rather than the built-in ==.
+	// Templates, so that comparing with a pointer, a Ref or a Gd matches them exactly, rather than the built-in ==.
 	template <typename P>
 	friend bool operator==(const Weak &p_a, const P &p_b) {
 		Weak b(p_b);
@@ -1296,63 +1395,51 @@ inline bool on_main_thread() {
 
 // destroy_now does what destroy does, on the calling thread, which must be allowed to change the scene tree.
 template <typename T>
-void destroy_now(T *p_object) {
+void destroy_now(Gd<T> p_object) {
 	if (!p_object) {
 		return;
 	}
 	if constexpr (has_pool<T>::value) {
 		if (p_object->_gdpp_pool_slot.owned) {
-			T::_gdpp_pool.give(p_object);
+			T::_gdpp_pool.give(p_object.ptr());
 			return;
 		}
 	}
-	memdelete(p_object);
-}
-// destroy_now of an extern deletes its object.
-template <typename T>
-void destroy_now(ExtPtr<T> p_object) {
-	if (p_object) {
-		memdelete(p_object.base());
-	}
+	memdelete(p_object.ptr());
 }
 
-// destroy_later destroys the object of ID p_id, unless it's gone, once the main thread gets to it. P is a pointer to
-// it. For a @pool class, it also leaves the object alone if it was given back to its pool since its generation
+// destroy_later destroys the object of ID p_id, held as a Gd<T>, unless it's gone, once the main thread gets to it.
+// For a @pool class, it also leaves the object alone if it was given back to its pool since its generation
 // p_generation.
-template <typename P>
+template <typename T>
 void destroy_later(uint64_t p_id, uint64_t p_generation) {
-	if constexpr (std::is_pointer_v<P>) {
-		using T = std::remove_pointer_t<P>;
-		T *object = Object::cast_to<T>(ObjectDB::get_instance(p_id));
-		if constexpr (has_pool<T>::value) {
-			if (object && object->_gdpp_pool_slot.generation != p_generation) {
-				return;
-			}
+	auto *object = Object::cast_to<gd_object_t<T>>(ObjectDB::get_instance(p_id));
+	if constexpr (has_pool<T>::value) {
+		if (object && object->_gdpp_pool_slot.generation != p_generation) {
+			return;
 		}
-		destroy_now(object);
-	} else {
-		destroy_now(P(Object::cast_to<std::remove_pointer_t<decltype(std::declval<P>().base())>>(ObjectDB::get_instance(p_id))));
 	}
+	destroy_now(Gd<T>(object));
 }
 
-// destroy_deferred schedules destroy_later for p_object, of type P.
-template <typename P>
-void destroy_deferred(P p_object) {
+// destroy_deferred schedules destroy_later for p_object.
+template <typename T>
+void destroy_deferred(Gd<T> p_object) {
 	uint64_t generation = 0;
-	if constexpr (has_pool<std::remove_pointer_t<P>>::value) {
+	if constexpr (has_pool<T>::value) {
 		generation = p_object->_gdpp_pool_slot.generation;
 	}
-	callable_mp_static(&destroy_later<P>).call_deferred(uint64_t(object_ptr(p_object)->get_instance_id()), generation);
+	callable_mp_static(&destroy_later<T>).call_deferred(uint64_t(p_object.ptr()->get_instance_id()), generation);
 }
 
-// defer_destroy reports whether destroy must leave p_object, of type P, to the main thread: this is another thread,
-// and it's a node in the scene tree, which only the main thread may change. Then it schedules destroy_later there.
-template <typename P>
-bool defer_destroy(P p_object) {
+// defer_destroy reports whether destroy must leave p_object to the main thread: this is another thread, and it's a
+// node in the scene tree, which only the main thread may change. Then it schedules destroy_later there.
+template <typename T>
+bool defer_destroy(Gd<T> p_object) {
 	if (on_main_thread()) {
 		return false;
 	}
-	Node *node = Object::cast_to<Node>(object_ptr(p_object));
+	Node *node = Object::cast_to<Node>(p_object.ptr());
 	if (!node || !node->is_inside_tree()) {
 		return false;
 	}
@@ -1362,103 +1449,74 @@ bool defer_destroy(P p_object) {
 
 // destroy deletes an object, which `destroy x` calls: it gives an object that a pool made back to the pool, and
 // deletes others. It does nothing for null. It's thread-safe: on other threads than the main one, it leaves nodes in
-// the scene tree to the main thread, which destroys them at the end of the frame. Refcounted objects free themselves,
-// so it doesn't take them. Destroying an object twice is a bug, except for an object that a pool made, which it keeps.
+// the scene tree to the main thread, which destroys them at the end of the frame. Destroying an object twice is a bug,
+// except for an object that a pool made, which it keeps. Refcounted objects free themselves, so it doesn't compile for
+// them.
+//   - For an extern with @factory, it calls the object's method of that name, which does what its class wants, e.g.
+//     returns the object to a pool.
+//   - For a trait, it destroys the object as its class does, e.g. with its pool.
 template <typename T>
-void destroy(T *p_object) {
-	if constexpr (std::is_base_of_v<Object, T>) {
-		if (p_object && defer_destroy(p_object)) {
-			return;
-		}
+void destroy(Gd<T> p_object) {
+	static_assert(!Gd<T>::is_refcounted(), "Refcounted objects free themselves when their last reference goes away.");
+	if (!p_object) {
+		return;
 	}
-	destroy_now(p_object);
-}
-// destroy of an extern deletes the object like above. With @factory, it calls the object's method of that name, which
-// does what its class wants, e.g. returns the object to a pool.
-template <typename T>
-void destroy(ExtPtr<T> p_object) {
-	if constexpr (ext_factory<T>().destroy != nullptr) {
-		if (p_object) {
-			p_object.base()->call(GDPP_STRING_NAME(ext_factory<T>().destroy));
-		}
-	} else if (p_object && !defer_destroy(p_object)) {
+	if constexpr (Gd<T>::is_trait()) {
+		p_object->_gdpp_destroy();
+	} else if constexpr (Gd<T>::is_extern() && ext_factory<T>().destroy != nullptr) {
+		p_object.ptr()->call(GDPP_STRING_NAME(ext_factory<T>().destroy));
+	} else if (!defer_destroy(p_object)) {
 		destroy_now(p_object);
 	}
 }
-
-// destroy of a trait destroys its object as its class does, e.g. with its pool.
+// destroy of a pointer destroys its object like a Gd. It deletes other C++ objects.
 template <typename T>
-void destroy(TraitPtr<T> p_object) {
-	if (p_object) {
-		p_object->_gdpp_destroy();
+void destroy(T *p_object) {
+	if constexpr (std::is_base_of_v<Object, T>) {
+		destroy(Gd<T>(p_object));
+	} else if (p_object) {
+		memdelete(p_object);
 	}
-}
-
-// queue_destroy destroys a node at the end of the frame, on the main thread, like queue_free, which `queue_destroy x`
-// calls. For a @pool class, it returns the node to its pool then, unless it was returned or freed before, even if the
-// pool has reused it since. For other classes, it's queue_free, which also does nothing for a node freed before. It only
-// works on nodes, from any thread, and does nothing for null.
-template <typename T>
-void queue_destroy(T *p_object) {
-	static_assert(std::is_base_of_v<Node, T>, "queue_destroy only works on nodes. Use destroy for other objects.");
-	if (!p_object) {
-		return;
-	}
-	if constexpr (has_pool<T>::value) {
-		destroy_deferred(p_object);
-	} else {
-		p_object->queue_free();
-	}
-}
-// queue_destroy of an extern is queue_free. With @factory, it calls the object's method of that name.
-template <typename T>
-void queue_destroy(ExtPtr<T> p_object) {
-	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
-	if (!p_object) {
-		return;
-	}
-	if constexpr (ext_factory<T>().queue_destroy != nullptr) {
-		p_object.base()->call(GDPP_STRING_NAME(ext_factory<T>().queue_destroy));
-	} else {
-		p_object.base()->queue_free();
-	}
-}
-// queue_destroy of a trait queues its object as its class does, e.g. with its pool.
-template <typename T>
-void queue_destroy(TraitPtr<T> p_object) {
-	static_assert(std::is_base_of_v<Node, typename T::Base>, "queue_destroy only works on nodes. Use destroy for other objects.");
-	if (p_object) {
-		p_object->_gdpp_queue_destroy();
-	}
-}
-// queue_destroy of a Ref doesn't compile: refcounted objects free themselves.
-template <typename T>
-void queue_destroy(const Ref<T> &) {
-	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
-}
-// queue_destroy of an ExtRef doesn't compile: refcounted objects free themselves.
-template <typename T>
-void queue_destroy(const ExtRef<T> &) {
-	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
-}
-// queue_destroy of a TraitRef doesn't compile: refcounted objects free themselves.
-template <typename T>
-void queue_destroy(const TraitRef<T> &) {
-	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
-}
-// destroy of a TraitRef doesn't compile: refcounted objects free themselves.
-template <typename T>
-void destroy(const TraitRef<T> &) {
-	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
 // destroy of a Ref doesn't compile: refcounted objects free themselves.
 template <typename T>
 void destroy(const Ref<T> &) {
 	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
-// destroy of an ExtRef doesn't compile: refcounted objects free themselves.
+
+// queue_destroy destroys a node at the end of the frame, on the main thread, like queue_free, which `queue_destroy x`
+// calls. For a @pool class, it returns the node to its pool then, unless it was returned or freed before, even if the
+// pool has reused it since. For other classes, it's queue_free, which also does nothing for a node freed before. It only
+// compiles for nodes, works from any thread, and does nothing for null.
+//   - For an extern with @factory, it calls the object's method of that name.
+//   - For a trait, it queues the object as its class does, e.g. with its pool.
 template <typename T>
-void destroy(const ExtRef<T> &) {
+void queue_destroy(Gd<T> p_object) {
+	static_assert(!Gd<T>::is_refcounted(), "Refcounted objects free themselves when their last reference goes away.");
+	static_assert(Gd<T>::is_refcounted() || Gd<T>::is_node(), "queue_destroy only works on nodes. Use destroy for other objects.");
+	if (!p_object) {
+		return;
+	}
+	if constexpr (Gd<T>::is_refcounted() || !Gd<T>::is_node()) {
+		// Only the static_asserts above.
+	} else if constexpr (Gd<T>::is_trait()) {
+		p_object->_gdpp_queue_destroy();
+	} else if constexpr (Gd<T>::is_extern() && ext_factory<T>().queue_destroy != nullptr) {
+		p_object.ptr()->call(GDPP_STRING_NAME(ext_factory<T>().queue_destroy));
+	} else if constexpr (has_pool<T>::value) {
+		destroy_deferred(p_object);
+	} else {
+		p_object.ptr()->queue_free();
+	}
+}
+// queue_destroy of a pointer queues its object like a Gd.
+template <typename T>
+void queue_destroy(T *p_object) {
+	queue_destroy(Gd<T>(p_object));
+}
+// queue_destroy of a Ref doesn't compile: refcounted objects free themselves.
+template <typename T>
+void queue_destroy(const Ref<T> &) {
 	static_assert(always_false<T>, "Refcounted objects free themselves when their last reference goes away.");
 }
 
@@ -1825,12 +1883,10 @@ struct Masked {
 // The runtime's names for user code, which writes them without a prefix. Generated code spells them gdpp::.
 using gdpp::Async;
 using gdpp::Emitted;
-using gdpp::Ext;
-using gdpp::ExtPtr;
-using gdpp::ExtRef;
-using gdpp::Trait;
-using gdpp::TraitPtr;
-using gdpp::TraitRef;
+using gdpp::Gd;
+using gdpp::Masked;
+using gdpp::Pool;
+using gdpp::PoolMode;
 using gdpp::Weak;
 
 // GDPP_SIGNATURE is the signature of the function it's in, e.g. "int Player::fire(int)", on the compilers that have one.
@@ -1876,135 +1932,85 @@ using gdpp::Weak;
 
 namespace godot {
 
-// Bindings see an extern as its base class. The hint names the extern, so the editor only accepts matching objects.
+// Bindings see a Gd as an object of its class: the base class for a trait or an extern. For an extern, the hint names
+// the extern, so the editor only accepts matching objects. For a trait, an object whose class doesn't implement the
+// trait becomes null.
 
 template <typename T>
-struct GetTypeInfo<gdpp::ExtPtr<T>> {
+struct GetTypeInfo<gdpp::Gd<T>> {
 	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
 	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
 	static inline PropertyInfo get_class_info() {
-		PropertyHint hint = std::is_base_of_v<Node, typename T::Base> ? PROPERTY_HINT_NODE_TYPE : PROPERTY_HINT_NONE;
-		return PropertyInfo(Variant::OBJECT, "", hint, T::gdpp_name, PROPERTY_USAGE_DEFAULT, T::Base::get_class_static());
+		using C = std::remove_cv_t<gdpp::gd_object_t<T>>;
+		if constexpr (gdpp::Gd<T>::is_extern()) {
+			PropertyHint hint = std::is_base_of_v<Node, C> ? PROPERTY_HINT_NODE_TYPE : std::is_base_of_v<Resource, C> ? PROPERTY_HINT_RESOURCE_TYPE : PROPERTY_HINT_NONE;
+			return PropertyInfo(Variant::OBJECT, "", hint, T::gdpp_name, PROPERTY_USAGE_DEFAULT, C::get_class_static());
+		} else if constexpr (gdpp::Gd<T>::is_refcounted()) {
+			return GetTypeInfo<Ref<C>>::get_class_info();
+		} else {
+			return GetTypeInfo<C *>::get_class_info();
+		}
 	}
 };
 
 template <typename T>
-struct GetTypeInfo<gdpp::ExtRef<T>> {
-	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
-	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-	static inline PropertyInfo get_class_info() {
-		PropertyHint hint = std::is_base_of_v<Resource, typename T::Base> ? PROPERTY_HINT_RESOURCE_TYPE : PROPERTY_HINT_NONE;
-		return PropertyInfo(Variant::OBJECT, "", hint, T::gdpp_name, PROPERTY_USAGE_DEFAULT, T::Base::get_class_static());
+struct PtrToArg<gdpp::Gd<T>> {
+	// What bindings pass: a Ref of the class for a refcounted object, else a pointer.
+	using Strong = std::conditional_t<gdpp::Gd<T>::is_refcounted(), Ref<std::remove_cv_t<gdpp::gd_object_t<T>>>, std::remove_cv_t<gdpp::gd_object_t<T>> *>;
+	_FORCE_INLINE_ static gdpp::Gd<T> convert(const void *p_ptr) {
+		if constexpr (gdpp::Gd<T>::is_trait()) {
+			return gdpp::Gd<T>::_gdpp_find(gdpp::object_ptr(PtrToArg<Strong>::convert(p_ptr)));
+		} else {
+			return PtrToArg<Strong>::convert(p_ptr);
+		}
+	}
+	typedef typename PtrToArg<Strong>::EncodeT EncodeT;
+	_FORCE_INLINE_ static void encode(gdpp::Gd<T> p_val, void *p_ptr) {
+		PtrToArg<Strong>::encode(Strong(p_val.ptr()), p_ptr);
 	}
 };
 
 template <typename T>
-struct PtrToArg<gdpp::ExtPtr<T>> {
-	_FORCE_INLINE_ static gdpp::ExtPtr<T> convert(const void *p_ptr) {
-		return PtrToArg<typename T::Base *>::convert(p_ptr);
-	}
-	typedef Object *EncodeT;
-	_FORCE_INLINE_ static void encode(gdpp::ExtPtr<T> p_val, void *p_ptr) {
-		PtrToArg<typename T::Base *>::encode(p_val.base(), p_ptr);
+struct VariantCaster<gdpp::Gd<T>> {
+	static _FORCE_INLINE_ gdpp::Gd<T> cast(const Variant &p_variant) {
+		if constexpr (gdpp::Gd<T>::is_trait()) {
+			return gdpp::Gd<T>::_gdpp_find(p_variant.operator Object *());
+		} else {
+			return Object::cast_to<std::remove_cv_t<gdpp::gd_object_t<T>>>(p_variant.operator Object *());
+		}
 	}
 };
+
+// Parameters take a Gd of a refcounted object as a const reference, like a Ref, so calls don't touch its refcount.
 
 template <typename T>
-struct PtrToArg<gdpp::ExtRef<T>> {
-	_FORCE_INLINE_ static gdpp::ExtRef<T> convert(const void *p_ptr) {
-		return PtrToArg<Ref<typename T::Base>>::convert(p_ptr);
-	}
-	typedef Ref<typename T::Base> EncodeT;
-	_FORCE_INLINE_ static void encode(gdpp::ExtRef<T> p_val, void *p_ptr) {
-		PtrToArg<Ref<typename T::Base>>::encode(p_val.base(), p_ptr);
-	}
-};
+struct GetTypeInfo<const gdpp::Gd<T> &> : GetTypeInfo<gdpp::Gd<T>> {};
 
 template <typename T>
-struct VariantCaster<gdpp::ExtPtr<T>> {
-	static _FORCE_INLINE_ gdpp::ExtPtr<T> cast(const Variant &p_variant) {
-		return Object::cast_to<typename T::Base>(p_variant.operator Object *());
-	}
-};
+struct PtrToArg<const gdpp::Gd<T> &> : PtrToArg<gdpp::Gd<T>> {};
 
 template <typename T>
-struct VariantCaster<gdpp::ExtRef<T>> {
-	static _FORCE_INLINE_ gdpp::ExtRef<T> cast(const Variant &p_variant) {
-		return Ref<typename T::Base>(p_variant);
-	}
-};
+struct VariantCaster<const gdpp::Gd<T> &> : VariantCaster<gdpp::Gd<T>> {};
 
-// Bindings see a trait as its base class. An object whose class doesn't implement the trait becomes null.
-
-template <typename T>
-struct GetTypeInfo<gdpp::TraitPtr<T>> {
-	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
-	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-	static inline PropertyInfo get_class_info() { return GetTypeInfo<typename T::Base *>::get_class_info(); }
-};
-
-template <typename T>
-struct GetTypeInfo<gdpp::TraitRef<T>> {
-	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
-	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-	static inline PropertyInfo get_class_info() { return GetTypeInfo<Ref<typename T::Base>>::get_class_info(); }
-};
-
-template <typename T>
-struct PtrToArg<gdpp::TraitPtr<T>> {
-	_FORCE_INLINE_ static gdpp::TraitPtr<T> convert(const void *p_ptr) {
-		return gdpp::TraitPtr<T>::find(PtrToArg<typename T::Base *>::convert(p_ptr));
-	}
-	typedef Object *EncodeT;
-	_FORCE_INLINE_ static void encode(gdpp::TraitPtr<T> p_val, void *p_ptr) {
-		PtrToArg<typename T::Base *>::encode(p_val.base(), p_ptr);
-	}
-};
-
-template <typename T>
-struct PtrToArg<gdpp::TraitRef<T>> {
-	_FORCE_INLINE_ static gdpp::TraitRef<T> convert(const void *p_ptr) {
-		return gdpp::TraitRef<T>::find(PtrToArg<Ref<typename T::Base>>::convert(p_ptr).ptr());
-	}
-	typedef Ref<typename T::Base> EncodeT;
-	_FORCE_INLINE_ static void encode(gdpp::TraitRef<T> p_val, void *p_ptr) {
-		PtrToArg<Ref<typename T::Base>>::encode(p_val.base(), p_ptr);
-	}
-};
-
-template <typename T>
-struct VariantCaster<gdpp::TraitPtr<T>> {
-	static _FORCE_INLINE_ gdpp::TraitPtr<T> cast(const Variant &p_variant) {
-		return gdpp::TraitPtr<T>::find(p_variant.operator Object *());
-	}
-};
-
-template <typename T>
-struct VariantCaster<gdpp::TraitRef<T>> {
-	static _FORCE_INLINE_ gdpp::TraitRef<T> cast(const Variant &p_variant) {
-		return gdpp::TraitRef<T>::find(p_variant.operator Object *());
-	}
-};
-
-// Bindings see a Weak<T> as a strong_t<T>: the object, or null once it's gone.
+// Bindings see a Weak<T> as a Gd<T>: the object, or null once it's gone.
 
 template <typename T>
 struct GetTypeInfo<gdpp::Weak<T>> {
 	static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_OBJECT;
 	static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
 	static inline PropertyInfo get_class_info() {
-		return GetTypeInfo<gdpp::strong_t<T>>::get_class_info();
+		return GetTypeInfo<gdpp::Gd<T>>::get_class_info();
 	}
 };
 
 template <typename T>
 struct PtrToArg<gdpp::Weak<T>> {
 	_FORCE_INLINE_ static gdpp::Weak<T> convert(const void *p_ptr) {
-		return PtrToArg<gdpp::strong_t<T>>::convert(p_ptr);
+		return PtrToArg<gdpp::Gd<T>>::convert(p_ptr);
 	}
-	typedef typename PtrToArg<gdpp::strong_t<T>>::EncodeT EncodeT;
+	typedef typename PtrToArg<gdpp::Gd<T>>::EncodeT EncodeT;
 	_FORCE_INLINE_ static void encode(gdpp::Weak<T> p_val, void *p_ptr) {
-		PtrToArg<gdpp::strong_t<T>>::encode(p_val, p_ptr);
+		PtrToArg<gdpp::Gd<T>>::encode(p_val, p_ptr);
 	}
 };
 

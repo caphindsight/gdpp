@@ -7,12 +7,15 @@
 
 namespace godot {
 
+class Counter;
+gdpp::kind::RefCounted gdpp_kind(Counter *);
+
 #define This Counter
 class Counter : public RefCounted {
 	GDCLASS(Counter, RefCounted)
 
 public:
-	static Ref<Counter> create();
+	static gdpp::Gd<Counter> create();
 
 protected:
 	static void _bind_methods();

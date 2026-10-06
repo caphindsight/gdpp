@@ -66,10 +66,10 @@ The slow function:
 ```gd++
 func nearest_ally() -> Node3D {
   TypedArray<Node> allies = get_tree()->get_nodes_in_group(string_name "enemies");
-  Node3D *best = nullptr;
+  Gd<Node3D> best;
   double best_distance = INFINITY;
   for (int64_t i = 0; i < allies.size(); i++) {
-    Node3D *ally = allies[i] as Node3D *;
+    Gd<Node3D> ally = allies[i] as Gd<Node3D>;
     double distance = get_global_position().distance_squared_to(ally->get_global_position());
     if (ally != this && distance < best_distance) {
       best = ally;
@@ -104,13 +104,13 @@ extends Node3D
 
 decl {
  public:
-  std::vector<Node3D *> members;
+  std::vector<Gd<Node3D>> members;
   std::vector<Vector3> positions;
 }
 
 on physics_process(delta: float) {
   positions.clear();
-  for (Node3D *member : members) {
+  for (Gd<Node3D> member : members) {
     positions.push_back(member->get_global_position());
   }
 }
@@ -131,7 +131,7 @@ Then `nearest_ally` is a loop over a `std::vector` of `Vector3`, without a singl
 ```gd++
 func nearest_ally() -> Node3D {
   Vector3 here = get_global_position();
-  Node3D *best = nullptr;
+  Gd<Node3D> best;
   double best_distance = INFINITY;
   for (size_t i = 0; i < horde->positions.size(); i++) {
     double distance = here.distance_squared_to(horde->positions[i]);

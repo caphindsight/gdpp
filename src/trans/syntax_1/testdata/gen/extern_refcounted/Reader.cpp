@@ -9,14 +9,14 @@ namespace godot {
 void Reader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_config"), &Reader::get_config);
 	ClassDB::bind_method(D_METHOD("set_config", "value"), &Reader::set_config);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtRef<Config>>("config", PROPERTY_USAGE_NONE), "set_config", "get_config");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Config>>("config", PROPERTY_USAGE_NONE), "set_config", "get_config");
 }
 
-gdpp::ExtRef<Config> Reader::get_config() const {
+gdpp::Gd<Config> Reader::get_config() const {
 	return config;
 }
 
-void Reader::set_config(gdpp::ExtRef<Config> p_value) {
+void Reader::set_config(const gdpp::Gd<Config> &p_value) {
 	config = p_value;
 }
 

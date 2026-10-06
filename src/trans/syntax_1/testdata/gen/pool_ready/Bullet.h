@@ -9,15 +9,18 @@
 
 namespace godot {
 
+class Bullet;
+gdpp::kind::Object gdpp_kind(Bullet *);
+
 #define This Bullet
 class Bullet : public Node3D {
 	GDCLASS(Bullet, Node3D)
 
 public:
-	MeshInstance3D *mesh{};
-	Node3D *trail{};
+	gdpp::Gd<MeshInstance3D> mesh{};
+	gdpp::Gd<Node3D> trail{};
 	Vector3 start{};
-	Node *sound{};
+	gdpp::Gd<Node> sound{};
 	int64_t hits{};
 
 public:
@@ -29,14 +32,14 @@ public:
 	void _gdpp_recycle_dtor();
 	void _gdpp_body__ready();
 	void _gdpp_body__notification(int64_t what);
-	MeshInstance3D *get_mesh() const;
-	void set_mesh(MeshInstance3D *p_value);
-	Node3D *get_trail() const;
-	void set_trail(Node3D *p_value);
+	gdpp::Gd<MeshInstance3D> get_mesh() const;
+	void set_mesh(gdpp::Gd<MeshInstance3D> p_value);
+	gdpp::Gd<Node3D> get_trail() const;
+	void set_trail(gdpp::Gd<Node3D> p_value);
 	Vector3 get_start() const;
 	void set_start(const Vector3 &p_value);
-	Node *get_sound() const;
-	void set_sound(Node *p_value);
+	gdpp::Gd<Node> get_sound() const;
+	void set_sound(gdpp::Gd<Node> p_value);
 	int64_t get_hits() const;
 	void set_hits(int64_t p_value);
 

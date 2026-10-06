@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Bow;
+gdpp::kind::RefCounted gdpp_kind(Bow *);
+
 #define This Bow
 class Bow : public Item {
 	GDCLASS(Bow, Item)

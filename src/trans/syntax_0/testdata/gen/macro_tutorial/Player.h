@@ -10,6 +10,8 @@
 namespace godot {
 
 enum class PlayerState : int64_t;
+class Player;
+gdpp::kind::Object gdpp_kind(Player *);
 
 enum _gdpp_Player_PlayerState : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Player_PlayerState, "Player.PlayerState")
@@ -23,8 +25,8 @@ public:
 	double jump_speed{};
 	double gravity{};
 	double attack_time{};
-	AnimationPlayer *animation{};
-	Area2D *hitbox{};
+	gdpp::Gd<AnimationPlayer> animation{};
+	gdpp::Gd<Area2D> hitbox{};
 	PlayerState state{};
 	double state_time{};
 
@@ -53,10 +55,10 @@ public:
 	void set_gravity(double p_value);
 	double get_attack_time() const;
 	void set_attack_time(double p_value);
-	AnimationPlayer *get_animation() const;
-	void set_animation(AnimationPlayer *p_value);
-	Area2D *get_hitbox() const;
-	void set_hitbox(Area2D *p_value);
+	gdpp::Gd<AnimationPlayer> get_animation() const;
+	void set_animation(gdpp::Gd<AnimationPlayer> p_value);
+	gdpp::Gd<Area2D> get_hitbox() const;
+	void set_hitbox(gdpp::Gd<Area2D> p_value);
 	PlayerState get_state() const;
 	void set_state(PlayerState p_value);
 	double get_state_time() const;

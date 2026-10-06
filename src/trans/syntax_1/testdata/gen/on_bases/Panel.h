@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Panel;
+gdpp::kind::Object gdpp_kind(Panel *);
+
 #define This Panel
 class Panel : public Control {
 	GDCLASS(Panel, Control)

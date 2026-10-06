@@ -7,13 +7,16 @@
 
 namespace godot {
 
+class Bullet;
+gdpp::kind::Object gdpp_kind(Bullet *);
+
 #define This Bullet
 class Bullet : public Node3D {
 	GDCLASS(Bullet, Node3D)
 
 public:
 	static constexpr gdpp::Scene<Bullet> _gdpp_scene{ "res://addons/foo/scenes/bullet.tscn" };
-	static Bullet *spawn();
+	static gdpp::Gd<Bullet> spawn();
 	void despawn();
 	static void evict_scene();
 	void fire();

@@ -47,7 +47,7 @@ func TestCompile(t *testing.T) {
 	os.MkdirAll(filepath.Join(include, "gd++"), 0o755)
 	os.WriteFile(filepath.Join(include, RuntimeHeaderName), []byte(RuntimeHeader), 0o644)
 	for name, text := range stubs {
-		text = "#pragma once\n\n#include <gd++/syntax_1.hpp>\n\nnamespace godot {\n\n" + text + "\n} // namespace godot\n"
+		text = "#pragma once\n\n#include <gd++/syntax_1.hpp>\n#include <godot_cpp/classes/node3d.hpp>\n\nnamespace godot {\n\n" + text + "\n} // namespace godot\n"
 		os.WriteFile(filepath.Join(include, name), []byte(text), 0o644)
 	}
 	// Headers too, since those of externs and enums have no source that includes them.

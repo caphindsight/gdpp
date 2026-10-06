@@ -64,7 +64,7 @@ func _score() -> int
   `destroy` keeps objects in a pool instead of deleting them, and `create` reuses them. Only for classes that extend `Node`. See `gd++ man pools`.
   - Scripts use the class's `@factory` methods for the same.
   - `@factory_pool` declares methods that make objects ahead of time, and drop them all.
-  - With SIZE, a positive integer: the pool holds up to SIZE objects. `create` returns `nullptr` once all of them are in use, so code must check its result. `"fixed"` is the same.
+  - With SIZE, a positive integer: the pool holds up to SIZE objects. `create` returns null once all of them are in use, so code must check its result. `"fixed"` is the same.
   - With `"grow"`: the pool makes more objects then. In debug builds, it logs an error when it grows past SIZE objects, and again past each double of that.
 
 @scene(PATH)

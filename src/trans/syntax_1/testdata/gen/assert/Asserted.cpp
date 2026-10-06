@@ -11,7 +11,7 @@ void Asserted::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("aim"), &Asserted::aim);
 	ClassDB::bind_method(D_METHOD("get_target"), &Asserted::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Asserted::set_target);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node3D *>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node3D>>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
 }
 
 int64_t Asserted::fire(int64_t count) {
@@ -37,11 +37,11 @@ void Asserted::aim() {
 #line 38 "Asserted.cpp"
 }
 
-Node3D *Asserted::get_target() const {
+gdpp::Gd<Node3D> Asserted::get_target() const {
 	return target;
 }
 
-void Asserted::set_target(Node3D *p_value) {
+void Asserted::set_target(gdpp::Gd<Node3D> p_value) {
 	target = p_value;
 }
 

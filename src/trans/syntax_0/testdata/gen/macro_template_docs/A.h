@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class A;
+gdpp::kind::Object gdpp_kind(A *);
+
 #define This A
 class A : public Node {
 	GDCLASS(A, Node)

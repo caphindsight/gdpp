@@ -8,26 +8,31 @@
 namespace godot {
 
 class Road;
+gdpp::kind::Extern gdpp_kind(Road *);
 class Settings;
+gdpp::kind::RefCountedExtern gdpp_kind(Settings *);
 class Terrain2;
+gdpp::kind::Extern gdpp_kind(Terrain2 *);
+class User;
+gdpp::kind::Object gdpp_kind(User *);
 
 #define This User
 class User : public Node {
 	GDCLASS(User, Node)
 
 public:
-	gdpp::ExtPtr<Terrain2> terrain{};
-	gdpp::ExtRef<Settings> settings{};
-	gdpp::ExtPtr<Road> other{};
+	gdpp::Gd<Terrain2> terrain{};
+	gdpp::Gd<Settings> settings{};
+	gdpp::Gd<Road> other{};
 
 public:
 	void use();
-	gdpp::ExtPtr<Terrain2> get_terrain() const;
-	void set_terrain(gdpp::ExtPtr<Terrain2> p_value);
-	gdpp::ExtRef<Settings> get_settings() const;
-	void set_settings(gdpp::ExtRef<Settings> p_value);
-	gdpp::ExtPtr<Road> get_other() const;
-	void set_other(gdpp::ExtPtr<Road> p_value);
+	gdpp::Gd<Terrain2> get_terrain() const;
+	void set_terrain(gdpp::Gd<Terrain2> p_value);
+	gdpp::Gd<Settings> get_settings() const;
+	void set_settings(const gdpp::Gd<Settings> &p_value);
+	gdpp::Gd<Road> get_other() const;
+	void set_other(gdpp::Gd<Road> p_value);
 
 protected:
 	static void _bind_methods();

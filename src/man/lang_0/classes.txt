@@ -85,33 +85,32 @@ Godot has two kinds of classes:
 
 - Refcounted: `RefCounted` and every class that extends it, e.g. `Resource`, `Texture2D` or `Stats` above.
   - Godot deletes the object when its last reference goes away.
-  - In C++, GD++ uses references, e.g. `Ref<Stats>`.
 - Not refcounted: `Object` and every class that extends it but not `RefCounted`, e.g. `Node` and all nodes.
   - You delete the object yourself, e.g. with `destroy` or `queue_destroy`.
-  - In C++, GD++ uses pointers, e.g. `Player *`.
-- A GD++ class is refcounted if its base is. See `gd++ man types`.
+- A GD++ class is refcounted if its base is.
+- In C++, GD++ holds both kinds as a `Gd<T>`, e.g. `Gd<Stats>` or `Gd<Player>`. For a refcounted class, it's a reference that keeps the object alive. For others, it's a plain pointer. See `gd++ man gd`.
 
 In C++ code, `create` creates an object of any class, yours or Godot's, and `destroy` deletes it:
 
 ```gd++
-Bullet *bullet = create Bullet;            // an object
+Gd<Bullet> bullet = create Bullet;       // an object
 add_child(bullet);
-destroy bullet;                            // deletes it
+destroy bullet;                          // deletes it
 
-Ref<Stats> stats = create Stats;           // a refcounted object, deleted with its last reference
-auto mesh = create ArrayMesh;              // a Ref<ArrayMesh>
+Gd<Stats> stats = create Stats;          // a refcounted object, deleted with its last reference
+auto mesh = create ArrayMesh;            // a Gd<ArrayMesh>
 ```
 
 `create T`:
 
-- Gives what GD++ uses for `T`: a pointer, a `Ref` for refcounted classes, or an `Ext` for externs (see `gd++ man externs`).
+- Gives a `Gd<T>`, for a class or an extern (see `gd++ man externs`).
 - For a `@pool` class, takes an object from the class's pool. See `gd++ man pools`.
 
 `destroy OBJECT`:
 
 - For a `@pool` class, gives the object back to its pool.
 - Does nothing with null.
-- Doesn't compile for references, since refcounted objects delete themselves.
+- Doesn't compile for refcounted objects, since they delete themselves.
 - Never `destroy` an object twice, except one that a pool made. The second time, the object is already deleted: it's a bug, like deleting it twice in C++. When unsure, use `queue_destroy`.
 - Works on any thread. On threads other than the main one, nodes in the scene tree are left to the main thread, which destroys them at the end of the frame, since only the main thread may change the tree.
 
@@ -121,7 +120,7 @@ auto mesh = create ArrayMesh;              // a Ref<ArrayMesh>
 - For a `@pool` class, returns the node to its pool then. It does nothing if the node was returned or freed before, even if the pool has reused it since.
 - For other classes, it's simply `queue_free()`, at no extra cost.
 - So prefer it to `queue_free()`: it keeps working if the class gets a `@pool` later.
-- Only works on nodes.
+- Only works on nodes: for other objects, it doesn't compile.
 - Works on any thread.
 - Queueing the same node twice is fine.
 
@@ -376,7 +375,7 @@ extends Area3D
 ```
 
 ```gd++
-Bullet *bullet = create Bullet;    // the root of bullet.tscn, with its children
+Gd<Bullet> bullet = create Bullet;   // the root of bullet.tscn, with its children
 add_child(bullet);
 ```
 
@@ -507,7 +506,7 @@ In a class's C++ code, `This` is the class's name, like `Self` in Rust:
 
 ```gd++
 func clone() -> Player {
-  This *copy = create This;
+  Gd<This> copy = create This;
   copy->speed = speed;
   return copy;
 }
@@ -557,7 +556,7 @@ extends Node3D
 @export var scene: PackedScene
 
 func spawn() -> Node3D {
-  Node3D *node = scene->instantiate() as Node3D *;
+  Gd<Node3D> node = scene->instantiate() as Gd<Node3D>;
   add_child(node);
   return node;
 }

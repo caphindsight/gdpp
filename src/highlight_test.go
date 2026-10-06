@@ -27,6 +27,8 @@ func TestHighlightCode(t *testing.T) {
 			Styled("is_done", CodeKeyword) + " t;"},
 		{"gd++", "cancel t; t.cancel();", Styled("cancel", CodeKeyword) + " t; t." + Styled("cancel", CodeFunction) + "();"},
 		{"gd++", "n = x as Node3D *;", "n = x " + Styled("as", CodeKeyword) + " " + Styled("Node3D", CodeType) + " *;"},
+		{"gd++", "Gd<Node3D> n = x as Gd<Damageable>;", Styled("Gd", CodeKeyword) + "<" + Styled("Node3D", CodeType) + "> n = x " + Styled("as", CodeKeyword) + " " +
+			Styled("Gd", CodeKeyword) + "<" + Styled("Damageable", CodeType) + ">;"},
 		{"gd++", "as = x;", "as = x;"},
 		{"gd++", "memnew(Node); memdelete(a); new Node; delete a;", "memnew(" + Styled("Node", CodeType) + "); memdelete(a); new " + Styled("Node", CodeType) + "; delete a;"},
 		{"gd++", "queue_destroy b; n->queue_destroy(1);", Styled("queue_destroy", CodeKeyword) + " b; n->" + Styled("queue_destroy", CodeFunction) + "(" +

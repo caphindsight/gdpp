@@ -10,6 +10,8 @@ namespace godot {
 enum class Hard : int64_t;
 enum class Mode : int64_t;
 enum class Result : int64_t;
+class Board;
+gdpp::kind::Object gdpp_kind(Board *);
 
 enum _gdpp_Board_Result : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Board_Result, "Board.Result")

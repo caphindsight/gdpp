@@ -23,7 +23,7 @@ extern Stats {
 func fire() -> void {
   auto bullet = create Bullet;
   if (bullet) {
-    add_child(bullet.base());
+    add_child(bullet);
   }
   auto spark = create Spark;
   auto shard = create Shard;

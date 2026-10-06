@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Spark;
+gdpp::kind::Object gdpp_kind(Spark *);
+
 #define This Spark
 class Spark : public Node {
 	GDCLASS(Spark, Node)

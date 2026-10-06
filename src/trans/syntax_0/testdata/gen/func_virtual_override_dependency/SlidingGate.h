@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class SlidingGate;
+gdpp::kind::Object gdpp_kind(SlidingGate *);
+
 #define This SlidingGate
 class SlidingGate : public Gate {
 	GDCLASS(SlidingGate, Gate)

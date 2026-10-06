@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Terrain : int64_t;
+class Pathfinder;
+gdpp::kind::Object gdpp_kind(Pathfinder *);
 
 enum _gdpp_Pathfinder_Terrain : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Pathfinder_Terrain, "Pathfinder.Terrain")

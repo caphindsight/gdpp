@@ -4,14 +4,25 @@
 
 #include <gd++/syntax_1.hpp>
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/resource.hpp>
 
 namespace godot {
 
+class Hero;
+gdpp::kind::Object gdpp_kind(Hero *);
 enum class Level : int64_t;
 enum class Mode : int64_t;
+class Named;
+gdpp::kind::RefCountedTrait gdpp_kind(Named *);
 class Road;
+gdpp::kind::Extern gdpp_kind(Road *);
+class Saveable;
+gdpp::kind::Trait gdpp_kind(Saveable *);
 class Settings;
+gdpp::kind::RefCountedExtern gdpp_kind(Settings *);
+class Caster;
+gdpp::kind::Object gdpp_kind(Caster *);
 
 enum _gdpp_Caster_Mode : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Caster_Mode, "Caster.Mode")
@@ -26,22 +37,28 @@ class Caster : public Node {
 public:
 	Mode mode{};
 	Level level{};
-	gdpp::ExtPtr<Road> road{};
-	gdpp::ExtRef<Settings> settings{};
+	gdpp::Gd<Road> road{};
+	gdpp::Gd<Settings> settings{};
 	gdpp::Async<int64_t> task{};
+	gdpp::Gd<Saveable> saved{};
+	gdpp::Gd<Named> named{};
 
 public:
-	int64_t convert(Node *node, const Ref<Resource> &resource, const Variant &value);
+	int64_t convert(gdpp::Gd<Node> node, const gdpp::Gd<Resource> &resource, const Variant &value, gdpp::Gd<Hero> hero, gdpp::Weak<Node3D> weak);
 	Mode get_mode() const;
 	void set_mode(Mode p_value);
 	Level get_level() const;
 	void set_level(Level p_value);
-	gdpp::ExtPtr<Road> get_road() const;
-	void set_road(gdpp::ExtPtr<Road> p_value);
-	gdpp::ExtRef<Settings> get_settings() const;
-	void set_settings(gdpp::ExtRef<Settings> p_value);
+	gdpp::Gd<Road> get_road() const;
+	void set_road(gdpp::Gd<Road> p_value);
+	gdpp::Gd<Settings> get_settings() const;
+	void set_settings(const gdpp::Gd<Settings> &p_value);
 	gdpp::Async<int64_t> get_task() const;
 	void set_task(gdpp::Async<int64_t> p_value);
+	gdpp::Gd<Saveable> get_saved() const;
+	void set_saved(gdpp::Gd<Saveable> p_value);
+	gdpp::Gd<Named> get_named() const;
+	void set_named(const gdpp::Gd<Named> &p_value);
 
 protected:
 	static void _bind_methods();
@@ -56,7 +73,10 @@ private:
 
 } // namespace godot
 
+#include "Hero.h"
 #include "Level.h"
 #include "Mode.h"
+#include "Named.h"
 #include "Road.h"
+#include "Saveable.h"
 #include "Settings.h"

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Ticker;
+gdpp::kind::Object gdpp_kind(Ticker *);
+
 #define This Ticker
 class Ticker : public Node {
 	GDCLASS(Ticker, Node)

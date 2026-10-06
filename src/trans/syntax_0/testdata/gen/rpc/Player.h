@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Team : int64_t;
+class Player;
+gdpp::kind::Object gdpp_kind(Player *);
 
 enum _gdpp_Player_Team : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Player_Team, "Player.Team")
@@ -24,7 +26,7 @@ public:
 	Error _gdpp_rpc_take_damage(int64_t p_peer, int64_t amount, Team from);
 	int64_t sync_position(const Vector3 &pos);
 	Error _gdpp_rpc_sync_position(int64_t p_peer, const Vector3 &pos);
-	void hit(int64_t peer, Player *other);
+	void hit(int64_t peer, gdpp::Gd<Player> other);
 
 protected:
 	static void _bind_methods();

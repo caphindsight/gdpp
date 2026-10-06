@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Table;
+gdpp::kind::Object gdpp_kind(Table *);
+
 #define This Table
 class Table : public Node {
 	GDCLASS(Table, Node)
@@ -16,7 +19,7 @@ private:
 
   static constexpr int64_t DAMAGE[] = {10, 20, 40};
 
-#line 20 "Table.h"
+#line 23 "Table.h"
 
 public:
 	int64_t damage(int64_t level);

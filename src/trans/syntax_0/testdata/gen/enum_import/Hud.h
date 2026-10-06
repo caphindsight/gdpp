@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Level : int64_t;
+class Hud;
+gdpp::kind::RefCounted gdpp_kind(Hud *);
 
 enum _gdpp_Hud_Level : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Hud_Level, "Hud.Level")

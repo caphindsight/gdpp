@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Weapon;
+gdpp::kind::Object gdpp_kind(Weapon *);
+
 #define This Weapon
 class Weapon : public Node3D {
 	GDCLASS(Weapon, Node3D)

@@ -36,14 +36,13 @@ class Crate {
   }
 
   func hit(body: Node3D) -> void {
-    Trait<Damageable> target = body as Trait<Damageable>;
-    if (target) {
+    if (auto target = body as Gd<Damageable>) {
       target->take_damage(1);
     }
   }
 
   func find(target: Damageable) -> Labeled {
-    return target as Trait<Labeled>;
+    return target as Gd<Labeled>;
   }
 }
 

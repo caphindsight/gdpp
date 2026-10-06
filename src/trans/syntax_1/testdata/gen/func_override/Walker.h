@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Walker;
+gdpp::kind::Object gdpp_kind(Walker *);
+
 #define This Walker
 class Walker : public Player {
 	GDCLASS(Walker, Player)

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Sections;
+gdpp::kind::Object gdpp_kind(Sections *);
+
 #define This Sections
 class Sections : public Node {
 	GDCLASS(Sections, Node)

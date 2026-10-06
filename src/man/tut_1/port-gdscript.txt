@@ -66,7 +66,7 @@ on process(delta: float) {
 }
 
 func _on_body_entered(body: Node2D) -> void {
-  Player *player = body as Player *;
+  Gd<Player> player = body as Gd<Player>;
   if (!player) {
     return;
   }
@@ -78,10 +78,10 @@ func _on_body_entered(body: Node2D) -> void {
 
 What changed:
 
-- Objects are pointers, so members are reached with `->`: `sprite->...`. Refcounted objects, e.g. resources, are `Ref<T>`, and use `->` too. See `gd++ man types`.
+- Objects are `Gd<T>`s, which work like pointers, so members are reached with `->`: `sprite->...`. That goes for every object, nodes and resources alike. See `gd++ man gd`.
 - `queue_free()` becomes `queue_destroy this;`. It does the same, and keeps working if the class later gets `@pool`. With `@factory` on the class, scripts call `Coin.create()` and `coin.queue_destroy()` for the same. See `gd++ man classes`.
 - Engine properties are getters and setters in C++: `sprite.rotation += x` becomes `sprite->set_rotation(sprite->get_rotation() + x)`. Your own GD++ variables are plain fields, so `player->score += value` works.
-- `as` casts like in GDScript, but names a C++ type: `body as Player *`. A failed downcast gives `nullptr`. See `gd++ man cast`.
+- `as` casts like in GDScript, but names a C++ type: `body as Gd<Player>`. A failed downcast gives null. See `gd++ man cast`.
 - Signals are sent with `emit NAME(ARGS);`. See `gd++ man signals`.
 - `func _process(delta)` becomes `on process(delta: float)`, `func _ready()` becomes `on ready`, and the like. `on` blocks add to the base's, and scripts can't replace them. See `gd++ man notifications`.
 - Other virtual functions of the engine, e.g. `_unhandled_input`, need `@override`. See `gd++ man functions`.
@@ -145,7 +145,7 @@ Compiler errors in your bodies point to the lines of `coin.gd++`. Once it builds
 - Connect in code only where the scene can't, e.g. for nodes that the code creates. Then use `connect`, with `callable_mp` for a function of the class, and `This` for the class's name:
 
 ```gd++
-Coin *coin = create Coin;
+Gd<Coin> coin = create Coin;
 coin->connect(string_name "collected", callable_mp(this, &This::_on_coin_collected));
 add_child(coin);
 ```
@@ -194,20 +194,20 @@ func f(): pass                      func f() {}
 print(a, b)                         gd::print(a, b)
 node.position = p                   node->set_position(p)
 $Hud/Score  (in a body)             get_node<Label>("Hud/Score")
-body as Player                      body as Player *
+body as Player                      body as Gd<Player>
 sig.emit(a)                         emit sig(a);
 sig.connect(f)                      connect in the scene, or if you can't:
                                     connect(string_name "sig", callable_mp(this, &This::f))
 Input.is_action_pressed("jump")     Input::get_singleton()->is_action_pressed(string_name "jump")
 load("res://bullet.tscn")           ResourceLoader::get_singleton()->load("res://bullet.tscn")
-scene.instantiate()                 scene->instantiate() as Bullet *
+scene.instantiate()                 scene->instantiate() as Gd<Bullet>
 Bullet.new()                        create Bullet
 bullet.queue_free()                 queue_destroy bullet
-is_instance_valid(enemy)            Enemy *e = enemy, with enemy a Weak[Enemy]
+is_instance_valid(enemy)            Gd<Enemy> e = enemy, with enemy a Weak[Enemy]
 preload(PATH).instantiate()         create Bullet, with @scene(PATH) on Bullet
                                     (and with @factory, scripts call Bullet.create())
 assert(x > 0)                       assert x > 0;
-body.has_method("hit")              body as Trait<Hittable>, with a trait Hittable
+body.has_method("hit")              body as Gd<Hittable>, with a trait Hittable
 ```
 
 # See also

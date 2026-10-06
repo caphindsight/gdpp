@@ -148,7 +148,7 @@ The player finds out which item it touched with a cast. In `player.tscn`, add an
 signal picked_up(item: Pickup)
 
 func _on_grabber_entered(node: Node3D) -> void {
-  Trait<Pickup> item = node as Trait<Pickup>;
+  Gd<Pickup> item = node as Gd<Pickup>;
   if (item && item->apply(this)) {
     emit picked_up(item);
     queue_destroy item;
@@ -158,8 +158,8 @@ func _on_grabber_entered(node: Node3D) -> void {
 
 In the Node dock, connect both of the grabber's signals, `area_entered` and `body_entered`, to `_on_grabber_entered`. Coins and health packs are areas, and keys are bodies.
 
-- In C++ code, `Trait<Pickup>` is the type of a trait value.
-- `node as Trait<Pickup>` gives the item, or null if the node's class doesn't implement `Pickup`, e.g. for a wall.
+- In C++ code, `Gd<Pickup>` is the type of a trait value, like for any object. See `gd++ man gd`.
+- `node as Gd<Pickup>` gives the item, or null if the node's class doesn't implement `Pickup`, e.g. for a wall.
 - `item->apply(this)` calls the item's own `apply`, whatever its class.
 - `queue_destroy item` does what it does for the item's class, e.g. returns it to its pool if it has one. See `gd++ man pools`.
 - The player's code doesn't name `Coin`, `HealthPack` or `Key`. A new item needs no change here.
@@ -176,8 +176,8 @@ The magnet pulls every item near the player towards them. The `@group` from step
 func pull_items(delta: float) -> void {
   TypedArray<Node> items = get_tree()->get_nodes_in_group(string_name "pickups");
   for (int64_t i = 0; i < items.size(); i++) {
-    Trait<Pickup> item = items[i] as Trait<Pickup>;
-    if (item && item.base()->get_global_position().distance_to(get_global_position()) <= magnet_radius) {
+    Gd<Pickup> item = items[i] as Gd<Pickup>;
+    if (item && item.ptr()->get_global_position().distance_to(get_global_position()) <= magnet_radius) {
       item->attract(get_global_position(), delta);
     }
   }
@@ -187,7 +187,7 @@ func pull_items(delta: float) -> void {
 Call `pull_items(delta)` from the player's `on physics_process`.
 
 - The cast from the array's `Variant` is checked. It's cheap, but not free: a loop like this is fine for a few dozen items.
-- `item.base()` gives the item as its base class, `Node3D *`, for the functions of `Node3D`.
+- `item.ptr()` gives the item as its base class, `Node3D *`, for the functions of `Node3D`.
 - Coins and health packs move with the default `attract`, and keys with their own.
 
 # 5. Use items from scripts

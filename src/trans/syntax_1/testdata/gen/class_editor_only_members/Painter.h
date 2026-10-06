@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Kind : int64_t;
+class Painter;
+gdpp::kind::Object gdpp_kind(Painter *);
 
 enum _gdpp_Painter_Kind : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Painter_Kind, "Painter.Kind")

@@ -10,7 +10,7 @@ namespace godot {
 void Radar::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_camera"), &Radar::get_camera);
 	ClassDB::bind_method(D_METHOD("set_camera", "value"), &Radar::set_camera);
-	ClassDB::add_property(get_class_static(), gdpp::info<Camera3D *>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Camera3D>>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
 }
 
 Radar::Radar() {
@@ -107,11 +107,11 @@ void Radar::_gdpp_body__draw() {
 #line 108 "Radar.cpp"
 }
 
-Camera3D *Radar::get_camera() const {
+gdpp::Gd<Camera3D> Radar::get_camera() const {
 	return camera;
 }
 
-void Radar::set_camera(Camera3D *p_value) {
+void Radar::set_camera(gdpp::Gd<Camera3D> p_value) {
 	camera = p_value;
 }
 

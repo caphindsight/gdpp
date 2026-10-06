@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Player;
+gdpp::kind::Object gdpp_kind(Player *);
+
 #define This Player
 class Player : public Node {
 	GDCLASS(Player, Node)
@@ -18,10 +21,10 @@ public:
 private:
 #line 5 "input.gd++"
 int64_t health_ = 100;
-#line 22 "Player.h"
+#line 25 "Player.h"
 #line 6 "input.gd++"
 int64_t mana_ = 50;
-#line 25 "Player.h"
+#line 28 "Player.h"
 
 public:
 	Player();

@@ -9,6 +9,9 @@
 
 namespace godot {
 
+class Stats;
+gdpp::kind::RefCounted gdpp_kind(Stats *);
+
 #define This Stats
 class Stats : public RefCounted {
 	GDCLASS(Stats, RefCounted)
@@ -18,8 +21,8 @@ public:
 	double speed{};
 	String name{};
 	Variant anything{};
-	Node3D *target{};
-	Ref<Texture2D> texture{};
+	gdpp::Gd<Node3D> target{};
+	gdpp::Gd<Texture2D> texture{};
 
 public:
 	Stats();
@@ -31,10 +34,10 @@ public:
 	void set_name(const String &p_value);
 	Variant get_anything() const;
 	void set_anything(const Variant &p_value);
-	Node3D *get_target() const;
-	void set_target(Node3D *p_value);
-	Ref<Texture2D> get_texture() const;
-	void set_texture(const Ref<Texture2D> &p_value);
+	gdpp::Gd<Node3D> get_target() const;
+	void set_target(gdpp::Gd<Node3D> p_value);
+	gdpp::Gd<Texture2D> get_texture() const;
+	void set_texture(const gdpp::Gd<Texture2D> &p_value);
 
 protected:
 	static void _bind_methods();

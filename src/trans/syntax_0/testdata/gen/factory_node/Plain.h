@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Plain;
+gdpp::kind::Object gdpp_kind(Plain *);
+
 #define This Plain
 class Plain : public Object {
 	GDCLASS(Plain, Object)

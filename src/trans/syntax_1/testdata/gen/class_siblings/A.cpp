@@ -10,10 +10,10 @@ void A::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("make_c"), &A::make_c);
 	ClassDB::bind_method(D_METHOD("get_b"), &A::get_b);
 	ClassDB::bind_method(D_METHOD("set_b", "value"), &A::set_b);
-	ClassDB::add_property(get_class_static(), gdpp::info<B *>("b", PROPERTY_USAGE_NONE), "set_b", "get_b");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<B>>("b", PROPERTY_USAGE_NONE), "set_b", "get_b");
 }
 
-Ref<C> A::make_c() {
+gdpp::Gd<C> A::make_c() {
 #line 5 "input.gd++"
 
     return gdpp::create<C>();
@@ -21,11 +21,11 @@ Ref<C> A::make_c() {
 #line 22 "A.cpp"
 }
 
-B *A::get_b() const {
+gdpp::Gd<B> A::get_b() const {
 	return b;
 }
 
-void A::set_b(B *p_value) {
+void A::set_b(gdpp::Gd<B> p_value) {
 	b = p_value;
 }
 

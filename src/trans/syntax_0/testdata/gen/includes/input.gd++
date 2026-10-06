@@ -5,11 +5,11 @@ import MeshInstance3D
 noimport MeshInstance2D
 
 decl {
-  Camera3D *camera_ = nullptr;
+  Gd<Camera3D> camera_;
 }
 
 func ready() -> void {
   if (Engine::get_singleton()->is_editor_hint()) return;
-  MeshInstance2D *m = nullptr;
-  Texture2D *t = nullptr;
+  Gd<MeshInstance2D> m;
+  Gd<Texture2D> t;
 }

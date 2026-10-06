@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Pool;
+gdpp::kind::Object gdpp_kind(Pool *);
+
 #define This Pool
 class Pool : public Node {
 	GDCLASS(Pool, Node)

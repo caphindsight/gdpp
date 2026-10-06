@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Bullet;
+gdpp::kind::Object gdpp_kind(Bullet *);
+
 #define This Bullet
 class Bullet : public Node3D {
 	GDCLASS(Bullet, Node3D)
@@ -24,7 +27,7 @@ public:
 	gdpp::PoolSlot<Bullet> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	static Bullet *create();
+	static gdpp::Gd<Bullet> create();
 	void destroy();
 	void queue_destroy();
 	static void pool_reserve(int64_t p_count = 100, const String &p_mode = String());

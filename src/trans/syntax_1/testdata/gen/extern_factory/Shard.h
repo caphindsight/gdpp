@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Shard;
+gdpp::kind::Extern gdpp_kind(Shard *);
+
 class Shard : public Spark {
 public:
 	static constexpr const char *gdpp_name = "Shard";

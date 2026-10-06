@@ -8,6 +8,9 @@
 namespace godot {
 
 class B;
+gdpp::kind::RefCountedExtern gdpp_kind(B *);
+class A;
+gdpp::kind::Extern gdpp_kind(A *);
 
 class A {
 public:
@@ -17,9 +20,9 @@ public:
 	explicit A(Base *p_object) :
 			_gdpp_base(p_object) {}
 
-	gdpp::ExtRef<B> b() const;
-	gdpp::ExtRef<B> get_peer() const;
-	void set_peer(gdpp::ExtRef<B> p_value) const;
+	gdpp::Gd<B> b() const;
+	gdpp::Gd<B> get_peer() const;
+	void set_peer(const gdpp::Gd<B> &p_value) const;
 
 protected:
 	Base *_gdpp_base;
@@ -31,15 +34,15 @@ protected:
 
 namespace godot {
 
-inline gdpp::ExtRef<B> A::b() const {
-	return gdpp::cast<gdpp::ExtRef<B>>(_gdpp_base->call(GDPP_STRING_NAME("b")));
+inline gdpp::Gd<B> A::b() const {
+	return gdpp::cast<gdpp::Gd<B>>(_gdpp_base->call(GDPP_STRING_NAME("b")));
 }
 
-inline gdpp::ExtRef<B> A::get_peer() const {
-	return gdpp::cast<gdpp::ExtRef<B>>(_gdpp_base->get(GDPP_STRING_NAME("peer")));
+inline gdpp::Gd<B> A::get_peer() const {
+	return gdpp::cast<gdpp::Gd<B>>(_gdpp_base->get(GDPP_STRING_NAME("peer")));
 }
 
-inline void A::set_peer(gdpp::ExtRef<B> p_value) const {
+inline void A::set_peer(const gdpp::Gd<B> &p_value) const {
 	_gdpp_base->set(GDPP_STRING_NAME("peer"), p_value);
 }
 

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Enemy;
+gdpp::kind::Object gdpp_kind(Enemy *);
+
 #define This Enemy
 class Enemy : public Node {
 	GDCLASS(Enemy, Node)
@@ -17,7 +20,7 @@ public:
 
 public:
 	void think();
-	int64_t attack(Node *target);
+	int64_t attack(gdpp::Gd<Node> target);
 	void move();
 	int64_t get_health() const;
 	void set_health(int64_t p_value);

@@ -108,7 +108,7 @@ func snap() -> void {
 ```
 
 - `terrain->height_at(...)` calls the function by name, and converts the result.
-- `terrain.base()` is the object as its base class, `Node3D *`, for everything the base class can do, e.g. `get_position()`.
+- `terrain.ptr()` is the object as its base class, `Node3D *`, for everything the base class can do, e.g. `get_position()`.
 - `@export var terrain: Terrain` shows a node picker that only offers `Terrain` nodes.
 - Connect objects of different packages in the editor, rather than in code. The same goes for signals: connect the terrain's `changed` signal to the car's `snap` in the Node dock.
 - The extern doesn't need to declare `changed` for that, only for code that emits it.

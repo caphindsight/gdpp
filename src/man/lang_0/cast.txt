@@ -4,7 +4,7 @@ C++ and godot-cpp have many ways to convert a value: `static_cast`, `Object::cas
 
 ```gd++
 func spawn(scene: PackedScene, mode: ProcessMode) -> Node3D {
-  Node3D *node = scene->instantiate() as Node3D *;
+  Gd<Node3D> node = scene->instantiate() as Gd<Node3D>;
   node->set_process_mode(mode as Node::ProcessMode);
   return node;
 }
@@ -20,8 +20,8 @@ func spawn(scene: PackedScene, mode: ProcessMode) -> Node3D {
   - Use parentheses to convert more: `(a + b) as float`.
 - T ends before anything that isn't part of a type.
   - `n as int < limit` compares.
-  - `x as Ref<Mesh>` names a template.
-  - A `*` after T is part of it. Write `(x as int) * y` to multiply.
+  - `x as Gd<Mesh>` names a template.
+  - A `*` after T is part of it, e.g. in `x as Node3D *`. Write `(x as int) * y` to multiply.
 - VALUE must be a name or an expression in parentheses, followed by any member accesses, scopes, calls and subscripts, e.g. `body`, `this->items[i]`, `get_node("Mesh")` or `(a + b)`.
 - GD++ only rewrites `as` where VALUE and T are clear. Elsewhere, e.g. in `x as int * y` or `(int) x as float`, the `as` stays, and the C++ doesn't compile. Parentheses fix it: `(x as int) * y`, `((int) x) as float`.
 
@@ -40,9 +40,10 @@ an object               a trait                  static if its class implements 
 anything else           T                        static_cast, e.g. numbers, enums, Array to Array[T]
 ```
 
-- An object is a pointer (e.g. `Node3D *`), a `Ref` (e.g. `Ref<Mesh>`), an extern, a trait, or an `Async`.
-- Any of them converts to any other that fits: a pointer to a `Ref`, a `Ref` to a pointer, an object to an extern, an extern to its base class, a `Ref<RefCounted>` to an `Async`, and so on.
-- A conversion that no row allows, e.g. from a `String` to a `Node3D *`, doesn't compile.
+- An object is a `Gd` of a class, an extern or a trait (see `gd++ man gd`), an `Async`, or a `Weak`.
+- Any of them converts to any other that fits: a class to an extern, an extern to its base class, a `Gd<RefCounted>` to an `Async`, and so on.
+- godot-cpp's plain pointers (e.g. `Node3D *`) and `Ref`s (e.g. `Ref<Mesh>`) are objects too, both as values and as targets, e.g. `node as Node3D *`. Prefer `Gd`.
+- A conversion that no row allows, e.g. from a `String` to a `Gd<Node3D>`, doesn't compile.
 
 # Upcasts and downcasts
 
@@ -51,14 +52,13 @@ anything else           T                        static_cast, e.g. numbers, enum
 - Downcast: to a class that extends it, or to an unrelated class.
   - It only works if the object is of that class.
   - `as` checks the class while the game runs, like `Object::cast_to`.
-  - Like GDScript's `as`, it gives `nullptr` or a null `Ref` if it doesn't match. So check the result.
+  - Like GDScript's `as`, it gives null if it doesn't match. So check the result.
   - A downcast of a null object gives null.
-- `as` keeps `const`: a `const Node *` casts to a `const Node3D *`, but not to a `Node3D *`.
+- `as` keeps `const`: a `Gd<const Node>` casts to a `Gd<const Node3D>`, but not to a `Gd<Node3D>`.
 
 ```gd++
 func _on_body_entered(body: Node3D) -> void {
-  Player *player = body as Player *;
-  if (player) {
+  if (auto player = body as Gd<Player>) {
     player->hurt(10);
   }
 }
@@ -81,7 +81,7 @@ on ready {
 
 # Variants
 
-- A `Variant` converts to any type, the way Godot converts the arguments of a bound method: to an enum from an `int`, to a pointer, a `Ref`, an extern or an `Async` from an object, and so on.
+- A `Variant` converts to any type, the way Godot converts the arguments of a bound method: to an enum from an `int`, to a `Gd` or an `Async` from an object, and so on.
 - A value of the wrong type converts like in a bound method, e.g. to null for objects, and to 0 for numbers.
 - Any type converts to a `Variant`. An enum converts as its `int`.
 
@@ -96,38 +96,34 @@ func take(task: Variant) -> void {
 
 An extern casts like an object of its base class:
 
-- like a `Node *` for an extern `Road` that extends `Node`,
-- like a `Ref<Resource>` for an extern `Settings` that extends `Resource`.
-
-In C++, `Ext<T>` names an extern's type, whether it's an `ExtPtr<T>` or an `ExtRef<T>`:
+- like a `Gd<Node>` for an extern `Road` that extends `Node`,
+- like a `Gd<Resource>` for an extern `Settings` that extends `Resource`.
 
 ```
 FROM                    TO                       CONVERSION
-Node *                  Ext<Road>                checked: null if it isn't a Node
-Ext<Road>               Node *                   static: free
-Ext<Road>               Node3D *                 checked downcast, null if it doesn't match
-Ref<Resource>           Ext<Settings>            checked: null if it isn't a Resource
-Ext<Settings>           Ref<Resource>            static: free
-Ext<Settings>           Resource *               static: free
-Variant                 Ext<Road>                as Godot's bindings do
+Gd<Object>              Gd<Road>                 checked: null if it isn't a Node
+Gd<Road>                Gd<Node>                 static: free
+Gd<Road>                Gd<Node3D>               checked downcast, null if it doesn't match
+Gd<Resource>            Gd<Settings>             static: free, since Settings extends Resource
+Gd<Settings>            Gd<Resource>             static: free
+Variant                 Gd<Road>                 as Godot's bindings do
 ```
 
 ```gd++
-Ext<Terrain> terrain = get_node("Terrain") as Ext<Terrain>;
+Gd<Terrain> terrain = get_node("Terrain") as Gd<Terrain>;
 ```
 
 Facts:
 
 - The check stops at the base class. Godot can't cheaply check a script class, so a `Node` with another script still converts to `Road`.
 - For the same reason, a cast between two externs with the same base class isn't checked at all.
-- An extern whose base isn't refcounted can't become a `Ref`: that cast doesn't compile.
-- An `Async` converts from any refcounted object, which should be a task object of some package.
+- An `Async` converts from any refcounted object, which should be a task object of some package, and to a `Gd<RefCounted>`.
 
 See `gd++ man externs` and `gd++ man async`.
 
 # Traits
 
-A trait is spelled `Trait<T>` in C++, e.g. `body as Trait<Damageable>`:
+A trait is spelled `Gd<T>` in C++, e.g. `body as Gd<Damageable>`:
 
 - A cast to a trait checks the object's class, unless the class is known to implement it. It gives null if the class doesn't.
 - A trait value casts like an object of the trait's base class: free to the base, checked to any other class.
@@ -135,8 +131,7 @@ A trait is spelled `Trait<T>` in C++, e.g. `body as Trait<Damageable>`:
 - A `const` object can't be cast to a trait.
 
 ```gd++
-Trait<Damageable> target = body as Trait<Damageable>;
-if (target) {
+if (auto target = body as Gd<Damageable>) {
   target->take_damage(10);
 }
 ```
@@ -152,4 +147,4 @@ See `gd++ man traits`.
 
 # See also
 
-`gd++ man types`, `gd++ man enums`, `gd++ man externs`, `gd++ man traits`, `gd++ man async`, `gd++ man runtime`.
+`gd++ man types`, `gd++ man gd`, `gd++ man enums`, `gd++ man externs`, `gd++ man traits`, `gd++ man async`, `gd++ man runtime`.

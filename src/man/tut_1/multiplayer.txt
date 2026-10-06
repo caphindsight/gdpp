@@ -27,8 +27,7 @@ on ready {
 }
 
 func host() -> void {
-  Ref<ENetMultiplayerPeer> peer;
-  peer.instantiate();
+  Gd<ENetMultiplayerPeer> peer = create ENetMultiplayerPeer;
   peer->create_server(PORT);
   get_multiplayer()->set_multiplayer_peer(peer);
   get_multiplayer()->connect(string_name "peer_connected", callable_mp(this, &This::add_player));
@@ -36,8 +35,7 @@ func host() -> void {
 }
 
 func join(address: String) -> void {
-  Ref<ENetMultiplayerPeer> peer;
-  peer.instantiate();
+  Gd<ENetMultiplayerPeer> peer = create ENetMultiplayerPeer;
   peer->create_client(address, PORT);
   get_multiplayer()->set_multiplayer_peer(peer);
 }
@@ -67,7 +65,7 @@ Each peer moves its own player, so it must be the multiplayer authority of its p
 
 ```gd++
 func create_player(id: int) -> Node {
-  Node *player = player_scene->instantiate();
+  Gd<Node> player = player_scene->instantiate();
   player->set_multiplayer_authority(id);
   return player;
 }
@@ -115,8 +113,7 @@ func request_shot(aim: Vector3) -> void {
   if (get_multiplayer()->get_remote_sender_id() != get_multiplayer_authority()) {
     return;
   }
-  Player *target = find_target(aim);
-  if (target) {
+  if (Gd<Player> target = find_target(aim)) {
     rpc target->set_health(target->health - 10);
   }
 }
@@ -142,7 +139,7 @@ func shoot(aim: Vector3) -> void {
 - `rpc target->set_health(...)` calls the function on every peer, for the target player. It also accepts any peer, so it checks that the server sent it.
 - `"reliable"` fits events that must arrive: a lost shot would be a bug.
 - `"call_local"` also runs the function on the calling peer. So the host's own player works like everyone else's.
-- `rpc` needs the object in a variable, like `target` here, not a call. Write `Player *p = get_player(); rpc p->...`, not `rpc get_player()->...`.
+- `rpc` needs the object in a variable, like `target` here, not a call. Write `Gd<Player> p = get_player(); rpc p->...`, not `rpc get_player()->...`.
 
 # 5. Test with two instances
 

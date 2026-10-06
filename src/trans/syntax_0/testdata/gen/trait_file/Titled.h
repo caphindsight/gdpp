@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Titled;
+gdpp::kind::RefCountedTrait gdpp_kind(Titled *);
+
 class Titled {
 public:
 	using Base = Resource;

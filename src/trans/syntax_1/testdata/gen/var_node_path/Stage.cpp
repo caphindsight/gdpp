@@ -9,22 +9,22 @@ namespace godot {
 void Stage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_root"), &Stage::get_root);
 	ClassDB::bind_method(D_METHOD("set_root", "value"), &Stage::set_root);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node *>("root", PROPERTY_USAGE_NONE), "set_root", "get_root");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node>>("root", PROPERTY_USAGE_NONE), "set_root", "get_root");
 	ClassDB::bind_method(D_METHOD("get_camera"), &Stage::get_camera);
 	ClassDB::bind_method(D_METHOD("set_camera", "value"), &Stage::set_camera);
-	ClassDB::add_property(get_class_static(), gdpp::info<Camera3D *>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Camera3D>>("camera", PROPERTY_USAGE_NONE), "set_camera", "get_camera");
 	ClassDB::bind_method(D_METHOD("get_health"), &Stage::get_health);
 	ClassDB::bind_method(D_METHOD("set_health", "value"), &Stage::set_health);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node3D *>("health", PROPERTY_USAGE_NONE), "set_health", "get_health");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node3D>>("health", PROPERTY_USAGE_NONE), "set_health", "get_health");
 	ClassDB::bind_method(D_METHOD("get_bar"), &Stage::get_bar);
 	ClassDB::bind_method(D_METHOD("set_bar", "value"), &Stage::set_bar);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node2D *>("bar", PROPERTY_USAGE_NONE), "set_bar", "get_bar");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node2D>>("bar", PROPERTY_USAGE_NONE), "set_bar", "get_bar");
 	ClassDB::bind_method(D_METHOD("get_label"), &Stage::get_label);
 	ClassDB::bind_method(D_METHOD("set_label", "value"), &Stage::set_label);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node *>("label", PROPERTY_USAGE_NONE), "set_label", "get_label");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node>>("label", PROPERTY_USAGE_NONE), "set_label", "get_label");
 	ClassDB::bind_method(D_METHOD("get_next"), &Stage::get_next);
 	ClassDB::bind_method(D_METHOD("set_next", "value"), &Stage::set_next);
-	ClassDB::add_property(get_class_static(), gdpp::info<Stage *>("next", PROPERTY_USAGE_NONE), "set_next", "get_next");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Stage>>("next", PROPERTY_USAGE_NONE), "set_next", "get_next");
 }
 
 void Stage::_notification(int WHAT) {
@@ -50,51 +50,51 @@ void Stage::_notification(int WHAT) {
 	}
 }
 
-Node *Stage::get_root() const {
+gdpp::Gd<Node> Stage::get_root() const {
 	return root;
 }
 
-void Stage::set_root(Node *p_value) {
+void Stage::set_root(gdpp::Gd<Node> p_value) {
 	root = p_value;
 }
 
-Camera3D *Stage::get_camera() const {
+gdpp::Gd<Camera3D> Stage::get_camera() const {
 	return camera;
 }
 
-void Stage::set_camera(Camera3D *p_value) {
+void Stage::set_camera(gdpp::Gd<Camera3D> p_value) {
 	camera = p_value;
 }
 
-Node3D *Stage::get_health() const {
+gdpp::Gd<Node3D> Stage::get_health() const {
 	return health;
 }
 
-void Stage::set_health(Node3D *p_value) {
+void Stage::set_health(gdpp::Gd<Node3D> p_value) {
 	health = p_value;
 }
 
-Node2D *Stage::get_bar() const {
+gdpp::Gd<Node2D> Stage::get_bar() const {
 	return bar;
 }
 
-void Stage::set_bar(Node2D *p_value) {
+void Stage::set_bar(gdpp::Gd<Node2D> p_value) {
 	bar = p_value;
 }
 
-Node *Stage::get_label() const {
+gdpp::Gd<Node> Stage::get_label() const {
 	return label;
 }
 
-void Stage::set_label(Node *p_value) {
+void Stage::set_label(gdpp::Gd<Node> p_value) {
 	label = p_value;
 }
 
-Stage *Stage::get_next() const {
+gdpp::Gd<Stage> Stage::get_next() const {
 	return next;
 }
 
-void Stage::set_next(Stage *p_value) {
+void Stage::set_next(gdpp::Gd<Stage> p_value) {
 	next = p_value;
 }
 

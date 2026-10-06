@@ -8,35 +8,48 @@ var level: Level
 var road: Road
 var settings: Settings
 var task: Async[int]
+var saved: Saveable
+var named: Named
 
-func convert(node: Node, resource: Resource, value: Variant) -> int {
+func convert(node: Node, resource: Resource, value: Variant, hero: Hero, weak: Weak[Node3D]) -> int {
   mode = value as Mode;
   level = int64_t(5) as Level;
   set_process_mode(mode as Node::ProcessMode);
   Variant boxed = level as Variant;
-  Node3D *spatial = node as Node3D *;
-  const Node *constant = node;
-  const Node3D *constant_spatial = constant as const Node3D *;
-  Node *up = spatial as Node *;
-  Object *object = up as Object *;
-  Ref<Texture2D> texture = resource as Ref<Texture2D>;
-  Ref<RefCounted> counted = texture as Ref<RefCounted>;
-  Ref<Resource> from_object = object as Ref<Resource>;
-  road = value as Ext<Road>;
-  road = node as Ext<Road>;
-  settings = resource as Ext<Settings>;
-  Ref<Resource> unwrapped = settings as Ref<Resource>;
-  Node *road_node = road as Node *;
-  Node3D *road_spatial = road as Node3D *;
-  Resource *settings_ptr = settings as Resource *;
+  Gd<Node3D> spatial = node as Gd<Node3D>;
+  Gd<const Node> constant = node;
+  Gd<const Node3D> constant_spatial = constant as Gd<const Node3D>;
+  Gd<Node> up = spatial as Gd<Node>;
+  Gd<Object> object = up as Gd<Object>;
+  Gd<Texture2D> texture = resource as Gd<Texture2D>;
+  Gd<RefCounted> counted = texture as Gd<RefCounted>;
+  Gd<Resource> from_object = object as Gd<Resource>;
+  road = value as Gd<Road>;
+  road = node as Gd<Road>;
+  settings = resource as Gd<Settings>;
+  Gd<Resource> unwrapped = settings as Gd<Resource>;
+  Gd<Node> road_node = road as Gd<Node>;
+  Gd<Node3D> road_spatial = road as Gd<Node3D>;
+  Gd<Resource> settings_resource = settings;
+  saved = hero;
+  saved = hero as Gd<Saveable>;
+  saved = node as Gd<Saveable>;
+  saved = value as Gd<Saveable>;
+  Gd<Node> saved_node = saved as Gd<Node>;
+  Gd<Hero> saved_hero = saved as Gd<Hero>;
+  named = counted as Gd<Named>;
+  Variant boxed_saved = saved as Variant;
   task = value as Async<int64_t>;
   task = counted as Async<int64_t>;
+  Gd<RefCounted> task_object = task as Gd<RefCounted>;
   Variant boxed_task = task as Variant;
-  ExtPtr<Road> road_ptr = road;
-  ExtRef<Settings> settings_ref = settings;
-  bool stop = is_cancelled || !road_ptr || !settings_ref;
+  Gd<Node3D> from_weak = weak;
+  Gd<Node> weak_node = weak as Gd<Node>;
+  Node3D *raw = node as Node3D *;
+  bool stop = is_cancelled || !road || !settings;
   float64_t ratio = value as float64_t;
   TypedArray<Node> nodes = Array() as TypedArray<Node>;
-  return ratio as int64_t + stop + (constant_spatial != nullptr) + boxed.operator int64_t() + boxed_task.get_type() +
-      nodes.size() + unwrapped.is_valid() + (road_node != nullptr) + (road_spatial != nullptr) + (settings_ptr != nullptr) + from_object.is_valid();
+  return ratio as int64_t + stop + bool(constant_spatial) + boxed.operator int64_t() + boxed_task.get_type() + nodes.size() +
+      bool(unwrapped) + bool(road_node) + bool(road_spatial) + bool(settings_resource) + bool(from_object) + bool(saved_node) +
+      bool(saved_hero) + bool(named) + boxed_saved.get_type() + bool(task_object) + bool(from_weak) + bool(weak_node) + (raw != nullptr);
 }

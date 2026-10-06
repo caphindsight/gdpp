@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Planner;
+gdpp::kind::Extern gdpp_kind(Planner *);
+
 class Planner {
 public:
 	using Base = Node;

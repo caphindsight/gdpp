@@ -59,7 +59,7 @@ Declarations look like GDScript: `class_name`, `extends`, `signal`, `var`, `func
 
 - Blocks use braces, not indentation. Whitespace doesn't matter.
 - Function bodies, initial values and the like are C++, compiled by a C++ compiler.
-- Types are Godot types, e.g. `int`, `float`, `Vector3` or `Node3D`. GD++ maps each one to a C++ type, e.g. `int64_t`, `double`, `Vector3` and `Node3D *`.
+- Types are Godot types, e.g. `int`, `float`, `Vector3` or `Node3D`. GD++ maps each one to a C++ type, e.g. `int64_t`, `double`, `Vector3` and `Gd<Node3D>`.
 - Every variable, parameter and return value has a static type, or is a `Variant`.
 
 GD++ is not quite C++ either: its code blocks hold C++ with a few rewrites, e.g. `emit` and `as`, which GD++ turns into plain C++. See `gd++ man rewrites`.
@@ -92,6 +92,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 
 - Classes: file-level with `class_name`, or inline with `class Name { ... }`. See `gd++ man classes`.
 - Types: Godot's types, and how they map to C++. See `gd++ man types`.
+- Objects: `Gd<T>` holds an object of any class, extern or trait, at no cost over a pointer where it can. See `gd++ man gd`.
 - Casts: `value as T` converts between any two types, and checks downcasts. See `gd++ man cast`.
 - Functions: `func name(params) -> type { C++ }`. See `gd++ man functions`. Annotations:
   - `@override`: needed by overrides of the base class's virtual functions,

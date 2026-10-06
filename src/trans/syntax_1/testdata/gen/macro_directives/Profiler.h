@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Profiler;
+gdpp::kind::Object gdpp_kind(Profiler *);
+
 #define This Profiler
 class Profiler : public Node {
 	GDCLASS(Profiler, Node)
@@ -26,7 +29,7 @@ private:
 #line 7 "input.gd++"
 
 
-#line 30 "Profiler.h"
+#line 33 "Profiler.h"
 
 public:
 	int64_t scaled(int64_t n);

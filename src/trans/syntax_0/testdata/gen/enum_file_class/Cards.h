@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Suit : int64_t;
+class Cards;
+gdpp::kind::RefCounted gdpp_kind(Cards *);
 
 enum _gdpp_Cards_Suit : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Cards_Suit, "Cards.Suit")

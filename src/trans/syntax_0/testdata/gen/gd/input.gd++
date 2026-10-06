@@ -1,0 +1,43 @@
+class_name Keeper
+extends Node3D
+
+var hero: Hero
+var road: Road
+var saved: Saveable
+var named: Named
+
+func keep(body: Node3D, resource: Resource, parent: Node) -> int {
+  static_assert(Gd<Hero>::is_class() && !Gd<Hero>::is_refcounted() && Gd<Hero>::is_node());
+  static_assert(Gd<Texture2D>::is_class() && Gd<Texture2D>::is_refcounted() && !Gd<Texture2D>::is_node());
+  static_assert(Gd<Saveable>::is_trait() && !Gd<Saveable>::is_refcounted() && Gd<Saveable>::is_node());
+  static_assert(Gd<Named>::is_trait() && Gd<Named>::is_refcounted());
+  static_assert(Gd<Road>::is_extern() && !Gd<Road>::is_refcounted());
+  static_assert(Gd<Settings>::is_extern() && Gd<Settings>::is_refcounted());
+  static_assert(sizeof(Gd<Hero>) == sizeof(Hero *) && std::is_trivially_copyable_v<Gd<Hero>>);
+  if constexpr (body.is_class()) {
+    body->rotate_y(1.0);
+  }
+  if (auto s = body as Gd<Saveable>) {
+    s->save();
+  }
+  Gd<Texture2D> texture = resource as Gd<Texture2D>;
+  if (auto item = parent as Gd<CanvasItem>) {
+    item->draw_texture(texture, Vector2());
+  }
+  hero = create Hero;
+  saved = hero;
+  parent->add_child(hero);
+  Gd<MeshInstance3D> instance = create MeshInstance3D;
+  instance->set_layer_mask(1);
+  Gd<Node> node = saved.ptr();
+  Gd<Hero> same = hero;
+  int64_t count = (hero == same) + (saved == hero) + (body != nullptr) + (nullptr == road) + (texture == resource);
+  Array items;
+  items.push_back(hero);
+  items.push_back(texture);
+  call("keep", body, texture, parent);
+  queue_destroy saved;
+  destroy instance;
+  queue_destroy road;
+  return count + bool(node) + bool(named);
+}

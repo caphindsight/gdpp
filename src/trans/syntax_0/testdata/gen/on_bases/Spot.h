@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Spot;
+gdpp::kind::Object gdpp_kind(Spot *);
+
 #define This Spot
 class Spot : public Node3D {
 	GDCLASS(Spot, Node3D)

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Item;
+gdpp::kind::RefCounted gdpp_kind(Item *);
+
 #define This Item
 class Item : public Resource {
 	GDCLASS(Item, Resource)

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Scored;
+gdpp::kind::RefCountedTrait gdpp_kind(Scored *);
+
 class Scored {
 public:
 	using Base = RefCounted;

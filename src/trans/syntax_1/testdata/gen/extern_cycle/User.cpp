@@ -10,10 +10,10 @@ void User::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("b"), &User::b);
 	ClassDB::bind_method(D_METHOD("get_a"), &User::get_a);
 	ClassDB::bind_method(D_METHOD("set_a", "value"), &User::set_a);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<A>>("a", PROPERTY_USAGE_NONE), "set_a", "get_a");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<A>>("a", PROPERTY_USAGE_NONE), "set_a", "get_a");
 }
 
-gdpp::ExtRef<B> User::b() {
+gdpp::Gd<B> User::b() {
 #line 18 "input.gd++"
 
     return nullptr;
@@ -21,11 +21,11 @@ gdpp::ExtRef<B> User::b() {
 #line 22 "User.cpp"
 }
 
-gdpp::ExtPtr<A> User::get_a() const {
+gdpp::Gd<A> User::get_a() const {
 	return a;
 }
 
-void User::set_a(gdpp::ExtPtr<A> p_value) {
+void User::set_a(gdpp::Gd<A> p_value) {
 	a = p_value;
 }
 

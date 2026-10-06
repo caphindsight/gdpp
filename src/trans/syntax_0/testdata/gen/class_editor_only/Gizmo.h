@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Mood : int64_t;
+class Gizmo;
+gdpp::kind::Object gdpp_kind(Gizmo *);
 
 enum _gdpp_Gizmo_Mood : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Gizmo_Mood, "Gizmo.Mood")

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Stats;
+gdpp::kind::RefCountedExtern gdpp_kind(Stats *);
+
 class Stats {
 public:
 	using Base = RefCounted;

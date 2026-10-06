@@ -42,10 +42,10 @@ void Settings2::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("hidden", PROPERTY_USAGE_STORAGE), "set_hidden", "get_hidden");
 	ClassDB::bind_method(D_METHOD("get_target"), &Settings2::get_target);
 	ClassDB::bind_method(D_METHOD("set_target", "value"), &Settings2::set_target);
-	ClassDB::add_property(get_class_static(), gdpp::info<Node3D *>("target", PROPERTY_USAGE_DEFAULT), "set_target", "get_target");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Node3D>>("target", PROPERTY_USAGE_DEFAULT), "set_target", "get_target");
 	ClassDB::bind_method(D_METHOD("get_tex"), &Settings2::get_tex);
 	ClassDB::bind_method(D_METHOD("set_tex", "value"), &Settings2::set_tex);
-	ClassDB::add_property(get_class_static(), gdpp::info<Ref<Texture2D>>("tex", PROPERTY_USAGE_DEFAULT), "set_tex", "get_tex");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Texture2D>>("tex", PROPERTY_USAGE_DEFAULT), "set_tex", "get_tex");
 }
 
 int64_t Settings2::get_plain() const {
@@ -136,19 +136,19 @@ void Settings2::set_hidden(int64_t p_value) {
 	hidden = p_value;
 }
 
-Node3D *Settings2::get_target() const {
+gdpp::Gd<Node3D> Settings2::get_target() const {
 	return target;
 }
 
-void Settings2::set_target(Node3D *p_value) {
+void Settings2::set_target(gdpp::Gd<Node3D> p_value) {
 	target = p_value;
 }
 
-Ref<Texture2D> Settings2::get_tex() const {
+gdpp::Gd<Texture2D> Settings2::get_tex() const {
 	return tex;
 }
 
-void Settings2::set_tex(const Ref<Texture2D> &p_value) {
+void Settings2::set_tex(const gdpp::Gd<Texture2D> &p_value) {
 	tex = p_value;
 }
 

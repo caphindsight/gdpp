@@ -8,6 +8,9 @@
 namespace godot {
 
 class Spark;
+gdpp::kind::Object gdpp_kind(Spark *);
+class SparkPool;
+gdpp::kind::Object gdpp_kind(SparkPool *);
 
 #define This SparkPool
 class SparkPool : public Node {
@@ -20,7 +23,7 @@ public:
 	gdpp::PoolSlot<SparkPool> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	Spark *take();
+	gdpp::Gd<Spark> take();
 
 protected:
 	static void _bind_methods();

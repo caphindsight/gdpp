@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Hud;
+gdpp::kind::Object gdpp_kind(Hud *);
+
 #define This Hud
 class Hud : public Node {
 	GDCLASS(Hud, Node)

@@ -27,7 +27,7 @@ Everything else is plain C++:
 Two names are available in all C++ code of a class:
 
 This
-  The current class's name, like `Self` in Rust: `This *copy = create This;` or `callable_mp(this, &This::on_hit)`. A macro that GD++ defines before the class's code and undefines after it. It works in function bodies and in `decl` and `impl` blocks, but not in `@global` blocks.
+  The current class's name, like `Self` in Rust: `Gd<This> copy = create This;` or `callable_mp(this, &This::on_hit)`. A macro that GD++ defines before the class's code and undefines after it. It works in function bodies and in `decl` and `impl` blocks, but not in `@global` blocks.
 
 gd
   Short for `UtilityFunctions`, Godot's global functions: `gd::print`, `gd::randf`, `gd::clamp`, `gd::lerp`, `gd::is_instance_valid` and so on. See `gd++ man runtime`.

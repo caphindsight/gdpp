@@ -24,7 +24,7 @@ void BulletPool::_gdpp_recycle_ctor() {
 void BulletPool::_gdpp_recycle_dtor() {
 }
 
-Bullet *BulletPool::take() {
+gdpp::Gd<Bullet> BulletPool::take() {
 #line 16 "input.gd++"
  return gdpp::create<Bullet>();
 #line 31 "BulletPool.cpp"

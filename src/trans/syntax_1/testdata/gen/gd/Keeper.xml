@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Keeper" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="keep">
+			<return type="int" />
+			<param index="0" name="body" type="Node3D" />
+			<param index="1" name="resource" type="Resource" />
+			<param index="2" name="parent" type="Node" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="hero" type="Hero" setter="set_hero" getter="get_hero">
+		</member>
+		<member name="named" type="RefCounted" setter="set_named" getter="get_named">
+		</member>
+		<member name="road" type="Road" setter="set_road" getter="get_road">
+		</member>
+		<member name="saved" type="Node" setter="set_saved" getter="get_saved">
+		</member>
+	</members>
+</class>

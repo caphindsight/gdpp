@@ -8,19 +8,23 @@
 namespace godot {
 
 class B;
+gdpp::kind::Object gdpp_kind(B *);
 class C;
+gdpp::kind::RefCounted gdpp_kind(C *);
+class A;
+gdpp::kind::Object gdpp_kind(A *);
 
 #define This A
 class A : public Node {
 	GDCLASS(A, Node)
 
 public:
-	B *b{};
+	gdpp::Gd<B> b{};
 
 public:
-	Ref<C> make_c();
-	B *get_b() const;
-	void set_b(B *p_value);
+	gdpp::Gd<C> make_c();
+	gdpp::Gd<B> get_b() const;
+	void set_b(gdpp::Gd<B> p_value);
 
 protected:
 	static void _bind_methods();

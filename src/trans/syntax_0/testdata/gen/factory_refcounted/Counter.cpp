@@ -10,7 +10,7 @@ void Counter::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Counter::create);
 }
 
-Ref<Counter> Counter::create() {
+gdpp::Gd<Counter> Counter::create() {
 	return gdpp::create<Counter>();
 }
 

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Player;
+gdpp::kind::Object gdpp_kind(Player *);
+
 enum _gdpp_Player_State : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Player_State, "Player.State")
 

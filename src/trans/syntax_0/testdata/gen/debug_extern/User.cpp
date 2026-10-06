@@ -9,14 +9,14 @@ namespace godot {
 void User::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_terrain"), &User::get_terrain);
 	ClassDB::bind_method(D_METHOD("set_terrain", "value"), &User::set_terrain);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Terrain>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Terrain>>("terrain", PROPERTY_USAGE_DEFAULT), "set_terrain", "get_terrain");
 }
 
-gdpp::ExtPtr<Terrain> User::get_terrain() const {
+gdpp::Gd<Terrain> User::get_terrain() const {
 	return terrain;
 }
 
-void User::set_terrain(gdpp::ExtPtr<Terrain> p_value) {
+void User::set_terrain(gdpp::Gd<Terrain> p_value) {
 	terrain = p_value;
 }
 

@@ -30,7 +30,7 @@ dtor {
 
 ```gd++
 func fire() -> void {
-  Bullet *bullet = create Bullet;
+  Gd<Bullet> bullet = create Bullet;
   if (bullet) {
     add_child(bullet);
   }
@@ -158,9 +158,9 @@ See `gd++ man classes`.
 
 # Remembering pooled objects
 
-- A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays valid after the bullet is returned to the pool.
+- A `Gd` of a pooled object, e.g. a homing missile's `Gd<Bullet> target`, stays valid after the bullet is returned to the pool.
 - But the pool may reuse it for another shot.
-- Keep a `Weak[Bullet]` instead: it gives `nullptr` once the bullet is returned to its pool, even if the pool has reused it since.
+- Keep a `Weak[Bullet]` instead: it gives null once the bullet is returned to its pool, even if the pool has reused it since.
 
 See "Objects of @pool classes" in `gd++ man weak`.
 
@@ -182,7 +182,7 @@ See "Objects of @pool classes" in `gd++ man weak`.
 
 So the mode, `"fixed"` or `"grow"`, says what happens once all the objects of the size are in use.
 
-Warning: in a `"fixed"` pool, `create` returns `nullptr` once all its objects are in use.
+Warning: in a `"fixed"` pool, `create` returns null once all its objects are in use.
 
 - Always check the result before using the object, as `fire` does above. Using a null pointer crashes the game.
 - If running out is a bug, log an error there.
@@ -254,7 +254,7 @@ With `true`, for `keep_in_use`, the objects in use leave the pool and live on:
 - They no longer belong to the pool, so they don't count toward its size.
 - `destroy` deletes them for good.
 
-Warning: without `keep_in_use`, the objects in use are freed. Drop every pointer to them. A `Weak[Bullet]` gives `nullptr` once its bullet is freed.
+Warning: without `keep_in_use`, the objects in use are freed. Drop every `Gd` of them. A `Weak[Bullet]` gives null once its bullet is freed.
 
 The difference between the calls:
 
@@ -271,7 +271,7 @@ pool_clear(true)      freed             leave the pool                     kept
 - Objects created otherwise, e.g. by a scene, by `Bullet.new()` in GDScript, or by `memnew`, don't count toward its size. `destroy` deletes them for good.
 - An object from the pool that's deleted for good, e.g. with `queue_free()`, leaves the pool. That frees up room for a new one.
 - `destroy` also deletes an object for good when called:
-  - through a pointer to a base class, e.g. `Node *`,
+  - through a `Gd` of a base class, e.g. `Gd<Node>`,
   - on an object of a class that extends a `@pool` class, unless that class has its own `@pool`.
 
 # Pools of scenes

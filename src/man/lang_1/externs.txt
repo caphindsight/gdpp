@@ -39,7 +39,7 @@ Externs can be file-level, with `extern_name`, or inline, like classes. See `gd+
 `extends` names the extern's base class: a Godot class, a GD++ class of the package, or another extern. Without `extends`, it extends `RefCounted`. The base decides:
 
 - What your code can do with the object without calling by name: everything the base class can.
-- How the extern is used: through a pointer, `ExtPtr<Terrain>`, if the base isn't refcounted, or through a reference, `ExtRef<Terrain>`, if it is.
+- Whether a `Gd<Terrain>` keeps the object alive: only if the base is refcounted.
 - How Godot sees it: as an object of the base class.
 
 Use the class's real base class, or any class above it, e.g. `Node3D` or `Node`, as long as the object really is one.
@@ -47,7 +47,7 @@ Use the class's real base class, or any class above it, e.g. `Node3D` or `Node`,
 An extern that extends another extern:
 
 - has that extern's members too,
-- converts to it, e.g. to pass an `ExtPtr<Car>` where an `ExtPtr<Vehicle>` is expected.
+- converts to it, e.g. to pass a `Gd<Car>` where a `Gd<Vehicle>` is expected.
 
 ```gd++
 extern Vehicle {
@@ -117,21 +117,20 @@ func regenerate(seed: int) -> void {
 - Functions: `terrain->height_at(x, z)` calls `height_at` on the object, by name, and converts the result to the declared return type.
 - Variables: `terrain->get_seed()` and `terrain->set_seed(5)` get and set the property by name.
 - Signals: `emit terrain->changed()` emits the signal on the object.
-- The base class: `terrain.base()` returns the object as its base class, `Node3D *`, for anything else, e.g. `add_child(terrain.base())` or `terrain.base()->get_position()`.
+- The base class: `terrain.ptr()` returns the object as its base class, `Node3D *`, for anything else, e.g. `terrain.ptr()->get_position()`. The `Gd` also converts to it, e.g. `add_child(terrain)`.
 
-In C++, an `ExtPtr<T>`:
+In C++, an extern is a `Gd<T>`, like any object. See `gd++ man gd`. It:
 
 - starts as null,
-- can be set from a pointer to the base class or `nullptr`: `terrain = get_node<Node3D>("Terrain");`,
+- can be set from its base class or `nullptr`: `terrain = get_node<Node3D>("Terrain");`,
 - tests as a bool: `if (terrain) { ... }`,
-- compares with `==` to another `ExtPtr<T>`,
-- converts to a `Variant`, e.g. to pass it to Godot.
+- compares with `==`,
+- converts to a `Variant`, e.g. to pass it to Godot,
+- keeps the object alive, if its base is refcounted.
 
 Also:
 
-- An `ExtRef<T>` is the same, but holds a reference, which keeps the object alive. Its `base()` returns a `Ref<Base>`.
-- `Ext<T>` is whichever of the two fits `T`.
-- Converting a base class pointer to an extern doesn't check the object's class. If it's not really a `Terrain`, calls fail at runtime, with Godot's errors about missing methods.
+- Converting from the base class doesn't check the object's class. If it's not really a `Terrain`, calls fail at runtime, with Godot's errors about missing methods.
 - For exported variables, the editor checks it for you. See below.
 
 # Exported externs
@@ -147,10 +146,10 @@ Also:
 # Creating and deleting objects
 
 ```gd++
-Ext<Terrain> terrain = create Terrain;
-add_child(terrain.base());
+Gd<Terrain> terrain = create Terrain;
+add_child(terrain);
 
-destroy some_terrain;             // only for ExtPtr; refcounted objects delete themselves
+destroy some_terrain;             // not if the base is refcounted: those objects delete themselves
 ```
 
 `create T` creates an object of the class named like the extern:
@@ -161,8 +160,8 @@ destroy some_terrain;             // only for ExtPtr; refcounted objects delete 
 
 `destroy`:
 
-- deletes an `ExtPtr`'s object,
-- doesn't compile for an `ExtRef`: refcounted objects delete themselves when their last `ExtRef` goes away.
+- deletes the object,
+- doesn't compile if the base is refcounted: refcounted objects delete themselves when their last `Gd` goes away.
 
 They're the same `create` and `destroy` as for any class. See `gd++ man classes`. To call the class's own methods instead, see the next section.
 
@@ -254,7 +253,7 @@ That's much slower than a C++ call, though the names are interned only once. Use
 
 - For each extern, GD++ generates a header, e.g. `Terrain.h`, with a small wrapper class in namespace `godot`.
 - The wrapper holds a pointer to the object. It has a method for each declared member, which calls the object's `call`, `call_deferred`, `get`, `set` or `emit_signal` with the member's name.
-- `ExtPtr<T>` and `ExtRef<T>` hold the object. Their `operator->` returns such a wrapper.
+- `Gd<T>` holds the object. Its `operator->` returns such a wrapper.
 - Externs aren't registered with Godot: they're only names for classes registered elsewhere.
 
 See `gd++ man runtime` and `gd++ man generated`.

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Shape;
+gdpp::kind::Object gdpp_kind(Shape *);
+
 #define This Shape
 class Shape : public Node {
 	GDCLASS(Shape, Node)

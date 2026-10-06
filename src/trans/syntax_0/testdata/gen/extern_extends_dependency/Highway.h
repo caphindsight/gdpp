@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Highway;
+gdpp::kind::Extern gdpp_kind(Highway *);
+
 class Highway : public Road {
 public:
 	static constexpr const char *gdpp_name = "Highway";

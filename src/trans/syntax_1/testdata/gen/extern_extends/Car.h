@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Car;
+gdpp::kind::Extern gdpp_kind(Car *);
+
 class Car : public Vehicle {
 public:
 	static constexpr const char *gdpp_name = "Car";

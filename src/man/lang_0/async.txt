@@ -305,7 +305,7 @@ No thread can be killed safely, so a running task can't be stopped from outside.
 ```gd++
 @onthread
 func generate(size: int) -> Terrain {
-  Ref<Terrain> terrain;
+  Gd<Terrain> terrain;
   for (int64_t row = 0; row < size; row++) {
     if (is_cancelled) {
       return {};

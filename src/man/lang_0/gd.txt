@@ -1,0 +1,143 @@
+Gd: one type for every object
+
+In C++ code, `Gd<T>` holds an object of `T`, whatever kind of type `T` is:
+
+- a Godot class, e.g. `Gd<Node3D>` or `Gd<Mesh>`,
+- a class of the package, e.g. `Gd<Player>`, or a C++ class (see `gd++ man cpp-classes`),
+- an extern, e.g. `Gd<Terrain>` (see `gd++ man externs`),
+- a trait, e.g. `Gd<Damageable>` (see `gd++ man traits`).
+
+It's the C++ type of every class, extern and trait in declarations. `var target: Node3D` is a `Gd<Node3D> target`. Use it in your C++ code too, so all objects work the same way:
+
+```gd++
+func _on_body_entered(body: Node3D) -> void {
+  if (auto target = body as Gd<Damageable>) {
+    target->take_damage(10);
+  }
+  Gd<Spark> spark = create Spark;
+  add_child(spark);
+}
+```
+
+Two kinds of types keep types of their own, since they aren't plain objects:
+
+- `Async[T]` is a task, and `Async<T>` in C++. See `gd++ man async`.
+- `Weak[T]` doesn't keep or point to the object, and `Weak<T>` in C++. See `gd++ man weak`.
+
+# The API
+
+The same for every kind of `T`:
+
+```
+WHAT                       MEANING
+Gd<T> x;                   null; also Gd<T> x = nullptr;
+if (x) ...                 true if it holds an object
+x->f()                     calls a member of the object
+x.ptr()                    the object, as a plain pointer
+x == y, x != y             the same object; y is a Gd, a pointer, a Ref or nullptr
+Gd<T> x = y;               from a Gd, pointer or Ref that's surely a T, e.g. of a subclass
+Node *n = x;               to a pointer of its class or a base, but Object: write x.ptr() for that
+Ref<Mesh> r = x;           to a Ref of its class or a base, for a refcounted class
+Variant v = x;             the object, as a Variant
+y as Gd<T>                 a cast, checked where it must be: see `gd++ man cast`
+create T                   a new object, as a Gd<T>
+destroy x                  deletes the object, see `gd++ man runtime`
+queue_destroy x            deletes a node at the end of the frame
+```
+
+- So a `Gd` passes to godot-cpp's functions, e.g. `add_child(x)`, and godot-cpp's results become `Gd`s, e.g. `Gd<Node> parent = get_parent();`.
+- A `Gd` doesn't convert to `Object *` by itself, since `Variant`'s constructors would then be ambiguous. Write `x.ptr()`.
+- Downcasts aren't implicit: `Gd<Player> p = node;` doesn't compile. Write `node as Gd<Player>`, which gives null if `node` isn't a `Player`.
+
+What `T` changes:
+
+- For a class, `->` calls the class's members, and `ptr()` gives a `T *`.
+- For a trait, `->` calls the trait's functions, and `ptr()` gives a pointer to the trait's base class.
+- For an extern, `->` calls the object's members by name, and `ptr()` gives a pointer to the extern's base class.
+
+# Kinds of types
+
+```
+T                         HOLDS                       KEEPS IT ALIVE   SIZE         COSTS
+class, not refcounted     a pointer                   no               1 pointer    nothing
+class, refcounted         a reference, like a Ref     yes              1 pointer    a refcount, like a Ref
+extern, not refcounted    a pointer                   no               1 pointer    nothing; calls by name
+extern, refcounted        a reference                 yes              1 pointer    a refcount; calls by name
+trait, not refcounted     the object and the trait    no               2 pointers   nearly nothing
+trait, refcounted         the same, by reference      yes              2 pointers   a refcount
+```
+
+- A `Gd` of a refcounted object keeps it alive, like a `Ref`. Godot deletes the object when the last one goes away.
+- Other objects live until someone deletes them, e.g. a node until it or its parent is freed. A `Gd` of one dangles after that, like a pointer. To know when it's gone, use `Weak[T]`.
+
+# When it costs nothing
+
+`Gd<T>` costs nothing over a plain pointer when `T` is a class that isn't refcounted, e.g. `Gd<Node3D>` or `Gd<Player>`:
+
+- It holds just the pointer, so it's the same size.
+- Copying, comparing and testing it compile to the same machine code as for a pointer.
+- Functions take it by value, in a register, like a pointer.
+- `->` and `ptr()` compile away.
+
+The runtime checks this when it compiles: `static_assert(sizeof(Gd<Node>) == sizeof(Node *))`, and that it copies like a pointer.
+
+This needs the compiler's optimizations: `gd++ build --ship`, or `--opt` or `--small` (see `gd++ man build`). Debug builds are unoptimized by default, and there `->` and `ptr()` stay small function calls, like any C++ wrapper's.
+
+The same holds for an extern that isn't refcounted. It holds one pointer, copied for free. But each call through `->` is a call by name, like `call("f")`, which is slower than a direct call. That's the extern's cost, not the `Gd`'s.
+
+# When it costs something
+
+- A refcounted object, e.g. `Gd<Mesh>`, costs what a `Ref` does: copying it, or letting it go, updates the object's refcount, an atomic operation. Moving it doesn't. GD++ passes it to functions as a `const Gd<T> &`, like a `Ref`, so calls don't touch the refcount.
+- A trait holds two pointers: the object, and the object as the trait. A call through `->` is a virtual call. Copying it is free, unless the trait's base is refcounted.
+- A cast with `as` may check the object's class while the game runs: see "Cost" in `gd++ man cast`. The implicit conversions never do: they only happen where the result is sure.
+
+# Compile-time queries
+
+`Gd<T>` tells what kind of type `T` is, at compile time:
+
+```
+QUERY                     TRUE FOR
+Gd<T>::is_class()         a class: Godot's, the package's, or a C++ class
+Gd<T>::is_trait()         a trait
+Gd<T>::is_extern()        an extern
+Gd<T>::is_refcounted()    a refcounted class, or a trait or an extern whose base is refcounted
+Gd<T>::is_node()          a class that extends Node, or a trait or an extern whose base does
+```
+
+- Exactly one of `is_class`, `is_trait` and `is_extern` is true.
+- They work with `if constexpr` and `static_assert`.
+- They also work on a variable, e.g. `if constexpr (target.is_trait())`.
+- On a reference, e.g. a `const Gd<Mesh> &` parameter, some compilers reject that, e.g. Clang. Write `Gd<Mesh>::is_refcounted()` there.
+
+```gd++
+decl {
+  template <typename T>
+  void release(Gd<T> object) {
+    if constexpr (!Gd<T>::is_refcounted()) {
+      destroy object;
+    }
+  }
+}
+```
+
+# Const
+
+- `Gd<const T>` holds an object that it doesn't change: `->` only calls `const` members, and `ptr()` gives a `const T *`.
+- A `Gd<T>` converts to a `Gd<const T>`, but not back.
+- `x as Gd<const Node3D>` casts a const object.
+
+# Incomplete types
+
+- A `Gd<T>` decides how to hold `T` from the kind of `T`. For that, `T` must be defined where the `Gd<T>` is first used.
+- GD++ declares the kind of the package's classes, externs and traits next to their forward declarations, so its generated code doesn't need them defined. E.g. two classes can hold `Gd`s of each other.
+- In your own C++ code, include the class's header before using a `Gd` of it.
+
+# What Godot sees
+
+- In bound functions, signals and properties, a `Gd<T>` is an object of `T`'s class, or of the base class for a trait or an extern.
+- An object whose class doesn't implement a trait arrives as null in a `Gd` of the trait.
+- See `gd++ man types`.
+
+# See also
+
+`gd++ man types`, `gd++ man cast`, `gd++ man traits`, `gd++ man externs`, `gd++ man weak`, `gd++ man runtime`, `gd++ man performance`.

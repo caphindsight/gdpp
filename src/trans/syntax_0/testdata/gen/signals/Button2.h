@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Button2;
+gdpp::kind::Object gdpp_kind(Button2 *);
+
 #define This Button2
 class Button2 : public Node {
 	GDCLASS(Button2, Node)

@@ -60,7 +60,7 @@ Error Player::_gdpp_rpc_sync_position(int64_t p_peer, const Vector3 &pos) {
 	return rpc_id(p_peer, GDPP_STRING_NAME("sync_position"), pos);
 }
 
-void Player::hit(int64_t peer, Player *other) {
+void Player::hit(int64_t peer, gdpp::Gd<Player> other) {
 #line 17 "input.gd++"
 
   _gdpp_rpc_ping(0);

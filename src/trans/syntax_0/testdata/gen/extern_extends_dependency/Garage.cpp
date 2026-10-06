@@ -9,25 +9,25 @@ namespace godot {
 void Garage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_highway"), &Garage::get_highway);
 	ClassDB::bind_method(D_METHOD("set_highway", "value"), &Garage::set_highway);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtPtr<Highway>>("highway", PROPERTY_USAGE_NONE), "set_highway", "get_highway");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Highway>>("highway", PROPERTY_USAGE_NONE), "set_highway", "get_highway");
 	ClassDB::bind_method(D_METHOD("get_profile"), &Garage::get_profile);
 	ClassDB::bind_method(D_METHOD("set_profile", "value"), &Garage::set_profile);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::ExtRef<Profile>>("profile", PROPERTY_USAGE_NONE), "set_profile", "get_profile");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Profile>>("profile", PROPERTY_USAGE_NONE), "set_profile", "get_profile");
 }
 
-gdpp::ExtPtr<Highway> Garage::get_highway() const {
+gdpp::Gd<Highway> Garage::get_highway() const {
 	return highway;
 }
 
-void Garage::set_highway(gdpp::ExtPtr<Highway> p_value) {
+void Garage::set_highway(gdpp::Gd<Highway> p_value) {
 	highway = p_value;
 }
 
-gdpp::ExtRef<Profile> Garage::get_profile() const {
+gdpp::Gd<Profile> Garage::get_profile() const {
 	return profile;
 }
 
-void Garage::set_profile(gdpp::ExtRef<Profile> p_value) {
+void Garage::set_profile(const gdpp::Gd<Profile> &p_value) {
 	profile = p_value;
 }
 

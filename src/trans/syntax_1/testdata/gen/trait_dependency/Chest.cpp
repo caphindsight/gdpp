@@ -11,10 +11,10 @@ void Chest::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("slot"), &Chest::slot);
 	ClassDB::bind_method(D_METHOD("get_next"), &Chest::get_next);
 	ClassDB::bind_method(D_METHOD("set_next", "value"), &Chest::set_next);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::TraitPtr<Saveable>>("next", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_NODE_TYPE, "Chest,Hero,Knight,Vault"), "set_next", "get_next");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Saveable>>("next", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_NODE_TYPE, "Chest,Hero,Knight,Vault"), "set_next", "get_next");
 	ClassDB::bind_method(D_METHOD("get_label"), &Chest::get_label);
 	ClassDB::bind_method(D_METHOD("set_label", "value"), &Chest::set_label);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::TraitRef<Named>>("label", PROPERTY_USAGE_DEFAULT), "set_label", "get_label");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Named>>("label", PROPERTY_USAGE_DEFAULT), "set_label", "get_label");
 }
 
 void Chest::_gdpp_traits(gdpp::TraitsOf<Chest>) {
@@ -49,19 +49,19 @@ int64_t Chest::slot() const {
 #line 50 "Chest.cpp"
 }
 
-gdpp::TraitPtr<Saveable> Chest::get_next() const {
+gdpp::Gd<Saveable> Chest::get_next() const {
 	return next;
 }
 
-void Chest::set_next(gdpp::TraitPtr<Saveable> p_value) {
+void Chest::set_next(gdpp::Gd<Saveable> p_value) {
 	next = p_value;
 }
 
-gdpp::TraitRef<Named> Chest::get_label() const {
+gdpp::Gd<Named> Chest::get_label() const {
 	return label;
 }
 
-void Chest::set_label(gdpp::TraitRef<Named> p_value) {
+void Chest::set_label(const gdpp::Gd<Named> &p_value) {
 	label = p_value;
 }
 

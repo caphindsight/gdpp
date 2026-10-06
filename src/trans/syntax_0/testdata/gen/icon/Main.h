@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Main;
+gdpp::kind::RefCounted gdpp_kind(Main *);
+
 #define This Main
 class Main : public RefCounted {
 	GDCLASS(Main, RefCounted)

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Undocumented;
+gdpp::kind::RefCounted gdpp_kind(Undocumented *);
+
 #define This Undocumented
 class Undocumented : public RefCounted {
 	GDCLASS(Undocumented, RefCounted)

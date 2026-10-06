@@ -66,6 +66,8 @@ const (
 	// C++'s and godot-cpp's ways to create and delete objects, which stay plain, so that GD++'s create and destroy stand
 	// out as the way to do it.
 	plainWords = "new delete memnew memdelete"
+	// The runtime's one type for objects, e.g. Gd<Node3D>: a keyword, so that it stands out from the class it holds.
+	gdWord = "Gd"
 	// The runtime's cast, which as becomes, and C++'s casts, which it replaces.
 	castWords    = "cast static_cast dynamic_cast const_cast reinterpret_cast"
 	cppTypeWords = "bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t uint8_t uint16_t " +
@@ -75,7 +77,7 @@ const (
 )
 
 var (
-	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords, castWords)
+	codeKeywords  = wordSet(gdppWords, cppWords, gdscriptWords, rewriteWords, gdWord, castWords)
 	codeOperators = wordSet(rewriteOperatorWords, invokeWord)
 	codeStringOps = wordSet(rewriteStringWords)
 	codeTypes     = wordSet(cppTypeWords, godotTypeWords)

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Gizmo;
+gdpp::kind::Object gdpp_kind(Gizmo *);
+
 #define This Gizmo
 class Gizmo : public Node3D {
 	GDCLASS(Gizmo, Node3D)

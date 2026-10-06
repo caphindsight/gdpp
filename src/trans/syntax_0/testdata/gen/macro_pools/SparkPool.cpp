@@ -24,7 +24,7 @@ void SparkPool::_gdpp_recycle_ctor() {
 void SparkPool::_gdpp_recycle_dtor() {
 }
 
-Spark *SparkPool::take() {
+gdpp::Gd<Spark> SparkPool::take() {
 #line 16 "input.gd++"
  return gdpp::create<Spark>();
 #line 31 "SparkPool.cpp"

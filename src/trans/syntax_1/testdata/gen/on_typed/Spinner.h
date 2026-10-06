@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Spinner;
+gdpp::kind::Object gdpp_kind(Spinner *);
+
 #define This Spinner
 class Spinner : public Node3D {
 	GDCLASS(Spinner, Node3D)

@@ -29,7 +29,7 @@ void Spark::_gdpp_recycle_ctor() {
 void Spark::_gdpp_recycle_dtor() {
 }
 
-Spark *Spark::create() {
+gdpp::Gd<Spark> Spark::create() {
 	return gdpp::create<Spark>();
 }
 

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Stats;
+gdpp::kind::Object gdpp_kind(Stats *);
+
 #define This Stats
 class Stats : public Node {
 	GDCLASS(Stats, Node)

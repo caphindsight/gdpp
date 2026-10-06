@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Knob;
+gdpp::kind::Object gdpp_kind(Knob *);
+
 #define This Knob
 class Knob : public Handle {
 	GDCLASS(Knob, Handle)

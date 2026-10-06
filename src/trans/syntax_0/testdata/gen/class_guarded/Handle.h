@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Handle;
+gdpp::kind::Object gdpp_kind(Handle *);
+
 #define This Handle
 class Handle : public Gizmo {
 	GDCLASS(Handle, Gizmo)

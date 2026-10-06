@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Damageable;
+gdpp::kind::Trait gdpp_kind(Damageable *);
+
 class Damageable {
 public:
 	using Base = Node3D;

@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Suit : int64_t;
+class B;
+gdpp::kind::Object gdpp_kind(B *);
 
 #define This B
 class B : public A {

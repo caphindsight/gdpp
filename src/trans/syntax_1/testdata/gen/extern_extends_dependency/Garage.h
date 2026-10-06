@@ -8,21 +8,25 @@
 namespace godot {
 
 class Highway;
+gdpp::kind::Extern gdpp_kind(Highway *);
 class Profile;
+gdpp::kind::RefCountedExtern gdpp_kind(Profile *);
+class Garage;
+gdpp::kind::Object gdpp_kind(Garage *);
 
 #define This Garage
 class Garage : public Node {
 	GDCLASS(Garage, Node)
 
 public:
-	gdpp::ExtPtr<Highway> highway{};
-	gdpp::ExtRef<Profile> profile{};
+	gdpp::Gd<Highway> highway{};
+	gdpp::Gd<Profile> profile{};
 
 public:
-	gdpp::ExtPtr<Highway> get_highway() const;
-	void set_highway(gdpp::ExtPtr<Highway> p_value);
-	gdpp::ExtRef<Profile> get_profile() const;
-	void set_profile(gdpp::ExtRef<Profile> p_value);
+	gdpp::Gd<Highway> get_highway() const;
+	void set_highway(gdpp::Gd<Highway> p_value);
+	gdpp::Gd<Profile> get_profile() const;
+	void set_profile(const gdpp::Gd<Profile> &p_value);
 
 protected:
 	static void _bind_methods();

@@ -8,6 +8,9 @@
 
 namespace godot {
 
+class Lobby;
+gdpp::kind::Extern gdpp_kind(Lobby *);
+
 class Lobby {
 public:
 	using Base = Node;

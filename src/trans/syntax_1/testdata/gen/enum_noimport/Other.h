@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Other;
+gdpp::kind::RefCounted gdpp_kind(Other *);
+
 enum _gdpp_Other_Local : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Other_Local, "Other.Local")
 

@@ -132,10 +132,10 @@ See "Sanitizers" in `gd++ man building`.
 The usual suspects, in C++ coming from GDScript:
 
 - A null pointer: a node path that found nothing, an unset `@export`, or a failed downcast with `as`. Check pointers before using them, or assert that they're set.
-- A freed node: pointers don't keep nodes alive.
-  - After `queue_destroy` or `queue_free()`, the node goes away at the end of the frame, and pointers to it dangle.
-  - To hold on to a node that may go away, keep a `Weak[T]` instead, e.g. `var target: Weak[Enemy]`. `Enemy *e = target` gives `nullptr` once the node is gone.
-  - Use the pointer right away, and don't keep it. See `gd++ man weak`.
+- A freed node: a `Gd` of a node is a plain pointer, which doesn't keep the node alive.
+  - After `queue_destroy` or `queue_free()`, the node goes away at the end of the frame, and `Gd`s of it dangle.
+  - To hold on to a node that may go away, keep a `Weak[T]` instead, e.g. `var target: Weak[Enemy]`. `Gd<Enemy> e = target` gives null once the node is gone.
+  - Use that `Gd` right away, and don't keep it. See `gd++ man weak`.
 - Work done twice in one frame, like the double death above: guard it with a flag, e.g. `if (dead) return;`.
 - An integer that overflows, or a `float` that's divided by zero. `--ubsan` finds the first.
 

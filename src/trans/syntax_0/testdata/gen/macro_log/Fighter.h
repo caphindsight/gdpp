@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Fighter;
+gdpp::kind::Object gdpp_kind(Fighter *);
+
 #define This Fighter
 class Fighter : public Node {
 	GDCLASS(Fighter, Node)

@@ -8,17 +8,20 @@
 namespace godot {
 
 class Config;
+gdpp::kind::RefCountedExtern gdpp_kind(Config *);
+class Reader;
+gdpp::kind::RefCounted gdpp_kind(Reader *);
 
 #define This Reader
 class Reader : public RefCounted {
 	GDCLASS(Reader, RefCounted)
 
 public:
-	gdpp::ExtRef<Config> config{};
+	gdpp::Gd<Config> config{};
 
 public:
-	gdpp::ExtRef<Config> get_config() const;
-	void set_config(gdpp::ExtRef<Config> p_value);
+	gdpp::Gd<Config> get_config() const;
+	void set_config(const gdpp::Gd<Config> &p_value);
 
 protected:
 	static void _bind_methods();

@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Mid;
+gdpp::kind::Object gdpp_kind(Mid *);
+
 #define This Mid
 class Mid : public Node2D {
 	GDCLASS(Mid, Node2D)

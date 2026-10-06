@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Profile;
+gdpp::kind::RefCountedExtern gdpp_kind(Profile *);
+
 class Profile : public Settings {
 public:
 	static constexpr const char *gdpp_name = "Profile";

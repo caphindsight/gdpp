@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Player;
+gdpp::kind::Object gdpp_kind(Player *);
+
 #define This Player
 class Player : public Node3D {
 	GDCLASS(Player, Node3D)

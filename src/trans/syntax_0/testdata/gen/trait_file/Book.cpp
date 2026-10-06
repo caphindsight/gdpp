@@ -11,7 +11,7 @@ void Book::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("rename", "name"), &Book::rename);
 	ClassDB::bind_method(D_METHOD("get_sequel"), &Book::get_sequel);
 	ClassDB::bind_method(D_METHOD("set_sequel", "value"), &Book::set_sequel);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::TraitRef<Titled>>("sequel", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_RESOURCE_TYPE, "Book"), "set_sequel", "get_sequel");
+	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Titled>>("sequel", PROPERTY_USAGE_DEFAULT, PROPERTY_HINT_RESOURCE_TYPE, "Book"), "set_sequel", "get_sequel");
 }
 
 void Book::_gdpp_traits(gdpp::TraitsOf<Book>) {
@@ -32,11 +32,11 @@ void Book::rename(const String &name) {
 #line 33 "Book.cpp"
 }
 
-gdpp::TraitRef<Titled> Book::get_sequel() const {
+gdpp::Gd<Titled> Book::get_sequel() const {
 	return sequel;
 }
 
-void Book::set_sequel(gdpp::TraitRef<Titled> p_value) {
+void Book::set_sequel(const gdpp::Gd<Titled> &p_value) {
 	sequel = p_value;
 }
 

@@ -8,6 +8,9 @@
 
 namespace godot {
 
+class Terrain;
+gdpp::kind::Extern gdpp_kind(Terrain *);
+
 class Terrain {
 public:
 	using Base = Node3D;

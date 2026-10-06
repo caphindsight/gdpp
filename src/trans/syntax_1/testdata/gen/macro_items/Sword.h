@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Sword;
+gdpp::kind::RefCounted gdpp_kind(Sword *);
+
 #define This Sword
 class Sword : public Item {
 	GDCLASS(Sword, Item)

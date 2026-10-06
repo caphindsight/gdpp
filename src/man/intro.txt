@@ -28,7 +28,7 @@ class_name HelloWorld
 extends Node
 
 on ready {
-  Label *label = create Label;
+  Gd<Label> label = create Label;
   label->set_text("Hello, world!");
   add_child(label);
 }

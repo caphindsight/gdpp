@@ -11,7 +11,7 @@ void Spawner::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("items", "names", "nodes", "map"), &Spawner::items);
 }
 
-Node3D *Spawner::spawn(Node *parent, const Ref<Texture2D> &tex) {
+gdpp::Gd<Node3D> Spawner::spawn(gdpp::Gd<Node> parent, const gdpp::Gd<Texture2D> &tex) {
 #line 4 "input.gd++"
 
   return nullptr;

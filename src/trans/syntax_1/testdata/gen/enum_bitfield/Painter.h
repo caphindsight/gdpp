@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Effect : int64_t;
+class Painter;
+gdpp::kind::Object gdpp_kind(Painter *);
 
 enum _gdpp_Painter_Effect : int64_t {};
 GDPP_BITFIELD_TAG(_gdpp_Painter_Effect, "Painter.Effect")

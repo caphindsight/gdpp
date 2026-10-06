@@ -401,7 +401,7 @@ func _packed_arrays_impl(n: int) -> int:
 func _godot_calls_impl(n: int) -> int {
   int64_t sum = 0;
   for (int64_t i = 0; i < n; i++) {
-    Node2D *node = create Node2D;
+    Gd<Node2D> node = create Node2D;
     node->set_position(Vector2(i % 100, i % 37));
     node->set_rotation(0.5);
     add_child(node);

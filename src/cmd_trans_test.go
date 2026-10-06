@@ -159,8 +159,10 @@ func TestTransPackage(t *testing.T) {
 		wants, bans []string
 	}{
 		"package": {CmdTrans{File: "player.gd++"},
-			[]string{`#include "Weapon.h"`, `#include "Power.h"`, "#include <godot_cpp/classes/node3d.hpp>", "Ref<Weapon> weapon{};"}, nil},
-		"spec": {CmdTrans{File: "player.gd++", Spec: "4.4"}, []string{`#include "Weapon.h"`, "Weapon *weapon{};"}, []string{"Ref<Weapon>"}},
+			[]string{`#include "Weapon.h"`, `#include "Power.h"`, "#include <godot_cpp/classes/node3d.hpp>", "gdpp::kind::RefCounted gdpp_kind(Weapon *);",
+				"gdpp::Gd<Weapon> weapon{};"}, nil},
+		"spec": {CmdTrans{File: "player.gd++", Spec: "4.4"}, []string{`#include "Weapon.h"`, "gdpp::kind::Object gdpp_kind(Weapon *);",
+			"gdpp::Gd<Weapon> weapon{};"}, []string{"gdpp::kind::RefCounted gdpp_kind(Weapon *);"}},
 		"no spec": {CmdTrans{File: "items/weapon.gdpp", NoSpec: true, Object: []string{"Resource=<my/resource.hpp>"}},
 			[]string{`#include "Player.h"`, "#include <my/resource.hpp>", "class Weapon : public Resource {"}, nil},
 	}

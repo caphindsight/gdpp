@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Guard;
+gdpp::kind::Object gdpp_kind(Guard *);
+
 #define This Guard
 class Guard : public Node {
 	GDCLASS(Guard, Node)

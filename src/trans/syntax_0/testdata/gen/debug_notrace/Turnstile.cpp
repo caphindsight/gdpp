@@ -20,7 +20,7 @@ void Turnstile::_bind_methods() {
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("ticks", PROPERTY_USAGE_NONE), "set_ticks", "get_ticks");
 	ClassDB::bind_method(D_METHOD("get_cost"), &Turnstile::get_cost);
 	ClassDB::add_property(get_class_static(), gdpp::info<int64_t>("cost", PROPERTY_USAGE_NONE), "", "get_cost");
-	ClassDB::add_signal(get_class_static(), MethodInfo("passed", gdpp::info<Node *>("by")));
+	ClassDB::add_signal(get_class_static(), MethodInfo("passed", gdpp::info<gdpp::Gd<Node>>("by")));
 	ClassDB::add_signal(get_class_static(), MethodInfo("ticked"));
 }
 
@@ -121,7 +121,7 @@ int64_t Turnstile::get_cost() const {
 #line 122 "Turnstile.cpp"
 }
 
-gdpp::Emitted Turnstile::passed(Node *by) {
+gdpp::Emitted Turnstile::passed(gdpp::Gd<Node> by) {
 	gdpp::trace_emit(this, "passed", "by", by);
 	return gdpp::Emitted{ emit_signal(GDPP_STRING_NAME("passed"), by) };
 }

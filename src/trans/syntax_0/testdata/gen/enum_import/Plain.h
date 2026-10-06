@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Plain;
+gdpp::kind::RefCounted gdpp_kind(Plain *);
+
 #define This Plain
 class Plain : public RefCounted {
 	GDCLASS(Plain, RefCounted)

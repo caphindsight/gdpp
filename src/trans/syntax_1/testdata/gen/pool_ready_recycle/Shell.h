@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Shell;
+gdpp::kind::Object gdpp_kind(Shell *);
+
 #define This Shell
 class Shell : public Node3D {
 	GDCLASS(Shell, Node3D)

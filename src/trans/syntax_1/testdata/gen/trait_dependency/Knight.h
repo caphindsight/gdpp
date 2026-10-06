@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Knight;
+gdpp::kind::Object gdpp_kind(Knight *);
+
 #define This Knight
 class Knight : public Hero {
 	GDCLASS(Knight, Hero)

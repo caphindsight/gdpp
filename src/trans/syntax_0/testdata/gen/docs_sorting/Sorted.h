@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Sorted;
+gdpp::kind::RefCounted gdpp_kind(Sorted *);
+
 #define This Sorted
 class Sorted : public RefCounted {
 	GDCLASS(Sorted, RefCounted)

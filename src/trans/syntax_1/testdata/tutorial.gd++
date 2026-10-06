@@ -110,11 +110,11 @@ decl {
 // - int -> int64_t
 // - float -> float64_t (a typedef for double, provided by GD++)
 // - Non-object types, e.g. Vector3 -> the C++ struct with the same name, from the Godot C++ bindings.
-// - Non-refcounted objects, e.g. Node -> a pointer: Node*
-// - Refcounted objects, e.g. Resource -> a reference: Ref<Resource>
+// - Non-refcounted objects, e.g. Node -> Gd<Node>, which costs what a pointer does
+// - Refcounted objects, e.g. Resource -> Gd<Resource>, which keeps the object alive like a reference
 // - GD++ enums, e.g. MyEnum -> a generated C++ enum class, so MyEnum::VALUE_1 etc. are available (see Part V).
-// - Non-refcounted externs -> ExtPtr<MyExtern> (see Part XII).
-// - Refcounted externs -> ExtRef<MyExtern> (see Part XII).
+// - Non-refcounted externs -> Gd<MyExtern> (see Part XII).
+// - Refcounted externs -> Gd<MyExtern> too (see Part XII).
 
 // Part V. Constants and enums.
 
@@ -381,7 +381,7 @@ var child_node_1: Node3D = $MyNode1  // Like GDScript: $Path/To/Node, or %Unique
 
 @onready
 var child_node_2: Node3D = {
-  Node3D* res = create Node3D;
+  Gd<Node3D> res = create Node3D;
   add_child(res);
   return res;
 }
@@ -472,7 +472,7 @@ extern Terrain {
 }
 
 // In C++ and in the public Godot API, an extern is just an object of its base class.
-// E.g. an ExtPtr<Terrain> holds a plain Node* under the hood.
+// E.g. a Gd<Terrain> holds a plain Node* under the hood.
 
 // You can expose an extern, e.g.:
 @export var my_extern: Terrain
@@ -482,7 +482,7 @@ extern Terrain {
 
 // GD++ generates wrappers, so you can use externs like regular types.
 // But each method call on an extern is resolved by name, as a string.
-// E.g. calling foo() on an ExtPtr<Terrain> is the same as calling call("foo") on the underlying Node*.
+// E.g. calling foo() on a Gd<Terrain> is the same as calling call("foo") on the underlying Node*.
 
 // The @deferred attribute makes calls go through call_deferred instead of call. @thread_safe uses call_thread_safe.
 

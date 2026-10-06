@@ -43,13 +43,29 @@ func (u *unit) header(name string) string {
 	u.globals(w, true)
 	w.ln("")
 	w.ln("namespace godot {")
-	if len(forwardNames) > 0 {
+	// Each class, extern and trait comes with its kind, so that a Gd of it works while it's incomplete, e.g. in a
+	// field of a class that it refers back to.
+	declared := slices.Clone(forwardNames)
+	for _, c := range u.classes {
+		declared = append(declared, c.name)
+	}
+	for _, e := range u.externs {
+		declared = append(declared, e.name)
+	}
+	for _, t := range u.traits {
+		declared = append(declared, t.name)
+	}
+	if len(declared) > 0 {
 		w.ln("")
-		for _, name := range forwardNames {
-			if u.symbols[name].kind == meta.Enum {
+		for _, name := range declared {
+			s := u.symbols[name]
+			if s.kind == meta.Enum {
 				w.ln("enum class %s : int64_t;", name)
 			} else {
 				w.ln("class %s;", name)
+				if k := kindNames[s.kind]; k != "" {
+					w.ln("gdpp::kind::%s gdpp_kind(%s *);", k, name)
+				}
 			}
 		}
 	}
@@ -196,12 +212,13 @@ func (c *classModel) needsNotification() bool {
 	return c.hasOnready() || len(c.notifs) > 0 || c.readyOnce
 }
 
+// kindNames are the runtime's names of the kinds of objects that a Gd holds, in namespace gdpp::kind.
+var kindNames = map[meta.Kind]string{meta.Object: "Object", meta.RefCounted: "RefCounted", meta.Extern: "Extern",
+	meta.RefCountedExtern: "RefCountedExtern", meta.Trait: "Trait", meta.RefCountedTrait: "RefCountedTrait"}
+
 // createType returns the C++ type that the class's create() returns.
 func (c *classModel) createType() string {
-	if c.refCounted {
-		return fmt.Sprintf("Ref<%s>", c.name)
-	}
-	return c.name + " *"
+	return gd(c.name)
 }
 
 // factoryDecl returns the declaration of the method that @factory declares for role, named name.

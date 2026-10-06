@@ -10,31 +10,34 @@
 
 namespace godot {
 
+class Stage;
+gdpp::kind::Object gdpp_kind(Stage *);
+
 #define This Stage
 class Stage : public Node {
 	GDCLASS(Stage, Node)
 
 public:
-	Node *root{};
-	Camera3D *camera{};
-	Node3D *health{};
-	Node2D *bar{};
-	Node *label{};
-	Stage *next{};
+	gdpp::Gd<Node> root{};
+	gdpp::Gd<Camera3D> camera{};
+	gdpp::Gd<Node3D> health{};
+	gdpp::Gd<Node2D> bar{};
+	gdpp::Gd<Node> label{};
+	gdpp::Gd<Stage> next{};
 
 public:
-	Node *get_root() const;
-	void set_root(Node *p_value);
-	Camera3D *get_camera() const;
-	void set_camera(Camera3D *p_value);
-	Node3D *get_health() const;
-	void set_health(Node3D *p_value);
-	Node2D *get_bar() const;
-	void set_bar(Node2D *p_value);
-	Node *get_label() const;
-	void set_label(Node *p_value);
-	Stage *get_next() const;
-	void set_next(Stage *p_value);
+	gdpp::Gd<Node> get_root() const;
+	void set_root(gdpp::Gd<Node> p_value);
+	gdpp::Gd<Camera3D> get_camera() const;
+	void set_camera(gdpp::Gd<Camera3D> p_value);
+	gdpp::Gd<Node3D> get_health() const;
+	void set_health(gdpp::Gd<Node3D> p_value);
+	gdpp::Gd<Node2D> get_bar() const;
+	void set_bar(gdpp::Gd<Node2D> p_value);
+	gdpp::Gd<Node> get_label() const;
+	void set_label(gdpp::Gd<Node> p_value);
+	gdpp::Gd<Stage> get_next() const;
+	void set_next(gdpp::Gd<Stage> p_value);
 
 protected:
 	static void _bind_methods();

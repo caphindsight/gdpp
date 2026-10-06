@@ -35,7 +35,7 @@ on physics_process(delta: float) {
 }
 
 func _on_body_entered(body: Node3D) -> void {
-  Enemy *enemy = body as Enemy *;
+  Gd<Enemy> enemy = body as Gd<Enemy>;
   if (enemy) {
     enemy->take_damage(damage);
     queue_destroy this;
@@ -87,7 +87,7 @@ class_name Gun
 extends Node3D
 
 func fire() -> void {
-  Bullet *bullet = create Bullet;
+  Gd<Bullet> bullet = create Bullet;
   get_tree()->get_current_scene()->add_child(bullet);
   bullet->set_global_transform(get_global_transform());
 }
@@ -156,7 +156,7 @@ ctor {
 
 ```gd++
 func fire() -> void {
-  Bullet *bullet = create Bullet;
+  Gd<Bullet> bullet = create Bullet;
   if (!bullet) {
     return;    // Too many bullets in flight: skip this shot.
   }

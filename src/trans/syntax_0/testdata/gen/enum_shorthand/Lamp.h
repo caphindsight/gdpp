@@ -9,6 +9,8 @@ namespace godot {
 
 enum class Level : int64_t;
 enum class ShadowCastingSetting : int64_t;
+class Lamp;
+gdpp::kind::Object gdpp_kind(Lamp *);
 
 enum _gdpp_Lamp_ShadowCastingSetting : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Lamp_ShadowCastingSetting, "Lamp.ShadowCastingSetting")

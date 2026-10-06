@@ -9,14 +9,17 @@
 
 namespace godot {
 
+class Lock;
+gdpp::kind::Object gdpp_kind(Lock *);
+
 #define This Lock
 class Lock : public Node {
 	GDCLASS(Lock, Node)
 
 public:
-	GDVIRTUAL1R(Door *, _open, Ref<Key>)
-	virtual Door *_open(const Ref<Key> &key);
-	Door *open(const Ref<Key> &key);
+	GDVIRTUAL1R(gdpp::Gd<Door>, _open, gdpp::Gd<Key>)
+	virtual gdpp::Gd<Door> _open(const gdpp::Gd<Key> &key);
+	gdpp::Gd<Door> open(const gdpp::Gd<Key> &key);
 
 protected:
 	static void _bind_methods();

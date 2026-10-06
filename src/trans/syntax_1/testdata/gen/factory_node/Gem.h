@@ -7,12 +7,15 @@
 
 namespace godot {
 
+class Gem;
+gdpp::kind::Object gdpp_kind(Gem *);
+
 #define This Gem
 class Gem : public Node {
 	GDCLASS(Gem, Node)
 
 public:
-	static Gem *create();
+	static gdpp::Gd<Gem> create();
 	void destroy();
 	void queue_destroy();
 

@@ -21,7 +21,7 @@ Shows the C++ declaration of a name, like `go doc`:
 Where the names come from:
 
 - godot-cpp: its own helpers, e.g. `TypedArray`, `Ref`, `memnew` or `UtilityFunctions`, which Godot's help doesn't describe, and Godot's classes, e.g. `Node3D`. For what Godot's classes do, see Godot's help, which the output points to.
-- The GD++ runtime: the helpers in namespace `gdpp` of the package's runtime header, e.g. `Ext`, `Weak`, `Async` or `create`. See `gd++ man runtime`.
+- The GD++ runtime: the helpers in namespace `gdpp` of the package's runtime header, e.g. `Gd`, `Weak`, `Async` or `create`. See `gd++ man runtime`.
 - Where both declare a name, godot-cpp's is shown.
 
 Facts:
@@ -116,7 +116,7 @@ gd++ doc TypedArray                  # a godot-cpp helper, and its members
 gd++ doc Array.push_back             # one member
 gd++ doc Node3D.rotate_y             # a method of a Godot class
 gd++ doc UtilityFunctions.print      # what gd::print is
-gd++ doc Ext                         # a GD++ runtime helper
+gd++ doc Gd                          # a GD++ runtime helper
 gd++ doc tools Ref                   # with the bindings of the package in res://tools
 gd++ doc                             # all types
 gd++ doc | grep Packed               # all packed array types

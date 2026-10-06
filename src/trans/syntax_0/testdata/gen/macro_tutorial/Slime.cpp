@@ -137,10 +137,10 @@ void Slime::_gdpp_body__physics_process(double delta) {
 #line 138 "Slime.cpp"
 }
 
-Node2D *Slime::player_in_sight() {
+gdpp::Gd<Node2D> Slime::player_in_sight() {
 #line 106 "input.gd++"
 
-    Node2D *player = gdpp::cast<Node2D *>(get_tree()->get_first_node_in_group(GDPP_STRING_NAME("player")));
+    Gd<Node2D> player = gdpp::cast<Gd<Node2D>>(get_tree()->get_first_node_in_group(GDPP_STRING_NAME("player")));
     if (player && player->get_global_position().distance_to(get_global_position()) <= sight) {
       return player;
     }
@@ -168,7 +168,7 @@ _gdpp_Slime_SlimeState Slime::_gdpp_update_patrol(double delta) {
 SlimeState Slime::update_chase(double delta) {
 #line 122 "input.gd++"
 
-    Node2D *player = player_in_sight();
+    Gd<Node2D> player = player_in_sight();
     if (!player) return SlimeState::PATROL;
     direction = player->get_global_position().x < get_global_position().x ? -1.0 : 1.0;
     set_velocity(Vector2(direction * speed * 2, 0));

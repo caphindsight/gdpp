@@ -8,6 +8,9 @@
 namespace godot {
 
 class Bullet;
+gdpp::kind::Object gdpp_kind(Bullet *);
+class BulletPool;
+gdpp::kind::Object gdpp_kind(BulletPool *);
 
 #define This BulletPool
 class BulletPool : public Node {
@@ -20,7 +23,7 @@ public:
 	gdpp::PoolSlot<BulletPool> _gdpp_pool_slot;
 	void _gdpp_recycle_ctor();
 	void _gdpp_recycle_dtor();
-	Bullet *take();
+	gdpp::Gd<Bullet> take();
 
 protected:
 	static void _bind_methods();

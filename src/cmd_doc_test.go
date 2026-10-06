@@ -106,7 +106,7 @@ func TestDocIndex(t *testing.T) {
 		"template class CharStringT\n" +
 		"struct Emitted\n" +
 		"enum Error\n" +
-		"template alias Ext = std::conditional_t<std::is_base_of_v<RefCounted, typename T::Base>, ExtRef<T>, ExtPtr<T>>\n" +
+		"template class Gd: GdTrait\n" +
 		"class Object\n" +
 		"template class TypedArray: Array\n" +
 		"template class TypedDictionary: private Dictionary\n" +

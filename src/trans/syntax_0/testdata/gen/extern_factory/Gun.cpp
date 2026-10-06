@@ -20,7 +20,7 @@ void Gun::fire() {
 
   auto bullet = gdpp::create<Bullet>();
   if (bullet) {
-    add_child(bullet.base());
+    add_child(bullet);
   }
   auto spark = gdpp::create<Spark>();
   auto shard = gdpp::create<Shard>();

@@ -33,8 +33,7 @@ class Crate {
 }
 
 func _on_body_entered(body: Node3D) -> void {
-  Trait<Damageable> target = body as Trait<Damageable>;
-  if (target) {
+  if (auto target = body as Gd<Damageable>) {
     target->take_damage(10);
   }
 }
@@ -155,11 +154,12 @@ func pick(targets: Array) -> Damageable {
 }
 ```
 
-In C++ code, `Trait<Damageable>` names the type:
+In C++ code, `Gd<Damageable>` names the type, like for any object. See `gd++ man gd`.
 
-- It's a `TraitPtr<Damageable>`, or a `TraitRef<Damageable>` if the trait's base is refcounted, which keeps the object alive.
 - `target->take_damage(5)` calls the trait's function.
-- `target.base()` gives the object as its base class, e.g. `Node3D *`, or a `Ref` of a refcounted base.
+- `target.ptr()` gives the object as its base class, e.g. `Node3D *`.
+- It converts to its base class and the base's bases, e.g. `Gd<Node3D> node = target;`.
+- It keeps the object alive if the trait's base is refcounted.
 - It starts as null, tests as a bool, compares with `==`, and converts to `Variant`.
 - `destroy target` and `queue_destroy target` do what they do for the object's class, e.g. use its pool. See `gd++ man pools`.
 
@@ -194,8 +194,8 @@ T                            Variant          the object
 ```
 
 ```gd++
-Trait<Saveable> saved = target as Trait<Saveable>;   // null if target's class isn't Saveable
-Node3D *node = target as Node3D *;                     // the object
+Gd<Saveable> saved = target as Gd<Saveable>;   // null if target's class isn't Saveable
+Gd<Node3D> node = target;                        // the object
 ```
 
 - The check looks up the object's class among the package's classes that implement the trait. It's cheap, but not free: in hot loops, keep the result.
@@ -223,8 +223,7 @@ trait Hostile {
 ```gd++
 TypedArray<Node> enemies = get_tree()->get_nodes_in_group(string_name "enemies");
 for (int64_t i = 0; i < enemies.size(); i++) {
-  Trait<Hostile> enemy = enemies[i] as Trait<Hostile>;
-  if (enemy) {
+  if (auto enemy = enemies[i] as Gd<Hostile>) {
     enemy->attack();
   }
 }

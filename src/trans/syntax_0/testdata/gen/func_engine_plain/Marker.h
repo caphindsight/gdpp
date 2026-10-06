@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Marker;
+gdpp::kind::Object gdpp_kind(Marker *);
+
 #define This Marker
 class Marker : public Node {
 	GDCLASS(Marker, Node)

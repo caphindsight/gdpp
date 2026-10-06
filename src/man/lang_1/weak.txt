@@ -15,7 +15,7 @@ func aim(enemy: Enemy) -> void {
 }
 
 on process(delta: float) {
-  if (Enemy *e = target) {
+  if (Gd<Enemy> e = target) {
     look_at(e->get_global_position());
   }
 }
@@ -32,41 +32,41 @@ Not externs, enums or built-in types.
 # How it works
 
 - In C++, `Weak[T]` is a `Weak<T>`, which holds the object's ID, not the object.
-- It converts to the object wherever one is needed, like in `Enemy *e = target`: it looks the object up by its ID.
+- It converts to a `Gd<T>` wherever one is needed, like in `Gd<Enemy> e = target`: it looks the object up by its ID.
 - It gives null once the object is gone. `if (target)` checks the same.
 - What "gone" means depends on the kind of object:
 
 ```
-Kind of T         Without Weak                                 Weak gives null once     Converts to
-not refcounted    a T * dangles once the object is freed       the object is freed      T *
-refcounted        a Ref<T> keeps the object alive              the object is freed      Ref<T>
-@pool class       a T * stays valid, but the pool reuses it    it's returned to pool    T *
+Kind of T         Without Weak                                 Weak gives null once
+not refcounted    a Gd<T> dangles once the object is freed     the object is freed
+refcounted        a Gd<T> keeps the object alive               the object is freed
+@pool class       a Gd<T> stays valid, but the pool reuses it  it's returned to pool
 ```
 
 # Nodes and other objects that aren't refcounted
 
-- A plain pointer to a node, e.g. `Enemy *`, says nothing about whether the node still exists.
-- Once the node is freed, the pointer points to freed memory, and using it crashes the game.
-- A `Weak[Enemy]` gives `nullptr` instead, as in the example above.
+- A `Gd` of a node, e.g. `Gd<Enemy>`, is a plain pointer. It says nothing about whether the node still exists.
+- Once the node is freed, it points to freed memory, and using it crashes the game.
+- A `Weak[Enemy]` gives null instead, as in the example above.
 
-The `T *` that a `Weak` converts to doesn't keep the object alive. If something frees the object while you use the pointer, that's undefined behavior, which usually crashes the game. So:
+The `Gd<T>` that a `Weak` converts to doesn't keep such an object alive. If something frees the object while you use the `Gd`, that's undefined behavior, which usually crashes the game. So:
 
-- Use the pointer only on the main thread, where a node goes away only at the end of the frame or when your own code frees it.
-- Don't keep the pointer anywhere, e.g. in a variable of the class. Keep the `Weak`, and convert it again next time.
+- Use the `Gd` only on the main thread, where a node goes away only at the end of the frame or when your own code frees it.
+- Don't keep the `Gd` anywhere, e.g. in a variable of the class. Keep the `Weak`, and convert it again next time.
 - On other threads, the main thread can free the object at any time.
 
 # Refcounted objects
 
 - A refcounted object, e.g. a `Mesh`, has the opposite problem: it lives as long as something references it. A cache that holds it keeps it alive.
-- A `Weak` of a refcounted class converts to a `Ref<T>`, which keeps the object alive while you hold it, like any `Ref`.
+- A `Weak` of a refcounted class converts to a `Gd<T>`, which keeps the object alive while you hold it.
 - The `Weak` alone doesn't.
 
 ```gd++
 var cache: Weak[ArrayMesh]
 
 func mesh() -> ArrayMesh {
-  Ref<ArrayMesh> m = cache;
-  if (m.is_null()) {
+  Gd<ArrayMesh> m = cache;
+  if (!m) {
     m = create ArrayMesh;
     cache = m;
   }
@@ -78,7 +78,7 @@ The cache lends the mesh to whoever uses it. Once they all let go of it, Godot f
 
 `Weak` also breaks cycles:
 
-- Two refcounted objects that reference each other through `Ref`s keep each other alive forever, and leak.
+- Two refcounted objects that reference each other through `Gd`s keep each other alive forever, and leak.
 - Give the back reference a `Weak`:
 
 ```gd++
@@ -94,25 +94,25 @@ class Step {
 ```
 
 - The quest keeps its steps alive, not the other way around.
-- Once nothing else references the quest, it goes away, and `Ref<Quest> q = step->quest;` gives a null `Ref`.
+- Once nothing else references the quest, it goes away, and `Gd<Quest> q = step->quest;` gives null.
 
 # Objects of @pool classes
 
-- A pointer to a pooled object, e.g. a homing missile's `Bullet *target`, stays valid after the bullet is returned to the pool, since the pool keeps the object.
-- But the pool may reuse it for another shot. Then the pointer points to a different bullet.
+- A `Gd` of a pooled object, e.g. a homing missile's `Gd<Bullet> target`, stays valid after the bullet is returned to the pool, since the pool keeps the object.
+- But the pool may reuse it for another shot. Then the `Gd` points to a different bullet.
 - Use `Weak[Bullet]` instead:
 
 ```gd++
 var target: Weak[Bullet]
 
 on process(delta: float) {
-  if (Bullet *b = target) {
+  if (Gd<Bullet> b = target) {
     look_at(b->get_global_position());
   }
 }
 ```
 
-- `Bullet *b = target` gives the bullet, or `nullptr` once it's returned to its pool or deleted, even if the pool has reused it since.
+- `Gd<Bullet> b = target` gives the bullet, or null once it's returned to its pool or deleted, even if the pool has reused it since.
 - How: each pooled object counts how many times it was returned, and a `Weak` remembers the count it saw.
 - `queue_destroy` uses the same check. So a queued destroy never returns a bullet that was reused in the meantime. See `gd++ man pools`.
 
@@ -124,12 +124,10 @@ Only a `Weak` of the `@pool` class itself checks the count:
 
 # Using it in C++ code
 
-- The conversion also gives what a `T *` or a `Ref<T>` converts to, e.g. a base class, as in `Node *n = target;`.
-- It works with `as`, e.g. `cache as Ref<Mesh>`.
-- Where C++ can't use it, e.g. `auto e = target;`, which keeps the `Weak`:
-  - `target.ptr()` gives the `T *`,
-  - `cache.ref()` gives the `Ref<T>`, for a refcounted class only.
-- `==` compares a `Weak` with another `Weak` of its class, a pointer or a `Ref`. They're equal when they refer to the same object, or are both null.
+- The conversion also gives what a `Gd<T>` converts to, e.g. a base class, as in `Gd<Node> n = target;`.
+- It works with `as`, e.g. `cache as Gd<Mesh>`.
+- Where C++ can't use it, e.g. `auto e = target;`, which keeps the `Weak`, write the type: `Gd<Enemy> e = target;`. Or `target.ptr()` gives a plain pointer, which doesn't keep a refcounted object alive.
+- `==` compares a `Weak` with another `Weak` of its class, a `Gd`, a pointer or a `Ref`. They're equal when they refer to the same object, or are both null.
 - For a `@pool` class, a `Weak` taken before the object was returned to its pool doesn't equal one taken after it was reused.
 - A `Weak` itself is safe to keep for as long as you like, and to share between threads.
 

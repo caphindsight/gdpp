@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Mob;
+gdpp::kind::Object gdpp_kind(Mob *);
+
 #define This Mob
 class Mob : public Node {
 	GDCLASS(Mob, Node)

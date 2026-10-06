@@ -9,6 +9,9 @@
 
 namespace godot {
 
+class Scene;
+gdpp::kind::Object gdpp_kind(Scene *);
+
 #define This Scene
 class Scene : public Node {
 	GDCLASS(Scene, Node)
@@ -16,9 +19,9 @@ class Scene : public Node {
 private:
 #line 7 "input.gd++"
 
-  Camera3D *camera_ = nullptr;
+  Gd<Camera3D> camera_;
 
-#line 22 "Scene.h"
+#line 25 "Scene.h"
 
 public:
 	void ready();

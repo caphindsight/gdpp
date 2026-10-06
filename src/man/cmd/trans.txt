@@ -70,10 +70,10 @@ FILE
   Don't take Godot's classes and enums from the package. Then the file only sees the package's other GD++ files and what the options declare.
 
 --object NAME[=INCLUDE]
-  Declare a Godot class that isn't refcounted, e.g. `Node`, used as `NAME *`. The include defaults to godot-cpp's header for the class, e.g. `<godot_cpp/classes/node3d.hpp>` for `Node3D`.
+  Declare a Godot class that isn't refcounted, e.g. `Node`, held as a `Gd<NAME>` that's a plain pointer. The include defaults to godot-cpp's header for the class, e.g. `<godot_cpp/classes/node3d.hpp>` for `Node3D`.
 
 --refcounted NAME[=INCLUDE]
-  Declare a refcounted Godot class, e.g. `Resource`, used as `Ref<NAME>`. The include defaults to godot-cpp's header.
+  Declare a refcounted Godot class, e.g. `Resource`, held as a `Gd<NAME>` that keeps it alive. The include defaults to godot-cpp's header.
 
 --extern NAME[=INCLUDE]
   Declare an extern of another GD++ file, whose base class isn't refcounted. The include defaults to `"NAME.h"`.

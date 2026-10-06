@@ -8,6 +8,8 @@
 namespace godot {
 
 enum class Lock : int64_t;
+class Safe;
+gdpp::kind::Object gdpp_kind(Safe *);
 
 enum _gdpp_Safe_Lock : int64_t {};
 GDPP_ENUM_TAG(_gdpp_Safe_Lock, "Safe.Lock")

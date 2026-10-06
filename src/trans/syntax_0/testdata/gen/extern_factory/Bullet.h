@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Bullet;
+gdpp::kind::Extern gdpp_kind(Bullet *);
+
 class Bullet {
 public:
 	using Base = Node3D;

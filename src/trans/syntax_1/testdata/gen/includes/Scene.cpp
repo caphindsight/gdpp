@@ -17,8 +17,8 @@ void Scene::ready() {
 #line 11 "input.gd++"
 
   if (Engine::get_singleton()->is_editor_hint()) return;
-  MeshInstance2D *m = nullptr;
-  Texture2D *t = nullptr;
+  Gd<MeshInstance2D> m;
+  Gd<Texture2D> t;
 
 #line 24 "Scene.cpp"
 }

@@ -8,6 +8,9 @@
 
 namespace godot {
 
+class Stats;
+gdpp::kind::RefCounted gdpp_kind(Stats *);
+
 #define This Stats
 class Stats : public RefCounted, public Scored {
 	GDCLASS(Stats, RefCounted)

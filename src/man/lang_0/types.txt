@@ -47,18 +47,18 @@ Array, Dictionary             the same name                  const T &
 PackedByteArray, ...          the same name                  const T &
 Array[T]                      TypedArray<T>                  const TypedArray<T> &
 Dictionary[K, V]              TypedDictionary<K, V>          const TypedDictionary<K, V> &
-Node, Node3D, Object, ...     Node *, Node3D *, ...          the pointer
-RefCounted, Resource, ...     Ref<Resource>, ...             const Ref<T> &
-your GD++ classes             like their base: Player * or Ref<Stats>
+Node, Node3D, Object, ...     Gd<Node>, Gd<Node3D>, ...      by value
+RefCounted, Resource, ...     Gd<RefCounted>, ...            const Gd<T> &
+your GD++ classes             Gd<Player>, Gd<Stats>, ...     like their base
 your GD++ enums               the C++ enum class             by value
-externs                       gdpp::ExtPtr<T> or ExtRef<T>   by value
-traits                        gdpp::Trait<T>                 by value
-Async[T], Async               gdpp::Async<T>, Async<Variant> by value
-Weak[T]                       gdpp::Weak<T>                  by value
+externs, traits               Gd<Terrain>, Gd<Damageable>    like their base
+Async[T], Async               Async<T>, Async<Variant>       by value
+Weak[T]                       Weak<T>                        by value
 ```
 
 - "Passed as": how function parameters and setters take the type.
 - Return values and fields always use the plain C++ type.
+- Every object type is a `Gd<T>`, whatever its kind. See "Objects" below.
 - Godot's `float` is a 64-bit `double`. The runtime header defines `float64_t` as `double`, to match `int64_t`.
 - godot-cpp's vector types use `real_t`, which is `float` in default builds. So e.g. the components of a `Vector3` are 32-bit.
 
@@ -83,23 +83,15 @@ Class types:
 - every class of the package's API spec, e.g. `Node`, `Camera3D`, `Resource` or `Texture2D`,
 - every class that a GD++ file of the package declares.
 
-How they're used:
-
-- A class that extends `RefCounted` is used through a reference, `Ref<T>`.
-  - The reference keeps the object alive.
-  - Godot deletes the object when the last reference goes away.
-- Any other class, i.e. `Object` and all nodes, is used through a pointer, `T *`.
-  - The pointer doesn't keep the object alive.
-  - The object lives until someone deletes it, e.g. a node until it or its parent is freed.
-- Pointers start as `nullptr`, references as null references.
+In C++, every class is held as a `Gd<T>`, e.g. `Gd<Camera3D>`. See "Objects" below.
 
 ```gd++
-var camera: Camera3D        // Camera3D *camera;
-var mesh: Mesh              // Ref<Mesh> mesh;
+var camera: Camera3D        // Gd<Camera3D> camera;
+var mesh: Mesh              // Gd<Mesh> mesh;
 
 func use() -> void {
   camera->make_current();
-  if (mesh.is_valid()) {
+  if (mesh) {
     gd::print(mesh->get_surface_count());
   }
 }
@@ -157,7 +149,7 @@ See `gd++ man enums`.
 
 An extern declared in any GD++ file of the package is a type.
 
-- In C++: a `gdpp::ExtPtr<T>`, or a `gdpp::ExtRef<T>` if its base class is refcounted.
+- In C++: a `Gd<T>`, e.g. `Gd<Terrain>`.
 - It calls the object's members by name, and converts to the externs it extends.
 - In Godot: its base class.
 - See `gd++ man externs`.
@@ -166,10 +158,26 @@ An extern declared in any GD++ file of the package is a type.
 
 A trait declared in any GD++ file of the package is a type.
 
-- In C++: a `gdpp::TraitPtr<T>`, or a `gdpp::TraitRef<T>` if its base class is refcounted. `Trait<T>` is whichever fits.
+- In C++: a `Gd<T>`, e.g. `Gd<Damageable>`.
 - It holds an object whose class implements the trait, and calls the trait's functions directly.
 - In Godot: its base class. An object whose class doesn't implement the trait arrives as null.
 - See `gd++ man traits`.
+
+# Objects
+
+In C++, `Gd<T>` holds an object of any kind: a class, refcounted or not, an extern or a trait.
+
+- It's the C++ type of every class, extern and trait in declarations, e.g. `Gd<Node3D>` for `Node3D`.
+- Your C++ code uses it too: `Gd<Player> player = create Player;`.
+- Its API is the same for every kind:
+  - it starts as null, and tests as a `bool`: `if (player) { ... }`,
+  - `->` calls the object's members,
+  - `ptr()` gives the object as a plain pointer,
+  - it converts to and from pointers and `Ref`s, so it passes to godot-cpp's functions.
+- For a refcounted class, it keeps the object alive, like a `Ref`. Godot deletes the object when the last one goes away.
+- For other classes, it doesn't. The object lives until someone deletes it, e.g. a node until it or its parent is freed.
+  - Then `Gd<T>` costs what a pointer does: the compiler generates the same code.
+- See `gd++ man runtime`.
 
 # Async
 
@@ -207,7 +215,7 @@ godot-cpp declares more than classes, e.g. `TypedArray`, `Ref`, `UtilityFunction
     Hint: Types are Godot's built-in types and classes, and the package's classes, externs, traits and enums.
 ```
 
-- Use `Array[T]` instead of `TypedArray<T>`, and a class name instead of `Ref<T>`.
+- Use `Array[T]` instead of `TypedArray<T>`, and a class name instead of `Gd<T>`.
 
 # Unknown types
 

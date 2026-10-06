@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class Math;
+gdpp::kind::RefCounted gdpp_kind(Math *);
+
 #define This Math
 class Math : public RefCounted {
 	GDCLASS(Math, RefCounted)
