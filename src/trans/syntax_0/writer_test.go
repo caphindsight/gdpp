@@ -53,6 +53,9 @@ func TestCpp(t *testing.T) {
 		"s.assert(x); assert = 1; assert; assert *= 2; f(assert x);":                       "s.assert(x); assert = 1; assert; assert *= 2; f(assert x);",
 		"assert_void x; assert_val(y); [] { assert_val z; };":                              `GDPP_ASSERT_VOID("x", x); GDPP_ASSERT_VALUE("y", (y)); [] { GDPP_ASSERT_VALUE("z", z); };`,
 		"s.assert_void(x); assert_val = 1; f(assert_void x);":                              "s.assert_void(x); assert_val = 1; f(assert_void x);",
+		"#line 6 \"a.gd++\"\nassert x;\n#ifdef A\n  assert y;\n#endif":                     "#line 6 \"a.gd++\"\nGDPP_ASSERT(\"x\", x);\n#ifdef A\n  GDPP_ASSERT(\"y\", y);\n#endif",
+		"f(a,\n  assert x);":                                                               "f(a,\n  assert x);",
+		"#line 6 \"a.gd++\"\nx as int;\n#if A\nf(x).y as T;":                               "#line 6 \"a.gd++\"\ngdpp::cast<int>(x);\n#if A\ngdpp::cast<T>(f(x).y);",
 		"x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;": "x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;",
 	} {
 		if got := cpp(code, assertAny); got != want {

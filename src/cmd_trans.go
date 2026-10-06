@@ -24,6 +24,7 @@ type CmdTrans struct {
 	File             string   `arg:"positional" help:"the GD++ file to transpile"`
 	Runtime          bool     `arg:"--runtime" help:"print the runtime header that all generated C++ includes, without a file"`
 	Invoke           bool     `arg:"--invoke" help:"only expand the file's macros and templates, and print the GD++ source that GD++ then parses"`
+	NoLine           bool     `arg:"--noline" help:"drop the #line directives from the output"`
 	Syntax           *int     `arg:"--syntax" placeholder:"N" help:"the GD++ syntax version [default: the package's, or else the latest stable one]"`
 	Nightly          bool     `arg:"--nightly" help:"the same as --syntax 0, the nightly syntax"`
 	Spec             string   `arg:"--spec" placeholder:"NAME" help:"take Godot's classes and enums from this Godot API spec in the project's cache, instead of the package's"`
@@ -43,6 +44,7 @@ func (c *CmdTrans) Run() {
 		syntax = *c.Syntax
 	}
 	Assert(!c.Invoke || !c.Runtime, "Invalid arguments: --invoke and --runtime cannot be used together.")
+	Assert(!c.NoLine || !c.Runtime, "Invalid arguments: --noline and --runtime cannot be used together.")
 	if c.Runtime {
 		Assert(c.File == "", "Invalid arguments: --runtime cannot be used with a file.")
 		_, text, err := trans.RuntimeHeader(syntax)
@@ -84,7 +86,7 @@ func (c *CmdTrans) Run() {
 		if err != nil {
 			FailWithText(err)
 		}
-		PageResult(highlightCode(text, "gd++"))
+		PageResult(highlightCode(c.dropLines(text), "gd++"))
 		return
 	}
 	generated, err := trans.Generate(c.File, file.ReadString(), c.transOptions(opts), syntax)
@@ -99,10 +101,20 @@ func (c *CmdTrans) Run() {
 		if i > 0 {
 			text.WriteString("\n")
 		}
-		text.WriteString(Styled("// ==== "+f.Name+" ====", Gray) + "\n\n" + highlightCode(f.Text, "cpp"))
+		text.WriteString(Styled("// ==== "+f.Name+" ====", Gray) + "\n\n" + highlightCode(c.dropLines(f.Text), "cpp"))
 	}
 	PageResult(text.String())
 }
+
+// dropLines returns text without its #line directives, with --noline.
+func (c *CmdTrans) dropLines(text string) string {
+	if !c.NoLine {
+		return text
+	}
+	return lineDirectiveRegexp.ReplaceAllString(text, "")
+}
+
+var lineDirectiveRegexp = regexp.MustCompile(`(?m)^#line .*\n`)
 
 // flagDependencies returns the dependencies from the flags.
 func (c *CmdTrans) flagDependencies() []trans.Dependency {

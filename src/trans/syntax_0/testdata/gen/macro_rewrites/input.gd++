@@ -1,0 +1,18 @@
+class Checker {
+  extends RefCounted
+
+  func check(v: int) {
+    invoke once();
+    invoke lines();
+  }
+}
+
+// Rewrites on one line.
+macro once() {
+  gd.text("assert v > 0; v as float;")
+}
+
+// Rewrites on several lines, which #line directives separate.
+macro lines() {
+  gd.text("assert v > 0;\nv as float;\n")
+}

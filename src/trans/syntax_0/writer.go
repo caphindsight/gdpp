@@ -270,7 +270,8 @@ func postfixEnd(ts []lexer.Token, j int) int {
 
 // asCast matches `x as T` at ts[i], the `as`. It returns the index where x starts and the end of T. It only matches
 // where both are clear, since a wrong guess could compile: x is a name or a group in brackets, followed by member
-// accesses, scopes, calls and subscripts, with nothing before it that could continue it, e.g. `)` in `(int) x as T`;
+// accesses, scopes, calls and subscripts, with nothing before it that could continue it, e.g. `)` in `(int) x as T`,
+// though a line after a preprocessor directive starts with nothing before it;
 // T is a name, followed by scopes, template arguments, `*` and `const`, with no operand after it, e.g. `y` in
 // `x as int * y`.
 func asCast(ts []lexer.Token, i int) (start, typeEnd int, ok bool) {
@@ -291,6 +292,9 @@ func asCast(ts []lexer.Token, i int) (start, typeEnd int, ok bool) {
 			return
 		}
 		p := prevToken(ts, start)
+		if afterDirective(ts, start) {
+			p = -1
+		}
 		switch {
 		case p >= 0 && (isPunct(ts[p], ".") || isPunct(ts[p], "->") || isPunct(ts[p], ":") && p > 0 && isPunct(ts[p-1], ":")):
 			if isPunct(ts[p], ":") {
@@ -400,15 +404,16 @@ func closing(ts []lexer.Token, open int) int {
 }
 
 // assertTarget matches an assertion at ts[i], `assert cond;`, where assert starts a statement and cond starts like an
-// expression, so `s.assert(x);` and `assert = 1;` aren't assertions. It returns the index where cond starts and
-// the index of the ';'.
+// expression, so `s.assert(x);` and `assert = 1;` aren't assertions. A line after a preprocessor directive starts a
+// statement too, e.g. after the #line directives around what a macro generates. It returns the index where cond
+// starts and the index of the ';'.
 func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
 	if _, found := assertKeywords[ts[i].Value]; ts[i].Type != tokIdent || !found {
 		return
 	}
 	p := prevToken(ts, i)
 	if p >= 0 && !isPunct(ts[p], ";") && !isPunct(ts[p], "{") && !isPunct(ts[p], "}") && !isPunct(ts[p], ")") &&
-		!(isPunct(ts[p], ":") && (p == 0 || !isPunct(ts[p-1], ":"))) && !(ts[p].Type == tokIdent && ts[p].Value == "else") {
+		!(isPunct(ts[p], ":") && (p == 0 || !isPunct(ts[p-1], ":"))) && !(ts[p].Type == tokIdent && ts[p].Value == "else") && !afterDirective(ts, i) {
 		return
 	}
 	cond = skipSpace(ts, i+1)
@@ -428,6 +433,22 @@ func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
 		}
 	}
 	return
+}
+
+// afterDirective reports whether ts[i] is the first token on a line right after a preprocessor directive.
+func afterDirective(ts []lexer.Token, i int) bool {
+	j := i - 1
+	for j >= 0 && ts[j].Type == tokWhitespace {
+		j--
+	}
+	if j < 0 || ts[j].Type != tokNewline {
+		return false
+	}
+	for j--; j >= 0 && ts[j].Type != tokNewline; j-- {
+	}
+	for j++; ts[j].Type == tokWhitespace; j++ {
+	}
+	return isPunct(ts[j], "#")
 }
 
 // assertKeywords are the words that start an assertion, and the macros that the fallbacks always become.

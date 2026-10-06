@@ -61,6 +61,21 @@ func TestTransInvoke(t *testing.T) {
 	}
 }
 
+func TestTransNoLine(t *testing.T) {
+	src := "class_name Player\nextends Node\n\nfunc f() -> void {\n  invoke { gd.text(\"int x = 1;\\nint y = 2;\") }\n}\n"
+	dir := writeTransFiles(t, map[string]string{"player.gd++": src})
+	file := filepath.Join(dir, "player.gd++")
+	for name, c := range map[string]CmdTrans{"trans": {File: file, Object: []string{"Node"}}, "invoke": {File: file, Invoke: true}} {
+		if out := captureStdout(t, c.Run); !strings.Contains(out, "\n#line ") {
+			t.Errorf("%s: output lacks #line directives:\n%s", name, out)
+		}
+		c.NoLine = true
+		if out := captureStdout(t, c.Run); strings.Contains(out, "#line") || !strings.Contains(out, "int y = 2;") {
+			t.Errorf("%s --noline: output = %q, want no #line directives", name, out)
+		}
+	}
+}
+
 func TestTransDebug(t *testing.T) {
 	src := "class_name Player\nextends Node\n\n@trace(\"combat\")\nfunc jump() -> void {}\n\n@profile\nfunc run() -> void {}\n"
 	dir := writeTransFiles(t, map[string]string{"player.gd++": src})
@@ -252,6 +267,7 @@ func TestTransFails(t *testing.T) {
 			"[x] player.gd++:3:9: Unknown base class \"Node\".\n     3 | extends Node\n       |         ^^^^\n" +
 				"    Hint: Types are Godot types, or classes, externs, traits and enums from the dependencies or this file.\n"},
 		"runtime and file":          {CmdTrans{File: "player.gd++", Runtime: true}, "[x] Invalid arguments: --runtime cannot be used with a file.\n"},
+		"noline and runtime":        {CmdTrans{Runtime: true, NoLine: true}, "[x] Invalid arguments: --noline and --runtime cannot be used together.\n"},
 		"no file":                   {CmdTrans{}, "[x] Invalid arguments: missing the GD++ file.\n"},
 		"missing file":              {CmdTrans{File: "missing.gd++"}, "[x] There is no file at missing.gd++.\n"},
 		"bad dependency":            {CmdTrans{File: "player.gd++", Enum: []string{"Suit:A=x"}}, "[x] Invalid arguments: --enum Suit:A=x: \"x\" is not an integer.\n"},

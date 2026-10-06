@@ -3,7 +3,7 @@ gd++ trans: print a file's generated C++
 # Synopsis
 
 ```sh
-gd++ trans FILE [--invoke] [--syntax N | --nightly] [--spec NAME | --nospec]
+gd++ trans FILE [--invoke] [--noline] [--syntax N | --nightly] [--spec NAME | --nospec]
                 [--object NAME[=INCLUDE]] [--refcounted NAME[=INCLUDE]]
                 [--extern NAME[=INCLUDE]] [--refcounted-extern NAME[=INCLUDE]]
                 [--enum NAME[=INCLUDE][:VALUES]] [--macro-timeout SECONDS]
@@ -29,7 +29,7 @@ In a package, the file sees what it would see in a build:
 - the classes, externs, traits and enums of the package's other GD++ files,
 - the package's C++ classes marked `[ptr]` or `[ref]` (see `gd++ man cpp-classes`).
 
-So the output is what the build compiles, apart from the `#line` directives, which name the file as you passed it.
+So the output is what the build compiles, apart from the `#line` directives, which name the file as you passed it. `--noline` drops them.
 
 Outside of a package:
 
@@ -50,6 +50,9 @@ FILE
 
 --invoke
   Only expand the file's macros and templates, and print the result: the file's GD++ source, with each invocation replaced by what it generates. It's exactly the source that GD++ parses to generate the C++. See `gd++ man macros`.
+
+--noline
+  Drop the `#line` directives from the output, with or without `--invoke`. They tell compilers where code comes from, but make the output harder to read.
 
 --runtime
   Print the runtime header that all generated C++ includes, `gd++/syntax_N.hpp` for syntax N, instead of transpiling a file. Without `--syntax` or `--nightly`, it's the header of the latest stable syntax. See `gd++ man runtime`.
