@@ -431,17 +431,10 @@ public:
 	// Holds p_object, which is surely a T: of T or a subclass, of a class that implements the trait T, or of the base
 	// class of the extern T, which isn't checked.
 	template <typename U, std::enable_if_t<accepts<U>(), int> = 0>
-	Gd(U *p_object) {
-		if (p_object == nullptr) {
-			return;
-		}
+	Gd(U *p_object) :
+			object_(hold(p_object)) {
 		if constexpr (is_trait()) {
 			this->trait_ = static_cast<T *>(p_object);
-		}
-		if constexpr (is_refcounted()) {
-			object_ = Ref<RefCounted>(const_cast<RefCounted *>(static_cast<const RefCounted *>(p_object)));
-		} else {
-			object_ = p_object;
 		}
 	}
 	// Holds the object of p_object, like the pointer.
@@ -558,6 +551,15 @@ private:
 	template <typename>
 	friend class Gd;
 
+	// hold returns what holds p_object: a Ref for a refcounted one, which takes a reference, else the pointer.
+	template <typename U>
+	static auto hold(U *p_object) {
+		if constexpr (is_refcounted()) {
+			return Ref<RefCounted>(const_cast<RefCounted *>(static_cast<const RefCounted *>(p_object)));
+		} else {
+			return p_object;
+		}
+	}
 	// object returns the object, as an Object.
 	const Object *object() const {
 		if constexpr (is_refcounted()) {
@@ -1982,20 +1984,41 @@ struct GetTypeInfo<gdpp::Gd<T>> {
 	}
 };
 
+// For a refcounted object, it takes the object from the engine's reference, and gives it back, directly, like
+// PtrToArg<Ref<T>> does: a temporary Ref would cost a refcount change each way.
 template <typename T>
 struct PtrToArg<gdpp::Gd<T>> {
-	// What bindings pass: a Ref of the class for a refcounted object, else a pointer.
-	using Strong = std::conditional_t<gdpp::Gd<T>::is_refcounted(), Ref<std::remove_cv_t<gdpp::gd_object_t<T>>>, std::remove_cv_t<gdpp::gd_object_t<T>> *>;
+	// The class of the object.
+	using C = std::remove_cv_t<gdpp::gd_object_t<T>>;
+	// What engine calls pass: a Ref of the class for a refcounted object, else a pointer.
+	using Strong = std::conditional_t<gdpp::Gd<T>::is_refcounted(), Ref<C>, C *>;
 	_FORCE_INLINE_ static gdpp::Gd<T> convert(const void *p_ptr) {
-		if constexpr (gdpp::Gd<T>::is_trait()) {
-			return gdpp::Gd<T>::_gdpp_find(gdpp::object_ptr(PtrToArg<Strong>::convert(p_ptr)));
+		C *object;
+		if constexpr (gdpp::Gd<T>::is_refcounted()) {
+			if (unlikely(!p_ptr)) {
+				return nullptr;
+			}
+			object = reinterpret_cast<C *>(internal::get_object_instance_binding(gdextension_interface::ref_get_object(const_cast<void *>(p_ptr))));
 		} else {
-			return PtrToArg<Strong>::convert(p_ptr);
+			object = PtrToArg<C *>::convert(p_ptr);
+		}
+		if constexpr (gdpp::Gd<T>::is_trait()) {
+			return gdpp::Gd<T>::_gdpp_find(object);
+		} else {
+			return object;
 		}
 	}
 	typedef typename PtrToArg<Strong>::EncodeT EncodeT;
-	_FORCE_INLINE_ static void encode(gdpp::Gd<T> p_val, void *p_ptr) {
-		PtrToArg<Strong>::encode(Strong(p_val.ptr()), p_ptr);
+	_FORCE_INLINE_ static void encode(const gdpp::Gd<T> &p_val, void *p_ptr) {
+		if constexpr (gdpp::Gd<T>::is_refcounted()) {
+			ERR_FAIL_NULL(p_ptr);
+			// Like PtrToArg<Ref<T>>: p_ptr is an unset reference, so it's set only for an object.
+			if (p_val) {
+				gdextension_interface::ref_set_object(p_ptr, p_val.ptr()->_owner);
+			}
+		} else {
+			PtrToArg<C *>::encode(p_val.ptr(), p_ptr);
+		}
 	}
 };
 
