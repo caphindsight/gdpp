@@ -104,6 +104,8 @@ auto mesh = create ArrayMesh;            // a Gd<ArrayMesh>
 `create T`:
 
 - Gives a `Gd<T>`, for a class or an extern (see `gd++ man externs`).
+- `Gd<Bullet>::create_new()` is the same as `create Bullet`.
+- `bullet.create();` does the same for a `Gd<Bullet> bullet`, and checks in debug builds that it held no object. See `gd++ man gd`.
 - For a `@pool` class, takes an object from the class's pool. See `gd++ man pools`.
 
 `destroy OBJECT`:
@@ -123,6 +125,8 @@ auto mesh = create ArrayMesh;            // a Gd<ArrayMesh>
 - Only works on nodes: for other objects, it doesn't compile.
 - Works on any thread.
 - Queueing the same node twice is fine.
+
+`bullet.destroy();` and `bullet.queue_destroy();` do the same for a `Gd<Bullet> bullet`, and then make it null.
 
 All three are rewrites: of `gdpp::create<T>()`, `gdpp::destroy(OBJECT)` and `gdpp::queue_destroy(NODE)`. See `gd++ man rewrites`. godot-cpp's `memnew` and `memdelete` work too, but skip pools.
 

@@ -104,6 +104,15 @@ template <typename T>
 class Gd;
 template <typename T>
 class Async;
+// create creates an object, see below. Gd's members use it, and the next two.
+template <typename T>
+Gd<T> create();
+// destroy deletes an object, see below.
+template <typename T>
+void destroy(Gd<T> p_object);
+// queue_destroy deletes a node at the end of the frame, see below.
+template <typename T>
+void queue_destroy(Gd<T> p_object);
 template <typename T>
 class Weak;
 
@@ -507,6 +516,29 @@ public:
 	// The same, with the Gd on the right.
 	template <typename P, std::enable_if_t<is_comparable<P>() && !is_gd<P>::value, int> = 0>
 	friend bool operator!=(const P &p_a, const Gd &p_b) { return !p_b.operator==(p_a); }
+
+	// create_new returns a new object of T, like `create T`.
+	static Gd create_new() { return gdpp::create<std::remove_cv_t<T>>(); }
+	// create makes it hold a new object of T, like `create T`. In debug builds, it logs an error if it held an object
+	// already. Either way, it replaces it, which for an object that isn't refcounted leaves it alive.
+	void create() {
+#ifdef DEBUG_ENABLED
+		if (*this) {
+			ERR_PRINT("Gd::create() replaces an object that the Gd still holds. Destroy that first, or assign the new object.");
+		}
+#endif
+		*this = gdpp::create<std::remove_cv_t<T>>();
+	}
+	// destroy deletes its object, like `destroy x`, and makes it null.
+	void destroy() {
+		gdpp::destroy(*this);
+		*this = nullptr;
+	}
+	// queue_destroy deletes its node at the end of the frame, like `queue_destroy x`, and makes it null.
+	void queue_destroy() {
+		gdpp::queue_destroy(*this);
+		*this = nullptr;
+	}
 
 	// _gdpp_find returns p_object as a Gd of the trait T, or null if its class doesn't implement T. `as` casts with it.
 	static Gd _gdpp_find(Object *p_object) {
@@ -1316,9 +1348,6 @@ Gd<T> create() {
 	}
 }
 
-// destroy deletes an object, see below.
-template <typename T>
-void destroy(Gd<T> p_object);
 // destroy of a pointer destroys its object like a Gd, see below.
 template <typename T>
 void destroy(T *p_object);

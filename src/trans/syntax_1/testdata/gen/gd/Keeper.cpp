@@ -62,9 +62,16 @@ int64_t Keeper::keep(gdpp::Gd<Node3D> body, const gdpp::Gd<Resource> &resource, 
   gdpp::queue_destroy(saved);
   gdpp::destroy(instance);
   gdpp::queue_destroy(road);
+  Gd<Hero> spare;
+  spare.create();
+  spare.queue_destroy();
+  spare.create();
+  spare.destroy();
+  auto fresh = Gd<Hero>::create_new();
+  fresh.destroy();
   return count + bool(node) + bool(named);
 
-#line 68 "Keeper.cpp"
+#line 75 "Keeper.cpp"
 }
 
 gdpp::Gd<Hero> Keeper::get_hero() const {

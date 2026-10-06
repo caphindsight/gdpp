@@ -39,5 +39,12 @@ func keep(body: Node3D, resource: Resource, parent: Node) -> int {
   queue_destroy saved;
   destroy instance;
   queue_destroy road;
+  Gd<Hero> spare;
+  spare.create();
+  spare.queue_destroy();
+  spare.create();
+  spare.destroy();
+  auto fresh = Gd<Hero>::create_new();
+  fresh.destroy();
   return count + bool(node) + bool(named);
 }

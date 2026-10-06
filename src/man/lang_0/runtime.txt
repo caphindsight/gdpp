@@ -96,6 +96,8 @@ Gd<T>
   - It converts from the pointers, `Ref`s and `Gd`s that are surely a `T`, and to pointers and `Ref`s of its class and its bases, but not to `Object *`.
   - It keeps a refcounted object alive. For other classes, it costs what a pointer does.
   - `Gd<T>::is_class()`, `is_trait()`, `is_extern()`, `is_refcounted()` and `is_node()` tell the kind of `T` at compile time.
+  - `Gd<T>::create_new()` returns a new object, like `create T`.
+  - `create()`, `destroy()` and `queue_destroy()` do what `create T`, `destroy` and `queue_destroy` do, with the `Gd` itself: `create()` assigns the new object, and logs an error in debug builds if the `Gd` held one; the others make it null.
 
 Weak<T>
   The C++ type of `Weak[T]`: a reference to an object of the class `T` that holds its ID, and doesn't keep it alive. See `gd++ man weak`.

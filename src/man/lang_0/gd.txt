@@ -41,12 +41,19 @@ Ref<Mesh> r = x;           to a Ref of its class or a base, for a refcounted cla
 Variant v = x;             the object, as a Variant
 y as Gd<T>                 a cast, checked where it must be: see `gd++ man cast`
 create T                   a new object, as a Gd<T>
+Gd<T>::create_new()        the same as create T, e.g. for a template's T
 destroy x                  deletes the object, see `gd++ man runtime`
 queue_destroy x            deletes a node at the end of the frame
+x.create()                 x = create T; in debug builds, logs an error if x held an object
+x.destroy()                destroy x, then x = nullptr
+x.queue_destroy()          queue_destroy x, then x = nullptr
 ```
 
 - So a `Gd` passes to godot-cpp's functions, e.g. `add_child(x)`, and godot-cpp's results become `Gd`s, e.g. `Gd<Node> parent = get_parent();`.
 - A `Gd` doesn't convert to `Object *` by itself, since `Variant`'s constructors would then be ambiguous. Write `x.ptr()`.
+- `x.create()` replaces an object that `x` still holds, like `x = create T;`. Destroy it first. Debug builds log an error when you don't, since it's usually a bug: a node left this way lives on, unreachable.
+- `x.destroy()` and `x.queue_destroy()` leave `x` null, so it can't point to a deleted object, and `x.create()` works again right away.
+- Mind `.` and `->`: `x.destroy()` is the `Gd`'s, while `x->destroy()` calls a method of the object named `destroy`, e.g. one that `@factory` adds.
 - Downcasts aren't implicit: `Gd<Player> p = node;` doesn't compile. Write `node as Gd<Player>`, which gives null if `node` isn't a `Player`.
 
 What `T` changes:
