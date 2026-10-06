@@ -1,0 +1,16 @@
+class_name Score
+extends Node
+
+extern Board {
+  extends Node
+  @readonly var size: int
+  var level: int
+}
+
+@readonly var points: int = 10
+@readonly @export_group("Stats") var kills: int
+var board: Board
+
+func reset() -> void {
+  points = board->get_size() + board->get_level();
+}

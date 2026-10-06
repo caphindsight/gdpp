@@ -1,0 +1,5 @@
+class_name Score
+extends Node
+
+@readonly
+@export var points: int

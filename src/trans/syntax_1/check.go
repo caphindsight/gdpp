@@ -1282,7 +1282,7 @@ var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "game_only", "global", "group", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "pool", "private", "profile", "readonly", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -1938,11 +1938,11 @@ func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage", "editor_only", "game_only", "noprofile", "notrace", "profile", "recycle", "trace"},
+		"export_multiline", "export_placeholder", "export_range", "export_storage", "editor_only", "game_only", "noprofile", "notrace", "profile", "readonly", "recycle", "trace"},
 		sectionAnnotations...)
 	kind := "a var"
 	if ext {
-		allowed, kind = []string{"noprofile", "profile"}, "an extern var"
+		allowed, kind = []string{"noprofile", "profile", "readonly"}, "an extern var"
 	}
 	a, err := u.annotations(v.Annotations, kind, allowed...)
 	if err != nil {
@@ -1984,6 +1984,10 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 			return nil, u.errorAt(e.Pos, len(e.Name)+1, fmt.Sprintf("Annotations @game_only and @%s can't be used together.", e.Name),
 				"The editor would read and save the default value, since the getter and setter don't run there.")
 		}
+		if strings.HasPrefix(e.Name, "export") && !slices.Contains(sectionAnnotations, e.Name) && a["readonly"] != nil {
+			return nil, u.errorAt(e.Pos, len(e.Name)+1, fmt.Sprintf("Annotations @readonly and @%s can't be used together.", e.Name),
+				"The editor couldn't load the saved value without a setter.")
+		}
 		if strings.HasPrefix(e.Name, "export") {
 			if err := u.requireBase(e, owner, "Only nodes and resources are edited in the inspector.", "Node", "Resource"); err != nil {
 				return nil, err
@@ -1994,8 +1998,15 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 		return nil, u.errorAt(r.Pos, len(r.Name)+1, fmt.Sprintf("A @recycle var needs an initial value, which property %s doesn't have.", v.Name),
 			"Give it one, e.g. \"= 0\", or reset it in a @recycle ctor.")
 	}
+	if r := a["readonly"]; r != nil && v.Property != nil {
+		return nil, u.errorAt(r.Pos, len(r.Name)+1, fmt.Sprintf("Annotation @readonly can't be used on property %s.", v.Name),
+			"A property is read-only without a set block.")
+	}
 	if v.Property == nil {
-		m.getter, m.setter = "get_"+v.Name, "set_"+v.Name
+		m.getter = "get_" + v.Name
+		if a["readonly"] == nil {
+			m.setter = "set_" + v.Name
+		}
 		return m, nil
 	}
 	for _, acc := range v.Property.Accessors {

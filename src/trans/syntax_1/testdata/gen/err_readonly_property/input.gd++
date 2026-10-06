@@ -1,0 +1,6 @@
+class_name Score
+
+@readonly
+var points: int {
+  get { return 0; }
+}

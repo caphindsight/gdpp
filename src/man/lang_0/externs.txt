@@ -76,7 +76,7 @@ func
 var
   Variables, without an initial value or a property body.
   - Read with `get_NAME()`, written with `set_NAME(value)`.
-  - They can have `@profile`.
+  - They can have `@profile`, and `@readonly`, which leaves out `set_NAME`.
 
 signal
   Signals, to send them on the object, with `emit`. They can have `@trace`.
