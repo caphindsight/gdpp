@@ -1,16 +1,17 @@
 func spawn() -> void {
-  // A node: a pointer.
-  Node3D *marker = create Node3D;
+  // Gd holds any object. A node: costs what a
+  // pointer does.
+  Gd<Node3D> marker = create Node3D;
   // A resource: a reference, which deletes the
   // object with the last one.
-  Ref<ArrayMesh> mesh = create ArrayMesh;
+  Gd<ArrayMesh> mesh = create ArrayMesh;
   // An extern.
-  Ext<Terrain> terrain = create Terrain;
+  Gd<Terrain> terrain = create Terrain;
   // A pool class: reused from its pool.
   // The crucial difference from memnew: create
   // can fail by design for some classes, e.g. a
-  // full "fixed" pool gives nullptr.
-  Bullet *bullet = create Bullet;
+  // full "fixed" pool gives null.
+  Gd<Bullet> bullet = create Bullet;
 
   // Deletes it.
   destroy marker;

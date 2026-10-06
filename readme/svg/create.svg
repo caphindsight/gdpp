@@ -1,24 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="436" height="409" viewBox="0 0 436 409">
+<svg xmlns="http://www.w3.org/2000/svg" width="436" height="429" viewBox="0 0 436 429">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">spawn</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
-  <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// A node: a pointer.</tspan></text>
-  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Node3D</tspan><tspan fill="#e6edf3"> *marker = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Node3D</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="90"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// A resource: a reference, which deletes the</tspan></text>
-  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// object with the last one.</tspan></text>
-  <text x="16" y="130"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Ref</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">ArrayMesh</tspan><tspan fill="#e6edf3">&gt; mesh = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">ArrayMesh</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// An extern.</tspan></text>
-  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Ext</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">Terrain</tspan><tspan fill="#e6edf3">&gt; terrain = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Terrain</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// A pool class: reused from its pool.</tspan></text>
-  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// The crucial difference from memnew: create</tspan></text>
-  <text x="16" y="230"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// can fail by design for some classes, e.g. a</tspan></text>
-  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// full "fixed" pool gives nullptr.</tspan></text>
-  <text x="16" y="270"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">Bullet</tspan><tspan fill="#e6edf3"> *bullet = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Bullet</tspan><tspan fill="#e6edf3">;</tspan></text>
-  <text x="16" y="290"></text>
-  <text x="16" y="310"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Deletes it.</tspan></text>
-  <text x="16" y="330"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">destroy</tspan><tspan fill="#e6edf3"> marker;</tspan></text>
-  <text x="16" y="350"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Gives it back to the pool.</tspan></text>
-  <text x="16" y="370"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">destroy</tspan><tspan fill="#e6edf3"> bullet;</tspan></text>
-  <text x="16" y="390"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="50"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Gd holds any object. A node: costs what a</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// pointer does.</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">Gd</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">Node3D</tspan><tspan fill="#e6edf3">&gt; marker = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Node3D</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// A resource: a reference, which deletes the</tspan></text>
+  <text x="16" y="130"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// object with the last one.</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">Gd</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">ArrayMesh</tspan><tspan fill="#e6edf3">&gt; mesh = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">ArrayMesh</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// An extern.</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">Gd</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">Terrain</tspan><tspan fill="#e6edf3">&gt; terrain = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Terrain</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="210"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// A pool class: reused from its pool.</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// The crucial difference from memnew: create</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// can fail by design for some classes, e.g. a</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// full "fixed" pool gives null.</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">Gd</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">Bullet</tspan><tspan fill="#e6edf3">&gt; bullet = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Bullet</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="310"></text>
+  <text x="16" y="330"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Deletes it.</tspan></text>
+  <text x="16" y="350"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">destroy</tspan><tspan fill="#e6edf3"> marker;</tspan></text>
+  <text x="16" y="370"><tspan fill="#e6edf3">  </tspan><tspan fill="#8b949e">// Gives it back to the pool.</tspan></text>
+  <text x="16" y="390"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">destroy</tspan><tspan fill="#e6edf3"> bullet;</tspan></text>
+  <text x="16" y="410"><tspan fill="#e6edf3">}</tspan></text>
   </g>
 </svg>

@@ -11,7 +11,7 @@
   <text x="16" y="170"></text>
   <text x="16" y="190"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">func</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">spawn</tspan><tspan fill="#e6edf3">() -&gt; </tspan><tspan fill="#7ee787">void</tspan><tspan fill="#e6edf3"> {</tspan></text>
   <text x="16" y="210"><tspan fill="#e6edf3">    </tspan><tspan fill="#8b949e">// The scene's root, with its children.</tspan></text>
-  <text x="16" y="230"><tspan fill="#e6edf3">    </tspan><tspan fill="#7ee787">Enemy</tspan><tspan fill="#e6edf3"> *enemy = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Enemy</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="230"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">Gd</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">Enemy</tspan><tspan fill="#e6edf3">&gt; enemy = </tspan><tspan fill="#e3b341">create</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Enemy</tspan><tspan fill="#e6edf3">;</tspan></text>
   <text x="16" y="250"><tspan fill="#e6edf3">    </tspan><tspan fill="#8b949e">// Null if the root isn't an Enemy.</tspan></text>
   <text x="16" y="270"><tspan fill="#e6edf3">    </tspan><tspan fill="#e3b341">if</tspan><tspan fill="#e6edf3"> (enemy) {</tspan></text>
   <text x="16" y="290"><tspan fill="#e6edf3">      </tspan><tspan fill="#56d4dd">add_child</tspan><tspan fill="#e6edf3">(enemy);</tspan></text>

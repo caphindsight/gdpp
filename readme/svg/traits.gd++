@@ -16,8 +16,7 @@ class Crate {
   func _on_body_entered(body: Node3D) -> void {
     // Checked at runtime: null if the body's
     // class doesn't implement Damageable.
-    Trait<Damageable> target = body as Trait<Damageable>;
-    if (target) {
+    if (auto target = body as Gd<Damageable>) {
       // A C++ virtual call, not an engine
       // call, so it's much faster.
       target->take_damage(10);

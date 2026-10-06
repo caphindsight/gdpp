@@ -70,7 +70,7 @@ See `gd++ man classes` and `gd++ man includes`.
 
 <a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
 
-See `gd++ man classes`.
+See `gd++ man classes` and `gd++ man gd`.
 
 ### Notifications
 

@@ -1,8 +1,7 @@
 func _on_body_entered(body: Node3D) -> void {
   // A downcast checks the class: null if the
   // body isn't a Player.
-  Player *player = body as Player *;
-  if (player) {
+  if (auto player = body as Gd<Player>) {
     player->hurt(10);
   }
 }

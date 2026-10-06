@@ -3,8 +3,8 @@ var cache: Weak[ArrayMesh]
 
 func mesh() -> ArrayMesh {
   // Null once the mesh is freed.
-  Ref<ArrayMesh> m = cache;
-  if (m.is_null()) {
+  Gd<ArrayMesh> m = cache;
+  if (!m) {
     m = build_mesh();
     cache = m;
   }

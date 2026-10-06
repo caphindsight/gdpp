@@ -8,7 +8,7 @@ class Spawner {
 
   func spawn() -> void {
     // The scene's root, with its children.
-    Enemy *enemy = create Enemy;
+    Gd<Enemy> enemy = create Enemy;
     // Null if the root isn't an Enemy.
     if (enemy) {
       add_child(enemy);
