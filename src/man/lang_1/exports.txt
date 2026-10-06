@@ -141,7 +141,6 @@ extends CharacterBody3D
 
 - One export annotation per variable: `@export`, `@export_range`, `@export_enum`, `@export_flags`, `@export_file`, `@export_dir`, `@export_multiline`, `@export_placeholder` or `@export_storage`.
 - Export annotations only go on variables, and not in externs.
-- Not on `@readonly` variables, which have no setter to load the saved value.
 - Export and section annotations only work in classes that extend `Node` or `Resource`, since only those are edited in the inspector.
 - `@export`, `@export_dir`, `@export_multiline` and `@export_storage` take no arguments.
 - Arguments are numbers and strings, written like in GDScript.

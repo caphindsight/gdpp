@@ -1,4 +1,0 @@
-input.gd++:5:1: Annotations @readonly and @export can't be used together.
- 5 | @export var points: int
-   | ^^^^^^^
-Hint: The editor couldn't load the saved value without a setter.

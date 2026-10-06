@@ -551,9 +551,7 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	}
 	for _, v := range e.vars {
 		w.ln("\t%s%s() const;", withSpace(v.t.cpp), v.getter)
-		if v.setter != "" {
-			w.ln("\tvoid %s(%sp_value) const;", v.setter, withSpace(v.t.param()))
-		}
+		w.ln("\tvoid %s(%sp_value) const;", v.setter, withSpace(v.t.param()))
 	}
 	for _, s := range e.signals {
 		w.ln("\tgdpp::Emitted %s(%s) const;", s.s.Name, params(nil, s.params, s.s.Params))
@@ -635,9 +633,6 @@ func (u *unit) externDefs(w *writer, e *externModel) {
 		}
 		w.ln("\treturn gdpp::cast<%s>(_gdpp_base->get(GDPP_STRING_NAME(%q)));", v.t.cpp, v.v.Name)
 		w.ln("}")
-		if v.setter == "" {
-			continue
-		}
 		w.ln("")
 		w.ln("inline void %s::%s(%sp_value) const {", e.name, v.setter, withSpace(v.t.param()))
 		if v.profile {

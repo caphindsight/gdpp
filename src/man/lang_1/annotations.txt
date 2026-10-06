@@ -216,9 +216,6 @@ Functions of traits only take `@const`. The functions of a class that implement 
 @onready
   Assign the initial value right before the `on ready` block, instead of in the constructor. Only in classes that extend `Node`. In a `@pool` class, only the first time an object gets ready, unless it also has `@recycle`. See `gd++ man lifecycle`.
 
-@readonly
-  Leave out the setter, so scripts and the editor can't change the variable. C++ code still writes its field. Not on properties, and not with an export annotation. See "@readonly" in `gd++ man variables`.
-
 @recycle
   Only in a `@pool` class. See "Resetting variables" and "Getting ready again" in `gd++ man pools`.
   - Reset the variable to its initial value, or to its type's default without one, each time the pool reuses an object.
@@ -297,9 +294,6 @@ They don't combine.
 
 @noprofile
   Leave them out of the extern's `@profile`.
-
-@readonly
-  Leave out their setter, for variables that the class declares `@readonly`.
 
 # Signals
 

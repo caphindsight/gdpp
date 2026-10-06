@@ -1,4 +1,0 @@
-input.gd++:3:1: Annotation @readonly can't be used on property points.
- 3 | @readonly
-   | ^^^^^^^^^
-Hint: A property is read-only without a set block.
