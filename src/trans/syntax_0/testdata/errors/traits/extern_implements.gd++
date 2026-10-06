@@ -1,0 +1,4 @@
+extern Foo {
+  extends Node
+  implements Bar
+}

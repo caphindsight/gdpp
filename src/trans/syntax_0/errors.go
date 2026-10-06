@@ -388,6 +388,9 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 			"Doc comments and annotations belong to func, var, signal, enum, class and extern declarations, and to enum values. " +
 				"Only @global belongs to decl and impl blocks."
 
+	case isName && u.Value == "implements" && (kw == "extern_name" || at(sig, enclosing(sig, j, "{")-2).Value == "extern"):
+		return "Externs can't implement traits.", "Only classes implement traits. Remove \"implements\" from the extern."
+
 	case isDoc(u):
 		return "This doc comment is not followed by a declaration.",
 			"Doc comments document the declaration right after them. Use \"//\" for a regular comment."

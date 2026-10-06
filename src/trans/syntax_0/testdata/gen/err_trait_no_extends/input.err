@@ -1,4 +1,0 @@
-input.gd++:1:1: Trait Damageable needs a base class: "extends Base".
- 1 | trait Damageable {
-   | ^^^^^
-Hint: Classes that implement the trait extend its base class, e.g. Node3D. Calls through the trait can use it too.

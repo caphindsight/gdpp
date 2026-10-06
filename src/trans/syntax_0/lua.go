@@ -1443,7 +1443,7 @@ func (r *run) emitClass(kind string, t *lua.LTable) int {
 		item.Class = &Class{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Implements: r.implements(what, t), Members: members}
 	} else {
 		if t.RawGetString("implements") != lua.LNil {
-			r.L.RaiseError("%s: externs don't implement traits.", what)
+			r.L.RaiseError("%s: externs can't implement traits.", what)
 		}
 		item.Extern = &Extern{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Members: members}
 	}

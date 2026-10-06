@@ -760,9 +760,6 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 	switch {
 	case slices.Contains(seen, s):
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s %s extends itself through its bases.", what, s.name), "")
-	case trait && extends == nil:
-		return 0, u.errorAt(pos, len("trait"), fmt.Sprintf("Trait %s needs a base class: \"extends Base\".", s.name),
-			"Classes that implement the trait extend its base class, e.g. Node3D. Calls through the trait can use it too.")
 	case b == nil:
 		t := &Type{Pos: pos, Name: name}
 		if extends == nil {

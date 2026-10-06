@@ -1,0 +1,3 @@
+extern_name Foo
+extends Node
+implements Bar

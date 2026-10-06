@@ -1,0 +1,12 @@
+// Without extends, a trait extends RefCounted.
+trait Scored {
+  @const func score() -> int
+}
+
+class Stats {
+  implements Scored
+
+  @const func score() -> int {
+    return 42;
+  }
+}

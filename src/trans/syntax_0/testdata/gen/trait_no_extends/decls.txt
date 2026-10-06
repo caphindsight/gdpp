@@ -1,0 +1,2 @@
+{Name:Scored Kind:8 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:Stats Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[Scored]}

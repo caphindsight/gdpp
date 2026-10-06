@@ -63,7 +63,7 @@ trait Damageable {
 ```
 
 - Both are the same kind of trait. Files can mix them with classes, externs and other traits. See `gd++ man files`.
-- `extends` is required. It names a Godot class or a GD++ class of the package.
+- `extends` names a Godot class or a GD++ class of the package. Without `extends`, the trait extends `RefCounted`, like a class.
 - A trait can't extend an extern, an enum or another trait.
 - A trait takes a doc comment. Its one annotation is `@group`, see below.
 
@@ -109,6 +109,7 @@ class Barrel {
 - Other annotations work, e.g. `@trace`, `@rpc` or `@game_only`.
 - Two traits may have a function of the same name. One function then implements both, if their signatures match.
 - Naming a trait twice is an error, and so is naming one that a base class implements already.
+- Only classes implement traits. Externs can't.
 
 ```out
 [×] res://crate.gd++:8:14: Class Crate doesn't implement func take_damage of trait Damageable.

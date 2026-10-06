@@ -1,0 +1,4 @@
+errors/traits/extern_name_implements.gd++:3:1: Externs can't implement traits.
+ 3 | implements Bar
+   | ^^^^^^^^^^
+Hint: Only classes implement traits. Remove "implements" from the extern.
