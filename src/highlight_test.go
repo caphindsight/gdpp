@@ -92,6 +92,9 @@ func TestHighlightCode(t *testing.T) {
 			Styled("1", CodeLiteral) + " }"},
 		{"gd++", "invoke {\n  local n = 1 // c\n}", Styled("invoke", CodeKeyword) + " {\n  " + Styled("local", CodeKeyword) + " n = " +
 			Styled("1", CodeLiteral) + " " + Styled("// c", CodeComment) + "\n}"},
+		{"gd++", "macro m() { gd.shader { name = 'f' } gd.shader_library {} }", Styled("macro", CodeKeyword) + " " + Styled("m", CodeFunction) + "() { " +
+			Styled("gd", CodeType) + "." + Styled("shader", CodeFunction) + " { name = " + Styled("'f'", CodeLiteral) + " } " + Styled("gd", CodeType) + "." +
+			Styled("shader_library", CodeFunction) + " {} }"},
 		{"gd++", "macro { local n = 1 }", Styled("macro", CodeKeyword) + " { " + Styled("local", CodeKeyword) + " n = " + Styled("1", CodeLiteral) + " }"},
 		{"gd++", "macro_library\nif a then end", Styled("macro_library", CodeKeyword) + "\n" + Styled("if", CodeKeyword) + " a " +
 			Styled("then", CodeKeyword) + " " + Styled("end", CodeKeyword)},

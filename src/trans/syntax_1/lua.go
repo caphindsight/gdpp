@@ -570,7 +570,7 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 			setType("param_type", m.On.ParamType)
 			setCode("body", m.On.Body)
 		case m.Code != nil && m.Code.Shader:
-			head("shader_block", nil, m.Code.Annotations)
+			head("shader_library", nil, m.Code.Annotations)
 			setCode("body", m.Code.Body)
 		case m.Code != nil:
 			head(map[[2]bool]string{{true, false}: "decl", {false, true}: "impl", {true, true}: "decl_impl"}[[2]bool{m.Code.Decl, m.Code.Impl}], nil, m.Code.Annotations)
@@ -912,7 +912,8 @@ func (r *run) gdTable() *lua.LTable {
 	fn("ctor", func(L *lua.LState) int { return r.emitLifecycle("ctor", L.CheckTable(1)) })
 	fn("dtor", func(L *lua.LState) int { return r.emitLifecycle("dtor", L.CheckTable(1)) })
 	fn("on", func(L *lua.LState) int { return r.emitOn(L.CheckTable(1)) })
-	for _, name := range []string{"decl", "impl", "decl_impl"} {
+	fn("shader", func(L *lua.LState) int { return r.emitShader(L.CheckTable(1)) })
+	for _, name := range []string{"decl", "impl", "decl_impl", "shader_library"} {
 		fn(name, func(L *lua.LState) int { return r.emitCode(name, L.CheckTable(1)) })
 	}
 	for _, name := range []string{"import", "noimport"} {
@@ -1417,7 +1418,11 @@ func (r *run) cpp(what string, t *lua.LTable, name string) (b *Block, expr bool)
 		}
 		s, ok := str(v)
 		if !ok {
-			r.L.RaiseError("%s: %s must be C++: a string, code, or a function that calls gd.text.", what, name)
+			lang := "C++"
+			if strings.HasPrefix(what, "gd.shader") {
+				lang = "GLSL"
+			}
+			r.L.RaiseError("%s: %s must be %s: a string, code, or a function that calls gd.text.", what, name, lang)
 		}
 		return r.block(s), false
 	}
@@ -1595,6 +1600,14 @@ func (r *run) emitVar(t *lua.LTable) int {
 	return 0
 }
 
+func (r *run) emitShader(t *lua.LTable) int {
+	const what = "gd.shader"
+	s := &Shader{Pos: r.inv.Pos, Doc: r.doc(what, t), Annotations: r.annotations(what, t), Name: r.name(what, t), Params: r.params(what, t),
+		Return: r.optType(what, t, "ret"), Body: r.body(what, t)}
+	r.emit(what, &topItem{Pos: r.inv.Pos, Member: &Member{Pos: r.inv.Pos, Shader: s}})
+	return 0
+}
+
 func (r *run) emitSignal(t *lua.LTable) int {
 	const what = "gd.signal"
 	s := &Signal{Pos: r.inv.Pos, Doc: r.doc(what, t), Annotations: r.annotations(what, t), Name: r.name(what, t), Params: r.params(what, t)}
@@ -1635,7 +1648,9 @@ func (r *run) emitOn(t *lua.LTable) int {
 
 func (r *run) emitCode(kind string, t *lua.LTable) int {
 	what := "gd." + kind
-	c := &Code{Pos: r.inv.Pos, Annotations: r.annotations(what, t), Decl: kind != "impl", Impl: kind != "decl", Body: r.body(what, t)}
+	shader := kind == "shader_library"
+	c := &Code{Pos: r.inv.Pos, Annotations: r.annotations(what, t), Shader: shader, Decl: !shader && kind != "impl", Impl: !shader && kind != "decl",
+		Body: r.body(what, t)}
 	r.emit(what, &topItem{Pos: r.inv.Pos, Member: &Member{Pos: r.inv.Pos, Code: c}})
 	return 0
 }

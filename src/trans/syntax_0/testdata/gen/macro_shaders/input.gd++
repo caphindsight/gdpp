@@ -1,0 +1,14 @@
+class_name Tints
+extends RefCounted
+
+// A shader library, and a @sync shader per tint, from emitters.
+macro tints(list) {
+  gd.shader_library { body = "const float STRENGTH = 0.75;" }
+  for name, color in gd.sorted_pairs(list) do
+    gd.shader { name = name, doc = "Tints the image " .. name .. ".", annotations = { "@sync" },
+      params = { "size: Vector2i", "src: Image" }, ret = "Image[rgba8]",
+      body = "return texelFetch(src, id, 0) * vec4(" .. color .. ", 1.0) * STRENGTH;" }
+  end
+}
+
+invoke tints({night = "0.4, 0.5, 1.0", sepia = "1.0, 0.85, 0.6"})

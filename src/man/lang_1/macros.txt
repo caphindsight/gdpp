@@ -302,6 +302,19 @@ gd.impl { body = function()
 end }
 ```
 
+gd.shader { name, params, ret, body, doc, annotations }
+  A shader. Its `body` is GLSL, not C++. See `gd++ man shaders`.
+```lua
+gd.shader { name = "double_all", annotations = { "@sync" }, params = { "n: int", "values: PackedFloat32Array" },
+  ret = "PackedFloat32Array", body = "return values[id] * 2.0;" }
+```
+
+gd.shader_library { body, annotations }
+  A shader block, `shader { ... }`: GLSL that the class's shaders share.
+```lua
+gd.shader_library { body = "const float TAU = 6.28318530;" }
+```
+
 gd.import(type) and gd.noimport(type)
   An `import` or `noimport`: `gd.import("Node3D")`.
 
@@ -519,7 +532,7 @@ Facts:
 
 Each table has:
 
-- `kind`: the emitter's name: `"var"`, `"func"`, `"signal"`, `"enum"`, `"ctor"`, `"dtor"`, `"on"`, `"decl"`, `"impl"`, `"decl_impl"`, `"import"`, `"noimport"`, `"class"` or `"extern"`.
+- `kind`: the emitter's name: `"var"`, `"func"`, `"signal"`, `"enum"`, `"ctor"`, `"dtor"`, `"on"`, `"decl"`, `"impl"`, `"decl_impl"`, `"shader"`, `"shader_library"`, `"import"`, `"noimport"`, `"class"` or `"extern"`.
 - The emitter's fields, in the formats of "Lua: field formats" above. E.g. a `var` has `name`, `type`, `init`, `doc` and `annotations`.
 - `generated`: whether an invocation generated it.
 - `generated_by`: the name of the macro or template whose invocation generated it, `"{ ... }"` for a macro block, or `nil`.

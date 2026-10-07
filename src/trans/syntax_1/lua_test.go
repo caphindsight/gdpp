@@ -294,6 +294,23 @@ class Foo {
 }
 enum Suit { HEARTS }
 `, []string{"class FooCopy {", "extends Node", `@export @@tag(1, "a") var x: int = 1`, "func f(a: int) -> int { return a;}"}},
+		// Shaders and shader libraries, read and emitted again.
+		{`invoke {
+  for _, c in ipairs(ctx.members) do
+    if c.kind == "class" then
+      gd.class { name = c.name .. "Copy", extends = c.extends, body = function()
+        for _, m in ipairs(c.members) do gd[m.kind](m) end
+      end }
+    end
+  end
+}
+class Foo {
+  extends RefCounted
+  shader { const float K = 2.0; }
+  @sync shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K; }
+}
+`, []string{"class FooCopy {", "shader { const float K = 2.0;}",
+			"@sync shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K;}"}},
 		// A class's traits, read as implements, and passed on to a generated class.
 		{`invoke {
   for _, c in ipairs(ctx.members) do
