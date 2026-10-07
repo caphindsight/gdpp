@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Doubler" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="run" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="v" type="PackedFloat32Array" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

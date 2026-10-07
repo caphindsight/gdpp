@@ -116,7 +116,7 @@ invoke stat { "health", max = 50 + 50 }
 
 Templates generate declarations:
 
-- At the top level of a file without `class_name` or `extern_name`, a template may generate classes, externs and enum types.
+- At the top level of a file without `class_name` or `extern_name`, a template may generate classes, externs, enum types and shader blocks.
 - In a class or extern, it generates members.
 - In a file-level class or extern, i.e. after `class_name` or `extern_name`, it may generate inline classes and externs too.
 

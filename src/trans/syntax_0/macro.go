@@ -170,6 +170,8 @@ func (x *expander) expandFile(f *File) error {
 			case item.Member.Enum != nil && item.Member.Enum.Value == nil:
 				f.InlineEnums = append(f.InlineEnums, item.Member.Enum)
 				added = append(added, item.Member.Enum)
+			case item.Member.Code != nil && item.Member.Code.Shader:
+				f.ShaderBlocks = append(f.ShaderBlocks, item.Member.Code)
 			default:
 				keyword, _ := item.Member.keyword()
 				return x.errorAt(inv.Pos, inv.span(), fmt.Sprintf("%s generated a %s outside of any class.", x.what(inv), keyword),

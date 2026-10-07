@@ -1,0 +1,23 @@
+// Shader blocks for the whole package, from an emitter, from gd.text and from a template.
+shader {const float K = 2.0;}
+shader {
+  float twice(float x) { return x * K; }
+}
+shader {
+    const float OFFSET = 1;
+}
+
+template glsl_const(name, value) {
+  shader {
+    const float ${gd.upper_snake(name)} = ${value};
+  }
+}
+
+class Doubler {
+  extends RefCounted
+
+  @sync
+  shader run(n: int, v: PackedFloat32Array) -> PackedFloat32Array {
+    return twice(v[id]) + OFFSET;
+  }
+}

@@ -96,7 +96,7 @@ invoke {
 
 Declarations:
 
-- At the top level of a file without `class_name` or `extern_name`, a macro may generate classes, externs and enum types.
+- At the top level of a file without `class_name` or `extern_name`, a macro may generate classes, externs, enum types and shader blocks.
 - In a class or extern, it generates members.
 - In a file-level class or extern, i.e. after `class_name` or `extern_name`, it may generate inline classes and externs too.
 
@@ -310,7 +310,7 @@ gd.shader { name = "double_all", annotations = { "@sync" }, params = { "n: int",
 ```
 
 gd.shader_library { body, annotations }
-  A shader block, `shader { ... }`: GLSL that the class's shaders share.
+  A shader block, `shader { ... }`: GLSL that shaders share. In a class, it's for the class's shaders. Outside of classes, it's for every shader of the package. See "Shader blocks" in `gd++ man shaders`.
 ```lua
 gd.shader_library { body = "const float TAU = 6.28318530;" }
 ```

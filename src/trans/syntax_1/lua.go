@@ -1213,8 +1213,8 @@ func (r *run) emit(what string, item *topItem) {
 		if sc.kind != "file" && !sc.fileLevel {
 			msg = fmt.Sprintf("%s can't be used in a class or extern: they can't be nested.", what)
 		}
-	case sc.kind == "file" && (m.Enum == nil || m.Enum.Value != nil):
-		msg = fmt.Sprintf("%s can't be used outside of a class: only gd.class, gd.extern and gd.enum without a value can.", what)
+	case sc.kind == "file" && (m.Enum == nil || m.Enum.Value != nil) && (m.Code == nil || !m.Code.Shader):
+		msg = fmt.Sprintf("%s can't be used outside of a class: only gd.class, gd.extern, gd.enum without a value and gd.shader_library can.", what)
 	}
 	if msg != "" {
 		r.L.RaiseError("%s", msg)

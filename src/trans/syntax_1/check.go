@@ -197,30 +197,39 @@ func (u *unit) errorAt(pos lexer.Position, n int, msg, hint string) *Error {
 	return e.withSource(u.src)
 }
 
-// parseUnit parses src, expands its macros and templates with those of the dependencies in opts, and indexes the
-// declarations, without the other dependencies.
-func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
+// parseExpanded parses the GD++ source src, and expands its invocations.
+func parseExpanded(filename, src string, opts meta.Options) (*File, *expander, error) {
 	file, err := Parse(filename, src)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := checkInvokes(file, src); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	x, err := newExpander(filename, src, file, opts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := x.expandFile(file); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(x.edits) > 0 { // What later stages see is the expanded source, as GD++ text.
 		if file, err = x.reparse(); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
+	return file, x, nil
+}
+
+// parseUnit parses src, expands its macros and templates with those of the dependencies in opts, and indexes the
+// declarations, without the other dependencies.
+func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
+	file, x, err := parseExpanded(filename, src, opts)
+	if err != nil {
+		return nil, err
+	}
 	u := &unit{src: src, file: file, symbols: map[string]*symbol{}, generated: x.generated}
-	if u.shaderLibs, err = shaderLibs(filename, file, opts); err != nil {
+	if u.shaderLibs, err = shaderLibs(filename, src, file, opts); err != nil {
 		return nil, err
 	}
 	if err := u.dropUserAnnotations(opts.Dependencies); err != nil {

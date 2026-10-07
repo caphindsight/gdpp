@@ -379,9 +379,9 @@ type shaderLib struct {
 	source string // How C++'s #line names its file, or empty for this file, whose name the writer knows.
 }
 
-// shaderLibs returns the package's shader blocks outside of classes: those of file, the GD++ file filename, and
-// those of the files that opts.Dependencies names, in the order of their files' paths.
-func shaderLibs(filename string, file *File, opts meta.Options) ([]shaderLib, error) {
+// shaderLibs returns the package's shader blocks outside of classes: those of file, the expanded GD++ file filename,
+// whose source is src, and those of the files that opts.Dependencies names, in the order of their files' paths.
+func shaderLibs(filename, src string, file *File, opts meta.Options) ([]shaderLib, error) {
 	var libs []shaderLib
 	for _, code := range file.ShaderBlocks {
 		libs = append(libs, shaderLib{b: code.Body, file: filename})
@@ -394,12 +394,32 @@ func shaderLibs(filename string, file *File, opts meta.Options) ([]shaderLib, er
 		if err != nil {
 			return nil, err
 		}
+		if len(f.Invokes) > 0 { // They may generate shader blocks.
+			if f, _, err = parseExpanded(d.File, d.Source, depOptions(filename, src, d, opts)); err != nil {
+				return nil, err
+			}
+		}
 		for _, code := range f.ShaderBlocks {
 			libs = append(libs, shaderLib{b: code.Body, file: d.File, source: cmpOr(d.SourceName, d.File)})
 		}
 	}
 	slices.SortStableFunc(libs, func(a, b shaderLib) int { return strings.Compare(a.file, b.file) })
 	return libs, nil
+}
+
+// depOptions returns the options to expand d's file with: opts, with the macros, templates and macro libraries of
+// filename, whose source is src, which opts.Dependencies leaves out.
+func depOptions(filename, src string, d meta.Dependency, opts meta.Options) meta.Options {
+	decls, _ := ListMacros(filename, src) // src already parsed.
+	kinds := map[meta.DeclKind]meta.Kind{meta.MacroDecl: meta.Macro, meta.TemplateDecl: meta.Template, meta.LibraryDecl: meta.MacroLibrary}
+	var deps []meta.Dependency
+	for _, decl := range decls {
+		if kind, ok := kinds[decl.Kind]; ok {
+			deps = append(deps, meta.Dependency{Name: decl.Name, Kind: kind, Source: src, File: filename, SourceName: opts.SourceName})
+		}
+	}
+	opts.Dependencies, opts.SourceName = append(deps, opts.Dependencies...), d.SourceName
+	return opts
 }
 
 // shaderBlocks returns the shader blocks that class c's shaders use: the package's, then the class's own.

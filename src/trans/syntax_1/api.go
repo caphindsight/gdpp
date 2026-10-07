@@ -29,7 +29,8 @@ const GpuRuntimeHeaderName = "gd++/syntax_1_gpu.hpp"
 var GpuRuntimeHeader string
 
 // ListMacros returns the macros, templates and user annotations that the GD++ source src declares, a LibraryDecl
-// if it has macro libraries, and a ShaderLibraryDecl if it has shader blocks outside of classes. Other files need them before ListClasses can expand their invocations.
+// if it has macro libraries, and a ShaderLibraryDecl if it has shader blocks outside of classes, or invocations there,
+// which may generate them. Other files need them before ListClasses can expand their invocations.
 func ListMacros(filename, src string) ([]meta.Declaration, error) {
 	file, err := Parse(filename, src)
 	if err != nil {
@@ -44,7 +45,7 @@ func ListMacros(filename, src string) ([]meta.Declaration, error) {
 	if len(file.Libraries) > 0 {
 		decls = append(decls, meta.Declaration{Kind: meta.LibraryDecl})
 	}
-	if len(file.ShaderBlocks) > 0 {
+	if len(file.ShaderBlocks) > 0 || len(file.Invokes) > 0 {
 		decls = append(decls, meta.Declaration{Kind: meta.ShaderLibraryDecl})
 	}
 	for _, a := range file.UserAnnotations {

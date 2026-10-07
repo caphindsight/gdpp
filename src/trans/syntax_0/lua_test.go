@@ -1,6 +1,7 @@
 package syntax_0
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -352,5 +353,27 @@ invoke {
 				t.Errorf("%s\n got: %s\nwant: %s", tc.src, got, w)
 			}
 		}
+	}
+}
+
+func TestLuaShaderLibraries(t *testing.T) {
+	// other.gd++ generates a shader block for the package, with a macro of main.gd++.
+	const main = `macro consts(k) { gd.shader_library { body = "const float K = " .. k .. ";" } }
+class Foo {
+  extends RefCounted
+  @sync shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K; }
+}
+`
+	const other = "invoke consts(2)\n"
+	decls, err := ListMacros("other.gd++", other)
+	if err != nil || !slices.ContainsFunc(decls, func(d meta.Declaration) bool { return d.Kind == meta.ShaderLibraryDecl }) {
+		t.Fatalf("ListMacros(other.gd++) = %v, %v: want a ShaderLibraryDecl", decls, err)
+	}
+	u, err := parseUnit("main.gd++", main, meta.Options{Dependencies: []meta.Dependency{{Kind: meta.ShaderLibrary, Source: other, File: "other.gd++"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(u.shaderLibs) != 1 || u.shaderLibs[0].file != "other.gd++" || !strings.Contains(u.shaderLibs[0].b.Text, "const float K = 2;") {
+		t.Errorf("shaderLibs = %+v, want K from other.gd++", u.shaderLibs)
 	}
 }
