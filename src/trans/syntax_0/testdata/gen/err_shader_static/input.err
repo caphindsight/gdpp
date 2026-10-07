@@ -1,0 +1,4 @@
+input.gd++:4:1: A shader is always static: remove @static.
+ 4 | @static
+   | ^^^^^^^
+Hint: Shaders can't use an object's fields, so GD++ makes them static.

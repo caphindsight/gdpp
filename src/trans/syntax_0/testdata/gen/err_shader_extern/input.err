@@ -1,0 +1,4 @@
+input.gd++:4:1: Externs can't contain shaders or shader blocks.
+ 4 | shader f(n: int) -> void {}
+   | ^^^^^^
+Hint: Externs only declare the funcs, vars and signals that another package defines.

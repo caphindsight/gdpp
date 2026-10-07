@@ -55,7 +55,7 @@ FILE
   Drop the `#line` directives from the output, with or without `--invoke`. They tell compilers where code comes from, but make the output harder to read.
 
 --runtime
-  Print the runtime header that all generated C++ includes, `gd++/syntax_N.hpp` for syntax N, instead of transpiling a file. Without `--syntax` or `--nightly`, it's the header of the latest stable syntax. See `gd++ man runtime`.
+  Print the runtime header that all generated C++ includes, `gd++/syntax_N.hpp` for syntax N, then the runtime header of shaders and GPU arrays, `gd++/syntax_N_gpu.hpp`, instead of transpiling a file. Without `--syntax` or `--nightly`, it's the header of the latest stable syntax. See `gd++ man runtime`.
 
 --syntax N
   The GD++ syntax version to use. Default: the package's, or else the latest stable one, which `gd++ --syntax` shows.

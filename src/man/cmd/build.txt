@@ -4,7 +4,7 @@ gd++ build: compile packages
 
 ```sh
 gd++ build [PATH...] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
-           [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [-j N] [--clean]
+           [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [--nogpu] [-j N] [--clean]
            [--cc COMPILER] [--asan] [--ubsan] [--tsan] [--macro-timeout SECONDS]
            [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 ```
@@ -68,6 +68,9 @@ PATH...
 
 --nowarn
   Disable C++ warnings: `-w`, or `/w` with MSVC. By default, warnings are errors: `-Werror`, or `/WX` with MSVC. Either way, it applies to the package's C++ and the generated C++, not to godot-cpp.
+
+--nogpu
+  Run shaders on the CPU, even with a GPU, e.g. to step through their bodies in a debugger. See "Without a GPU" in `gd++ man shaders`.
 
 --trace GROUP...
   Compile in the `@trace` annotations of these groups, or of all groups with `all`.

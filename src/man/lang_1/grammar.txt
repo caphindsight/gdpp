@@ -25,21 +25,23 @@ Whitespace, newlines and comments may appear between any two tokens, except insi
 
 ```
 File        = Code* FileHead? TopItem*
-FileHead    = ClassHead | ExternHead | TraitHead | EnumHead | MacroHead | LibraryHead
+FileHead    = ClassHead | ExternHead | TraitHead | EnumHead | MacroHead | LibraryHead | ShaderHead
 ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )? Implements*
 ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
 TraitHead   = Doc? Annotation* 'trait_name' Ident ( 'extends' Type )?
 EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEntry*
 MacroHead   = ( 'macro_name' | 'template_name' ) Ident '(' MacroParams? ')' Body
 LibraryHead = 'macro_library' Body
+ShaderHead  = Doc? 'shader_library' GLSL code
 TopItem     = Class | Extern | Trait | Macro | AnnotDecl | Member
 ```
 
-- `Code` before the file head is always an error: `decl` and `impl` blocks must be in a class.
+- `Code` before the file head must be a shader block: `decl` and `impl` blocks must be in a class.
 - After `class_name`, `extern_name` or `trait_name`, every `Member` belongs to that class, extern or trait.
-- In a file without any of them, only enum types are allowed as members at the top level.
+- In a file without any of them, only enum types and shader blocks are allowed as members at the top level.
 - After `enum_name`, only an optional `extends` and enum values follow.
 - After `macro_name`, `template_name` or `macro_library`, the rest of the file is the `Body`.
+- After `shader_library`, the rest of the file is GLSL code.
 
 # Classes, externs and traits
 
@@ -54,6 +56,7 @@ Member      = Code
             | Annotation* 'dtor' Block
             | Annotation* 'on' Ident? ( '(' Ident ':' Type ')' )? Block
             | Func
+            | Shader
             | Signal
             | Var
             | Enum
@@ -97,8 +100,10 @@ Value       = Number | '-' Number | String | Type | '[' ( Value ( ',' Value )* '
 # Code blocks
 
 ```
-Code        = Annotation* ( 'decl' 'impl'? | 'impl' ) Block
+Code        = Annotation* ( 'decl' 'impl'? | 'impl' | 'shader' ) Block
 ```
+
+- A `'shader'` block holds GLSL code, not C++. It takes no annotations.
 
 # Functions
 
@@ -107,6 +112,14 @@ Func        = Doc? Annotation* 'func' Ident '(' ParamList? ')' ( '->' Type )? Bl
 ParamList   = Param ( ',' Param )* ','?
 Param       = Ident ( ':' Type )? ( '=' Default )?
 ```
+
+# Shaders
+
+```
+Shader      = Doc? Annotation* 'shader' Ident '(' ParamList ')' '->' Type '{' GLSL code '}'
+```
+
+- A shader's grid is its first parameter, or the one that `@grid` names, and every parameter has a type. See `gd++ man shaders`.
 
 # Signals
 
@@ -195,7 +208,7 @@ Default     = Block | Expr
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
 func  get  impl  implements  import  invoke  macro  macro_library  macro_name  noimport  on  set
-signal  template  template_name  trait  trait_name  var
+shader  shader_library  signal  template  template_name  trait  trait_name  var
 ```
 
 In C++ code, GD++ also reserves:
@@ -203,6 +216,8 @@ In C++ code, GD++ also reserves:
 - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - `This` and `gd`. See `gd++ man code`.
 - `invoke`, which invokes macros and starts macro blocks. See `gd++ man macros`.
+
+In shaders' GLSL code, GD++ reserves `id` and `index`. See `gd++ man shaders`.
 
 # See also
 

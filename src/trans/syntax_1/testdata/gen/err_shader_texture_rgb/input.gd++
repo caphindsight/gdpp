@@ -1,0 +1,6 @@
+class_name C
+extends RefCounted
+
+shader f(size: Vector2i) -> Texture2D[rgb8] {
+  return vec3(1.0);
+}

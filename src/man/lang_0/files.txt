@@ -1,6 +1,6 @@
 Files: the layout of a GD++ file
 
-A GD++ file declares any number of classes, externs, traits, enums, macros and templates. Every other GD++ file of the package can use them. This page covers the layout of a file.
+A GD++ file declares any number of classes, externs, traits, enums, macros, templates and shader blocks. Every other GD++ file of the package can use them. This page covers the layout of a file.
 
 # File-level and inline declarations
 
@@ -29,6 +29,9 @@ template_name pool(T)    // a file-level template: the rest of the file is its G
 template slot(n) { ... } // an inline template
 
 annotation save          // a user annotation, @@save, for macros
+
+shader_library           // a file-level shader library: the rest of the file is its GLSL code
+shader { ... }           // a shader block: GLSL that shaders share
 ```
 
 - Both forms work the same.
@@ -155,6 +158,13 @@ Its top level can only hold inline classes, externs, traits, enums, macros, temp
 - With `macro_name`, `template_name` or `macro_library`, the rest of the file is the body. Like after `enum_name`, nothing else can follow.
 - Their bodies may declare more macros and templates. Those are package-level declarations too.
 - `annotation NAME` declarations can go there too. See "User annotations" in `gd++ man annotations`.
+
+# Shader blocks
+
+- A shader block, `shader { ... }`, holds GLSL that shaders share.
+- In a class, its shaders use it. Outside of classes, i.e. in a file without `class_name`, or before it, every shader of the package uses it.
+- With `shader_library`, the rest of the file is one shader block, for every shader of the package. Like after `enum_name`, nothing else can follow.
+- See "Shader blocks" in `gd++ man shaders`.
 - See `gd++ man templates` and `gd++ man macros`. Prefer templates whenever they do the job: macros are more powerful, but also more advanced.
 
 # Order

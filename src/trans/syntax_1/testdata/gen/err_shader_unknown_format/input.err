@@ -1,0 +1,4 @@
+input.gd++:4:39: Unknown texture format rgb9.
+ 4 | shader f(size: Vector2i, t: Texture2D[rgb9]) -> void {}
+   |                                       ^^^^
+Hint: Shaders write textures of format r8, rg8, rgba8, rf, rgf, rgbah or rgbaf.

@@ -66,6 +66,18 @@ func (pkg Package) AsyncClass() string {
 	return pkg.Prefix() + "Async"
 }
 
+// GpuArrayClass returns the name of the package's class of GPU arrays, which
+// GpuArray types name, e.g. FooGpuArray.
+func (pkg Package) GpuArrayClass() string {
+	return pkg.Prefix() + "GpuArray"
+}
+
+// GpuTextureClass returns the name of the package's internal class of the
+// textures that shaders create, e.g. FooGpuTexture.
+func (pkg Package) GpuTextureClass() string {
+	return pkg.Prefix() + "GpuTexture"
+}
+
 // ResPath returns the res:// path of the package's root, e.g. res://addons/foo.
 func (pkg Package) ResPath() string {
 	if rel := relPath(GetProjectRoot(pkg.Root), pkg.Root); rel != "." {

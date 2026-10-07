@@ -1,0 +1,4 @@
+class_name C
+extends Node
+
+shader _process(n: int) -> void {}

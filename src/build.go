@@ -43,6 +43,7 @@ type BuildOptions struct {
 	Doc    bool   `arg:"--doc" help:"compile the documentation of GD++ classes into GDExtension libraries [default: without --ship]"`
 	NoDoc  bool   `arg:"--nodoc" help:"don't compile the documentation of GD++ classes [default: with --ship]"`
 	NoWarn bool   `arg:"--nowarn" help:"disable C++ warnings, which are errors by default, except in godot-cpp"`
+	NoGpu  bool   `arg:"--nogpu" help:"run shaders on the CPU, e.g. to step through them in a debugger"`
 	Asan   bool   `arg:"--asan" help:"detect memory errors with AddressSanitizer"`
 	Ubsan  bool   `arg:"--ubsan" help:"detect undefined behavior with UndefinedBehaviorSanitizer"`
 	Tsan   bool   `arg:"--tsan" help:"detect data races with ThreadSanitizer"`
@@ -177,6 +178,9 @@ func (o BuildOptions) sconsArgs(target string) []string {
 	if o.NoWarn {
 		args = append(args, "--gdpp-nowarn")
 	}
+	if o.NoGpu {
+		args = append(args, "--gdpp-nogpu")
+	}
 	if s := o.sanitizers(); len(s) > 0 {
 		args = append(args, "--gdpp-sanitize="+strings.Join(s, ","))
 	}
@@ -270,6 +274,9 @@ func (o BuildOptions) describe(targets []string, gdpp bool) string {
 		if len(o.Profile) > 0 {
 			desc += ", " + Styled("profiling", Magenta)
 		}
+		if o.NoGpu {
+			desc += ", " + Styled("shaders on the CPU", Magenta)
+		}
 	}
 	return desc
 }
@@ -339,13 +346,15 @@ func generateBuildCache(p Project, pkg Package) {
 	}
 
 	writeTemplate(cache.Cd("SConstruct"), sconstructTemplate, map[string]any{
-		"Id":          pkg.Id,
-		"CppStandard": pkg.Config.CppStandard,
-		"Color":       isTTY,
-		"ProjectRoot": relPath(cache, p.Root),
-		"Sources":     cppSources(p, pkg),
-		"AsyncClass":  pkg.AsyncClass(),
-		"QuitTimeout": int64(math.Round(pkg.QuitTimeout() * 1e6)),
+		"Id":              pkg.Id,
+		"CppStandard":     pkg.Config.CppStandard,
+		"Color":           isTTY,
+		"ProjectRoot":     relPath(cache, p.Root),
+		"Sources":         cppSources(p, pkg),
+		"AsyncClass":      pkg.AsyncClass(),
+		"GpuArrayClass":   pkg.GpuArrayClass(),
+		"GpuTextureClass": pkg.GpuTextureClass(),
+		"QuitTimeout":     int64(math.Round(pkg.QuitTimeout() * 1e6)),
 	})
 }
 
@@ -422,20 +431,33 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 	// Packages with GD++ classes include the runtime, which unloads their code;
 	// GD++ adds the class of tasks, which Async types name, to those whose GD++
 	// classes use Async.
-	asyncClass, runtimeName := "", ""
+	asyncClass, runtimeName, gpuRuntimeName := "", "", ""
 	if len(gdpp) > 0 {
 		var err error
 		runtimeName, _, err = trans.RuntimeHeader(pkg.Config.Syntax)
 		Check(err, "Failed to find the GD++ runtime header")
 	}
+	// The classes that GD++ adds, by name, with what they are for.
+	added := map[string]string{}
 	if slices.ContainsFunc(gdpp, func(c gdppClass) bool { return c.Async }) {
 		asyncClass = pkg.AsyncClass()
-		Assert(!slices.Contains(classes, asyncClass), "Class %s is declared in %s, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init %s --prefix NAME`.",
-			asyncClass, pkg.Root.Cd(packageFileName).ToString(), pkg.Root.ToString())
+		added[asyncClass] = "Async types"
+	}
+	if slices.ContainsFunc(gdpp, func(c gdppClass) bool { return c.Gpu }) {
+		var err error
+		gpuRuntimeName, _, err = trans.GpuRuntimeHeader(pkg.Config.Syntax)
+		Check(err, "Failed to find the GD++ runtime header of shaders")
+		added[pkg.GpuArrayClass()] = "GpuArray types"
+		added[pkg.GpuTextureClass()] = "the textures that shaders create"
+	}
+	for name, what := range added {
+		Assert(!slices.Contains(classes, name), "Class %s is declared in %s, but GD++ adds a class of that name for %s. Set another prefix with `gd++ init %s --prefix NAME`.",
+			name, pkg.Root.Cd(packageFileName).ToString(), what, pkg.Root.ToString())
 	}
 	for _, class := range gdpp {
-		Assert(class.Name != asyncClass, "Class %s is declared in %s, but GD++ adds a class of that name for Async types. Set another prefix with `gd++ init %s --prefix NAME`.",
-			class.Name, class.File.File.ToString(), pkg.Root.ToString())
+		what, clash := added[class.Name]
+		Assert(!clash, "Class %s is declared in %s, but GD++ adds a class of that name for %s. Set another prefix with `gd++ init %s --prefix NAME`.",
+			class.Name, class.File.File.ToString(), what, pkg.Root.ToString())
 		Assert(!slices.Contains(classes, class.Name), "Class %s is declared in %s and in %s.",
 			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
 		add(class.Name, class.Abstract)
@@ -448,6 +470,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		"Includes":        uniqueSorted(includes, strings.Compare),
 		"AsyncClass":      asyncClass,
 		"Runtime":         runtimeName,
+		"GpuRuntime":      gpuRuntimeName,
 	}) {
 		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}

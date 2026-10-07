@@ -2,6 +2,8 @@ Functions: func, parameters and overrides
 
 A function is a method of its class that Godot knows. GDScript can call it, e.g. `player.jump()`, and so can `call()`, signals and the editor. Its signature is GD++, and its body is C++.
 
+A shader is a special function, declared with `shader` instead of `func`, whose body is GLSL and runs on the GPU. To C++ and scripts, it's a static function like any other. See `gd++ man shaders`.
+
 # Syntax
 
 ```gd++

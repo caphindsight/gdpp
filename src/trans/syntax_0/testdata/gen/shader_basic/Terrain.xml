@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Terrain" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="blank" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="size" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="grow" qualifiers="static">
+			<return type="ShooterGpuArray" />
+			<param index="0" name="size" type="Vector3i" />
+			<param index="1" name="image" type="Image" />
+			<description>
+			</description>
+		</method>
+		<method name="noise" qualifiers="static">
+			<return type="Image" />
+			<param index="0" name="size" type="Vector2i" />
+			<param index="1" name="cell" type="float" default="8.0" />
+			<description>
+			</description>
+		</method>
+		<method name="paint" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="size" type="Vector2i" />
+			<param index="1" name="heights" type="ShooterGpuArray" />
+			<param index="2" name="src" type="Texture2D" />
+			<param index="3" name="target" type="Texture2D" />
+			<param index="4" name="tint" type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="scale" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="values" type="PackedFloat32Array" />
+			<param index="2" name="k" type="float" />
+			<description>
+				Scales each value.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -13,5 +13,11 @@
 				Creates an object of the class, like [code]create[/code] in GD++ code.
 			</description>
 		</method>
+		<method name="queue_destroy">
+			<return type="void" />
+			<description>
+				Frees the node at the end of the frame, like [code]queue_destroy[/code] in GD++ code, and [method Node.queue_free].
+			</description>
+		</method>
 	</methods>
 </class>

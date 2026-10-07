@@ -1,0 +1,4 @@
+input.gd++:4:1: Shader f needs a return type: void, or what it puts together from each cell's result.
+ 4 | shader f(n: int) {}
+   | ^^^^^^
+Hint: E.g. -> PackedFloat32Array, -> Image[rf], -> Texture2D[rgba8], -> GpuArray[float], or -> void.

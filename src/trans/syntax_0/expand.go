@@ -254,7 +254,11 @@ func (p *printer) member(m *Member) {
 	switch {
 	case m.Code != nil:
 		p.head(nil, m.Code.Annotations)
-		p.write(map[[2]bool]string{{true, false}: "decl", {false, true}: "impl", {true, true}: "decl impl"}[[2]bool{m.Code.Decl, m.Code.Impl}], " ")
+		if m.Code.Shader {
+			p.write("shader ")
+		} else {
+			p.write(map[[2]bool]string{{true, false}: "decl", {false, true}: "impl", {true, true}: "decl impl"}[[2]bool{m.Code.Decl, m.Code.Impl}], " ")
+		}
 		p.block(m.Code.Body)
 	case m.Ctor != nil:
 		p.head(nil, m.Ctor.Annotations)
@@ -296,6 +300,17 @@ func (p *printer) member(m *Member) {
 			p.write(" ")
 			p.block(f.Body)
 		}
+	case m.Shader != nil:
+		f := m.Shader
+		p.head(f.Doc, f.Annotations)
+		p.write("shader ", f.Name, "(")
+		p.params(f.Params)
+		p.write(")")
+		if f.Return != nil {
+			p.write(" -> ", typeText(f.Return))
+		}
+		p.write(" ")
+		p.block(f.Body)
 	case m.Signal != nil:
 		s := m.Signal
 		p.head(s.Doc, s.Annotations)

@@ -1,0 +1,8 @@
+/// Math that every shader of the package uses.
+shader_library
+
+const float TAU = 6.28318530;
+
+float wrap_angle(float a) {
+  return mod(a, TAU);
+}

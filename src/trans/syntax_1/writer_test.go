@@ -114,3 +114,27 @@ func TestAssertMacros(t *testing.T) {
 		})
 	}
 }
+
+func TestGlslToCpp(t *testing.T) {
+	for code, want := range map[string]string{
+		"v.xy":                  "v.swizzle<0, 1>()",
+		"c.rgb * 2.0":           "c.swizzle<0, 1, 2>() * 2.0",
+		"p.stpq.x":              "p.swizzle<0, 1, 2, 3>().x",
+		"v.x + v.r + v.s":       "v.x + v.r + v.s",
+		"v.xy = w; v.zw += w;":  "v.swizzle_ref<0, 1>() = w; v.swizzle_ref<2, 3>() += w;",
+		"if (v.xy == w)":        "if (v.swizzle<0, 1>() == w)",
+		"v.xr; s.size; v.xyzwx": "v.xr; s.size; v.xyzwx",
+		"void f(in vec3 a, out vec3 b, inout float c)": "void f(vec3 a, vec3 &b, float &c)",
+		"highp float x; lowp vec2 y;":                  "float x; vec2 y;",
+		"bvec2 b = not(a);":                            "bvec2 b = glsl_not(a);",
+		"shared float tile[64];":                       "static float tile[64];",
+		"Ray r = Ray(o, vec3(0.0));":                   "Ray r = Ray{o, vec3(0.0)};",
+		"struct Ray { vec3 o; };":                      "struct Ray { vec3 o; };",
+		"Ray make(vec3 o)":                             "Ray make(vec3 o)",
+		"v.xy\n  = w;":                                 "v.swizzle_ref<0, 1>()\n  = w;",
+	} {
+		if got := glslToCpp(code, []string{"Ray"}); got != want {
+			t.Errorf("glslToCpp(%q) = %q, want %q", code, got, want)
+		}
+	}
+}

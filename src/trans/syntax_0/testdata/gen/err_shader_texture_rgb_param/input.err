@@ -1,0 +1,4 @@
+input.gd++:4:39: Textures can't have the format rgbh, since GPUs can't write 3 channels.
+ 4 | shader f(size: Vector2i, t: Texture2D[rgbh]) -> void {}
+   |                                       ^^^^
+Hint: Use rgbah: imageStore takes a vec4 anyway, e.g. vec4(color, 1.0).

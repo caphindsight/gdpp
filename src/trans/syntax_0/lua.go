@@ -549,6 +549,8 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 			n = m.Var
 		case m.Func != nil:
 			n = m.Func
+		case m.Shader != nil:
+			n = m.Shader
 		case m.Signal != nil:
 			n = m.Signal
 		case m.Enum != nil:
@@ -567,6 +569,9 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 			}
 			setType("param_type", m.On.ParamType)
 			setCode("body", m.On.Body)
+		case m.Code != nil && m.Code.Shader:
+			head("shader_block", nil, m.Code.Annotations)
+			setCode("body", m.Code.Body)
 		case m.Code != nil:
 			head(map[[2]bool]string{{true, false}: "decl", {false, true}: "impl", {true, true}: "decl_impl"}[[2]bool{m.Code.Decl, m.Code.Impl}], nil, m.Code.Annotations)
 			setCode("body", m.Code.Body)
@@ -596,6 +601,12 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 		}
 	case *Func:
 		head("func", n.Doc, n.Annotations)
+		setStr("name", n.Name)
+		set("params", r.paramTables(n.Params))
+		setType("ret", n.Return)
+		setCode("body", n.Body)
+	case *Shader:
+		head("shader", n.Doc, n.Annotations)
 		setStr("name", n.Name)
 		set("params", r.paramTables(n.Params))
 		setType("ret", n.Return)

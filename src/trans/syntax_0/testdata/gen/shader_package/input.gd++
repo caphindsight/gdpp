@@ -1,0 +1,30 @@
+shader {
+  vec2 rotate(vec2 v, float a) {
+    return vec2(cos(a) * v.x - sin(a) * v.y, sin(a) * v.x + cos(a) * v.y);
+  }
+}
+
+class Spin {
+  extends RefCounted
+
+  shader {
+    shared float tile[64];
+  }
+
+  @sync
+  shader spin(n: int, points: PackedVector2Array, angle: float) -> PackedVector2Array {
+    return rotate(points[id], wrap_angle(angle));
+  }
+
+  shader reduce(n: int, values: GpuArray[float]) -> void {
+    tile[gl_LocalInvocationID.x] = values[id];
+    barrier();
+    if (gl_LocalInvocationID.x == 0) {
+      float sum = 0.0;
+      for (int i = 0; i < 64; i++) {
+        sum += tile[i];
+      }
+      values[id] = sum;
+    }
+  }
+}

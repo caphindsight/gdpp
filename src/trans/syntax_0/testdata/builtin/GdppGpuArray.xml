@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GdppGpuArray" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		An array of floats, ints, vectors or colors that stays on the GPU, where shaders read and write it.
+	</brief_description>
+	<description>
+		GD++ provides this class: its runtime defines it, and the package registers it. Run [code]gd++ man shaders[/code] to read how to use it.
+		A GPU array holds the elements of one kind of packed array: [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Shaders read and write its elements in place, so a simulation can run many steps without copying them back and forth. [method read] copies them back, once you need them.
+		Without a GPU, e.g. with the Compatibility renderer or [code]--headless[/code], it's an array in memory, and shaders run on the CPU.
+		[codeblock]
+		var heights = GameGpuArray.from(PackedFloat32Array([0.0, 1.0, 2.0]))
+		Terrain.erode(heights.size(), heights, 0.1)
+		print(heights.read())
+		[/codeblock]
+		In GD++ code, the type [code]GpuArray[T][/code] names it, e.g. [code]GpuArray[float][/code]. Each package with shaders or GpuArray types has its own class of GPU arrays, named after its prefix, e.g. [code]FooGpuArray[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from" qualifiers="static">
+			<return type="Variant" />
+			<param index="0" name="packed" type="Variant" />
+			<description>
+				Returns a new GPU array with the elements of [param packed]: a [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Its element type is that of [param packed].
+			</description>
+		</method>
+		<method name="read">
+			<return type="Variant" />
+			<description>
+				Returns the elements as a packed array of the GPU array's element type. It waits until the shaders that write them are done.
+			</description>
+		</method>
+		<method name="size">
+			<return type="int" />
+			<description>
+				Returns how many elements the GPU array has.
+			</description>
+		</method>
+		<method name="write">
+			<return type="void" />
+			<param index="0" name="packed" type="Variant" />
+			<description>
+				Sets the elements from [param packed], a packed array of the GPU array's element type and size.
+			</description>
+		</method>
+	</methods>
+</class>

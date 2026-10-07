@@ -1,0 +1,4 @@
+@tool
+shader_library
+
+float one() { return 1.0; }

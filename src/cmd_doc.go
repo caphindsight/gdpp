@@ -256,30 +256,38 @@ func similarGodotNames(names []godotName, name string) []string {
 // doesn't, sorted.
 func docNames(p Project, pkg Package) []godotName {
 	names := packageGodotNames(p, pkg)
-	include, src := runtimeHeader(pkg)
-	for _, d := range scanCppDecls(src, "gdpp") {
-		if !slices.ContainsFunc(names, func(n godotName) bool { return n.Name == d.name }) {
-			names = append(names, godotName{Name: d.name, Include: include, Decl: d.kind, Base: cmp.Or(d.base, d.target)})
+	for _, h := range runtimeHeaders(pkg) {
+		for _, d := range scanCppDecls(h[1], "gdpp") {
+			if !slices.ContainsFunc(names, func(n godotName) bool { return n.Name == d.name }) {
+				names = append(names, godotName{Name: d.name, Include: h[0], Decl: d.kind, Base: cmp.Or(d.base, d.target)})
+			}
 		}
 	}
 	slices.SortStableFunc(names, func(a, b godotName) int { return strings.Compare(a.Name, b.Name) })
 	return names
 }
 
-// runtimeHeader returns the include of the package's runtime header, e.g.
-// "<gd++/syntax_0.hpp>", and its contents.
-func runtimeHeader(pkg Package) (string, string) {
+// runtimeHeaders returns the include of each of the package's runtime
+// headers, e.g. "<gd++/syntax_0.hpp>", and its contents: the runtime, and the
+// runtime of shaders, if its syntax has one.
+func runtimeHeaders(pkg Package) [][2]string {
 	name, src, err := trans.RuntimeHeader(pkg.Config.Syntax)
 	Check(err, "Failed to find the GD++ runtime header")
-	return "<" + name + ">", src
+	headers := [][2]string{{"<" + name + ">", src}}
+	if name, src, err := trans.GpuRuntimeHeader(pkg.Config.Syntax); err == nil && name != "" {
+		headers = append(headers, [2]string{"<" + name + ">", src})
+	}
+	return headers
 }
 
 // docSource returns the source of the header that declares n, its namespace,
 // and where it comes from: the runtime header, or one in the package's build
 // cache.
 func docSource(pkg Package, n godotName) (string, string, string) {
-	if include, src := runtimeHeader(pkg); n.Include == include {
-		return src, "gdpp", fromRuntime
+	for _, h := range runtimeHeaders(pkg) {
+		if n.Include == h[0] {
+			return h[1], "gdpp", fromRuntime
+		}
 	}
 	roots := bindingRoots(pkg)
 	for i, root := range roots {

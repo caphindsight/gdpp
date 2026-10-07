@@ -1,0 +1,4 @@
+input.gd++:4:1: Shader f needs a parameter for the size of its grid: an int, Vector2i or Vector3i.
+ 4 | shader f() -> void {}
+   | ^^^^^^
+Hint: The shader runs once for each cell of its grid, e.g. "shader blur(size: Vector2i, ...)". It's the first parameter, unless @grid names another one.

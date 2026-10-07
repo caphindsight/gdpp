@@ -208,13 +208,17 @@ func TestTransPackageFails(t *testing.T) {
 }
 
 func TestTransRuntime(t *testing.T) {
-	_, want, _ := trans.RuntimeHeader(trans.LatestSyntax)
-	if out := captureStdout(t, (&CmdTrans{Runtime: true}).Run); out != want {
-		t.Errorf("output = %q, want the runtime header", out)
+	// The runtime header, then the runtime header of shaders.
+	headers := func(syntax int) string {
+		_, runtime, _ := trans.RuntimeHeader(syntax)
+		_, gpu, _ := trans.GpuRuntimeHeader(syntax)
+		return runtime + "\n" + gpu
 	}
-	_, want, _ = trans.RuntimeHeader(trans.NightlySyntax)
-	if out := captureStdout(t, (&CmdTrans{Runtime: true, Nightly: true}).Run); out != want {
-		t.Errorf("output with --nightly = %q, want the nightly runtime header", out)
+	if out := captureStdout(t, (&CmdTrans{Runtime: true}).Run); out != headers(trans.LatestSyntax) {
+		t.Errorf("output = %q, want the runtime headers", out)
+	}
+	if out := captureStdout(t, (&CmdTrans{Runtime: true, Nightly: true}).Run); out != headers(trans.NightlySyntax) {
+		t.Errorf("output with --nightly = %q, want the nightly runtime headers", out)
 	}
 }
 

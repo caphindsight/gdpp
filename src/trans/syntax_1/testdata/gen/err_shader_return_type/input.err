@@ -1,0 +1,4 @@
+input.gd++:4:21: Shaders can't return a String.
+ 4 | shader f(n: int) -> String {}
+   |                     ^^^^^^
+Hint: Shaders return void, a packed array, a GpuArray[T], an Image[FORMAT] or a Texture2D[FORMAT], with what their body returns for each cell.

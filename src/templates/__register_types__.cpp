@@ -11,6 +11,11 @@
 // The GD++ runtime, which defines the package's class of tasks, and unloads the package's GD++ code.
 #include <{{.Runtime}}>
 {{- end}}
+{{- if .GpuRuntime}}
+
+// The GD++ runtime of shaders, which defines the package's class of GPU arrays, and of the textures that shaders create.
+#include <{{.GpuRuntime}}>
+{{- end}}
 {{range .Includes}}
 #include {{.}}{{end}}
 
@@ -70,6 +75,10 @@ static void gdpp_initialize(ModuleInitializationLevel p_level) {
 	}
 {{- if .AsyncClass}}
 	GDREGISTER_CLASS(gdpp::GDPP_ASYNC_CLASS);
+{{- end}}
+{{- if .GpuRuntime}}
+	GDREGISTER_CLASS(gdpp::GDPP_GPU_ARRAY_CLASS);
+	GDREGISTER_INTERNAL_CLASS(gdpp::GDPP_GPU_TEXTURE_CLASS);
 {{- end}}
 {{- range .Classes}}
 	gdpp_register_class<{{.}}>();

@@ -17,7 +17,8 @@ clean:
 readme: build
 	GDPP=$(CURDIR)/$(BINARY_NAME) readme/render.sh
 
-# TestCompile also runs when GDPP_GODOT_CPP names a godot-cpp checkout with generated bindings.
+# TestCompile also runs when GDPP_GODOT_CPP names a godot-cpp checkout with generated bindings, and TestGlsl when
+# GDPP_GODOT_CPP_LIB also names a godot-cpp library built from it.
 test:
 	go -C src vet ./...
 	go -C src test ./...

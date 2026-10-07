@@ -1,0 +1,30 @@
+class_name Baker
+extends RefCounted
+
+/// Waits until the GPU has written the texture.
+@sync
+shader bake(size: Vector2i, target: Texture2D[rgba8]) -> void {
+  imageStore(target, id, vec4(1.0));
+}
+
+/// Returns an Async, which is done once the GPU has written the array.
+@sync @onthread
+shader fill(n: int, values: GpuArray[float]) -> void {
+  values[id] = float(id);
+}
+
+/// Returns an Async, which is done once the dispatch is queued.
+@onthread
+shader queue(n: int, values: GpuArray[float]) -> void {
+  values[id] = 0.0;
+}
+
+@sync @onthread
+shader heights(size: Vector2i) -> Image[rf] {
+  return float(id.x);
+}
+
+@sync
+shader blank(size: Vector2i) -> Texture2D[rgbah] {
+  return vec4(0.0);
+}

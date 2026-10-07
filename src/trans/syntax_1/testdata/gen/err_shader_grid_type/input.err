@@ -1,0 +1,4 @@
+input.gd++:4:16: The grid of a shader is an int, Vector2i or Vector3i, but size is a Vector2.
+ 4 | shader f(size: Vector2) -> void {}
+   |                ^^^^^^^
+Hint: A grid counts cells, so its size is whole: write Vector2i.

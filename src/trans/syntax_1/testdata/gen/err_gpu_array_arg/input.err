@@ -1,0 +1,4 @@
+input.gd++:4:8: Type GpuArray takes one type argument: float, int, Vector2, Vector3, Vector4 or Color, e.g. GpuArray[float].
+ 4 | var a: GpuArray[String]
+   |        ^^^^^^^^
+Hint: GPU arrays hold the elements of packed arrays that shaders can use.

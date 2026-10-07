@@ -475,6 +475,7 @@ A class body holds members, in any order:
 
 ```
 func       functions                      gd++ man functions
+shader     functions in GLSL, on the GPU  gd++ man shaders
 var        variables and properties       gd++ man variables
 signal     signals                        gd++ man signals
 enum       enums and integer constants    gd++ man enums
@@ -482,11 +483,12 @@ ctor       the constructor                gd++ man lifecycle
 dtor       the destructor                 gd++ man lifecycle
 on         notification handlers          gd++ man notifications
 decl, impl plain C++                      gd++ man code
+shader { } GLSL that shaders share        gd++ man shaders
 import     force an include               gd++ man includes
 noimport   prevent an include             gd++ man includes
 ```
 
-Functions, variables, signals and constants share one namespace, since they all become C++ members of one class:
+Functions, shaders, variables, signals and constants share one namespace, since they all become C++ members of one class:
 
 - `var x` also declares its getter `get_x` and its setter `set_x`.
 - `signal s` also declares a C++ method `s`, which emits it.

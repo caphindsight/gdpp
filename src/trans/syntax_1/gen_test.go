@@ -40,7 +40,8 @@ func TestGenerate(t *testing.T) {
 	}
 	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
 		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other, "GodotEnum": meta.GodotEnum, "Macro": meta.Macro,
-		"Template": meta.Template, "Annotation": meta.Annotation, "Trait": meta.Trait, "RefCountedTrait": meta.RefCountedTrait}
+		"Template": meta.Template, "Annotation": meta.Annotation, "Trait": meta.Trait, "RefCountedTrait": meta.RefCountedTrait,
+		"ShaderLibrary": meta.ShaderLibrary}
 	var opts meta.Options
 	for _, d := range file.Dep {
 		source := ""
@@ -187,7 +188,8 @@ func checkLines(t *testing.T, sources map[string]string, self, text string) {
 		}
 		srcLines := strings.Split(src, "\n")
 		// Lines after the first come straight from the source (minus comments), so their identifiers match, except
-		// for the rewrites of emit, rpc, is_cancelled, string_name, claim, is_done, cancel, as and assert, whose operand may start on the next line.
+		// for the rewrites of emit, rpc, is_cancelled, string_name, claim, is_done, cancel, as and assert, whose operand may start on the next line,
+		// and in shaders, of swizzles, not and shared.
 		for k := 1; i+1+k < len(lines) && !lineDirective.MatchString(lines[i+1+k]); k++ {
 			if n+k > len(srcLines) {
 				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])
@@ -197,7 +199,8 @@ func checkLines(t *testing.T, sources map[string]string, self, text string) {
 			}
 			want := identifiers(srcLines[n+k-1])
 			for _, id := range identifiers(lines[i+1+k]) {
-				if !slices.Contains([]string{"void", "gdpp", "GDPP_STRING_NAME", "GDPP_ASSERT", "GDPP_ASSERT_VOID", "GDPP_ASSERT_VALUE", "claim", "is_done", "cancel", "cast"}, id) && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
+				if !slices.Contains([]string{"void", "gdpp", "GDPP_STRING_NAME", "GDPP_ASSERT", "GDPP_ASSERT_VOID", "GDPP_ASSERT_VALUE", "claim", "is_done", "cancel", "cast",
+					"swizzle", "swizzle_ref", "glsl_not", "static"}, id) && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
 					t.Errorf("%s:%d: %q is not on line %d of the source: %q", self, i+2+k, id, n+k, srcLines[n+k-1])
 				}
 			}

@@ -17,6 +17,7 @@ Each declaration of a GD++ file gets its own files, named after it:
 Plus, for the whole package:
 
 - `gd++/syntax_1.hpp`, the runtime header. See `gd++ man runtime`.
+- `gd++/syntax_1_gpu.hpp`, the runtime header of shaders and GPU arrays, which only the files that use them include. See `gd++ man shaders`.
 - `doc_classes/NAME.xml` per class, its documentation, in debug builds, and one for each class that GD++ adds, e.g. the class of tasks. See `gd++ man docs`.
 
 Facts:
@@ -261,6 +262,10 @@ _gdpp_recycle_ctor, _gdpp_recycle_dtor   what a @pool class runs when its pool r
 _gdpp_scene                  a @scene class's scene path, a static constexpr gdpp::Scene<T>
 _gdpp_abstract               an @abstract class's mark, a static constexpr gdpp::Abstract<T>, which makes create fail to compile
 _gdpp_editor_NAME            the field that a guarded variable's getter and setter use in the editor, if it has get and set blocks
+_gdpp_gpu_CLASS              the namespace, at global scope, of a class's shaders' code: its shader blocks, and a struct per shader
+_gdpp_shader_SHADER          a shader's struct: its GLSL, and its body as C++, for the CPU
+_gdpp_kernel, _gdpp_call     a shader's compiled code, and the call that runs it
+_gdpp_body, _gdpp_result     in a shader's GLSL: its body, and what main stores the body's results in
 ```
 
 - `This` is a macro, defined around each class's code.
@@ -375,12 +380,15 @@ In a package with GD++ classes, `__register_types__.cpp` also:
 - includes the GD++ runtime,
 - calls `gdpp::uninitialize()` when the library is unloaded. It waits for the package's running tasks, and removes the engine's hooks into the package's code, e.g. signal connections. So the editor doesn't call the old code after a hot reload.
 - registers the class of tasks first, e.g. `FooAsync`, if the package's GD++ classes use `Async`. The GD++ runtime defines it.
+- registers the class of GPU arrays, e.g. `FooGpuArray`, and the internal class of the textures that shaders return, e.g. `FooGpuTexture`, if the package's GD++ classes have shaders or GPU arrays. The runtime header of shaders defines them.
 - records the traits of each class right after registering it, with `gdpp::register_traits`, which calls its `_gdpp_traits`. `gdpp::uninitialize()` forgets them.
 
 `SConstruct` defines, for all the package's C++:
 
 - `GDPP_ASYNC_CLASS` as the class of tasks' name,
-- `GDPP_QUIT_TIMEOUT_USEC` as the package's `quit_timeout`.
+- `GDPP_QUIT_TIMEOUT_USEC` as the package's `quit_timeout`,
+- `GDPP_GPU_ARRAY_CLASS` and `GDPP_GPU_TEXTURE_CLASS` as the names of the class of GPU arrays and the class of textures,
+- `GDPP_GPU_FORCE_CPU`, with `gd++ build --nogpu`, which runs shaders on the CPU.
 
 See `gd++ man async`.
 

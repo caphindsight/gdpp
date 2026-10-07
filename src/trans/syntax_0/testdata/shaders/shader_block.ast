@@ -1,0 +1,33 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Noise
+    Extends: @2:9 RefCounted
+    Members:
+      - @4:1
+        Code: @4:1
+          Shader: true
+          Body: @4:8
+            TextPos: 4:9
+            Text: |
+
+                float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+
+      - @8:1
+        Shader: @9:1
+          Annotations:
+            - @8:1 sync
+          Name: noise
+          Params:
+            - @9:14
+              Name: size
+              Type: @9:20 Vector2i
+          Return: @9:33
+            Name: Image
+            Args:
+              - @9:39 rf
+          Body: @9:43
+            TextPos: 9:44
+            Text: |
+
+                return hash(vec2(id));
+

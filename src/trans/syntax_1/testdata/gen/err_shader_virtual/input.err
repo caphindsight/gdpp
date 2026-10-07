@@ -1,0 +1,4 @@
+input.gd++:4:1: Shader _process has the name of a virtual function of Node, which it can't override, since shaders are static.
+ 4 | shader _process(n: int) -> void {}
+   | ^^^^^^
+Hint: Rename the shader. To override the function, write a func that calls the shader.

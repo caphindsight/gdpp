@@ -1,0 +1,4 @@
+input.gd++:4:1: GpuArray variables can't be exported.
+ 4 | @export var a: GpuArray[float]
+   | ^^^^^^^
+Hint: Neither the inspector nor scene files can hold GPU memory.

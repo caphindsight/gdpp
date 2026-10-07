@@ -1,0 +1,3 @@
+input.gd++:4:1: Annotation @virtual can't be used on a shader.
+ 4 | @virtual
+   | ^^^^^^^^

@@ -23,6 +23,9 @@ func (u *unit) header(name string) string {
 		w.ln("#define GDPP_TRACING")
 	}
 	w.ln("#include <%s>", RuntimeHeaderName)
+	if u.usesGpu() {
+		w.ln("#include <%s>", GpuRuntimeHeaderName)
+	}
 	// Other GD++ headers may include this one in turn, and #pragma once cuts such a cycle short. So their classes,
 	// externs and enums are forward-declared, and included at the end, unless they must be complete.
 	names, complete := u.headerNames()

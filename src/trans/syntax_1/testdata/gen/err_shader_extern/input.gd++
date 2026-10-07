@@ -1,0 +1,4 @@
+extern_name E
+extends Node
+
+shader f(n: int) -> void {}

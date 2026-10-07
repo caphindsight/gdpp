@@ -20,6 +20,7 @@ public:
 
 public:
 	static void _gdpp_traits(gdpp::TraitsOf<Book>);
+	void _gdpp_queue_destroy() override;
 	String title() const override;
 	void rename(const String &name) override;
 	gdpp::Gd<Titled> get_sequel() const;

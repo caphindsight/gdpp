@@ -14,12 +14,16 @@ void Stats::_gdpp_traits(gdpp::TraitsOf<Stats>) {
 	gdpp::implement<Scored, Stats>();
 }
 
+void Stats::_gdpp_queue_destroy() {
+	gdpp::queue_destroy(this);
+}
+
 int64_t Stats::score() const {
 #line 9 "input.gd++"
 
     return 42;
 
-#line 23 "Stats.cpp"
+#line 27 "Stats.cpp"
 }
 
 #undef This

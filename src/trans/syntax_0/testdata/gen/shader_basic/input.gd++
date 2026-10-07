@@ -1,0 +1,45 @@
+class_name Terrain
+extends Node3D
+
+shader {
+  struct Ray {
+    vec3 origin;
+    vec3 dir;
+  };
+
+  float hash(ivec2 p) {
+    return fract(sin(dot(vec2(p), vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
+  void split(vec4 c, out vec3 rgb, inout float alpha) {
+    rgb = c.rgb;
+    alpha *= c.a;
+  }
+}
+
+/// Scales each value.
+@grid(256) @sync
+shader scale(n: int, values: PackedFloat32Array, k: float) -> PackedFloat32Array {
+  return values[id] * k;
+}
+
+@sync
+shader noise(size: Vector2i, cell: float = 8.0) -> Image[rf] {
+  return hash(ivec2(vec2(id) / cell));
+}
+
+shader paint(size: Vector2i, heights: GpuArray[float], src: Texture2D, target: Texture2D[rgba8], tint: Color) -> void {
+  vec4 c = texture(src, (vec2(id) + 0.5) / vec2(size));
+  c.rg *= tint.rg;
+  Ray r = Ray(vec3(0.0), vec3(0.0, 1.0, 0.0));
+  imageStore(target, id, c * heights[index(id)] + vec4(r.dir, 0.0));
+}
+
+shader grow(size: Vector3i, image: Image) -> GpuArray[Vector3] {
+  return texelFetch(image, id.xy, 0).xyz;
+}
+
+@onthread
+shader blank(size: Vector2i) -> Texture2D[rgbah] {
+  return vec4(0.0);
+}

@@ -31,6 +31,7 @@ const (
 	Annotation       Kind = 11 // A user annotation that a GD++ file declares, which code writes as "@@name". Only its Name matters.
 	Trait            Kind = 12 // A GD++ trait whose base isn't refcounted, held as Gd<T>. Source and File hold its file.
 	RefCountedTrait  Kind = 13 // A GD++ trait whose base is refcounted, held as Gd<T>. Source and File hold its file.
+	ShaderLibrary    Kind = 14 // The shader blocks of a GD++ file outside of classes, or its shader_library, which every shader of the package uses. It has no Name. Source and File hold its file.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -82,6 +83,9 @@ const (
 	// A user annotation, "annotation name". Unlike other names, several files may declare the same one.
 	AnnotationDecl DeclKind = 7
 	TraitDecl      DeclKind = 8
+	// The file's shader blocks outside of classes, "shader { ... }" and shader_library, which every shader of the
+	// package uses. It has no Name.
+	ShaderLibraryDecl DeclKind = 9
 )
 
 // Declaration is a class, extern, trait, enum type, macro or template declared in a GD++ file, which other files may use.
@@ -98,6 +102,7 @@ type Declaration struct {
 	EditorOnly bool        // For classes: whether @editor_only, or @tool("editor_only"), keeps its code from running in the game.
 	Abstract   bool        // For classes: whether @abstract keeps the editor and GD++ code from creating its objects.
 	Async      bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
+	Gpu        bool        // For classes: whether it has shaders or GpuArray types, so the package needs its GPU classes.
 	Virtuals   []string    // For classes: the names of its @virtual functions, without "noscript", which subclasses can override.
 	// For classes: the names of its @virtual("noscript") functions, which subclasses can override.
 	NoscriptVirtuals []string

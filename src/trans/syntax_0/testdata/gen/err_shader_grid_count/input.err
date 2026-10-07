@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotation @grid takes 2 workgroup sizes here, one for each dimension of the grid of shader f.
+ 4 | @grid(8)
+   | ^^^^^
+Hint: E.g. @grid(8, 8).

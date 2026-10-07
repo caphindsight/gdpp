@@ -1,4 +1,0 @@
-input.gd++:1:1: Annotation @group can only be used in traits that extend Node, which Saved doesn't.
- 1 | @group
-   | ^^^^^^
-Hint: Only nodes are in groups.

@@ -1,0 +1,467 @@
+Shaders: functions in GLSL that run on the GPU
+
+Some work runs the same small piece of code on many values: blurring an image, eroding a heightmap, moving thousands of particles. A GPU does that much faster than a CPU.
+
+- A shader is a special function, declared with `shader` instead of `func`.
+- A func's body is C++, and runs on the CPU. A shader's body is GLSL, Godot's language of GPU shaders, and runs on the GPU.
+- The body runs once for each cell of the shader's grid, e.g. once for each pixel of an image, all at the same time.
+- GD++ writes all the code that runs it: buffers, uniforms, pipelines, dispatch and readback.
+
+# A first example
+
+```gd++
+class_name Filters
+extends RefCounted
+
+@sync
+shader brighten(size: Vector2i, src: Image, gain: float) -> Image[rgba8] {
+  return texelFetch(src, id, 0) * gain;
+}
+```
+
+- `size` is the grid: the shader runs once for each of its cells, here each pixel of a `size.x` by `size.y` image.
+- `id` is the cell that the body runs for, an `ivec2` here.
+- `return` gives the cell's result: here, its pixel. Together, the results make the image that the call returns.
+- `@sync` says that a call waits for the GPU: here, for the image, which comes back to the CPU. See "Waiting for the GPU: @sync" below.
+
+C++ code calls it like any function:
+
+```gd++
+Gd<Image> photo = load_photo();
+Gd<Image> brighter = Filters::brighten(photo->get_size(), photo, 1.5);
+```
+
+And so do scripts:
+
+```gdscript
+var brighter = Filters.brighten(photo.get_size(), photo, 1.5)
+```
+
+# Shaders and funcs
+
+To C++ and to scripts, a shader is a function of the same name, like any func:
+
+- C++ calls it as `Filters::brighten(...)`, and scripts as `Filters.brighten(...)`.
+- It's always static: its body runs on the GPU, so it can't use an object's fields. Writing `@static` is an error: "A shader is always static: remove @static."
+- So it can't be virtual, and can't override anything. A shader with the name of a virtual function of the base class, or of a trait function, is an error. To implement such a function, write a func that calls the shader.
+- Its parameters may have default values, like a func's.
+- It can have a doc comment, which the editor's help shows.
+
+Its body is different:
+
+- It's GLSL, not C++: none of godot-cpp, and none of GD++'s rewrites, e.g. `emit` or `as`.
+- It sees its parameters, `id`, `index`, the GLSL built-ins, and the class's and the package's shader blocks. See "Shader blocks" below.
+
+# The grid
+
+The grid is the cells that the shader runs on: its first parameter, unless `@grid` names another one.
+
+```
+The grid parameter is    The grid is   id is    Typical use
+n: int                   1D            int      arrays
+size: Vector2i           2D            ivec2    images and textures
+size: Vector3i           3D            ivec3    volumes, e.g. voxels
+```
+
+- The call passes it, e.g. `values.size()` or `image->get_size()`.
+- In the body, it has the parameter's name and the type of `id`, e.g. `size.x`.
+- The grid doesn't have to match the size of the inputs. A downsample reads a 1024x1024 image over a 256x256 grid, and reads 4x4 pixels per cell.
+- Only cells inside the grid run the body, so any size works, e.g. 1000.
+- A grid of a negative size is an error, and runs nothing.
+- A grid counts cells, so it's an `int`, a `Vector2i` or a `Vector3i`. Other types are errors, e.g. `Vector2`.
+
+`@grid` names another parameter as the grid, e.g. to keep the order of an existing function's parameters:
+
+```gd++
+@grid(size) @sync
+shader fill(color: Color, size: Vector2i) -> Image[rgba8] {
+  return color;
+}
+```
+
+- The name can be in double quotes too: `@grid("size")`.
+- `@grid` also takes the workgroup's sizes, after the name. See "Workgroups" below.
+
+`index(p)` turns a cell into the index of an array element, row by row: `p.y * size.x + p.x` in 2D. Use it to read an array over a 2D or 3D grid:
+
+```gd++
+@sync
+shader double_all(size: Vector2i, values: PackedFloat32Array) -> PackedFloat32Array {
+  return values[index(id)] * 2.0;
+}
+```
+
+# What shaders take
+
+The other parameters can have these types:
+
+```
+GD++ type                                  In the body                         The body can
+int, float, bool                           int, float, bool                    read it
+Vector2, Vector3, Vector4, Color           vec2, vec3, vec4, vec4              read it
+Vector2i, Vector3i, Vector4i               ivec2, ivec3, ivec4                 read it
+Basis, Transform3D, Projection             mat3, mat4x3, mat4                  read it
+PackedFloat32Array, PackedInt32Array       float[], int[]                      read its elements
+PackedVector2Array, PackedVector3Array     vec2[], vec3[]                      read its elements
+PackedVector4Array, PackedColorArray       vec4[], vec4[]                      read its elements
+Image, Texture2D                           sampler2D                           sample it, with texture and texelFetch
+GpuArray[T]                                T[], e.g. float[]                   read and write its elements
+Texture2D[FORMAT]                          image2D                             read and write it, with imageLoad and imageStore
+```
+
+- GPUs compute with 32 bits: `int` and `float` arguments become 32-bit, so a value beyond 32 bits loses digits.
+- Arrays have `length()`, e.g. `values.length()`.
+- `texture(src, uv)` samples linearly, clamped to the edges. `texelFetch(src, p, 0)` reads one pixel. Both return a `vec4`, whatever the format.
+- Other types are errors, e.g. `String`, `PackedByteArray` or `Array`.
+- Parameters can't have the names of GLSL keywords and built-ins, e.g. `texture` or `buffer`, nor `id` and `index`.
+
+A shader writes only what it returns, its `GpuArray` parameters, and its `Texture2D[FORMAT]` parameters. Everything else is read-only: writing it is a compile error.
+
+# What shaders return
+
+What the body returns for each cell, put together:
+
+```
+The shader returns        Each cell's body returns             The call returns
+void                      nothing                              nothing: the body writes its GpuArray and texture parameters
+PackedFloat32Array, ...   an element, e.g. float               a packed array, an element per cell, row by row
+GpuArray[T]               an element, e.g. vec3                a new GpuArray, an element per cell, which stays on the GPU
+Image[FORMAT]             a pixel: float, vec2, vec3 or vec4   a new Image of the grid's size
+Texture2D[FORMAT]         a pixel: float, vec2 or vec4         a new texture of the grid's size, which stays on the GPU
+```
+
+- Images and textures need a 2D grid.
+- The pixel's type follows the format's channels: `float` for `r8` and `rf`, `vec2` for `rg8` and `rgf`, `vec3` for `rgb8`, `rgbh` and `rgbf`, `vec4` for the others.
+- A plain `Image` is `Image[rgbaf]`. A texture always needs its format.
+
+Formats of images and textures that shaders write, named like Godot's `Image` formats, in lower case:
+
+```
+FORMAT     Channels   Each channel             Godot's Image format
+r8         1          8 bits, from 0 to 1      FORMAT_R8
+rg8        2          8 bits, from 0 to 1      FORMAT_RG8
+rgb8       3          8 bits, from 0 to 1      FORMAT_RGB8       Image only
+rgba8      4          8 bits, from 0 to 1      FORMAT_RGBA8
+rf         1          32-bit float             FORMAT_RF
+rgf        2          32-bit float             FORMAT_RGF
+rgbh       3          16-bit float             FORMAT_RGBH       Image only
+rgbah      4          16-bit float             FORMAT_RGBAH
+rgbf       3          32-bit float             FORMAT_RGBF       Image only
+rgbaf      4          32-bit float             FORMAT_RGBAF
+```
+
+- GPUs can't write 3 channels. So for an `Image[rgb8]`, `Image[rgbh]` or `Image[rgbf]`, the GPU writes the RGBA format, and the call converts the image before it returns it. The conversion costs a pass over the image on the CPU.
+- Textures can't have RGB formats: a texture stays on the GPU, so it would really be RGBA. Use the RGBA format, and return `vec4(color, 1.0)`.
+- Images that shaders read can have any format.
+
+# GPU arrays
+
+Each call of a shader copies its arrays and images to the GPU, and its result back. That's fine for one call. For many calls on the same data, e.g. a simulation that runs 100 steps a frame, the copies cost more than the work. A `GpuArray` stays on the GPU instead:
+
+```gd++
+class_name Heat
+extends Node
+
+var cells: GpuArray[float]
+var next: GpuArray[float]
+
+shader diffuse(n: int, from: GpuArray[float], to: GpuArray[float]) -> void {
+  float left = from[max(id - 1, 0)], right = from[min(id + 1, n - 1)];
+  to[id] = mix(from[id], (left + right) * 0.5, 0.5);
+}
+
+on ready {
+  cells = GpuArray<float>(PackedFloat32Array({0, 0, 100, 0, 0}));
+  next = GpuArray<float>(cells.size());
+}
+
+on process(delta: float) {
+  for (int64_t step = 0; step < 100; step++) {
+    diffuse(cells.size(), cells, next);
+    std::swap(cells, next);
+  }
+}
+
+func temperatures() -> PackedFloat32Array {
+  return cells.read();
+}
+```
+
+`GpuArray[T]` holds elements of type T: `float`, `int`, `Vector2`, `Vector3`, `Vector4` or `Color`. In C++, it's a `GpuArray<T>`, with an `int32_t` for an `int`:
+
+```
+GpuArray<float> a;                 no array, which tests as false
+GpuArray<float> a(1000);           1000 elements, all zero
+GpuArray<float> a(packed);         the elements of a PackedFloat32Array
+a.size()                           how many elements it has
+a.read()                           its elements, as a PackedFloat32Array
+a.write(packed)                    sets its elements, from a packed array of its size
+```
+
+- Copies share the array, like a `Ref`.
+- It's a type like any other: variables, parameters and return values can have it. It can't be exported, nor be in a typed collection.
+- Shaders' writes and `read()` happen in order: `read()` waits for the shaders that came before.
+- Without a GPU, it's an array in memory. See "Without a GPU" below.
+
+Scripts see it as an object of the package's class of GPU arrays, named after its prefix, e.g. `FooGpuArray`:
+
+```gdscript
+var cells = FooGpuArray.from(PackedFloat32Array([0, 0, 100, 0, 0]))
+Heat.diffuse(cells.size(), cells, next)
+print(cells.read())
+```
+
+- `from(packed)` makes one with the elements of a packed array, whose type sets its element type.
+- `size()`, `read()` and `write(packed)` work like in C++.
+- A script's GPU array has the element type that it was made with. A shader that gets one of another type prints an error.
+
+# Textures
+
+Shaders read and write Godot's textures. A texture they write stays on the GPU, where materials and sprites draw it, with no copy:
+
+```gd++
+class_name Ripples
+extends Sprite2D
+
+shader paint(size: Vector2i, time: float, target: Texture2D[rgba8]) -> void {
+  vec2 p = vec2(id) / vec2(size) - 0.5;
+  float wave = 0.5 + 0.5 * sin(length(p) * 40.0 - time * 4.0);
+  imageStore(target, id, vec4(wave, wave, 1.0, 1.0));
+}
+
+shader blank(size: Vector2i) -> Texture2D[rgba8] {
+  return vec4(0.0);
+}
+
+var time: float = 0.0
+
+on ready {
+  set_texture(blank(Vector2i(256, 256)));
+}
+
+on process(delta: float) {
+  time += delta;
+  paint(Vector2i(256, 256), time, get_texture());
+}
+```
+
+- `blank` returns a new texture. Here, it's the sprite's.
+- Each frame, `paint` writes into the same texture, so the sprite shows the new pixels.
+
+A texture that a shader returns:
+
+- is a `Texture2DRD`: a texture of Godot's RenderingDevice, which materials, sprites and shader parameters use like any `Texture2D`.
+- owns the GPU's memory, which is freed once nothing uses the texture.
+- reads back with `get_image()`, like any texture. That waits for the shaders that write it.
+
+`gpu_texture(size, format)` makes one in C++ too, e.g. `gpu_texture(Vector2i(256, 256), GpuFormat::rgbah)`. All its pixels are zero.
+
+A `Texture2D[FORMAT]` parameter takes:
+
+- a texture that a shader returned, or that `gpu_texture` made, of that format,
+- any `Texture2DRD` whose texture has that format and can be used as storage,
+- an `ImageTexture`, which a `@sync` shader copies to the GPU and back: slow, but it works. A shader without `@sync` can't wait for the copy back, so it runs on the CPU instead, and warns once.
+
+Other textures are errors, e.g. imported ones, since the GPU can't write them.
+
+A `Texture2D` parameter, without a format, takes any texture, e.g. an imported one, and reads it on the GPU with no copy. An `Image` parameter is copied to the GPU.
+
+Linear filtering of 32-bit float textures doesn't work on every GPU. For textures that you draw, prefer `rgba8` or `rgbah`.
+
+# Waiting for the GPU: @sync
+
+A call of a shader waits for the GPU if, and only if, the shader has `@sync`:
+
+- With `@sync`, the call returns once the GPU is done with the shader, and its results are written.
+- Without it, the call only queues the shader for the GPU, and returns right away, while the GPU works.
+
+`@sync` is required on shaders whose result comes back to the CPU, since the call can't return it before the GPU is done:
+
+```
+The shader returns          @sync        A call without @sync
+a packed array              required     doesn't compile
+Image[FORMAT]               required     doesn't compile
+GpuArray[T]                 optional     returns the array right away, while the GPU fills it
+Texture2D[FORMAT]           optional     returns the texture right away, while the GPU fills it
+void                        optional     returns right away, while the GPU writes the GPU arrays and textures
+```
+
+```gd++
+@sync
+shader scale(n: int, values: PackedFloat32Array, k: float) -> PackedFloat32Array { ... }   // waits
+
+shader advance(size: Vector2i, from: GpuArray[int], to: GpuArray[int]) -> void { ... }     // returns right away
+
+@sync
+shader bake(size: Vector2i, target: Texture2D[rgba8]) -> void { ... }                      // waits until the texture is written
+```
+
+Without `@sync`, nothing sees the difference but the clock:
+
+- The GPU runs the shader before everything that comes after it: other shaders, drawing, `read()` and `get_image()`. So a texture that a shader returns can be drawn right away, and a GPU array passed to the next shader.
+- `GpuArray::read()` and `Texture2D::get_image()` are the places that wait, for all the shaders before them.
+
+Use `@sync` on a shader that doesn't need it when something outside the GPU's order needs its results done, e.g. to time the GPU's work, or to tell when it's done with `@onthread`. See below.
+
+Other facts:
+
+- Waiting on the main RenderingDevice stalls rendering until the GPU catches up, like `read()` does. Keep `@sync` off shaders that run every frame, unless they must.
+- The first call of a shader also waits once, while Godot compiles its GLSL.
+- Without a GPU, every call runs on the CPU, so it returns once it's done, with or without `@sync`. See "Without a GPU" below.
+- `@sync` takes no arguments.
+
+Shaders run on one of two RenderingDevices, Godot's interface to the GPU:
+
+- Shaders that use GPU arrays or textures run on the main one, which also renders the game, so they share its resources.
+- Other shaders run on the package's own one, so they don't hold up rendering.
+
+# @sync and @onthread
+
+`@onthread` runs a shader's call on a worker thread, and the caller gets an `Async` right away, like with an `@onthread` func. See `gd++ man async`.
+
+- `@sync` says what the call does: wait for the GPU, or not.
+- `@onthread` says who waits for the call: a worker thread, instead of the caller.
+
+So they combine, and the `Async` is done when the call is done:
+
+```
+@sync @onthread shader f(...) -> Image[rf]    the Async is done once the image is ready, and holds it
+@onthread shader f(...) -> Image[rf]          doesn't compile: the image needs @sync
+@sync @onthread shader f(...) -> void         the Async is done once the GPU is done with the shader
+@onthread shader f(...) -> void               the Async is done once the shader is queued
+```
+
+```gd++
+var pending: Async[Image]
+
+@sync @onthread
+shader big_noise(size: Vector2i, scale: float) -> Image[rf] { ... }
+
+on ready {
+  pending = big_noise(Vector2i(4096, 4096), 64.0);   // no frame waits for it
+}
+
+on process(delta: float) {
+  if (is_done pending) {
+    build_terrain(claim pending);
+  }
+}
+```
+
+- Without `@sync`, `@onthread` still takes the call's own work off the caller: copying packed arrays and images to the GPU, and compiling the shader on the first call.
+- `@onthread("detached")` works too, for a shader that returns `void`.
+
+Avoid a deadlock: the main RenderingDevice runs on the main thread, unless the project renders on its own thread. So a worker thread waits for the main thread when it calls a shader that uses GPU arrays or textures, and with `@sync`, until the GPU is done. Don't make the main thread wait for that worker then, e.g. with `wait()`. Test `is_done` each frame instead.
+
+`@trace` and `@profile` work on shaders too. They time the whole call, copies included. See `gd++ man debugging`.
+
+# Workgroups
+
+A GPU runs a shader's cells in groups, its workgroups. GD++ picks a size that works well:
+
+- 64 cells for a 1D grid,
+- 8x8 for a 2D grid,
+- 4x4x4 for a 3D grid.
+
+`@grid` sets another size, one number per dimension, after the name of the grid's parameter, if any:
+
+```gd++
+@grid(16, 16) @sync
+shader blur(size: Vector2i, src: Image) -> Image[rgba8] { ... }
+
+@grid(size, 16, 16) @sync
+shader sharpen(src: Image, size: Vector2i) -> Image[rgba8] { ... }
+```
+
+- So `@grid` takes the name, the sizes, or both: `@grid(size)`, `@grid(256)`, `@grid("size", 8, 8)` and so on.
+
+- A workgroup can have at most 1024 cells. 64 or 256 work well everywhere.
+- It matters for shaders that share memory within a workgroup, with GLSL's `shared` and `barrier()`. GLSL's `gl_LocalInvocationID` and `gl_WorkGroupID` tell where a cell is.
+
+# Shader blocks
+
+A shader block holds GLSL that shaders share: functions, structs and constants.
+
+```gd++
+shader {
+  const float TAU = 6.28318530;
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+}
+```
+
+- In a class, it's for the class's shaders.
+- Outside of classes, i.e. in a file without `class_name` or before it, it's for every shader of the package.
+- A whole file can be a shader library: with `shader_library` at its top, the rest of the file is GLSL that every shader of the package uses.
+
+```gd++
+/// Helpers for every shader of the package.
+shader_library
+
+float wrap_angle(float a) {
+  return mod(a, TAU);
+}
+```
+
+- Every shader gets the package's blocks, in the order of their files' paths, then its class's blocks, in order.
+- GLSL needs a name declared before it's used, so a block can use the blocks before it.
+- A block's functions can't use a shader's parameters. Pass them as arguments.
+
+# Without a GPU
+
+Not every game has a GPU to run shaders on:
+
+- the Compatibility renderer has no RenderingDevice,
+- `--headless`, e.g. on a dedicated server, has no GPU,
+- a shader may fail to compile on a GPU.
+
+Then shaders run on the CPU, with the same results, but slower:
+
+- GD++ compiles each shader's body as C++ too, into the library.
+- The CPU runs the workgroups on Godot's `WorkerThreadPool`, all at once, and the cells of each workgroup one after another.
+- GPU arrays are arrays in memory, and textures are `ImageTexture`s.
+- Float results can differ in their last bits.
+
+So a shader's body must be GLSL that also compiles as C++, with GD++'s help:
+
+- GD++ gives the C++ code GLSL's types and built-ins: `vec3`, `mat4`, `mix`, `dot`, `texture`, `imageStore`, `atomicAdd` and so on.
+- It turns what C++ lacks into C++: swizzles, e.g. `v.xy`, `out` and `inout` parameters, `not`, and a struct's constructor, e.g. `Ray(o, d)`.
+- Write array constructors in braces: `float w[3] = {1.0, 2.0, 1.0};`, not `float[3](...)`.
+- C++ checks more strictly than GLSL in places, and the other way around. So a body that compiles on the CPU can still fail to compile on a GPU, at runtime. See "Errors" below.
+- A struct field can't have the name of a swizzle of 2 to 4 components, e.g. `xy` or `rgb`, since GD++ rewrites those.
+
+`barrier()` and `shared` variables have no CPU fallback, since the CPU runs a workgroup's cells one after another:
+
+- A shader whose body uses them runs only on the GPU.
+- Without a GPU, it prints an error, and returns nothing: an empty array, a black image.
+- Keep such shaders for work that only matters with a GPU, or write a func that does the same on the CPU.
+
+`gd++ build --nogpu` runs every shader on the CPU, even with a GPU. Then you can step through a shader's body in a debugger, like any C++ code. See `gd++ man building`.
+
+On the CPU, debug builds check that shaders read and write arrays within their bounds, and print an error when they don't. GPUs don't check: an index out of bounds reads or writes anything.
+
+# Errors
+
+Errors in a shader show up at three times:
+
+- GD++'s errors, e.g. a wrong parameter type, stop `gd++ build`.
+- C++ errors in the body's CPU copy, e.g. a misspelled name, stop the build too, at the shader's line.
+- GLSL errors show up when the game first calls the shader, since Godot compiles GLSL then. Godot prints them, at their lines in the GD++ file. The shader then runs on the CPU.
+
+# How it works
+
+For a shader `blur` of the class `Filters`, GD++ generates:
+
+- the GLSL: `#version 450`, the parameters as a uniform block and bindings, the shader blocks, the body as a function `_gdpp_body(id)`, and `main`, which skips cells outside the grid, and stores what the body returns.
+- `_gdpp_gpu_Filters::_gdpp_shader_blur`, a C++ struct with the GLSL, the parameters, and the body as a method, for the CPU.
+- `Filters::blur`, a static method, which a `gdpp::gpu::Call` runs: on the GPU, or else on the CPU, with the struct.
+
+The class's header includes GD++'s runtime of shaders, `gd++/syntax_0_gpu.hpp`. A package with shaders or GPU arrays registers its class of GPU arrays, and its internal class of the textures that shaders return.
+
+`gd++ trans FILE` shows the generated code, and `gd++ trans --runtime` the runtime. See also `gd++ man generated`.
+
+# See also
+
+`gd++ man functions`, `gd++ man async`, `gd++ man types`, `gd++ man debugging`, `gd++ man gpu`.

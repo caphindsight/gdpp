@@ -46,6 +46,7 @@ func TestCompile(t *testing.T) {
 	include := t.TempDir()
 	os.MkdirAll(filepath.Join(include, "gd++"), 0o755)
 	os.WriteFile(filepath.Join(include, RuntimeHeaderName), []byte(RuntimeHeader), 0o644)
+	os.WriteFile(filepath.Join(include, GpuRuntimeHeaderName), []byte(GpuRuntimeHeader), 0o644)
 	for name, text := range stubs {
 		text = "#pragma once\n\n#include <gd++/syntax_1.hpp>\n#include <godot_cpp/classes/node3d.hpp>\n\nnamespace godot {\n\n" + text + "\n} // namespace godot\n"
 		os.WriteFile(filepath.Join(include, name), []byte(text), 0o644)
@@ -64,5 +65,32 @@ func TestCompile(t *testing.T) {
 				t.Errorf("%s failed to compile:\n%s", file, out)
 			}
 		})
+	}
+}
+
+// TestGlsl compiles testdata/glsl/semantics.cpp, which checks GLSL in C++, and runs it. It needs what TestCompile
+// needs, and a godot-cpp library to link with, named by GDPP_GODOT_CPP_LIB, e.g.
+// .../bin/libgodot-cpp.linux.template_debug.dev.x86_64.a.
+func TestGlsl(t *testing.T) {
+	root, lib := os.Getenv("GDPP_GODOT_CPP"), os.Getenv("GDPP_GODOT_CPP_LIB")
+	if root == "" || lib == "" {
+		t.Skip("Set GDPP_GODOT_CPP and GDPP_GODOT_CPP_LIB to run GLSL in C++.")
+	}
+	cxx := os.Getenv("CXX")
+	if cxx == "" {
+		cxx = "c++"
+	}
+	include := t.TempDir()
+	os.MkdirAll(filepath.Join(include, "gd++"), 0o755)
+	os.WriteFile(filepath.Join(include, RuntimeHeaderName), []byte(RuntimeHeader), 0o644)
+	os.WriteFile(filepath.Join(include, GpuRuntimeHeaderName), []byte(GpuRuntimeHeader), 0o644)
+	bin := filepath.Join(include, "semantics")
+	args := []string{"-std=c++17", "-DDEBUG_ENABLED", "-I", include, "-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"),
+		"-I", filepath.Join(root, "gdextension"), "testdata/glsl/semantics.cpp", lib, "-o", bin}
+	if out, err := exec.Command(cxx, args...).CombinedOutput(); err != nil {
+		t.Fatalf("testdata/glsl/semantics.cpp failed to compile:\n%s", out)
+	}
+	if out, err := exec.Command(bin).CombinedOutput(); err != nil {
+		t.Errorf("testdata/glsl/semantics.cpp failed:\n%s", out)
 	}
 }

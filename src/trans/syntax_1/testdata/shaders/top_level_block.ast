@@ -1,0 +1,29 @@
+File: @1:1
+  InlineClasses:
+    - @5:1
+      Name: Waves
+      Extends: @6:11 RefCounted
+      Members:
+        - @8:3
+          Shader: @8:3
+            Name: wave
+            Params:
+              - @8:15
+                Name: n
+                Type: @8:18 int
+            Return: @8:26 PackedFloat32Array
+            Body: @8:45
+              TextPos: 8:46
+              Text: |
+
+                    return sin(float(id) * PI);
+
+  ShaderBlocks:
+    - @1:1
+      Shader: true
+      Body: @1:8
+        TextPos: 1:9
+        Text: |
+
+            const float PI = 3.14159265;
+

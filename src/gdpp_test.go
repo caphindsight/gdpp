@@ -123,7 +123,7 @@ func TestTranspilePackage(t *testing.T) {
 		files = append(files, file)
 	}
 	wantFiles := []string{"Blade.cpp", "Blade.h", "Hitbox.cpp", "Hitbox.h", "Player.cpp", "Player.h", "Power.h", "Tiny.cpp", "Tiny.h", "Weapon.cpp", "Weapon.h",
-		"doc_classes/", "doc_classes/Blade.xml", "doc_classes/Hitbox.xml", "doc_classes/PkgAsync.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml", "gd++/", "gd++/syntax_0.hpp"}
+		"doc_classes/", "doc_classes/Blade.xml", "doc_classes/Hitbox.xml", "doc_classes/PkgAsync.xml", "doc_classes/Player.xml", "doc_classes/Tiny.xml", "doc_classes/Weapon.xml", "gd++/", "gd++/syntax_0.hpp", "gd++/syntax_0_gpu.hpp"}
 	slices.Sort(files)
 	if !reflect.DeepEqual(files, wantFiles) {
 		t.Errorf("generated files = %q, want %q", files, wantFiles)

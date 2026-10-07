@@ -12,6 +12,8 @@ AddOption("--gdpp-bindings", dest="gdpp_bindings", action="store_true", help="on
 AddOption("--gdpp-nowarn", dest="gdpp_nowarn", action="store_true", help="disable warnings")
 # With --gdpp-sanitize, the package's sources, but not godot-cpp's, are compiled with these sanitizers, e.g. address,undefined.
 AddOption("--gdpp-sanitize", dest="gdpp_sanitize", type="string", default="", help="sanitizers to compile in")
+# With --gdpp-nogpu, shaders run on the CPU.
+AddOption("--gdpp-nogpu", dest="gdpp_nogpu", action="store_true", help="run shaders on the CPU")
 
 package_root = ".."
 # Copies of the package's GD++ and C/C++ files, which GD++ syncs before each build, so errors show the compiled code.
@@ -42,6 +44,10 @@ else:
     env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", {{printf "%q" .AsyncClass}})])
     # How long its tasks may still run after the game started quitting, from its quit_timeout setting.
     env.Append(CPPDEFINES=[("GDPP_QUIT_TIMEOUT_USEC", {{.QuitTimeout}})])
+    # The names of the package's class of GPU arrays, which GpuArray types name, and of the textures that shaders create.
+    env.Append(CPPDEFINES=[("GDPP_GPU_ARRAY_CLASS", {{printf "%q" .GpuArrayClass}}), ("GDPP_GPU_TEXTURE_CLASS", {{printf "%q" .GpuTextureClass}})])
+    if GetOption("gdpp_nogpu"):
+        env.Append(CPPDEFINES=["GDPP_GPU_FORCE_CPU"])
     if GetOption("gdpp_nowarn"):
         env.Append(CCFLAGS=["/w" if env.get("is_msvc", False) else "-w"])
     else:

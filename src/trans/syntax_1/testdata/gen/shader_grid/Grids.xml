@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Grids" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="fill" qualifiers="static">
+			<return type="Image" />
+			<param index="0" name="value" type="float" />
+			<param index="1" name="size" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="ramp" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="scale" type="float" />
+			<param index="1" name="count" type="int" />
+			<param index="2" name="values" type="PackedFloat32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="volume" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="size" type="Vector3i" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

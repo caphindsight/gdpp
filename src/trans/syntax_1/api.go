@@ -19,8 +19,17 @@ const RuntimeHeaderName = "gd++/syntax_1.hpp"
 //go:embed runtime.hpp
 var RuntimeHeader string
 
-// ListMacros returns the macros, templates and user annotations that the GD++ source src declares, and a LibraryDecl
-// if it has macro libraries. Other files need them before ListClasses can expand their invocations.
+// GpuRuntimeHeaderName is how generated headers include GpuRuntimeHeader.
+const GpuRuntimeHeaderName = "gd++/syntax_1_gpu.hpp"
+
+// GpuRuntimeHeader holds what shaders and GpuArray types use. Headers include it only if they need it, since it's
+// big. It doesn't depend on any GD++ file.
+//
+//go:embed gpu.hpp
+var GpuRuntimeHeader string
+
+// ListMacros returns the macros, templates and user annotations that the GD++ source src declares, a LibraryDecl
+// if it has macro libraries, and a ShaderLibraryDecl if it has shader blocks outside of classes. Other files need them before ListClasses can expand their invocations.
 func ListMacros(filename, src string) ([]meta.Declaration, error) {
 	file, err := Parse(filename, src)
 	if err != nil {
@@ -34,6 +43,9 @@ func ListMacros(filename, src string) ([]meta.Declaration, error) {
 	}
 	if len(file.Libraries) > 0 {
 		decls = append(decls, meta.Declaration{Kind: meta.LibraryDecl})
+	}
+	if len(file.ShaderBlocks) > 0 {
+		decls = append(decls, meta.Declaration{Kind: meta.ShaderLibraryDecl})
 	}
 	for _, a := range file.UserAnnotations {
 		decls = append(decls, meta.Declaration{Name: a.Name, Kind: meta.AnnotationDecl})
@@ -90,11 +102,14 @@ func (u *unit) only(s *symbol) *unit {
 	return &d
 }
 
-// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package, e.g.
-// its class of tasks, named opts.AsyncClass, for a package whose GD++ classes use Async: a file "<Class>.xml" per class.
+// DocumentBuiltinClasses returns the Godot XML documentation of the classes that the runtime adds to a package: a file
+// "<Class>.xml" per class. They are its class of tasks, named opts.AsyncClass, for a package whose GD++ classes use
+// Async, then its class of GPU arrays, named after opts.PackagePrefix, for a package whose GD++ classes have shaders
+// or GpuArray types.
 func DocumentBuiltinClasses(opts meta.Options) []meta.File {
 	name := cmp.Or(opts.AsyncClass, "GdppAsync")
-	return []meta.File{{Name: name + ".xml", Text: documentAsyncClass(name)}}
+	gpu := (&unit{opts: opts}).gpuArrayClass()
+	return []meta.File{{Name: name + ".xml", Text: documentAsyncClass(name)}, {Name: gpu + ".xml", Text: documentGpuArrayClass(gpu)}}
 }
 
 // DocumentClass returns the Godot XML documentation of the class named class in the GD++ source src.

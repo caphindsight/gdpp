@@ -72,6 +72,7 @@ type gtype struct {
 	byRef bool    // Whether parameters take it as const &.
 	enum  *symbol // Set for enums.
 	async *gtype  // For Async types: the type of the result.
+	gpu   string  // For GpuArray types: the GLSL type of the elements, e.g. "vec3".
 	weak  bool    // Whether it's a Weak type.
 	trait string  // For traits: the trait's name.
 	void  bool
@@ -117,10 +118,13 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 	if t.Name == "Weak" {
 		return u.weak(t)
 	}
+	if t.Name == "GpuArray" {
+		return u.gpuArray(t)
+	}
 	if (t.Name == "Array" && len(t.Args) > 1) || (t.Name == "Dictionary" && len(t.Args) != 0 && len(t.Args) != 2) ||
 		(len(t.Args) > 0 && t.Name != "Array" && t.Name != "Dictionary") {
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Type %s doesn't take these type arguments.", t.Name),
-			"Only Array[T], Dictionary[K, V], Async[T] and Weak[T] take type arguments.")
+			"Only Array[T], Dictionary[K, V], Async[T], Weak[T] and GpuArray[T] take type arguments.")
 	}
 	if len(t.Args) > 0 {
 		var cpp, doc []string
@@ -191,6 +195,25 @@ func (u *unit) async(result *gtype) *gtype {
 	return &gtype{cpp: "gdpp::Async<" + result.cpp + ">", doc: cmp.Or(u.opts.AsyncClass, "GdppAsync"), async: result}
 }
 
+// gpuElements are the element types of GPU arrays: their C++ type in GpuArray<T>, and their GLSL type.
+var gpuElements = map[string][2]string{"float": {"float", "float"}, "int": {"int32_t", "int"}, "Vector2": {"Vector2", "vec2"},
+	"Vector3": {"Vector3", "vec3"}, "Vector4": {"Vector4", "vec4"}, "Color": {"Color", "vec4"}}
+
+// gpuArray resolves t, a GpuArray type: an array that stays on the GPU, where shaders read and write it.
+func (u *unit) gpuArray(t *Type) (*gtype, error) {
+	if len(t.Args) != 1 || len(t.Args[0].Args) > 0 || gpuElements[t.Args[0].Name][0] == "" {
+		return nil, u.errorAt(t.Pos, len(t.Name), "Type GpuArray takes one type argument: float, int, Vector2, Vector3, Vector4 or Color, e.g. GpuArray[float].",
+			"GPU arrays hold the elements of packed arrays that shaders can use.")
+	}
+	e := gpuElements[t.Args[0].Name]
+	return &gtype{cpp: "gdpp::GpuArray<" + e[0] + ">", doc: u.gpuArrayClass(), byRef: true, gpu: e[1]}, nil
+}
+
+// gpuArrayClass is the name of the package's class of GPU arrays, e.g. "FooGpuArray".
+func (u *unit) gpuArrayClass() string {
+	return cmp.Or(u.opts.PackagePrefix, "Gdpp") + "GpuArray"
+}
+
 // asyncArg returns the type argument of t, an Async type, or nil (a Variant) if it has none.
 func asyncArg(t *Type) *Type {
 	if len(t.Args) == 0 {
@@ -201,7 +224,7 @@ func asyncArg(t *Type) *Type {
 
 // resolveElement resolves a type argument of Array or Dictionary.
 func (u *unit) resolveElement(t *Type) (*gtype, error) {
-	if t.Name == "Async" || t.Name == "Weak" {
+	if t.Name == "Async" || t.Name == "Weak" || t.Name == "GpuArray" {
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Typed collections can't hold %s values.", t.Name), "Use a plain Array or Dictionary.")
 	}
 	if len(t.Args) > 0 {
@@ -226,7 +249,7 @@ func (u *unit) unknownType(t *Type) error {
 
 // unknownName returns the error for t, an unknown type used as what, e.g. "base class".
 func (u *unit) unknownName(t *Type, what string) error {
-	names := []string{"Async", "Weak"}
+	names := []string{"Async", "Weak", "GpuArray"}
 	for name := range builtins {
 		names = append(names, name)
 	}

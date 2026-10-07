@@ -1,0 +1,4 @@
+input.gd++:4:7: Shader f has no parameter cells.
+ 4 | @grid(cells, 8, 8)
+   |       ^^^^^
+Hint: @grid's first argument may name the parameter that is the shader's grid, e.g. @grid(size) or @grid(size, 8, 8).

@@ -79,7 +79,7 @@ func macroDeps(files []gdppFile, self string) []trans.Dependency {
 		for _, m := range f.Macros {
 			if f.Rel != self {
 				kind := map[trans.DeclKind]trans.Kind{trans.MacroDecl: trans.Macro, trans.TemplateDecl: trans.Template, trans.LibraryDecl: trans.MacroLibrary,
-					trans.AnnotationDecl: trans.Annotation}[m.Kind]
+					trans.AnnotationDecl: trans.Annotation, trans.ShaderLibraryDecl: trans.ShaderLibrary}[m.Kind]
 				deps = append(deps, trans.Dependency{Name: m.Name, Kind: kind, Source: f.Src, File: f.File.ToString()})
 			}
 		}
@@ -412,7 +412,7 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 			FailWithText(f.Err)
 		}
 		for _, d := range slices.Concat(f.Decls, f.Macros) {
-			if d.Kind == trans.LibraryDecl || d.Kind == trans.AnnotationDecl {
+			if d.Kind == trans.LibraryDecl || d.Kind == trans.ShaderLibraryDecl || d.Kind == trans.AnnotationDecl {
 				continue // No name, or one that files may share.
 			}
 			if prev, ok := owner[d.Name]; ok {
@@ -468,16 +468,23 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 		}
 	}
 	classes := gdppClasses(files)
-	if o.docs() && slices.ContainsFunc(classes, func(c gdppClass) bool { return c.Async }) {
-		docs, err := trans.DocumentBuiltinClasses(trans.Options{AsyncClass: pkg.AsyncClass()}, syntax)
+	if o.docs() {
+		docs, err := trans.DocumentBuiltinClasses(trans.Options{AsyncClass: pkg.AsyncClass(), PackagePrefix: pkg.Prefix()}, syntax)
 		Check(err, "Failed to document the classes that GD++ adds")
+		used := map[string]bool{pkg.AsyncClass(): slices.ContainsFunc(classes, func(c gdppClass) bool { return c.Async }),
+			pkg.GpuArrayClass(): slices.ContainsFunc(classes, func(c gdppClass) bool { return c.Gpu })}
 		for _, d := range docs {
-			write("doc_classes/"+d.Name, d.Text)
+			if used[strings.TrimSuffix(d.Name, ".xml")] {
+				write("doc_classes/"+d.Name, d.Text)
+			}
 		}
 	}
 	runtimeName, runtimeText, err := trans.RuntimeHeader(syntax)
 	Check(err, "Failed to generate the GD++ runtime header")
 	write(runtimeName, runtimeText)
+	if gpuName, gpuText, err := trans.GpuRuntimeHeader(syntax); err == nil && gpuName != "" {
+		write(gpuName, gpuText)
+	}
 
 	removeStale(dir, "", written)
 	t.Done()

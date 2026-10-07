@@ -1,0 +1,4 @@
+input.gd++:4:18: Parameter x of a shader needs a type.
+ 4 | shader f(n: int, x) -> void {}
+   |                  ^
+Hint: Shaders don't take Variants, e.g. "scale: float".

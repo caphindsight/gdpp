@@ -1,4 +1,0 @@
-input.gd++:6:3: Annotation @thread_safe can only be used in classes that extend Node, which A doesn't.
- 6 |   @thread_safe set(value) {}
-   |   ^^^^^^^^^^^^
-Hint: call_thread_safe is a method of Node.

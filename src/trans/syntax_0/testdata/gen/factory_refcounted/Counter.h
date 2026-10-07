@@ -16,6 +16,7 @@ class Counter : public RefCounted {
 
 public:
 	static gdpp::Gd<Counter> create();
+	void queue_destroy();
 
 protected:
 	static void _bind_methods();

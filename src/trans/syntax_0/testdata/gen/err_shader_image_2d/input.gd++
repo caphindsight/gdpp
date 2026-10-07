@@ -1,0 +1,4 @@
+class_name C
+extends RefCounted
+
+shader f(n: int) -> Image[r8] {}

@@ -1,0 +1,4 @@
+shaders/shader_no_body.gd++:4:25: Expected "{" to start the body of shader "f", but found the end of the file.
+ 4 | shader f(n: int) -> void
+   |                         ^
+Hint: A shader always has a body, written in GLSL, e.g. "shader f(n: int) -> PackedFloat32Array { return float(id); }".

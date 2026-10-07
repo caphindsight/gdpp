@@ -33,6 +33,9 @@ type unit struct {
 	// The offsets of macro and template invocations, with what each one invokes, e.g. "macro stat". Everything
 	// that an invocation generates is at its offset.
 	generated map[int]string
+	// The package's shader blocks outside of classes, of this file and its dependencies, which every shader uses, in
+	// the order of their files.
+	shaderLibs []shaderLib
 }
 
 type classModel struct {
@@ -45,6 +48,7 @@ type classModel struct {
 	trace      bool              // Whether its @trace is on: it traces its lifetime, signals, and all its funcs and vars.
 	profile    bool              // Whether its @profile is on: it profiles all its funcs, and the get and set blocks of its vars.
 	codes      []*Code           // decl and impl blocks inside the class.
+	shaders    []*Code           // Shader blocks inside the class: GLSL that its shaders share.
 	globals    []*Code           // @global decl and impl blocks, outside the class and namespace godot.
 	pool       *poolModel        // Its @pool, or nil.
 	scene      string            // The res:// path of its @scene, or "".
@@ -130,7 +134,8 @@ type funcModel struct {
 	// The class whose GDVIRTUAL lets scripts override the function: its own for @virtual, a base's for an
 	// @override of a @virtual function. Empty for others.
 	virtualOf string
-	trait     string // For a class's function: the trait whose function it implements, or copies as a default. Else empty.
+	trait     string    // For a class's function: the trait whose function it implements, or copies as a default. Else empty.
+	gpu       *gpuModel // For a shader: what runs it, else nil. Its function, and the body of an @onthread one, run it.
 }
 
 // rpcModel is the configuration from @rpc, as C++ values. Empty in externs, whose defining class configures it.
@@ -215,6 +220,9 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 		}
 	}
 	u := &unit{src: src, file: file, symbols: map[string]*symbol{}, generated: x.generated}
+	if u.shaderLibs, err = shaderLibs(filename, file, opts); err != nil {
+		return nil, err
+	}
 	if err := u.dropUserAnnotations(opts.Dependencies); err != nil {
 		return nil, err
 	}
@@ -321,7 +329,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			}
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
-				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c),
+				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c), Gpu: usesGpuTypes(c) || usesGpuNames(u.src),
 				Virtuals: classVirtuals(c, false), NoscriptVirtuals: classVirtuals(c, true), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements)})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
@@ -345,6 +353,8 @@ func usesAsync(c *Class) bool {
 		case m.Func != nil:
 			return isAsync(m.Func.Return) || hasAsync(m.Func.Params) ||
 				slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "onthread" })
+		case m.Shader != nil:
+			return slices.ContainsFunc(m.Shader.Annotations, func(a *Annotation) bool { return a.Name == "onthread" })
 		case m.Signal != nil:
 			return hasAsync(m.Signal.Params)
 		case m.Var != nil:
@@ -1278,8 +1288,8 @@ func cppString(s string) string {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "game_only", "global", "group", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
+	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "sync", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -1300,7 +1310,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
+			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -1806,6 +1816,8 @@ func (u *unit) checkNoDebug(member *Member, owner string, trace, profile bool) e
 	switch {
 	case member.Func != nil:
 		list = member.Func.Annotations
+	case member.Shader != nil:
+		list = member.Shader.Annotations
 	case member.Var != nil:
 		list = member.Var.Annotations
 	case member.Signal != nil:
@@ -2064,6 +2076,9 @@ func (u *unit) exportHint(m *varModel) error {
 	if m.t.async != nil {
 		return u.errorAt(export.Pos, len(export.Name)+1, "Async variables can't be exported.", "Neither the inspector nor scene files can hold a task.")
 	}
+	if m.t.gpu != "" {
+		return u.errorAt(export.Pos, len(export.Name)+1, "GpuArray variables can't be exported.", "Neither the inspector nor scene files can hold GPU memory.")
+	}
 	if m.t.weak {
 		return u.errorAt(export.Pos, len(export.Name)+1, "Weak variables can't be exported.",
 			fmt.Sprintf("Export the class itself, e.g. \"@export var %s: %s\".", m.v.Name, m.t.doc))
@@ -2235,7 +2250,7 @@ func (u *unit) buildExterns() error {
 			default:
 				keyword, pos := member.keyword()
 				return u.errorAt(pos, len(keyword), fmt.Sprintf("Externs can't contain %s.", map[string]string{"decl": "decl or impl blocks",
-					"ctor": "a ctor", "dtor": "a dtor", "on": "on blocks", "enum": "enums", "import": "imports", "noimport": "imports"}[keyword]),
+					"ctor": "a ctor", "dtor": "a dtor", "on": "on blocks", "enum": "enums", "import": "imports", "noimport": "imports", "shader": "shaders or shader blocks"}[keyword]),
 					"Externs only declare the funcs, vars and signals that another package defines.")
 			}
 			if err != nil {
@@ -2291,7 +2306,8 @@ func (u *unit) traitModel(name string) (*traitModel, error) {
 			}
 			keyword, pos := member.keyword()
 			return nil, u.errorAt(pos, len(keyword), fmt.Sprintf("Traits can't contain %s.", map[string]string{"decl": "decl or impl blocks", "impl": "decl or impl blocks",
-				"ctor": "a ctor", "dtor": "a dtor", "on": "on blocks", "enum": "enums", "import": "imports", "noimport": "imports", "var": "vars", "signal": "signals"}[keyword]),
+				"ctor": "a ctor", "dtor": "a dtor", "on": "on blocks", "enum": "enums", "import": "imports", "noimport": "imports", "var": "vars", "signal": "signals",
+				"shader": "shaders or shader blocks"}[keyword]),
 				"Traits only declare the funcs that their classes implement.")
 		}
 		f, err := u.buildTraitFunc(member.Func, name)
@@ -2371,6 +2387,10 @@ func (u *unit) implement(m *classModel, names map[string]bool) error {
 				continue
 			}
 			f := m.funcs[i]
+			if f.gpu != nil {
+				return u.errorAt(f.f.Pos, len("shader"), fmt.Sprintf("Shader %s can't implement func %s of trait %s, since shaders are static.", f.f.Name, f.f.Name, t.Name),
+					fmt.Sprintf("Rename the shader, and implement the trait's func with a func that calls it: \"%s { return my_%s(...); }\".", signature(tf), f.f.Name))
+			}
 			if err := u.checkTraitFunc(f, tf, t.Name, fmt.Sprintf("implements func %s of trait %s", f.f.Name, t.Name)); err != nil {
 				return err
 			}
@@ -2580,6 +2600,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		}
 		var err error
 		switch {
+		case member.Code != nil && member.Code.Shader:
+			_, err = u.annotations(member.Code.Annotations, "a shader block")
+			m.shaders = append(m.shaders, member.Code)
 		case member.Code != nil:
 			keyword, _ := member.keyword()
 			var a map[string]*Annotation
@@ -2596,10 +2619,14 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		case member.Func != nil && member.Func.Name == "_notification":
 			return nil, u.errorAt(member.Func.Pos, 4, "Classes can't declare _notification, since GD++ generates it.",
 				"Handle notifications with on blocks, e.g. \"on ready { ... }\", or \"on(what: int) { ... }\" for every notification.")
-		case member.Func != nil || member.On != nil:
+		case member.Func != nil || member.On != nil || member.Shader != nil:
 			var f *funcModel
 			if member.On != nil {
 				f, err = u.buildOn(member.On, c.Name)
+			} else if member.Shader != nil {
+				if f, err = u.buildShader(member.Shader, c.Name); err == nil {
+					err = u.shaderNotVirtual(f, m.base)
+				}
 			} else if f, err = u.buildFunc(member.Func, c.Name, false); err == nil {
 				err = u.setVirtualOf(f, c.Name, m.base)
 			}
@@ -2677,7 +2704,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 					body.Params = append(body.Params, &p)
 				}
 				// The body does the work, so it's what @trace and @profile follow.
-				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static,
+				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static, gpu: f.gpu,
 					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, only: f.only})
 				f.trace, f.profile = false, false
 				if f.deferral == "onthread" && !f.detached {

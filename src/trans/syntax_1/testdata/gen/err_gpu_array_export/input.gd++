@@ -1,0 +1,4 @@
+class_name C
+extends RefCounted
+
+@export var a: GpuArray[float]

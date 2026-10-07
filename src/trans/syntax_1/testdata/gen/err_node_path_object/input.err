@@ -1,4 +1,0 @@
-input.gd++:4:17: A node path needs a variable of a node type, e.g. Node3D, but e has type Engine.
- 4 | @onready var e: Engine = $Foo
-   |                 ^^^^^^
-Hint: $ and % get nodes.

@@ -1,4 +1,0 @@
-input.gd++:8:14: Class Ghost implements trait Damageable, so it must extend Node3D.
- 8 |   implements Damageable
-   |              ^^^^^^^^^^
-Hint: Trait Damageable extends Node3D, and so must the classes that implement it.

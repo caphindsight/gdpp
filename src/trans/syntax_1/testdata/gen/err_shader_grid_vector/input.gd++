@@ -1,0 +1,5 @@
+class_name C
+extends RefCounted
+
+@grid(foo)
+shader f(a: int, foo: Vector2) -> void {}

@@ -15,6 +15,7 @@ public:
 	using Base = RefCounted;
 	virtual ~Scored() = default;
 	virtual int64_t score() const = 0;
+	virtual void _gdpp_queue_destroy() = 0;
 };
 
 } // namespace godot

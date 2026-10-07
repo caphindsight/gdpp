@@ -21,27 +21,29 @@ type (
 )
 
 const (
-	Object           = meta.Object
-	RefCounted       = meta.RefCounted
-	Extern           = meta.Extern
-	RefCountedExtern = meta.RefCountedExtern
-	Enum             = meta.Enum
-	Other            = meta.Other
-	GodotEnum        = meta.GodotEnum
-	Macro            = meta.Macro
-	Template         = meta.Template
-	MacroLibrary     = meta.MacroLibrary
-	Annotation       = meta.Annotation
-	Trait            = meta.Trait
-	RefCountedTrait  = meta.RefCountedTrait
-	ClassDecl        = meta.ClassDecl
-	ExternDecl       = meta.ExternDecl
-	EnumDecl         = meta.EnumDecl
-	MacroDecl        = meta.MacroDecl
-	TemplateDecl     = meta.TemplateDecl
-	LibraryDecl      = meta.LibraryDecl
-	AnnotationDecl   = meta.AnnotationDecl
-	TraitDecl        = meta.TraitDecl
+	Object            = meta.Object
+	RefCounted        = meta.RefCounted
+	Extern            = meta.Extern
+	RefCountedExtern  = meta.RefCountedExtern
+	Enum              = meta.Enum
+	Other             = meta.Other
+	GodotEnum         = meta.GodotEnum
+	Macro             = meta.Macro
+	Template          = meta.Template
+	MacroLibrary      = meta.MacroLibrary
+	ShaderLibrary     = meta.ShaderLibrary
+	Annotation        = meta.Annotation
+	Trait             = meta.Trait
+	RefCountedTrait   = meta.RefCountedTrait
+	ClassDecl         = meta.ClassDecl
+	ExternDecl        = meta.ExternDecl
+	EnumDecl          = meta.EnumDecl
+	MacroDecl         = meta.MacroDecl
+	TemplateDecl      = meta.TemplateDecl
+	LibraryDecl       = meta.LibraryDecl
+	ShaderLibraryDecl = meta.ShaderLibraryDecl
+	AnnotationDecl    = meta.AnnotationDecl
+	TraitDecl         = meta.TraitDecl
 )
 
 // fork is what every syntax fork provides.
@@ -54,14 +56,16 @@ type fork struct {
 	expand        func(filename, src string, opts meta.Options) (string, error)
 	runtimeName   string
 	runtimeText   string
+	gpuName       string // The header of shaders and GpuArray types, empty if the fork has none.
+	gpuText       string
 }
 
 // Syntax 0 is nightly: it may break code at any time. Every other syntax is a stable snapshot.
 var forks = map[int]fork{
 	0: {syntax_0.ListMacros, syntax_0.ListClasses, syntax_0.DocumentClass, syntax_0.DocumentBuiltinClasses, syntax_0.Generate,
-		syntax_0.Expand, syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader},
+		syntax_0.Expand, syntax_0.RuntimeHeaderName, syntax_0.RuntimeHeader, syntax_0.GpuRuntimeHeaderName, syntax_0.GpuRuntimeHeader},
 	1: {syntax_1.ListMacros, syntax_1.ListClasses, syntax_1.DocumentClass, syntax_1.DocumentBuiltinClasses, syntax_1.Generate,
-		syntax_1.Expand, syntax_1.RuntimeHeaderName, syntax_1.RuntimeHeader},
+		syntax_1.Expand, syntax_1.RuntimeHeaderName, syntax_1.RuntimeHeader, syntax_1.GpuRuntimeHeaderName, syntax_1.GpuRuntimeHeader},
 }
 
 const (
@@ -163,4 +167,15 @@ func RuntimeHeader(syntax int) (name, text string, err error) {
 		return "", "", err
 	}
 	return f.runtimeName, f.runtimeText, nil
+}
+
+// GpuRuntimeHeader returns the name (as generated headers include it) and contents of the header of shaders and
+// GpuArray types, which files generated with the given syntax include if they use them. It's empty for a syntax
+// without shaders.
+func GpuRuntimeHeader(syntax int) (name, text string, err error) {
+	f, err := get(syntax)
+	if err != nil {
+		return "", "", err
+	}
+	return f.gpuName, f.gpuText, nil
 }

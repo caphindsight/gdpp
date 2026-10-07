@@ -350,3 +350,19 @@ kind = "Object"
 base = "Node3D"
 gdpp = true
 traits = ["Saveable"]
+
+[[dep]]
+name = "Image"
+include = "<godot_cpp/classes/image.hpp>"
+kind = "RefCounted"
+base = "Resource"
+
+[[dep]]
+kind = "ShaderLibrary"
+file = "shader_library.gd++"
+
+[[dep]]
+name = "Sprite2D"
+include = "<godot_cpp/classes/sprite2d.hpp>"
+kind = "Object"
+base = "Node2D"

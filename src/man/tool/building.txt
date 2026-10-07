@@ -152,7 +152,13 @@ Warnings:
 - They apply to the package's C++ and the generated C++, not to godot-cpp.
 - Changing it recompiles the package's sources, but not godot-cpp.
 
-Before building, `gd++ build` prints what it builds once, e.g. "Build parameters: windows.x86_64, release, optimized, no docs.". It also names the `--cc` compiler, disabled warnings, sanitizers, and tracing or profiling. On a terminal, values that differ from the defaults are highlighted.
+Shaders:
+
+- Shaders run on the GPU when the game has one, and else on the CPU. See `gd++ man shaders`.
+- `--nogpu` runs them on the CPU, even with a GPU. Then a debugger steps through their bodies, like through C++ code.
+- Changing it recompiles the package's sources, but not godot-cpp.
+
+Before building, `gd++ build` prints what it builds once, e.g. "Build parameters: windows.x86_64, release, optimized, no docs.". It also names the `--cc` compiler, disabled warnings, sanitizers, tracing or profiling, and shaders on the CPU. On a terminal, values that differ from the defaults are highlighted.
 
 # Sanitizers
 

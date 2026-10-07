@@ -1,0 +1,4 @@
+input.gd++:4:18: A shader's parameter can't be named texture, a name of GLSL or of GD++ in shaders.
+ 4 | shader f(n: int, texture: Image) -> void {}
+   |                  ^^^^^^^
+Hint: Rename the parameter.

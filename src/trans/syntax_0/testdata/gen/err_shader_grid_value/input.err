@@ -1,0 +1,4 @@
+input.gd++:4:7: Annotation @grid takes positive integers as workgroup sizes, after the grid's parameter if any.
+ 4 | @grid(0)
+   |       ^
+Hint: E.g. @grid(64), @grid(8, 8) or @grid(size, 8, 8).

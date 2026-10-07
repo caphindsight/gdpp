@@ -1,0 +1,4 @@
+input.gd++:4:29: Shader f returns a texture, so it needs its format, e.g. -> Texture2D[rgba8].
+ 4 | shader f(size: Vector2i) -> Texture2D {}
+   |                             ^^^^^^^^^
+Hint: Formats: r8, rg8, rgba8, rf, rgf, rgbah or rgbaf.

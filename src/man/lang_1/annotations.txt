@@ -204,6 +204,20 @@ Externs also take `@trace` and `@profile`, which work like a class's on their fu
 
 See `gd++ man externs`.
 
+# Shaders
+
+A shader takes `@onthread`, `@trace`, `@profile`, `@notrace`, `@noprofile`, `@game_only` and `@editor_only`, which work like on a function, and:
+
+@sync
+  Calls wait until the GPU is done with the shader. Without it, they return right away, while the GPU works. Required on shaders that return a packed array or an `Image`, and optional on the others. Combines with `@onthread`, whose task then waits. See "Waiting for the GPU: @sync" in `gd++ man shaders`.
+
+@grid(NAME, SIZES...)
+  Both parts are optional, e.g. `@grid(size)`, `@grid(16, 16)` or `@grid(size, 16, 16)`.
+  - NAME, a parameter's name, maybe in double quotes: that parameter is the shader's grid, instead of the first one. See "The grid" in `gd++ man shaders`.
+  - SIZES: the size of the shader's workgroups, one positive integer for each dimension of its grid. At most 1024 cells in all. See "Workgroups" in `gd++ man shaders`.
+
+A shader is always static, so `@static` is an error. Shader blocks take no annotations.
+
 # Traits
 
 @group(NAME)

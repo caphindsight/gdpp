@@ -1,0 +1,4 @@
+input.gd++:4:25: Shaders can't take a PackedStringArray.
+ 4 | shader f(n: int, names: PackedStringArray) -> void {}
+   |                         ^^^^^^^^^^^^^^^^^
+Hint: Shaders take scalars and vectors, e.g. float, Vector3 and Color, packed arrays of floats, ints and vectors, GpuArray[T], Image, Texture2D, and Texture2D[FORMAT] to write.

@@ -49,6 +49,9 @@ func (c *CmdTrans) Run() {
 		Assert(c.File == "", "Invalid arguments: --runtime cannot be used with a file.")
 		_, text, err := trans.RuntimeHeader(syntax)
 		Check(err, "Failed to print the runtime header")
+		if _, gpu, err := trans.GpuRuntimeHeader(syntax); err == nil && gpu != "" {
+			text += "\n" + gpu
+		}
 		PageResult(highlightCode(text, "cpp"))
 		return
 	}

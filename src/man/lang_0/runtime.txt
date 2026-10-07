@@ -127,6 +127,12 @@ is_cancelled
 Emitted
   What a signal's emit function returns: a `[[nodiscard]]` struct with the `Error` of `emit_signal`, in its field `error`. See `gd++ man signals`.
 
+GpuArray<T>
+  An array of T that stays on the GPU, where shaders read and write it: `GpuArray[T]` in GD++. `GpuArray<float> a(1000)` makes one of 1000 zeros, `a.read()` copies its elements back as a packed array, and `a.write(packed)` sets them. See "GPU arrays" in `gd++ man shaders`.
+
+gpu_texture(SIZE, FORMAT)
+  A new texture of SIZE, a `Vector2i`, and FORMAT, a `GpuFormat`, e.g. `GpuFormat::rgba8`, which shaders write and materials draw. All its pixels are zero. See "Textures" in `gd++ man shaders`.
+
 GDPP_STRING_NAME("name")
   A `StringName`, created the first time the expression runs, and reused after, like the engine's `SNAME`.
   - Creating a `StringName` from a string looks it up in a global table, behind a lock. So this is faster for names used over and over, e.g. in calls by name.
@@ -139,6 +145,8 @@ node->call(GDPP_STRING_NAME("update"));
 # For generated code
 
 The code that GD++ generates uses these. Your code rarely needs them:
+
+- `gdpp::gpu::Kernel` and `gdpp::gpu::Call` run a shader, on the GPU or on the CPU. `gdpp::glsl` holds GLSL's types and built-ins in C++, for shaders' bodies on the CPU. The runtime header of shaders, `gd++/syntax_0_gpu.hpp`, defines them, and only files that use shaders or GPU arrays include it.
 
 - `gdpp::info<T>(name, ...)` returns the `PropertyInfo` of a value of type T, for bindings. A `Gd` of a node class gets a node-type hint, so the inspector only accepts nodes of that class.
 - `gdpp::add_property_category(class, name)` adds an inspector category, for `@export_category`.

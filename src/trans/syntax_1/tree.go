@@ -18,7 +18,8 @@ type parsedFile struct {
 	Trait  *traitHead  `parser:"| @@"`
 	Enum   *enumHead   `parser:"| @@"`
 	Macro  *macroHead  `parser:"| @@"`
-	Lib    *libHead    `parser:"| @@ )?"`
+	Lib    *libHead    `parser:"| @@"`
+	Shader *shaderHead `parser:"| @@ )?"`
 	Items  []*topItem  `parser:"@@*"`
 }
 
@@ -76,6 +77,28 @@ type libHead struct {
 	Body        *fileBody     `parser:"'macro_library' @@"`
 }
 
+// shaderHead is shader_library. Its body is the rest of the file: GLSL that every shader of the package uses.
+type shaderHead struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Body        *restBlock    `parser:"'shader_library' @@"`
+}
+
+// restBlock is a block that is the rest of the file, without braces.
+type restBlock Block
+
+func (b *restBlock) Parse(lex *lexer.PeekingLexer) error {
+	first := peekRaw(lex)
+	b.Pos, b.TextPos = first.Pos, first.Pos
+	var code codeBuilder
+	for t := nextRaw(lex); !t.EOF(); t = nextRaw(lex) {
+		code.add(t)
+	}
+	b.Text = code.String()
+	return nil
+}
+
 // fileBody is the body of a file-level macro or template: the rest of the file.
 type fileBody MacroBody
 
@@ -92,10 +115,13 @@ type topItem struct {
 // toFile converts the parse tree into a File. After class_name, extern_name or trait_name, members go into that
 // class, extern or trait; in a file without any, only enums are allowed outside inline classes.
 func (pf *parsedFile) toFile() (*File, *Error) {
-	if len(pf.Code) > 0 {
-		return nil, outsideClass(&Member{Pos: pf.Code[0].Pos, Code: pf.Code[0]})
-	}
 	f := &File{Pos: pf.Pos}
+	for _, code := range pf.Code {
+		if !code.Shader {
+			return nil, outsideClass(&Member{Pos: code.Pos, Code: code})
+		}
+		f.ShaderBlocks = append(f.ShaderBlocks, code)
+	}
 	var members *[]*Member
 	switch {
 	case pf.Class != nil:
@@ -120,6 +146,13 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 	case pf.Lib != nil:
 		h := pf.Lib
 		f.Libraries = []*Macro{{Pos: h.Pos, Doc: h.Doc, Annotations: h.Annotations, Body: (*MacroBody)(h.Body)}}
+	case pf.Shader != nil:
+		h := pf.Shader
+		if len(h.Annotations) > 0 {
+			a := h.Annotations[0]
+			return nil, &Error{Pos: a.Pos, Len: len(a.label()), Msg: fmt.Sprintf("Annotation %s can't be used on a shader library.", a.label())}
+		}
+		f.ShaderBlocks = append(f.ShaderBlocks, &Code{Pos: h.Pos, Shader: true, Body: (*Block)(h.Body)})
 	}
 	for _, item := range pf.Items {
 		m := item.Member
@@ -145,6 +178,8 @@ func (pf *parsedFile) toFile() (*File, *Error) {
 			f.InlineEnums = append(f.InlineEnums, m.Enum)
 		case m.Invoke != nil:
 			f.Invokes = append(f.Invokes, m.Invoke)
+		case m.Code != nil && m.Code.Shader:
+			f.ShaderBlocks = append(f.ShaderBlocks, m.Code)
 		default:
 			return nil, outsideClass(m)
 		}
@@ -233,6 +268,8 @@ func (m *Member) keyword() (string, lexer.Position) {
 	switch {
 	case m.Func != nil:
 		return "func", m.Func.Pos
+	case m.Shader != nil:
+		return "shader", m.Shader.Pos
 	case m.Signal != nil:
 		return "signal", m.Signal.Pos
 	case m.Var != nil:
@@ -251,6 +288,9 @@ func (m *Member) keyword() (string, lexer.Position) {
 		return "noimport", m.Pos
 	case m.Invoke != nil:
 		return "invoke", m.Invoke.Pos
+	}
+	if m.Code.Shader {
+		return "shader", m.Code.Pos
 	}
 	if !m.Code.Decl {
 		return "impl", m.Code.Pos

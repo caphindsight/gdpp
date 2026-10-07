@@ -54,6 +54,7 @@ your GD++ enums               the C++ enum class             by value
 externs, traits               Gd<Terrain>, Gd<Damageable>    like their base
 Async[T], Async               Async<T>, Async<Variant>       by value
 Weak[T]                       Weak<T>                        by value
+GpuArray[T]                   GpuArray<T>                    const GpuArray<T> &
 ```
 
 - "Passed as": how function parameters and setters take the type.
@@ -191,6 +192,18 @@ In C++, `Gd<T>` holds an object of any kind: a class, refcounted or not, an exte
 - Typed collections can't hold it.
 - A task's result can't be another task.
 - See `gd++ man async`.
+
+# GPU arrays
+
+`GpuArray[T]` is an array that stays on the GPU, where shaders read and write it, e.g. `GpuArray[float]`.
+
+- T is `float`, `int`, `Vector2`, `Vector3`, `Vector4` or `Color`.
+- In C++: a `GpuArray<T>`, with an `int32_t` for `int`, e.g. `GpuArray<int32_t>`.
+- In Godot: an object of the package's class of GPU arrays, e.g. `FooGpuArray` for the prefix `Foo`.
+- Copies share the array.
+- It can't be exported, and typed collections can't hold it.
+
+Shaders also take `Texture2D[FORMAT]`, a texture that they write, and return `Image[FORMAT]` and `Texture2D[FORMAT]`, e.g. `Texture2D[rgba8]`. Those are a `Texture2D` and an `Image` with a format, which only shaders' signatures use. See `gd++ man shaders`.
 
 # Weak references
 

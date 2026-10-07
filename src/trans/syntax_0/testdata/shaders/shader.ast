@@ -1,0 +1,39 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Blur
+    Extends: @2:9 RefCounted
+    Members:
+      - @4:1
+        Shader: @6:1
+          Doc: @4:1 Blurs an image.
+          Annotations:
+            - @5:1
+              Name: grid
+              Args:
+                - @5:7 16
+                - @5:11 16
+            - @5:15 onthread
+            - @5:25 sync
+          Name: blur
+          Params:
+            - @6:13
+              Name: size
+              Type: @6:19 Vector2i
+            - @6:29
+              Name: src
+              Type: @6:34 Image
+            - @6:41
+              Name: radius
+              Type: @6:49 int
+              Default: @6:55 2
+          Return: @6:61
+            Name: Image
+            Args:
+              - @6:67 rgba8
+          Body: @6:74
+            TextPos: 6:75
+            Text: |
+
+                vec4 sum = vec4(0.0);
+                return sum / float(radius);
+

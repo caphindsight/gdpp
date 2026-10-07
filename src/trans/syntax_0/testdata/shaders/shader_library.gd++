@@ -1,0 +1,9 @@
+/// Helpers that every shader of the package uses.
+shader_library
+
+const float TAU = 6.28318530;
+
+/* Nested /* comments */ are gone. */
+float wrap(float a) {
+  return mod(a, TAU);
+}

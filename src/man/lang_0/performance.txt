@@ -106,6 +106,7 @@ So in debug, GD++ can be slower than GDScript: `dictionaries` took almost twice 
 - Don't call GDScript from C++ in hot loops, e.g. a script's override of a `@virtual` function once per item. Call it once per batch instead.
 - Use pools for nodes that come and go often, e.g. bullets or effects. With `@pool`, `destroy` keeps the node, and `create` reuses it, so the engine doesn't set up a new object each time. See `gd++ man pools`.
 - Build strings with `+=` in GD++. In GDScript, join them from a `PackedStringArray` instead.
+- Work that runs the same code on many values, e.g. on every pixel of an image or every cell of a grid, can run on the GPU, with a shader. It's often 10 to 100 times faster there, but each call costs copies to the GPU and back, so batch the work, and keep data on the GPU between calls with `GpuArray`. See `gd++ man shaders`.
 - Don't guess: profile. `gd++ build --opt --profile all --print` prints what each function costs per frame. See `gd++ man debugging`.
 
 # The benchmark code

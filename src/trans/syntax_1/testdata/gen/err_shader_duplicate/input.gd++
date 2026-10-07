@@ -1,0 +1,6 @@
+class_name C
+extends RefCounted
+
+func f() -> void {}
+
+shader f(n: int) -> void {}

@@ -1,0 +1,4 @@
+input.gd++:4:21: Shader f returns an image, so its grid must be a Vector2i.
+ 4 | shader f(n: int) -> Image[r8] {}
+   |                     ^^^^^
+Hint: Each cell of the grid makes one pixel.

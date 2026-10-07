@@ -1,0 +1,4 @@
+input.gd++:4:1: The workgroups of shader f have 4096 invocations, but GPUs run at most 1024.
+ 4 | @grid(64, 64)
+   | ^^^^^
+Hint: Choose smaller sizes: 64 or 256 invocations work well everywhere.

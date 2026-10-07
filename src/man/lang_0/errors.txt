@@ -245,7 +245,18 @@ Some compiler errors are about the generated code, but caused by the GD++ declar
 - "conversion from 'Gd<...>' to non-scalar type 'Gd<...>' requested": an implicit downcast, e.g. from a `Gd<Node>` to a `Gd<Player>`. Cast with `as`, which checks the class. See `gd++ man cast`.
 - "'claim' was not declared in this scope", or the same for `is_done` or `cancel`: what follows doesn't start with a name, e.g. `claim (a ? x : y)`, so GD++ didn't rewrite it. Call the method instead: `(a ? x : y).claim()`. See `gd++ man rewrites`.
 - "expected unqualified-id before 'gdpp'", or a similar error at a declaration: a variable or field is named `is_cancelled`, which GD++ reserves and rewrites to `gdpp::is_cancelled()`. Rename it. See `gd++ man rewrites`.
+- Errors at a shader's line come from its body's copy for the CPU, which is C++: the body uses something that's GLSL but not C++, or misspells a name. See "Without a GPU" in `gd++ man shaders`.
 - Errors in a file `NAME.h` or `NAME.cpp` of the build cache point to generated code. Open the file, e.g. `res://.gd++build/gdpp/Player.cpp`, to see what GD++ generated, and which declaration it came from.
+
+# GLSL errors
+
+Godot compiles shaders' GLSL when the game first calls them, so their GLSL errors show up then, not at build time:
+
+- Godot prints them as errors, at their lines in the GD++ file, after "Kernel CLASS.SHADER failed to compile for the GPU, so it runs on the CPU".
+- The shader then runs on the CPU, so the game goes on.
+- `gd++ build --nogpu` doesn't help find them: it never compiles the GLSL.
+
+See "Errors" in `gd++ man shaders`.
 
 # See also
 

@@ -1,0 +1,16 @@
+File: @1:1
+  ShaderBlocks:
+    - @2:1
+      Shader: true
+      Body: @2:15
+        TextPos: 2:15
+        Text: |
+
+
+          const float TAU = 6.28318530;
+
+
+          float wrap(float a) {
+            return mod(a, TAU);
+          }
+

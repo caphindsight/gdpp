@@ -28,6 +28,9 @@ func (u *unit) source(name string) string {
 		}
 	}
 	u.globals(w, false)
+	for _, c := range u.classes {
+		u.shaderDefs(w, c)
+	}
 	w.ln("")
 	w.ln("namespace godot {")
 	for _, c := range u.classes {
@@ -472,6 +475,8 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t%s;", deferredCall(f.deferral, fmt.Sprintf("const_cast<%s *>(this)", c.name), bodyName(f), f.params, f.f.Params))
 	case f.deferral != "":
 		w.ln("\t%s;", deferredCall(f.deferral, "this", bodyName(f), f.params, f.f.Params))
+	case f.gpu != nil:
+		u.shaderCall(w, c, f)
 	case f.f.Body != nil:
 		w.block(f.f.Body, "", "", assertFor(f.ret.void))
 	case !f.ret.void:

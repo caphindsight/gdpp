@@ -65,6 +65,7 @@ std (optional, default `"c++20"`)
 prefix (optional, default: the package's id in PascalCase)
   The prefix of the classes that GD++ adds to the package, e.g. `"Foo"`.
   - If the package's GD++ classes use `Async`, e.g. in an `@onthread` function, the package registers `FooAsync`, the class of its tasks. See `gd++ man async`.
+  - If they have shaders or use `GpuArray`, it registers `FooGpuArray`, the class of its GPU arrays, and `FooGpuTexture`, the internal class of the textures that its shaders return. See `gd++ man shaders`.
   - Default examples: `my_game` gives `MyGame`. An id that starts with a digit gets `Pkg` in front: `3d_tools` gives `Pkg3dTools`.
   - Set it when the default clashes with a class name, or reads badly.
 

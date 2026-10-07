@@ -16,6 +16,7 @@ public:
 	virtual ~Titled() = default;
 	virtual String title() const = 0;
 	virtual void rename(const String &name) = 0;
+	virtual void _gdpp_queue_destroy() = 0;
 };
 
 } // namespace godot

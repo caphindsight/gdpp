@@ -17,6 +17,7 @@ class Stats : public RefCounted, public Scored {
 
 public:
 	static void _gdpp_traits(gdpp::TraitsOf<Stats>);
+	void _gdpp_queue_destroy() override;
 	int64_t score() const override;
 
 protected:

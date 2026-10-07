@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Baker" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bake" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="size" type="Vector2i" />
+			<param index="1" name="target" type="Texture2D" />
+			<description>
+				Waits until the GPU has written the texture.
+			</description>
+		</method>
+		<method name="blank" qualifiers="static">
+			<return type="Texture2D" />
+			<param index="0" name="size" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="fill" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="values" type="ShooterGpuArray" />
+			<description>
+				Returns an Async, which is done once the GPU has written the array.
+			</description>
+		</method>
+		<method name="heights" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="size" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="queue" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="values" type="ShooterGpuArray" />
+			<description>
+				Returns an Async, which is done once the dispatch is queued.
+			</description>
+		</method>
+	</methods>
+</class>

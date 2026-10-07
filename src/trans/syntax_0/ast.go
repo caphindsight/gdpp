@@ -24,6 +24,8 @@ type File struct {
 	Invokes       []*Invoke // Macro invocations in a file without a file-level class. Expansion replaces them.
 	// Declared with annotation Name: the user annotations, @@Name, that every file of the package may use.
 	UserAnnotations []*AnnotationDecl
+	// Shader blocks outside of classes, or the body of shader_library: GLSL that every shader of the package uses.
+	ShaderBlocks []*Code
 }
 
 // Member is one declaration in a class or extern. Exactly one field after Pos is set.
@@ -34,6 +36,7 @@ type Member struct {
 	Dtor     *Dtor   `parser:"| @@"`
 	On       *On     `parser:"| @@"`
 	Func     *Func   `parser:"| @@"`
+	Shader   *Shader `parser:"| @@"`
 	Signal   *Signal `parser:"| @@"`
 	Var      *Var    `parser:"| @@"`
 	Enum     *Enum   `parser:"| @@"`
@@ -78,11 +81,13 @@ type Name struct {
 	Name string `parser:"@Ident"`
 }
 
-// Code is an embedded C++ block: decl, impl or decl impl. It takes annotations, but no doc comment.
+// Code is an embedded C++ block: decl, impl or decl impl, or with Shader, a shader block of GLSL that the class's
+// shaders share. It takes annotations, but no doc comment.
 type Code struct {
 	Pos         lexer.Position
 	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
-	Decl        bool          `parser:"( @'decl'"`
+	Shader      bool          `parser:"( @'shader'"`
+	Decl        bool          `parser:"| @'decl'"`
 	Impl        bool          `parser:"  @'impl'? | @'impl' )"`
 	Body        *Block        `parser:"@@"`
 }
@@ -129,6 +134,17 @@ type Func struct {
 	Params      []*Param      `parser:"( @@ ( ',' @@ )* ','? )? ')'"`
 	Return      *Type         `parser:"( '->' @@ )?"`
 	Body        *Block        `parser:"@@?"`
+}
+
+// Shader is a shader: a function whose Body is GLSL, which runs on the GPU, once for each cell of its first parameter.
+type Shader struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Name        string        `parser:"'shader' @Ident '('"`
+	Params      []*Param      `parser:"( @@ ( ',' @@ )* ','? )? ')'"`
+	Return      *Type         `parser:"( '->' @@ )?"`
+	Body        *Block        `parser:"@@"`
 }
 
 // Param is a function, signal or setter parameter. Without a Type it is a Variant.

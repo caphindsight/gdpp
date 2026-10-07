@@ -1,0 +1,268 @@
+Tutorial: move work to the GPU with shaders
+
+Some work runs the same small piece of code on a great many values: every pixel of an image, every cell of a grid, every particle. A GPU runs such code on thousands of values at once. This tutorial:
+
+- writes a first shader, and calls it from GD++ and from GDScript,
+- generates a heightmap, and shows it on a sprite,
+- runs a simulation that stays on the GPU between frames,
+- reads an imported texture,
+- shares GLSL between shaders,
+- runs a shader without holding up the game,
+- debugs a shader, and runs it without a GPU.
+
+It assumes a project that builds, as in `gd++ man tour`. A shader's body is GLSL, Godot's language of GPU shaders. If you know C, it reads much like it. See `gd++ man shaders` for every detail.
+
+# 1. A first shader
+
+A shader looks like a function, with `shader` instead of `func`:
+
+```gd++
+class_name Effects
+extends RefCounted
+
+@sync
+shader scale(n: int, values: PackedFloat32Array, k: float) -> PackedFloat32Array {
+  return values[id] * k;
+}
+```
+
+- `@sync` says that a call waits for the GPU. Here it must: the result comes back to the CPU. Step 3 shows calls that don't wait.
+- The first parameter is the grid: the shader runs once for each of its `n` cells. `@grid(name)` makes another parameter the grid.
+- `id` is the cell that the body runs for: here, an `int` from 0 to `n - 1`.
+- The body returns the cell's result. Together, the results make the `PackedFloat32Array` that the call returns.
+- The body is GLSL: `float`, not `double`, and no godot-cpp.
+
+Call it like any static function. From GD++:
+
+```gd++
+PackedFloat32Array values = {1, 2, 3, 4};
+PackedFloat32Array doubled = Effects::scale(values.size(), values, 2.0);   // {2, 4, 6, 8}
+```
+
+And from GDScript:
+
+```gdscript
+var doubled = Effects.scale(values.size(), values, 2.0)
+```
+
+- A shader is always static: its body runs on the GPU, so it has no object.
+- For four values, the GPU isn't faster: copying them there and back costs more than the work. Shaders pay off with many values, and with work per value.
+
+# 2. Make an image
+
+Over a 2D grid, a shader makes images. Here, a heightmap of value noise:
+
+```gd++
+class_name Heightmap
+extends Sprite2D
+
+@sync
+shader noise(size: Vector2i, scale: float) -> Image[rf] {
+  vec2 p = vec2(id) / scale;
+  vec2 c = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(c), hash(c + vec2(1, 0)), u.x),
+             mix(hash(c + vec2(0, 1)), hash(c + vec2(1, 1)), u.x), u.y);
+}
+```
+
+- The grid is a `Vector2i`, so `id` is an `ivec2`: the pixel.
+- `Image[rf]` is an image of one 32-bit float per pixel, e.g. for heights. So the body returns a `float`.
+- `hash` comes in step 5.
+
+The call returns an `Image`, e.g. to save it, or to read heights on the CPU:
+
+```gd++
+Gd<Image> heights = noise(Vector2i(512, 512), 32.0);
+float h = heights->get_pixel(10, 20).r;
+```
+
+To show it, return a texture instead: it stays on the GPU, and a sprite draws it with no copy:
+
+```gd++
+shader noise_texture(size: Vector2i, scale: float) -> Texture2D[r8] {
+  // the same body
+}
+
+on ready {
+  set_texture(noise_texture(Vector2i(512, 512), 32.0));
+}
+```
+
+- `r8` is one 8-bit channel per pixel, from 0 to 1, like a grayscale image.
+- No `@sync`: the texture stays on the GPU, so the call returns it right away, while the GPU fills it. The sprite draws it after that.
+- The texture is a `Texture2DRD`. Materials and shader parameters use it like any texture.
+
+# 3. Keep a simulation on the GPU
+
+A simulation runs many steps on the same data. Copying it to the GPU and back for each step would cost more than the steps. A `GpuArray` stays on the GPU instead. Here, Conway's Game of Life, drawn into a texture:
+
+```gd++
+class_name Life
+extends Sprite2D
+
+enum SIZE = 256
+
+var cells: GpuArray[int]
+var next: GpuArray[int]
+
+shader seed(size: Vector2i) -> GpuArray[int] {
+  return fract(sin(dot(vec2(id), vec2(12.9898, 78.233))) * 43758.5453) < 0.3 ? 1 : 0;
+}
+
+shader advance(size: Vector2i, from: GpuArray[int], to: GpuArray[int], target: Texture2D[rgba8]) -> void {
+  int alive = 0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      ivec2 p = (id + ivec2(x, y) + size) % size;
+      alive += (x != 0 || y != 0) ? from[index(p)] : 0;
+    }
+  }
+  int self = from[index(id)];
+  int now = (alive == 3 || (alive == 2 && self == 1)) ? 1 : 0;
+  to[index(id)] = now;
+  imageStore(target, id, vec4(vec3(float(now)), 1.0));
+}
+
+shader blank(size: Vector2i) -> Texture2D[rgba8] {
+  return vec4(0.0, 0.0, 0.0, 1.0);
+}
+
+on ready {
+  cells = seed(Vector2i(SIZE, SIZE));
+  next = GpuArray<int32_t>(SIZE * SIZE);
+  set_texture(blank(Vector2i(SIZE, SIZE)));
+}
+
+on process(delta: float) {
+  advance(Vector2i(SIZE, SIZE), cells, next, get_texture());
+  std::swap(cells, next);
+}
+```
+
+- `seed` returns a new `GpuArray`, with a cell per element, row by row.
+- `advance` reads one array, and writes the other and the texture. It returns `void`: it only writes its GPU arrays and its texture.
+- `index(p)` is the element of the cell `p`, row by row.
+- `on process` swaps the two arrays, so each step reads what the last one wrote.
+- `advance` has no `@sync`, so it returns right away, while the GPU works. Nothing in the frame waits for it.
+- In C++, a `GpuArray[int]` is a `GpuArray<int32_t>`: GPUs compute with 32 bits.
+
+To look at the cells on the CPU, e.g. to count them, `read()` copies them back, once:
+
+```gd++
+func population() -> int {
+  int64_t count = 0;
+  for (int32_t c : cells.read()) {
+    count += c;
+  }
+  return count;
+}
+```
+
+`read()` waits for the calls of `advance` before it. Call it when you need the values, not every frame.
+
+# 4. Read a texture
+
+A shader samples images and textures with GLSL's `texture` and `texelFetch`. A `Texture2D` parameter takes any texture, e.g. an imported one, and reads it on the GPU with no copy. Here, a blur, into a texture of the same size:
+
+```gd++
+@export var source: Texture2D
+
+shader blur(size: Vector2i, src: Texture2D, radius: int) -> Texture2D[rgba8] {
+  vec4 sum = vec4(0.0);
+  for (int y = -radius; y <= radius; y++) {
+    for (int x = -radius; x <= radius; x++) {
+      sum += texelFetch(src, clamp(id + ivec2(x, y), ivec2(0), size - 1), 0);
+    }
+  }
+  float n = float((2 * radius + 1) * (2 * radius + 1));
+  return sum / n;
+}
+
+on ready {
+  set_texture(blur(source->get_size(), source, 3));
+}
+```
+
+- `texelFetch(src, p, 0)` reads the pixel `p`. `texture(src, uv)` samples between pixels, with `uv` from 0 to 1.
+- An `Image` parameter works the same way, but the call copies it to the GPU.
+
+# 5. Share GLSL between shaders
+
+A shader block holds GLSL that shaders share: functions, structs and constants. Here, the `hash` of step 2:
+
+```gd++
+shader {
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+}
+```
+
+- In a class, the class's shaders use it.
+- Outside of classes, every shader of the package uses it.
+- A file with `shader_library` at its top is a shader block for the whole package:
+
+```gd++
+/// Noise for every shader of the package.
+shader_library
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+```
+
+A block's functions can't use a shader's parameters: pass what they need as arguments.
+
+# 6. Don't hold up the game
+
+A `@sync` shader waits for the GPU. For a big one, e.g. a 4096x4096 heightmap, that's a hitch. Add `@onthread`, and the call runs on a worker thread instead, and returns an `Async`:
+
+```gd++
+var pending: Async[Image]
+
+@sync @onthread
+shader big_noise(size: Vector2i, scale: float) -> Image[rf] {
+  // the body of noise
+}
+
+on ready {
+  pending = big_noise(Vector2i(4096, 4096), 64.0);
+}
+
+on process(delta: float) {
+  if (is_done pending) {
+    build_terrain(claim pending);
+  }
+}
+```
+
+- Each frame checks whether the image is ready, as with any `@onthread` function. See `gd++ man threads`.
+- `@sync` stays: it's the task that waits for the GPU now, not the caller. So the `Async` is done once the image is ready.
+- Shaders without `@sync` don't need `@onthread`: they return right away anyway.
+
+# 7. Debug a shader, and run without a GPU
+
+GD++ checks a shader at three times:
+
+- `gd++ build` reports GD++ errors, e.g. a parameter type that shaders can't take.
+- It compiles each shader's body as C++ too, for running without a GPU. So a misspelled name fails the build, at the shader's line.
+- Godot compiles the GLSL when the game first calls the shader. It prints GLSL errors then, at their lines in the GD++ file, and runs the shader on the CPU.
+
+To step through a shader's body, run it on the CPU:
+
+```sh
+gd++ build --nogpu
+```
+
+- Every shader runs on the CPU, as C++. A debugger stops at breakpoints in its body, like in any C++ code.
+- On the CPU, debug builds also check that the body reads and writes arrays within their bounds. GPUs don't.
+- `gd++ build` without `--nogpu` runs them on the GPU again.
+
+Some games have no GPU to run shaders on: with the Compatibility renderer, or on a dedicated server with `--headless`. There, shaders run on the CPU on their own, with the same results, just slower. A shader that uses `barrier()` or `shared` variables can't: it prints an error and returns nothing. See "Without a GPU" in `gd++ man shaders`.
+
+`@trace` and `@profile` work on shaders too, and time whole calls. See `gd++ man hunt-bugs` and `gd++ man debugging`.
+
+# See also
+
+`gd++ man shaders`, `gd++ man threads`, `gd++ man optimize`, `gd++ man async`.

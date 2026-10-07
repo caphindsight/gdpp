@@ -1,0 +1,22 @@
+class_name Heightmap
+extends Sprite2D
+
+// GLSL that the class's shaders share.
+shader {
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+}
+
+// Runs on the GPU, once for each pixel.
+shader noise(size: Vector2i, scale: float) -> Texture2D[r8] {
+  vec2 p = vec2(id) / scale;
+  vec2 c = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(c), hash(c + vec2(1, 0)), u.x),
+             mix(hash(c + vec2(0, 1)), hash(c + vec2(1, 1)), u.x), u.y);
+}
+
+on ready {
+  set_texture(noise(Vector2i(512, 512), 32.0));
+}

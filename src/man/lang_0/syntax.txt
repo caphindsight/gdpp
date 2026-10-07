@@ -10,11 +10,11 @@ This page covers the lexical structure of GD++: tokens, comments, literals and s
 
 # Scopes
 
-A file has four kinds of scope:
+A file has five kinds of scope:
 
 1. The class declaration scope.
    - Where: the top of a file, the rest of a file after `class_name`, `extern_name` or `trait_name`, and the inside of `class Name { ... }`, `extern Name { ... }` and `trait Name { ... }`.
-   - Holds: `func`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, `import` and `noimport`, and at the top level, classes, externs and traits.
+   - Holds: `func`, `shader`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, shader blocks, `import` and `noimport`, and at the top level, classes, externs and traits.
    - The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
 2. The property declaration scope.
    - Where: the braces after `var name: type { ... }`.
@@ -25,6 +25,9 @@ A file has four kinds of scope:
 4. The C++ scope.
    - Where: every other pair of braces, i.e. function bodies, `ctor`, `dtor` and `on` blocks, `decl` and `impl` blocks, `get` and `set` blocks, and initial and default values.
    - Holds: any C++ code, which GD++ copies into the generated C++. See `gd++ man code`.
+5. The GLSL scope.
+   - Where: the bodies of shaders, shader blocks, and the rest of a file after `shader_library`.
+   - Holds: GLSL code, which runs on the GPU. See `gd++ man shaders`.
 
 All scopes share the same tokens, described below, and the same comments. So a C++ block ends at the `}` that matches its `{`. Braces inside strings, character literals and comments don't count.
 
@@ -82,7 +85,7 @@ Keywords have a special meaning in declarations. Don't use them as names of clas
 ```gd++
 annotation  class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern
 extern_name  func  get  impl  implements  import  invoke  macro  macro_library  macro_name  noimport
-on  set  signal  template  template_name  trait  trait_name  var
+on  set  shader  shader_library  signal  template  template_name  trait  trait_name  var
 ```
 
 - `code` is a keyword only right before `{`, in a macro's arguments. See `gd++ man macros`.

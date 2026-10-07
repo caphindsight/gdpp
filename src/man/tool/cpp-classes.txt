@@ -170,6 +170,7 @@ The class of tasks:
 
 - If the package's GD++ classes use `Async`, e.g. in an `@onthread` function, the package gets a class of tasks.
 - It's named after the package's prefix, e.g. `FooAsync` for the prefix `Foo`.
+- Likewise, a package whose GD++ classes have shaders or use `GpuArray` gets `FooGpuArray`, the class of its GPU arrays, and `FooGpuTexture`, the internal class of the textures that its shaders return. See `gd++ man shaders`.
 - The GD++ runtime defines it. `__register_types__.cpp` registers it first, with `GDREGISTER_CLASS`.
 - No other class of the package, C++ or GD++, can have its name. Then the build fails and asks for another prefix.
 - `SConstruct` defines `GDPP_ASYNC_CLASS` as its name, for all the package's C++.

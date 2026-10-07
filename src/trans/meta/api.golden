@@ -77,3 +77,6 @@ field Declaration.Traits []string
 field Options.Implementers map[string][]string
 field Dependency.NoscriptVirtuals []string
 field Declaration.NoscriptVirtuals []string
+const ShaderLibrary Kind = 14
+const ShaderLibraryDecl DeclKind = 9
+field Declaration.Gpu bool

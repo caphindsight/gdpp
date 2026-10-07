@@ -58,6 +58,16 @@ func TestHighlightCode(t *testing.T) {
 			Styled("int", CodeType) + "\n}"},
 		{"gd++", "noimport  on  set", Styled("noimport", CodeKeyword) + "  " + Styled("on", CodeKeyword) + "  " + Styled("set", CodeKeyword)},
 		{"gd++", "on = on || x;", "on = on || x;"},
+		{"gd++", "@grid(size, 8, 8)\nshader f(size: Vector2i, t: Texture2D[rgba8]) -> void {\n  vec4 c = vec4(id);\n  emit x;\n}",
+			Styled("@grid", CodePreProc) + "(size, " + Styled("8", CodeLiteral) + ", " + Styled("8", CodeLiteral) + ")\n" + Styled("shader", CodeKeyword) + " " +
+				Styled("f", CodeFunction) + "(size: " + Styled("Vector2i", CodeType) + ", t: " + Styled("Texture2D", CodeType) + "[" + Styled("rgba8", CodeType) + "]) -> " +
+				Styled("void", CodeType) + " {\n  " + Styled("vec4", CodeType) + " c = " + Styled("vec4", CodeType) + "(" + Styled("id", CodeKeyword) + ");\n  emit x;\n}"},
+		{"gd++", "shader {\n  shared float t[4];\n}", Styled("shader", CodeKeyword) + " {\n  " + Styled("shared", CodeKeyword) + " " + Styled("float", CodeType) +
+			" t[" + Styled("4", CodeLiteral) + "];\n}"},
+		{"gd++", "// c\nshader_library\nout vec2 x;", Styled("// c", CodeComment) + "\n" + Styled("shader_library", CodeKeyword) + "\n" + Styled("out", CodeKeyword) + " " +
+			Styled("vec2", CodeType) + " x;"},
+		{"gd++", "shader  shader_library  var", Styled("shader", CodeKeyword) + "  " + Styled("shader_library", CodeKeyword) + "  " + Styled("var", CodeKeyword)},
+		{"gd++", "var vec2 = id;", Styled("var", CodeKeyword) + " vec2 = id;"},
 		{"gd++", "on(what: int) {}\non {}\nsignal s(on: int)", Styled("on", CodeKeyword) + "(what: " + Styled("int", CodeType) + ") {}\n" +
 			Styled("on", CodeKeyword) + " {}\n" + Styled("signal", CodeKeyword) + " " + Styled("s", CodeFunction) + "(on: " + Styled("int", CodeType) + ")"},
 		{"gd++", "var x: Node = $Hud/\"a b\" // c", Styled("var", CodeKeyword) + " x: " + Styled("Node", CodeType) + " = " +

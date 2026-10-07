@@ -1,2 +1,2 @@
-{Name:Lamp Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
-{Name:ShadowCastingSetting Kind:3 Base:GeometryInstance3D.ShadowCastingSetting Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:Lamp Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}
+{Name:ShadowCastingSetting Kind:3 Base:GeometryInstance3D.ShadowCastingSetting Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}

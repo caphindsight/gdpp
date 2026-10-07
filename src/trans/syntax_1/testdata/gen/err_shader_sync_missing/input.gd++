@@ -1,0 +1,6 @@
+class_name C
+extends RefCounted
+
+shader f(n: int) -> PackedFloat32Array {
+  return 1.0;
+}

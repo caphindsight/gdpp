@@ -41,7 +41,7 @@ func highlightCode(code, lang string) string {
 // The words that highlightGdpp marks, by kind. Add new words to these lists.
 const (
 	gdppWords = "annotation class class_name ctor decl dtor enum enum_name extends extern extern_name func get impl implements import macro macro_library macro_name noimport " +
-		"set signal template_name trait trait_name var"
+		"set shader shader_library signal template_name trait trait_name var"
 	// GD++'s on blocks, e.g. on ready { ... }, whose keyword is also a name elsewhere: it's a keyword, with the
 	// notification's name, where it starts a block, at the start of a line or after annotations, and alone where
 	// another identifier follows it, e.g. in a list of keywords, since a name never has one right after it.
@@ -74,6 +74,14 @@ const (
 		"uint32_t uint64_t"
 	// Godot's names for types that aren't written in PascalCase, which is how highlightGdpp spots other types.
 	godotTypeWords = "float64_t real_t gd RID AABB"
+	// GLSL's types, in shaders and shader blocks.
+	glslTypeWords = "uint vec2 vec3 vec4 ivec2 ivec3 ivec4 uvec2 uvec3 uvec4 bvec2 bvec3 bvec4 mat2 mat3 mat4 mat2x2 mat2x3 mat2x4 mat3x2 " +
+		"mat3x3 mat3x4 mat4x2 mat4x3 mat4x4 sampler2D image2D"
+	// GLSL's keywords and qualifiers, and the cell of a shader's body, in shaders and shader blocks.
+	glslWords = "if else for while do return switch case break continue default const struct true false discard in out inout " +
+		"uniform buffer shared layout highp mediump lowp precise coherent volatile restrict readonly writeonly id"
+	// The formats of images and textures that shaders write, which are types in brackets, e.g. Texture2D[rgba8].
+	gpuFormatWords = "r8 rg8 rgb8 rgba8 rf rgf rgbh rgbah rgbf rgbaf"
 )
 
 var (
@@ -84,6 +92,9 @@ var (
 	codePlain     = wordSet(plainWords)
 	luaKeywords   = wordSet(luaWords)
 	luaGlobals    = wordSet(luaGlobalWords)
+	glslKeywords  = wordSet(glslWords)
+	glslTypes     = wordSet(glslTypeWords, cppTypeWords)
+	gpuFormats    = wordSet(gpuFormatWords)
 )
 
 // wordSet returns the set of the words in lists, which are separated by spaces.
@@ -101,6 +112,18 @@ func wordSet(lists ...string) map[string]bool {
 // where # starts a comment rather than a preprocessor directive: keywords,
 // annotations, types, function names, literals and comments.
 func highlightGdpp(code string, gdscript bool) string {
+	return highlightCodeOf(code, gdscript, false)
+}
+
+// shaderHeadRegexp matches the start of a shader block, "shader {", or of a shader, "shader NAME(".
+var shaderHeadRegexp = regexp.MustCompile(`^shader(\s*\{|\s+\w+\s*\()`)
+
+// shaderLibraryRegexp matches a file-level shader library's keyword, which only starts one before any declaration.
+var shaderLibraryRegexp = regexp.MustCompile(`^shader_library\b`)
+
+// highlightCodeOf highlights code like highlightGdpp does, or with glsl, the GLSL of shaders: with GLSL's keywords
+// and types, and without GD++'s rewrites.
+func highlightCodeOf(code string, gdscript, glsl bool) string {
 	var out strings.Builder
 	for i := 0; i < len(code); {
 		c, rest := code[i], code[i:]
@@ -142,6 +165,18 @@ func highlightGdpp(code string, gdscript bool) string {
 			out.WriteString(Styled("macro_library", CodeKeyword) + highlightLua(rest[len("macro_library"):]))
 			i += len(rest)
 			continue
+		case !gdscript && !glsl && shaderLibraryRegexp.MatchString(rest) && onlyComments(code[:i]): // The rest of the file is GLSL.
+			out.WriteString(Styled("shader_library", CodeKeyword) + highlightCodeOf(rest[len("shader_library"):], false, true))
+			i += len(rest)
+			continue
+		case !gdscript && !glsl && shaderHeadRegexp.MatchString(rest) && (i == 0 || !isIdentByte(code[i-1])) && strings.IndexByte(rest, '{') >= 0:
+			// A shader or a shader block: its head is GD++, and its body GLSL.
+			open := strings.IndexByte(rest, '{')
+			end := closingBrace(rest, open)
+			out.WriteString(Styled("shader", CodeKeyword) + highlightCodeOf(rest[len("shader"):open+1], false, false) +
+				highlightCodeOf(rest[open+1:end], false, true) + rest[end:min(end+1, len(rest))])
+			i += min(end+1, len(rest))
+			continue
 		case c == '$' || c == '%' && strings.HasSuffix(strings.TrimRight(code[:i], " \t"), "="):
 			n, style = nodePathLen(rest), []Style{CodeLiteral}
 		case c >= '0' && c <= '9':
@@ -163,7 +198,7 @@ func highlightGdpp(code string, gdscript bool) string {
 				isOn = len(after) < len(rest[n:]) && identLen(after) > 0
 			}
 			after := strings.TrimLeft(rest[n:], " \t\n")
-			if m := invokeRegexp.FindStringSubmatch(rest); !gdscript && m != nil && strings.ContainsAny(rest[len(m[0]):min(len(m[0])+1, len(rest))], "({") {
+			if m := invokeRegexp.FindStringSubmatch(rest); !gdscript && !glsl && m != nil && strings.ContainsAny(rest[len(m[0]):min(len(m[0])+1, len(rest))], "({") {
 				// A macro invocation, maybe with a Lua table.
 				out.WriteString(Styled(m[1], CodeKeyword) + m[2] + Styled(m[3], CodeFunction) + m[4])
 				i += len(m[0])
@@ -175,6 +210,15 @@ func highlightGdpp(code string, gdscript bool) string {
 				continue
 			}
 			switch {
+			case glsl && glslKeywords[word]:
+				style = []Style{CodeKeyword}
+			case glsl && glslTypes[word]:
+				style = []Style{CodeType}
+			case glsl && strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "("):
+				style = []Style{CodeFunction}
+			case glsl:
+			case gpuFormats[word] && strings.HasSuffix(strings.TrimRight(code[:i], " "), "["):
+				style = []Style{CodeType}
 			case !gdscript && word == "code" && strings.HasPrefix(after, "{"):
 				style = []Style{CodeKeyword}
 			case isOn, codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,

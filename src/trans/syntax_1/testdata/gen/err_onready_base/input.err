@@ -1,4 +1,0 @@
-input.gd++:3:1: Annotation @onready can only be used in classes that extend Node, which A doesn't.
- 3 | @onready var x: int = 1
-   | ^^^^^^^^
-Hint: Only nodes get _ready.

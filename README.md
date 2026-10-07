@@ -318,6 +318,14 @@ See `gd++ man macros`.
 
 See `gd++ man annotations`.
 
+### Shaders
+
+<a href="readme/svg/shaders.gd++"><img src="readme/svg/shaders.svg" alt="GD++ code: shaders"></a>
+
+Shaders are functions written in GLSL, which run on the GPU. Without one, e.g. on a dedicated server, they run on the CPU.
+
+See `gd++ man shaders`.
+
 ## The build tool
 
 - A **project** is a normal Godot project.

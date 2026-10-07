@@ -1,0 +1,4 @@
+input.gd++:5:23: The grid of a shader is an int, Vector2i or Vector3i, but foo is a Vector2.
+ 5 | shader f(a: int, foo: Vector2) -> void {}
+   |                       ^^^^^^^
+Hint: A grid counts cells, so its size is whole: write Vector2i.

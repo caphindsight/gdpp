@@ -49,6 +49,8 @@ Rewrites only happen in C++ code, never in comments or strings. Each applies in 
 
 Avoid the names of all rewrites as names in your C++ code.
 
+Shaders and shader blocks are GLSL, not C++, so none of these rewrites apply in them. Their copy for the CPU has rewrites of its own, which turn GLSL into C++, e.g. of swizzles such as `v.xy`. See "Without a GPU" in `gd++ man shaders`.
+
 Their operands:
 
 - NAME may have objects before it, joined by `->` or `.`, e.g. `rpc other->take_damage(5)`. The objects must be named by variables, not by function calls.

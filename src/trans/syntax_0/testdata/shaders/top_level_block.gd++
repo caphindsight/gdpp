@@ -1,0 +1,11 @@
+shader {
+  const float PI = 3.14159265;
+}
+
+class Waves {
+  extends RefCounted
+
+  shader wave(n: int) -> PackedFloat32Array {
+    return sin(float(id) * PI);
+  }
+}
