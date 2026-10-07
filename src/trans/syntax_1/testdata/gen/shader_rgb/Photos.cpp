@@ -63,6 +63,10 @@ struct _gdpp_shader_opaque {
   return texelFetch(src, id, 0).swizzle<0, 1, 2>();
 }
 #line 66 "Photos.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Photos.opaque", glsl, { 8, 8, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_normals {
@@ -108,7 +112,11 @@ struct _gdpp_shader_normals {
 	vec3 body(Id id) const {
   return normalize(vec3(vec2(id) / vec2(size) - 0.5, 1.0));
 }
-#line 112 "Photos.cpp"
+#line 116 "Photos.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Photos.normals", glsl, { 8, 8, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Photos
@@ -123,15 +131,13 @@ void Photos::_bind_methods() {
 }
 
 gdpp::Gd<Image> Photos::opaque(const Vector2i &size, const gdpp::Gd<Image> &src) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Photos.opaque", ::_gdpp_gpu_Photos::_gdpp_shader_opaque::glsl, { 8, 8, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Photos::_gdpp_shader_opaque::_gdpp_kernel(), size);
 	_gdpp_call.sampler(src);
 	return _gdpp_call.result_image(gdpp::GpuFormat::rgb8, [&] { return ::_gdpp_gpu_Photos::_gdpp_shader_opaque{ gdpp::glsl::ivec2(size), gdpp::gpu::sampled(src) }; });
 }
 
 gdpp::Gd<Image> Photos::normals(const Vector2i &size) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Photos.normals", ::_gdpp_gpu_Photos::_gdpp_shader_normals::glsl, { 8, 8, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Photos::_gdpp_shader_normals::_gdpp_kernel(), size);
 	return _gdpp_call.result_image(gdpp::GpuFormat::rgbf, [&] { return ::_gdpp_gpu_Photos::_gdpp_shader_normals{ gdpp::glsl::ivec2(size) }; });
 }
 

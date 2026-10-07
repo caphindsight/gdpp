@@ -494,7 +494,7 @@ Functions, shaders, variables, signals and constants share one namespace, since 
 - `signal s` also declares a C++ method `s`, which emits it.
 - `@virtual func _f` also declares `f`, which scripts call. See `gd++ man functions`.
 - A trait's default function, which the class doesn't define, is a member too. See `gd++ man traits`.
-- `@factory`, `@factory_pool` and `@factory_scene` declare their methods, e.g. `create`. See "In scripts" above.
+- `@factory`, `@factory_pool`, `@factory_scene` and `@factory_shader` declare their methods, e.g. `create`. See "In scripts" above, and `gd++ man shaders`.
 - Names that start with `_gdpp_` are reserved for generated code.
 
 So `var x` and `func get_x()` can't be in the same class:

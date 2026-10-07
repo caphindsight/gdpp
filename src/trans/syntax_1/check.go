@@ -53,7 +53,7 @@ type classModel struct {
 	pool       *poolModel        // Its @pool, or nil.
 	scene      string            // The res:// path of its @scene, or "".
 	abstract   bool              // Whether @abstract keeps the editor and GD++ code from creating its objects.
-	factory    map[string]string // The methods its @factory, @factory_pool and @factory_scene declare: their names by role, e.g. "create". See factoryRoles.
+	factory    map[string]string // The methods its @factory, @factory_pool, @factory_scene and @factory_shader declare: their names by role, e.g. "create". See factoryRoles.
 	ctor, dtor *Block
 	notifs     []*notifModel
 	funcs      []*funcModel
@@ -351,8 +351,12 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 	return decls, nil
 }
 
-// usesAsync reports whether class c uses Async: has an @onthread function, or an Async type in a signature.
+// usesAsync reports whether class c uses Async: has an @onthread function, an Async type in a signature, or
+// @factory_shader, whose methods return one.
 func usesAsync(c *Class) bool {
+	if hasAnnotation(c, "factory_shader") {
+		return true
+	}
 	isAsync := func(t *Type) bool { return t != nil && t.Name == "Async" }
 	hasAsync := func(params []*Param) bool {
 		return slices.ContainsFunc(params, func(p *Param) bool { return isAsync(p.Type) })
@@ -1297,7 +1301,7 @@ func cppString(s string) string {
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
+	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
 	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "sync", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
@@ -1319,7 +1323,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
+			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -1742,12 +1746,14 @@ func (u *unit) sceneOf(a *Annotation, owner string) (string, error) {
 	return path, err
 }
 
-// factoryRoles are the methods that @factory, @factory_pool and @factory_scene can declare, in order. Each one's
-// default name is the role itself.
-var factoryRoles = []string{"create", "destroy", "queue_destroy", "pool_reserve", "pool_clear", "scene_cache", "scene_evict"}
+// factoryRoles are the methods that @factory, @factory_pool, @factory_scene and @factory_shader can declare, in order.
+// Each one's default name is the role itself.
+var factoryRoles = []string{"create", "destroy", "queue_destroy", "pool_reserve", "pool_clear", "scene_cache", "scene_evict",
+	"compile_shader", "compile_shader_async", "compile_shader_detached", "compile_shaders", "compile_shaders_async", "compile_shaders_detached"}
 
 // factoryAnnotations are the annotations that declare methods, with their roles.
-var factoryAnnotations = map[string][]string{"factory": factoryRoles[:3], "factory_pool": factoryRoles[3:5], "factory_scene": factoryRoles[5:]}
+var factoryAnnotations = map[string][]string{"factory": factoryRoles[:3], "factory_pool": factoryRoles[3:5], "factory_scene": factoryRoles[5:7],
+	"factory_shader": factoryRoles[7:]}
 
 // factoryOf returns the names of the methods that the annotations a of the class m declare, by role. For an extern, m
 // only has its name, refCounted and node, and the methods are its class's. Without arguments,
@@ -1765,7 +1771,7 @@ func (u *unit) factoryOf(a map[string]*Annotation, m *classModel) (map[string]st
 		whyNot["queue_destroy"] = "only nodes are queued for destruction"
 	}
 	f, roleOf := map[string]string{}, map[string]string{}
-	for _, kind := range []string{"factory", "factory_pool", "factory_scene"} {
+	for _, kind := range []string{"factory", "factory_pool", "factory_scene", "factory_shader"} {
 		b, roles := a[kind], factoryAnnotations[kind]
 		needs := strings.TrimPrefix(kind, "factory_")
 		switch {
@@ -2561,7 +2567,7 @@ func (u *unit) buildClasses() error {
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted,
 		node: u.extends(c.Name, "Node")}
-	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "factory", "factory_pool", "factory_scene", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
+	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
@@ -2776,6 +2782,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	if b := a["factory_shader"]; b != nil && !slices.ContainsFunc(m.funcs, func(f *funcModel) bool { return f.gpu != nil }) {
+		return nil, u.errorAt(b.Pos, len(b.Name)+1, "Annotation @factory_shader needs a shader in the class.", "Add a shader, or remove @factory_shader.")
 	}
 	if err := u.implement(m, names); err != nil {
 		return nil, err

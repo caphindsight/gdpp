@@ -63,6 +63,10 @@ struct _gdpp_shader_fill {
   return value;
 }
 #line 66 "Grids.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Grids.fill", glsl, { 8, 8, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_ramp {
@@ -116,7 +120,11 @@ struct _gdpp_shader_ramp {
 	float body(Id id) const {
   return values[index(id)] * scale + float(count);
 }
-#line 120 "Grids.cpp"
+#line 124 "Grids.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Grids.ramp", glsl, { 128, 1, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_volume {
@@ -164,7 +172,11 @@ struct _gdpp_shader_volume {
 	float body(Id id) const {
   return float(id.x + id.y + id.z);
 }
-#line 168 "Grids.cpp"
+#line 176 "Grids.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Grids.volume", glsl, { 4, 4, 4 }, false, true, true);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Grids
@@ -180,23 +192,20 @@ void Grids::_bind_methods() {
 }
 
 gdpp::Gd<Image> Grids::fill(double value, const Vector2i &size) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Grids.fill", ::_gdpp_gpu_Grids::_gdpp_shader_fill::glsl, { 8, 8, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Grids::_gdpp_shader_fill::_gdpp_kernel(), size);
 	_gdpp_call.uniform(value);
 	return _gdpp_call.result_image(gdpp::GpuFormat::rf, [&] { return ::_gdpp_gpu_Grids::_gdpp_shader_fill{ float(value), gdpp::glsl::ivec2(size) }; });
 }
 
 PackedFloat32Array Grids::ramp(double scale, int64_t count, const PackedFloat32Array &values) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Grids.ramp", ::_gdpp_gpu_Grids::_gdpp_shader_ramp::glsl, { 128, 1, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, count);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Grids::_gdpp_shader_ramp::_gdpp_kernel(), count);
 	_gdpp_call.uniform(scale);
 	_gdpp_call.input(values);
 	return _gdpp_call.result_buffer<PackedFloat32Array>([&] { return ::_gdpp_gpu_Grids::_gdpp_shader_ramp{ float(scale), int(count), gdpp::gpu::ReadBuffer<float>(values) }; });
 }
 
 PackedFloat32Array Grids::volume(const Vector3i &size) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Grids.volume", ::_gdpp_gpu_Grids::_gdpp_shader_volume::glsl, { 4, 4, 4 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Grids::_gdpp_shader_volume::_gdpp_kernel(), size);
 	return _gdpp_call.result_buffer<PackedFloat32Array>([&] { return ::_gdpp_gpu_Grids::_gdpp_shader_volume{ gdpp::glsl::ivec3(size) }; });
 }
 

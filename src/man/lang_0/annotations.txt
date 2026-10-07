@@ -57,6 +57,10 @@ func _score() -> int
   Declare the class's static methods that load and drop its scene: `scene_cache()` and `scene_evict()` by default. Only with `@scene`. See `gd++ man classes`.
   - With arguments: up to two names, as strings, e.g. `@factory_scene("preload_scene")`. An empty string `""`, or a missing name at the end, leaves that method out.
 
+@factory_shader and @factory_shader(SHADER, SHADER_ASYNC, SHADER_DETACHED, SHADERS, SHADERS_ASYNC, SHADERS_DETACHED)
+  Declare the class's static methods that compile its shaders ahead of time: `compile_shader(shader)`, `compile_shader_async(shader)`, `compile_shader_detached(shader)`, `compile_shaders()`, `compile_shaders_async()` and `compile_shaders_detached()` by default. Only for classes with a shader. See `gd++ man shaders`.
+  - With arguments: up to six names, as strings, e.g. `@factory_shader("", "", "", "warm_up")`. An empty string `""`, or a missing name at the end, leaves that method out.
+
 @icon(PATH)
   The class's icon in the editor: a string with a `res://` or `pkg://` path. See `gd++ man classes`.
 

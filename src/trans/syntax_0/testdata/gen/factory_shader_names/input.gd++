@@ -1,0 +1,9 @@
+@factory_shader("warm_up", "", "", "warm_up_all")
+@game_only
+class_name Noise
+extends Node
+
+@sync
+shader fill(n: int) -> PackedFloat32Array {
+  return float(id);
+}

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Filters" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="brighten" qualifiers="static">
+			<return type="Image" />
+			<param index="0" name="size" type="Vector2i" />
+			<param index="1" name="src" type="Image" />
+			<param index="2" name="gain" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="clear" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="values" type="ShooterGpuArray" />
+			<description>
+			</description>
+		</method>
+		<method name="compile_shader" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="shader" type="StringName" />
+			<description>
+				Compiles the class's shader named [param shader] for the GPU, so that its first call doesn't wait for Godot to compile it, e.g. when a level loads. Returns once it's compiled. Does nothing if it's compiled already, or without a GPU. Prints an error if the class has no such shader. It's thread-safe.
+			</description>
+		</method>
+		<method name="compile_shader_async" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="shader" type="StringName" />
+			<description>
+				Compiles the class's shader named [param shader] for the GPU on the [WorkerThreadPool], so that its first call doesn't wait for Godot to compile it. Prints an error if the class has no such shader. Returns a task right away, which is done once the shader is compiled.
+			</description>
+		</method>
+		<method name="compile_shader_detached" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="shader" type="StringName" />
+			<description>
+				Compiles the class's shader named [param shader] for the GPU on the [WorkerThreadPool], so that its first call doesn't wait for Godot to compile it. Prints an error if the class has no such shader. Returns right away, and nothing waits for it.
+			</description>
+		</method>
+		<method name="compile_shaders" qualifiers="static">
+			<return type="void" />
+			<description>
+				Compiles all the class's shaders for the GPU, so that their first calls don't wait for Godot to compile them, e.g. when a level loads. Returns once they're compiled. Skips those compiled already, and does nothing without a GPU. It's thread-safe.
+			</description>
+		</method>
+		<method name="compile_shaders_async" qualifiers="static">
+			<return type="GdppAsync" />
+			<description>
+				Compiles all the class's shaders for the GPU on the [WorkerThreadPool], so that their first calls don't wait for Godot to compile them. Returns a task right away, which is done once they're compiled.
+			</description>
+		</method>
+		<method name="compile_shaders_detached" qualifiers="static">
+			<return type="void" />
+			<description>
+				Compiles all the class's shaders for the GPU on the [WorkerThreadPool], so that their first calls don't wait for Godot to compile them. Returns right away, and nothing waits for it.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -237,8 +237,14 @@ func factoryDecl(c *classModel, role, name string) string {
 		return fmt.Sprintf("static void %s(%s, const String &p_mode = String());", name, count)
 	case "pool_clear":
 		return fmt.Sprintf("static void %s(bool p_keep_in_use = false);", name)
-	case "scene_cache", "scene_evict":
+	case "scene_cache", "scene_evict", "compile_shaders", "compile_shaders_detached":
 		return fmt.Sprintf("static void %s();", name)
+	case "compile_shader", "compile_shader_detached":
+		return fmt.Sprintf("static void %s(const StringName &p_shader);", name)
+	case "compile_shader_async":
+		return fmt.Sprintf("static gdpp::Async<void> %s(const StringName &p_shader);", name)
+	case "compile_shaders_async":
+		return fmt.Sprintf("static gdpp::Async<void> %s();", name)
 	}
 	return fmt.Sprintf("void %s();", name)
 }

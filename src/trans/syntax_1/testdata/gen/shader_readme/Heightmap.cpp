@@ -85,6 +85,10 @@ struct _gdpp_shader_noise {
              mix(hash(c + vec2(0, 1)), hash(c + vec2(1, 1)), u.x), u.y);
 }
 #line 88 "Heightmap.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Heightmap.noise", glsl, { 8, 8, 1 }, true, true, false);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Heightmap
@@ -104,8 +108,7 @@ void Heightmap::_notification(int WHAT) {
 }
 
 gdpp::Gd<Texture2D> Heightmap::noise(const Vector2i &size, double scale) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Heightmap.noise", ::_gdpp_gpu_Heightmap::_gdpp_shader_noise::glsl, { 8, 8, 1 }, true, true, false);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Heightmap::_gdpp_shader_noise::_gdpp_kernel(), size);
 	_gdpp_call.uniform(scale);
 	return _gdpp_call.result_texture(gdpp::GpuFormat::r8, [&] { return ::_gdpp_gpu_Heightmap::_gdpp_shader_noise{ gdpp::glsl::ivec2(size), float(scale) }; });
 }
@@ -115,7 +118,7 @@ void Heightmap::_gdpp_body__ready() {
 
   set_texture(noise(Vector2i(512, 512), 32.0));
 
-#line 119 "Heightmap.cpp"
+#line 122 "Heightmap.cpp"
 }
 
 #undef This

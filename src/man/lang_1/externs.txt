@@ -192,7 +192,7 @@ Facts:
 
 - Only the methods that apply: no `destroy` for refcounted externs, and no `queue_destroy` for externs that don't extend `Node`.
 - An extern that extends a `@factory` extern doesn't use its methods, unless it has `@factory` itself.
-- Externs can't have `@pool`, `@scene`, `@factory_pool` or `@factory_scene`. Declare the class's other methods as members, like any other.
+- Externs can't have `@pool`, `@scene`, `@factory_pool`, `@factory_scene` or `@factory_shader`. Declare the class's other methods as members, like any other.
 
 # @deferred
 

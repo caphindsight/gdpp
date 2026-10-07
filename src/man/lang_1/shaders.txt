@@ -306,7 +306,7 @@ Use `@sync` on a shader that doesn't need it when something outside the GPU's or
 Other facts:
 
 - Waiting on the main RenderingDevice stalls rendering until the GPU catches up, like `read()` does. Keep `@sync` off shaders that run every frame, unless they must.
-- The first call of a shader also waits once, while Godot compiles its GLSL.
+- The first call of a shader also waits once, while Godot compiles its GLSL. `@factory_shader` compiles it ahead of time. See "Compiling ahead of time: @factory_shader" below.
 - Without a GPU, every call runs on the CPU, so it returns once it's done, with or without `@sync`. See "Without a GPU" below.
 - `@sync` takes no arguments.
 
@@ -354,6 +354,47 @@ on process(delta: float) {
 Avoid a deadlock: the main RenderingDevice runs on the main thread, unless the project renders on its own thread. So a worker thread waits for the main thread when it calls a shader that uses GPU arrays or textures, and with `@sync`, until the GPU is done. Don't make the main thread wait for that worker then, e.g. with `wait()`. Test `is_done` each frame instead.
 
 `@trace` and `@profile` work on shaders too. They time the whole call, copies included. See `gd++ man debugging`.
+
+# Compiling ahead of time: @factory_shader
+
+Godot compiles a shader's GLSL on its first call, which then waits for it, e.g. for a frame or more. `@factory_shader` gives the class static methods that compile its shaders ahead of time, e.g. when a level loads:
+
+```gd++
+@factory_shader
+class_name Filters
+extends RefCounted
+
+@sync
+shader brighten(size: Vector2i, src: Image, gain: float) -> Image[rgba8] { ... }
+
+@sync
+shader blur(size: Vector2i, src: Image) -> Image[rgba8] { ... }
+```
+
+```gdscript
+func _ready():
+    Filters.compile_shaders()               # compiles brighten and blur, and returns once they're compiled
+    Filters.compile_shader(&"blur")         # compiles only blur
+```
+
+```
+compile_shader(shader: StringName)            compiles the class's shader of that name, and returns once it's compiled
+compile_shader_async(shader: StringName)      the same on a worker thread: returns an Async right away, done once it's compiled
+compile_shader_detached(shader: StringName)   the same on a worker thread: returns nothing, and nothing waits for it
+compile_shaders()                             compiles all the class's shaders, and returns once they're compiled
+compile_shaders_async()                       the same on a worker thread: returns an Async right away, done once they're compiled
+compile_shaders_detached()                    the same on a worker thread: returns nothing, and nothing waits for it
+```
+
+- A class with `@factory_shader` needs a shader.
+- An `Async` is the package's class of tasks, like an `@onthread` function's. See `gd++ man async`.
+- A shader that's compiled already isn't compiled again.
+- Without a GPU, they do nothing, since shaders run on the CPU.
+- A name that isn't one of the class's shaders prints an error.
+- GLSL errors show up then, instead of on the first call. See "Errors" below.
+- GD++ code calls them the same way: `Filters::compile_shaders();`.
+- Other names: `@factory_shader` takes up to six strings, for the six methods in the order above, e.g. `@factory_shader("", "", "", "warm_up")`. An empty string `""`, or a missing name at the end, leaves that method out.
+- Don't make the main thread wait for the `Async`, e.g. with `wait()`: compiling for the main RenderingDevice needs the main thread, unless the project renders on its own thread. Test `is_done` each frame instead. See "@sync and @onthread" above.
 
 # Workgroups
 
@@ -448,7 +489,7 @@ Errors in a shader show up at three times:
 
 - GD++'s errors, e.g. a wrong parameter type, stop `gd++ build`.
 - C++ errors in the body's CPU copy, e.g. a misspelled name, stop the build too, at the shader's line.
-- GLSL errors show up when the game first calls the shader, since Godot compiles GLSL then. Godot prints them, at their lines in the GD++ file. The shader then runs on the CPU.
+- GLSL errors show up when the game first calls the shader, or compiles it with `@factory_shader`'s methods, since Godot compiles GLSL then. Godot prints them, at their lines in the GD++ file. The shader then runs on the CPU.
 
 # How it works
 

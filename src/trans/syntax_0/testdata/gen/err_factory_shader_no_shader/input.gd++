@@ -1,0 +1,6 @@
+@factory_shader
+class_name A
+extends RefCounted
+
+func f() -> void {
+}

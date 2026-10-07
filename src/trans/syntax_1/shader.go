@@ -502,6 +502,20 @@ func (u *unit) shaderDefs(w *writer, c *classModel) {
 			}
 			w.ln("\t}")
 		}
+		w.ln("\tstatic gdpp::gpu::Kernel &_gdpp_kernel() {")
+		w.ln("\t\tstatic gdpp::gpu::Kernel kernel(%q, glsl, { %d, %d, %d }, %t, %t, %t);", c.name+"."+g.s.Name,
+			g.group[0], g.group[1], g.group[2], g.main, u.hasCPU(c, f), g.sync)
+		w.ln("\t\treturn kernel;")
+		w.ln("\t}")
+		w.ln("};")
+	}
+	if c.compilesShaders() {
+		w.ln("")
+		w.ln("// The class's shaders, which @factory_shader's methods compile.")
+		w.ln("inline const gdpp::gpu::Shaders _gdpp_shaders = {")
+		for _, f := range shaders {
+			w.ln("\t{ %q, &%s::_gdpp_kernel },", f.gpu.s.Name, shaderStruct(f))
+		}
 		w.ln("};")
 	}
 	w.ln("")
@@ -632,14 +646,26 @@ func (u *unit) glsl(c *classModel, f *funcModel) string {
 	return sb.String()
 }
 
+// compilesShaders reports whether class c has a method of @factory_shader, which needs the list of its shaders.
+func (c *classModel) compilesShaders() bool {
+	return slices.ContainsFunc(factoryAnnotations["factory_shader"], func(role string) bool { return c.factory[role] != "" })
+}
+
+// compileCall returns the call of the runtime that a method of @factory_shader for role makes, without the task that
+// the async and detached ones start.
+func compileCall(c *classModel, role string) string {
+	if strings.HasPrefix(role, "compile_shaders") {
+		return fmt.Sprintf("gdpp::gpu::compile(::%s::_gdpp_shaders)", shaderNamespace(c))
+	}
+	return fmt.Sprintf("gdpp::gpu::compile(::%s::_gdpp_shaders, %q, p_shader)", shaderNamespace(c), c.name)
+}
+
 // shaderCall writes the body of the generated function of shader f of class c, which runs it with its arguments: on
 // the GPU, or else on the CPU, with the C++ struct of its body.
 func (u *unit) shaderCall(w *writer, c *classModel, f *funcModel) {
 	g := f.gpu
 	kernel := "::" + shaderNamespace(c) + "::" + shaderStruct(f)
-	w.ln("\tstatic gdpp::gpu::Kernel _gdpp_kernel(%q, %s::glsl, { %d, %d, %d }, %t, %t, %t);", c.name+"."+g.s.Name, kernel,
-		g.group[0], g.group[1], g.group[2], g.main, u.hasCPU(c, f), g.sync)
-	w.ln("\tgdpp::gpu::Call _gdpp_call(_gdpp_kernel, %s);", g.params[g.grid].p.Name)
+	w.ln("\tgdpp::gpu::Call _gdpp_call(%s::_gdpp_kernel(), %s);", kernel, g.params[g.grid].p.Name)
 	var members []string
 	for _, p := range g.params {
 		name := p.p.Name

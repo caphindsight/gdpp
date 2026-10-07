@@ -62,6 +62,10 @@ struct _gdpp_shader_bake {
   imageStore(target, id, vec4(1.0));
 }
 #line 65 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.bake", glsl, { 8, 8, 1 }, true, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_fill {
@@ -110,7 +114,11 @@ struct _gdpp_shader_fill {
 	void body(Id id) const {
   values[id] = float(id);
 }
-#line 114 "Baker.cpp"
+#line 118 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.fill", glsl, { 64, 1, 1 }, true, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_queue {
@@ -159,7 +167,11 @@ struct _gdpp_shader_queue {
 	void body(Id id) const {
   values[id] = 0.0;
 }
-#line 163 "Baker.cpp"
+#line 171 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.queue", glsl, { 64, 1, 1 }, true, true, false);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_heights {
@@ -205,7 +217,11 @@ struct _gdpp_shader_heights {
 	float body(Id id) const {
   return float(id.x);
 }
-#line 209 "Baker.cpp"
+#line 221 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.heights", glsl, { 8, 8, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_blank {
@@ -251,7 +267,11 @@ struct _gdpp_shader_blank {
 	vec4 body(Id id) const {
   return vec4(0.0);
 }
-#line 255 "Baker.cpp"
+#line 271 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.blank", glsl, { 8, 8, 1 }, true, true, true);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Baker
@@ -269,8 +289,7 @@ void Baker::_bind_methods() {
 }
 
 void Baker::bake(const Vector2i &size, const gdpp::Gd<Texture2D> &target) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Baker.bake", ::_gdpp_gpu_Baker::_gdpp_shader_bake::glsl, { 8, 8, 1 }, true, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_bake::_gdpp_kernel(), size);
 	_gdpp_call.image(target, gdpp::GpuFormat::rgba8);
 	_gdpp_call.run([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_bake{ gdpp::glsl::ivec2(size), gdpp::gpu::writable(target, gdpp::GpuFormat::rgba8) }; });
 }
@@ -280,8 +299,7 @@ gdpp::Async<void> Baker::fill(int64_t n, const gdpp::GpuArray<float> &values) {
 }
 
 void Baker::_gdpp_body_fill(int64_t n, const gdpp::GpuArray<float> &values) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Baker.fill", ::_gdpp_gpu_Baker::_gdpp_shader_fill::glsl, { 64, 1, 1 }, true, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, n);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_fill::_gdpp_kernel(), n);
 	_gdpp_call.array(values);
 	_gdpp_call.run([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_fill{ int(n), gdpp::gpu::RwBuffer<float>(values) }; });
 }
@@ -291,8 +309,7 @@ gdpp::Async<void> Baker::queue(int64_t n, const gdpp::GpuArray<float> &values) {
 }
 
 void Baker::_gdpp_body_queue(int64_t n, const gdpp::GpuArray<float> &values) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Baker.queue", ::_gdpp_gpu_Baker::_gdpp_shader_queue::glsl, { 64, 1, 1 }, true, true, false);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, n);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_queue::_gdpp_kernel(), n);
 	_gdpp_call.array(values);
 	_gdpp_call.run([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_queue{ int(n), gdpp::gpu::RwBuffer<float>(values) }; });
 }
@@ -302,14 +319,12 @@ gdpp::Async<gdpp::Gd<Image>> Baker::heights(const Vector2i &size) {
 }
 
 gdpp::Gd<Image> Baker::_gdpp_body_heights(const Vector2i &size) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Baker.heights", ::_gdpp_gpu_Baker::_gdpp_shader_heights::glsl, { 8, 8, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_heights::_gdpp_kernel(), size);
 	return _gdpp_call.result_image(gdpp::GpuFormat::rf, [&] { return ::_gdpp_gpu_Baker::_gdpp_shader_heights{ gdpp::glsl::ivec2(size) }; });
 }
 
 gdpp::Gd<Texture2D> Baker::blank(const Vector2i &size) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Baker.blank", ::_gdpp_gpu_Baker::_gdpp_shader_blank::glsl, { 8, 8, 1 }, true, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_blank::_gdpp_kernel(), size);
 	return _gdpp_call.result_texture(gdpp::GpuFormat::rgbah, [&] { return ::_gdpp_gpu_Baker::_gdpp_shader_blank{ gdpp::glsl::ivec2(size) }; });
 }
 

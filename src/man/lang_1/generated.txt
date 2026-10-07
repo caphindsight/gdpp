@@ -245,6 +245,8 @@ pool_reserve                 @factory_pool's static method, which fills the pool
 pool_clear                   @factory_pool's static method, which empties the pool
 scene_cache                  @factory_scene's static method, which loads the scene
 scene_evict                  @factory_scene's static method, which drops the scene
+compile_shader               @factory_shader's static method, which compiles a shader, and its _async and _detached forms
+compile_shaders              @factory_shader's static method, which compiles all shaders, and its _async and _detached forms
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
 _gdpp_body_FUNC              the body of a @deferred, @thread_safe or @onthread function, or set block, which its deferred call or task runs

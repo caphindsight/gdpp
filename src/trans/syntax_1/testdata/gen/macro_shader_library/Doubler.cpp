@@ -93,6 +93,10 @@ struct _gdpp_shader_run {
     return twice(v[id]) + OFFSET;
 }
 #line 96 "Doubler.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Doubler.run", glsl, { 64, 1, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Doubler
@@ -106,8 +110,7 @@ void Doubler::_bind_methods() {
 }
 
 PackedFloat32Array Doubler::run(int64_t n, const PackedFloat32Array &v) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Doubler.run", ::_gdpp_gpu_Doubler::_gdpp_shader_run::glsl, { 64, 1, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, n);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Doubler::_gdpp_shader_run::_gdpp_kernel(), n);
 	_gdpp_call.input(v);
 	return _gdpp_call.result_buffer<PackedFloat32Array>([&] { return ::_gdpp_gpu_Doubler::_gdpp_shader_run{ int(n), gdpp::gpu::ReadBuffer<float>(v) }; });
 }

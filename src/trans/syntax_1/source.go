@@ -159,6 +159,19 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		case "pool_clear":
 			params = "bool p_keep_in_use"
 		}
+		if strings.HasPrefix(role, "compile_shader") {
+			if !strings.HasPrefix(role, "compile_shaders") {
+				params = "const StringName &p_shader"
+			}
+			body = compileCall(c, role) + ";"
+			task := fmt.Sprintf("(nullptr, %q, [=] { %s; });", c.name+"."+name, compileCall(c, role))
+			switch {
+			case strings.HasSuffix(role, "_async"):
+				ret, guardRet, body = "gdpp::Async<void> ", "gdpp::Async<void>", "return gdpp::run_task"+task
+			case strings.HasSuffix(role, "_detached"):
+				body = "gdpp::run_detached" + task
+			}
+		}
 		w.ln("")
 		w.ln("%s%s::%s(%s) {", ret, c.name, name, params)
 		guard(w, c.only, guardRet)
@@ -666,6 +679,8 @@ func (u *unit) bindings(w *writer, c *classModel) {
 			w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s, %s);", method(name, "count", "mode"), c.name, name, defaults)
 		case "pool_clear":
 			w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s, DEFVAL(false));", method(name, "keep_in_use"), c.name, name)
+		case "compile_shader", "compile_shader_async", "compile_shader_detached":
+			w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s);", method(name, "shader"), c.name, name)
 		default:
 			w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::%s);", method(name), c.name, name)
 		}

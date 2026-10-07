@@ -93,6 +93,10 @@ struct _gdpp_shader_spin {
     return rotate(points[id], wrap_angle(angle));
 }
 #line 96 "Spin.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Spin.spin", glsl, { 64, 1, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_reduce {
@@ -157,6 +161,10 @@ struct _gdpp_shader_reduce {
 	}
 	void body(Id) const { // It uses barrier() or shared variables, which have no CPU fallback.
 	}
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Spin.reduce", glsl, { 64, 1, 1 }, true, false, false);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Spin
@@ -171,16 +179,14 @@ void Spin::_bind_methods() {
 }
 
 PackedVector2Array Spin::spin(int64_t n, const PackedVector2Array &points, double angle) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Spin.spin", ::_gdpp_gpu_Spin::_gdpp_shader_spin::glsl, { 64, 1, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, n);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Spin::_gdpp_shader_spin::_gdpp_kernel(), n);
 	_gdpp_call.input(points);
 	_gdpp_call.uniform(angle);
 	return _gdpp_call.result_buffer<PackedVector2Array>([&] { return ::_gdpp_gpu_Spin::_gdpp_shader_spin{ int(n), gdpp::gpu::ReadBuffer<gdpp::glsl::vec2>(points), float(angle) }; });
 }
 
 void Spin::reduce(int64_t n, const gdpp::GpuArray<float> &values) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Spin.reduce", ::_gdpp_gpu_Spin::_gdpp_shader_reduce::glsl, { 64, 1, 1 }, true, false, false);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, n);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Spin::_gdpp_shader_reduce::_gdpp_kernel(), n);
 	_gdpp_call.array(values);
 	_gdpp_call.run([&] { return ::_gdpp_gpu_Spin::_gdpp_shader_reduce{ int(n), gdpp::gpu::RwBuffer<float>(values) }; });
 }

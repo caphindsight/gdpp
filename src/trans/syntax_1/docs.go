@@ -382,6 +382,14 @@ func (u *unit) document(c *classModel) string {
 			d.doc = parseDoc(sceneCacheDoc, false)
 		case "scene_evict":
 			d.doc = parseDoc(sceneEvictDoc, false)
+		default: // The methods of @factory_shader.
+			if !strings.HasPrefix(role, "compile_shaders") {
+				d.params, d.list = []*gtype{{cpp: "StringName", doc: "StringName", byRef: true}}, []*Param{{Name: "shader"}}
+			}
+			if strings.HasSuffix(role, "_async") {
+				d.ret = u.async(void)
+			}
+			d.doc = parseDoc(compileDocs[role], false)
 		}
 		methods = append(methods, d)
 	}
@@ -491,6 +499,16 @@ const poolClearDoc = `Drops all the objects of the class's pool for good: it fre
 const sceneCacheDoc = `Loads the class's scene and keeps it, so that creating an object doesn't load it later, e.g. when a level loads. Does nothing if the scene is kept already. Prints an error if it fails to load. It's thread-safe.`
 
 const sceneEvictDoc = `Drops the class's kept scene, e.g. when a level is unloaded, so that Godot can free it once nothing else uses it. The next creation or cache loads it again. Objects created from it stay as they are. It's thread-safe.`
+
+// The documentation of the methods of @factory_shader, by role.
+var compileDocs = map[string]string{
+	"compile_shader":           `Compiles the class's shader named [param shader] for the GPU, so that its first call doesn't wait for Godot to compile it, e.g. when a level loads. Returns once it's compiled. Does nothing if it's compiled already, or without a GPU. Prints an error if the class has no such shader. It's thread-safe.`,
+	"compile_shader_async":     `Compiles the class's shader named [param shader] for the GPU on the [WorkerThreadPool], so that its first call doesn't wait for Godot to compile it. Prints an error if the class has no such shader. Returns a task right away, which is done once the shader is compiled.`,
+	"compile_shader_detached":  `Compiles the class's shader named [param shader] for the GPU on the [WorkerThreadPool], so that its first call doesn't wait for Godot to compile it. Prints an error if the class has no such shader. Returns right away, and nothing waits for it.`,
+	"compile_shaders":          `Compiles all the class's shaders for the GPU, so that their first calls don't wait for Godot to compile them, e.g. when a level loads. Returns once they're compiled. Skips those compiled already, and does nothing without a GPU. It's thread-safe.`,
+	"compile_shaders_async":    `Compiles all the class's shaders for the GPU on the [WorkerThreadPool], so that their first calls don't wait for Godot to compile them. Returns a task right away, which is done once they're compiled.`,
+	"compile_shaders_detached": `Compiles all the class's shaders for the GPU on the [WorkerThreadPool], so that their first calls don't wait for Godot to compile them. Returns right away, and nothing waits for it.`,
+}
 
 // documentAsyncClass returns the Godot XML documentation of the class of tasks named name.
 func documentAsyncClass(name string) string {

@@ -65,6 +65,10 @@ struct _gdpp_shader_night {
 #line 14 "input.gd++"
 	vec4 body(Id id) const {return texelFetch(src, id, 0) * vec4(0.4, 0.5, 1.0, 1.0) * STRENGTH;}
 #line 68 "Tints.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Tints.night", glsl, { 8, 8, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_sepia {
@@ -110,7 +114,11 @@ struct _gdpp_shader_sepia {
 	}
 #line 14 "input.gd++"
 	vec4 body(Id id) const {return texelFetch(src, id, 0) * vec4(1.0, 0.85, 0.6, 1.0) * STRENGTH;}
-#line 114 "Tints.cpp"
+#line 118 "Tints.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Tints.sepia", glsl, { 8, 8, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Tints
@@ -125,15 +133,13 @@ void Tints::_bind_methods() {
 }
 
 gdpp::Gd<Image> Tints::night(const Vector2i &size, const gdpp::Gd<Image> &src) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Tints.night", ::_gdpp_gpu_Tints::_gdpp_shader_night::glsl, { 8, 8, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Tints::_gdpp_shader_night::_gdpp_kernel(), size);
 	_gdpp_call.sampler(src);
 	return _gdpp_call.result_image(gdpp::GpuFormat::rgba8, [&] { return ::_gdpp_gpu_Tints::_gdpp_shader_night{ gdpp::glsl::ivec2(size), gdpp::gpu::sampled(src) }; });
 }
 
 gdpp::Gd<Image> Tints::sepia(const Vector2i &size, const gdpp::Gd<Image> &src) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Tints.sepia", ::_gdpp_gpu_Tints::_gdpp_shader_sepia::glsl, { 8, 8, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Tints::_gdpp_shader_sepia::_gdpp_kernel(), size);
 	_gdpp_call.sampler(src);
 	return _gdpp_call.result_image(gdpp::GpuFormat::rgba8, [&] { return ::_gdpp_gpu_Tints::_gdpp_shader_sepia{ gdpp::glsl::ivec2(size), gdpp::gpu::sampled(src) }; });
 }

@@ -1,0 +1,4 @@
+input.gd++:1:1: Annotation @factory_shader needs a shader in the class.
+ 1 | @factory_shader
+   | ^^^^^^^^^^^^^^^
+Hint: Add a shader, or remove @factory_shader.

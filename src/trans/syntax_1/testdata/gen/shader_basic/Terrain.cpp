@@ -103,6 +103,10 @@ struct _gdpp_shader_scale {
   return values[id] * k;
 }
 #line 106 "Terrain.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Terrain.scale", glsl, { 256, 1, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_noise {
@@ -166,7 +170,11 @@ struct _gdpp_shader_noise {
 	float body(Id id) const {
   return hash(ivec2(vec2(id) / cell));
 }
-#line 170 "Terrain.cpp"
+#line 174 "Terrain.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Terrain.noise", glsl, { 8, 8, 1 }, false, true, true);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_paint {
@@ -243,7 +251,11 @@ struct _gdpp_shader_paint {
   Ray r = Ray{vec3(0.0), vec3(0.0, 1.0, 0.0)};
   imageStore(target, id, c * heights[index(id)] + vec4(r.dir, 0.0));
 }
-#line 247 "Terrain.cpp"
+#line 255 "Terrain.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Terrain.paint", glsl, { 8, 8, 1 }, true, true, false);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_grow {
@@ -309,7 +321,11 @@ struct _gdpp_shader_grow {
 	vec3 body(Id id) const {
   return texelFetch(image, id.swizzle<0, 1>(), 0).swizzle<0, 1, 2>();
 }
-#line 313 "Terrain.cpp"
+#line 325 "Terrain.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Terrain.grow", glsl, { 4, 4, 4 }, true, true, false);
+		return kernel;
+	}
 };
 
 struct _gdpp_shader_blank {
@@ -371,7 +387,11 @@ struct _gdpp_shader_blank {
 	vec4 body(Id id) const {
   return vec4(0.0);
 }
-#line 375 "Terrain.cpp"
+#line 391 "Terrain.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Terrain.blank", glsl, { 8, 8, 1 }, true, true, false);
+		return kernel;
+	}
 };
 
 } // namespace _gdpp_gpu_Terrain
@@ -389,16 +409,14 @@ void Terrain::_bind_methods() {
 }
 
 PackedFloat32Array Terrain::scale(int64_t n, const PackedFloat32Array &values, double k) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Terrain.scale", ::_gdpp_gpu_Terrain::_gdpp_shader_scale::glsl, { 256, 1, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, n);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Terrain::_gdpp_shader_scale::_gdpp_kernel(), n);
 	_gdpp_call.input(values);
 	_gdpp_call.uniform(k);
 	return _gdpp_call.result_buffer<PackedFloat32Array>([&] { return ::_gdpp_gpu_Terrain::_gdpp_shader_scale{ int(n), gdpp::gpu::ReadBuffer<float>(values), float(k) }; });
 }
 
 gdpp::Gd<Image> Terrain::noise(const Vector2i &size, double cell) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Terrain.noise", ::_gdpp_gpu_Terrain::_gdpp_shader_noise::glsl, { 8, 8, 1 }, false, true, true);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Terrain::_gdpp_shader_noise::_gdpp_kernel(), size);
 	_gdpp_call.uniform(cell);
 	return _gdpp_call.result_image(gdpp::GpuFormat::rf, [&] { return ::_gdpp_gpu_Terrain::_gdpp_shader_noise{ gdpp::glsl::ivec2(size), float(cell) }; });
 }
@@ -406,12 +424,11 @@ gdpp::Gd<Image> Terrain::noise(const Vector2i &size, double cell) {
 double Terrain::_gdpp_default_noise_cell() {
 #line 27 "input.gd++"
 	return 8.0;
-#line 410 "Terrain.cpp"
+#line 428 "Terrain.cpp"
 }
 
 void Terrain::paint(const Vector2i &size, const gdpp::GpuArray<float> &heights, const gdpp::Gd<Texture2D> &src, const gdpp::Gd<Texture2D> &target, const Color &tint) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Terrain.paint", ::_gdpp_gpu_Terrain::_gdpp_shader_paint::glsl, { 8, 8, 1 }, true, true, false);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Terrain::_gdpp_shader_paint::_gdpp_kernel(), size);
 	_gdpp_call.array(heights);
 	_gdpp_call.sampler(src);
 	_gdpp_call.image(target, gdpp::GpuFormat::rgba8);
@@ -420,8 +437,7 @@ void Terrain::paint(const Vector2i &size, const gdpp::GpuArray<float> &heights, 
 }
 
 gdpp::GpuArray<Vector3> Terrain::grow(const Vector3i &size, const gdpp::Gd<Image> &image) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Terrain.grow", ::_gdpp_gpu_Terrain::_gdpp_shader_grow::glsl, { 4, 4, 4 }, true, true, false);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Terrain::_gdpp_shader_grow::_gdpp_kernel(), size);
 	_gdpp_call.sampler(image);
 	return _gdpp_call.result_array<Vector3>([&] { return ::_gdpp_gpu_Terrain::_gdpp_shader_grow{ gdpp::glsl::ivec3(size), gdpp::gpu::sampled(image) }; });
 }
@@ -431,8 +447,7 @@ gdpp::Async<gdpp::Gd<Texture2D>> Terrain::blank(const Vector2i &size) {
 }
 
 gdpp::Gd<Texture2D> Terrain::_gdpp_body_blank(const Vector2i &size) {
-	static gdpp::gpu::Kernel _gdpp_kernel("Terrain.blank", ::_gdpp_gpu_Terrain::_gdpp_shader_blank::glsl, { 8, 8, 1 }, true, true, false);
-	gdpp::gpu::Call _gdpp_call(_gdpp_kernel, size);
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Terrain::_gdpp_shader_blank::_gdpp_kernel(), size);
 	return _gdpp_call.result_texture(gdpp::GpuFormat::rgbah, [&] { return ::_gdpp_gpu_Terrain::_gdpp_shader_blank{ gdpp::glsl::ivec2(size) }; });
 }
 

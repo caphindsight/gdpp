@@ -1711,6 +1711,29 @@ inline void free_resources() {
 	}
 }
 
+// Shaders are the kernels of a class's shaders, by name, which @factory_shader's methods compile.
+using Shaders = std::vector<std::pair<const char *, Kernel &(*)()>>;
+
+// compile compiles all of p_shaders for the devices they run on, so that their first calls don't wait for it. Without
+// a GPU, it does nothing.
+inline void compile(const Shaders &p_shaders) {
+	for (const auto &[name, kernel] : p_shaders) {
+		kernel().device();
+	}
+}
+
+// compile compiles the shader named p_shader, one of p_shaders, the shaders of the class p_class, like the other
+// compile. Prints an error if there's no such shader.
+inline void compile(const Shaders &p_shaders, const char *p_class, const StringName &p_shader) {
+	for (const auto &[name, kernel] : p_shaders) {
+		if (String(p_shader) == name) {
+			kernel().device();
+			return;
+		}
+	}
+	ERR_PRINT(vformat("Class %s has no shader named %s.", p_class, p_shader));
+}
+
 // pixels_from_image converts any Image to pixels, e.g. for the CPU.
 inline std::shared_ptr<Pixels> pixels_from_image(const Ref<Image> &p_image) {
 	std::shared_ptr<Pixels> pixels = std::make_shared<Pixels>();
