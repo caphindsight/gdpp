@@ -27,7 +27,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="weight">
+		<method name="weight" qualifiers="const">
 			<return type="int" />
 			<description>
 			</description>

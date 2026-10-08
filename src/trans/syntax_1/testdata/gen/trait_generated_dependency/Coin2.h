@@ -21,7 +21,7 @@ public:
 	void _gdpp_destroy() override;
 	void _gdpp_queue_destroy() override;
 	int64_t value() const override;
-	int64_t weight() override;
+	int64_t weight() const override;
 	int64_t double_value() const override;
 	int64_t base_weight() const override;
 	bool heavy() const override;

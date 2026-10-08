@@ -33,7 +33,7 @@ int64_t Coin2::value() const {
 #line 34 "Coin2.cpp"
 }
 
-int64_t Coin2::weight() {
+int64_t Coin2::weight() const {
 #line 7 "input.gd++"
  return 2;
 #line 40 "Coin2.cpp"

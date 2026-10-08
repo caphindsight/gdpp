@@ -1817,7 +1817,7 @@ struct is_struct<T, std::void_t<decltype(&T::_gdpp_fields)>> : std::true_type {}
 inline Dictionary struct_dictionary(const Variant &p_value, const char *p_owner, std::initializer_list<const char *> p_keys) {
 	if (p_value.get_type() != Variant::DICTIONARY) {
 		if (p_value.get_type() != Variant::NIL) {
-			ERR_PRINT(vformat("A %s needs a Dictionary, but got a %s.", p_owner, Variant::get_type_name(p_value.get_type())));
+			ERR_PRINT(vformat("%s needs a Dictionary, but got a value of type %s.", p_owner, Variant::get_type_name(p_value.get_type())));
 		}
 		return Dictionary();
 	}
@@ -1850,7 +1850,7 @@ void struct_field(const Dictionary &p_dict, const char *p_key, T &r_field, const
 			type = Variant::Type(GetTypeInfo<T>::VARIANT_TYPE);
 		}
 		if (!Variant::can_convert_strict(value.get_type(), type)) {
-			ERR_PRINT(vformat("%s.%s needs a %s, but got a %s.", p_owner, p_key, Variant::get_type_name(type), Variant::get_type_name(value.get_type())));
+			ERR_PRINT(vformat("%s.%s needs a value of type %s, but got one of type %s.", p_owner, p_key, Variant::get_type_name(type), Variant::get_type_name(value.get_type())));
 			return;
 		}
 	}

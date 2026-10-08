@@ -4,4 +4,4 @@ extends Node
 implements Collectible, Weighted
 
 @const func value() -> int { return 1; }
-func weight() -> int { return 2; }
+@const func weight() -> int { return 2; }

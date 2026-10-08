@@ -3,7 +3,7 @@ invoke value_trait(Collectible, Node)
 
 trait Weighted {
   extends Node
-  func weight() -> int
+  @const func weight() -> int
   invoke constant_func(base_weight, 10)
   @const func heavy() -> bool {
     int64_t limit = base_weight();

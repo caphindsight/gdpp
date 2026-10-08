@@ -29,7 +29,7 @@ var stubs = map[string]string{
 		"\tDictionary _gdpp_to_dictionary() const { return Dictionary(); }\n\tstatic Loot _gdpp_from(const Variant &) { return Loot(); }\n};\nGDPP_STRUCT(Loot)\n",
 	"Collectible.h": "class Collectible {\npublic:\n\tusing Base = Node;\n\tvirtual ~Collectible() = default;\n\tvirtual int64_t value() const = 0;\n" +
 		"\tvirtual int64_t double_value() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n",
-	"Weighted.h": "class Weighted {\npublic:\n\tusing Base = Node;\n\tvirtual ~Weighted() = default;\n\tvirtual int64_t weight() = 0;\n" +
+	"Weighted.h": "class Weighted {\npublic:\n\tusing Base = Node;\n\tvirtual ~Weighted() = default;\n\tvirtual int64_t weight() const = 0;\n" +
 		"\tvirtual int64_t base_weight() const = 0;\n\tvirtual bool heavy() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n",
 	"Settings.h": "class Settings {\npublic:\n\tusing Base = Resource;\n\tstatic constexpr const char *gdpp_name = \"Settings\";\n" +
 		"\texplicit Settings(Base *p_object) :\n\t\t\t_gdpp_base(p_object) {}\n\nprotected:\n\tBase *_gdpp_base;\n};\n",
