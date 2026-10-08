@@ -72,7 +72,7 @@ func (c *CmdLs) Run() {
 	if width, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && isTerminal(os.Stdout) {
 		out = WrapHanging(out, width)
 	}
-	PrintResult(out)
+	PageResult(out) // In a pager if it doesn't fit the terminal.
 }
 
 // lsClasses returns the classes of the package: those in its config, then

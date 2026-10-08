@@ -52,7 +52,7 @@ These work with every command, before or after its name: `gd++ -v build` and `gd
   Act as if the output were not a terminal: plain text, no styles, spinners or pager, and prompts assume no. Not with `--tty`.
 
 --pager
-  Show long results, e.g. of `gd++ man` and `gd++ cat`, in the pager even when they fit the terminal. No effect when the output is not a terminal. Not with `--notty`.
+  Show long results, e.g. of `gd++ man`, `gd++ cat` and `gd++ ls`, in the pager even when they fit the terminal. No effect when the output is not a terminal. Not with `--notty`.
 
 -L N, --log-depth N
   Show the last N lines of a running subprocess's output under its task, e.g. the compiler's. Default: 4.
@@ -113,7 +113,7 @@ Paths in messages:
 
 The pager:
 
-- Used by `gd++ cat`, `gd++ doc`, `gd++ man` and `gd++ trans`, when the result doesn't fit the terminal, or always with `--pager`.
+- Used by `gd++ cat`, `gd++ doc`, `gd++ ls`, `gd++ man` and `gd++ trans`, when the result doesn't fit the terminal, or always with `--pager`.
 - Up and down scroll by a line. Page up and page down, or space, scroll by a page.
 - q, escape or Ctrl+C quit.
 - `/` searches: type the text and press Enter. Matches are highlighted, ignoring case.
