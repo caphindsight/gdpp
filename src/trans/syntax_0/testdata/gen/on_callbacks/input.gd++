@@ -1,0 +1,40 @@
+@tool
+class_name Inventory
+extends Node
+
+var slots: Dictionary
+
+on get(name: StringName) -> Variant {
+  return slots.get(name, Variant());
+}
+
+on set(name: StringName, value: Variant) {
+  if (!String(name).begins_with("slot_")) {
+    return false;
+  }
+  slots[name] = value;
+  return true;
+}
+
+on get_property_list {
+  TypedArray<Dictionary> list;
+  return list;
+}
+
+on validate_property(property) {
+  if (property["name"] == "slots") {
+    property["usage"] = PROPERTY_USAGE_NO_EDITOR;
+  }
+}
+
+on property_can_revert(name: StringName) {
+  return slots.has(name);
+}
+
+on property_get_revert {
+  return 0;
+}
+
+on to_string {
+  return "Inventory";
+}

@@ -71,7 +71,7 @@ A GD++ file mixes two languages, and a third one for shaders:
 - GD++ declarations: classes, functions, variables, signals, enums and so on. GD++ parses them, and turns them into C++ declarations and bindings.
 - C++ code, in braces: function bodies, getters and setters, constructors, initial values, and `decl` and `impl` blocks. GD++ copies it into the generated C++ almost unchanged. It only:
   - removes comments,
-  - applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `await`, `create`, `destroy`, `queue_destroy`, `as` and `assert`.
+  - applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `await`, `create`, `destroy`, `queue_destroy`, `as`, `callable` and `assert`.
 
 In C++ code, all of godot-cpp works: Godot's classes, `Variant`, `memnew`, `Ref`, `UtilityFunctions` and so on. GD++ adds a few helpers. See `gd++ man runtime`.
 
@@ -103,10 +103,10 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
   - node paths, like `@onready var label: Label = $Hud/Score`,
   - properties with their own `get` and `set`.
 - Exports: `@export` and its family, to show variables in the inspector. See `gd++ man exports`.
-- Signals: `signal name(params)`, sent with `emit`. See `gd++ man signals`.
+- Signals: `signal name(params)`, sent with `emit`, and handled with `on`, e.g. `on button.pressed { }`. See `gd++ man signals`.
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
 - Object lifecycle: `ctor { }`, `dtor { }` and `@onready`. See `gd++ man lifecycle`.
-- Notifications: `on ready { }`, `on process { }`, `on predelete { }` and the like. They run code at the engine's notifications, and add to the base's. See `gd++ man notifications`.
+- Notifications: `on ready { }`, `on process { }`, `on predelete { }` and the like. They run code at the engine's notifications, and add to the base's. Property callbacks too, e.g. `on get(name) { }`. See `gd++ man notifications`.
 - Abstract classes: `@abstract` makes a class only a base for other classes. See `gd++ man classes`.
 - Classes of scenes: `@scene` makes `create` instantiate a scene. See `gd++ man classes`.
 - Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `@recycle on ready`, `GENERATION`, `create`, `destroy` and `queue_destroy`. See `gd++ man pools`.
@@ -131,7 +131,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - User annotations: `annotation save` declares `@@save`, which marks declarations for macros, e.g. `@@save var health: int`. GD++ itself ignores them. See `gd++ man annotations`.
   - Both are advanced features: use them seldom. Generated code is harder to read and debug than code you write out.
 - Rewrites: GD++'s few additions to C++ code. See `gd++ man rewrites`.
-  - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `await`, `create`, `destroy`, `queue_destroy` and `as`,
+  - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `await`, `create`, `destroy`, `queue_destroy`, `as` and `callable`,
   - `assert`, with its fallbacks `assert_void` and `assert_val`.
 - Includes: automatic, with `import` and `noimport` to adjust them. See `gd++ man includes`.
 - Doc comments: `///` and `/** */`, which become the editor's help. See `gd++ man docs`.

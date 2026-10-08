@@ -44,27 +44,37 @@ func TestCpp(t *testing.T) {
 		"destroy this->items[i]; destroy\n  b;":                     "gdpp::destroy(this->items[i]); gdpp::destroy(\n  b);",
 		"queue_destroy this; queue_destroy b->c; p->queue_destroy x; queue_destroy(x);": "gdpp::queue_destroy(this); gdpp::queue_destroy(b->c); p->queue_destroy x; queue_destroy(x);",
 		"destroy(x); s.destroy x; destroy = 1; destroy f(create A);":                    "destroy(x); s.destroy x; destroy = 1; gdpp::destroy(f(gdpp::create<A>()));",
-		"assert child != nullptr;":                                                         `GDPP_ASSERT("child != nullptr", child != nullptr);`,
-		"if (a) assert x; else { assert y; }":                                              `if (a) GDPP_ASSERT("x", x); else { GDPP_ASSERT("y", y); }`,
-		"assert a &&\n  b;":                                                                "GDPP_ASSERT(\"a && b\", a &&\n  b);",
-		"assert x as int > 0;":                                                             `GDPP_ASSERT("x as int > 0", gdpp::cast<int>(x) > 0);`,
-		`assert f<A, B>(s) == "\\";`:                                                       `GDPP_ASSERT("f<A, B>(s) == \"\\\\\"", f<A, B>(s) == "\\");`,
-		"assert all([](int x) { return x; });":                                             `GDPP_ASSERT("all([](int x) { return x; })", all([](int x) { return x; }));`,
-		"assert !done; assert *p; assert(a || b);":                                         `GDPP_ASSERT("!done", !done); GDPP_ASSERT("*p", *p); GDPP_ASSERT("a || b", (a || b));`,
-		"assert (a)(b); assert (a) || (b);":                                                `GDPP_ASSERT("(a)(b)", (a)(b)); GDPP_ASSERT("(a) || (b)", (a) || (b));`,
-		"s.assert(x); assert = 1; assert; assert *= 2; f(assert x);":                       "s.assert(x); assert = 1; assert; assert *= 2; f(assert x);",
-		"assert_void x; assert_val(y); [] { assert_val z; };":                              `GDPP_ASSERT_VOID("x", x); GDPP_ASSERT_VALUE("y", (y)); [] { GDPP_ASSERT_VALUE("z", z); };`,
-		"s.assert_void(x); assert_val = 1; f(assert_void x);":                              "s.assert_void(x); assert_val = 1; f(assert_void x);",
-		"#line 6 \"a.gd++\"\nassert x;\n#ifdef A\n  assert y;\n#endif":                     "#line 6 \"a.gd++\"\nGDPP_ASSERT(\"x\", x);\n#ifdef A\n  GDPP_ASSERT(\"y\", y);\n#endif",
-		"f(a,\n  assert x);":                                                               "f(a,\n  assert x);",
-		"#line 6 \"a.gd++\"\nx as int;\n#if A\nf(x).y as T;":                               "#line 6 \"a.gd++\"\ngdpp::cast<int>(x);\n#if A\ngdpp::cast<T>(f(x).y);",
-		"x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;": "x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;",
+		"assert child != nullptr;":                                                          `GDPP_ASSERT("child != nullptr", child != nullptr);`,
+		"if (a) assert x; else { assert y; }":                                               `if (a) GDPP_ASSERT("x", x); else { GDPP_ASSERT("y", y); }`,
+		"assert a &&\n  b;":                                                                 "GDPP_ASSERT(\"a && b\", a &&\n  b);",
+		"assert x as int > 0;":                                                              `GDPP_ASSERT("x as int > 0", gdpp::cast<int>(x) > 0);`,
+		`assert f<A, B>(s) == "\\";`:                                                        `GDPP_ASSERT("f<A, B>(s) == \"\\\\\"", f<A, B>(s) == "\\");`,
+		"assert all([](int x) { return x; });":                                              `GDPP_ASSERT("all([](int x) { return x; })", all([](int x) { return x; }));`,
+		"assert !done; assert *p; assert(a || b);":                                          `GDPP_ASSERT("!done", !done); GDPP_ASSERT("*p", *p); GDPP_ASSERT("a || b", (a || b));`,
+		"assert (a)(b); assert (a) || (b);":                                                 `GDPP_ASSERT("(a)(b)", (a)(b)); GDPP_ASSERT("(a) || (b)", (a) || (b));`,
+		"s.assert(x); assert = 1; assert; assert *= 2; f(assert x);":                        "s.assert(x); assert = 1; assert; assert *= 2; f(assert x);",
+		"assert_void x; assert_val(y); [] { assert_val z; };":                               `GDPP_ASSERT_VOID("x", x); GDPP_ASSERT_VALUE("y", (y)); [] { GDPP_ASSERT_VALUE("z", z); };`,
+		"s.assert_void(x); assert_val = 1; f(assert_void x);":                               "s.assert_void(x); assert_val = 1; f(assert_void x);",
+		"#line 6 \"a.gd++\"\nassert x;\n#ifdef A\n  assert y;\n#endif":                      "#line 6 \"a.gd++\"\nGDPP_ASSERT(\"x\", x);\n#ifdef A\n  GDPP_ASSERT(\"y\", y);\n#endif",
+		"f(a,\n  assert x);":                                                                "f(a,\n  assert x);",
+		"#line 6 \"a.gd++\"\nx as int;\n#if A\nf(x).y as T;":                                "#line 6 \"a.gd++\"\ngdpp::cast<int>(x);\n#if A\ngdpp::cast<T>(f(x).y);",
+		"x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;":  "x as int * y; (int) x as T; x as A as B; get<A>(x) as T; as = 1; int as; s.as T;",
+		"connect(n, callable on_hit); f(callable Bullet::spawn);":                           "connect(n, gdpp::callable_method(this, &This::on_hit)); f(gdpp::callable_method(this, &Bullet::spawn));",
+		"f(callable hud->score); f(callable a.b -> c);":                                     `f(gdpp::callable_member(hud, [](auto *o) { return &std::remove_pointer_t<decltype(o)>::score; }, GDPP_STRING_NAME("score"))); f(gdpp::callable_member(a.b , [](auto *o) { return &std::remove_pointer_t<decltype(o)>::c; }, GDPP_STRING_NAME("c")));`,
+		`f(callable "ping"); f(callable hud->"refresh");`:                                   `f(gdpp::callable_name(this, GDPP_STRING_NAME("ping"))); f(gdpp::callable_name(hud, GDPP_STRING_NAME("refresh")));`,
+		"t(callable [=](int x) -> int { return x + n; }); t(callable [] { emit done(); });": "t(gdpp::callable(this, [=](int x) -> int { return x + n; })); t(gdpp::callable(this, [] { (void) done(); }));",
+		"t(callable(enemy) [this] { hit(); }); t(callable(nullptr) step);":                  "t(gdpp::callable(enemy, [this] { hit(); })); t(gdpp::callable(nullptr, step));",
+		"Callable callable = x; f(callable); callable.call(); s.callable f; callable f(1);": "Callable callable = x; f(callable); callable.call(); s.callable f; callable f(1);",
+		"(callable on_hit).bind(5);":                                                        "(gdpp::callable_method(this, &This::on_hit)).bind(5);",
 	} {
-		if got := cpp(code, assertAny); got != want {
+		if got := cpp(code, assertAny, "this"); got != want {
 			t.Errorf("cpp(%q) = %q, want %q", code, got, want)
 		}
 	}
-	if got, want := cpp("assert x;", assertVoid), `GDPP_ASSERT_VOID("x", x);`; got != want {
+	if got, want := cpp("f(callable [] {}); f(callable g);", assertVoid, "nullptr"), "f(gdpp::callable(nullptr, [] {})); f(gdpp::callable_method(nullptr, &This::g));"; got != want {
+		t.Errorf("cpp in a static function = %q, want %q", got, want)
+	}
+	if got, want := cpp("assert x;", assertVoid, "this"), `GDPP_ASSERT_VOID("x", x);`; got != want {
 		t.Errorf("cpp with GDPP_ASSERT_VOID = %q, want %q", got, want)
 	}
 	// In a lambda, its own return type picks the macro.
@@ -75,11 +85,11 @@ func TestCpp(t *testing.T) {
 		"[]() -> std::pair<A, B> { [] { assert a; }; assert b; };": `[]() -> std::pair<A, B> { [] { GDPP_ASSERT_VOID("a", a); }; GDPP_ASSERT_VALUE("b", b); };`,
 		"a[i]; delete[] p; [[nodiscard]] int f() { assert a; }":    `a[i]; delete[] p; [[nodiscard]] int f() { GDPP_ASSERT_VALUE("a", a); }`,
 	} {
-		if got := cpp(code, assertValue); got != want {
+		if got := cpp(code, assertValue, "this"); got != want {
 			t.Errorf("cpp(%q) = %q, want %q", code, got, want)
 		}
 	}
-	if got, want := cpp("f([&]() -> int { assert x; return 1; });", assertVoid), `f([&]() -> int { GDPP_ASSERT_VALUE("x", x); return 1; });`; got != want {
+	if got, want := cpp("f([&]() -> int { assert x; return 1; });", assertVoid, "this"), `f([&]() -> int { GDPP_ASSERT_VALUE("x", x); return 1; });`; got != want {
 		t.Errorf("cpp with GDPP_ASSERT_VOID = %q, want %q", got, want)
 	}
 	// In a coroutine, whose class has the signal died.
@@ -96,12 +106,13 @@ func TestCpp(t *testing.T) {
 		"await = 1; x.await; await; await -1;":                  "await = 1; x.await; await; await -1;",
 		"return 1; [] { return 2; }; assert x;":                 `co_return 1; [] { return 2; }; GDPP_ASSERT_CO_VALUE("x", x);`,
 		`call(string_name "f"); [] { call(string_name "g"); };`: `call(gdpp::string_name<"f">()); [] { call(GDPP_STRING_NAME("g")); };`,
+		`f(callable "g"); f(callable x->h);`:                    `f(gdpp::callable_name(this, gdpp::string_name<"g">())); f(gdpp::callable_member(x, [](auto *o) { return &std::remove_pointer_t<decltype(o)>::h; }, gdpp::string_name<"h">()));`,
 	} {
-		if got := cpp(code, assertCoValue, "died"); got != want {
+		if got := cpp(code, assertCoValue, "this", "died"); got != want {
 			t.Errorf("cpp(%q) = %q, want %q", code, got, want)
 		}
 	}
-	if got, want := cpp("return; assert x;", assertCoVoid), `co_return; GDPP_ASSERT_CO_VOID("x", x);`; got != want {
+	if got, want := cpp("return; assert x;", assertCoVoid, "this"), `co_return; GDPP_ASSERT_CO_VOID("x", x);`; got != want {
 		t.Errorf("cpp with GDPP_ASSERT_CO_VOID = %q, want %q", got, want)
 	}
 }
@@ -129,7 +140,7 @@ func TestAssertMacros(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := cpp(string(data), contexts[filepath.Base(filepath.Dir(input))])
+			got := cpp(string(data), contexts[filepath.Base(filepath.Dir(input))], "this")
 			golden := strings.TrimSuffix(input, ".cpp") + ".golden"
 			if *update {
 				if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
@@ -163,6 +174,21 @@ func TestGlslToCpp(t *testing.T) {
 		"struct Ray { vec3 o; };":                      "struct Ray { vec3 o; };",
 		"Ray make(vec3 o)":                             "Ray make(vec3 o)",
 		"v.xy\n  = w;":                                 "v.swizzle_ref<0, 1>()\n  = w;",
+		"struct Foo { int xy; float zw[2]; }; f.xy = 1;": "struct Foo { int xy; float zw[2]; template <int... I> decltype(auto) swizzle() {" +
+			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
+			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 2, 3>>) { return (zw); } }" +
+			" template <int... I> decltype(auto) swizzle() const {" +
+			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
+			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 2, 3>>) { return (zw); } }" +
+			" template <int... I> decltype(auto) swizzle_ref() { return swizzle<I...>(); } }; f.swizzle_ref<0, 1>() = 1;",
+		"struct S { int xy, rg; };": "struct S { int xy, rg; static_assert(sizeof(int) == 0, \"The fields xy and rg of a struct read alike to the CPU copy of shaders, which turns both into swizzle<0, 1>(). Rename one.\"); " +
+			"template <int... I> decltype(auto) swizzle() {" +
+			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
+			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (rg); } }" +
+			" template <int... I> decltype(auto) swizzle() const {" +
+			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
+			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (rg); } }" +
+			" template <int... I> decltype(auto) swizzle_ref() { return swizzle<I...>(); } };",
 	} {
 		if got := glslToCpp(code, []string{"Ray"}); got != want {
 			t.Errorf("glslToCpp(%q) = %q, want %q", code, got, want)

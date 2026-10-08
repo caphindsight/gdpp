@@ -52,6 +52,7 @@ func listGdppFiles(p Project, pkg Package, macroTimeout int) []gdppFile {
 		macros, err := trans.ListMacros(file.ToString(), src, pkg.Config.Syntax)
 		files = append(files, gdppFile{File: file, Rel: rel, Src: src, Macros: macros, Err: err})
 	}
+	files = append(files, loadProjectNames(p, pkg).files...)
 	// Macros may generate classes, so listing those needs every file's macros.
 	for i, f := range files {
 		if f.Err == nil {
@@ -243,9 +244,11 @@ func fileDecls(files []gdppFile) []trans.Declaration {
 
 // apiSpec is what GD++ code needs from the API spec file.
 type apiSpec struct {
-	enums    []trans.Dependency  // The enums, which GD++ enums may extend: those of classes, e.g. Node.ProcessMode, and global ones, e.g. Error.
-	virtuals map[string][]string // Each class's own virtual methods, e.g. _input for Node, which GD++ code overrides with @override.
-	notifs   map[string][]string // Each class's own notifications, without NOTIFICATION_, e.g. READY for Node, which on blocks handle.
+	enums    []trans.Dependency        // The enums, which GD++ enums may extend: those of classes, e.g. Node.ProcessMode, and global ones, e.g. Error.
+	virtuals map[string][]string       // Each class's own virtual methods, e.g. _input for Node, which GD++ code overrides with @override.
+	notifs   map[string][]string       // Each class's own notifications, without NOTIFICATION_, e.g. READY for Node, which on blocks handle.
+	signals  map[string][]trans.Signal // Each class's own signals, which on blocks connect to.
+	editor   map[string]bool           // The editor's classes, e.g. EditorPlugin, which only exist in the editor.
 }
 
 // readSpec reads the API spec file. Returns an empty spec if there is no file.
@@ -262,6 +265,7 @@ func readSpec(file Path) apiSpec {
 		GlobalEnums []enum `json:"global_enums"`
 		Classes     []struct {
 			Name      string `json:"name"`
+			APIType   string `json:"api_type"`
 			Enums     []enum `json:"enums"`
 			Constants []struct {
 				Name string `json:"name"`
@@ -270,10 +274,17 @@ func readSpec(file Path) apiSpec {
 				Name      string `json:"name"`
 				IsVirtual bool   `json:"is_virtual"`
 			} `json:"methods"`
+			Signals []struct {
+				Name      string `json:"name"`
+				Arguments []struct {
+					Name string `json:"name"`
+					Type string `json:"type"`
+				} `json:"arguments"`
+			} `json:"signals"`
 		} `json:"classes"`
 	}
 	Check(json.Unmarshal([]byte(file.ReadString()), &api), "Failed to parse %s", file.ToString())
-	spec := apiSpec{virtuals: map[string][]string{}, notifs: map[string][]string{}}
+	spec := apiSpec{virtuals: map[string][]string{}, notifs: map[string][]string{}, signals: map[string][]trans.Signal{}, editor: map[string]bool{}}
 	for _, e := range api.GlobalEnums {
 		spec.enums = append(spec.enums, trans.Dependency{Name: e.Name, Kind: trans.GodotEnum, Values: e.Values, Bitfield: e.IsBitfield})
 	}
@@ -291,8 +302,30 @@ func readSpec(file Path) apiSpec {
 				spec.virtuals[c.Name] = append(spec.virtuals[c.Name], m.Name)
 			}
 		}
+		spec.editor[c.Name] = c.APIType == "editor"
+		for _, sig := range c.Signals {
+			s := trans.Signal{Name: sig.Name}
+			for _, a := range sig.Arguments {
+				s.Params = append(s.Params, trans.SignalParam{Name: a.Name, Type: specType(a.Type)})
+			}
+			spec.signals[c.Name] = append(spec.signals[c.Name], s)
+		}
 	}
 	return spec
+}
+
+// specType returns the GD++ type of a type of the API spec, e.g. "Array[Node]" for "typedarray::Node", or "int" for
+// an enum, e.g. "enum::Error", since engine enums aren't GD++ types.
+func specType(t string) string {
+	switch kind, name, _ := strings.Cut(t, "::"); kind {
+	case "enum", "bitfield":
+		return "int"
+	case "typedarray":
+		return "Array[" + specType(name) + "]"
+	case "typeddictionary":
+		return "Dictionary"
+	}
+	return t
 }
 
 // packageDeps returns the dependencies of the package's GD++ file whose path
@@ -313,7 +346,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 	for _, n := range names {
 		dep := trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind, NonRuntime: nonRuntime[n.Name]}
 		if n.Kind != trans.Other {
-			dep.Base, dep.Virtuals, dep.Notifications = n.Base, spec.virtuals[n.Name], spec.notifs[n.Name]
+			dep.Base, dep.Virtuals, dep.Notifications, dep.Signals = n.Base, spec.virtuals[n.Name], spec.notifs[n.Name], spec.signals[n.Name]
 		}
 		deps = append(deps, dep)
 	}
@@ -322,7 +355,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 		for _, d := range f.Decls {
 			if f.Rel != self {
 				dep := trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals, Notifications: d.Notifications,
-					NonRuntime: nonRuntime[d.Name], Traits: d.Traits}
+					NonRuntime: nonRuntime[d.Name], Traits: d.Traits, Signals: d.Signals}
 				if d.Kind == trans.TraitDecl { // Its classes check and copy its functions.
 					dep.Source, dep.File = f.Src, f.File.ToString()
 				}
@@ -429,7 +462,11 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 	}
 	syntax := pkg.Config.Syntax
 	spec := readSpec(pkg.BuildCache.Cd("extension_api.json"))
-	names = append(slices.Clip(names), cppClassNames(pkg)...)
+	projectNames := loadProjectNames(LoadProject(pkg.Root), pkg)
+	names = append(slices.Clip(names), slices.Concat(cppClassNames(pkg), projectNames.names)...)
+	if projectNames.header != "" {
+		write(namesHeader, projectNames.header)
+	}
 	nonRuntime, implementers := nonRuntimeClasses(pkg, fileDecls(files)), traitImplementers(files)
 	check := func(text string, err error) string {
 		if err != nil {

@@ -1,0 +1,8 @@
+// Added to the editor, without a plugin.cfg.
+@tool
+class_name TerrainPlugin
+extends EditorPlugin
+
+on enter_tree {
+  add_custom_type("Terrain", "Node3D", nullptr, nullptr);
+}

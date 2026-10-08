@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Pickup" inherits="Area2D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="hud" type="Control" setter="set_hud" getter="get_hud">
+		</member>
+		<member name="panel" type="Control" setter="set_panel" getter="get_panel">
+		</member>
+		<member name="target" type="Control" setter="set_target" getter="get_target">
+		</member>
+	</members>
+	<signals>
+		<signal name="collected">
+			<param index="0" name="by" type="Node2D" />
+			<param index="1" name="points" type="int" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

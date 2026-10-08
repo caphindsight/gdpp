@@ -136,6 +136,33 @@ extends Node3D
 
 Tool code that crashes takes the editor down with it. Save your scenes before you try new tool code.
 
+# 7. Add buttons and an editor plugin
+
+A button in the inspector runs code of the class:
+
+```gd++
+@export_tool_button("Rebuild", "Reload") var rebuild_button: Callable = callable rebuild
+
+func rebuild() -> void {
+  ...
+}
+```
+
+For more, e.g. a dock or a custom gizmo, write an editor plugin: a `@tool` class that extends `EditorPlugin`.
+
+```gd++
+@tool
+class_name TerrainPlugin
+extends EditorPlugin
+
+on enter_tree {
+  add_custom_type("Terrain", "Node3D", nullptr, nullptr);
+}
+```
+
+- GD++ adds it to the editor by itself. Unlike a script's plugin, it needs no `plugin.cfg`, and the project settings don't list it.
+- See "Editor plugins" in `gd++ man classes`.
+
 # See also
 
 `gd++ man classes`, `gd++ man variables`, `gd++ man docs`, `gd++ man lifecycle`, `gd++ man cpp-classes`.

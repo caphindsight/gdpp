@@ -402,14 +402,15 @@ func syncSources(p Project, pkg Package, files []gdppFile) {
 // class uses Async. With GD++ classes, it unloads them with the runtime's
 // gdpp::uninitialize. Runtime classes don't run their code in the editor:
 // classes without tool or abstract, unless they extend a class with one of
-// those, see nonRuntimeClasses.
+// those, see nonRuntimeClasses. It creates the object of each @singleton
+// class, which Godot knows by the class's name.
 func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 	var decls []trans.Declaration
 	for _, class := range gdpp {
 		decls = append(decls, class.Declaration)
 	}
 	nonRuntime := nonRuntimeClasses(pkg, decls)
-	var classes, runtime, abstract, includes []string
+	var classes, runtime, abstract, includes, singletons, editor, plugins []string
 	add := func(name string, isAbstract bool) {
 		classes = append(classes, name)
 		if !nonRuntime[name] {
@@ -462,6 +463,30 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
 		add(class.Name, class.Abstract)
 		includes = append(includes, `"`+class.Name+`.h"`)
+		if class.Singleton {
+			singletons = append(singletons, class.Name)
+		}
+	}
+	// Classes that extend the editor's, which only exist in the editor, register with them, at the editor's level.
+	// EditorPlugins add the plugins among them to the editor.
+	bases := map[string]string{}
+	for _, class := range pkg.Config.Classes {
+		bases[class.Name] = cppClassBase(pkg, class)
+	}
+	for _, d := range decls {
+		bases[d.Name] = d.Base
+	}
+	spec := readSpec(pkg.BuildCache.Cd("extension_api.json"))
+	for _, name := range classes {
+		base := name
+		for depth := 0; bases[base] != "" && depth <= len(bases); depth++ { // depth stops at cycles, which other checks report.
+			if base = bases[base]; base == "EditorPlugin" && !slices.Contains(abstract, name) {
+				plugins = append(plugins, name)
+			}
+		}
+		if spec.editor[base] {
+			editor = append(editor, name)
+		}
 	}
 	if writeTemplate(pkg.BuildCache.Cd("__register_types__.cpp"), registerTypesTemplate, map[string]any{
 		"Classes":         classes,
@@ -471,6 +496,10 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		"AsyncClass":      asyncClass,
 		"Runtime":         runtimeName,
 		"GpuRuntime":      gpuRuntimeName,
+		"Singletons":      singletons,
+		"SceneClasses":    slices.DeleteFunc(slices.Clone(classes), func(c string) bool { return slices.Contains(editor, c) }),
+		"EditorClasses":   editor,
+		"EditorPlugins":   plugins,
 	}) {
 		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
 	}

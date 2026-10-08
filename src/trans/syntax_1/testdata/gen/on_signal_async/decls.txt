@@ -1,0 +1,1 @@
+{Name:Gate2 Kind:1 Base:Area2D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:true Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[{Name:opened Params:[]}]}

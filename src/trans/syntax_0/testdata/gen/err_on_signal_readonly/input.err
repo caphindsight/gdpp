@@ -1,0 +1,4 @@
+input.gd++:8:1: Property box has no set block, so the on block can't follow its value.
+ 8 | on box.resized {}
+   | ^^^^^^
+Hint: An on block connects to the object in the variable each time the variable is set.

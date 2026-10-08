@@ -78,6 +78,9 @@ func _score() -> int
   - Scripts use the class's `@factory` methods for the same.
   - `@factory_scene` declares methods that load the scene ahead of time, and drop it.
 
+@singleton
+  Make the package create the class's one object, which Godot knows by the class's name, and GD++ code gets with `get_singleton()`. Not for classes that extend `Node`. See "@singleton" in `gd++ man classes`.
+
 @trace(GROUPS...)
   Trace all its functions, variables and signals, and print the creation and destruction of its objects. Except `on process`, `on physics_process` and overrides of `_process` and `_physics_process`. See "@trace and @profile" below.
 
@@ -259,17 +262,35 @@ Functions of traits only take `@const`. The functions of a class that implement 
 @export_flags(NAMES...)
   An `int` of bit flags.
 
-@export_file([FILTERS...])
-  A `String` with a file path.
+@export_flags_2d_render, @export_flags_2d_physics, @export_flags_2d_navigation, @export_flags_3d_render, @export_flags_3d_physics, @export_flags_3d_navigation and @export_flags_avoidance
+  An `int` of layer bits, with the layer names of the project settings.
 
-@export_dir
-  A `String` with a directory path.
+@export_exp_easing([EXTRAS...])
+  A `float` edited as an easing curve.
+
+@export_color_no_alpha
+  A `Color` without alpha.
+
+@export_file([FILTERS...]), @export_file_path([FILTERS...]) and @export_global_file([FILTERS...])
+  A `String` with a file path: `res://` or `uid://`, always `res://`, or absolute.
+
+@export_dir and @export_global_dir
+  A `String` with a directory path: `res://`, or absolute.
 
 @export_multiline
   A `String` with many lines.
 
 @export_placeholder(TEXT)
   A `String` with a placeholder text.
+
+@export_node_path([TYPES...])
+  A `NodePath` to a node of one of the classes TYPES, as strings.
+
+@export_tool_button(TEXT[, ICON])
+  A `Callable`, shown as a button that calls it. Only in `@tool` classes.
+
+@export_custom(HINT, HINT_STRING[, USAGE...])
+  Any variable, with a property hint and usage flags of your choice.
 
 @export_storage
   Save the variable, but don't show it in the inspector.
@@ -447,7 +468,6 @@ Facts:
 Some GDScript annotations have no GD++ version, since GD++ does the same another way, or it doesn't apply to C++:
 
 - `@abstract` on functions, `@static_unload`, `@warning_ignore` and the like: not supported.
-- `@export_node_path`, `@export_color_no_alpha`, `@export_exp_easing`, `@export_global_file`, `@export_global_dir` and the like: not supported yet. Use `@export`, or a property of the right type.
 - `static`, `const` and `onready` without `@` are not keywords. Write `@static` and `@onready`, and `enum NAME = VALUE` for constants.
 
 # See also

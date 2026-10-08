@@ -428,6 +428,64 @@ Other facts:
 - With `@pool`, the pool instantiates the scene for each new object, and reuses objects without it.
 - With `@factory`, scripts call `Bullet.create()`, which does the same. It returns the root of a new instance of the scene, or `null`, so check it. See "In scripts" above.
 
+# Editor plugins
+
+A class that extends `EditorPlugin` is an editor plugin, which adds to the editor, e.g. docks, gizmos and importers:
+
+```gd++
+@tool
+class_name TerrainPlugin
+extends EditorPlugin
+
+on enter_tree {
+  add_control_to_bottom_panel(create Label, "Terrain");
+}
+```
+
+- GD++ adds it to the editor when the editor loads the package. It needs no `plugin.cfg`, and the project settings don't list it, so it can't be turned off there.
+- It needs `@tool`, since it runs in the editor.
+- An `@abstract` one isn't added: only its subclasses are.
+- Godot only has the editor's classes, e.g. `EditorPlugin` or `EditorInspectorPlugin`, in the editor. So GD++ registers the classes that extend them later than the others, once the editor is there. Exported games don't have them at all.
+
+# @singleton
+
+A singleton is the one object of its class, which every part of the game reaches by its class's name, like Godot's `Input` or `Engine`. E.g. for a game's state or services:
+
+```gd++
+@singleton
+class_name Game
+extends Object
+
+var score: int
+
+func add(points: int) -> void {
+  score += points;
+}
+```
+
+```gd++
+Game::get_singleton()->add(10);
+```
+
+```gdscript
+Game.add(10)
+```
+
+- The package creates the object when Godot loads it, and deletes it when Godot unloads it.
+- Godot knows it by the class's name, like its own singletons. So scripts write `Game.add(10)`, and `Engine.get_singleton("Game")` returns it.
+- GD++ code gets it with the static function `get_singleton()`. Its name is taken: a member can't be named `get_singleton`.
+- Without `@tool`, the object exists in the editor too, so that scripts that use it parse, but its code doesn't run there: it's guarded like a `@game_only` class. See "@game_only" above.
+- It doesn't extend `Node`: Godot's singletons aren't in the scene tree, so they get no `_process`, no `_ready` and no children.
+- It can be refcounted, e.g. extend `RefCounted` or `Resource`. Then the package holds a reference to it, which keeps it alive until the package is unloaded. Other references may keep it alive longer.
+- Not with `@abstract`, `@pool`, `@scene`, `@factory`, `@factory_pool` or `@factory_scene`, since the package creates its one object.
+- `gd++ ls` shows it with the tag `@singleton`.
+
+A node that every scene reaches, e.g. a game manager that processes every frame, is an autoload instead. GDExtensions can't register autoloads, but a scene can be one:
+
+1. Make a scene whose root is the node, e.g. `game_manager.tscn` with a `GameManager` root.
+2. In Godot's project settings, under Globals > Autoload, add the scene, e.g. as `GameManager`.
+3. Scripts then write `GameManager.method()`. GD++ code gets it with `get_node<GameManager>("/root/GameManager")`.
+
 # @trace and @profile
 
 ```gd++
@@ -454,7 +512,7 @@ See `gd++ man debugging`.
 Before `class_name` or `class`, a class can have, in any order:
 
 - `@tool`, `@tool("editor_only")`, `@editor_only @tool` or `@game_only`,
-- `@abstract`, `@icon`, `@pool`, `@scene`, `@trace` and `@profile`,
+- `@abstract`, `@icon`, `@pool`, `@scene`, `@singleton`, `@trace` and `@profile`,
 - a doc comment.
 
 ```gd++

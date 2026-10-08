@@ -1,0 +1,4 @@
+input.gd++:4:13: An on ready block returns nothing.
+ 4 | on ready -> int {
+   |             ^^^
+Hint: Write "on ready { ... }".

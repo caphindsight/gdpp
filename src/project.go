@@ -21,8 +21,9 @@ type Project struct {
 
 // ProjectConfig holds the GD++ settings from res://.gd++proj.
 type ProjectConfig struct {
-	VCS     string `toml:"vcs"`
-	Presets bool   `toml:"presets"` // whether GD++'s exclude filters are kept in the export presets
+	VCS     string       `toml:"vcs"`
+	Presets bool         `toml:"presets"`         // whether GD++'s exclude filters are kept in the export presets
+	Names   ProjectNames `toml:"names,omitempty"` // what GD++ generates from project.godot, see names.go
 }
 
 // DefaultProjectConfig returns the config used when res://.gd++proj

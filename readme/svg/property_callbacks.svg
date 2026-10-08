@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="595" height="329" viewBox="0 0 595 329">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#8b949e">// Properties that aren't variables, like GDScript's _get and _set.</tspan></text>
+  <text x="16" y="50"><tspan fill="#e3b341">on get</tspan><tspan fill="#e6edf3">(name) {</tspan></text>
+  <text x="16" y="70"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> slots.</tspan><tspan fill="#e3b341">get</tspan><tspan fill="#e6edf3">(name, </tspan><tspan fill="#7ee787">Variant</tspan><tspan fill="#e6edf3">());</tspan></text>
+  <text x="16" y="90"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="110"></text>
+  <text x="16" y="130"><tspan fill="#e3b341">on set</tspan><tspan fill="#e6edf3">(name, value) {</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  slots[name] = value;</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">true</tspan><tspan fill="#e6edf3">;</tspan></text>
+  <text x="16" y="190"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="210"></text>
+  <text x="16" y="230"><tspan fill="#e3b341">on get_property_list</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">TypedArray</tspan><tspan fill="#e6edf3">&lt;</tspan><tspan fill="#7ee787">Dictionary</tspan><tspan fill="#e6edf3">&gt; list;</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">  list.</tspan><tspan fill="#56d4dd">push_back</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">Dictionary</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">PropertyInfo</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#7ee787">Variant</tspan><tspan fill="#e6edf3">::INT, </tspan><tspan fill="#d2a8ff">"slot_0"</tspan><tspan fill="#e6edf3">)));</tspan></text>
+  <text x="16" y="290"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">return</tspan><tspan fill="#e6edf3"> list;</tspan></text>
+  <text x="16" y="310"><tspan fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>

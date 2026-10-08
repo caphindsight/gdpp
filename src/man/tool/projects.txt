@@ -13,6 +13,7 @@ Facts:
 
 - If either is missing, commands fail with "Failed to find the project name in res://project.godot." or "Failed to find the Godot version in ...". Open the project in the Godot editor once to fix it.
 - `gd++` never writes `project.godot`.
+- With `[names]` in `.gd++proj`, GD++ also reads the input actions, global groups and layer names. See `gd++ man project-names`.
 - The project's id is the name of its root directory. The package at the project root has the same id.
 
 # .gd++proj
@@ -38,6 +39,15 @@ presets
   - `true`: `gd++ build` and `gd++ fix` add GD++'s exclude filters to every preset in `res://export_presets.cfg`.
   - `false`: they remove them once, and then leave the file alone.
   - Set it with `gd++ init --presets` or `--nopresets`. See `gd++ man shipping`.
+
+names
+  What GD++ generates from `project.godot`: names for its input actions, global groups and layers. A table of keys, each the name of what it generates, e.g. `actions = "Action"`. All off by default. See `gd++ man project-names`.
+
+```toml
+[names]
+actions = "Action"
+physics_layers_3d = "Physics3D"
+```
 
 # What GD++ adds to a project
 

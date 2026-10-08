@@ -333,6 +333,10 @@ In the editor:
 
 See `gd++ man generated`.
 
+# Enums of layers
+
+GD++ can generate a `@bitfield` enum of the layers that the project settings name, e.g. `Physics3D::PLAYER`. See `gd++ man project-names`.
+
 # Integer constants
 
 ```gd++

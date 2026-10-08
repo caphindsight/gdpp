@@ -1,0 +1,4 @@
+input.gd++:6:25: Parameter event is an InputEvent, but found Node.
+ 6 | on box.gui_input(event: Node) {}
+   |                         ^^^^
+Hint: Leave out the type, which GD++ knows, or write "event: InputEvent".

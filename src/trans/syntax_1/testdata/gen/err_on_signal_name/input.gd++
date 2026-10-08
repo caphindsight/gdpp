@@ -1,0 +1,6 @@
+class_name A
+extends Node
+
+var box: Control
+
+on box.resize {}

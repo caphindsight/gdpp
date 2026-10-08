@@ -19,8 +19,9 @@ on predelete {
 ```
 
 - `on`, the notification's name, then the body: C++ in braces.
+- With a variable and a dot, e.g. `on button.pressed`, an `on` block runs at a signal instead. See "Connecting to signals" in `gd++ man signals`.
 - The name is the engine's constant without `NOTIFICATION_`, in lower case: `on predelete` runs at `NOTIFICATION_PREDELETE`.
-- No return type.
+- No return type. Property callbacks return a value, whose type GD++ knows. See "Property callbacks" below.
 - A class has at most one `on` block per notification.
 - Notification names stay free as names elsewhere, e.g. `var ready: bool`.
 
@@ -114,8 +115,8 @@ Most `on` blocks just run at their notification. A few do more:
   - In a `@pool` class, it only runs the first time an object gets ready, unless it has `@recycle`. See "Getting ready again" in `gd++ man pools`.
 - `on process`, `on physics_process`, `on internal_process` and `on internal_physics_process`:
   - Turn their processing on in the constructor, with `set_process(true)` and the like.
-  - Can take the delta time, the seconds since the last frame, as a `float` parameter in parentheses, with a name you choose: `on process(delta: float)` or `on process(dt: float)`.
-  - The parameter is optional: `on process { ... }` works too.
+  - Can take the delta time, the seconds since the last frame, as a `float` parameter in parentheses, with a name you choose: `on process(delta)` or `on process(dt: float)`.
+  - The parameter and its type are optional: `on process { ... }` works too. GD++ knows the type, so a type, if written, must be `float`.
 - Other `on` blocks take no parameters.
 
 # Every notification
@@ -141,6 +142,81 @@ on(what: int) {
 - `notification(NOTIFICATION_HIT)` sends it.
 
 See "Integer constants" in `gd++ man enums`.
+
+# Property callbacks
+
+A few more `on` blocks let a class decide about its properties, like the functions `_get`, `_set` and so on of GDScript. E.g. to show properties in the inspector that aren't variables, or to hide some depending on others:
+
+```gd++
+@tool
+class_name Inventory
+extends Node
+
+var items: Array = {
+  Array slots;
+  slots.resize(3);
+  return slots;
+}
+
+on get(name) {
+  String s = name;
+  return s.begins_with("item_") ? items.get(s.get_slice("_", 1).to_int()) : Variant();
+}
+
+on set(name, value) {
+  String s = name;
+  if (!s.begins_with("item_")) {
+    return false;
+  }
+  items.set(s.get_slice("_", 1).to_int(), value);
+  return true;
+}
+
+on get_property_list {
+  TypedArray<Dictionary> list;
+  for (int64_t i = 0; i < items.size(); i++) {
+    list.push_back(Dictionary(PropertyInfo(Variant::OBJECT, "item_" + String::num_int64(i), PROPERTY_HINT_RESOURCE_TYPE, "Item")));
+  }
+  return list;
+}
+```
+
+The blocks, with their full signatures:
+
+```
+on get(name: StringName) -> Variant                  the value of the property name, or null if it isn't one of the class's
+on set(name: StringName, value: Variant) -> bool     sets the property name, and returns true, or returns false if it isn't one of the class's
+on get_property_list -> Array[Dictionary]           more properties, each a Dictionary like those of Object.get_property_list()
+on validate_property(property: Dictionary)          changes how the inspector shows a property, e.g. its "usage" or "hint", in place
+on property_can_revert(name: StringName) -> bool     whether the inspector shows a revert button for the property name
+on property_get_revert(name: StringName) -> Variant  the value that the revert button sets, or null if it isn't one of the class's
+on to_string -> String                               the text of the object in print() and str()
+```
+
+Like for other `on` blocks, the signature is optional:
+
+- The parameters' names are yours to choose.
+- Their types and the return type can be left out: GD++ knows them. If written, they must be those above.
+- The parameters at the end can be left out too, e.g. `on property_can_revert { ... }` or `on set(name) { ... }`, if the block doesn't need them.
+
+A wrong type is an error, which explains what the block returns:
+
+```out
+[×] res://inventory.gd++:4:45: The on set block is Godot's _set, which returns a bool, not void: true if it set the property, or false if the class doesn't have the property.
+     4 | on set(name: StringName, value: Variant) -> void {
+       |                                             ^^^^
+    Hint: Leave out the return type, which GD++ knows, or write "-> bool".
+```
+
+Facts:
+
+- They're the functions `_get`, `_set`, `_get_property_list`, `_validate_property`, `_property_can_revert`, `_property_get_revert` and `_to_string` of godot-cpp, which GD++ generates from the blocks.
+- All but `on set` are const: they can't change the object's fields, except mutable ones.
+- In `on validate_property`, changes to the `Dictionary` change the property.
+- They add up, like other `on` blocks: a base's block runs too, and handles the properties that the subclass's doesn't. Except `on to_string`: the most derived one gives the text.
+- They take the annotations of other `on` blocks, except `@async` and `@recycle`: Godot needs their result right away.
+- A class's variables don't go through them: Godot handles those itself.
+- Without `@tool`, the editor runs none of them, since it runs none of the class's code. To change the inspector, use `@tool`.
 
 # How they work
 

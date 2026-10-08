@@ -290,8 +290,11 @@ gd.signal { name, params, doc, annotations }
 gd.ctor { body, annotations } and gd.dtor { body, annotations }
   A `ctor` or `dtor` block.
 
-gd.on { name, param, param_type, body, annotations }
-  An `on` block: `gd.on { name = "process", param = "delta", param_type = "float", body = "tick(delta);" }`.
+gd.on { name, source, params, ret, body, annotations }
+  An `on` block: `gd.on { name = "process", params = { "delta: float" }, body = "tick(delta);" }`.
+  - `source` makes it a signal's block, e.g. `source = "button", name = "pressed"` for `on button.pressed`.
+  - `ret` is a property callback's return type, e.g. `"Variant"` for `on get`.
+  - `param` and `param_type` still work for one parameter: `param = "delta", param_type = "float"`.
 
 gd.decl { body, annotations }, gd.impl { ... } and gd.decl_impl { ... }
   A `decl`, `impl` or `decl impl` block. `annotations = { "@global" }` makes it `@global`.

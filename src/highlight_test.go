@@ -56,6 +56,12 @@ func TestHighlightCode(t *testing.T) {
 			Styled("var", CodeKeyword) + " on: " + Styled("int", CodeType)},
 		{"gd++", "@@save(\"a\") var x\n@@x on ready {}", Styled("@@save", CodePreProc) + "(" + Styled("\"a\"", CodeLiteral) + ") " + Styled("var", CodeKeyword) + " x\n" +
 			Styled("@@x", CodePreProc) + " " + Styled("on ready", CodeKeyword) + " {}"},
+		{"gd++", "on button.pressed {}\non this.died(by) {}\non set(name, value) -> bool {}", Styled("on button.pressed", CodeKeyword) + " {}\n" +
+			Styled("on this.died", CodeKeyword) + "(by) {}\n" + Styled("on set", CodeKeyword) + "(name, value) -> " + Styled("bool", CodeType) + " {}"},
+		{"gd++", "f(callable g); f(callable [] {}); f(callable \"h\"); f(callable(o) k); Callable callable = x; callable.call();",
+			Styled("f", CodeFunction) + "(" + Styled("callable", CodeKeyword) + " g); " + Styled("f", CodeFunction) + "(" + Styled("callable", CodeKeyword) + " [] {}); " +
+				Styled("f", CodeFunction) + "(" + Styled("callable", CodeKeyword) + " " + Styled("\"h\"", CodeLiteral) + "); " + Styled("f", CodeFunction) + "(" +
+				Styled("callable", CodeKeyword) + "(o) k); " + Styled("Callable", CodeType) + " callable = x; callable." + Styled("call", CodeFunction) + "();"},
 		{"gd++", "annotation save", Styled("annotation", CodeKeyword) + " save"},
 		{"gd++", "trait_name Damageable\nimplements Named, Saved\ntrait Named {}", Styled("trait_name", CodeKeyword) + " " + Styled("Damageable", CodeType) + "\n" +
 			Styled("implements", CodeKeyword) + " " + Styled("Named", CodeType) + ", " + Styled("Saved", CodeType) + "\n" + Styled("trait", CodeKeyword) + " " +

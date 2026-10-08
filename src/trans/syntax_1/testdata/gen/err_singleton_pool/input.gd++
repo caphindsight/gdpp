@@ -1,0 +1,4 @@
+@singleton
+@pool
+class_name Game
+extends Object

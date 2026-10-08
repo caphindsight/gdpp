@@ -114,10 +114,15 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 			case v.v.Init == nil || v.onready:
 			case v.recycle != nil:
 				w.ln("\tif (!_gdpp_reserved) {")
-				initializer(w, v, "\t\t")
+				initializer(w, c, v, "\t\t")
 				w.ln("\t}")
 			default:
-				initializer(w, v, "\t")
+				initializer(w, c, v, "\t")
+			}
+		}
+		for _, f := range c.signalOns {
+			if f.on.Source == "this" {
+				w.ln("\tconnect(GDPP_STRING_NAME(%q), callable_mp(this, &%s::%s));", f.on.Name, c.name, f.f.Name)
 			}
 		}
 		// Initial values set up the objects in the editor too, so the inspector shows them.
@@ -193,6 +198,13 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("\t%s", body)
 		w.ln("}")
 	}
+	for _, f := range c.callbacks {
+		m := callbackMethods[callbackName(f)]
+		w.ln("")
+		w.ln("%s %s::%s {", m.ret, c.name, m.decl)
+		w.ln("\t%s", fmt.Sprintf(m.body, f.f.Name, c.base))
+		w.ln("}")
+	}
 	if c.needsNotification() {
 		w.ln("")
 		w.ln("void %s::_notification(int WHAT) {", c.name)
@@ -214,9 +226,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 					once = o
 				}
 				if once {
-					initializer(w, v, "\t\t\t")
+					initializer(w, c, v, "\t\t\t")
 				} else {
-					initializer(w, v, "\t\t")
+					initializer(w, c, v, "\t\t")
 				}
 			}
 			if once {
@@ -278,8 +290,9 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 // generationRegexp matches the use of GENERATION, which on blocks and @recycle ctor, dtor and _ready can read.
 var generationRegexp = regexp.MustCompile(`\bGENERATION\b`)
 
-// initializer writes the assignment of var v's initial value, or of its type's default if it has none.
-func initializer(w *writer, v *varModel, indent string) {
+// initializer writes the assignment of var v's initial value, or of its type's default if it has none, and connects
+// the on blocks of its signals to it.
+func initializer(w *writer, c *classModel, v *varModel, indent string) {
 	switch init := v.v.Init; {
 	case init == nil:
 		w.ln("%s%s = {};", indent, v.v.Name)
@@ -288,6 +301,27 @@ func initializer(w *writer, v *varModel, indent string) {
 	default:
 		w.user(init.Pos, init.Origin, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
 	}
+	for _, line := range follows(c, v.v.Name, v.v.Name) {
+		w.ln("%s%s", indent, line)
+	}
+}
+
+// follows returns the statements that connect the on blocks of the signals of the class's variable called name, e.g.
+// on button.pressed, to value, its value, and disconnect them from the object they were connected to.
+func follows(c *classModel, name, value string) []string {
+	var lines []string
+	for _, f := range c.signalOns {
+		if f.on.Source == name {
+			lines = append(lines, fmt.Sprintf("gdpp::follow(%s, %s, GDPP_STRING_NAME(%q), callable_mp(this, &%s::%s));", followField(f), value, f.on.Name, c.name, f.f.Name))
+		}
+	}
+	return lines
+}
+
+// followField returns the name of the field that holds the ID of the object that f, an on block of a variable's
+// signal, is connected to.
+func followField(f *funcModel) string {
+	return "_gdpp_follow_" + f.on.Source + "_" + f.on.Name
 }
 
 // recycler writes the method of @pool class c that its pool calls when it reuses an object, for the keyword ctor, or
@@ -301,7 +335,7 @@ func recycler(w *writer, c *classModel, keyword string, body *Block) {
 	}
 	for _, v := range c.vars {
 		if v.recycle != nil && !v.onready && keyword == "ctor" {
-			initializer(w, v, "\t")
+			initializer(w, c, v, "\t")
 		}
 	}
 	if body != nil {
@@ -531,12 +565,15 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	case f.gpu != nil:
 		u.shaderCall(w, c, f)
 	case f.f.Body != nil && f.coro != nil:
+		w.static = f.static
 		w.block(f.f.Body, "", "", assertCoFor(f.coro.void))
 	case f.f.Body != nil:
+		w.static = f.static
 		w.block(f.f.Body, "", "", assertFor(f.ret.void))
 	case !f.ret.void:
 		w.ln("\treturn {};")
 	}
+	w.static = false
 	if wrap {
 		w.ln("\t}());")
 	}
@@ -566,11 +603,13 @@ func defaultDefs(w *writer, c *classModel, f *funcModel) {
 		w.ln("")
 		w.ln("%s {", qualified(c, f.params[i].cpp, defaultName(f, p), "", false))
 		guard(w, f.only, f.params[i].cpp)
+		w.static = true
 		if d.Block != nil {
 			w.block(d.Block, "", "", assertValue)
 		} else {
 			w.user(d.Pos, d.Origin, "\treturn ", d.Expr, ";", assertValue)
 		}
+		w.static = false
 		w.ln("}")
 	}
 }
@@ -611,6 +650,12 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 			}
 			watch(w, c, v.setter)
 		}
+		lines := follows(c, v.v.Name, v.v.Name)
+		if v.set != nil && len(lines) > 0 { // Runs on every return of the set block.
+			lines = follows(c, v.v.Name, v.getter+"()")
+			w.ln("\tgdpp::Defer _gdpp_follow([this] { %s });", strings.Join(lines, " "))
+			lines = nil
+		}
 		switch {
 		case v.deferral != "":
 			w.ln("\t%s;", deferredCall(v.deferral, "this", "_gdpp_body_"+v.setter, []*gtype{v.t}, []*Param{v.set.Param}))
@@ -618,6 +663,9 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 			w.block(v.set.Body, "", "", assertVoid)
 		default:
 			w.ln("\t%s = p_value;", v.v.Name)
+		}
+		for _, line := range lines {
+			w.ln("\t%s", line)
 		}
 		w.ln("}")
 	}
@@ -662,7 +710,7 @@ func info(c *classModel, t *gtype, name, usage, hint, hintString string) string 
 	if usage != "" {
 		s += ", " + usage
 	}
-	if hint != "" && hint != "PROPERTY_HINT_NONE" {
+	if hint != "" && (hint != "PROPERTY_HINT_NONE" || hintString != "") {
 		s += fmt.Sprintf(", %s, %q", hint, hintString)
 	}
 	return s + ")"
@@ -671,7 +719,7 @@ func info(c *classModel, t *gtype, name, usage, hint, hintString string) string 
 // bindings writes the body of _bind_methods.
 func (u *unit) bindings(w *writer, c *classModel) {
 	for _, f := range c.funcs {
-		if f.hidden == "onthread" || f.hidden == "async" || f.hidden == "notif" || f.isPrivate {
+		if f.hidden == "onthread" || f.hidden == "async" || f.hidden == "notif" || f.hidden == "callback" || f.hidden == "signal" || f.isPrivate {
 			continue // Its func, or _notification, calls it directly. Or it's @private.
 		}
 		// The method, followed by the default values of its parameters.

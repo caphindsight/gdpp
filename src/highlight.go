@@ -57,7 +57,8 @@ const (
 	rewriteWords = "emit rpc is_cancelled assert assert_void assert_val await"
 	// GD++'s rewrites in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
 	// where a name follows them, which is where GD++ rewrites them.
-	rewriteOperatorWords = "is_done claim cancel as create destroy queue_destroy"
+	// callable is also one where a string, "[" or "(" follows it, see below.
+	rewriteOperatorWords = "is_done claim cancel as create destroy queue_destroy callable"
 	// GD++'s invocations of macros and templates, e.g. invoke log("hit"). C++ code may also use it as a name, e.g. in
 	// std::invoke(f), so it's a keyword only where a name follows it, like the words above.
 	invokeWord = "invoke"
@@ -239,6 +240,7 @@ func highlightCodeOf(code string, gdscript, glsl bool) string {
 				style = []Style{CodeKeyword}
 			case isOn, codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,
 				codeStringOps[word] && strings.HasPrefix(after, "\""),
+				word == "callable" && after != "" && strings.ContainsRune("\"[(", rune(after[0])), // A method by name, a lambda, or a lambda's owner.
 				codeStringOps[word] && strings.HasPrefix(after, "(") && (lastWord(code[:i]) == "await" || strings.HasSuffix(strings.TrimRight(code[:i], " \t\n"), "->")):
 				style = []Style{CodeKeyword}
 			case codePlain[word]:
@@ -432,8 +434,9 @@ func longBracketEnd(s string) int {
 
 var (
 	annotationsRegexp = regexp.MustCompile(`^\s*(@@?\w+(\([^)]*\))?\s*)*$`)
-	// What follows "on" in an on block's head: the notification's name, if any, then the parameter, if any, and "{".
-	onHeadRegexp = regexp.MustCompile(`^(\s+\w+)?\s*(\(\s*\w+\s*(:\s*\w+\s*)?\)\s*)?\{`)
+	// What follows "on" in an on block's head: the notification's name, or a variable's or this's signal, e.g.
+	// button.pressed, if any, then the parameters, if any, the return type, if any, and "{".
+	onHeadRegexp = regexp.MustCompile(`^(\s+(?:\w+\s*\.\s*)?\w+)?\s*(\([^()]*\)\s*)?(->\s*[\w\[\], ]+?\s*)?\{`)
 )
 
 // lastWord returns the identifier at the end of s, before any spaces, e.g. signal in "signal ".

@@ -1,0 +1,15 @@
+// Properties that aren't variables, like GDScript's _get and _set.
+on get(name) {
+  return slots.get(name, Variant());
+}
+
+on set(name, value) {
+  slots[name] = value;
+  return true;
+}
+
+on get_property_list {
+  TypedArray<Dictionary> list;
+  list.push_back(Dictionary(PropertyInfo(Variant::INT, "slot_0")));
+  return list;
+}

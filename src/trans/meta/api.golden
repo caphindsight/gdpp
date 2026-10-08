@@ -80,3 +80,12 @@ field Declaration.NoscriptVirtuals []string
 const ShaderLibrary Kind = 14
 const ShaderLibraryDecl DeclKind = 9
 field Declaration.Gpu bool
+field Dependency.Signals []Signal
+field Declaration.Signals []Signal
+type Signal struct
+field Signal.Name string
+field Signal.Params []SignalParam
+type SignalParam struct
+field SignalParam.Name string
+field SignalParam.Type string
+field Declaration.Singleton bool

@@ -53,9 +53,12 @@ type classModel struct {
 	pool       *poolModel        // Its @pool, or nil.
 	scene      string            // The res:// path of its @scene, or "".
 	abstract   bool              // Whether @abstract keeps the editor and GD++ code from creating its objects.
+	singleton  bool              // Whether @singleton makes the package create its one object, which get_singleton returns.
 	factory    map[string]string // The methods its @factory, @factory_pool, @factory_scene and @factory_shader declare: their names by role, e.g. "create". See factoryRoles.
 	ctor, dtor *Block
 	notifs     []*notifModel
+	callbacks  []*funcModel // The methods of its property callbacks, e.g. _gdpp_body__get for on get, which godot-cpp's methods call.
+	signalOns  []*funcModel // The methods of its on blocks of signals, e.g. _gdpp_body__on_button_pressed for on button.pressed.
 	funcs      []*funcModel
 	vars       []*varModel
 	signals    []*signalModel
@@ -137,6 +140,7 @@ type funcModel struct {
 	virtualOf string
 	trait     string    // For a class's function: the trait whose function it implements, or copies as a default. Else empty.
 	gpu       *gpuModel // For a shader: what runs it, else nil. Its function runs it.
+	on        *On       // For the method of an on block of a signal, e.g. on button.pressed: the block. Else nil.
 }
 
 // rpcModel is the configuration from @rpc, as C++ values. Empty in externs, whose defining class configures it.
@@ -339,10 +343,10 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			}
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
-				Abstract: hasAnnotation(c, "abstract"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c), Gpu: usesGpuTypes(c) || usesGpuNames(u.src),
-				Virtuals: classVirtuals(c, false), NoscriptVirtuals: classVirtuals(c, true), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements)})
+				Abstract: hasAnnotation(c, "abstract"), Singleton: hasAnnotation(c, "singleton"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c), Gpu: usesGpuTypes(c) || usesGpuNames(u.src),
+				Virtuals: classVirtuals(c, false), NoscriptVirtuals: classVirtuals(c, true), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements), Signals: ownSignals(c.Members)})
 		case s.extern != nil:
-			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends)})
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends), Signals: ownSignals(s.extern.Members)})
 		case s.trait != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.TraitDecl, Base: baseName(s.trait.Extends)})
 		default:
@@ -453,6 +457,48 @@ func ownNotifications(members []*Member) []string {
 		}
 	}
 	return names
+}
+
+// ownSignals returns the signals that members declare.
+func ownSignals(members []*Member) []meta.Signal {
+	var signals []meta.Signal
+	for _, m := range members {
+		if sig := m.Signal; sig != nil {
+			s := meta.Signal{Name: sig.Name}
+			for _, p := range sig.Params {
+				s.Params = append(s.Params, meta.SignalParam{Name: p.Name, Type: typeString(p.Type)})
+			}
+			signals = append(signals, s)
+		}
+	}
+	return signals
+}
+
+// signalOf returns the signal name of the class or extern named class, or of one of its bases. If there's none, it
+// returns false, and the names of the signals that they have.
+func (u *unit) signalOf(class, name string) (meta.Signal, bool, []string) {
+	var all []string
+	for depth := 0; class != "" && depth < 100; depth++ {
+		s := u.symbols[class]
+		if s == nil {
+			break
+		}
+		own := s.signals
+		switch {
+		case s.class != nil:
+			own = ownSignals(s.class.Members)
+		case s.extern != nil:
+			own = ownSignals(s.extern.Members)
+		}
+		for _, sig := range own {
+			if sig.Name == name {
+				return sig, true, nil
+			}
+			all = append(all, sig.Name)
+		}
+		class = u.baseOf(class)
+	}
+	return meta.Signal{}, false, all
 }
 
 // notificationOf returns the class that has the notification name, e.g. READY: the class named class, or one of
@@ -724,7 +770,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				"Names must differ from Godot's, and from those of the package's other classes, externs, traits and enums.")
 		}
 		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
-			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits}
+			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits, signals: d.Signals}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}
@@ -1310,9 +1356,11 @@ func cppString(s string) string {
 
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
-var knownAnnotations = []string{"abstract", "async", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
-	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "sync", "thread_safe", "tool", "trace", "virtual"}
+var knownAnnotations = []string{"abstract", "async", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_color_no_alpha", "export_custom", "export_dir", "export_enum",
+	"export_exp_easing", "export_file", "export_file_path", "export_flags", "export_flags_2d_navigation", "export_flags_2d_physics", "export_flags_2d_render", "export_flags_3d_navigation",
+	"export_flags_3d_physics", "export_flags_3d_render", "export_flags_avoidance", "export_global_dir", "export_global_file", "export_group", "export_multiline", "export_node_path",
+	"export_placeholder", "export_range", "export_storage", "export_subgroup", "export_tool_button", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
+	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "singleton", "static", "sync", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -1332,8 +1380,8 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can't be used on %s.", a.Name, kind), "")
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
-		case len(a.Args) > 0 && !slices.Contains([]string{"async", "export_category", "export_enum", "export_file", "export_flags", "export_group",
-			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
+		case len(a.Args) > 0 && !slices.Contains([]string{"async", "export_category", "export_custom", "export_enum", "export_exp_easing", "export_file", "export_file_path", "export_flags",
+			"export_global_file", "export_group", "export_node_path", "export_placeholder", "export_tool_button", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -1652,11 +1700,18 @@ func onExample(name string) string {
 // buildOn checks o, an on block of the class named owner, and returns it as the function that its notification
 // calls, named after it, e.g. _ready for on ready { ... }, or _notification for the nameless block.
 func (u *unit) buildOn(o *On, owner string) (*funcModel, error) {
+	if o.Source != "" {
+		return u.buildSignalOn(o, owner)
+	}
 	what := "an on block"
 	if o.Name != "" {
 		what = "an on " + o.Name + " block"
 	}
-	allowed := []string{"async", "editor_only", "game_only", "noprofile", "notrace", "profile", "trace"}
+	callback, isCallback := propertyCallbacks[o.Name]
+	allowed := []string{"editor_only", "game_only", "noprofile", "notrace", "profile", "trace"}
+	if !isCallback {
+		allowed = append(allowed, "async")
+	}
 	if o.Name == "ready" {
 		allowed = append(allowed, "recycle")
 	}
@@ -1677,8 +1732,14 @@ func (u *unit) buildOn(o *On, owner string) (*funcModel, error) {
 		if err := u.requireCoroutines(as.Pos, len(as.Name)+1, "The on "+o.Name+" block"); err != nil {
 			return nil, err
 		}
-	} else if err := u.checkNoAwait(o.Body, strings.ToUpper(what[:1])+what[1:], "Add @async: the block becomes a coroutine, which the notification starts."); err != nil {
-		return nil, err
+	} else {
+		hint := "Add @async: the block becomes a coroutine, which the notification starts."
+		if isCallback {
+			hint = "Godot needs the callback's result right away, so it can't wait."
+		}
+		if err := u.checkNoAwait(o.Body, strings.ToUpper(what[:1])+what[1:], hint); err != nil {
+			return nil, err
+		}
 	}
 	switch upper := strings.ToUpper(o.Name); {
 	case strings.HasPrefix(upper, "NOTIFICATION_"):
@@ -1688,6 +1749,8 @@ func (u *unit) buildOn(o *On, owner string) (*funcModel, error) {
 	case o.Name != strings.ToLower(o.Name):
 		return nil, u.errorAt(o.Pos, len(o.Name)+3, fmt.Sprintf("Write notification %s in lower case.", o.Name),
 			fmt.Sprintf("E.g. \"%s\".", onExample(strings.ToLower(o.Name))))
+	case isCallback:
+		return u.buildCallback(o, owner, callback)
 	case o.Name != "":
 		if class, all := u.notificationOf(owner, upper); class == "" {
 			hint := ""
@@ -1702,26 +1765,224 @@ func (u *unit) buildOn(o *On, owner string) (*funcModel, error) {
 		}
 	}
 	switch {
+	case o.Return != nil:
+		return nil, u.errorAt(o.Return.Pos, len(o.Return.Name), strings.ToUpper(what[:1])+what[1:]+" returns nothing.", fmt.Sprintf("Write \"%s\".", onExample(o.Name)))
 	case o.Parens && !takesParam:
 		return nil, u.errorAt(o.Pos, len(o.Name)+3, fmt.Sprintf("An on %s block takes no parameters.", o.Name),
 			fmt.Sprintf("Write \"%s\". Only process, physics_process, internal_process, internal_physics_process, and the nameless on block, which runs at every notification, take one.", onExample(o.Name)))
-	case o.Param != nil && o.ParamType == nil:
-		return nil, u.errorAt(o.Param.Pos, len(o.Param.Name), fmt.Sprintf("Parameter %s needs its type, %s.", o.Param.Name, param.typ),
-			fmt.Sprintf("Write \"%s: %s\".", o.Param.Name, param.typ))
-	case o.ParamType != nil && (o.ParamType.Name != param.typ || len(o.ParamType.Args) > 0):
-		t := o.ParamType
-		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Parameter %s is a %s, but found %s.", o.Param.Name, param.typ, typeString(t)),
-			fmt.Sprintf("Write \"%s: %s\".", o.Param.Name, param.typ))
 	}
-	f := &Func{Pos: o.Pos, Annotations: o.Annotations, Name: "_" + cmp.Or(o.Name, "notification"), Return: &Type{Pos: o.Pos, Name: "void"}, Body: o.Body}
-	if o.Param != nil {
-		f.Params = []*Param{{Pos: o.Param.Pos, Name: o.Param.Name, Type: o.ParamType}}
+	var params []*Param
+	if takesParam && len(o.Params) > 0 { // Without one, the block doesn't need the value.
+		var err error
+		if params, err = u.onParams(o, []string{param.typ}, onExample(o.Name)); err != nil {
+			return nil, err
+		}
 	}
+	f := &Func{Pos: o.Pos, Annotations: o.Annotations, Name: "_" + cmp.Or(o.Name, "notification"), Params: params, Return: &Type{Pos: o.Pos, Name: "void"}, Body: o.Body}
 	m, err := u.buildFunc(f, owner, false)
 	if err != nil {
 		return nil, err
 	}
 	m.hidden = "notif"
+	return m, nil
+}
+
+// propertyCallbacks are the on blocks that implement godot-cpp's property callbacks, e.g. on get for _get, by name:
+// the types of their parameters, their return type, like GDScript's, and what they return.
+var propertyCallbacks = map[string]callbackSig{
+	"get":                 {[]string{"StringName"}, "Variant", "the property's value, or null if the class doesn't have the property"},
+	"set":                 {[]string{"StringName", "Variant"}, "bool", "true if it set the property, or false if the class doesn't have the property"},
+	"get_property_list":   {nil, "Array[Dictionary]", "the class's extra properties, each a Dictionary like those of Object.get_property_list()"},
+	"validate_property":   {[]string{"Dictionary"}, "void", "nothing, since it changes the property's Dictionary in place"},
+	"property_can_revert": {[]string{"StringName"}, "bool", "whether the inspector shows a revert button for the property"},
+	"property_get_revert": {[]string{"StringName"}, "Variant", "the value that the revert button sets, or null if the class doesn't have the property"},
+	"to_string":           {nil, "String", "the object's text, for print() and str()"},
+}
+
+// callbackMethods are the godot-cpp methods that property callbacks implement, by the name of the on block: the
+// return type, the rest of the declaration, and the body, in which %[1]s is the block's method, and %[2]s the base
+// class. godot-cpp runs the base's _get, _set and _validate_property first, and Godot every class's property list.
+var callbackMethods = map[string]struct{ ret, decl, body string }{
+	"get":                 {"bool", "_get(const StringName &p_name, Variant &r_ret) const", "r_ret = %[1]s(p_name);\n\treturn r_ret.get_type() != Variant::NIL;"},
+	"set":                 {"bool", "_set(const StringName &p_name, const Variant &p_value)", "return %[1]s(p_name, p_value);"},
+	"get_property_list":   {"void", "_get_property_list(List<PropertyInfo> *p_list) const", "TypedArray<Dictionary> list = %[1]s();\n\tfor (int64_t i = 0; i < list.size(); i++) {\n\t\tp_list->push_back(PropertyInfo::from_dict(list[i]));\n\t}"},
+	"validate_property":   {"void", "_validate_property(PropertyInfo &p_property) const", "Dictionary property = p_property;\n\tproperty[\"usage\"] = p_property.usage; // Which the conversion leaves out when it's PROPERTY_USAGE_NONE.\n\t%[1]s(property);\n\tp_property = PropertyInfo::from_dict(property);"},
+	"property_can_revert": {"bool", "_property_can_revert(const StringName &p_name) const", "return %[1]s(p_name) || %[2]s::_property_can_revert(p_name);"},
+	"property_get_revert": {"bool", "_property_get_revert(const StringName &p_name, Variant &r_ret) const", "r_ret = %[1]s(p_name);\n\treturn r_ret.get_type() != Variant::NIL || %[2]s::_property_get_revert(p_name, r_ret);"},
+	"to_string":           {"String", "_to_string() const", "return %[1]s();"},
+}
+
+// callbackName returns the name of the on block of f, a property callback's method, e.g. "get".
+func callbackName(f *funcModel) string {
+	return strings.TrimPrefix(f.f.Name, bodyName(&funcModel{f: &Func{Name: "_"}}))
+}
+
+// article returns the type name t with "a" or "an" before it, e.g. "a bool" or "an Array[Dictionary]", or
+// "nothing" for void.
+func article(t string) string {
+	switch {
+	case t == "void":
+		return "nothing"
+	case strings.ContainsRune("AEIOU", rune(t[0])):
+		return "an " + t
+	}
+	return "a " + t
+}
+
+// onParams returns the parameters of o, an on block whose parameters have the types of types: its own, with their
+// types where it leaves them out, then those it leaves out, with generated names. want is how to write o.
+func (u *unit) onParams(o *On, types []string, want string) ([]*Param, error) {
+	if len(o.Params) > len(types) {
+		p := o.Params[len(types)]
+		return nil, u.errorAt(p.Pos, len(p.Name), fmt.Sprintf("The on %s block takes %d parameters at most.", o.Name, len(types)), fmt.Sprintf("Write \"%s\".", want))
+	}
+	var params []*Param
+	for i, typ := range types {
+		t := typeAt(typ, o.Pos)
+		if i >= len(o.Params) {
+			params = append(params, &Param{Pos: o.Pos, Name: fmt.Sprintf("_gdpp_param%d", i), Type: t})
+			continue
+		}
+		switch p := o.Params[i]; {
+		case p.Default != nil:
+			return nil, u.errorAt(p.Pos, len(p.Name), fmt.Sprintf("Parameter %s can't have a default value.", p.Name), fmt.Sprintf("Write \"%s\".", want))
+		case p.Type != nil && typeString(p.Type) != typ:
+			return nil, u.errorAt(p.Type.Pos, len(typeString(p.Type)), fmt.Sprintf("Parameter %s is %s, but found %s.", p.Name, article(typ), typeString(p.Type)),
+				fmt.Sprintf("Leave out the type, which GD++ knows, or write \"%s: %s\".", p.Name, typ))
+		default:
+			params = append(params, &Param{Pos: p.Pos, Name: p.Name, Type: t})
+		}
+	}
+	return params, nil
+}
+
+// typeAt returns the type spelled s, e.g. "Array[Dictionary]", at pos.
+func typeAt(s string, pos lexer.Position) *Type {
+	t, err := typeParser.ParseString("", s)
+	if err != nil {
+		panic(err) // GD++ spells it.
+	}
+	forEachNode(t, func(n any) {
+		if t, ok := n.(*Type); ok {
+			t.Pos = pos
+		}
+	})
+	return t
+}
+
+// callbackSig is the signature of a property callback: the types of its parameters, its return type, and what it
+// returns.
+type callbackSig struct {
+	params     []string
+	ret, means string
+}
+
+// buildSignalOn checks o, an on block of the class named owner for the signal o.Name of o.Source, a variable of the
+// class or this, and returns it as the method that the signal calls, named after both, e.g. _on_button_pressed.
+func (u *unit) buildSignalOn(o *On, owner string) (*funcModel, error) {
+	what := fmt.Sprintf("an on %s.%s block", o.Source, o.Name)
+	a, err := u.annotations(o.Annotations, what, "async", "editor_only", "game_only", "noprofile", "notrace", "profile", "trace")
+	if err != nil {
+		return nil, err
+	}
+	if as := a["async"]; as != nil {
+		if len(as.Args) > 0 {
+			return nil, u.errorAt(as.Args[0].Pos, len(as.Args[0].Value), "Annotation @async takes no arguments on an on block.",
+				"An @async on block is always detached: the signal, which runs it, doesn't take an Async.")
+		}
+		if err := u.requireCoroutines(as.Pos, len(as.Name)+1, "The on "+o.Source+"."+o.Name+" block"); err != nil {
+			return nil, err
+		}
+	} else if err := u.checkNoAwait(o.Body, "The on "+o.Source+"."+o.Name+" block", "Add @async: the block becomes a coroutine, which the signal starts."); err != nil {
+		return nil, err
+	}
+	class := owner
+	if o.Source != "this" {
+		var v *Var
+		for _, m := range u.symbols[owner].class.Members {
+			if m.Var != nil && m.Var.Name == o.Source {
+				v = m.Var
+			}
+		}
+		switch {
+		case v == nil:
+			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Class %s has no variable %s.", owner, o.Source),
+				fmt.Sprintf("An on block connects to a signal of a variable of the class, e.g. \"on button.pressed\", or of the object itself, e.g. \"on this.%s\".", o.Name))
+		case v.Property != nil && !slices.ContainsFunc(v.Property.Accessors, func(a *Accessor) bool { return a.Set != nil }):
+			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Property %s has no set block, so the on block can't follow its value.", o.Source),
+				"An on block connects to the object in the variable each time the variable is set.")
+		case v.Property != nil && slices.ContainsFunc(v.Property.Accessors, func(a *Accessor) bool { return a.Set != nil && len(a.Set.Annotations) > 0 }):
+			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Property %s has a @deferred or @thread_safe set block, so the on block can't follow its value.", o.Source), "")
+		}
+		t := u.symbols[baseName(v.Type)]
+		if v.Type == nil || len(v.Type.Args) > 0 || t == nil || !slices.Contains([]meta.Kind{meta.Object, meta.RefCounted, meta.Extern, meta.RefCountedExtern, meta.Trait, meta.RefCountedTrait}, t.kind) {
+			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Variable %s is a %s, which has no signals that GD++ knows.", o.Source, typeString(v.Type)),
+				"Give the variable a class type, e.g. \"var button: Button\".")
+		}
+		class = v.Type.Name
+	}
+	sig, ok, all := u.signalOf(class, o.Name)
+	if !ok {
+		hint := ""
+		if sug := suggest(o.Name, all...); sug != "" {
+			hint = fmt.Sprintf("Did you mean %q?", sug)
+		}
+		return nil, u.errorAt(o.Pos, len(o.Source)+len(o.Name)+4, fmt.Sprintf("Class %s and its bases have no signal %s.", class, o.Name), hint)
+	}
+	var types, example []string
+	for _, p := range sig.Params {
+		types, example = append(types, p.Type), append(example, p.Name+": "+p.Type)
+	}
+	want := fmt.Sprintf("on %s.%s(%s) { ... }", o.Source, o.Name, strings.Join(example, ", "))
+	if o.Return != nil {
+		return nil, u.errorAt(o.Return.Pos, len(o.Return.Name), fmt.Sprintf("The on %s.%s block returns nothing.", o.Source, o.Name), fmt.Sprintf("Write \"%s\".", want))
+	}
+	params, err := u.onParams(o, types, want)
+	if err != nil {
+		return nil, err
+	}
+	f := &Func{Pos: o.Pos, Annotations: o.Annotations, Name: "_on_" + o.Source + "_" + o.Name, Params: params, Return: &Type{Pos: o.Pos, Name: "void"}, Body: o.Body}
+	m, err := u.buildFunc(f, owner, false)
+	if err != nil {
+		return nil, err
+	}
+	m.hidden, m.on = "signal", o
+	return m, nil
+}
+
+// buildCallback checks o, a property callback of the class named owner, e.g. on get, against its signature, and
+// returns it as a function named after it, e.g. _get.
+func (u *unit) buildCallback(o *On, owner string, sig callbackSig) (*funcModel, error) {
+	example := []string{}
+	for i, t := range sig.params {
+		name := []string{"name", "value"}[i]
+		if t == "Dictionary" {
+			name = "property"
+		}
+		example = append(example, name+": "+t)
+	}
+	want := "on " + o.Name
+	if len(example) > 0 {
+		want += "(" + strings.Join(example, ", ") + ")"
+	}
+	params, err := u.onParams(o, sig.params, want)
+	if err != nil {
+		return nil, err
+	}
+	if r := o.Return; r != nil && typeString(r) != sig.ret {
+		return nil, u.errorAt(r.Pos, len(typeString(r)), fmt.Sprintf("The on %s block is Godot's _%s, which returns %s, not %s: %s.", o.Name, o.Name, article(sig.ret), typeString(r), sig.means),
+			fmt.Sprintf("Leave out the return type, which GD++ knows, or write \"-> %s\".", sig.ret))
+	}
+	ret := typeAt(sig.ret, o.Pos)
+	f := &Func{Pos: o.Pos, Annotations: o.Annotations, Name: "_" + o.Name, Params: params, Return: ret, Body: o.Body}
+	m, err := u.buildFunc(f, owner, false)
+	if err != nil {
+		return nil, err
+	}
+	m.hidden, m.isConst = "callback", o.Name != "set"
+	if o.Name == "validate_property" { // By value: Dictionaries share their data, so the block's changes reach the caller's.
+		m.params[0] = &gtype{cpp: "Dictionary", doc: "Dictionary"}
+	}
 	return m, nil
 }
 
@@ -2072,9 +2333,13 @@ func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
 
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
-	allowed := append([]string{"onready", "export", "export_dir", "export_enum", "export_file", "export_flags",
-		"export_multiline", "export_placeholder", "export_range", "export_storage", "editor_only", "game_only", "noprofile", "notrace", "profile", "recycle", "trace"},
+	allowed := append([]string{"onready", "editor_only", "game_only", "noprofile", "notrace", "profile", "recycle", "trace"},
 		sectionAnnotations...)
+	for _, name := range knownAnnotations {
+		if strings.HasPrefix(name, "export") && !slices.Contains(allowed, name) {
+			allowed = append(allowed, name)
+		}
+	}
 	kind := "a var"
 	if ext {
 		allowed, kind = []string{"noprofile", "profile"}, "an extern var"
@@ -2105,7 +2370,7 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	if err := u.enumShorthand(m.t, v.Init); err != nil {
 		return nil, err
 	}
-	if err := u.exportHint(m); err != nil {
+	if err := u.exportHint(m, owner); err != nil {
 		return nil, err
 	}
 	if err := u.sections(m); err != nil {
@@ -2185,8 +2450,40 @@ func typeString(t *Type) string {
 	return t.Name + "[" + strings.Join(args, ", ") + "]"
 }
 
-// exportHint sets the property usage and hint of m from its export annotations.
-func (u *unit) exportHint(m *varModel) error {
+// simpleExports are the export annotations that only set a hint, by name: the C++ type of their variable, its GD++
+// name, and the hint. Their arguments, if they take any, are the hint string.
+var simpleExports = map[string]struct{ cpp, typ, hint string }{
+	"export_color_no_alpha":      {"Color", "Color", "PROPERTY_HINT_COLOR_NO_ALPHA"},
+	"export_dir":                 {"String", "String", "PROPERTY_HINT_DIR"},
+	"export_exp_easing":          {"double", "float", "PROPERTY_HINT_EXP_EASING"},
+	"export_file":                {"String", "String", "PROPERTY_HINT_FILE"},
+	"export_file_path":           {"String", "String", "PROPERTY_HINT_FILE_PATH"},
+	"export_flags_2d_navigation": {"int64_t", "int", "PROPERTY_HINT_LAYERS_2D_NAVIGATION"},
+	"export_flags_2d_physics":    {"int64_t", "int", "PROPERTY_HINT_LAYERS_2D_PHYSICS"},
+	"export_flags_2d_render":     {"int64_t", "int", "PROPERTY_HINT_LAYERS_2D_RENDER"},
+	"export_flags_3d_navigation": {"int64_t", "int", "PROPERTY_HINT_LAYERS_3D_NAVIGATION"},
+	"export_flags_3d_physics":    {"int64_t", "int", "PROPERTY_HINT_LAYERS_3D_PHYSICS"},
+	"export_flags_3d_render":     {"int64_t", "int", "PROPERTY_HINT_LAYERS_3D_RENDER"},
+	"export_flags_avoidance":     {"int64_t", "int", "PROPERTY_HINT_LAYERS_AVOIDANCE"},
+	"export_global_dir":          {"String", "String", "PROPERTY_HINT_GLOBAL_DIR"},
+	"export_global_file":         {"String", "String", "PROPERTY_HINT_GLOBAL_FILE"},
+	"export_multiline":           {"String", "String", "PROPERTY_HINT_MULTILINE_TEXT"},
+	"export_node_path":           {"NodePath", "NodePath", "PROPERTY_HINT_NODE_PATH_VALID_TYPES"},
+	"export_placeholder":         {"String", "String", "PROPERTY_HINT_PLACEHOLDER_TEXT"},
+}
+
+// requireConstant returns an error at a unless the engine enum called enum has the value name. Without the API spec,
+// which declares the enum, any name passes.
+func (u *unit) requireConstant(a *Annotation, enum, name string) error {
+	if s := u.symbols[enum]; s != nil && s.kind == meta.GodotEnum && !slices.Contains(s.godotNames, name) {
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s needs %s, which the package's Godot API spec doesn't have.", a.Name, name),
+			"Set a newer spec in the package's .gd++pkg. Run \"gd++ fetch --index\" for the versions that exist.")
+	}
+	return nil
+}
+
+// exportHint sets the property usage and hint of m, a var of the class named owner, from its export annotations.
+func (u *unit) exportHint(m *varModel, owner string) error {
 	var export *Annotation
 	for _, ann := range m.v.Annotations { // In source order, so the second one is reported.
 		if strings.HasPrefix(ann.Name, "export") && !slices.Contains(sectionAnnotations, ann.Name) {
@@ -2257,15 +2554,62 @@ func (u *unit) exportHint(m *varModel) error {
 				fmt.Sprintf("E.g. \"@%s(\\\"A\\\", \\\"B\\\") var x: int\".", export.Name))
 		}
 		m.hint, m.hintString = map[string]string{"export_enum": "PROPERTY_HINT_ENUM", "export_flags": "PROPERTY_HINT_FLAGS"}[export.Name], strings.Join(args, ",")
-	case "export_file", "export_dir", "export_multiline", "export_placeholder":
-		if m.t.cpp != "String" {
-			return u.errorAt(export.Pos, len(export.Name)+1, fmt.Sprintf("Annotation @%s needs a String variable.", export.Name), "")
+	case "export_custom":
+		if len(export.Args) < 2 || isString(export.Args[0].Value) || !isString(export.Args[1].Value) || !strings.HasPrefix(args[0], "PROPERTY_HINT_") {
+			return u.errorAt(export.Pos, len(export.Name)+1, "Annotation @export_custom needs a hint, a hint string, and optional usage flags.",
+				"E.g. \"@export_custom(PROPERTY_HINT_NONE, \\\"suffix:m\\\") var x: float\".")
 		}
-		m.hint = map[string]string{"export_file": "PROPERTY_HINT_FILE", "export_dir": "PROPERTY_HINT_DIR",
-			"export_multiline": "PROPERTY_HINT_MULTILINE_TEXT", "export_placeholder": "PROPERTY_HINT_PLACEHOLDER_TEXT"}[export.Name]
-		m.hintString = strings.Join(args, ",")
+		if err := u.requireConstant(export, "PropertyHint", args[0]); err != nil {
+			return err
+		}
+		m.hint, m.hintString = args[0], args[1]
+		if usage := args[2:]; len(usage) > 0 {
+			for i, flag := range usage {
+				if isString(export.Args[2+i].Value) || !strings.HasPrefix(flag, "PROPERTY_USAGE_") {
+					return u.errorAt(export.Args[2+i].Pos, len(export.Args[2+i].Value), "Annotation @export_custom takes usage flags after the hint string, e.g. PROPERTY_USAGE_STORAGE.", "")
+				}
+				if err := u.requireConstant(export, "PropertyUsageFlags", flag); err != nil {
+					return err
+				}
+			}
+			m.usage = strings.Join(usage, " | ")
+		}
+	case "export_tool_button":
+		switch {
+		case m.t.cpp != "Callable" || len(args) == 0 || len(args) > 2 || !isString(export.Args[0].Value):
+			return u.errorAt(export.Pos, len(export.Name)+1, "Annotation @export_tool_button needs a Callable variable, a text, and an optional icon.",
+				"E.g. \"@export_tool_button(\\\"Bake\\\", \\\"Bake\\\") var bake_button: Callable = callable bake\".")
+		case m.v.Init == nil:
+			return u.errorAt(export.Pos, len(export.Name)+1, fmt.Sprintf("Variable %s needs an initial value: the Callable that the button calls.", m.v.Name),
+				"E.g. \"= callable bake\".")
+		case !u.isTool(owner):
+			return u.errorAt(export.Pos, len(export.Name)+1, fmt.Sprintf("Annotation @export_tool_button needs a @tool class, which %s isn't.", owner),
+				"Buttons call the class's code in the editor. Add @tool to the class.")
+		}
+		if err := u.requireConstant(export, "PropertyHint", "PROPERTY_HINT_TOOL_BUTTON"); err != nil {
+			return err
+		}
+		m.hint, m.hintString, m.usage = "PROPERTY_HINT_TOOL_BUTTON", strings.Join(args, ","), "PROPERTY_USAGE_EDITOR"
+	default:
+		e, ok := simpleExports[export.Name]
+		if !ok {
+			break
+		}
+		if m.t.cpp != e.cpp {
+			return u.errorAt(export.Pos, len(export.Name)+1, fmt.Sprintf("Annotation @%s needs a %s variable.", export.Name, e.typ), "")
+		}
+		if err := u.requireConstant(export, "PropertyHint", e.hint); err != nil {
+			return err
+		}
+		m.hint, m.hintString = e.hint, strings.Join(args, ",")
 	}
 	return nil
+}
+
+// isTool reports whether the class named name has @tool.
+func (u *unit) isTool(name string) bool {
+	s := u.symbols[name]
+	return s != nil && s.class != nil && slices.ContainsFunc(s.class.Annotations, func(a *Annotation) bool { return a.Name == "tool" })
 }
 
 // sections sets the inspector sections m starts, from its section annotations.
@@ -2640,7 +2984,7 @@ func (u *unit) unique(names map[string]bool, pos lexer.Position, keyword string,
 		}
 		if names[name] {
 			return u.errorAt(pos, len(keyword), fmt.Sprintf("The name %q is already used by another member.", name),
-				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @factory declares methods, e.g. create.")
+				"Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, @factory declares methods, e.g. create, and @singleton declares get_singleton.")
 		}
 		names[name] = true
 	}
@@ -2678,17 +3022,36 @@ func (u *unit) buildClasses() error {
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted,
 		node: u.extends(c.Name, "Node")}
-	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "icon", "pool", "profile", "scene", "tool", "trace")
+	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "icon", "pool", "profile", "scene", "singleton", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
-	m.abstract = a["abstract"] != nil
+	m.abstract, m.singleton = a["abstract"] != nil, a["singleton"] != nil
 	// Godot doesn't let runtime classes extend non-runtime ones, so classes without @tool below those are guarded instead.
 	if m.only, err = u.onlyOf(a, c.Name); err != nil {
 		return nil, err
 	}
-	if a["tool"] == nil && u.nonRuntime(c.Name) {
-		m.only = "game"
+	if a["tool"] == nil && (u.nonRuntime(c.Name) || m.singleton) { // The singleton is a real object in the editor too.
+		m.only = cmp.Or(m.only, "game")
+	}
+	if a["tool"] == nil && !m.abstract && u.extends(c.Name, "EditorPlugin") {
+		keyword := "class"
+		if fileLevel {
+			keyword = "class_name"
+		}
+		return nil, u.errorAt(c.Pos, len(keyword), fmt.Sprintf("Class %s extends EditorPlugin, so it needs @tool.", c.Name),
+			"Editor plugins run in the editor. Add @tool to the class.")
+	}
+	if s := a["singleton"]; s != nil {
+		for _, name := range []string{"abstract", "pool", "scene", "factory", "factory_pool", "factory_scene"} {
+			if a[name] != nil {
+				return nil, u.errorAt(a[name].Pos, len(name)+1, fmt.Sprintf("Annotations @singleton and @%s can't be used together.", name), "The package creates the one object of a @singleton class.")
+			}
+		}
+		if m.node {
+			return nil, u.errorAt(s.Pos, len(s.Name)+1, fmt.Sprintf("A @singleton class can't extend Node, which %s does.", c.Name),
+				"Godot's singletons aren't in the scene tree. For a node that every scene can reach, add a scene with it as an autoload in Godot's project settings.")
+		}
 	}
 	for _, name := range []string{"pool", "scene"} {
 		if m.abstract && a[name] != nil {
@@ -2717,6 +3080,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	names := map[string]bool{}
 	for _, name := range m.factory {
 		names[name] = true
+	}
+	if m.singleton {
+		names["get_singleton"] = true
 	}
 	// Enums declared in the class.
 	var declared []*symbol
@@ -2775,9 +3141,12 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				m.readyOnce = m.readyOnce || f.once
 			}
 			if on := member.On; err == nil && on != nil && slices.ContainsFunc(m.funcs, func(g *funcModel) bool { return g.f.Name == bodyName(f) }) {
-				if on.Name == "" {
+				switch {
+				case on.Name == "":
 					err = u.errorAt(on.Pos, 2, fmt.Sprintf("Class %s has two nameless on blocks.", m.name), "Merge them into one.")
-				} else {
+				case on.Source != "":
+					err = u.errorAt(on.Pos, len(on.Source)+len(on.Name)+4, fmt.Sprintf("Class %s has two on %s.%s blocks.", m.name, on.Source, on.Name), "Merge them into one.")
+				default:
 					err = u.errorAt(on.Pos, len(on.Name)+3, fmt.Sprintf("Class %s has two on %s blocks.", m.name, on.Name), "Merge them into one.")
 				}
 			}
@@ -2787,6 +3156,18 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			}
 			switch {
 			case err != nil:
+			case f.hidden == "callback" || f.hidden == "signal":
+				body := *f.f
+				body.Name = bodyName(f)
+				f.f = &body
+				if f.on != nil {
+					m.signalOns = append(m.signalOns, f)
+				} else {
+					m.callbacks = append(m.callbacks, f)
+				}
+				m.funcs = append(m.funcs, f)
+				// With @async, the signal calls f, which starts the block's coroutine, below, and waits for nothing.
+				f.detached = f.deferral == "async"
 			case f.hidden == "notif":
 				// It's a method with another name, since godot-cpp would make a method of its name an override.
 				if f.f.Name == "_ready" { // Runs first, right after the @onready initializers.

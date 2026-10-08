@@ -31,15 +31,15 @@ type lsPackage struct {
 // so commands can't change them. A GD++ class with an empty Name stands for a
 // GD++ file with errors.
 type lsClass struct {
-	Name                                 string
-	File, Icon                           Path     // The header of a C++ class, or the GD++ file of a GD++ class.
-	FileText                             string   // For GD++ classes, the file's pkg:// path; if empty, File's.
-	Base                                 string   // For GD++ classes.
-	Traits                               []string // For GD++ classes: the traits it implements itself.
-	Kind                                 string   // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
-	Gdpp                                 bool
-	Abstract, Tool, GameOnly, EditorOnly bool
-	Clash                                bool // Another class has the same name.
+	Name                                            string
+	File, Icon                                      Path     // The header of a C++ class, or the GD++ file of a GD++ class.
+	FileText                                        string   // For GD++ classes, the file's pkg:// path; if empty, File's.
+	Base                                            string   // For GD++ classes.
+	Traits                                          []string // For GD++ classes: the traits it implements itself.
+	Kind                                            string   // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
+	Gdpp                                            bool
+	Abstract, Tool, GameOnly, EditorOnly, Singleton bool
+	Clash                                           bool // Another class has the same name.
 }
 
 func (c *CmdLs) Run() {
@@ -81,7 +81,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 			if d.Kind == trans.ClassDecl {
 				class := file
 				class.Name, class.Base, class.Traits, class.Icon = d.Name, d.Base, d.Traits, pkg.ClassPath(d.Icon)
-				class.Abstract, class.Tool, class.GameOnly, class.EditorOnly = d.Abstract, d.Tool, d.GameOnly, d.EditorOnly
+				class.Abstract, class.Tool, class.GameOnly, class.EditorOnly, class.Singleton = d.Abstract, d.Tool, d.GameOnly, d.EditorOnly, d.Singleton
 				classes = append(classes, class)
 			}
 		}
@@ -116,13 +116,22 @@ func lsMissing(s string) string { return Styled(s, Red) }
 // every dependency instead of counting them. With all, it shows the engines.
 func lsProject(p Project, pkgs []lsPackage, deps, all bool) string {
 	caches := slices.DeleteFunc(slices.Clone(p.Caches), func(c ProjectDepCache) bool { return !all && c.Name == "engine" })
-	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
+	return lsSummary(p, all) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
 }
 
-// lsSummary renders the project's name and settings.
-func lsSummary(p Project) string {
+// lsSummary renders the project's name and settings, and with all, the names that GD++ generates from project.godot.
+func lsSummary(p Project, all bool) string {
 	rows := [][]string{{lsKey("Godot"), p.GodotVersion}, {lsKey("VCS"), p.Config.VCS},
 		{lsKey("Manage presets"), map[bool]string{true: "yes", false: "no"}[p.Config.Presets]}}
+	if all {
+		for i, l := range projectNameLists(p) {
+			label := ""
+			if i == 0 {
+				label = lsKey("Names")
+			}
+			rows = append(rows, []string{label, Styled(l.decl, Cyan), Styled(l.what, Gray), strings.Join(l.idents, " ")})
+		}
+	}
 	return Styled("Project:", Bold, BrightBlue) + " " + Styled(p.Name, Bold, Cyan) + " " + Styled("["+p.Id+"]", Gray) + "\n" +
 		AlignColumns(rows, "  ")
 }
@@ -291,7 +300,7 @@ func lsTags(class lsClass) string {
 	for _, t := range []struct {
 		on   bool
 		name string
-	}{{class.Abstract, "@abstract"}, {class.Tool, "@tool"}, {class.GameOnly, "@game_only"}, {class.EditorOnly, "@editor_only"}} {
+	}{{class.Abstract, "@abstract"}, {class.Tool, "@tool"}, {class.GameOnly, "@game_only"}, {class.EditorOnly, "@editor_only"}, {class.Singleton, "@singleton"}} {
 		if t.on {
 			tags = append(tags, t.name)
 		}

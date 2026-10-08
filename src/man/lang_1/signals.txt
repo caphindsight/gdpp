@@ -73,25 +73,64 @@ A signal declares a C++ method. So its name shares its class's namespace with fu
 
 # Connecting to signals
 
-Connect in C++ like in godot-cpp, with `callable_mp` for the methods of your class:
+An `on` block runs when an object emits a signal: `on`, a variable of the class, a dot, and the signal's name.
 
 ```gd++
-on ready {
-  Gd<Button> button = get_node<Button>("Button");
-  button->connect(string_name "pressed", callable_mp(this, &This::on_pressed));
-  connect(string_name "died", callable_mp(this, &This::on_died));
+class_name Menu
+extends Control
+
+@onready var start: Button = $Start
+@export var player: Player
+
+on start.pressed {
+  get_tree()->change_scene_to_file("res://level.tscn");
 }
 
-func on_pressed() -> void {
-  gd::print("Pressed.");
+on player.health_changed(health) {
+  gd::print("Health: ", health);
 }
 
-func on_died() -> void {
-  queue_destroy this;
+on this.resized {
+  gd::print("The menu's size changed.");
 }
 ```
 
-- Functions declared with `func` are bound. So you can also connect them by name, e.g. with `Callable(this, "on_died")`, or in the editor's Node dock.
+- `on VARIABLE.SIGNAL` runs when the object in the variable emits the signal. `on this.SIGNAL` runs when the object itself does.
+- The variable's type says which signals it has: those of its class and its bases, e.g. `Button`'s `pressed`, or a GD++ class's or extern's own. A misspelled signal is an error.
+- The parameters are the signal's, in order. Their names are yours to choose. Their types can be left out, since GD++ knows them, and so can the parameters at the end, which the block doesn't need: `on player.health_changed(health)`, `on player.health_changed(health: int)` and `on player.health_changed` all work.
+- The block is a method of the class, which scripts can't call.
+
+The block follows its variable: it's always connected to the object that the variable holds.
+
+- GD++ connects it right after each assignment of the variable: its initial value in the constructor, its `@onready` value, its `@recycle` value, and every call of its setter, e.g. from scripts, the inspector, scenes and C++'s `set_player(p)`.
+- When the variable gets another object, GD++ disconnects the block from the old one, if it's still there.
+- C++ code that assigns the field itself, e.g. `player = p;`, skips the setter. Then the block stays connected to the old object. Call the setter instead: `set_player(p);`.
+- A null variable connects nothing, without an error.
+- The variable must be a simple variable, or a property with a `set` block that isn't `@deferred` or `@thread_safe`.
+- `on this.SIGNAL` connects once, in the constructor.
+
+Facts:
+
+- When the object or the class's object is freed, Godot drops the connection.
+- `on` blocks of signals take `@trace`, `@profile`, `@game_only`, `@editor_only` and `@async`, like other `on` blocks.
+- With `@async`, the block is a coroutine, which can `await`: each emission starts one, and nothing waits for it, like an `@async("detached")` function. Its parameters are copies, so they stay valid across its awaits. If the class's object is freed while it waits, it stops there. See `gd++ man async`.
+- A signal can have only one `on` block per variable in a class.
+- In the editor's Node dock, connections that GD++ makes don't show. They're made by the code, like `connect` in a script's `_ready`.
+
+Connecting in the scene, in the editor's Node dock, works too: functions declared with `func` are bound, so the editor lists them.
+
+To connect in C++ code, e.g. to an object in a local variable, call `connect` with `callable`:
+
+```gd++
+func spawn() -> void {
+  Gd<Coin> coin = create Coin;
+  coin->connect(string_name "collected", callable on_collected);
+  coin->connect(string_name "lost", callable [this] { lives--; });
+  add_child(coin);
+}
+```
+
+- `callable NAME` makes a `Callable` of a function of the class, and `callable [...] { ... }` of a lambda. See "Callables" in `gd++ man rewrites`.
 - In GDScript, connect as usual: `player.died.connect(_on_player_died)`.
 
 # Awaiting signals

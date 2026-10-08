@@ -1,0 +1,4 @@
+input.gd++:5:1: Class A has two on this.ready blocks.
+ 5 | on this.ready {}
+   | ^^^^^^^^^^^^^
+Hint: Merge them into one.

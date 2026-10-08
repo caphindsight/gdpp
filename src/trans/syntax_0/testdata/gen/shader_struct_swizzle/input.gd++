@@ -1,0 +1,17 @@
+class_name Grid
+extends Node
+
+shader {
+  struct Cell {
+    int xy;
+    vec2 rgb;
+  };
+}
+
+@grid(64)
+shader sum(n: int, values: PackedFloat32Array) -> PackedFloat32Array {
+  Cell c = Cell(1, vec2(2.0, 3.0));
+  c.xy += 1;
+  vec2 v = c.rgb.yx;
+  return values[id] + float(c.xy) + v.x;
+}

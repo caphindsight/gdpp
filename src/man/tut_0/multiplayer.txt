@@ -23,14 +23,14 @@ enum PORT = 7777
 
 on ready {
   assert spawner != nullptr;
-  spawner->set_spawn_function(callable_mp(this, &This::create_player));
+  spawner->set_spawn_function(callable create_player);
 }
 
 func host() -> void {
   Gd<ENetMultiplayerPeer> peer = create ENetMultiplayerPeer;
   peer->create_server(PORT);
   get_multiplayer()->set_multiplayer_peer(peer);
-  get_multiplayer()->connect(string_name "peer_connected", callable_mp(this, &This::add_player));
+  get_multiplayer()->connect(string_name "peer_connected", callable add_player);
   add_player(1);
 }
 

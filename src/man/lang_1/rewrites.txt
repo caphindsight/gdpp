@@ -22,6 +22,16 @@ create T                       gdpp::create<T>()                  create an obje
 destroy OBJECT                 gdpp::destroy(OBJECT)              delete an object, or give it back to its pool
 queue_destroy NODE             gdpp::queue_destroy(NODE)          destroy a node at the end of the frame
 VALUE as T                     gdpp::cast<T>(VALUE)               convert a value to the type T, see `gd++ man cast`
+callable NAME                  gdpp::callable_method(this,        a Callable of a function of this class, see "Callables" below
+                                 &This::NAME)
+callable T::NAME               gdpp::callable_method(this,        a Callable of a static function, or a method of a base T
+                                 &T::NAME)
+callable OBJECT->NAME          gdpp::callable_member(OBJECT, ...) a Callable of a method of another object
+callable "NAME"                gdpp::callable_name(this,          a Callable that calls a method by name, e.g. a script's
+                                 GDPP_STRING_NAME("NAME"))
+callable OBJECT->"NAME"        gdpp::callable_name(OBJECT, ...)   the same, on another object
+callable LAMBDA                gdpp::callable(this, LAMBDA)       a Callable of a lambda, owned by this
+callable(OWNER) LAMBDA         gdpp::callable(OWNER, LAMBDA)      a Callable of a lambda, owned by OWNER
 assert COND;                   GDPP_ASSERT("COND", COND);         check what must be true, see below
 assert_void COND;              GDPP_ASSERT_VOID("COND", COND);    the fallbacks of assert, see below
 assert_val COND;               GDPP_ASSERT_VALUE("COND", COND);
@@ -36,6 +46,7 @@ assert_val COND;               GDPP_ASSERT_VALUE("COND", COND);
   - `string_name "NAME"` reads like a typed literal.
   - A conversion reads like GDScript's.
   - Creating and deleting an object read alike for every class, pools included.
+  - A `Callable` of anything, a function, a method, a name or a lambda, reads alike.
 - `assert` does more: it returns from a function whose check fails, but only in debug builds. Plain C++ can only do that with `#ifdef`.
 - The method calls work too, e.g. `task.is_done()`, if you prefer them.
 
@@ -52,6 +63,7 @@ Rewrites only happen in C++ code, never in comments or strings. Each applies in 
 - `is_done`, `claim` and `cancel`: only when a name follows them. Elsewhere they're left alone, e.g. a variable named `claim`, or the call `task.is_done()`.
 - `create`, `destroy` and `queue_destroy`: only when a name follows them, and they aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
 - `as`: only when a value comes before it and a type after it.
+- `callable`: only when a name, a string, `[` or `(` follows it, and it isn't a member. In `callable(...)`, only when a name or `[` follows the `)`. And not when the name is called, e.g. `callable f(1)`. Elsewhere it's left alone, e.g. in `Callable callable = f;` or `callable.call()`.
 - `assert`, `assert_void` and `assert_val`: only where they start a statement, followed by a condition and a `;`. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere they're left alone, e.g. in `s.assert(x);` or `assert = 1;`.
 
 Avoid the names of all rewrites as names in your C++ code.
@@ -71,12 +83,55 @@ Their operands:
   - T is a type, e.g. `int`, `Gd<Node3D>` or `Node3D *`.
   - `as` is only rewritten where both are clear. In `x as int * y` or `(int) x as float`, it stays, and the code doesn't compile. Parentheses fix it, e.g. `(x as int) * y`. See `gd++ man cast`.
 
+- In `callable`, OBJECT is a chain of names joined by `->` or `.`, like the objects of `rpc`, e.g. `hud->score`. LAMBDA is a C++ lambda, e.g. `[this](int x) { ... }`. After `callable(OWNER)`, it can also be a name, e.g. a variable that holds a lambda.
+  - `callable` applies to the whole name, like the prefix rewrites above: `(callable on_hit).bind(5)` binds an argument.
+
 Other facts:
 
 - Rewrites also apply to the C++ that macros generate. GD++ expands macros first. See `gd++ man macros`.
 - A rewrite keeps the code's line breaks. So line numbers in errors still match the GD++ file.
 - In an `@async` function, `string_name "NAME"` becomes `gdpp::string_name<"NAME">()` instead, which does the same without a lambda, since a coroutine's frame can't hold one.
-- `gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it, or `(` in an await.
+- `gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, `string_name` only where a string follows it, or `(` in an await, and `callable` only where a name, a string, `[` or `(` follows it.
+
+# Callables
+
+`callable` makes a `Callable` of anything that can be called, e.g. to connect a signal, or for a tween or a timer:
+
+```gd++
+on ready {
+  button->connect(string_name "pressed", callable start);            // a function of this class
+  hud->connect(string_name "closed", callable hud->queue_free);      // a method of another object
+  timer->connect(string_name "timeout", callable "_on_timeout");     // a method by name, e.g. a script's
+  tween->tween_callback(callable [this] { set_visible(false); });     // a lambda
+}
+
+func adder(n: int) -> Callable {
+  return callable [n](int x) -> int { return x + n; };
+}
+```
+
+A function or a method:
+
+- `callable NAME`: a function of this class or its bases, e.g. `callable start` or `callable queue_free`. In a `@static` function, only a `@static` function.
+- `callable T::NAME`: a static function of the class T, e.g. `callable Bullet::spawn`, or a method of T, a base of this class.
+- `callable OBJECT->NAME`: a method of another object, held by a `Gd`, a pointer, a `Ref` or a `Weak`. On an extern or a trait, it calls the method by name, since its class isn't known to C++.
+- Unlike godot-cpp's `callable_mp`, it doesn't need the class's name, and it works for every kind of function.
+
+A method by name, which C++ doesn't know, e.g. a script's:
+
+- `callable "NAME"`: of this object.
+- `callable OBJECT->"NAME"`: of another object.
+- The name is a `StringName` created once, like `string_name "NAME"`.
+
+A lambda:
+
+- `callable [CAPTURES](PARAMS) { ... }`: a `Callable` that runs the lambda. Its parameters get the call's arguments, converted to their types, and its result is the call's.
+- The lambda belongs to this object: once the object is freed, Godot drops the lambda's signal connections, and calls of it do nothing.
+- `callable(OWNER) LAMBDA` makes it belong to OWNER instead, e.g. `callable(enemy) [] { ... }`, or to nothing with `callable(nullptr) LAMBDA`. In a `@static` function, it belongs to nothing.
+- The lambda's parameters need types: `auto` doesn't work, since the `Callable` converts the arguments to them.
+- Captures are C++'s. Capture `this` to use the object's members, and values by copy, e.g. `[this, n]`: the lambda runs later, once local variables are gone.
+
+`callable` takes no arguments to bind. Call `bind` on the result, in parentheses: `(callable on_hit).bind(5)`.
 
 # Assertions
 

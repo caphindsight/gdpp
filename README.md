@@ -84,6 +84,12 @@ See `gd++ man variables`.
 
 See `gd++ man signals`.
 
+### Signal handlers
+
+<a href="readme/svg/signal_handlers.gd++"><img src="readme/svg/signal_handlers.svg" alt="GD++ code: signal_handlers"></a>
+
+See `gd++ man signals`.
+
 ### Exports
 
 <a href="readme/svg/exports.gd++"><img src="readme/svg/exports.svg" alt="GD++ code: exports"></a>
@@ -219,6 +225,36 @@ See `gd++ man async`.
 Shaders are functions written in GLSL, which run on the GPU. Without one, e.g. on a dedicated server, they run on the CPU. A call waits for results that come back to the CPU, e.g. an `Image`, and returns others right away. With `@async`, it returns an `Async` instead, which is done once the GPU is.
 
 See `gd++ man shaders`.
+
+### Callables
+
+<a href="readme/svg/callable.gd++"><img src="readme/svg/callable.svg" alt="GD++ code: callable"></a>
+
+See `gd++ man rewrites`.
+
+### Property callbacks
+
+<a href="readme/svg/property_callbacks.gd++"><img src="readme/svg/property_callbacks.svg" alt="GD++ code: property_callbacks"></a>
+
+See `gd++ man notifications`.
+
+### Singletons
+
+<a href="readme/svg/singleton.gd++"><img src="readme/svg/singleton.svg" alt="GD++ code: singleton"></a>
+
+See `gd++ man classes`.
+
+### Editor plugins
+
+<a href="readme/svg/editor_plugin.gd++"><img src="readme/svg/editor_plugin.svg" alt="GD++ code: editor_plugin"></a>
+
+See `gd++ man classes`.
+
+### Names from the project settings
+
+<a href="readme/svg/project_names.gd++"><img src="readme/svg/project_names.svg" alt="GD++ code: project_names"></a>
+
+See `gd++ man project-names`.
 
 ### Tool classes
 

@@ -205,6 +205,41 @@ func TestTranspilePackageEnumBases(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageRegistration(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"plugin.gd++": "@tool\nclass_name Dock\nextends EditorPlugin\n\non button.pressed {}\n\nvar button: Node\n",
+		"inner.gd++":  "@tool\nclass_name Inner\nextends Dock\n",
+		"game.gd++":   "@singleton\nclass_name Game\nextends Object\n",
+	})
+	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{"classes": [
+		{"name": "EditorPlugin", "api_type": "editor"}, {"name": "Object", "api_type": "core"},
+		{"name": "Node", "api_type": "core", "signals": [{"name": "pressed"}]}]}`)
+	old := testGodotNames
+	testGodotNames = append(slices.Clone(old), godotName{"EditorPlugin", "<godot_cpp/classes/editor_plugin.hpp>", trans.Object, "class", "Node"})
+	t.Cleanup(func() { testGodotNames = old })
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	register := m.tree()[pkgDir+".gd++build/__register_types__.cpp"]
+	for _, want := range []string{
+		"\tif (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {\n\t\tgdpp_register_class<Dock>();\n\t\tgdpp_register_class<Inner>();\n\t\tEditorPlugins::add_by_type<Dock>();\n\t\tEditorPlugins::add_by_type<Inner>();\n\t}",
+		"\tgdpp_register_class<Game>();\n\tgdpp::add_singleton(\"Game\", Game::_gdpp_singleton);\n}",
+		"\tEditorPlugins::remove_by_type<Dock>();\n\t\tEditorPlugins::remove_by_type<Inner>();\n\t\tgdpp_registered<Dock> = false;",
+		"\tgdpp::drop_singleton(\"Game\", Game::_gdpp_singleton);\n",
+		"#include <godot_cpp/classes/editor_plugin_registration.hpp>",
+	} {
+		if !strings.Contains(register, want) {
+			t.Errorf("__register_types__.cpp = %s\nwant it to contain %q", register, want)
+		}
+	}
+	if strings.Contains(register, "\tgdpp_register_class<Dock>();\n\tgdpp_register_class<Game>();") {
+		t.Errorf("__register_types__.cpp = %s\nwant Dock registered only at the editor's level", register)
+	}
+	if gen := m.tree()[pkgDir+".gd++build/gdpp/Dock.cpp"]; !strings.Contains(gen, `gdpp::follow(_gdpp_follow_button_pressed, button, GDPP_STRING_NAME("pressed")`) {
+		t.Errorf("Dock.cpp = %s\nwant the on block to follow button, with the spec's signal", gen)
+	}
+}
+
 func TestTranspilePackageEnumBitfields(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
 		"a.gd++": "@bitfield enum Sizes { extends Control.SizeFlags HUGE }\n",

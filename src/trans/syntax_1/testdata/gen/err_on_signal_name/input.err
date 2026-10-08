@@ -1,0 +1,4 @@
+input.gd++:6:1: Class Control and its bases have no signal resize.
+ 6 | on box.resize {}
+   | ^^^^^^^^^^^^^
+Hint: Did you mean "resized"?

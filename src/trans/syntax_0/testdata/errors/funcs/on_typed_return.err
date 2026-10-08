@@ -1,4 +1,0 @@
-errors/funcs/on_typed_return.gd++:1:26: Expected "{" to start the on block, but found "->".
- 1 | on process(delta: float) -> void {}
-   |                          ^^
-Hint: Write "on process(delta: float) { ... }".

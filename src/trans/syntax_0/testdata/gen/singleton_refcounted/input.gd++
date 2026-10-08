@@ -1,0 +1,4 @@
+@singleton
+class_name Settings2
+
+var volume: float = 1.0

@@ -14,7 +14,7 @@ Wherever GD++ takes a block in braces, the block is C++:
 GD++ copies C++ code into the generated files almost as it is. It only:
 
 - removes comments, keeping their newlines, so line numbers stay the same. GD++'s block comments nest. See `gd++ man syntax`.
-- applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
+- applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as`, `callable` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - wraps it in `#line` directives, so compiler errors point to the line in the GD++ file, not in the generated file.
 
 Everything else is plain C++:

@@ -1,4 +1,0 @@
-input.gd++:4:4: Parameter what needs its type, int.
- 4 | on(what) {}
-   |    ^^^^
-Hint: Write "what: int".

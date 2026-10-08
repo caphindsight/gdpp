@@ -362,7 +362,7 @@ func clamped(damage: int) -> int {
 
 - Makes the function a private method in C++: only the class's own C++ code calls it.
 - GD++ doesn't bind it, so Godot doesn't know it: scripts, `call()` and signals connected by name can't reach it, and the editor's help leaves it out.
-- To connect it to a signal, use `callable_mp(this, &This::clamped)`.
+- To connect it to a signal, use `callable clamped`, or an `on` block. See `gd++ man signals`.
 - Like a method in a `decl` block, but written as a `func`. See `gd++ man code`.
 - Combines with `@static`, `@const`, `@deferred`, `@thread_safe`, `@onthread` and `@async`. Their `_gdpp_body_NAME` is still bound, since their calls run it by name or from a task, except for `@onthread` and `@async`.
 

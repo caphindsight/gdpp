@@ -1,4 +1,4 @@
 input.gd++:5:1: The name "create" is already used by another member.
  5 | func create() -> void {
    | ^^^^
-Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, and @factory declares methods, e.g. create.
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, @factory declares methods, e.g. create, and @singleton declares get_singleton.

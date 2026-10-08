@@ -62,16 +62,18 @@ type Dtor struct {
 }
 
 // On is an on block, e.g. on ready { ... } or on process(delta: float) { ... }: Body runs when the object gets the
-// notification NOTIFICATION_<NAME>, or every notification if Name is empty. Param names the value that the block
-// takes, e.g. the delta time of process, and ParamType is its type. Parens is whether parentheses follow, even empty
-// ones.
+// notification NOTIFICATION_<NAME>, or every notification if Name is empty. With a Source, e.g. on button.pressed
+// { ... }, it runs when the object in the variable Source, or this, emits the signal Name. Property callbacks, e.g.
+// on get(name: StringName) -> Variant { ... }, implement godot-cpp's methods of the same name, and have a Return
+// type. Parens is whether parentheses follow, even empty ones.
 type On struct {
 	Pos         lexer.Position
 	Annotations []*Annotation `parser:"( (?= '@') @@ )*"`
-	Name        string        `parser:"'on' @Ident?"`
+	Source      string        `parser:"'on' ( @Ident '.' )?"`
+	Name        string        `parser:"@Ident?"`
 	Parens      bool          `parser:"( @'('"`
-	Param       *Name         `parser:"  ( @@"`
-	ParamType   *Type         `parser:"    ( ':' @@ )? )? ')' )?"`
+	Params      []*Param      `parser:"  ( @@ ( ',' @@ )* ','? )? ')' )?"`
+	Return      *Type         `parser:"( '->' @@ )?"`
 	Body        *Block        `parser:"@@"`
 }
 

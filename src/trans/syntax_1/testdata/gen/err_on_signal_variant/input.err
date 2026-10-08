@@ -1,0 +1,4 @@
+input.gd++:6:1: Variable box is a Variant, which has no signals that GD++ knows.
+ 6 | on box.resized {}
+   | ^^^^^^
+Hint: Give the variable a class type, e.g. "var button: Button".

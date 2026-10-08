@@ -142,11 +142,22 @@ Compiler errors in your bodies point to the lines of `coin.gd++`. Once it builds
 - Keep connecting signals in the scene, in the editor's Node dock, as with scripts.
 - GD++ binds every `func`. So the editor lists the functions of `Coin`, and connects signals to them by name.
 - Connections in the scene are visible in the editor, and the code needs none.
-- Connect in code only where the scene can't, e.g. for nodes that the code creates. Then use `connect`, with `callable_mp` for a function of the class, and `This` for the class's name:
+- Connect in code only where the scene can't, e.g. for nodes that the code creates.
+- For an object in a variable of the class, write an `on` block. It stays connected to whatever the variable holds:
+
+```gd++
+var coin: Coin
+
+on coin.collected {
+  score++;
+}
+```
+
+- Elsewhere, use `connect`, with `callable` for a function of the class:
 
 ```gd++
 Gd<Coin> coin = create Coin;
-coin->connect(string_name "collected", callable_mp(this, &This::_on_coin_collected));
+coin->connect(string_name "collected", callable _on_coin_collected);
 add_child(coin);
 ```
 
@@ -197,8 +208,11 @@ $Hud/Score  (in a body)             get_node<Label>("Hud/Score")
 body as Player                      body as Gd<Player>
 sig.emit(a)                         emit sig(a);
 sig.connect(f)                      connect in the scene, or if you can't:
-                                    connect(string_name "sig", callable_mp(this, &This::f))
+                                    on x.sig { ... }, for a variable x of the class, or
+                                    connect(string_name "sig", callable f)
+func(x): return x + 1               callable [](int x) { return x + 1; }
 Input.is_action_pressed("jump")     Input::get_singleton()->is_action_pressed(string_name "jump")
+                                    or Action::jump, see gd++ man project-names
 load("res://bullet.tscn")           ResourceLoader::get_singleton()->load("res://bullet.tscn")
 scene.instantiate()                 scene->instantiate() as Gd<Bullet>
 Bullet.new()                        create Bullet

@@ -7,3 +7,5 @@ var volume: int = 80
 @export_enum("Easy", "Normal", "Hard")
 var difficulty: int = 1
 @export_file("*.json") var save_path: String
+// A button in the inspector, in @tool classes.
+@export_tool_button("Reset") var reset_button: Callable = callable reset

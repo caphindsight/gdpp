@@ -20,7 +20,7 @@ The godot-cpp headers that generated code always needs. So your code can use the
 - the global constants, e.g. `Error` and `PropertyHint`,
 - `ClassDB`, `Variant`, `TypedArray`, `TypedDictionary`, `UtilityFunctions`, `CallableCustom`,
 - `SceneTree`, `Window` and `WorkerThreadPool`,
-- `<atomic>`, `<chrono>`, `<cstdint>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`, `<functional>`, `<mutex>`, `<thread>` and `<type_traits>`.
+- `<atomic>`, `<chrono>`, `<cstdint>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`, `<functional>`, `<mutex>`, `<thread>`, `<tuple>` and `<type_traits>`.
 
 `GDPP_DEBUGGING`:
 
@@ -57,6 +57,11 @@ gdpp::cast<T>(VALUE)
 ```gd++
 Gd<Node3D> node = scene->instantiate() as Gd<Node3D>;
 ```
+
+gdpp::callable(OWNER, LAMBDA), gdpp::callable_method(OBJECT, METHOD), gdpp::callable_member(OBJECT, GETTER, NAME) and gdpp::callable_name(OBJECT, NAME)
+  What `callable` becomes: a `Callable` of a lambda, a method or static function, a method of another object, and a method by name. Your code writes `callable`, which GD++ rewrites into one of these. See "Callables" in `gd++ man rewrites`.
+  - `gdpp::callable`'s `Callable` converts the arguments to the lambda's parameter types. It belongs to OWNER, a pointer, a `Gd` or `nullptr`: once OWNER is freed, Godot drops its connections, and calls do nothing.
+  - OBJECT is a pointer, a `Gd`, a `Ref` or a `Weak`. Externs and traits call methods by name.
 
 GDPP_ASSERT(TEXT, CONDITION), GDPP_ASSERT_VOID(TEXT, CONDITION), GDPP_ASSERT_VALUE(TEXT, CONDITION) and GDPP_ASSERT_REFERENCE(TEXT, CONDITION)
   What an assertion becomes. Your code writes it `assert`, which GD++ rewrites into one of these. See `gd++ man rewrites`.

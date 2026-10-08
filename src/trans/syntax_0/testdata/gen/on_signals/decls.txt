@@ -1,0 +1,1 @@
+{Name:Pickup Kind:1 Base:Area2D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[{Name:collected Params:[{Name:by Type:Node2D} {Name:points Type:int}]}]}

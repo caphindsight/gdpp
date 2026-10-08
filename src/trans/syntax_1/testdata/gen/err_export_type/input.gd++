@@ -1,0 +1,4 @@
+class_name Terrain
+extends Node3D
+
+@export_node_path("Button") var trigger: String

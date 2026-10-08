@@ -1,4 +1,0 @@
-input.gd++:4:12: Parameter delta needs its type, float.
- 4 | on process(delta) {}
-   |            ^^^^^
-Hint: Write "delta: float".

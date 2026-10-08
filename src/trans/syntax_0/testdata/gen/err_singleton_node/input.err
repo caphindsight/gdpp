@@ -1,0 +1,4 @@
+input.gd++:1:1: A @singleton class can't extend Node, which Game does.
+ 1 | @singleton
+   | ^^^^^^^^^^
+Hint: Godot's singletons aren't in the scene tree. For a node that every scene can reach, add a scene with it as an autoload in Godot's project settings.

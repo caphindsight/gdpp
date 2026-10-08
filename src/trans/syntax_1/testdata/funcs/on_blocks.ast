@@ -28,16 +28,20 @@ File: @1:1
         On: @10:1
           Name: process
           Parens: true
-          Param: @10:12 delta
-          ParamType: @10:19 float
+          Params:
+            - @10:12
+              Name: delta
+              Type: @10:19 float
           Body: @10:26
             TextPos: 10:27
       - @11:1
         On: @11:1
           Name: physics_process
           Parens: true
-          Param: @11:20 dt
-          ParamType: @11:24 float
+          Params:
+            - @11:20
+              Name: dt
+              Type: @11:24 float
           Body: @11:31
             TextPos: 11:32
       - @12:1
@@ -61,8 +65,10 @@ File: @1:1
       - @16:1
         On: @16:1
           Parens: true
-          Param: @16:4 what
-          ParamType: @16:10 int
+          Params:
+            - @16:4
+              Name: what
+              Type: @16:10 int
           Body: @16:15
             TextPos: 16:16
       - @17:1

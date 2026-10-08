@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="453" height="209" viewBox="0 0 453 209">
+<svg xmlns="http://www.w3.org/2000/svg" width="637" height="249" viewBox="0 0 637 249">
   <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
   <text x="16" y="30"><tspan fill="#8b949e">// The inspector shows them, and scenes save them.</tspan></text>
@@ -10,5 +10,7 @@
   <text x="16" y="150"><tspan fill="#79c0ff">@export_enum</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Easy"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"Normal"</tspan><tspan fill="#e6edf3">, </tspan><tspan fill="#d2a8ff">"Hard"</tspan><tspan fill="#e6edf3">)</tspan></text>
   <text x="16" y="170"><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> difficulty: </tspan><tspan fill="#7ee787">int</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">1</tspan></text>
   <text x="16" y="190"><tspan fill="#79c0ff">@export_file</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"*.json"</tspan><tspan fill="#e6edf3">) </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> save_path: </tspan><tspan fill="#7ee787">String</tspan></text>
+  <text x="16" y="210"><tspan fill="#8b949e">// A button in the inspector, in @tool classes.</tspan></text>
+  <text x="16" y="230"><tspan fill="#79c0ff">@export_tool_button</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Reset"</tspan><tspan fill="#e6edf3">) </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> reset_button: </tspan><tspan fill="#7ee787">Callable</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#e3b341">callable</tspan><tspan fill="#e6edf3"> reset</tspan></text>
   </g>
 </svg>

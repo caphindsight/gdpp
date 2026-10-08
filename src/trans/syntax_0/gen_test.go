@@ -31,8 +31,9 @@ func TestGenerate(t *testing.T) {
 			Virtuals, Notifications    []string
 			Traits                     []string
 			NoscriptVirtuals           []string `toml:"noscript_virtuals"`
-			File                       string   // For macros and templates: their file in testdata/gen.
-			SourceName                 string   `toml:"source_name"`
+			Signals                    []meta.Signal
+			File                       string // For macros and templates: their file in testdata/gen.
+			SourceName                 string `toml:"source_name"`
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
@@ -53,7 +54,7 @@ func TestGenerate(t *testing.T) {
 			source = string(data)
 		}
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals,
-			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits})
+			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits, Signals: d.Signals})
 	}
 	opts.PackageID, opts.PackagePrefix, opts.CppStandard = "shooter", "Shooter", "c++17"
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")
@@ -188,9 +189,9 @@ func checkLines(t *testing.T, sources map[string]string, self, text string) {
 		}
 		srcLines := strings.Split(src, "\n")
 		// Lines after the first come straight from the source (minus comments), so their identifiers match, except
-		// for the rewrites of emit, rpc, is_cancelled, string_name, claim, is_done, cancel, as, assert, await and return, whose operand may start
+		// for the rewrites of emit, rpc, is_cancelled, string_name, claim, is_done, cancel, as, assert, await, return and callable, whose operand may start
 		// on the next line,
-		// and in shaders, of swizzles, not and shared.
+		// and in shaders, of swizzles, not and shared, and the swizzle methods of structs.
 		for k := 1; i+1+k < len(lines) && !lineDirective.MatchString(lines[i+1+k]); k++ {
 			if n+k > len(srcLines) {
 				t.Fatalf("%s:%d: %s claims more lines than the source has.", self, i+1, lines[i])
@@ -202,7 +203,8 @@ func checkLines(t *testing.T, sources map[string]string, self, text string) {
 			for _, id := range identifiers(lines[i+1+k]) {
 				if !slices.Contains([]string{"void", "gdpp", "GDPP_STRING_NAME", "GDPP_ASSERT", "GDPP_ASSERT_VOID", "GDPP_ASSERT_VALUE", "GDPP_ASSERT_CO_VOID", "GDPP_ASSERT_CO_VALUE", "claim", "is_done", "cancel", "cast",
 					"co_await", "co_return", "signal", "StringName", "string_name", "this",
-					"swizzle", "swizzle_ref", "glsl_not", "static"}, id) && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
+					"callable", "callable_method", "callable_member", "callable_name", "This", "nullptr", "auto", "o", "return", "std", "remove_pointer_t", "decltype",
+					"swizzle", "swizzle_ref", "glsl_not", "static", "template", "int", "I", "if", "else", "constexpr", "is_same_v", "integer_sequence", "const"}, id) && !swizzleRegexp.MatchString(id) && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
 					t.Errorf("%s:%d: %q is not on line %d of the source: %q", self, i+2+k, id, n+k, srcLines[n+k-1])
 				}
 			}

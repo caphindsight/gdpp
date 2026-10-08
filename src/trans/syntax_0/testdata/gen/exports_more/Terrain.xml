@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Terrain" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bake">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="avoids" type="int" setter="set_avoids" getter="get_avoids">
+		</member>
+		<member name="bake_button" type="Callable" setter="set_bake_button" getter="get_bake_button">
+		</member>
+		<member name="collides_with" type="int" setter="set_collides_with" getter="get_collides_with">
+		</member>
+		<member name="falloff" type="float" setter="set_falloff" getter="get_falloff">
+		</member>
+		<member name="height" type="float" setter="set_height" getter="get_height">
+		</member>
+		<member name="image" type="String" setter="set_image" getter="get_image">
+		</member>
+		<member name="level" type="int" setter="set_level" getter="get_level">
+		</member>
+		<member name="log_file" type="String" setter="set_log_file" getter="get_log_file">
+		</member>
+		<member name="out_dir" type="String" setter="set_out_dir" getter="get_out_dir">
+		</member>
+		<member name="tint" type="Color" setter="set_tint" getter="get_tint">
+		</member>
+		<member name="trigger" type="NodePath" setter="set_trigger" getter="get_trigger">
+		</member>
+	</members>
+</class>

@@ -12,6 +12,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -657,7 +658,7 @@ PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DE
 			result.hint = PROPERTY_HINT_NODE_TYPE;
 		}
 	}
-	if (p_hint != PROPERTY_HINT_NONE) {
+	if (p_hint != PROPERTY_HINT_NONE || !p_hint_string.is_empty()) {
 		result.hint = p_hint;
 		result.hint_string = p_hint_string;
 	}
@@ -1660,6 +1661,207 @@ public:
 
 private:
 	mutable std::function<Variant()> run;
+};
+
+// lambda_traits<F> gives the result and the parameter types, without references and const, of the lambda type F.
+template <typename F>
+struct lambda_traits : lambda_traits<decltype(&F::operator())> {};
+template <typename C, typename R, typename... A>
+struct lambda_traits<R (C::*)(A...) const> {
+	using result = R;
+	using params = std::tuple<std::remove_cv_t<std::remove_reference_t<A>>...>;
+};
+template <typename C, typename R, typename... A>
+struct lambda_traits<R (C::*)(A...)> : lambda_traits<R (C::*)(A...) const> {};
+
+// object_id returns the ID of p_object: a pointer, a Gd, or nullptr for none.
+template <typename T>
+ObjectID object_id(const T &p_object) {
+	if constexpr (std::is_null_pointer_v<T>) {
+		return ObjectID();
+	} else if constexpr (std::is_pointer_v<T>) {
+		return p_object ? ObjectID(p_object->get_instance_id()) : ObjectID();
+	} else {
+		return object_id(p_object.ptr());
+	}
+}
+
+// LambdaCallable is the Callable of a lambda, which `callable [...](...) { ... }` makes. It belongs to an object, if
+// any: Godot drops its connections when the object is freed, and calls do nothing then.
+template <typename F>
+class LambdaCallable : public CallableCustom {
+public:
+	// A Callable that runs p_fn, which belongs to the object p_owner, or to none if it's null.
+	LambdaCallable(ObjectID p_owner, F p_fn) :
+			owner(p_owner), fn(std::move(p_fn)) {}
+
+	// The address: each LambdaCallable is only equal to itself.
+	uint32_t hash() const override { return uint32_t(uintptr_t(this)); }
+	// "gdpp::LambdaCallable".
+	String get_as_text() const override { return "gdpp::LambdaCallable"; }
+	// Compares addresses.
+	CompareEqualFunc get_compare_equal_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a == p_b; };
+	}
+	// Orders by address.
+	CompareLessFunc get_compare_less_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a < p_b; };
+	}
+	// Whether its object, if it has one, is still there.
+	bool is_valid() const override { return owner.is_null() || ObjectDB::get_instance(owner) != nullptr; }
+	// Its object, if any.
+	ObjectID get_object() const override { return owner; }
+	// call converts the arguments to the lambda's parameter types, and calls it.
+	void call(const Variant **p_args, int p_count, Variant &r_return_value, GDExtensionCallError &r_call_error) const override {
+		constexpr int count = int(std::tuple_size_v<typename lambda_traits<F>::params>);
+		r_call_error.error = GDEXTENSION_CALL_OK;
+		if (!is_valid()) {
+			r_call_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
+		} else if (p_count != count) {
+			r_call_error.error = p_count < count ? GDEXTENSION_CALL_ERROR_TOO_FEW_ARGUMENTS : GDEXTENSION_CALL_ERROR_TOO_MANY_ARGUMENTS;
+			r_call_error.expected = count;
+		} else {
+			call_with(p_args, r_return_value, std::make_index_sequence<count>());
+		}
+	}
+
+private:
+	template <size_t... I>
+	void call_with(const Variant **p_args, Variant &r_return_value, std::index_sequence<I...>) const {
+		using Params = typename lambda_traits<F>::params;
+		if constexpr (std::is_void_v<typename lambda_traits<F>::result>) {
+			fn(VariantCaster<std::tuple_element_t<I, Params>>::cast(*p_args[I])...);
+		} else {
+			r_return_value = fn(VariantCaster<std::tuple_element_t<I, Params>>::cast(*p_args[I])...);
+		}
+	}
+
+	ObjectID owner;
+	mutable F fn;
+};
+
+// callable returns a Callable of the lambda p_fn, which belongs to p_owner: a pointer, a Gd, or nullptr for none.
+// `callable [...](...) { ... }` and `callable(OWNER) LAMBDA` become it.
+template <typename O, typename F>
+Callable callable(const O &p_owner, F p_fn) {
+	return Callable(memnew(LambdaCallable<F>(object_id(p_owner), std::move(p_fn))));
+}
+
+// method_class<M>::type is the class of the method pointer type M.
+template <typename M>
+struct method_class;
+template <typename C, typename R, typename... A>
+struct method_class<R (C::*)(A...)> {
+	using type = C;
+};
+template <typename C, typename R, typename... A>
+struct method_class<R (C::*)(A...) const> {
+	using type = C;
+};
+
+// callable_method returns a Callable of p_method: a method, on p_object, or a static function. `callable NAME` and
+// `callable T::NAME` become it, with this, or nullptr in static functions.
+template <typename O, typename M>
+Callable callable_method(O *p_object, M p_method) {
+	if constexpr (std::is_member_function_pointer_v<M>) {
+		// As the method's class, which may be a base, so that callable_mp's types match.
+		return callable_mp(static_cast<typename method_class<M>::type *>(const_cast<std::remove_const_t<O> *>(p_object)), p_method);
+	} else {
+		return callable_mp_static(p_method);
+	}
+}
+// callable_method returns a Callable of p_method, a static function, where there's no this, e.g. in a static function.
+template <typename M>
+Callable callable_method(std::nullptr_t, M p_method) {
+	static_assert(!std::is_member_function_pointer_v<M>, "This callable names a method, which needs an object, but there's no this here. Write \"callable OBJECT->NAME\".");
+	return callable_mp_static(p_method);
+}
+
+// callable_member returns a Callable of a method of p_object, a pointer, Gd, Ref or Weak: p_getter gives the method of
+// the object's class, and p_name its name, for externs and traits, which call it by name. `callable OBJECT->NAME`
+// becomes it.
+template <typename T, typename G>
+Callable callable_member(const T &p_object, G p_getter, const StringName &p_name) {
+	if constexpr (std::is_pointer_v<T>) {
+		auto *object = const_cast<std::remove_const_t<std::remove_pointer_t<T>> *>(p_object);
+		return callable_method(object, p_getter(object));
+	} else if constexpr (is_gd<T>::value && (T::is_extern() || T::is_trait())) {
+		return Callable(p_object.ptr(), p_name);
+	} else {
+		return callable_member(p_object.ptr(), p_getter, p_name);
+	}
+}
+
+// callable_name returns a Callable of the method called p_name of p_object, a pointer, Gd, Ref or Weak, which it calls
+// by name, e.g. a script's. `callable "NAME"` and `callable OBJECT->"NAME"` become it.
+template <typename T>
+Callable callable_name(const T &p_object, const StringName &p_name) {
+	if constexpr (std::is_pointer_v<T>) {
+		return Callable(const_cast<std::remove_const_t<std::remove_pointer_t<T>> *>(p_object), p_name);
+	} else {
+		return Callable(p_object.ptr(), p_name);
+	}
+}
+
+// add_singleton creates the object of a @singleton class into r_object, and registers it as the engine's singleton
+// p_name. The package's registration code calls it.
+template <typename T>
+void add_singleton(const StringName &p_name, Gd<T> &r_object) {
+	r_object.create();
+	Engine::get_singleton()->register_singleton(p_name, r_object.ptr());
+}
+
+// drop_singleton unregisters the engine's singleton p_name, r_object, and deletes it, or for a refcounted class,
+// drops the package's reference to it. The package's registration code calls it when the package is unloaded.
+template <typename T>
+void drop_singleton(const StringName &p_name, Gd<T> &r_object) {
+	Engine::get_singleton()->unregister_singleton(p_name);
+	if constexpr (Gd<T>::is_refcounted()) {
+		r_object = Gd<T>();
+	} else {
+		r_object.destroy();
+	}
+}
+
+// Name is a StringName created once, the first time it's used, from the text S, e.g. the names that GD++ generates
+// from project.godot, like Action::jump. It converts to the StringName, so it passes to the engine's functions.
+template <const char *S>
+struct Name {
+	// The StringName.
+	operator const StringName &() const {
+		static const StringName name(S);
+		return name;
+	}
+};
+
+// follow connects p_callable to the signal p_signal of p_object, a pointer or Gd, and disconnects it from the object
+// that r_connected names, if it's still there, then makes r_connected name p_object. The on block of a variable's
+// signal, e.g. on button.pressed, follows the variable with it, each time the variable is set.
+template <typename T>
+void follow(ObjectID &r_connected, const T &p_object, const StringName &p_signal, const Callable &p_callable) {
+	ObjectID id = object_id(p_object);
+	if (id == r_connected) {
+		return;
+	}
+	if (Object *old = ObjectDB::get_instance(r_connected); old && old->is_connected(p_signal, p_callable)) {
+		old->disconnect(p_signal, p_callable);
+	}
+	r_connected = id;
+	if (Object *object = ObjectDB::get_instance(id)) {
+		object->connect(p_signal, p_callable);
+	}
+}
+
+// Defer runs a function when it goes out of scope, e.g. on every return of a set block.
+template <typename F>
+struct Defer {
+	// Runs p_fn when it goes out of scope.
+	explicit Defer(F p_fn) :
+			fn(std::move(p_fn)) {}
+	// Runs the function.
+	~Defer() { fn(); }
+	// The function.
+	F fn;
 };
 
 #define GDPP_GDCLASS(m_class, m_inherits) GDCLASS(m_class, m_inherits) // Expands m_class before GDCLASS quotes it.

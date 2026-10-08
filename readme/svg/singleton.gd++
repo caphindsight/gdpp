@@ -1,0 +1,11 @@
+// The one object of the class, which scripts reach as Game.
+@singleton
+class_name Game
+extends Object
+
+var score: int
+
+// Elsewhere: Game::get_singleton()->add(10);
+func add(points: int) -> void {
+  score += points;
+}

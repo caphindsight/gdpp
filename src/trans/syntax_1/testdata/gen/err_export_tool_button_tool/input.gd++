@@ -1,0 +1,6 @@
+class_name Terrain
+extends Node3D
+
+@export_tool_button("Bake") var bake_button: Callable = callable_mp(this, &This::bake)
+
+func bake() -> void {}

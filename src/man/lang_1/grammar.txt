@@ -54,7 +54,7 @@ Trait       = Doc? Annotation* 'trait' Ident '{' ( 'extends' Type )? Member* '}'
 Member      = Code
             | Annotation* 'ctor' Block
             | Annotation* 'dtor' Block
-            | Annotation* 'on' Ident? ( '(' Ident ':' Type ')' )? Block
+            | Annotation* 'on' ( Ident '.' )? Ident? ( '(' ParamList? ')' )? ( '->' Type )? Block
             | Func
             | Shader
             | Signal
@@ -214,7 +214,7 @@ shader  shader_library  signal  template  template_name  trait  trait_name  var
 
 In C++ code, GD++ also reserves:
 
-- `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
+- `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as`, `callable` and `assert`, with its fallbacks `assert_void` and `assert_val`. See `gd++ man rewrites`.
 - `This` and `gd`. See `gd++ man code`.
 - `invoke`, which invokes macros and starts macro blocks. See `gd++ man macros`.
 

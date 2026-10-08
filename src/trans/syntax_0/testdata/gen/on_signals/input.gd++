@@ -1,0 +1,45 @@
+class_name Pickup
+extends Area2D
+
+signal collected(by: Node2D, points: int)
+
+@export var hud: Control
+
+@onready var panel: Control = $Panel
+
+var target: Control {
+  decl {
+    Gd<Control> target_;
+  }
+  get {
+    return target_;
+  }
+  set(value) {
+    if (value == target_) {
+      return;
+    }
+    target_ = value;
+  }
+}
+
+on this.body_entered(body) {
+  emit collected(body, 1);
+}
+
+on this.body_shape_entered(rid, body: Node2D) {
+  gd::print(rid, body);
+}
+
+on this.collected {
+  queue_destroy this;
+}
+
+on hud.resized {
+  gd::print("Resized.");
+}
+
+on panel.gui_input(event: InputEvent) {
+  gd::print(event);
+}
+
+on target.resized {}

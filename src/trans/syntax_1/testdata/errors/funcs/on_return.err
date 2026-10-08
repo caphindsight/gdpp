@@ -1,4 +1,0 @@
-errors/funcs/on_return.gd++:1:12: Expected "{" to start the on block, but found "->".
- 1 | on ready() -> void {}
-   |            ^^
-Hint: Write "on ready { ... }".

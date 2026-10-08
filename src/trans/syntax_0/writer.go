@@ -15,6 +15,7 @@ type writer struct {
 	self    string   // How #line names the generated file.
 	source  string   // How #line names the GD++ file.
 	signals []string // The signals of the class whose code it writes, which a bare `await NAME` awaits.
+	static  bool     // Whether it writes the code of a static function, which has no this, so callable's lambdas have no owner.
 }
 
 // ln writes a line, formatted like fmt.Sprintf.
@@ -33,7 +34,7 @@ func (w *writer) user(pos lexer.Position, origin Origin, prefix, code, suffix, a
 		line, source = origin.Line, origin.Source
 	}
 	w.ln("#line %d %q", line, source)
-	w.ln("%s", prefix+cpp(code, assert, w.signals...)+suffix)
+	w.ln("%s", prefix+cpp(code, assert, w.owner(), w.signals...)+suffix)
 	w.ln("#line %d %q", w.lines+2, w.self)
 }
 
@@ -47,8 +48,17 @@ func (w *writer) block(b *Block, prefix, suffix, assert string) {
 	}
 	at := fmt.Sprintf("#line %d %q", b.TextPos.Line, w.source)
 	w.ln("%s", at)
-	w.ln("%s", strings.ReplaceAll(prefix+cpp(b.Text, assert, w.signals...)+suffix, "\n", "\n"+at+"\n"))
+	w.ln("%s", strings.ReplaceAll(prefix+cpp(b.Text, assert, w.owner(), w.signals...)+suffix, "\n", "\n"+at+"\n"))
 	w.ln("#line %d %q", w.lines+2, w.self)
+}
+
+// owner returns what callable's lambdas and methods belong to in the code it writes: this, or nullptr in static
+// functions.
+func (w *writer) owner() string {
+	if w.static {
+		return "nullptr"
+	}
+	return "this"
 }
 
 func (w *writer) String() string {
@@ -94,6 +104,9 @@ func assertCoFor(void bool) string {
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
 //   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`, or in a coroutine `gdpp::string_name<"x">()`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`,
+//   - `callable` makes a Callable of what follows it: a method or static function, `name`, `T::name` or `x->name`, a
+//     method by name, `"name"` or `x->"name"`, or a lambda, `[...](...) { ... }`, which belongs to owner, or to
+//     the object of `callable(object) lambda`. See callableRewrite.
 //   - `assert x;` becomes `GDPP_ASSERT("x", x);`, where assert names the macro, e.g. GDPP_ASSERT_VOID in a void function,
 //     and a lambda's own return type picks it in the lambda (see assertMacros), while the fallbacks `assert_void x;`
 //     and `assert_val x;` always become GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE,
@@ -103,7 +116,7 @@ func assertCoFor(void bool) string {
 //   - in a coroutine, whose assert macro is assertCoVoid or assertCoValue, `return` becomes `co_return`, though not
 //     in lambdas,
 //   - a `,` before `)` is dropped, so calls may end with a trailing comma.
-func cpp(code, assert string, signals ...string) string {
+func cpp(code, assert, owner string, signals ...string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
 		return code
@@ -156,6 +169,12 @@ func cpp(code, assert string, signals ...string) string {
 					out[i], out[j] = "GDPP_STRING_NAME(", out[j]+")"
 				}
 				i = j
+				continue
+			}
+		}
+		if ts[i].Type == tokIdent && ts[i].Value == "callable" && !isMember(ts, i) {
+			if next := callableRewrite(ts, out, i, owner, macros[i] == assertCoVoid || macros[i] == assertCoValue); next > i {
+				i = next - 1 // The operand may hold more rewrites, e.g. in a lambda.
 				continue
 			}
 		}
@@ -258,6 +277,136 @@ func cpp(code, assert string, signals ...string) string {
 		i = paren
 	}
 	return strings.Join(out, "")
+}
+
+// callableRewrite rewrites `callable` at ts[i] into out, and returns where the rewrites go on, or i if it doesn't
+// apply. owner is this or nullptr, and coro whether the code is a coroutine's. The forms:
+//   - `callable name` and `callable T::name`: `gdpp::callable_method(owner, &This::name)` and `...(owner, &T::name)`,
+//   - `callable x->name`: `gdpp::callable_member(x, GETTER, NAME)`, where the generic lambda GETTER gives the method of
+//     the object's class, and NAME is its StringName, for objects that call it by name: externs and traits,
+//   - `callable "name"` and `callable x->"name"`: `gdpp::callable_name(owner, NAME)` and `...(x, NAME)`,
+//   - `callable [...](...) { ... }`: `gdpp::callable(owner, [...](...) { ... })`,
+//   - `callable(object) value`: `gdpp::callable(object, value)`, for a lambda or a name.
+//
+// x is a chain of names joined by "->" or ".", e.g. `hud->score`. A name followed by "(" isn't rewritten.
+func callableRewrite(ts []lexer.Token, out []string, i int, owner string, coro bool) int {
+	// blank drops ts[from:to], keeping their newlines so the lines still match.
+	blank := func(from, to int) {
+		for k := from; k < to; k++ {
+			out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
+		}
+	}
+	// name returns the StringName of the string literal s.
+	name := func(s string) string {
+		if coro {
+			return "gdpp::string_name<" + s + ">()"
+		}
+		return "GDPP_STRING_NAME(" + s + ")"
+	}
+	isString := func(k int) bool { return k < len(ts) && ts[k].Type == tokString && ts[k].Value[0] == '"' }
+	j := skipSpace(ts, i+1)
+	switch {
+	case isString(j):
+		blank(i+1, j)
+		out[i], out[j] = "gdpp::callable_name("+owner+", ", name(ts[j].Value)+")"
+		return j + 1
+	case j < len(ts) && isPunct(ts[j], "["):
+		end := lambdaEnd(ts, j)
+		if end < 0 {
+			return i
+		}
+		blank(i+1, j)
+		out[i], out[end] = "gdpp::callable("+owner+", ", out[end]+")"
+		return j
+	case j < len(ts) && isPunct(ts[j], "("):
+		k := closing(ts, j)
+		m := skipSpace(ts, k+1)
+		end := -1
+		switch {
+		case k == len(ts) || m == len(ts):
+		case isPunct(ts[m], "["):
+			end = lambdaEnd(ts, m)
+		case ts[m].Type == tokIdent:
+			end = postfixEnd(ts, m) - 1
+		}
+		if end < 0 {
+			return i
+		}
+		blank(i+1, j)
+		blank(k+1, m)
+		out[i], out[k], out[end] = "gdpp::callable", ", ", out[end]+")"
+		return j + 1
+	case j == len(ts) || ts[j].Type != tokIdent:
+		return i
+	}
+	// A chain of names: end is the last name, and sep the start of the separator before it, or -1.
+	end, sep := j, -1
+	for {
+		n, width := skipSpace(ts, end+1), 0
+		switch {
+		case n < len(ts) && (isPunct(ts[n], "->") || isPunct(ts[n], ".")):
+			width = 1
+		case n+1 < len(ts) && isPunct(ts[n], ":") && isPunct(ts[n+1], ":"):
+			width = 2
+		}
+		if width == 0 {
+			break
+		}
+		m := skipSpace(ts, n+width)
+		if isString(m) && isPunct(ts[n], "->") {
+			blank(i+1, j)
+			blank(n+1, m)
+			out[i], out[n], out[m] = "gdpp::callable_name(", ", ", name(ts[m].Value)+")"
+			return m + 1
+		}
+		if m == len(ts) || ts[m].Type != tokIdent {
+			break
+		}
+		end, sep = m, n
+	}
+	if n := skipSpace(ts, end+1); n < len(ts) && isPunct(ts[n], "(") {
+		return i
+	}
+	blank(i+1, j)
+	switch {
+	case sep < 0:
+		out[i], out[end] = "gdpp::callable_method("+owner+", &This::", out[end]+")"
+	case isPunct(ts[sep], ":"):
+		out[i], out[end] = "gdpp::callable_method("+owner+", &", out[end]+")"
+	default:
+		blank(sep+1, end)
+		out[i], out[sep] = "gdpp::callable_member(", ", [](auto *o) { return &std::remove_pointer_t<decltype(o)>::"
+		out[end] += "; }, " + name(`"`+ts[end].Value+`"`) + ")"
+	}
+	return end + 1
+}
+
+// lambdaEnd returns the index of the "}" that ends the lambda whose "[" is at ts[j], or -1 if there's none.
+func lambdaEnd(ts []lexer.Token, j int) int {
+	k := closing(ts, j)
+	for k < len(ts) {
+		m := skipSpace(ts, k+1)
+		switch {
+		case m == len(ts) || isPunct(ts[m], ";") || isPunct(ts[m], ",") || isPunct(ts[m], ")") || isPunct(ts[m], "]") || isPunct(ts[m], "}"):
+			return -1
+		case isPunct(ts[m], "{"):
+			for depth, c := 0, m; c < len(ts); c++ {
+				if isPunct(ts[c], "{") || isPunct(ts[c], "(") || isPunct(ts[c], "[") {
+					depth++
+				} else if isPunct(ts[c], "}") || isPunct(ts[c], ")") || isPunct(ts[c], "]") {
+					if depth--; depth == 0 {
+						return c
+					}
+				}
+			}
+			return -1
+		case isPunct(ts[m], "(") || isPunct(ts[m], "["):
+			k = closing(ts, m)
+		default:
+			k = m
+		}
+	}
+	return -1
 }
 
 // awaitRewrite rewrites `await` at ts[i], whose operand starts at ts[j], into out, and returns where the rewrites

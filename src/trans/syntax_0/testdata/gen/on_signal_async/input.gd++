@@ -1,0 +1,15 @@
+class_name Gate2
+extends Area2D
+
+signal opened
+
+@async
+on this.body_entered(body) {
+  await opened;
+  gd::print(body);
+}
+
+@async
+on this.ready {
+  await this->body_entered;
+}

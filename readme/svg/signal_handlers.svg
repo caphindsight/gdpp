@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="537" height="429" viewBox="0 0 537 429">
+  <rect width="100%" height="100%" rx="8" fill="#0d1117"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14">
+  <text x="16" y="30"><tspan fill="#79c0ff">@onready</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> start: </tspan><tspan fill="#7ee787">Button</tspan><tspan fill="#e6edf3"> = </tspan><tspan fill="#d2a8ff">$Start</tspan></text>
+  <text x="16" y="50"><tspan fill="#79c0ff">@export</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#e3b341">var</tspan><tspan fill="#e6edf3"> player: </tspan><tspan fill="#7ee787">Player</tspan></text>
+  <text x="16" y="70"></text>
+  <text x="16" y="90"><tspan fill="#8b949e">// When the button in the variable emits pressed. It follows</tspan></text>
+  <text x="16" y="110"><tspan fill="#8b949e">// the variable: setting another button reconnects it.</tspan></text>
+  <text x="16" y="130"><tspan fill="#e3b341">on start.pressed</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="150"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">begin</tspan><tspan fill="#e6edf3">();</tspan></text>
+  <text x="16" y="170"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="190"></text>
+  <text x="16" y="210"><tspan fill="#8b949e">// The signal's parameters, whose types GD++ knows.</tspan></text>
+  <text x="16" y="230"><tspan fill="#e3b341">on player.health_changed</tspan><tspan fill="#e6edf3">(health) {</tspan></text>
+  <text x="16" y="250"><tspan fill="#e6edf3">  bar-&gt;</tspan><tspan fill="#56d4dd">set_value</tspan><tspan fill="#e6edf3">(health);</tspan></text>
+  <text x="16" y="270"><tspan fill="#e6edf3">}</tspan></text>
+  <text x="16" y="290"></text>
+  <text x="16" y="310"><tspan fill="#8b949e">// A signal of this object. With @async, it can await.</tspan></text>
+  <text x="16" y="330"><tspan fill="#79c0ff">@async</tspan></text>
+  <text x="16" y="350"><tspan fill="#e3b341">on this.visibility_changed</tspan><tspan fill="#e6edf3"> {</tspan></text>
+  <text x="16" y="370"><tspan fill="#e6edf3">  </tspan><tspan fill="#e3b341">await</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#56d4dd">get_tree</tspan><tspan fill="#e6edf3">()-&gt;</tspan><tspan fill="#56d4dd">create_timer</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">0.5</tspan><tspan fill="#e6edf3">)-&gt;timeout;</tspan></text>
+  <text x="16" y="390"><tspan fill="#e6edf3">  </tspan><tspan fill="#7ee787">gd</tspan><tspan fill="#e6edf3">::</tspan><tspan fill="#56d4dd">print</tspan><tspan fill="#e6edf3">(</tspan><tspan fill="#d2a8ff">"Shown or hidden half a second ago."</tspan><tspan fill="#e6edf3">);</tspan></text>
+  <text x="16" y="410"><tspan fill="#e6edf3">}</tspan></text>
+  </g>
+</svg>

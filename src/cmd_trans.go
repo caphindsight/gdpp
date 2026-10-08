@@ -69,7 +69,7 @@ func (c *CmdTrans) Run() {
 	if root, ok := GetPackageRootMaybe(file); ok {
 		p, pkg := LoadProject(root), LoadPackage(root)
 		files, self, opts = listGdppFiles(p, pkg, c.MacroTimeout), relPath(root, file), packageOptions(pkg, nil)
-		cppClasses, nonRuntime = cppClassNames(pkg), nonRuntimeClasses(pkg, fileDecls(files))
+		cppClasses, nonRuntime = append(cppClassNames(pkg), loadProjectNames(p, pkg).names...), nonRuntimeClasses(pkg, fileDecls(files))
 		if c.Syntax == nil {
 			syntax = pkg.Config.Syntax
 		}

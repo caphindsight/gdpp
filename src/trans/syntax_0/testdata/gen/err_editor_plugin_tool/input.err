@@ -1,0 +1,4 @@
+input.gd++:1:1: Class Dock extends EditorPlugin, so it needs @tool.
+ 1 | class_name Dock
+   | ^^^^^^^^^^
+Hint: Editor plugins run in the editor. Add @tool to the class.

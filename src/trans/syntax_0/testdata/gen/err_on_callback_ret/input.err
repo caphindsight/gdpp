@@ -1,0 +1,4 @@
+input.gd++:4:45: The on set block is Godot's _set, which returns a bool, not void: true if it set the property, or false if the class doesn't have the property.
+ 4 | on set(name: StringName, value: Variant) -> void {
+   |                                             ^^^^
+Hint: Leave out the return type, which GD++ knows, or write "-> bool".

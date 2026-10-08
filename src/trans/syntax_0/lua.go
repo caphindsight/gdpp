@@ -564,10 +564,13 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 		case m.On != nil:
 			head("on", nil, m.On.Annotations)
 			setStr("name", m.On.Name)
-			if m.On.Param != nil {
-				setStr("param", m.On.Param.Name)
+			setStr("source", m.On.Source)
+			set("params", r.paramTables(m.On.Params))
+			setType("ret", m.On.Return)
+			if len(m.On.Params) == 1 {
+				setStr("param", m.On.Params[0].Name)
+				setType("param_type", m.On.Params[0].Type)
 			}
-			setType("param_type", m.On.ParamType)
 			setCode("body", m.On.Body)
 		case m.Code != nil && m.Code.Shader:
 			head("shader_library", nil, m.Code.Annotations)
@@ -1638,10 +1641,12 @@ func (r *run) emitLifecycle(kind string, t *lua.LTable) int {
 
 func (r *run) emitOn(t *lua.LTable) int {
 	const what = "gd.on"
-	o := &On{Pos: r.inv.Pos, Annotations: r.annotations(what, t), Name: r.field(what, t, "name", true), Body: r.body(what, t)}
+	o := &On{Pos: r.inv.Pos, Annotations: r.annotations(what, t), Source: r.field(what, t, "source", true), Name: r.field(what, t, "name", true),
+		Params: r.params(what, t), Return: r.optType(what, t, "ret"), Body: r.body(what, t)}
 	if p := r.field(what, t, "param", true); p != "" {
-		o.Parens, o.Param, o.ParamType = true, &Name{Pos: r.inv.Pos, Name: p}, r.optType(what, t, "param_type")
+		o.Params = append(o.Params, &Param{Pos: r.inv.Pos, Name: p, Type: r.optType(what, t, "param_type")})
 	}
+	o.Parens = len(o.Params) > 0
 	r.emit(what, &topItem{Pos: r.inv.Pos, Member: &Member{Pos: r.inv.Pos, On: o}})
 	return 0
 }

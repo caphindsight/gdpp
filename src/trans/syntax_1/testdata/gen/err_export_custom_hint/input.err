@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotation @export_custom needs PROPERTY_HINT_BOGUS, which the package's Godot API spec doesn't have.
+ 4 | @export_custom(PROPERTY_HINT_BOGUS, "") var height: float
+   | ^^^^^^^^^^^^^^
+Hint: Set a newer spec in the package's .gd++pkg. Run "gd++ fetch --index" for the versions that exist.

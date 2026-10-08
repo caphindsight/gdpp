@@ -53,6 +53,7 @@ type Dependency struct {
 	// For classes of the package: whether Godot registers it as a non-runtime class, with tool or abstract, or as a
 	// subclass of such a class. Godot doesn't let runtime classes extend it, so GD++ guards its subclasses instead.
 	NonRuntime bool
+	Signals    []Signal // For classes and externs: their own signals, which on blocks connect to.
 	Source     string   // For Kind Macro, Template, Trait and RefCountedTrait: the whole GD++ file that declares it, which the translator parses.
 	File       string   // For Kind Macro, Template, Trait and RefCountedTrait: that file's name, for errors.
 	SourceName string   // For Kind Template, Trait and RefCountedTrait: how #line names that file, like Options.SourceName. Default: File.
@@ -101,6 +102,7 @@ type Declaration struct {
 	GameOnly   bool        // For classes: whether @game_only keeps its code from running in the editor.
 	EditorOnly bool        // For classes: whether @editor_only, or @tool("editor_only"), keeps its code from running in the game.
 	Abstract   bool        // For classes: whether @abstract keeps the editor and GD++ code from creating its objects.
+	Singleton  bool        // For classes: whether @singleton makes the package create one object of it, which Godot knows by the class's name.
 	Async      bool        // For classes: whether it uses Async, e.g. in an @onthread function, so the package needs its class of tasks.
 	Gpu        bool        // For classes: whether it has shaders or GpuArray types, so the package needs its GPU classes.
 	Virtuals   []string    // For classes: the names of its @virtual functions, without "noscript", which subclasses can override.
@@ -109,6 +111,19 @@ type Declaration struct {
 	// For classes: the names of its own notifications, without NOTIFICATION_: its constants named NOTIFICATION_....
 	Notifications []string
 	Traits        []string // For classes: the traits it implements itself, without those of its bases.
+	Signals       []Signal // For classes and externs: their own signals, which on blocks connect to.
+}
+
+// Signal is a signal of a class or extern. Stable: additive changes only.
+type Signal struct {
+	Name   string        //
+	Params []SignalParam //
+}
+
+// SignalParam is a parameter of a signal. Stable: additive changes only.
+type SignalParam struct {
+	Name string //
+	Type string // Its GD++ type, e.g. "int", "Node" or "Array[Node]".
 }
 
 // Options configure code generation for one GD++ file. Stable: additive changes only.

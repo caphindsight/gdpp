@@ -1,0 +1,13 @@
+on ready {
+  // A function of this class, of another object,
+  // or by name, e.g. a script's.
+  connect(string_name "died", callable respawn);
+  timer->connect(string_name "timeout", callable hud->refresh);
+  timer->connect(string_name "timeout", callable "_on_timeout");
+  // A lambda, which belongs to this object.
+  create_tween()->tween_callback(callable [this] { hide(); });
+}
+
+func adder(n: int) -> Callable {
+  return callable [n](int x) -> int { return x + n; };
+}

@@ -1,0 +1,4 @@
+input.gd++:5:3: The on this.ready block awaits, so it needs @async.
+ 5 |   await ready;
+   |   ^^^^^
+Hint: Add @async: the block becomes a coroutine, which the signal starts.

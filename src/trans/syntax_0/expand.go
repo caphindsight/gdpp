@@ -272,18 +272,19 @@ func (p *printer) member(m *Member) {
 		o := m.On
 		p.head(nil, o.Annotations)
 		p.write("on")
-		if o.Name != "" {
+		switch {
+		case o.Source != "":
+			p.write(" ", o.Source, ".", o.Name)
+		case o.Name != "":
 			p.write(" ", o.Name)
 		}
 		if o.Parens {
 			p.write("(")
-			if o.Param != nil {
-				p.write(o.Param.Name)
-				if o.ParamType != nil {
-					p.write(": ", typeText(o.ParamType))
-				}
-			}
+			p.params(o.Params)
 			p.write(")")
+		}
+		if o.Return != nil {
+			p.write(" -> ", typeText(o.Return))
 		}
 		p.write(" ")
 		p.block(o.Body)

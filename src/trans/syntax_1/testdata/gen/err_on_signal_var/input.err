@@ -1,0 +1,4 @@
+input.gd++:4:1: Class A has no variable button.
+ 4 | on button.pressed {}
+   | ^^^^^^^^^
+Hint: An on block connects to a signal of a variable of the class, e.g. "on button.pressed", or of the object itself, e.g. "on this.pressed".

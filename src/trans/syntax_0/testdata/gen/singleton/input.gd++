@@ -1,0 +1,17 @@
+@singleton
+class_name Game
+extends Object
+
+var score: int
+
+func add(points: int) -> void {
+  score += points;
+}
+
+class User {
+  extends Node
+
+  on ready {
+    Game::get_singleton()->add(1);
+  }
+}

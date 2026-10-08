@@ -1,0 +1,5 @@
+@singleton
+class_name Game
+extends Object
+
+func get_singleton() -> void {}

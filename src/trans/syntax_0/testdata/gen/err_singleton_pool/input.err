@@ -1,0 +1,4 @@
+input.gd++:2:1: Annotations @singleton and @pool can't be used together.
+ 2 | @pool
+   | ^^^^^
+Hint: The package creates the one object of a @singleton class.

@@ -1,0 +1,17 @@
+@tool
+class_name Terrain
+extends Node3D
+
+@export_color_no_alpha var tint: Color
+@export_exp_easing("attenuation") var falloff: float
+@export_file_path("*.png") var image: String
+@export_global_file var log_file: String
+@export_global_dir var out_dir: String
+@export_node_path("Button", "TouchScreenButton") var trigger: NodePath
+@export_flags_3d_physics var collides_with: int
+@export_flags_avoidance var avoids: int
+@export_custom(PROPERTY_HINT_NONE, "suffix:m") var height: float
+@export_custom(PROPERTY_HINT_RANGE, "0,10", PROPERTY_USAGE_STORAGE, PROPERTY_USAGE_EDITOR) var level: int
+@export_tool_button("Bake", "Bake") var bake_button: Callable = callable bake
+
+func bake() -> void {}

@@ -1,0 +1,9 @@
+// With [names] in res://.gd++proj, e.g. actions = "Action":
+// names of input actions, groups and layers, checked by the compiler.
+@export var mask: Physics3D = PLAYER | WORLD
+
+on physics_process {
+  if (Input::get_singleton()->is_action_pressed(Action::jump)) {
+    jump();
+  }
+}

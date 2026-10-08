@@ -1,0 +1,40 @@
+class_name Clicker
+extends Node
+
+signal clicked(count: int)
+
+var count: int
+var hud: Control
+
+func foo() -> Callable {
+  return callable []() { return 42; };
+}
+
+func adder(n: int) -> Callable {
+  return callable [n](int x) -> int { return x + n; };
+}
+
+func on_click() -> void {
+  count++;
+}
+
+@static
+func reset() -> void {}
+
+@static
+func ticker() -> Callable {
+  return callable [] { gd::print("tick"); };
+}
+
+on ready {
+  connect(string_name "clicked", callable on_click);
+  connect(string_name "clicked", callable [this](int c) { count = c; });
+  connect(string_name "clicked", callable(hud) [](int c) { gd::print(c); });
+  Callable a = callable Clicker::reset;
+  Callable b = callable hud->set_visible;
+  Callable c = callable "on_click";
+  Callable d = callable hud->"queue_free";
+  Callable e = (callable on_click).bind();
+  int64_t answer = foo().call();
+  (void) a; (void) b; (void) c; (void) d; (void) e; (void) answer;
+}

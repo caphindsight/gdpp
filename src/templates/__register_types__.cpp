@@ -11,6 +11,9 @@
 // The GD++ runtime, which defines the package's class of tasks, and unloads the package's GD++ code.
 #include <{{.Runtime}}>
 {{- end}}
+{{- if .EditorPlugins}}
+#include <godot_cpp/classes/editor_plugin_registration.hpp>
+{{- end}}
 {{- if .GpuRuntime}}
 
 // The GD++ runtime of shaders, which defines the package's class of GPU arrays, and of the textures that shaders create.
@@ -70,6 +73,17 @@ static void gdpp_register_class() {
 }
 
 static void gdpp_initialize(ModuleInitializationLevel p_level) {
+{{- if .EditorClasses}}
+	// Classes that extend the editor's, which only exist in the editor.
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+{{- range .EditorClasses}}
+		gdpp_register_class<{{.}}>();
+{{- end}}
+{{- range .EditorPlugins}}
+		EditorPlugins::add_by_type<{{.}}>();
+{{- end}}
+	}
+{{- end}}
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
@@ -80,21 +94,37 @@ static void gdpp_initialize(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(gdpp::GDPP_GPU_ARRAY_CLASS);
 	GDREGISTER_INTERNAL_CLASS(gdpp::GDPP_GPU_TEXTURE_CLASS);
 {{- end}}
-{{- range .Classes}}
+{{- range .SceneClasses}}
 	gdpp_register_class<{{.}}>();
+{{- end}}
+{{- range .Singletons}}
+	gdpp::add_singleton("{{.}}", {{.}}::_gdpp_singleton);
 {{- end}}
 }
 
 static void gdpp_uninitialize(ModuleInitializationLevel p_level) {
+{{- if .EditorClasses}}
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+{{- range .EditorPlugins}}
+		EditorPlugins::remove_by_type<{{.}}>();
+{{- end}}
+{{- range .EditorClasses}}
+		gdpp_registered<{{.}}> = false;
+{{- end}}
+	}
+{{- end}}
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
+{{- range .Singletons}}
+	gdpp::drop_singleton("{{.}}", {{.}}::_gdpp_singleton);
+{{- end}}
 {{- if .Runtime}}
 	// Waits for the package's tasks, and removes the engine's hooks into the package's code, which must not run once
 	// it's unloaded, e.g. by hot reload.
 	gdpp::uninitialize();
 {{- end}}
-{{- range .Classes}}
+{{- range .SceneClasses}}
 	gdpp_registered<{{.}}> = false;
 {{- end}}
 }

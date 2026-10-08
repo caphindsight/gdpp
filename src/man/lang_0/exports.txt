@@ -59,10 +59,34 @@ GD++ has GDScript's export annotations. Each one exports the variable, and most 
 @export_flags("Self:4", "Allies:8", "Foes:16") var targets: int
 ```
 
+@export_flags_2d_render, @export_flags_2d_physics, @export_flags_2d_navigation, @export_flags_3d_render, @export_flags_3d_physics, @export_flags_3d_navigation and @export_flags_avoidance
+  An `int`, edited as the checkboxes of a kind of layers, named like in the project settings, e.g. "Layer Names > 3D Physics".
+
+```gd++
+@export_flags_3d_physics var collides_with: int
+```
+
+@export_exp_easing([EXTRAS...])
+  A `float`, edited as an easing curve. EXTRAS: `"attenuation"` flips the curve, and `"positive_only"` limits it to positive values.
+
+```gd++
+@export_exp_easing var fade: float
+@export_exp_easing("attenuation") var falloff: float
+```
+
+# Colors
+
+@export_color_no_alpha
+  A `Color`, edited without its alpha channel.
+
+```gd++
+@export_color_no_alpha var tint: Color
+```
+
 # Strings
 
 @export_file(FILTERS...)
-  A `String`, edited with a file picker. FILTERS limit the file types, e.g. `"*.png"`.
+  A `String`, edited with a file picker. FILTERS limit the file types, e.g. `"*.png"`. The value is a `uid://` path if the file has one, else a `res://` path.
 
 ```gd++
 @export_file var any_file: String
@@ -70,8 +94,17 @@ GD++ has GDScript's export annotations. Each one exports the variable, and most 
 @export_file("*.png", "*.jpg") var image: String
 ```
 
+@export_file_path(FILTERS...)
+  Like `@export_file`, but the value is always a `res://` path.
+
+@export_global_file(FILTERS...)
+  Like `@export_file`, but for any file of the system: the value is an absolute path. Only for tools that run in the editor, since exported games can't count on such paths.
+
 @export_dir
   A `String`, edited with a directory picker.
+
+@export_global_dir
+  Like `@export_dir`, but for any directory of the system: the value is an absolute path.
 
 @export_multiline
   A `String`, edited in a large text box with many lines.
@@ -85,6 +118,38 @@ GD++ has GDScript's export annotations. Each one exports the variable, and most 
 @export_placeholder("Your name") var player_name: String
 ```
 
+# Nodes
+
+@export_node_path(TYPES...)
+  A `NodePath`, edited with a node picker. TYPES, as strings, limit the nodes to those classes, e.g. `"Button"`. Without TYPES, any node.
+
+```gd++
+@export_node_path("Button", "TouchScreenButton") var trigger: NodePath
+```
+
+- To hold the node itself, prefer `@export` on a variable of a node type, e.g. `@export var trigger: Button`.
+
+# Buttons
+
+@export_tool_button(TEXT[, ICON])
+  A `Callable`, shown as a button with TEXT, and optionally the editor icon ICON, e.g. `"Callable"`. Pressing it calls the `Callable`.
+
+```gd++
+@tool
+class_name Terrain
+extends Node3D
+
+@export_tool_button("Bake", "Bake") var bake_button: Callable = callable bake
+
+func bake() -> void {
+  ...
+}
+```
+
+- Only in `@tool` classes: the button runs the class's code in the editor.
+- The variable needs an initial value: the `Callable` to call. See "callable" in `gd++ man rewrites`.
+- It's not saved in scenes and resources.
+
 # Storage only
 
 @export_storage
@@ -93,6 +158,25 @@ GD++ has GDScript's export annotations. Each one exports the variable, and most 
 ```gd++
 @export_storage var visits: int
 ```
+
+# Custom hints
+
+@export_custom(HINT, HINT_STRING[, USAGE...])
+  Any variable, with a property hint and usage flags of your choice, for what no other annotation covers.
+  - HINT: a `PROPERTY_HINT_*` constant, e.g. `PROPERTY_HINT_NONE`.
+  - HINT_STRING: a string, which the hint reads.
+  - USAGE: `PROPERTY_USAGE_*` constants, which GD++ combines. Without them, `PROPERTY_USAGE_DEFAULT`.
+
+```gd++
+@export_custom(PROPERTY_HINT_NONE, "suffix:m") var height: float
+@export_custom(PROPERTY_HINT_RANGE, "0,10", PROPERTY_USAGE_STORAGE, PROPERTY_USAGE_EDITOR) var level: int
+```
+
+`gd++ doc PropertyHint` and `gd++ doc PropertyUsageFlags` list the constants. Godot's help explains them.
+
+# Godot versions
+
+A few annotations need a newer Godot, i.e. a newer API spec in the package's `.gd++pkg`: e.g. `@export_tool_button` and `@export_file_path`. With an older one, GD++ reports which constant the spec doesn't have.
 
 # Sections
 
@@ -139,11 +223,11 @@ extends CharacterBody3D
 
 # Rules
 
-- One export annotation per variable: `@export`, `@export_range`, `@export_enum`, `@export_flags`, `@export_file`, `@export_dir`, `@export_multiline`, `@export_placeholder` or `@export_storage`.
+- One export annotation per variable, i.e. one annotation that starts with `@export`, except the section annotations.
 - Export annotations only go on variables, and not in externs.
 - Export and section annotations only work in classes that extend `Node` or `Resource`, since only those are edited in the inspector.
-- `@export`, `@export_dir`, `@export_multiline` and `@export_storage` take no arguments.
-- Arguments are numbers and strings, written like in GDScript.
+- `@export`, `@export_storage`, `@export_dir`, `@export_global_dir`, `@export_multiline`, `@export_color_no_alpha` and the `@export_flags_` annotations of layers take no arguments.
+- Arguments are numbers and strings, written like in GDScript, and the constants of `@export_custom`.
 - `Async` variables can't be exported: neither the inspector nor scene files can hold a task. See `gd++ man async`.
 - Each annotation checks the variable's type:
 

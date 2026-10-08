@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotation @export_tool_button needs a @tool class, which Terrain isn't.
+ 4 | @export_tool_button("Bake") var bake_button: Callable = callable_mp(this, &This::bake)
+   | ^^^^^^^^^^^^^^^^^^^
+Hint: Buttons call the class's code in the editor. Add @tool to the class.

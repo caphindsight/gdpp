@@ -35,8 +35,10 @@ File: @1:1
         - @8:3
           On: @8:3
             Parens: true
-            Param: @8:6 what
-            ParamType: @8:12 int
+            Params:
+              - @8:6
+                Name: what
+                Type: @8:12 int
             Body: @8:17
               TextPos: 8:18
               Text: " a_ = 3;"

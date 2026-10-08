@@ -1,0 +1,6 @@
+class_name A
+extends Node
+
+on this.ready {
+  await ready;
+}

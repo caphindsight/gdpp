@@ -201,7 +201,7 @@ var processing = map[string]string{"_process": "set_process", "_physics_process"
 	"_internal_process": "set_process_internal", "_internal_physics_process": "set_physics_process_internal"}
 
 func (c *classModel) needsCtor() bool {
-	return c.ctor != nil || c.pool != nil || c.trace || len(c.groups) > 0 || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
+	return c.ctor != nil || slices.ContainsFunc(c.signalOns, func(f *funcModel) bool { return f.on.Source == "this" }) || c.pool != nil || c.trace || len(c.groups) > 0 || slices.ContainsFunc(c.vars, func(v *varModel) bool { return v.v.Init != nil && !v.onready }) ||
 		slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.rpc != nil || f.override && processing[f.f.Name] != "" }) ||
 		slices.ContainsFunc(c.notifs, func(n *notifModel) bool { return n.setter != "" })
 }
@@ -411,6 +411,11 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	for _, s := range c.signals {
 		public = append(public, fmt.Sprintf("gdpp::Emitted %s(%s);", s.s.Name, params(nil, s.params, s.s.Params)))
 	}
+	if c.singleton {
+		// The package's registration code creates the object, and deletes it.
+		public = append(public, fmt.Sprintf("static inline %s _gdpp_singleton{};", gd(c.name)),
+			fmt.Sprintf("static %s get_singleton() { return _gdpp_singleton; }", gd(c.name)))
+	}
 	if len(public) > 0 {
 		w.ln("")
 		w.ln("public:")
@@ -424,6 +429,10 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.needsNotification() {
 		w.ln("\tvoid _notification(int WHAT);")
 	}
+	for _, f := range c.callbacks {
+		m := callbackMethods[callbackName(f)]
+		w.ln("\t%s %s;", m.ret, m.decl)
+	}
 	for _, f := range c.funcs {
 		if !f.scripted() && !f.override && f.trampolined() {
 			private = append(private, trampolineDecl(c, f))
@@ -432,6 +441,11 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 			if p.Default != nil {
 				private = append(private, fmt.Sprintf("static %s%s();", withSpace(f.params[i].cpp), defaultName(f, p)))
 			}
+		}
+	}
+	for _, f := range c.signalOns {
+		if f.on.Source != "this" {
+			private = append(private, fmt.Sprintf("ObjectID %s;", followField(f)))
 		}
 	}
 	for _, v := range c.vars {

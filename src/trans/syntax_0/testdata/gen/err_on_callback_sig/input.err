@@ -1,0 +1,4 @@
+input.gd++:4:14: Parameter name is a StringName, but found String.
+ 4 | on get(name: String) -> Variant {
+   |              ^^^^^^
+Hint: Leave out the type, which GD++ knows, or write "name: StringName".

@@ -1,0 +1,6 @@
+class_name A
+extends Node
+
+on get(name: String) -> Variant {
+  return Variant();
+}

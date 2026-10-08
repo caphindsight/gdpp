@@ -18,6 +18,8 @@ type (
 	File        = meta.File
 	Kind        = meta.Kind
 	Options     = meta.Options
+	Signal      = meta.Signal
+	SignalParam = meta.SignalParam
 )
 
 const (

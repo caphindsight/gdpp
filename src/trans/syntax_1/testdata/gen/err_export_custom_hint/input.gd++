@@ -1,0 +1,4 @@
+class_name Terrain
+extends Node3D
+
+@export_custom(PROPERTY_HINT_BOGUS, "") var height: float
