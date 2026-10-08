@@ -73,7 +73,7 @@ var speed: float = 300.0
 
 signal jumped
 
-on physics_process(delta: float) {
+on physics_process {
   Vector2 direction = Input::get_singleton()->get_vector(string_name "ui_left", string_name "ui_right", string_name "ui_up", string_name "ui_down");
   set_velocity(direction * speed);
   move_and_slide();

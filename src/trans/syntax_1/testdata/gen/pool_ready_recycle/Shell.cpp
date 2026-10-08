@@ -10,7 +10,7 @@ void Shell::_bind_methods() {
 }
 
 Shell::Shell() {
-	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
+	[[maybe_unused]] const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 }
 
 Shell::~Shell() {

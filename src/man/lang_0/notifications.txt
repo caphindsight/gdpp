@@ -162,7 +162,7 @@ See "Integer constants" in `gd++ man enums`.
 
 ```gd++
 @trace
-on physics_process(delta: float) {
+on physics_process {
   move_and_slide();
 }
 ```

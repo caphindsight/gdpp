@@ -19,6 +19,7 @@ func open(names: Array, slow: bool) -> Node {
   int64_t n = await count(slow);
   assert n > 0;
   auto twice = [](int64_t x) { return x * 2; };
+  n = twice(n);
   if (is_cancelled) {
     return nullptr;
   }

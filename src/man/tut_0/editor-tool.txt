@@ -77,7 +77,7 @@ A tool class runs all its code in the editor, including code meant for the game,
 
 ```gd++
 @game_only
-on process(delta: float) {
+on process {
   // ... game logic, never run in the editor ...
 }
 ```

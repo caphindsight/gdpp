@@ -42,31 +42,33 @@ if (open_south) return i;
   return -1;
 }
 
-func foo() {}
+func foo() {
+  return Variant();
+}
 
 func foo_ten_times() -> int {
   
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 44 "input.gd++"
+#line 46 "input.gd++"
 
   int calls_done = 10;
   return calls_done;

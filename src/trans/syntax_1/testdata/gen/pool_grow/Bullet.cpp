@@ -23,7 +23,7 @@ void Bullet::_bind_methods() {
 }
 
 Bullet::Bullet() {
-	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
+	[[maybe_unused]] const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 #line 5 "input.gd++"
 	speed = 20.0;
 #line 30 "Bullet.cpp"

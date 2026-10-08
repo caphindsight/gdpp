@@ -10,13 +10,13 @@ void Checker::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("check", "v"), &Checker::check);
 }
 
-Variant Checker::check(int64_t v) {
+void Checker::check(int64_t v) {
 #line 4 "input.gd++"
 
-    GDPP_ASSERT_VALUE("v > 0", v > 0); gdpp::cast<float>(v);
+    GDPP_ASSERT_VOID("v > 0", v > 0); gdpp::cast<float>(v);
 
 #line 6 "input.gd++"
-GDPP_ASSERT_VALUE("v > 0", v > 0);
+GDPP_ASSERT_VOID("v > 0", v > 0);
 #line 6 "input.gd++"
 gdpp::cast<float>(v);
 #line 6 "input.gd++"

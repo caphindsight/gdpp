@@ -212,7 +212,7 @@ Like GDScript's `await`. Scripts await a task with `await task.until_done()`.
 
 See `gd++ man async`.
 
-### Shaders
+### Compute shaders
 
 <a href="readme/svg/shaders.gd++"><img src="readme/svg/shaders.svg" alt="GD++ code: shaders"></a>
 

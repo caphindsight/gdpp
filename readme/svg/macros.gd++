@@ -1,7 +1,7 @@
 class_name Slime
 extends CharacterBody2D
 
-on physics_process(delta: float) {
+on physics_process {
   state_machine_tick();
 }
 

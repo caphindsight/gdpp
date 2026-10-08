@@ -23,12 +23,13 @@ void User::use() {
 #line 18 "input.gd++"
 
   float h = terrain->height(1.0, 2.0);
+  gd::print(h);
   terrain->rebuild();
   terrain->refresh(1);
   terrain->set_size(3);
   (void) terrain->done(true);
 
-#line 32 "User.cpp"
+#line 33 "User.cpp"
 }
 
 gdpp::Gd<Terrain2> User::get_terrain() const {

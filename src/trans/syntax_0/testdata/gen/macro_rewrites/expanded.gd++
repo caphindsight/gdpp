@@ -1,7 +1,7 @@
 class Checker {
   extends RefCounted
 
-  func check(v: int) {
+  func check(v: int) -> void {
     assert v > 0; v as float;
     
 #line 6 "input.gd++"

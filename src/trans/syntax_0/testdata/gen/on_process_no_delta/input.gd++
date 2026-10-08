@@ -1,0 +1,13 @@
+class_name Walker
+extends CharacterBody2D
+
+@export var speed: float = 200.0
+
+on physics_process {
+  set_velocity(Vector2(speed, 0.0));
+  move_and_slide();
+}
+
+on process {
+  queue_redraw();
+}

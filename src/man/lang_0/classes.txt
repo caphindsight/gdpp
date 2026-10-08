@@ -309,7 +309,7 @@ class_name Spawner
 extends Node3D
 
 @editor_only
-on process(delta: float) {
+on process {
   preview();                // Only previews in the editor.
 }
 

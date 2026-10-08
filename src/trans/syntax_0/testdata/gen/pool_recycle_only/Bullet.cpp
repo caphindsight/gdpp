@@ -13,7 +13,7 @@ void Bullet::_bind_methods() {
 }
 
 Bullet::Bullet() {
-	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
+	[[maybe_unused]] const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 	if (!_gdpp_reserved) {
 #line 5 "input.gd++"
 		age = 0.0;

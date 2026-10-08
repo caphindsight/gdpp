@@ -11,7 +11,7 @@ void SparkPool::_bind_methods() {
 }
 
 SparkPool::SparkPool() {
-	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
+	[[maybe_unused]] const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 }
 
 SparkPool::~SparkPool() {

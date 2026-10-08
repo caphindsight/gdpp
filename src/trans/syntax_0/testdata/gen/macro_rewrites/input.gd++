@@ -1,7 +1,7 @@
 class Checker {
   extends RefCounted
 
-  func check(v: int) {
+  func check(v: int) -> void {
     invoke once();
     invoke lines();
   }

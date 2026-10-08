@@ -4,7 +4,7 @@
   <text x="16" y="30"><tspan fill="#e3b341">class_name</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">Slime</tspan></text>
   <text x="16" y="50"><tspan fill="#e3b341">extends</tspan><tspan fill="#e6edf3"> </tspan><tspan fill="#7ee787">CharacterBody2D</tspan></text>
   <text x="16" y="70"></text>
-  <text x="16" y="90"><tspan fill="#e3b341">on physics_process</tspan><tspan fill="#e6edf3">(delta: </tspan><tspan fill="#7ee787">float</tspan><tspan fill="#e6edf3">) {</tspan></text>
+  <text x="16" y="90"><tspan fill="#e3b341">on physics_process</tspan><tspan fill="#e6edf3"> {</tspan></text>
   <text x="16" y="110"><tspan fill="#e6edf3">  </tspan><tspan fill="#56d4dd">state_machine_tick</tspan><tspan fill="#e6edf3">();</tspan></text>
   <text x="16" y="130"><tspan fill="#e6edf3">}</tspan></text>
   <text x="16" y="150"></text>

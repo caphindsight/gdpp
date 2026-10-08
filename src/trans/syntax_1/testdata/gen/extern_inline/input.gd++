@@ -17,6 +17,7 @@ var other: Road
 
 func use() -> void {
   float h = terrain->height(1.0, 2.0);
+  gd::print(h);
   terrain->rebuild();
   terrain->refresh(1);
   terrain->set_size(3);

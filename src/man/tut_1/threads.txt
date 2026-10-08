@@ -70,7 +70,7 @@ on ready {
   pending = compute_heights(coords, 64);
 }
 
-on process(delta: float) {
+on process {
   if (is_done pending) {
     set_mesh(build_mesh(claim pending));
   }

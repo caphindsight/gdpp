@@ -6,4 +6,5 @@ extends Node3D
 
 func fire() -> void {
   Gd<Bullet> b = create Bullet;
+  add_child(b);
 }

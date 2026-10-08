@@ -29,8 +29,9 @@ void Bullet::fire() {
 #line 7 "input.gd++"
 
   Gd<Bullet> b = gdpp::create<Bullet>();
+  add_child(b);
 
-#line 34 "Bullet.cpp"
+#line 35 "Bullet.cpp"
 }
 
 #undef This

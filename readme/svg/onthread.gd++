@@ -12,7 +12,7 @@ func find_path(from: Vector2, to: Vector2)
   return path;
 }
 
-on process(delta: float) {
+on process {
   if (!pending) {
     pending = find_path(get_position(), target);
   } else if (is_done pending) {

@@ -12,4 +12,6 @@ func identity(value) {
   return value;
 }
 
-func nothing() {}
+func nothing() {
+  return Variant();
+}

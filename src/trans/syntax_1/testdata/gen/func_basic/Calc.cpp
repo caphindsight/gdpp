@@ -40,7 +40,9 @@ Variant Calc::identity(const Variant &value) {
 Variant Calc::nothing() {
 #line 15 "input.gd++"
 
-#line 44 "Calc.cpp"
+  return Variant();
+
+#line 46 "Calc.cpp"
 }
 
 #undef This

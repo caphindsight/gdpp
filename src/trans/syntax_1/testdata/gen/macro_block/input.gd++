@@ -34,7 +34,9 @@ func first_open() -> int {
   return -1;
 }
 
-func foo() {}
+func foo() {
+  return Variant();
+}
 
 func foo_ten_times() -> int {
   invoke {

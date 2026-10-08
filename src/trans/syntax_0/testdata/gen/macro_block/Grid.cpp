@@ -93,47 +93,49 @@ if (open_south) return i;
 Variant Grid::foo() {
 #line 37 "input.gd++"
 
-#line 97 "Grid.cpp"
+  return Variant();
+
+#line 99 "Grid.cpp"
 }
 
 int64_t Grid::foo_ten_times() {
-#line 39 "input.gd++"
+#line 41 "input.gd++"
 
 
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 40 "input.gd++"
+#line 42 "input.gd++"
 foo();
-#line 44 "input.gd++"
+#line 46 "input.gd++"
 
   int calls_done = 10;
   return calls_done;
 
-#line 129 "Grid.cpp"
+#line 131 "Grid.cpp"
 }
 
 void Grid::_gdpp_body__ready() {
-#line 49 "input.gd++"
+#line 51 "input.gd++"
 
   open_north = true;
 
-#line 137 "Grid.cpp"
+#line 139 "Grid.cpp"
 }
 
 bool Grid::get_open_north() const {
@@ -176,11 +178,11 @@ void Grid::set_cells(int64_t p_value) {
 	cells = p_value;
 }
 
-#line 53 "input.gd++"
+#line 55 "input.gd++"
 
   static int grid_size() { return 8; }
 
-#line 184 "Grid.cpp"
+#line 186 "Grid.cpp"
 
 #undef This
 

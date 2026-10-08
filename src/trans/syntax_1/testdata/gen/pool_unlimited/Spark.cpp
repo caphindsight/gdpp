@@ -10,7 +10,7 @@ void Spark::_bind_methods() {
 }
 
 Spark::Spark() {
-	const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
+	[[maybe_unused]] const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);
 }
 
 Spark::~Spark() {

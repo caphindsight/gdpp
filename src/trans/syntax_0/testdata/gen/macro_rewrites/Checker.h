@@ -15,7 +15,7 @@ class Checker : public RefCounted {
 	GDCLASS(Checker, RefCounted)
 
 public:
-	Variant check(int64_t v);
+	void check(int64_t v);
 
 protected:
 	static void _bind_methods();

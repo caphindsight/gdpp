@@ -45,12 +45,15 @@ gdpp::Coroutine<Variant> Chest::_gdpp_body_loot(gdpp::Gd<Node> loader) {
 #line 12 "input.gd++"
 
   bool opened = co_await open(1);
+  if (!opened) {
+    co_return Variant();
+  }
   Variant level = co_await loader->call("load_level", "forest");
   Signal ready_signal(loader.ptr(), "ready");
   co_await ready_signal;
   co_return level;
 
-#line 54 "Chest.cpp"
+#line 57 "Chest.cpp"
 }
 
 #undef This

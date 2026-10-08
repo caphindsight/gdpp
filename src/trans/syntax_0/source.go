@@ -88,7 +88,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("%s::%s() {", c.name, c.name)
 		if c.pool != nil {
 			// Whether the pool reserves this object, unused, so it skips its @recycle parts until the pool hands it out.
-			w.ln("\tconst bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);")
+			w.ln("\t[[maybe_unused]] const bool _gdpp_reserved = std::exchange(gdpp::reserving(), false);")
 		}
 		if c.trace {
 			w.ln("\tgdpp::trace_lifetime(%q, this, true);", c.name)

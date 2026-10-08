@@ -11,6 +11,9 @@ func _open(force: int) -> bool {
 @async
 func loot(loader: Node) -> Variant {
   bool opened = await open(1);
+  if (!opened) {
+    return Variant();
+  }
   Variant level = await loader->call("load_level", "forest");
   Signal ready_signal(loader.ptr(), "ready");
   await ready_signal;

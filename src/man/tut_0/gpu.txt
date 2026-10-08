@@ -132,7 +132,7 @@ on ready {
   set_texture(blank(Vector2i(SIZE, SIZE)));
 }
 
-on process(delta: float) {
+on process {
   advance(Vector2i(SIZE, SIZE), cells, next, get_texture());
   std::swap(cells, next);
 }
@@ -228,7 +228,7 @@ on ready {
   pending = big_noise(Vector2i(4096, 4096), 64.0);
 }
 
-on process(delta: float) {
+on process {
   if (is_done pending) {
     build_terrain(claim pending);
   }

@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -57,8 +58,15 @@ func TestCompile(t *testing.T) {
 		dir := filepath.Dir(file)
 		t.Run(filepath.Base(dir)+"/"+filepath.Base(file), func(t *testing.T) {
 			t.Parallel()
-			args := []string{"-std=c++20", "-fsyntax-only", "-Wno-pragma-once-outside-header", "-I", dir, "-I", include,
-				"-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"), "-I", filepath.Join(root, "gdextension"), "-x", "c++", file}
+			// godot-cpp's headers are system headers, so only the generated code and GD++'s runtime must have no warnings.
+			args := []string{"-std=c++20", "-fsyntax-only", "-Wall", "-Werror", "-I", dir, "-I", include,
+				"-isystem", filepath.Join(root, "include"), "-isystem", filepath.Join(root, "gen", "include"), "-isystem", filepath.Join(root, "gdextension")}
+			if strings.HasSuffix(file, ".h") {
+				// Included from an empty file, since compilers warn about #pragma once in the file they compile.
+				args = append(args, "-include", file, "-x", "c++", os.DevNull)
+			} else {
+				args = append(args, "-x", "c++", file)
+			}
 			if out, err := exec.Command(cxx, args...).CombinedOutput(); err != nil {
 				t.Errorf("%s failed to compile:\n%s", file, out)
 			}
@@ -83,8 +91,8 @@ func TestGlsl(t *testing.T) {
 	os.WriteFile(filepath.Join(include, RuntimeHeaderName), []byte(RuntimeHeader), 0o644)
 	os.WriteFile(filepath.Join(include, GpuRuntimeHeaderName), []byte(GpuRuntimeHeader), 0o644)
 	bin := filepath.Join(include, "semantics")
-	args := []string{"-std=c++17", "-DDEBUG_ENABLED", "-I", include, "-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"),
-		"-I", filepath.Join(root, "gdextension"), "testdata/glsl/semantics.cpp", lib, "-o", bin}
+	args := []string{"-std=c++17", "-Wall", "-Werror", "-DDEBUG_ENABLED", "-I", include, "-isystem", filepath.Join(root, "include"),
+		"-isystem", filepath.Join(root, "gen", "include"), "-isystem", filepath.Join(root, "gdextension"), "testdata/glsl/semantics.cpp", lib, "-o", bin}
 	if out, err := exec.Command(cxx, args...).CombinedOutput(); err != nil {
 		t.Fatalf("testdata/glsl/semantics.cpp failed to compile:\n%s", out)
 	}

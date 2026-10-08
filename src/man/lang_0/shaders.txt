@@ -173,7 +173,7 @@ on ready {
   next = GpuArray<float>(cells.size());
 }
 
-on process(delta: float) {
+on process {
   for (int64_t step = 0; step < 100; step++) {
     diffuse(cells.size(), cells, next);
     std::swap(cells, next);
@@ -323,7 +323,7 @@ on ready {
   pending = big_noise(Vector2i(4096, 4096), 64.0);   // no frame waits for it
 }
 
-on process(delta: float) {
+on process {
   if (is_done pending) {
     build_terrain(claim pending);
   }

@@ -41,12 +41,13 @@ gdpp::Coroutine<gdpp::Gd<Node>> Hatch::_gdpp_body_open(Array names, bool slow) {
   int64_t n = co_await count(slow);
   GDPP_ASSERT_CO_VALUE("n > 0", n > 0);
   auto twice = [](int64_t x) { return x * 2; };
+  n = twice(n);
   if (gdpp::is_cancelled()) {
     co_return nullptr;
   }
   co_return gdpp::cast<Node *>(body);
 
-#line 50 "Hatch.cpp"
+#line 51 "Hatch.cpp"
 }
 
 gdpp::Async<int64_t> Hatch::count(bool slow) {
@@ -54,11 +55,11 @@ gdpp::Async<int64_t> Hatch::count(bool slow) {
 }
 
 gdpp::Coroutine<int64_t> Hatch::_gdpp_body_count(bool slow) {
-#line 29 "input.gd++"
+#line 30 "input.gd++"
 
   co_return 1;
 
-#line 62 "Hatch.cpp"
+#line 63 "Hatch.cpp"
 }
 
 gdpp::Async<void> Hatch::wait_a_bit() const {
@@ -66,13 +67,13 @@ gdpp::Async<void> Hatch::wait_a_bit() const {
 }
 
 gdpp::Coroutine<void> Hatch::_gdpp_body_wait_a_bit() const {
-#line 34 "input.gd++"
+#line 35 "input.gd++"
 
   co_await gdpp::signal(get_tree()->create_timer(0.5), gdpp::string_name<"timeout">());
   GDPP_ASSERT_CO_VOID("true", true);
   co_return;
 
-#line 76 "Hatch.cpp"
+#line 77 "Hatch.cpp"
 }
 
 gdpp::Async<String> Hatch::show(const String &text) {
@@ -85,11 +86,11 @@ gdpp::Async<String> Hatch::show(const String &text) {
 }
 
 gdpp::Coroutine<String> Hatch::_gdpp_body_show(String text) {
-#line 41 "input.gd++"
+#line 42 "input.gd++"
 
   co_return text;
 
-#line 93 "Hatch.cpp"
+#line 94 "Hatch.cpp"
 }
 
 gdpp::Gd<AnimationPlayer> Hatch::get_anim() const {
