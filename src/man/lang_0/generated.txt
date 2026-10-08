@@ -12,6 +12,7 @@ Each declaration of a GD++ file gets its own files, named after it:
 - a class NAME: `NAME.h`, its definition, and `NAME.cpp`, its methods and bindings,
 - an extern NAME: `NAME.h`, its wrapper class,
 - a trait NAME: `NAME.h`, its interface,
+- a struct NAME: `NAME.h`, its definition, and `NAME.cpp`, its functions and conversions,
 - an enum NAME: `NAME.h`, its enum class.
 
 Plus, for the whole package:
@@ -377,6 +378,10 @@ enum class Suit : int64_t {
 ```
 
 A bitfield's enum class is followed by `GDPP_BITFIELD(Name)`, which gives it the bitwise operators, and lets `&` test as a `bool`.
+
+# Struct headers
+
+A struct NAME gets a header with the struct, followed by `GDPP_STRUCT(NAME)`, which makes godot-cpp's bindings pass it as a `Dictionary`, and a source file with its functions and its conversions to and from a `Dictionary`. See "What GD++ generates" in `gd++ man structs`.
 
 # Registration
 

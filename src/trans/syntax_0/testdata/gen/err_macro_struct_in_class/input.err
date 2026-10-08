@@ -1,0 +1,5 @@
+input.gd++:4:5: Macro { ... } failed: gd.struct can't be used in a class: classes, externs, traits and structs can't be nested.
+ 4 |     gd.struct { name = "Hit", body = function() end }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Macro call stack:
+  macro { ... }, invoked at input.gd++:3

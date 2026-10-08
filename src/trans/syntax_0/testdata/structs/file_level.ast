@@ -1,0 +1,22 @@
+File: @1:1
+  FileStruct: @2:1
+    Doc: @1:1 A file-level struct.
+    Name: Score
+    Members:
+      - @4:1
+        Var: @4:1
+          Name: points
+          Type: @4:13 int
+      - @5:1
+        Func: @5:1
+          Name: add
+          Params:
+            - @5:10
+              Name: n
+              Type: @5:13 int
+          Return: @5:21 void
+          Body: @5:26
+            TextPos: 5:27
+            Text: " points += n;"
+  InlineStructs:
+    - @7:1 Other

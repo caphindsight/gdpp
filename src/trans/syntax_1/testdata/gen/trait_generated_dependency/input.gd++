@@ -1,0 +1,7 @@
+// Collectible and Weighted are traits that macros of struct_macros.gd++ generate in generated_traits.gd++.
+class_name Coin2
+extends Node
+implements Collectible, Weighted
+
+@const func value() -> int { return 1; }
+func weight() -> int { return 2; }

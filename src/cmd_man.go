@@ -64,12 +64,12 @@ var tutManPages = map[int][]string{
 var langManPages = map[int][]string{
 	0: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/gd", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
-		"lang/signals", "lang/enums", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/performance",
+		"lang/signals", "lang/enums", "lang/structs", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/performance",
 		"lang/code", "lang/templates", "lang/macros", "lang/lua", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 	1: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/gd", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
-		"lang/signals", "lang/enums", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/performance",
+		"lang/signals", "lang/enums", "lang/structs", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/performance",
 		"lang/code", "lang/templates", "lang/macros", "lang/lua", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 }

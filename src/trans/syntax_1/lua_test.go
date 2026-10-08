@@ -1,6 +1,7 @@
 package syntax_1
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -342,6 +343,57 @@ invoke {
     show(gd.annotation(ctx, "@@kind")), show(gd.annotation(y, "@@nope")) }, "/")) }
 }
 `, []string{`@@made var out: String = "0:/0:/nil/nil/2:k,2/1:item/nil"`}},
+		// Traits and structs at the file's top level, read and emitted again.
+		{`invoke {
+  for _, d in ipairs(ctx.members) do
+    if d.kind == "trait" or d.kind == "struct" then
+      gd[d.kind] { name = d.name .. "Copy", extends = d.extends, doc = d.doc, body = function()
+        for _, m in ipairs(d.members) do gd[m.kind](m) end
+      end }
+    end
+  end
+}
+trait Valued {
+  extends Node
+  @const func value() -> int
+}
+/// A hit.
+struct Hit {
+  var damage: int = 1
+  @const func twice() -> int { return damage * 2; }
+  decl { int x_ = 0; }
+}
+`, []string{"trait ValuedCopy {", "  extends Node", "  @const func value() -> int", "/// A hit.", "struct HitCopy {", "  var damage: int = 1",
+			"  @const func twice() -> int { return damage * 2;}", "  decl { int x_ = 0;}"}},
+		// The scope inside generated and written structs and traits.
+		{`invoke {
+  gd.struct { name = "Made", body = function() gd.invoke("where", {}) end }
+  gd.trait { name = "Shaped", extends = "Node", body = function() gd.invoke("where", {}) end }
+}
+struct Written {
+  invoke where()
+}
+trait Drawn {
+  extends Node
+  invoke where()
+}
+macro where() {
+  gd.func { name = ctx.scope .. "_" .. ctx.class, ret = "int", body = "return 0;" }
+}
+`, []string{"func struct_Made() -> int", "func trait_Shaped() -> int", "func struct_Written() -> int", "func trait_Drawn() -> int"}},
+		// on blocks of every kind.
+		{`class_name Foo
+extends Node
+@export var player: Node
+invoke {
+  gd.on { source = "player", name = "child_entered_tree", params = { "node" }, body = "gd::print(node);" }
+  gd.on { source = "this", name = "ready", body = "gd::print(1);" }
+  gd.on { name = "process", params = { "delta: float" }, annotations = { "@trace" }, body = "gd::print(delta);" }
+  gd.on { name = "get", params = { "name" }, ret = "Variant", body = "return Variant();" }
+  gd.on { params = { "what" }, body = "gd::print(what);" }
+}
+`, []string{"on player.child_entered_tree(node) {gd::print(node);}", "on this.ready {gd::print(1);}",
+			"@trace on process(delta: float) {gd::print(delta);}", "on get(name) -> Variant {return Variant();}", "on(what) {gd::print(what);}"}},
 	} {
 		got, err := expandPackage(t, map[string]string{"main.gd++": tc.src})
 		if err != nil {
@@ -375,5 +427,65 @@ class Foo {
 	}
 	if len(u.shaderLibs) != 1 || u.shaderLibs[0].file != "other.gd++" || !strings.Contains(u.shaderLibs[0].b.Text, "const float K = 2;") {
 		t.Errorf("shaderLibs = %+v, want K from other.gd++", u.shaderLibs)
+	}
+}
+
+// TestLuaGeneratedDecls checks structs and traits that macros and templates of another file generate.
+func TestLuaGeneratedDecls(t *testing.T) {
+	lib := `macro pair(name, a, b) {
+  gd.struct { name = name, body = function()
+    gd.var { name = a, type = "int" }
+    gd.var { name = b, type = "int" }
+    gd.func { name = "sum", ret = "int", annotations = { "@const" }, body = "return " .. a .. " + " .. b .. ";" }
+  end }
+}
+macro named(name) {
+  gd.trait { name = name, extends = "Node", body = function()
+    gd.func { name = "title", ret = "String", annotations = { "@const" } }
+  end }
+}
+template tagged(name) {
+  trait ${name} {
+    extends Node
+    @const func tag() -> String { return "${name}"; }
+  }
+  struct ${name}Info {
+    var tag: String = "${name}"
+  }
+}
+`
+	main := `invoke pair(Range, low, high)
+invoke named(Titled)
+invoke tagged(Marked)
+class Thing {
+  extends Node
+  implements Titled, Marked
+  var range: Range
+  var info: MarkedInfo
+  @const func title() -> String { return "thing"; }
+}
+`
+	got, err := expandPackage(t, map[string]string{"main.gd++": main, "lib.gd++": lib})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range []string{"struct Range {", "  var low: int", "  @const func sum() -> int {return low + high;}", "trait Titled {",
+		"  @const func title() -> String", "trait Marked {", `  @const func tag() -> String { return "Marked";}`, "struct MarkedInfo {",
+		`  var tag: String = "Marked"`} {
+		if !strings.Contains(got, w) {
+			t.Errorf("got: %s\nwant: %s", got, w)
+		}
+	}
+	// What the file generates is what it declares, for the other files.
+	decls, err := ListClasses("main.gd++", got, meta.Options{Dependencies: []meta.Dependency{{Name: "Node", Kind: meta.Object}, {Name: "String"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, d := range decls {
+		names = append(names, fmt.Sprintf("%s:%d", d.Name, d.Kind))
+	}
+	if want := []string{"Range:10", "Titled:8", "Marked:8", "MarkedInfo:10", "Thing:1"}; !slices.Equal(names, want) {
+		t.Errorf("got %v, want %v", names, want)
 	}
 }

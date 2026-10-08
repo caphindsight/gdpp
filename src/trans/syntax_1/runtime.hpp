@@ -10,6 +10,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <initializer_list>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <tuple>
@@ -1803,6 +1805,86 @@ Callable callable_name(const T &p_object, const StringName &p_name) {
 	}
 }
 
+// is_struct<T> says whether T is a GD++ struct. Its _gdpp_fields gives its fields, without the Callables of its funcs.
+template <typename T, typename = void>
+struct is_struct : std::false_type {};
+template <typename T>
+struct is_struct<T, std::void_t<decltype(&T::_gdpp_fields)>> : std::true_type {};
+
+// struct_dictionary returns p_value as the Dictionary of the struct p_owner, whose keys are p_keys: its fields and
+// funcs. Null is an empty Dictionary, so the struct keeps its defaults. In debug builds, another type, and unknown
+// keys, e.g. typos in a script's Dictionary, print errors.
+inline Dictionary struct_dictionary(const Variant &p_value, const char *p_owner, std::initializer_list<const char *> p_keys) {
+	if (p_value.get_type() != Variant::DICTIONARY) {
+		if (p_value.get_type() != Variant::NIL) {
+			ERR_PRINT(vformat("A %s needs a Dictionary, but got a %s.", p_owner, Variant::get_type_name(p_value.get_type())));
+		}
+		return Dictionary();
+	}
+	Dictionary dict = p_value;
+#ifdef DEBUG_ENABLED
+	Array keys = dict.keys();
+	for (int64_t i = 0; i < keys.size(); i++) {
+		String key = keys[i];
+		if (std::none_of(p_keys.begin(), p_keys.end(), [&](const char *k) { return key == k; })) {
+			ERR_PRINT(vformat("%s has no field %s.", p_owner, keys[i]));
+		}
+	}
+#endif
+	return dict;
+}
+
+// struct_field sets r_field, a field of the struct p_owner, to p_dict[p_key], converted to its type, if p_dict has the
+// key. A value that doesn't convert keeps r_field, and prints an error.
+template <typename T>
+void struct_field(const Dictionary &p_dict, const char *p_key, T &r_field, const char *p_owner) {
+	if (!p_dict.has(p_key)) {
+		return;
+	}
+	const Variant &value = p_dict[p_key];
+	if constexpr (!std::is_same_v<T, Variant>) {
+		Variant::Type type;
+		if constexpr (std::is_enum_v<T>) {
+			type = Variant::INT;
+		} else {
+			type = Variant::Type(GetTypeInfo<T>::VARIANT_TYPE);
+		}
+		if (!Variant::can_convert_strict(value.get_type(), type)) {
+			ERR_PRINT(vformat("%s.%s needs a %s, but got a %s.", p_owner, p_key, Variant::get_type_name(type), Variant::get_type_name(value.get_type())));
+			return;
+		}
+	}
+	r_field = cast<T>(value);
+}
+
+// struct_arg_t is how a struct func's Callable passes T, a parameter or return type: enums as ints, the rest by value.
+template <typename T>
+using struct_arg_t = std::conditional_t<std::is_enum_v<std::remove_cv_t<std::remove_reference_t<T>>>, int64_t, std::remove_cv_t<std::remove_reference_t<T>>>;
+
+// struct_callable_of returns a Callable of p_method, which takes A and returns R, on p_self.
+template <typename R, typename... A, typename S, typename M>
+Callable struct_callable_of(const std::shared_ptr<S> &p_self, M p_method) {
+	return callable(nullptr, [p_self, p_method](struct_arg_t<A>... p_args) -> struct_arg_t<R> {
+		if constexpr (std::is_void_v<R>) {
+			((*p_self).*p_method)(static_cast<std::remove_cv_t<std::remove_reference_t<A>>>(p_args)...);
+		} else {
+			return static_cast<struct_arg_t<R>>(((*p_self).*p_method)(static_cast<std::remove_cv_t<std::remove_reference_t<A>>>(p_args)...));
+		}
+	});
+}
+
+// struct_callable returns a Callable of the method p_method of p_self, a struct's hidden copy, which the Callables of
+// one Dictionary of the struct share. Calls convert their arguments to the method's parameter types.
+template <typename S, typename R, typename... A>
+Callable struct_callable(const std::shared_ptr<S> &p_self, R (S::*p_method)(A...)) {
+	return struct_callable_of<R, A...>(p_self, p_method);
+}
+// struct_callable returns a Callable of the const method p_method of p_self, like the one for other methods.
+template <typename S, typename R, typename... A>
+Callable struct_callable(const std::shared_ptr<S> &p_self, R (S::*p_method)(A...) const) {
+	return struct_callable_of<R, A...>(p_self, p_method);
+}
+
 // add_singleton creates the object of a @singleton class into r_object, and registers it as the engine's singleton
 // p_name. The package's registration code calls it.
 template <typename T>
@@ -2903,6 +2985,40 @@ inline gdpp::VariantAwaiter operator co_await(const Signal &p_signal) {
 		} \
 	};
 
+// GDPP_STRUCT makes the GD++ struct m_struct bind as a Dictionary, with its fields and the Callables of its funcs, and
+// convert from one. Use it in namespace godot.
+#define GDPP_STRUCT(m_struct) \
+	template <> \
+	struct GetTypeInfo<m_struct> { \
+		static constexpr GDExtensionVariantType VARIANT_TYPE = GDEXTENSION_VARIANT_TYPE_DICTIONARY; \
+		static constexpr GDExtensionClassMethodArgumentMetadata METADATA = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE; \
+		static inline PropertyInfo get_class_info() { \
+			return PropertyInfo(Variant::DICTIONARY, ""); \
+		} \
+	}; \
+	template <> \
+	struct GetTypeInfo<const m_struct &> : GetTypeInfo<m_struct> {}; \
+	template <> \
+	struct PtrToArg<m_struct> { \
+		_FORCE_INLINE_ static m_struct convert(const void *p_ptr) { \
+			return m_struct::_gdpp_from(*reinterpret_cast<const Dictionary *>(p_ptr)); \
+		} \
+		typedef Dictionary EncodeT; \
+		_FORCE_INLINE_ static void encode(const m_struct &p_val, void *p_ptr) { \
+			*reinterpret_cast<Dictionary *>(p_ptr) = p_val._gdpp_to_dictionary(); \
+		} \
+	}; \
+	template <> \
+	struct PtrToArg<const m_struct &> : PtrToArg<m_struct> {}; \
+	template <> \
+	struct VariantCaster<m_struct> { \
+		static _FORCE_INLINE_ m_struct cast(const Variant &p_variant) { \
+			return m_struct::_gdpp_from(p_variant); \
+		} \
+	}; \
+	template <> \
+	struct VariantCaster<const m_struct &> : VariantCaster<m_struct> {};
+
 // GDPP_BITFIELD gives m_enum, a GD++ bitfield, the bitwise operators. & returns a gdpp::Masked, which tests as a bool.
 // Use it in namespace godot.
 #define GDPP_BITFIELD(m_enum) \
@@ -2987,6 +3103,8 @@ template <typename T>
 Variant snapshot(const T &p_value) {
 	if constexpr (std::is_enum_v<T>) {
 		return static_cast<int64_t>(p_value);
+	} else if constexpr (is_struct<T>::value) {
+		return p_value._gdpp_fields(); // Without the Callables of its funcs, which differ in every Dictionary.
 	} else {
 		Variant result = p_value;
 		if (result.get_type() == Variant::ARRAY || result.get_type() == Variant::DICTIONARY) {

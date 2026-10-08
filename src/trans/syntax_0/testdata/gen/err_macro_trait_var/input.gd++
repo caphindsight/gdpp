@@ -1,0 +1,5 @@
+invoke {
+  gd.trait { name = "Valued", extends = "Node", body = function()
+    gd.var { name = "value", type = "int" }
+  end }
+}

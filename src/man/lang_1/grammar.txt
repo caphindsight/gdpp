@@ -25,31 +25,33 @@ Whitespace, newlines and comments may appear between any two tokens, except insi
 
 ```
 File        = Code* FileHead? TopItem*
-FileHead    = ClassHead | ExternHead | TraitHead | EnumHead | MacroHead | LibraryHead | ShaderHead
+FileHead    = ClassHead | ExternHead | TraitHead | StructHead | EnumHead | MacroHead | LibraryHead | ShaderHead
 ClassHead   = Doc? Annotation* 'class_name' Ident ( 'extends' Type )? Implements*
 ExternHead  = Doc? Annotation* 'extern_name' Ident ( 'extends' Type )?
 TraitHead   = Doc? Annotation* 'trait_name' Ident ( 'extends' Type )?
+StructHead  = Doc? 'struct_name' Ident
 EnumHead    = Doc? Annotation* 'enum_name' Ident ( 'extends' EnumBase )? EnumEntry*
 MacroHead   = ( 'macro_name' | 'template_name' ) Ident '(' MacroParams? ')' Body
 LibraryHead = 'macro_library' Body
 ShaderHead  = Doc? 'shader_library' GLSL code
-TopItem     = Class | Extern | Trait | Macro | AnnotDecl | Member
+TopItem     = Class | Extern | Trait | Struct | Macro | AnnotDecl | Member
 ```
 
 - `Code` before the file head must be a shader block: `decl` and `impl` blocks must be in a class.
-- After `class_name`, `extern_name` or `trait_name`, every `Member` belongs to that class, extern or trait.
+- After `class_name`, `extern_name`, `trait_name` or `struct_name`, every `Member` belongs to that class, extern, trait or struct.
 - In a file without any of them, only enum types and shader blocks are allowed as members at the top level.
 - After `enum_name`, only an optional `extends` and enum values follow.
 - After `macro_name`, `template_name` or `macro_library`, the rest of the file is the `Body`.
 - After `shader_library`, the rest of the file is GLSL code.
 
-# Classes, externs and traits
+# Classes, externs, traits and structs
 
 ```
 Class       = Doc? Annotation* 'class' Ident '{' ( 'extends' Type )? Implements* Member* '}'
 Implements  = 'implements' Type ( ',' Type )*
 Extern      = Doc? Annotation* 'extern' Ident '{' ( 'extends' Type )? Member* '}'
 Trait       = Doc? Annotation* 'trait' Ident '{' ( 'extends' Type )? Member* '}'
+Struct      = Doc? 'struct' Ident '{' Member* '}'
 
 Member      = Code
             | Annotation* 'ctor' Block
@@ -67,7 +69,8 @@ Member      = Code
 
 Externs only allow `Func`, `Signal` and `Var` members, without bodies, initial values or default values.
 
-- Traits only allow `Func` members, without default values. A trait needs `extends`. See `gd++ man traits`.
+- Traits only allow `Func` members, without default values, and invocations that generate them. A trait needs `extends`. See `gd++ man traits`.
+- Structs only allow `Var` members without a property body, `Func` members with a body, `decl` and `impl` blocks, and invocations that generate them. See `gd++ man structs`.
 - `Implements` comes after `extends`, and any number of times.
 - In an `on` block, `Ident '.' Ident` is a signal's callback, e.g. `on button.pressed`: the first `Ident` is a variable of the class, or `this`. A `ParamList` may leave out types, and parameters at its end. `'->' Type` is only for property callbacks, e.g. `on get`. See `gd++ man callbacks`.
 
@@ -210,7 +213,7 @@ Default     = Block | Expr
 ```gd++
 class  class_name  ctor  decl  dtor  enum  enum_name  extends  extern  extern_name
 func  get  impl  implements  import  invoke  macro  macro_library  macro_name  noimport  on  set
-shader  shader_library  signal  template  template_name  trait  trait_name  var
+shader  shader_library  signal  struct  struct_name  template  template_name  trait  trait_name  var
 ```
 
 In C++ code, GD++ also reserves:

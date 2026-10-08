@@ -48,7 +48,7 @@ Facts:
 
 - `template NAME(params) { GD++ }` goes wherever an inline class can go. See `gd++ man files`.
 - Every file of the package can invoke it.
-- Its name shares the package's namespace with classes, externs, traits, enums and macros. It can't be a GD++ or C++ keyword.
+- Its name shares the package's namespace with classes, externs, traits, structs, enums and macros. It can't be a GD++ or C++ keyword.
 - A template has no doc comment and no annotations: Godot never sees a template. Use `//` comments.
 - Its braces must balance.
 
@@ -117,9 +117,9 @@ invoke stat { "health", max = 50 + 50 }
 
 Templates generate declarations:
 
-- At the top level of a file without `class_name` or `extern_name`, a template may generate classes, externs, enum types and shader blocks.
-- In a class or extern, it generates members.
-- In a file-level class or extern, i.e. after `class_name` or `extern_name`, it may generate inline classes and externs too.
+- At the top level of a file without a file-level declaration, a template may generate classes, externs, traits, structs, enum types and shader blocks.
+- In a class, extern, trait or struct, it generates members. In a trait, only functions. In a struct, only vars, functions, and `decl` and `impl` blocks.
+- After `class_name`, `extern_name`, `trait_name` or `struct_name`, it may generate inline classes, externs, traits and structs too.
 
 Templates don't work in C++ code, e.g. in a function body. Use a macro there. See `gd++ man macros`.
 
@@ -133,18 +133,24 @@ Templates don't work in C++ code, e.g. in a function body. Use a macro there. Se
 Like `class_name`, `template_name` makes the whole file one template:
 
 ```gd++
-template_name pool_of(T, size = 64)
+template_name spawner(T, max = 8)
 
-// A pool class for any poolable class.
-@pool(${size}, "grow")
-class ${T}Pool {
-  extends Node
-  func take() -> ${T} { return create ${T}; }
+// A node that spawns nodes of class T as its children.
+class ${T}Spawner {
+  extends Node3D
+  func spawn() -> ${T} {
+    if (get_child_count() >= ${max}) {
+      return nullptr;
+    }
+    Gd<${T}> node = create ${T};
+    add_child(node);
+    return node;
+  }
 }
 ```
 
 - The head comes first in the file. Everything after it, to the end of the file, is the body.
-- It works the same as `template pool_of(T, size = 64) { ... }`.
+- It works the same as `template spawner(T, max = 8) { ... }`.
 
 # Inline templates and macros
 
@@ -189,17 +195,24 @@ template inventory(first, second) {
 
 # Examples
 
-A pool class for each poolable class:
+A spawner class for each class of nodes to spawn: `EnemySpawner`, which keeps up to 16 enemies, and `CoinSpawner`, up to 8 coins.
 
 ```gd++
-invoke pool_of(Bullet, 512)
-invoke pool_of(Spark)
+invoke spawner(Enemy, 16)
+invoke spawner(Coin)
 
-template pool_of(T, size = 64) {
-  @pool(${size}, "grow")
-  class ${T}Pool {
-    extends Node
-    func take() -> ${T} { return create ${T}; }
+template spawner(T, max = 8) {
+  /// Spawns ${T}s as its children, at most ${max} at a time.
+  class ${T}Spawner {
+    extends Node3D
+    func spawn() -> ${T} {
+      if (get_child_count() >= ${max}) {
+        return nullptr;
+      }
+      Gd<${T}> node = create ${T};
+      add_child(node);
+      return node;
+    }
   }
 }
 ```

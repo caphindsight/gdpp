@@ -1,0 +1,6 @@
+class Holder {
+  extends Node
+  invoke {
+    gd.struct { name = "Hit", body = function() end }
+  }
+}

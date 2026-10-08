@@ -1,0 +1,2 @@
+struct Hit {
+  var x: int

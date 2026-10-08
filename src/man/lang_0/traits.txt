@@ -74,7 +74,7 @@ A trait only contains functions:
 - A function with a body is a default: a class that doesn't define it gets a copy.
 - Functions can have a doc comment and `@const`. No other annotations, and no default values for parameters.
 - Anything else, e.g. `var` or `signal`, is an error: "Traits can't contain vars.".
-- A trait can't invoke macros or templates, neither as a member nor in a default's code. Classes in other files copy defaults as they're written.
+- Macros and templates can generate a trait's functions, and code in its defaults. Classes in other files copy defaults as the trait's file expands them. See `gd++ man macros`.
 
 A default's code runs as the class's own code:
 

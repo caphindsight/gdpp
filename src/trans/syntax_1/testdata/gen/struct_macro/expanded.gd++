@@ -1,0 +1,24 @@
+// Structs that macros of another file generate, and invocations in a struct.
+class_name Hero2
+extends Node
+
+var stats: Stats
+var ammo: Ammo
+
+// The vars of the class, which ctx.members lists.
+func vars() -> String {return "stats ammo";}
+
+/// Stats: strength, agility.
+struct Stats {
+  var strength: int = 0
+  var agility: int = 0
+  @const func total() -> int {return strength + agility;}
+}
+
+struct Ammo {
+  var kind: String
+  var count: int = 1
+  @const func count_twice() -> int {return count * 2;}
+  // The struct's members, which ctx.members lists in a struct.
+  @const func members() -> String {return "struct: var kind, var count, func count_twice";}
+}

@@ -1,0 +1,4 @@
+input.gd++:2:3: Struct Hit's var damage can't be a property.
+ 2 |   var damage: int { get { return 1; } }
+   |   ^^^
+Hint: Struct vars are plain fields. To compute a value, write a func, e.g. "@const func ...".

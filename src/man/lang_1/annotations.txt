@@ -240,6 +240,21 @@ A shader is always static, so `@static` is an error. Shader blocks take no annot
 
 Functions of traits only take `@const`. The functions of a class that implement them can't have `@static`, `@virtual`, `@override`, `@deferred`, `@thread_safe`, `@onthread` or `@private`. See `gd++ man traits`.
 
+# Structs
+
+Structs, and their vars, take no annotations. Functions of structs take:
+
+@const
+  Make the function a const method, which doesn't change the fields.
+
+@static
+  Make the function static: it has no struct, e.g. a factory, and isn't in the struct's `Dictionary`.
+
+@private
+  Keep the function out of the struct's `Dictionary`: only C++ code calls it.
+
+See `gd++ man structs`.
+
 # Variables of classes
 
 @onready

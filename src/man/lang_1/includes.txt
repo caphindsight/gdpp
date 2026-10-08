@@ -19,7 +19,7 @@ UtilityFunctions <godot_cpp/variant/utility_functions.hpp>
 memnew           <godot_cpp/core/memory.hpp>
 ```
 
-- It adds the classes, externs, traits and enums of the package's GD++ files, each with its generated header, e.g. `"Player.h"`.
+- It adds the classes, externs, traits, structs and enums of the package's GD++ files, each with its generated header, e.g. `"Player.h"`.
 - The list is cached in the package's build cache.
 - `gd++ doc NAME` shows a name's header.
 
@@ -49,7 +49,8 @@ GD++ files can use each other freely, even in cycles: `Player` can have a `var` 
 
 - In headers, GD++ declares other GD++ classes, externs, traits and enums ahead (`class Enemy;` or `enum class Suit : int64_t;`), and includes their headers at the end. That breaks the cycle.
 - With a class, extern or trait, it also declares its kind, so a `Gd<Enemy>` works before `Enemy` is defined. See `gd++ man gd`.
-- A name is included at the top when the header needs its definition: the base class, the types of `@virtual` functions, and names in `decl` blocks.
+- A name is included at the top when the header needs its definition: the base class, the types of `@virtual` functions, names in `decl` blocks, and structs, which are held by value.
+- So two structs can't hold each other, directly or through other structs.
 - So fields of GD++ class types in `decl` blocks can create include cycles that don't compile. Prefer variables declared with `var`.
 
 # import

@@ -1,0 +1,4 @@
+struct Hit {
+  var damage: int
+  func damage() -> int { return 1; }
+}

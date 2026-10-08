@@ -229,6 +229,7 @@ extends CharacterBody3D
 - `@export`, `@export_storage`, `@export_dir`, `@export_global_dir`, `@export_multiline`, `@export_color_no_alpha` and the `@export_flags_` annotations of layers take no arguments.
 - Arguments are numbers and strings, written like in GDScript, and the constants of `@export_custom`.
 - `Async` variables can't be exported: neither the inspector nor scene files can hold a task. See `gd++ man async`.
+- A struct variable is exported as a `Dictionary` of its fields, without its functions: the inspector edits them, and scenes save them. See `gd++ man structs`.
 - Each annotation checks the variable's type:
 
 ```out

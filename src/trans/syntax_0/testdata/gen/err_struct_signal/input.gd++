@@ -1,0 +1,3 @@
+struct Hit {
+  signal landed
+}

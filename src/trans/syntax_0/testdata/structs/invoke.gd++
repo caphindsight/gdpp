@@ -1,0 +1,4 @@
+struct Ammo {
+  var kind: String
+  invoke twice(count)
+}

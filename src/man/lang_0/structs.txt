@@ -1,0 +1,239 @@
+Structs: value types that Godot sees as Dictionaries
+
+A struct is a C++ value type, with fields and functions. Godot has no value types of its own, so it sees a struct as a `Dictionary`.
+
+- In C++, a struct is a plain C++ struct: copying one copies its fields, and it costs no allocation and no refcount.
+- In signals, RPCs, bound functions, variables and `as`, it converts to and from a `Dictionary` keyed by its field names.
+- So GDScript reads `hit.damage`, and passes `{"damage": 3}`.
+
+```gd++
+/// What hit a character.
+struct Hit {
+  var point: Vector3
+  /// Hit points to take.
+  var damage: int = 1
+  var by: Node3D
+
+  @const func is_lethal(hp: int) -> bool { return hp <= damage; }
+}
+
+class_name Player
+extends CharacterBody3D
+
+signal hit_taken(hit: Hit)
+
+var health: int = 100
+
+func take(hit: Hit) -> void {
+  health -= hit.damage;
+  emit hit_taken(hit);
+}
+```
+
+```gdscript
+func _on_hit_taken(hit):
+    print(hit.damage, " ", hit.is_lethal.call(10))
+
+player.take({"point": Vector3.ZERO, "damage": 3})
+```
+
+# Declaring a struct
+
+A file-level struct takes the rest of the file:
+
+```gd++
+struct_name Hit
+
+var damage: int = 1
+```
+
+An inline struct takes a pair of braces:
+
+```gd++
+struct Hit {
+  var damage: int = 1
+}
+```
+
+- Both are the same kind of struct. Files can mix them with classes, externs and traits. See `gd++ man files`.
+- An inline struct can also come after `class_name`, like an inline class.
+- A struct has no base class, and implements no traits.
+- A struct takes a doc comment, but no annotations.
+- A struct's name is a type of the package, like a class's: every file of the package can use it.
+
+# Fields
+
+```gd++
+struct Hit {
+  var point: Vector3
+  var damage: int = 1
+  var kind: DamageKind = FIRE
+  var weights: PackedFloat32Array = {
+    PackedFloat32Array w;
+    w.push_back(0.5);
+    return w;
+  }
+}
+```
+
+- `var name: Type`, with an optional initial value, like a variable of a class. See `gd++ man variables`.
+- Without a type, the field is a `Variant`.
+- The initial value is C++: an expression, a block that returns the value, or for an enum field, the enum's values, e.g. `FIRE`.
+- Fields have no annotations, and can't be properties or node paths.
+
+A field's type can be:
+
+- a built-in type, e.g. `int`, `Vector3` or `String`, or `Variant`,
+- an object, e.g. `Node3D`, a GD++ class, an extern or a trait, held as a `Gd`,
+- a GD++ enum,
+- a typed `Array[T]` or `Dictionary[K, V]`,
+- another struct, held by value.
+
+It can't be an `Async`, a `Weak`, a `GpuArray`, or the struct itself.
+
+# Functions
+
+```gd++
+struct Hit {
+  var damage: int = 1
+
+  @const func is_lethal(hp: int) -> bool { return hp <= damage; }
+  func scale(factor: float) -> void { damage = int64_t(damage * factor); }
+  @static func none() -> Hit { return Hit{}; }
+  @private func clamp() -> void { damage = std::max<int64_t>(damage, 0); }
+}
+```
+
+- `func`, like in a class: C++ in braces, which can use the fields directly. `this` is the struct.
+- Every function needs a body.
+- `@const` makes a function that doesn't change the fields.
+- `@static` makes a function without a struct, e.g. a factory: `Hit::none()`.
+- `@private` keeps a function out of Godot's view: only C++ code calls it.
+- No other annotations.
+- Parameter and return types are those of fields, plus `void` as a return type.
+- Fields and functions share one namespace: names must be unique, and can't start with `_gdpp_`.
+
+# decl and impl blocks
+
+```gd++
+struct Hit {
+  var damage: int = 1
+  decl {
+    int64_t hits_ = 0;
+  }
+  impl {
+    static int64_t clamp_damage(int64_t d) { return d < 0 ? 0 : d; }
+  }
+}
+```
+
+- `decl`, `impl` and `decl impl` blocks work like in a class. See `gd++ man code`.
+- A `decl` block starts in the struct's private section, like in a class. Start it with `public:` for public members.
+- `This` names the struct.
+
+# Using structs in C++
+
+```cpp
+Hit hit;                                   // the fields' initial values
+Hit strong{ Vector3(), 10 };               // fields in order
+Hit aimed{ .point = target, .damage = 3 }; // fields by name, with C++20
+hit.damage += 1;
+Hit copy = hit;                            // a copy: changing it doesn't change hit
+```
+
+- A struct is an aggregate, so braces set its fields, in order or by name.
+- A private field from a `decl` block, or a constructor, makes it a plain class instead, which braces can't fill. Then give it a `@static` factory function.
+
+# What Godot sees
+
+Godot sees a struct as a `Dictionary`:
+
+- one key per field, with the field's name, in the order of the declarations,
+- one key per function without `@static` or `@private`, with a `Callable` of the function,
+- a nested struct as a nested `Dictionary`,
+- an enum as its `int`.
+
+E.g. a `Hit` is `{"point": Vector3(0, 0, 0), "damage": 1, "by": null, "is_lethal": Callable(...)}`.
+
+Where this applies:
+
+- Function parameters and return values, which scripts call.
+- Variables, which scripts get and set.
+- Signal arguments.
+- `as`: `variant as Hit` and `hit as Variant`. See `gd++ man cast`.
+
+From a `Dictionary` to a struct:
+
+- Each field gets the value of its key, converted to its type.
+- A missing key keeps the field's initial value.
+- A value of another type keeps the initial value too, and prints an error.
+- A key that's no field or function prints an error in debug builds, e.g. `Hit has no field damge.`. It catches typos in scripts.
+- `null` gives the initial values, without an error. Anything else that's no `Dictionary` gives them too, with an error.
+
+# Functions in scripts
+
+A script calls a struct's function through its `Callable`:
+
+```gdscript
+var hit = player.last_hit
+print(hit.is_lethal.call(10))
+hit.scale.call(2.0)
+```
+
+- Scripts pass every argument: default values only work in C++.
+- A struct is a value, so the `Dictionary` is a copy. Its `Callable`s share a hidden copy of the struct, made when the struct became the `Dictionary`.
+- A function that changes the fields, e.g. `scale`, changes that hidden copy: later calls through the same `Dictionary` see the change. The `Dictionary`'s keys, e.g. `hit.damage`, don't change, and neither does the struct in C++. It's like passing a struct by value in C++.
+- Each conversion makes the `Callable`s anew, which costs an allocation. `@private` functions cost nothing.
+- Two `Dictionary`s of equal structs aren't equal with `==` in scripts, since their `Callable`s differ. Compare their fields, or compare in C++.
+
+# Where only the fields go
+
+`Callable`s can't be saved or sent over the network. So these places see a struct's fields, without its functions:
+
+- Exported variables, with `@export` or `@export_storage`: the inspector edits the fields, and scenes save them.
+- RPCs: `rpc` sends the fields. See `gd++ man rpc`.
+- `@deferred` and `@thread_safe` calls, which come back as a struct anyway.
+- `@trace`, which prints and compares the fields. See `gd++ man debugging`.
+
+# Limits
+
+- A struct can't be in a typed collection, e.g. `Array[Hit]`. Use a plain `Array` of them.
+- Shaders can't take or return structs.
+- A struct can't extend a class or another struct, and a class can't extend a struct.
+- Scripts don't see a struct's name, only `Dictionary`.
+
+# What GD++ generates
+
+Each struct gets a header and a source file, e.g. `Hit.h` and `Hit.cpp`:
+
+```cpp
+struct Hit {
+	Vector3 point{};
+	int64_t damage = 1;
+	gdpp::Gd<Node3D> by{};
+
+	bool is_lethal(int64_t hp) const;
+
+	operator Variant() const { return _gdpp_to_dictionary(); }
+	Dictionary _gdpp_fields() const;
+	Dictionary _gdpp_to_dictionary() const;
+	static Hit _gdpp_from(const Variant &p_value);
+};
+GDPP_STRUCT(Hit)
+```
+
+- The fields, with their initial values, and the functions' declarations.
+- `_gdpp_fields` returns the `Dictionary` of the fields, and `_gdpp_to_dictionary` adds the functions' `Callable`s. A struct converts to a `Variant` with the latter.
+- `_gdpp_from` makes a struct from a `Dictionary`.
+- `GDPP_STRUCT` tells godot-cpp's bindings to pass the struct as a `Dictionary`.
+- The source file defines the functions and the conversions, and holds the `impl` blocks.
+
+`gd++ trans FILE` prints them. See `gd++ man generated`.
+
+# Macros
+
+Macros generate structs with `gd.struct`, and templates by writing them. Invocations work inside a struct too, where `ctx.scope` is `"struct"`. See `gd++ man macros`.
+
+# See also
+
+`gd++ man types`, `gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man code`, `gd++ man files`.

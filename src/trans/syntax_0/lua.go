@@ -41,14 +41,14 @@ type codeValue struct {
 	expr  bool
 }
 
-// scope is where emitters put what they generate: the invocation's place, or the body of a gd.class, gd.extern or
-// C++ field function. Kind is "file", "class", "extern" or "cpp".
+// scope is where emitters put what they generate: the invocation's place, or the body of a gd.class, gd.extern,
+// gd.trait, gd.struct or C++ field function. Kind is "file", "class", "extern", "trait", "struct" or "cpp".
 type scope struct {
 	kind        string
-	owner       string        // The class or extern, if any.
+	owner       string        // The class, extern, trait or struct, if any.
 	annotations []*Annotation // The owner's annotations, which ctx.annotations shows.
-	fileLevel   bool          // Whether it's the body of the file-level class or extern, which may hold inline ones too.
-	members     []any         // What ctx.members shows: *Member, or at the file's top level, *Class, *Extern and *Enum.
+	fileLevel   bool          // Whether it's the body of the file-level class, extern, trait or struct, which may hold inline ones too.
+	members     []any         // What ctx.members shows: *Member, or at the file's top level, *Class, *Extern, *Trait, *Struct and *Enum.
 	chunks      []chunk
 }
 
@@ -493,7 +493,7 @@ func (r *run) declTables(nodes []any, by string) *lua.LTable {
 	return list
 }
 
-// declTable returns n, a *Member, *Class, *Extern or *Enum, as a table of ctx.members.
+// declTable returns n, a *Member, *Class, *Extern, *Trait, *Struct or *Enum, as a table of ctx.members.
 func (r *run) declTable(n any, by string) *lua.LTable {
 	t := r.L.NewTable()
 	set := func(k string, v lua.LValue) {
@@ -523,7 +523,7 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 		}
 		set("annotations", r.annotationTables(annotations))
 	}
-	// A class or extern, with its members, without invocations.
+	// A class, extern, trait or struct, with its members, without invocations.
 	body := func(kind string, doc *Doc, annotations []*Annotation, name string, extends *Type, implements []*Type, members []*Member) {
 		head(kind, doc, annotations)
 		setStr("name", name)
@@ -649,6 +649,10 @@ func (r *run) declTable(n any, by string) *lua.LTable {
 		body("class", n.Doc, n.Annotations, n.Name, n.Extends, n.Implements, n.Members)
 	case *Extern:
 		body("extern", n.Doc, n.Annotations, n.Name, n.Extends, nil, n.Members)
+	case *Trait:
+		body("trait", n.Doc, n.Annotations, n.Name, n.Extends, nil, n.Members)
+	case *Struct:
+		body("struct", n.Doc, n.Annotations, n.Name, nil, nil, n.Members)
 	}
 	t.RawSetString("generated", lua.LBool(by != ""))
 	setStr("generated_by", by)
@@ -905,7 +909,7 @@ func (r *run) gdTable() *lua.LTable {
 	}
 
 	// Emitters.
-	for _, name := range []string{"class", "extern"} {
+	for _, name := range []string{"class", "extern", "trait", "struct"} {
 		fn(name, func(L *lua.LState) int { return r.emitClass(name, L.CheckTable(1)) })
 	}
 	fn("enum", func(L *lua.LState) int { return r.emitEnum(L.CheckTable(1)) })
@@ -1212,12 +1216,16 @@ func (r *run) emit(what string, item *topItem) {
 	switch {
 	case sc.kind == "cpp":
 		msg = fmt.Sprintf("%s can't be used in C++ code: only gd.text can.", what)
-	case item.Class != nil || item.Extern != nil:
+	case item.decl() != nil:
 		if sc.kind != "file" && !sc.fileLevel {
-			msg = fmt.Sprintf("%s can't be used in a class or extern: they can't be nested.", what)
+			msg = fmt.Sprintf("%s can't be used in a %s: classes, externs, traits and structs can't be nested.", what, sc.kind)
 		}
 	case sc.kind == "file" && (m.Enum == nil || m.Enum.Value != nil) && (m.Code == nil || !m.Code.Shader):
-		msg = fmt.Sprintf("%s can't be used outside of a class: only gd.class, gd.extern, gd.enum without a value and gd.shader_library can.", what)
+		msg = fmt.Sprintf("%s can't be used outside of a class: only gd.class, gd.extern, gd.trait, gd.struct, gd.enum without a value and gd.shader_library can.", what)
+	case sc.kind == "trait" && m.Func == nil:
+		msg = fmt.Sprintf("%s can't be used in a trait: only gd.func can.", what)
+	case sc.kind == "struct" && m.Var == nil && m.Func == nil && (m.Code == nil || m.Code.Shader):
+		msg = fmt.Sprintf("%s can't be used in a struct: only gd.var, gd.func, gd.decl, gd.impl and gd.decl_impl can.", what)
 	}
 	if msg != "" {
 		r.L.RaiseError("%s", msg)
@@ -1452,19 +1460,27 @@ func (r *run) emitClass(kind string, t *lua.LTable) int {
 	var members []*Member
 	for _, item := range items {
 		if item.Member == nil {
-			r.L.RaiseError("%s: classes and externs can't be nested.", what)
+			r.L.RaiseError("%s: classes, externs, traits and structs can't be nested.", what)
 		}
 		members = append(members, item.Member)
 	}
 	extends, doc := r.optType(what, t, "extends"), r.doc(what, t)
+	if kind != "class" && t.RawGetString("implements") != lua.LNil {
+		r.L.RaiseError("%s: %ss can't implement traits.", what, kind)
+	}
+	if kind == "struct" && extends != nil {
+		r.L.RaiseError("%s: structs have no base class, so they take no extends.", what)
+	}
 	item := &topItem{Pos: r.inv.Pos}
-	if kind == "class" {
+	switch kind {
+	case "class":
 		item.Class = &Class{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Implements: r.implements(what, t), Members: members}
-	} else {
-		if t.RawGetString("implements") != lua.LNil {
-			r.L.RaiseError("%s: externs can't implement traits.", what)
-		}
+	case "extern":
 		item.Extern = &Extern{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Members: members}
+	case "trait":
+		item.Trait = &Trait{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Extends: extends, Members: members}
+	default:
+		item.Struct = &Struct{Pos: r.inv.Pos, Doc: doc, Annotations: annotations, Name: name, Members: members}
 	}
 	r.emit(what, item)
 	return 0

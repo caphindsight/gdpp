@@ -43,6 +43,7 @@ func not_done_yet() -> int
 - A function without a body gets a generated one.
 - It returns the type's default value: `0`, `false`, an empty `String`, `nullptr`, and so on, or nothing for `void`.
 - Handy for `@virtual` functions, and to sketch a class's API.
+- Functions of structs always need a body. See `gd++ man structs`.
 
 # What GD++ does with a function
 

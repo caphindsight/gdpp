@@ -1,4 +1,4 @@
 input.gd++:2:1: The name "A" is declared twice in this file.
  2 | extern A {}
    | ^
-Hint: Class, extern, trait, enum, macro and template names must be unique in the package.
+Hint: Class, extern, trait, struct, enum, macro and template names must be unique in the package.

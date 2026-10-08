@@ -1,0 +1,9 @@
+class_name Scoreboard
+extends Node
+
+var best: Entry
+
+struct Entry {
+  var name: String
+  var points: int
+}

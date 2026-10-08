@@ -66,6 +66,8 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "trait_name Damageable\nimplements Named, Saved\ntrait Named {}", Styled("trait_name", CodeKeyword) + " " + Styled("Damageable", CodeType) + "\n" +
 			Styled("implements", CodeKeyword) + " " + Styled("Named", CodeType) + ", " + Styled("Saved", CodeType) + "\n" + Styled("trait", CodeKeyword) + " " +
 			Styled("Named", CodeType) + " {}"},
+		{"gd++", "struct_name Hit\nstruct Miss {}", Styled("struct_name", CodeKeyword) + " " + Styled("Hit", CodeType) + "\n" + Styled("struct", CodeKeyword) + " " +
+			Styled("Miss", CodeType) + " {}"},
 		{"gd++", "// c\nmacro_library\nlocal x", Styled("// c", CodeComment) + "\n" + Styled("macro_library", CodeKeyword) + "\n" + Styled("local", CodeKeyword) + " x"},
 		{"gd++", "macro  macro_library  var", Styled("macro", CodeKeyword) + "  " + Styled("macro_library", CodeKeyword) + "  " + Styled("var", CodeKeyword)},
 		{"gd++", "template t(n) {\n  @@save var ${n}: int\n}", Styled("template", CodeKeyword) + " " + Styled("t", CodeFunction) + "(n) {\n  " +

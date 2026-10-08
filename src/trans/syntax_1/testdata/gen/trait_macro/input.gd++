@@ -1,0 +1,8 @@
+// A trait that a macro of another file generates, and a class of this file that implements it.
+invoke value_trait(Valuable, Node)
+
+class Gem {
+  extends Node
+  implements Valuable
+  @const func value() -> int { return 50; }
+}

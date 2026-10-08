@@ -1,0 +1,10 @@
+class_name Gpu
+extends Node
+
+shader double(n: int, hit: Hit) -> PackedFloat32Array {
+  return 1.0;
+}
+
+struct Hit {
+  var damage: int
+}

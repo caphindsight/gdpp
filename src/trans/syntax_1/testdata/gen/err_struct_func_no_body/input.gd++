@@ -1,0 +1,3 @@
+struct Hit {
+  func damage() -> int
+}

@@ -1,0 +1,4 @@
+input.gd++:2:13: Struct Hit can't have a var of type Async[int].
+ 2 |   var task: Async[int]
+   |             ^^^^^
+Hint: Structs hold values that convert to and from a Variant. Async, Weak and GpuArray values don't.

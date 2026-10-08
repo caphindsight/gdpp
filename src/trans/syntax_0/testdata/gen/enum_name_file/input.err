@@ -1,4 +1,4 @@
 input.gd++:2:1: The name "Difficulty" is already declared by a dependency.
  2 | enum_name Difficulty
    | ^
-Hint: Names must differ from Godot's, and from those of the package's other classes, externs, traits and enums.
+Hint: Names must differ from Godot's, and from those of the package's other classes, externs, traits, structs and enums.

@@ -51,6 +51,7 @@ Node, Node3D, Object, ...     Gd<Node>, Gd<Node3D>, ...      by value
 RefCounted, Resource, ...     Gd<RefCounted>, ...            const Gd<T> &
 your GD++ classes             Gd<Player>, Gd<Stats>, ...     like their base
 your GD++ enums               the C++ enum class             by value
+your GD++ structs             the C++ struct                 const T &
 externs, traits               Gd<Terrain>, Gd<Damageable>    like their base
 Async[T], Async               Async<T>, Async<Variant>       by value
 Weak[T]                       Weak<T>                        by value
@@ -112,7 +113,7 @@ var names: Dictionary[String, Node3D]      // TypedDictionary<String, Node3D>
 - `Dictionary[K, V]`: a dictionary with keys of type `K` and values of type `V`. Needs Godot 4.4 or newer.
 - In C++, they are godot-cpp's `TypedArray` and `TypedDictionary`, with element types spelled by name: `TypedArray<Node>`, not `TypedArray<Node *>`.
 - Only `Array` (one argument) and `Dictionary` (two) take type arguments, besides `Async` and `Weak` (see `gd++ man async` and `gd++ man weak`).
-- Element types can be built-in types and classes. Not enums, externs, traits, `Async` or `Weak` types.
+- Element types can be built-in types and classes. Not enums, externs, traits, structs, `Async` or `Weak` types.
 - No nesting: `Array[Array[int]]` is an error. Use `Array[Array]`.
 
 # Enums
@@ -163,6 +164,14 @@ A trait declared in any GD++ file of the package is a type.
 - It holds an object whose class implements the trait, and calls the trait's functions directly.
 - In Godot: its base class. An object whose class doesn't implement the trait arrives as null.
 - See `gd++ man traits`.
+
+# Structs
+
+A struct declared in any GD++ file of the package is a type.
+
+- In C++: the struct itself, held by value, e.g. `Hit`.
+- In Godot: a `Dictionary` of its fields, and of `Callable`s of its functions.
+- See `gd++ man structs`.
 
 # Objects
 
@@ -225,7 +234,7 @@ godot-cpp declares more than classes, e.g. `TypedArray`, `Ref`, `UtilityFunction
 [×] res://a.gd++:3:8: TypedArray is not a Godot type.
      3 | var x: TypedArray
        |        ^^^^^^^^^^
-    Hint: Types are Godot's built-in types and classes, and the package's classes, externs, traits and enums.
+    Hint: Types are Godot's built-in types and classes, and the package's classes, externs, traits, structs and enums.
 ```
 
 - Use `Array[T]` instead of `TypedArray<T>`, and a class name instead of `Gd<T>`.
@@ -250,7 +259,8 @@ The editor's help shows GD++ types like GDScript does:
 - `Dictionary[String, Node3D]`,
 - the class of tasks, e.g. `FooAsync`, for `Async` types,
 - `T` for `Weak[T]`,
-- `int` with the enum's name, for enums.
+- `int` with the enum's name, for enums,
+- `Dictionary` for structs.
 
 See `gd++ man docs`.
 

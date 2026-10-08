@@ -1,0 +1,8 @@
+class_name Board
+extends Node
+
+var best: Entry
+
+struct Entry {
+  var name: String
+}

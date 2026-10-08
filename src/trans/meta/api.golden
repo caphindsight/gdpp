@@ -89,3 +89,6 @@ type SignalParam struct
 field SignalParam.Name string
 field SignalParam.Type string
 field Declaration.Singleton bool
+const Struct Kind = 15
+field Dependency.Macros []Dependency
+const StructDecl DeclKind = 10

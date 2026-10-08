@@ -1,0 +1,41 @@
+File: @1:1
+  InlineStructs:
+    - @2:1
+      Doc: @1:1 A struct.
+      Name: Hit
+      Members:
+        - @3:3
+          Var: @4:3
+            Doc: @3:3 A field.
+            Name: damage
+            Type: @4:15 int
+            Init: @4:21 1
+        - @5:3
+          Var: @5:3
+            Name: at
+            Type: @5:11 Vector3
+        - @6:3
+          Func: @6:10
+            Annotations:
+              - @6:3 const
+            Name: lethal
+            Params:
+              - @6:22
+                Name: hp
+                Type: @6:26 int
+            Return: @6:34 bool
+            Body: @6:39
+              TextPos: 6:40
+              Text: " return hp <= damage;"
+        - @7:3
+          Code: @7:3
+            Decl: true
+            Body: @7:8
+              TextPos: 7:9
+              Text: " int x_ = 0;"
+        - @8:3
+          Code: @8:3
+            Impl: true
+            Body: @8:8
+              TextPos: 8:9
+              Text: " int f() { return 1; }"

@@ -1,6 +1,6 @@
 Files: the layout of a GD++ file
 
-A GD++ file declares any number of classes, externs, traits, enums, macros, templates and shader blocks. Every other GD++ file of the package can use them. This page covers the layout of a file.
+A GD++ file declares any number of classes, externs, traits, structs, enums, macros, templates and shader blocks. Every other GD++ file of the package can use them. This page covers the layout of a file.
 
 # File-level and inline declarations
 
@@ -15,6 +15,9 @@ extern Road { ... }      // an inline extern
 
 trait_name Damageable    // a file-level trait
 trait Saveable { ... }   // an inline trait
+
+struct_name Hit          // a file-level struct
+struct Spot { ... }      // an inline struct
 
 enum_name Suit           // a file-level enum: the rest of the file is its values
 enum Rank { ... }        // an inline enum
@@ -55,7 +58,7 @@ func jump() -> void {
 - `extends`, if any, comes right after it, even on the same line: `class_name Player extends CharacterBody3D`.
 - `implements`, if any, comes after `extends`, or in its place. See `gd++ man traits`.
 - Everything after it, to the end of the file, is a member of the class.
-- Exception: inline classes, externs and traits can appear between the members.
+- Exception: inline classes, externs, traits and structs can appear between the members.
 
 ```gd++
 class_name Player
@@ -83,7 +86,7 @@ signal changed
 ```
 
 - Like `class_name`, but for an extern: the rest of the file declares its members.
-- Inline classes, externs and traits can appear between them.
+- Inline classes, externs, traits and structs can appear between them.
 - See `gd++ man externs`.
 
 # A file-level trait
@@ -96,8 +99,21 @@ func take_damage(amount: int) -> void
 ```
 
 - Like `class_name`, but for a trait: the rest of the file declares its functions.
-- Inline classes, externs and traits can appear between them.
+- Inline classes, externs, traits and structs can appear between them.
 - See `gd++ man traits`.
+
+# A file-level struct
+
+```gd++
+struct_name Hit
+
+var damage: int = 1
+@const func is_lethal(hp: int) -> bool { return hp <= damage; }
+```
+
+- Like `class_name`, but for a struct: the rest of the file declares its fields and functions.
+- Inline classes, externs, traits and structs can appear between them.
+- See `gd++ man structs`.
 
 # A file-level enum
 
@@ -137,7 +153,7 @@ extern Terrain {
 }
 ```
 
-Its top level can only hold inline classes, externs, traits, enums, macros, templates, annotation declarations, and invocations of macros and templates. Anything else, e.g. a `func`, a `var`, an integer constant or a `decl` block, belongs in a class:
+Its top level can only hold inline classes, externs, traits, structs, enums, macros, templates, annotation declarations, and invocations of macros and templates. Anything else, e.g. a `func`, a `var`, an integer constant or a `decl` block, belongs in a class:
 
 ```out
 [×] res://enemies.gd++:12:1: This func is outside of any class.
@@ -148,7 +164,7 @@ Its top level can only hold inline classes, externs, traits, enums, macros, temp
 
 # No nesting
 
-- Classes, externs and traits can't be nested: an inline class can't be inside another class, extern or trait.
+- Classes, externs, traits and structs can't be nested: an inline class can't be inside another class, extern, trait or struct.
 - Enums can be declared inside a class, but they are global types anyway. See `gd++ man enums`.
 
 # Macros and templates
@@ -175,7 +191,7 @@ Its top level can only hold inline classes, externs, traits, enums, macros, temp
 
 # Names
 
-- Every class, extern, trait, enum, macro and template has a name, unique in the package.
+- Every class, extern, trait, struct, enum, macro and template has a name, unique in the package.
   - Two GD++ files can't declare the same name.
   - A name can't be declared twice in one file.
 - Names must differ from Godot's classes and from godot-cpp's names, e.g. `Node` or `TypedArray`.
@@ -187,7 +203,7 @@ Its top level can only hold inline classes, externs, traits, enums, macros, temp
 
 Each declaration generates its own files, as if it were alone in its file:
 
-- a class: `NAME.h` and `NAME.cpp`,
+- a class or a struct: `NAME.h` and `NAME.cpp`,
 - an extern, a trait or an enum: `NAME.h`.
 
 The declarations of one file see each other just like they see those of other files. See `gd++ man generated`.

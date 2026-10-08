@@ -1,0 +1,4 @@
+errors/structs/unclosed.gd++:1:12: This "{" (the body of struct "Hit") is never closed.
+ 1 | struct Hit {
+   |            ^
+Hint: Add a matching "}".

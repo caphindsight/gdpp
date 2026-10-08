@@ -1,0 +1,4 @@
+input.gd++:2:14: Struct Hit can't have a func parameter of type Weak[Node].
+ 2 |   func by(n: Weak[Node]) -> void {}
+   |              ^^^^
+Hint: Structs hold values that convert to and from a Variant. Async, Weak and GpuArray values don't.

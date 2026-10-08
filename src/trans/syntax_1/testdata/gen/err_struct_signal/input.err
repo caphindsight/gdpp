@@ -1,0 +1,4 @@
+input.gd++:2:3: Structs can't contain signals.
+ 2 |   signal landed
+   |   ^^^^^^
+Hint: Structs contain vars, funcs, and decl and impl blocks.

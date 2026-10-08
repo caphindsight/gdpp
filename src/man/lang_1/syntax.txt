@@ -13,8 +13,8 @@ This page covers the lexical structure of GD++: tokens, comments, literals and s
 A file has five kinds of scope:
 
 1. The class declaration scope.
-   - Where: the top of a file, the rest of a file after `class_name`, `extern_name` or `trait_name`, and the inside of `class Name { ... }`, `extern Name { ... }` and `trait Name { ... }`.
-   - Holds: `func`, `shader`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, shader blocks, `import` and `noimport`, and at the top level, classes, externs and traits.
+   - Where: the top of a file, the rest of a file after `class_name`, `extern_name`, `trait_name` or `struct_name`, and the inside of `class Name { ... }`, `extern Name { ... }`, `trait Name { ... }` and `struct Name { ... }`.
+   - Holds: `func`, `shader`, `var`, `signal`, `enum`, `ctor`, `dtor`, `on`, `decl`, `impl`, shader blocks, `import` and `noimport`, and at the top level, classes, externs, traits and structs.
    - The syntax looks like GDScript, but it's GD++'s own. See `gd++ man files`.
 2. The property declaration scope.
    - Where: the braces after `var name: type { ... }`.

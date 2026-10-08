@@ -124,7 +124,7 @@ A GD++ enum is a type of the whole package: every GD++ file of the package can u
 - inside a class, file-level or inline, which changes nothing about its scope,
 - as a whole file, with `enum_name`. See `gd++ man files`.
 
-Its name must be unique in the package, like the names of classes, externs and traits.
+Its name must be unique in the package, like the names of classes, externs, traits and structs.
 
 ```gd++
 enum_name Suit

@@ -1,0 +1,13 @@
+// A trait that a macro of another file generates, and a class of this file that implements it.
+/// An item with a value.
+trait Valuable {
+  extends Node
+  @const func value() -> int
+  @const func double_value() -> int {return value() * 2;}
+}
+
+class Gem {
+  extends Node
+  implements Valuable
+  @const func value() -> int { return 50; }
+}

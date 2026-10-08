@@ -84,6 +84,7 @@ on ready {
 - A `Variant` converts to any type, the way Godot converts the arguments of a bound method: to an enum from an `int`, to a `Gd` or an `Async` from an object, and so on.
 - A value of the wrong type converts like in a bound method, e.g. to null for objects, and to 0 for numbers.
 - Any type converts to a `Variant`. An enum converts as its `int`.
+- A struct converts to and from a `Dictionary` of its fields, and of `Callable`s of its functions, e.g. `variant as Hit` and `hit as Variant`. See `gd++ man structs`.
 
 ```gd++
 func take(task: Variant) -> void {

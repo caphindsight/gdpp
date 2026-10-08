@@ -27,6 +27,7 @@ type unit struct {
 	classes []*classModel      // Bases first.
 	externs []*externModel
 	traits  []*traitModel // Traits declared in the file.
+	structs []*structModel
 	// Every trait that the file's classes use, by name: those of the file, and of dependencies.
 	traitModels map[string]*traitModel
 	tracing     bool // Whether the unit's header defines GDPP_TRACING, so that failed assertions print trace lines.
@@ -208,9 +209,6 @@ func parseExpanded(filename, src string, opts meta.Options) (*File, *expander, e
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := checkInvokes(file, src); err != nil {
-		return nil, nil, err
-	}
 	x, err := newExpander(filename, src, file, opts)
 	if err != nil {
 		return nil, nil, err
@@ -243,7 +241,7 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 	declare := func(pos lexer.Position, name string, s *symbol) error {
 		if u.symbols[name] != nil || x.defs[name] != nil && x.defs[name].file == filename {
 			return u.errorAt(pos, 0, fmt.Sprintf("The name %q is declared twice in this file.", name),
-				"Class, extern, trait, enum, macro and template names must be unique in the package.")
+				"Class, extern, trait, struct, enum, macro and template names must be unique in the package.")
 		}
 		s.name, s.include, s.gdpp, s.order = name, `"`+name+`.h"`, true, len(u.symbols)
 		u.symbols[name] = s
@@ -269,6 +267,11 @@ func parseUnit(filename, src string, opts meta.Options) (*unit, error) {
 	}
 	for _, t := range fileTraits(file) {
 		if err := declare(t.Pos, t.Name, &symbol{trait: t}); err != nil {
+			return nil, err
+		}
+	}
+	for _, st := range fileStructs(file) {
+		if err := declare(st.Pos, st.Name, &symbol{kind: meta.Struct, strukt: st}); err != nil {
 			return nil, err
 		}
 	}
@@ -349,6 +352,8 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends), Signals: ownSignals(s.extern.Members)})
 		case s.trait != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.TraitDecl, Base: baseName(s.trait.Extends)})
+		case s.strukt != nil:
+			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.StructDecl})
 		default:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.EnumDecl, Base: s.base, Values: s.values, Bitfield: s.bitfield})
 		}
@@ -669,6 +674,8 @@ func (s *symbol) pos() lexer.Position {
 		return s.extern.Pos
 	case s.trait != nil:
 		return s.trait.Pos
+	case s.strukt != nil:
+		return s.strukt.Pos
 	}
 	return s.enum.Pos
 }
@@ -688,57 +695,6 @@ func typeNamesOf(types []*Type) []string {
 		names = append(names, t.Name)
 	}
 	return names
-}
-
-// checkInvokes reports the invocations in the traits of file, before expansion: a trait's default functions are
-// copied into classes of other files, as plain code.
-func checkInvokes(file *File, src string) error {
-	for _, t := range fileTraits(file) {
-		for _, m := range t.Members {
-			pos := m.Pos
-			switch {
-			case m.Invoke != nil:
-				pos = m.Invoke.Pos
-			case m.Func != nil && m.Func.Body != nil:
-				p, ok := findInvoke(m.Func.Body)
-				if !ok {
-					continue
-				}
-				pos = p
-			default:
-				continue
-			}
-			e := &Error{Pos: pos, Len: len("invoke"), Msg: fmt.Sprintf("Traits can't invoke macros or templates, but trait %s does.", t.Name),
-				Hint: "Classes of other files copy a trait's default functions as they're written. Call a function of the class instead."}
-			return e.withSource(src)
-		}
-	}
-	return nil
-}
-
-// findInvoke returns where the C++ code of b invokes a macro or template: "invoke" followed by "{", or by a name and
-// "(" or "{". Members and scopes, e.g. std::invoke(f), don't count.
-func findInvoke(b *Block) (lexer.Position, bool) {
-	if !strings.Contains(b.Text, "invoke") {
-		return lexer.Position{}, false
-	}
-	l, err := gdppLexer.LexString(b.Pos.Filename, b.Text)
-	if err != nil {
-		return lexer.Position{}, false
-	}
-	tokens, err := lexer.ConsumeAll(l)
-	if err != nil {
-		return lexer.Position{}, false
-	}
-	tokens = significant(tokens)
-	for i, t := range tokens {
-		next, after := at(tokens, i+1), at(tokens, i+2)
-		if t.Type == tokIdent && t.Value == "invoke" && !isPunct(at(tokens, i-1), ".") && !isPunct(at(tokens, i-1), ">") && !isPunct(at(tokens, i-1), ":") &&
-			(isPunct(next, "{") || next.Type == tokIdent && (isPunct(after, "(") || isPunct(after, "{"))) {
-			return shift(t.Pos, b.TextPos, ""), true
-		}
-	}
-	return lexer.Position{}, false
 }
 
 func baseName(t *Type) string {
@@ -767,7 +723,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				continue // A duplicate dependency.
 			}
 			return nil, u.errorAt(s.pos(), 0, fmt.Sprintf("The name %q is already declared by a dependency.", d.Name),
-				"Names must differ from Godot's, and from those of the package's other classes, externs, traits and enums.")
+				"Names must differ from Godot's, and from those of the package's other classes, externs, traits, structs and enums.")
 		}
 		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
 			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits, signals: d.Signals}
@@ -775,9 +731,12 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}
 		if d.Kind == meta.Trait || d.Kind == meta.RefCountedTrait {
-			// Its own file reports its errors, so here a broken file counts as a trait without functions.
+			// Its own file reports its errors, so here a broken file counts as a trait without functions. The file is
+			// expanded with the macros that it sees, since they may generate the trait, or its functions.
 			s.depTrait, s.traitSource = &Trait{Name: d.Name}, cmp.Or(d.SourceName, d.File)
-			if f, err := Parse(d.File, d.Source); err == nil {
+			traitOpts := opts
+			traitOpts.Dependencies = d.Macros
+			if f, _, err := parseExpanded(d.File, d.Source, traitOpts); err == nil {
 				if i := slices.IndexFunc(fileTraits(f), func(t *Trait) bool { return t.Name == d.Name }); i >= 0 {
 					s.depTrait = fileTraits(f)[i]
 				}
@@ -799,6 +758,9 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 		u.enumValues(s, nil) // Dependencies, which classes may expose.
 	}
 	if err := u.buildExterns(); err != nil {
+		return nil, err
+	}
+	if err := u.buildStructs(); err != nil {
 		return nil, err
 	}
 	u.traitModels = map[string]*traitModel{}
@@ -847,6 +809,9 @@ func (u *unit) kindOf(s *symbol, seen []*symbol) (meta.Kind, error) {
 		return 0, u.unknownName(t, "base class")
 	case b.kind == meta.Enum:
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is an enum.", s.name, name), "")
+	case b.kind == meta.Struct:
+		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is a struct.", s.name, name),
+			fmt.Sprintf("Structs have no subclasses. Hold a %s in a var instead.", name))
 	case b.isTrait():
 		return 0, u.errorAt(pos, len(name), fmt.Sprintf("%s can't extend %s, which is a trait.", s.name, name),
 			map[bool]string{true: "Traits extend a class, and can't extend each other.", false: "Write \"implements " + name + "\" instead."}[trait])
@@ -2844,7 +2809,7 @@ func (u *unit) implement(m *classModel, names map[string]bool) error {
 				// A default: the class gets a copy, whose code runs as its own.
 				f := *tf.f
 				body := *f.Body
-				if tm.source != "" {
+				if tm.source != "" && body.Origin.Source == "" { // A template's code keeps its own lines.
 					body.Origin = Origin{Source: tm.source, Line: body.TextPos.Line}
 				}
 				f.Body, f.Pos = &body, t.Pos

@@ -1,0 +1,9 @@
+/// A struct.
+struct Hit {
+  /// A field.
+  var damage: int = 1
+  var at: Vector3
+  @const func lethal(hp: int) -> bool { return hp <= damage; }
+  decl { int x_ = 0; }
+  impl { int f() { return 1; } }
+}

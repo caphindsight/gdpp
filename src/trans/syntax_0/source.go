@@ -55,6 +55,9 @@ func (u *unit) source(name string) string {
 			w.ln("%s", d)
 		}
 	}
+	for _, s := range u.structs {
+		u.structDefs(w, s)
+	}
 	for _, c := range u.classes {
 		u.classDefs(w, c)
 	}
@@ -287,7 +290,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		if s.trace {
 			w.ln("\tgdpp::trace_emit(this, %q%s);", s.s.Name, namedArgs(s.s.Params))
 		}
-		w.ln("\treturn gdpp::Emitted{ emit_signal(GDPP_STRING_NAME(%q)%s) };", s.s.Name, args(s.params, s.s.Params))
+		w.ln("\treturn gdpp::Emitted{ emit_signal(GDPP_STRING_NAME(%q)%s) };", s.s.Name, args(s.params, s.s.Params, true))
 		w.ln("}")
 	}
 	for _, code := range c.codes {
@@ -785,17 +788,26 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 	if !v.trampolined() {
 		return
 	}
-	tag := tagName(c, v.t.enum)
+	tag := v.tag(c)
 	if v.getter != "" {
 		w.ln("")
 		w.ln("%s {", qualified(c, tag, "_gdpp_"+v.getter, "", true))
-		w.ln("\treturn static_cast<%s>(%s());", tag, v.getter)
+		if v.t.strukt != nil {
+			w.ln("\treturn %s()._gdpp_fields();", v.getter)
+		} else {
+			w.ln("\treturn static_cast<%s>(%s());", tag, v.getter)
+		}
 		w.ln("}")
 	}
 	if v.setter != "" {
 		w.ln("")
-		w.ln("%s {", qualified(c, "void", "_gdpp_"+v.setter, tag+" p_value", false))
-		w.ln("\t%s(static_cast<%s>(p_value));", v.setter, v.t.cpp)
+		if v.t.strukt != nil {
+			w.ln("%s {", qualified(c, "void", "_gdpp_"+v.setter, "const Dictionary &p_value", false))
+			w.ln("\t%s(%s::_gdpp_from(p_value));", v.setter, v.t.cpp)
+		} else {
+			w.ln("%s {", qualified(c, "void", "_gdpp_"+v.setter, tag+" p_value", false))
+			w.ln("\t%s(static_cast<%s>(p_value));", v.setter, v.t.cpp)
+		}
 		w.ln("}")
 	}
 }
@@ -980,6 +992,22 @@ func (u *unit) headerNames() (names, complete []string) {
 		complete = append(complete, t.base)
 		addFuncs(t.funcs, nil, nil)
 	}
+	for _, s := range u.structs {
+		addFuncs(s.funcs, s.fields, nil)
+		for _, v := range s.fields {
+			if init := v.v.Init; init != nil { // Default member initializers, in the header.
+				if init.Block != nil {
+					code(init.Block)
+				}
+				complete = append(complete, identifiers(init.Expr)...)
+			}
+		}
+		for _, cd := range s.codes {
+			if cd.Decl {
+				code(cd.Body)
+			}
+		}
+	}
 	for _, c := range u.classes {
 		complete = append(append(complete, c.base), c.traits...)
 		add(c.imports...)
@@ -1008,6 +1036,22 @@ func (u *unit) sourceNames() []string {
 	code := func(b *Block) {
 		if b != nil {
 			names = append(names, identifiers(b.Text)...)
+		}
+	}
+	for _, s := range u.structs {
+		for _, f := range s.funcs {
+			code(f.f.Body)
+			for _, p := range f.f.Params {
+				if d := p.Default; d != nil {
+					code(d.Block)
+					names = append(names, identifiers(d.Expr)...)
+				}
+			}
+		}
+		for _, cd := range s.codes {
+			if cd.Impl {
+				code(cd.Body)
+			}
 		}
 	}
 	for _, c := range u.classes {

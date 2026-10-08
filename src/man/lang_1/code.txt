@@ -42,7 +42,7 @@ decl {
 ```
 
 - A `decl` block goes into the class definition, in the class's header.
-- Its code starts in the class's private section: it's for private fields and methods.
+- Its code starts in the class's private section: it's for private fields and methods. In a struct too. See `gd++ man structs`.
 - Functions declared there are plain C++ methods. Godot doesn't know them, and GDScript can't call them.
 - For such a method, `@private func` is shorter: it needs no `impl` block. See "@private" in `gd++ man functions`.
 - Define them in an `impl` block, or inline, in the `decl` block itself.
@@ -164,7 +164,7 @@ See `gd++ man generated` for all details.
 
 # Includes in C++ code
 
-- You don't write `#include` lines for Godot's classes, godot-cpp's names, or the package's GD++ classes, externs, traits and enums.
+- You don't write `#include` lines for Godot's classes, godot-cpp's names, or the package's GD++ classes, externs, traits, structs and enums.
 - GD++ finds every name that the C++ code uses, and includes its header. See `gd++ man includes`.
 - Write `#include` lines only for other code, e.g. `<vector>`, or the package's plain C++ headers, in `@global` blocks.
 

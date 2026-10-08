@@ -1,0 +1,12 @@
+// Loot is a struct that a macro generates in another file.
+class_name Chest
+extends Node
+
+signal opened(loot: Loot)
+
+@export var loot: Loot
+
+func open() -> Loot {
+  emit opened(loot);
+  return loot;
+}

@@ -6,8 +6,8 @@ import "github.com/alecthomas/participle/v2/lexer"
 // For declarations with a Doc or Annotations, Pos is the position of the keyword (func, var, ...) instead.
 // Later stages use Pos to emit #line directives.
 
-// File is a whole .gd++ file. At most one of FileClass, FileExtern, FileTrait, FileEnum and FileMacro is set.
-// Inline classes, externs and traits are always listed in File, even when they appear after class_name.
+// File is a whole .gd++ file. At most one of FileClass, FileExtern, FileTrait, FileStruct, FileEnum and FileMacro is
+// set. Inline classes, externs, traits and structs are always listed in File, even when they appear after class_name.
 type File struct {
 	Pos           lexer.Position
 	FileClass     *Class    // Declared with class_name.
@@ -16,6 +16,8 @@ type File struct {
 	InlineExterns []*Extern // Declared with extern Name { ... }.
 	FileTrait     *Trait    // Declared with trait_name.
 	InlineTraits  []*Trait  // Declared with trait Name { ... }.
+	FileStruct    *Struct   // Declared with struct_name.
+	InlineStructs []*Struct // Declared with struct Name { ... }.
 	FileEnum      *Enum     // Declared with enum_name.
 	InlineEnums   []*Enum   // Enums in a file without a file-level class. (Otherwise they are class members.)
 	FileMacro     *Macro    // Declared with macro_name or template_name.
@@ -124,6 +126,16 @@ type Trait struct {
 	Annotations []*Annotation `parser:"@@*"`
 	Name        string        `parser:"'trait' @Ident '{'"`
 	Extends     *Type         `parser:"( 'extends' @@ )?"`
+	Members     []*Member     `parser:"@@* '}'"`
+}
+
+// Struct is a struct, declared with struct_name (the rest of the file) or inline with struct Name { ... }: a C++ value
+// type of fields and functions, which Godot sees as a Dictionary. The checker restricts its Members.
+type Struct struct {
+	Pos         lexer.Position
+	Doc         *Doc          `parser:"@@?"`
+	Annotations []*Annotation `parser:"@@*"`
+	Name        string        `parser:"'struct' @Ident '{'"`
 	Members     []*Member     `parser:"@@* '}'"`
 }
 

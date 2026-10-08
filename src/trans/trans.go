@@ -37,6 +37,7 @@ const (
 	Annotation        = meta.Annotation
 	Trait             = meta.Trait
 	RefCountedTrait   = meta.RefCountedTrait
+	Struct            = meta.Struct
 	ClassDecl         = meta.ClassDecl
 	ExternDecl        = meta.ExternDecl
 	EnumDecl          = meta.EnumDecl
@@ -46,6 +47,7 @@ const (
 	ShaderLibraryDecl = meta.ShaderLibraryDecl
 	AnnotationDecl    = meta.AnnotationDecl
 	TraitDecl         = meta.TraitDecl
+	StructDecl        = meta.StructDecl
 )
 
 // fork is what every syntax fork provides.

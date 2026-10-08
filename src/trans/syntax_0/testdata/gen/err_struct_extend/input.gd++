@@ -1,0 +1,6 @@
+class_name Big
+extends Hit
+
+struct Hit {
+  var damage: int
+}

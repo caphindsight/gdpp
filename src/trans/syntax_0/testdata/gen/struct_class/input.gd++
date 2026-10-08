@@ -1,0 +1,35 @@
+// A class that uses a struct wherever a type goes.
+class_name Fighter
+extends Node
+
+signal hit_taken(hit: Hit)
+
+var last: Hit
+@export var spawn: Hit
+@export_storage var saved: Hit
+
+@rpc
+func sync_hit(hit: Hit) -> void {
+  last = hit;
+  emit hit_taken(hit);
+}
+
+func make(d: Variant, fallback: Hit = Hit{}) -> Hit {
+  Hit h = d as Hit;
+  Variant v = h as Variant;
+  return v.get_type() == Variant::NIL ? fallback : h;
+}
+
+@deferred
+func later(hit: Hit) -> void {
+  last = hit;
+}
+
+on this.hit_taken(hit) {
+  gd::print(hit.damage);
+}
+
+struct Hit {
+  var damage: int = 1
+  var at: Vector3
+}

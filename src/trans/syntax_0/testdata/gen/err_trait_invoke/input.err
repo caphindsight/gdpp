@@ -1,4 +1,0 @@
-input.gd++:6:5: Traits can't invoke macros or templates, but trait Damageable does.
- 6 |     invoke log("hit");
-   |     ^^^^^^
-Hint: Classes of other files copy a trait's default functions as they're written. Call a function of the class instead.

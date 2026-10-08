@@ -1,0 +1,3 @@
+struct Hit {
+  var next: Hit
+}

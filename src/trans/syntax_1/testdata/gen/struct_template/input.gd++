@@ -1,0 +1,7 @@
+// A struct that a template of another file generates.
+invoke point_struct(Point)
+
+class Walker {
+  extends Node
+  var at: Point
+}

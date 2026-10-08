@@ -43,12 +43,13 @@ type symbol struct {
 	traitSource      string        // For dependency traits: how #line names its file.
 	traits           []string      // For dependency classes: the traits they implement themselves, see meta.Dependency.
 	enum             *Enum         // Set for enums in the file.
+	strukt           *Struct       // Set for structs in the file.
 	order            int           // For declarations in the file: how many came before, which orders those at the same position.
 }
 
 // local reports whether the file declares s.
 func (s *symbol) local() bool {
-	return s.class != nil || s.extern != nil || s.trait != nil || s.enum != nil
+	return s.class != nil || s.extern != nil || s.trait != nil || s.strukt != nil || s.enum != nil
 }
 
 // isExtern reports whether s is an extern: of the file or a dependency.
@@ -72,11 +73,13 @@ type gtype struct {
 	doc   string  // Godot's doc spelling, e.g. "Resource" or "int[]".
 	byRef bool    // Whether parameters take it as const &.
 	enum  *symbol // Set for enums.
-	async *gtype  // For Async types: the type of the result.
-	gpu   string  // For GpuArray types: the GLSL type of the elements, e.g. "vec3".
-	weak  bool    // Whether it's a Weak type.
-	trait string  // For traits: the trait's name.
-	void  bool
+	// Set for structs: C++ value types, which Godot sees as a Dictionary.
+	strukt *symbol
+	async  *gtype // For Async types: the type of the result.
+	gpu    string // For GpuArray types: the GLSL type of the elements, e.g. "vec3".
+	weak   bool   // Whether it's a Weak type.
+	trait  string // For traits: the trait's name.
+	void   bool
 }
 
 // param is the C++ parameter type of t.
@@ -160,12 +163,14 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		return &gtype{cpp: gd(s.name), doc: u.baseOf(s.name), trait: s.name, byRef: s.kind == meta.RefCountedTrait}, nil
 	case meta.Enum:
 		return &gtype{cpp: s.name, doc: "int", enum: s}, nil
+	case meta.Struct:
+		return &gtype{cpp: s.name, doc: "Dictionary", byRef: true, strukt: s}, nil
 	case meta.GodotEnum:
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("%s is not a GD++ type.", t.Name),
 			fmt.Sprintf("Use int, or redefine it as a GD++ enum: \"enum My%s { extends %s }\".", t.Name, t.Name))
 	}
 	return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("%s is not a Godot type.", t.Name),
-		"Types are Godot's built-in types and classes, and the package's classes, externs, traits and enums.")
+		"Types are Godot's built-in types and classes, and the package's classes, externs, traits, structs and enums.")
 }
 
 // gd returns the C++ type that holds an object of the class, extern or trait name: gdpp::Gd<name>. Parameters take it
@@ -234,7 +239,7 @@ func (u *unit) resolveElement(t *Type) (*gtype, error) {
 	_, builtin := builtins[t.Name]
 	if s := u.symbols[t.Name]; !builtin && s != nil && s.kind != meta.Object && s.kind != meta.RefCounted {
 		return nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Type %s can't be used in a typed collection.", t.Name),
-			"Typed collections can hold built-in types and classes, but not enums, externs or traits.")
+			"Typed collections can hold built-in types and classes, but not enums, externs, traits or structs.")
 	}
 	g, err := u.resolve(t, false)
 	if err != nil || builtin || u.symbols[t.Name] == nil {
@@ -257,7 +262,7 @@ func (u *unit) unknownName(t *Type, what string) error {
 	for name := range u.symbols {
 		names = append(names, name)
 	}
-	hint := "Types are Godot types, or classes, externs, traits and enums from the dependencies or this file."
+	hint := "Types are Godot types, or classes, externs, traits, structs and enums from the dependencies or this file."
 	if s := suggest(t.Name, names...); s != "" {
 		hint = fmt.Sprintf("Did you mean %q?", s)
 	}

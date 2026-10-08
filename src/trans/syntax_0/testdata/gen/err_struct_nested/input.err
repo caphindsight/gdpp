@@ -1,0 +1,4 @@
+input.gd++:2:3: Classes, externs, traits and structs can't be nested, but found keyword "struct" inside the body of struct "Hit".
+ 2 |   struct Inner {}
+   |   ^^^^^^
+Hint: Move it out to the top level of the file. Inline classes, externs, traits and structs are listed next to each other.

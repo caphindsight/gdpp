@@ -105,6 +105,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Exports: `@export` and all of GDScript's export annotations, e.g. `@export_range` or `@export_tool_button`, to show variables in the inspector. See `gd++ man exports`.
 - Signals: `signal name(params)`, sent with `emit`, and handled with `on`, e.g. `on button.pressed { }`, which stays connected to whatever the variable holds. See `gd++ man signals`.
 - Callables: `callable` makes a `Callable` of a function, a method, a name or a lambda, e.g. `callable on_hit` or `callable [this] { hide(); }`. See "Callables" in `gd++ man rewrites`.
+- Structs: `struct Name { var ... func ... }`, C++ value types of fields and functions, which Godot sees as a `Dictionary`, with a `Callable` per function. See `gd++ man structs`.
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
 - Object lifecycle: `ctor { }`, `dtor { }` and `@onready`. See `gd++ man lifecycle`.
 - Callbacks: `on` blocks, e.g. `on ready { }`, `on process { }` or `on predelete { }`, which run code at the engine's notifications, and add to the base's. Property callbacks too, e.g. `on get(name) { }`. See `gd++ man callbacks`.

@@ -34,6 +34,7 @@ type CmdTrans struct {
 	Extern           []string `arg:"--extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base isn't refcounted [default include: \"NAME.h\"]"`
 	RefCountedExtern []string `arg:"--refcounted-extern,separate" placeholder:"NAME[=INCLUDE]" help:"an extern of another GD++ file, whose base is refcounted [default include: \"NAME.h\"]"`
 	Enum             []string `arg:"--enum,separate" placeholder:"NAME[=INCLUDE][:VALUES]" help:"an enum of another GD++ file, with its values, e.g. Suit:HEARTS,SPADES=5 [default include: \"NAME.h\"]"`
+	Struct           []string `arg:"--struct,separate" placeholder:"NAME[=INCLUDE]" help:"a struct of another GD++ file [default include: \"NAME.h\"]"`
 	DebugOptions
 }
 
@@ -97,7 +98,7 @@ func (c *CmdTrans) Run() {
 		FailWithText(err)
 	}
 	if len(generated) == 0 {
-		LogInfo("The file declares no classes, externs, traits or enums.")
+		LogInfo("The file declares no classes, externs, traits, structs or enums.")
 	}
 	var text strings.Builder
 	for i, f := range generated {
@@ -132,6 +133,7 @@ func (c *CmdTrans) flagDependencies() []trans.Dependency {
 		{"--extern", c.Extern, trans.Extern},
 		{"--refcounted-extern", c.RefCountedExtern, trans.RefCountedExtern},
 		{"--enum", c.Enum, trans.Enum},
+		{"--struct", c.Struct, trans.Struct},
 	} {
 		for _, value := range flag.values {
 			dep, err := parseTransDep(value, flag.kind)

@@ -1,0 +1,3 @@
+struct Hit {
+  @export var damage: int
+}

@@ -1,0 +1,2 @@
+struct Hit extends Node {
+}

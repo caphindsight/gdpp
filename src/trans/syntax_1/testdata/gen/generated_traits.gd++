@@ -1,0 +1,13 @@
+// Traits of another file of the package, which macros of struct_macros.gd++ generate, for the cases that use them.
+invoke value_trait(Collectible, Node)
+
+trait Weighted {
+  extends Node
+  func weight() -> int
+  invoke constant_func(base_weight, 10)
+  @const func heavy() -> bool {
+    int64_t limit = base_weight();
+    invoke plus_one(limit);
+    return weight() > limit;
+  }
+}

@@ -1,0 +1,5 @@
+input.gd++:3:5: Macro { ... } failed: gd.signal can't be used in a struct: only gd.var, gd.func, gd.decl, gd.impl and gd.decl_impl can.
+ 3 |     gd.signal { name = "landed" }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Macro call stack:
+  macro { ... }, invoked at input.gd++:1

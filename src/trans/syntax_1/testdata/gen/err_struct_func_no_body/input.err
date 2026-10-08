@@ -1,0 +1,4 @@
+input.gd++:2:3: Struct Hit's func damage needs a body.
+ 2 |   func damage() -> int
+   |   ^^^^
+Hint: Structs define their funcs.

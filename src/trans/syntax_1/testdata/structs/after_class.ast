@@ -1,0 +1,17 @@
+File: @1:1
+  FileClass: @1:1
+    Name: Board
+    Extends: @2:9 Node
+    Members:
+      - @4:1
+        Var: @4:1
+          Name: best
+          Type: @4:11 Entry
+  InlineStructs:
+    - @6:1
+      Name: Entry
+      Members:
+        - @7:3
+          Var: @7:3
+            Name: name
+            Type: @7:13 String

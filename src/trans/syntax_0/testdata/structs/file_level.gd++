@@ -1,0 +1,7 @@
+/// A file-level struct.
+struct_name Score
+
+var points: int
+func add(n: int) -> void { points += n; }
+
+struct Other {}

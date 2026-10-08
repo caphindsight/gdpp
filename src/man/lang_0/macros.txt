@@ -46,7 +46,7 @@ Facts:
 
 - `macro NAME(params) { Lua }` goes wherever an inline class can go. See `gd++ man files`.
 - Every file of the package can invoke it.
-- Its name shares the package's namespace with classes, externs, traits, enums and templates. It can't be a GD++ or C++ keyword.
+- Its name shares the package's namespace with classes, externs, traits, structs, enums and templates. It can't be a GD++ or C++ keyword.
 - A macro has no doc comment and no annotations: Godot never sees a macro. Use `//` comments.
 - The body is Lua 5.1 code. New to Lua? See `gd++ man lua`.
 - Its braces must balance, also in Lua comments and long strings.
@@ -97,9 +97,10 @@ invoke {
 
 Declarations:
 
-- At the top level of a file without `class_name` or `extern_name`, a macro may generate classes, externs, enum types and shader blocks.
-- In a class or extern, it generates members.
-- In a file-level class or extern, i.e. after `class_name` or `extern_name`, it may generate inline classes and externs too.
+- At the top level of a file without a file-level declaration, a macro may generate classes, externs, traits, structs, enum types and shader blocks.
+- In a class, extern, trait or struct, it generates members. In a trait, only functions. In a struct, only vars, functions, and `decl` and `impl` blocks.
+- After `class_name`, `extern_name`, `trait_name` or `struct_name`, it may generate inline classes, externs, traits and structs too.
+- Classes in other files see a trait as it's expanded, with what the invocations in its file generate.
 
 C++ code:
 
@@ -156,10 +157,10 @@ A doc comment before an invocation goes to `ctx.doc`, so the macro can document 
 `gd.invoke` invokes a template, so a macro can generate readable GD++:
 
 ```gd++
-// A pool class for each entry of the table.
-macro pools(classes) {
+// A spawner class for each entry of the table, e.g. { { "Enemy", max = 16 }, { "Coin" } }.
+macro spawners(classes) {
   for _, c in ipairs(classes) do
-    gd.invoke("pool_of", { T = c[1], size = c.size })
+    gd.invoke("spawner", { T = c[1], max = c.max })
   end
 }
 ```
@@ -263,6 +264,24 @@ end }
 gd.extern { name, extends, doc, annotations, body }
   An extern, like `gd.class`, without `implements`.
 
+gd.trait { name, extends, doc, annotations, body }
+  A trait, like `gd.class`, without `implements`. Its `body` only emits functions: without `body` for required ones, with one for defaults.
+```lua
+gd.trait { name = "Valued", extends = "Node", body = function()
+  gd.func { name = "value", ret = "int", annotations = { "@const" } }
+  gd.func { name = "double_value", ret = "int", annotations = { "@const" }, body = "return value() * 2;" }
+end }
+```
+
+gd.struct { name, doc, body }
+  A struct. Its `body` emits its fields with `gd.var`, its functions with `gd.func`, and `gd.decl`, `gd.impl` and `gd.decl_impl` blocks. See `gd++ man structs`.
+```lua
+gd.struct { name = "Hit", doc = "What hit a character.", body = function()
+  gd.var { name = "damage", type = "int", init = 1 }
+  gd.func { name = "is_lethal", params = { "hp: int" }, ret = "bool", annotations = { "@const" }, body = "return hp <= damage;" }
+end }
+```
+
 gd.enum { name, extends, doc, annotations, values }
   An enum type. Each value is a name, `{ name, value }`, or `{ name = ..., value = ..., doc = ... }`. A value is an integer, or a string with an expression.
 ```lua
@@ -292,9 +311,18 @@ gd.ctor { body, annotations } and gd.dtor { body, annotations }
 
 gd.on { name, source, params, ret, body, annotations }
   An `on` block: `gd.on { name = "process", params = { "delta: float" }, body = "tick(delta);" }`.
-  - `source` makes it a signal's block, e.g. `source = "button", name = "pressed"` for `on button.pressed`.
+  - `source` makes it a signal's block, e.g. `source = "button", name = "pressed"` for `on button.pressed`. Like a written one, it follows its variable: it's connected to whatever object the variable holds. `source = "this"` connects it to the object's own signal.
   - `ret` is a property callback's return type, e.g. `"Variant"` for `on get`.
+  - Without `name`, it's the block that runs at every notification, `on(what) { ... }`.
+  - `annotations` takes what `on` blocks take, e.g. `@async`, `@trace` and `@game_only`.
   - `param` and `param_type` still work for one parameter: `param = "delta", param_type = "float"`.
+```lua
+gd.on { source = "player", name = "health_changed", params = { "health" }, body = "bar->set_value(health);" }
+gd.on { source = "this", name = "resized", body = "relayout();" }
+gd.on { name = "get", params = { "name" }, ret = "Variant", body = "return extra.get(name, Variant());" }
+gd.on { name = "ready", annotations = { "@async" }, body = "await get_tree()->process_frame; start();" }
+gd.on { params = { "what" }, body = "log_notification(what);" }
+```
 
 gd.decl { body, annotations }, gd.impl { ... } and gd.decl_impl { ... }
   A `decl`, `impl` or `decl impl` block. `annotations = { "@global" }` makes it `@global`.
@@ -340,7 +368,7 @@ gd.invoke(name, args)
   - Templates generate declarations, so `gd.invoke` can't invoke them in C++ code.
   - Each call nests one level deeper, so a macro that invokes itself forever stops with an error. See "The sandbox".
 ```lua
-gd.invoke("pool_of", { T = "Bullet", size = 128 })
+gd.invoke("spawner", { T = "Enemy", max = 16 })
 gd.invoke("label", { "score", format = function(s) return gd.title(s) .. ":" end })
 ```
 
@@ -448,7 +476,7 @@ User annotations, e.g. `@@save`, are made for macros: GD++ itself ignores them. 
 ```lua
 gd.unique("tmp")              -- _gdpp_tmp_1, then _gdpp_tmp_2: fresh names for helpers
 gd.has_macro("stat")          -- whether the package has a macro of that name
-gd.has_template("pool_of")    -- the same, for templates
+gd.has_template("spawner")    -- the same, for templates
 ```
 
 # Lua: errors
@@ -477,9 +505,9 @@ Messages become sentences: capitalized, ending with a period.
 
 ```
 FIELD            VALUE
-ctx.scope        "file", "class", "extern" or "cpp": where the invocation is
-ctx.class        the class or extern around the invocation, if any
-ctx.annotations  the annotations of that class or extern, if any, like the field of emitters
+ctx.scope        "file", "class", "extern", "trait", "struct" or "cpp": where the invocation is
+ctx.class        the class, extern, trait or struct around the invocation, if any
+ctx.annotations  the annotations of that class, extern or trait, if any, like the field of emitters
 ctx.doc          the invocation's doc comment, if any
 ctx.file         the GD++ file's name
 ctx.line         the invocation's line
@@ -530,10 +558,10 @@ var mana: int = 50   // seen too: it's written after the invocation
 What it holds, by `ctx.scope`:
 
 ```
-SCOPE              ctx.members
-"class", "extern"  the members of the class or extern
-"file"             the file's inline classes, externs and enum types
-"cpp"              the members of the class or extern around the C++ code
+SCOPE                                 ctx.members
+"class", "extern", "trait", "struct"  the members of the class, extern, trait or struct
+"file"                                the file's inline classes, externs, traits, structs and enum types
+"cpp"                                 the members of the class, extern, trait or struct around the C++ code
 ```
 
 Facts:
@@ -542,12 +570,11 @@ Facts:
 - It also lists what earlier invocations in the scope generated, in their place. What later ones generate isn't there yet.
 - In C++ code, it lists all members, generated ones included: C++ code expands after all declarations.
 - Invocations themselves aren't listed.
-- A class or extern at the file's top level has `members` too. Only the written ones: its own invocations expand later.
-- Traits aren't listed. Macros can't generate traits, and can't be invoked in them. See `gd++ man traits`.
+- A class, extern, trait or struct at the file's top level has `members` too. Only the written ones: its own invocations expand later.
 
 Each table has:
 
-- `kind`: the emitter's name: `"var"`, `"func"`, `"signal"`, `"enum"`, `"ctor"`, `"dtor"`, `"on"`, `"decl"`, `"impl"`, `"decl_impl"`, `"shader"`, `"shader_library"`, `"import"`, `"noimport"`, `"class"` or `"extern"`.
+- `kind`: the emitter's name: `"var"`, `"func"`, `"signal"`, `"enum"`, `"ctor"`, `"dtor"`, `"on"`, `"decl"`, `"impl"`, `"decl_impl"`, `"shader"`, `"shader_library"`, `"import"`, `"noimport"`, `"class"`, `"extern"`, `"trait"` or `"struct"`.
 - The emitter's fields, in the formats of "Lua: field formats" above. E.g. a `var` has `name`, `type`, `init`, `doc` and `annotations`.
 - `generated`: whether an invocation generated it.
 - `generated_by`: the name of the macro or template whose invocation generated it, `"{ ... }"` for a macro block, or `nil`.

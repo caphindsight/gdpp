@@ -1,0 +1,4 @@
+errors/structs/file_level_braces.gd++:1:17: Unexpected "{".
+ 1 | struct_name Hit {
+   |                 ^
+Hint: The file-level struct declared with "struct_name" has no braces: its body is the rest of the file. Use "struct Name { ... }" for an inline struct.

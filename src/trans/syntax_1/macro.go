@@ -40,14 +40,13 @@ type expander struct {
 	filename, src string
 	opts          meta.Options
 	defs          map[string]*macroDef
-	libs          []*macroDef      // The package's macro libraries, in the order they run.
-	generated     map[int]string   // The offsets of invocations, with what each one invokes, e.g. "macro stat".
-	edits         []edit           // What the file's own invocations generated, where they are.
-	lineStarts    []int            // The offsets of src's lines, for posAt.
-	done          map[*Class]bool  // Classes whose members are expanded already.
-	doneExterns   map[*Extern]bool // The same for externs.
-	uniques       int              // How many names gd.unique made.
-	generatedBy   map[any]string   // Generated declarations, with the macro or template whose invocation generated them.
+	libs          []*macroDef    // The package's macro libraries, in the order they run.
+	generated     map[int]string // The offsets of invocations, with what each one invokes, e.g. "macro stat".
+	edits         []edit         // What the file's own invocations generated, where they are.
+	lineStarts    []int          // The offsets of src's lines, for posAt.
+	done          map[any]bool   // Classes, externs, traits and structs whose members are expanded already.
+	uniques       int            // How many names gd.unique made.
+	generatedBy   map[any]string // Generated declarations, with the macro or template whose invocation generated them.
 }
 
 // cppKeywords are C++'s keywords, which macros can't be named after.
@@ -62,7 +61,7 @@ var cppKeywords = strings.Fields("alignas alignof and and_eq asm auto bitand bit
 // dependencies in opts.
 func newExpander(filename, src string, file *File, opts meta.Options) (*expander, error) {
 	x := &expander{filename: filename, src: src, opts: opts, defs: map[string]*macroDef{}, generated: map[int]string{},
-		generatedBy: map[any]string{}, done: map[*Class]bool{}, doneExterns: map[*Extern]bool{}}
+		generatedBy: map[any]string{}, done: map[any]bool{}}
 	local := file.InlineMacros
 	if file.FileMacro != nil {
 		local = append([]*Macro{file.FileMacro}, local...)
@@ -144,6 +143,12 @@ func (x *expander) expandFile(f *File) error {
 	for _, e := range f.InlineExterns {
 		decls = append(decls, e)
 	}
+	for _, t := range f.InlineTraits {
+		decls = append(decls, t)
+	}
+	for _, s := range f.InlineStructs {
+		decls = append(decls, s)
+	}
 	for _, e := range f.InlineEnums {
 		decls = append(decls, e)
 	}
@@ -161,12 +166,9 @@ func (x *expander) expandFile(f *File) error {
 		var added []any
 		for _, item := range items {
 			switch {
-			case item.Class != nil:
-				f.InlineClasses = append(f.InlineClasses, item.Class)
-				added = append(added, item.Class)
-			case item.Extern != nil:
-				f.InlineExterns = append(f.InlineExterns, item.Extern)
-				added = append(added, item.Extern)
+			case item.decl() != nil:
+				f.add(item)
+				added = append(added, item.decl())
 			case item.Member.Enum != nil && item.Member.Enum.Value == nil:
 				f.InlineEnums = append(f.InlineEnums, item.Member.Enum)
 				added = append(added, item.Member.Enum)
@@ -184,33 +186,19 @@ func (x *expander) expandFile(f *File) error {
 		decls = slices.Insert(decls, at, added...)
 	}
 	f.Invokes = nil
-	var err error
-	if c := f.FileClass; c != nil {
-		if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name, annotations: c.Annotations, fileLevel: true}, f, 0); err != nil {
-			return err
-		}
-		x.done[c] = true
-	}
-	if e := f.FileExtern; e != nil {
-		if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name, annotations: e.Annotations, fileLevel: true}, f, 0); err != nil {
-			return err
-		}
-		x.doneExterns[e] = true
-	}
-	for i := 0; i < len(f.InlineClasses); i++ {
-		if c := f.InlineClasses[i]; !x.done[c] {
-			if c.Members, err = x.expandMembers(c.Members, &scope{kind: "class", owner: c.Name, annotations: c.Annotations}, nil, 0); err != nil {
+	for _, d := range []any{f.FileClass, f.FileExtern, f.FileTrait, f.FileStruct} {
+		if !reflect.ValueOf(d).IsNil() {
+			if err := x.expandBody(d, f, 0); err != nil {
 				return err
 			}
-			x.done[c] = true
 		}
 	}
-	for i := 0; i < len(f.InlineExterns); i++ {
-		if e := f.InlineExterns[i]; !x.doneExterns[e] {
-			if e.Members, err = x.expandMembers(e.Members, &scope{kind: "extern", owner: e.Name, annotations: e.Annotations}, nil, 0); err != nil {
+	// The inline declarations, which the file-level ones' invocations may add to.
+	for i := 0; i < len(f.inline()); i++ {
+		if d := f.inline()[i]; !x.done[d] {
+			if err := x.expandBody(d, nil, 0); err != nil {
 				return err
 			}
-			x.doneExterns[e] = true
 		}
 	}
 	// Then invocations in C++ code, which only generate C++.
@@ -243,24 +231,87 @@ func (x *expander) expandFile(f *File) error {
 		})
 		return err
 	}
-	classes, externs := f.InlineClasses, f.InlineExterns
-	if f.FileClass != nil {
-		classes = append([]*Class{f.FileClass}, classes...)
-	}
-	if f.FileExtern != nil {
-		externs = append([]*Extern{f.FileExtern}, externs...)
-	}
-	for _, c := range classes {
-		if err := expandIn(c.Name, c.Annotations, c.Members, c); err != nil {
-			return err
-		}
-	}
-	for _, e := range externs {
-		if err := expandIn(e.Name, e.Annotations, e.Members, e); err != nil {
-			return err
+	for _, d := range append([]any{f.FileClass, f.FileExtern, f.FileTrait, f.FileStruct}, f.inline()...) {
+		if !reflect.ValueOf(d).IsNil() {
+			_, name, annotations, members := declBody(d)
+			if err := expandIn(name, annotations, *members, d); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+// declBody returns the keyword, name, annotations and members of d, a *Class, *Extern, *Trait or *Struct.
+func declBody(d any) (keyword, name string, annotations []*Annotation, members *[]*Member) {
+	switch d := d.(type) {
+	case *Class:
+		return "class", d.Name, d.Annotations, &d.Members
+	case *Extern:
+		return "extern", d.Name, d.Annotations, &d.Members
+	case *Trait:
+		return "trait", d.Name, d.Annotations, &d.Members
+	case *Struct:
+		return "struct", d.Name, d.Annotations, &d.Members
+	}
+	panic(fmt.Sprintf("declBody of %T", d))
+}
+
+// expandBody expands the invocations among the members of d, a *Class, *Extern, *Trait or *Struct. With f, d is
+// the file-level declaration, whose invocations may add inline ones to f.
+func (x *expander) expandBody(d any, f *File, depth int) error {
+	keyword, name, annotations, members := declBody(d)
+	var err error
+	*members, err = x.expandMembers(*members, &scope{kind: keyword, owner: name, annotations: annotations, fileLevel: f != nil}, f, depth)
+	x.done[d] = true
+	return err
+}
+
+// decl returns item's class, extern, trait or struct, or nil if it's a member.
+func (item *topItem) decl() any {
+	switch {
+	case item.Class != nil:
+		return item.Class
+	case item.Extern != nil:
+		return item.Extern
+	case item.Trait != nil:
+		return item.Trait
+	case item.Struct != nil:
+		return item.Struct
+	}
+	return nil
+}
+
+// add adds item's class, extern, trait or struct to f's inline ones.
+func (f *File) add(item *topItem) {
+	switch {
+	case item.Class != nil:
+		f.InlineClasses = append(f.InlineClasses, item.Class)
+	case item.Extern != nil:
+		f.InlineExterns = append(f.InlineExterns, item.Extern)
+	case item.Trait != nil:
+		f.InlineTraits = append(f.InlineTraits, item.Trait)
+	case item.Struct != nil:
+		f.InlineStructs = append(f.InlineStructs, item.Struct)
+	}
+}
+
+// inline returns f's inline classes, externs, traits and structs.
+func (f *File) inline() []any {
+	var ds []any
+	for _, c := range f.InlineClasses {
+		ds = append(ds, c)
+	}
+	for _, e := range f.InlineExterns {
+		ds = append(ds, e)
+	}
+	for _, t := range f.InlineTraits {
+		ds = append(ds, t)
+	}
+	for _, s := range f.InlineStructs {
+		ds = append(ds, s)
+	}
+	return ds
 }
 
 // anonymous is the name of macro blocks, invoke { ... }, in messages.
@@ -282,8 +333,8 @@ func (x *expander) what(inv *Invoke) string {
 	return "Macro " + inv.Name
 }
 
-// expandMembers replaces the invocations among members with what they generate. Inline classes and externs that
-// they generate go into f, if sc is the body of the file-level class or extern.
+// expandMembers replaces the invocations among members with what they generate. Inline classes, externs, traits and
+// structs that they generate go into f, if sc is the body of the file-level one.
 func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth int) ([]*Member, error) {
 	var out []*Member
 	for i, m := range members {
@@ -314,15 +365,13 @@ func (x *expander) expandMembers(members []*Member, sc *scope, f *File, depth in
 			case item.Member != nil:
 				out = append(out, item.Member)
 				x.markGenerated(item.Member, m.Invoke.label())
-			case f != nil && item.Class != nil:
-				f.InlineClasses = append(f.InlineClasses, item.Class)
-				x.markGenerated(item.Class, m.Invoke.label())
-			case f != nil && item.Extern != nil:
-				f.InlineExterns = append(f.InlineExterns, item.Extern)
-				x.markGenerated(item.Extern, m.Invoke.label())
+			case f != nil:
+				f.add(item)
+				x.markGenerated(item.decl(), m.Invoke.label())
 			default:
-				return nil, x.errorAt(m.Invoke.Pos, m.Invoke.span(), fmt.Sprintf("%s generated a class or extern inside %s %s, but they can't be nested.",
-					x.what(m.Invoke), sc.kind, sc.owner), "Invoke it at the top level of the file.")
+				keyword, _, _, _ := declBody(item.decl())
+				return nil, x.errorAt(m.Invoke.Pos, m.Invoke.span(), fmt.Sprintf("%s generated a %s inside %s %s, but classes, externs, traits and structs can't be nested.",
+					x.what(m.Invoke), keyword, sc.kind, sc.owner), "Invoke it at the top level of the file.")
 			}
 		}
 	}
@@ -386,16 +435,10 @@ func (x *expander) invoke(inv *Invoke, sc *scope, depth int) (out []*topItem, er
 			}
 			out = append(out, nested...)
 			continue
-		case item.Class != nil:
-			if item.Class.Members, err = x.expandMembers(item.Class.Members, &scope{kind: "class", owner: item.Class.Name, annotations: item.Class.Annotations}, nil, depth+1); err != nil {
+		case item.decl() != nil:
+			if err := x.expandBody(item.decl(), nil, depth+1); err != nil {
 				return nil, err
 			}
-			x.done[item.Class] = true
-		case item.Extern != nil:
-			if item.Extern.Members, err = x.expandMembers(item.Extern.Members, &scope{kind: "extern", owner: item.Extern.Name, annotations: item.Extern.Annotations}, nil, depth+1); err != nil {
-				return nil, err
-			}
-			x.doneExterns[item.Extern] = true
 		}
 		out = append(out, item)
 	}
@@ -419,19 +462,16 @@ func addFrame(err error, frame string) error {
 	return err
 }
 
-// markGenerated records that the invocation of by generated node, a *Member, *Class, *Extern or *Enum, and the
-// members of a class or extern.
+// markGenerated records that the invocation of by generated node, a *Member, *Class, *Extern, *Trait, *Struct or
+// *Enum, and the members of a class, extern, trait or struct.
 func (x *expander) markGenerated(node any, by string) {
 	x.generatedBy[node] = by
-	var members []*Member
-	switch n := node.(type) {
-	case *Class:
-		members = n.Members
-	case *Extern:
-		members = n.Members
-	}
-	for _, m := range members {
-		x.generatedBy[m] = by
+	switch node.(type) {
+	case *Class, *Extern, *Trait, *Struct:
+		_, _, _, members := declBody(node)
+		for _, m := range *members {
+			x.generatedBy[m] = by
+		}
 	}
 }
 
@@ -768,10 +808,8 @@ func reflectPos(node any) *lexer.Position {
 
 // docField returns a pointer to the Doc field of item's declaration, or nil if it has none.
 func docField(item *topItem) **Doc {
-	var node any = item.Class
+	node := item.decl()
 	switch {
-	case item.Extern != nil:
-		node = item.Extern
 	case item.Member != nil:
 		m := item.Member
 		for _, n := range []any{m.Func, m.Var, m.Signal, m.Enum} {
@@ -797,7 +835,7 @@ func elidedTypes() []lexer.TokenType {
 	return types
 }
 
-// parsedItems is GD++ that a macro or template generates: classes, externs and members.
+// parsedItems is GD++ that a macro or template generates: classes, externs, traits, structs and members.
 type parsedItems struct {
 	Pos   lexer.Position
 	Items []*topItem `parser:"@@*"`

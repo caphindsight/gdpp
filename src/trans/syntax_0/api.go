@@ -73,7 +73,7 @@ func Generate(filename, src string, opts meta.Options) ([]meta.File, error) {
 	var files []meta.File
 	for _, s := range u.sortedSymbols() {
 		d := u.only(s)
-		if s.class == nil {
+		if s.class == nil && s.strukt == nil {
 			files = append(files, meta.File{Name: s.name + ".h", Text: d.header(s.name)})
 			continue
 		}
@@ -100,6 +100,7 @@ func (u *unit) only(s *symbol) *unit {
 	d.classes = slices.DeleteFunc(slices.Clone(u.classes), func(c *classModel) bool { return c.name != s.name })
 	d.externs = slices.DeleteFunc(slices.Clone(u.externs), func(e *externModel) bool { return e.name != s.name })
 	d.traits = slices.DeleteFunc(slices.Clone(u.traits), func(t *traitModel) bool { return t.name != s.name })
+	d.structs = slices.DeleteFunc(slices.Clone(u.structs), func(t *structModel) bool { return t.name != s.name })
 	return &d
 }
 

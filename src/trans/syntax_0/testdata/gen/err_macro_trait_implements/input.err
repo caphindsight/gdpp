@@ -1,0 +1,5 @@
+input.gd++:2:3: Macro { ... } failed: gd.trait: traits can't implement traits.
+ 2 |   gd.trait { name = "Valued", implements = { "Named" }, body = function() end }
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Macro call stack:
+  macro { ... }, invoked at input.gd++:1

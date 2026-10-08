@@ -1,4 +1,4 @@
 input.gd++:3:8: TypedArray is not a Godot type.
  3 | var a: TypedArray
    |        ^^^^^^^^^^
-Hint: Types are Godot's built-in types and classes, and the package's classes, externs, traits and enums.
+Hint: Types are Godot's built-in types and classes, and the package's classes, externs, traits, structs and enums.

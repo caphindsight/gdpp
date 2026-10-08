@@ -89,12 +89,12 @@ func (e *Error) withSource(src string) *Error {
 var keywords = map[string]bool{
 	"class": true, "class_name": true, "ctor": true, "decl": true, "dtor": true, "enum": true, "enum_name": true,
 	"extends": true, "extern": true, "extern_name": true, "func": true, "get": true, "impl": true, "implements": true, "import": true,
-	"invoke": true, "annotation": true, "macro": true, "macro_library": true, "macro_name": true, "noimport": true, "set": true, "shader": true, "shader_library": true, "signal": true, "template": true, "template_name": true, "trait": true, "trait_name": true, "var": true,
+	"invoke": true, "annotation": true, "macro": true, "macro_library": true, "macro_name": true, "noimport": true, "set": true, "shader": true, "shader_library": true, "signal": true, "struct": true, "struct_name": true, "template": true, "template_name": true, "trait": true, "trait_name": true, "var": true,
 }
 
 // declKeywords are the words that can start a declaration, in the order hints list them.
 // Unlike the others, "on" isn't a keyword: it can be a name too.
-var declKeywords = []string{"func", "shader", "var", "signal", "enum", "class", "extern", "trait", "decl", "impl", "ctor", "dtor", "on", "import", "noimport", "invoke"}
+var declKeywords = []string{"func", "shader", "var", "signal", "enum", "class", "extern", "trait", "struct", "decl", "impl", "ctor", "dtor", "on", "import", "noimport", "invoke"}
 
 // describe names token t for humans, e.g. `keyword "func"` or `the end of the file`.
 func describe(t lexer.Token) string {
@@ -237,7 +237,7 @@ func owner(sig []lexer.Token, open lexer.Token) string {
 		return fmt.Sprintf(" (the %s block)", prev.Value)
 	case onHead(sig, j-1) >= 0:
 		return " (the on block)"
-	case prev.Type == tokIdent && (prev2.Value == "class" || prev2.Value == "extern" || prev2.Value == "trait" || prev2.Value == "enum"):
+	case prev.Type == tokIdent && (prev2.Value == "class" || prev2.Value == "extern" || prev2.Value == "trait" || prev2.Value == "struct" || prev2.Value == "enum"):
 		return fmt.Sprintf(" (the body of %s %q)", prev2.Value, prev.Value)
 	}
 	k := headKeyword(sig, j)
@@ -324,7 +324,7 @@ var names = map[string]string{
 	"@": "an annotation name", "class": "a class name", "class_name": "a class name", "enum": "an enum name",
 	"enum_name": "an enum name", "extends": "a base class name", "extern": "an extern name",
 	"extern_name": "an extern name", "func": "a function name", "import": "a type name", "invoke": "a macro or template name", "macro": "a macro name",
-	"macro_name": "a macro name", "noimport": "a type name", "shader": "a shader name or \"{\"", "signal": "a signal name", "template": "a template name",
+	"macro_name": "a macro name", "noimport": "a type name", "shader": "a shader name or \"{\"", "signal": "a signal name", "struct": "a struct name", "struct_name": "a struct name", "template": "a template name",
 	"template_name": "a template name", "implements": "a trait name", "trait": "a trait name", "trait_name": "a trait name",
 	"var": "a variable name",
 }
@@ -361,7 +361,7 @@ func diagnose(sig []lexer.Token, j int) (int, string, string) {
 	}
 	msg, hint := diagnoseAt(sig, j)
 	if p, p2 := at(sig, j-1), at(sig, j-2); names[p2.Value] != "" && (p2.Type == tokIdent || isPunct(p2, "@")) &&
-		p.Type == tokIdent && slices.Contains(append(declKeywords, "class_name", "enum_name", "extern_name", "macro_library", "macro_name", "shader_library", "template_name", "trait_name"), p.Value) {
+		p.Type == tokIdent && slices.Contains(append(declKeywords, "class_name", "enum_name", "extern_name", "macro_library", "macro_name", "shader_library", "struct_name", "template_name", "trait_name"), p.Value) {
 		// The keyword was taken as a name, e.g. "class_name" followed by "var" on the next line.
 		return j - 1, fmt.Sprintf("Expected %s after %q, but found %s.", names[p2.Value], p2.Value, describe(p)),
 			fmt.Sprintf("%q is a keyword, so it can't be used as a name.", p.Value)
@@ -408,9 +408,9 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 		return fmt.Sprintf("Expected an enum value name, but found %s.", found),
 			"Everything after \"enum_name Name\" is a value of that enum, e.g. \"A\", \"B = 2\" or \"C,\"."
 
-	case (u.Value == "class" || u.Value == "extern" || u.Value == "trait") && isName && enclosing(sig, j, "{") >= 0:
-		return fmt.Sprintf("Classes, externs and traits can't be nested, but found %s inside%s.", found, strings.TrimSuffix(strings.Replace(owner(sig, sig[enclosing(sig, j, "{")]), " (", " ", 1), ")")),
-			"Move it out to the top level of the file. Inline classes, externs and traits are listed next to each other."
+	case (u.Value == "class" || u.Value == "extern" || u.Value == "trait" || u.Value == "struct") && isName && enclosing(sig, j, "{") >= 0:
+		return fmt.Sprintf("Classes, externs, traits and structs can't be nested, but found %s inside%s.", found, strings.TrimSuffix(strings.Replace(owner(sig, sig[enclosing(sig, j, "{")]), " (", " ", 1), ")")),
+			"Move it out to the top level of the file. Inline classes, externs, traits and structs are listed next to each other."
 
 	case isPunct(p, ",") && !isName && slices.ContainsFunc(sig[max(k, 0):j], func(t lexer.Token) bool { return t.Type == tokIdent && t.Value == "implements" }):
 		return fmt.Sprintf("Expected a trait name after \",\", but found %s.", found), "Write \"implements A, B\", without a \",\" at the end."
@@ -482,17 +482,20 @@ func diagnoseAt(sig []lexer.Token, j int) (msg, hint string) {
 		return fmt.Sprintf("Expected an integer value after \"=\", but found %s.", found),
 			"Constants are integers, such as 42, -1 or 0x10."
 
-	case (p2.Value == "class" || p2.Value == "extern" || p2.Value == "trait") && p2.Type == tokIdent && p.Type == tokIdent && !isPunct(u, "{"):
-		if u.Value == "extends" {
+	case (p2.Value == "class" || p2.Value == "extern" || p2.Value == "trait" || p2.Value == "struct") && p2.Type == tokIdent && p.Type == tokIdent && !isPunct(u, "{"):
+		switch {
+		case u.Value == "extends" && p2.Value == "struct":
+			hint = "Structs have no base class. To share fields, hold another struct in a var."
+		case u.Value == "extends":
 			hint = fmt.Sprintf("In an inline %s, \"extends\" goes inside the braces: \"%s %s { extends ... }\".", p2.Value, p2.Value, p.Value)
 		}
 		return fmt.Sprintf("Expected \"{\" after the %s name, but found %s.", p2.Value, found), hint
 
-	case (p2.Value == "class_name" || p2.Value == "extern_name" || p2.Value == "trait_name" || p2.Value == "extends" || p2.Value == "implements") &&
+	case (p2.Value == "class_name" || p2.Value == "extern_name" || p2.Value == "trait_name" || p2.Value == "struct_name" || p2.Value == "extends" || p2.Value == "implements") &&
 		isPunct(u, "{"):
 		head, kind := "class_name", "class"
 		for _, t := range sig[:j] {
-			if t.Type == tokIdent && (t.Value == "extern_name" || t.Value == "trait_name") {
+			if t.Type == tokIdent && (t.Value == "extern_name" || t.Value == "trait_name" || t.Value == "struct_name") {
 				head, kind = t.Value, strings.TrimSuffix(t.Value, "_name")
 			}
 		}
@@ -573,7 +576,7 @@ func inEnumValues(sig []lexer.Token, j int) bool {
 // declarationHint suggests a fix for token u found where a declaration should start.
 func declarationHint(u lexer.Token) string {
 	switch u.Value {
-	case "class_name", "enum_name", "extern_name", "macro_library", "macro_name", "shader_library", "template_name", "trait_name":
+	case "class_name", "enum_name", "extern_name", "macro_library", "macro_name", "shader_library", "struct_name", "template_name", "trait_name":
 		return fmt.Sprintf("A file has at most one %q, at the very top. Only decl, impl and shader blocks may come before it.", u.Value)
 	case "extends":
 		return "\"extends\" goes right after \"class_name Name\", or right after the \"{\" of an inline class."
@@ -591,7 +594,7 @@ func declarationHint(u lexer.Token) string {
 		return "An empty function body is written \"{}\"."
 	}
 	if u.Type == tokIdent {
-		if s := suggest(u.Value, slices.Concat(declKeywords, []string{"extends", "implements", "class_name", "enum_name", "extern_name", "trait_name", "macro",
+		if s := suggest(u.Value, slices.Concat(declKeywords, []string{"extends", "implements", "class_name", "enum_name", "extern_name", "struct_name", "trait_name", "macro",
 			"template", "macro_library", "macro_name", "shader_library", "template_name"})...); s != "" {
 			return fmt.Sprintf("Did you mean %q?", s)
 		}

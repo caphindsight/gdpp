@@ -1,0 +1,5 @@
+input.gd++:3:5: Macro { ... } failed: gd.var can't be used in a trait: only gd.func can.
+ 3 |     gd.var { name = "value", type = "int" }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Macro call stack:
+  macro { ... }, invoked at input.gd++:1

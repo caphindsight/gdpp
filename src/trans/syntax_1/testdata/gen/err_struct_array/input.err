@@ -1,0 +1,4 @@
+input.gd++:4:17: Type Hit can't be used in a typed collection.
+ 4 | var hits: Array[Hit]
+   |                 ^^^
+Hint: Typed collections can hold built-in types and classes, but not enums, externs, traits or structs.

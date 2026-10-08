@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Fighter" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="later">
+			<return type="void" />
+			<param index="0" name="hit" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="make">
+			<return type="Dictionary" />
+			<param index="0" name="d" type="Variant" />
+			<param index="1" name="fallback" type="Dictionary" default="Hit{}" />
+			<description>
+			</description>
+		</method>
+		<method name="sync_hit">
+			<return type="void" />
+			<param index="0" name="hit" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="last" type="Dictionary" setter="set_last" getter="get_last">
+		</member>
+		<member name="saved" type="Dictionary" setter="set_saved" getter="get_saved">
+		</member>
+		<member name="spawn" type="Dictionary" setter="set_spawn" getter="get_spawn">
+		</member>
+	</members>
+	<signals>
+		<signal name="hit_taken">
+			<param index="0" name="hit" type="Dictionary" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

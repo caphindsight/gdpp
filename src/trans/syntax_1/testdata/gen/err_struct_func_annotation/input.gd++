@@ -1,0 +1,3 @@
+struct Hit {
+  @virtual func _damage() -> int { return 1; }
+}

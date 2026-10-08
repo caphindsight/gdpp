@@ -1,0 +1,4 @@
+input.gd++:2:9: Big can't extend Hit, which is a struct.
+ 2 | extends Hit
+   |         ^^^
+Hint: Structs have no subclasses. Hold a Hit in a var instead.

@@ -1,0 +1,3 @@
+errors/structs/no_name.gd++:1:8: Expected a struct name after "struct", but found "{".
+ 1 | struct {
+   |        ^

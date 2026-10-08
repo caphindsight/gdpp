@@ -473,3 +473,63 @@ name = "EditorPlugin"
 include = "<godot_cpp/classes/editor_plugin.hpp>"
 kind = "Object"
 base = "Node"
+
+[[dep]]
+name = "stat_struct"
+kind = "Macro"
+file = "struct_macros.gd++"
+
+[[dep]]
+name = "point_struct"
+kind = "Template"
+file = "struct_macros.gd++"
+source_name = "package/struct_macros.gd++"
+
+[[dep]]
+name = "twice"
+kind = "Macro"
+file = "struct_macros.gd++"
+
+[[dep]]
+name = "value_trait"
+kind = "Macro"
+file = "struct_macros.gd++"
+
+[[dep]]
+name = "constant_func"
+kind = "Template"
+file = "struct_macros.gd++"
+source_name = "package/struct_macros.gd++"
+
+[[dep]]
+name = "plus_one"
+kind = "Macro"
+file = "struct_macros.gd++"
+
+# A struct that a macro of struct_macros.gd++ generates in another file.
+[[dep]]
+name = "Loot"
+include = "\"Loot.h\""
+kind = "Struct"
+gdpp = true
+
+# Traits that macros of struct_macros.gd++ generate in generated_traits.gd++.
+[[dep]]
+name = "Collectible"
+include = "\"Collectible.h\""
+kind = "Trait"
+base = "Node"
+gdpp = true
+file = "generated_traits.gd++"
+source_name = "package/generated_traits.gd++"
+macros = ["value_trait", "constant_func", "plus_one"]
+
+[[dep]]
+name = "Weighted"
+include = "\"Weighted.h\""
+kind = "Trait"
+base = "Node"
+gdpp = true
+file = "generated_traits.gd++"
+source_name = "package/generated_traits.gd++"
+macros = ["value_trait", "constant_func", "plus_one"]

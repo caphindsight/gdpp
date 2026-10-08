@@ -1,0 +1,5 @@
+invoke {
+  gd.struct { name = "Hit", body = function()
+    gd.signal { name = "landed" }
+  end }
+}

@@ -1,4 +1,4 @@
-input.gd++:4:3: Macro helper failed: gd.func can't be used outside of a class: only gd.class, gd.extern, gd.enum without a value and gd.shader_library can.
+input.gd++:4:3: Macro helper failed: gd.func can't be used outside of a class: only gd.class, gd.extern, gd.trait, gd.struct, gd.enum without a value and gd.shader_library can.
  4 |   gd.func { name = "f", ret = "void", body = "" }
    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Macro call stack:

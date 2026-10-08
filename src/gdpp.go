@@ -355,8 +355,8 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 			if f.Rel != self {
 				dep := trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals, Notifications: d.Notifications,
 					NonRuntime: nonRuntime[d.Name], Traits: d.Traits, Signals: d.Signals}
-				if d.Kind == trans.TraitDecl { // Its classes check and copy its functions.
-					dep.Source, dep.File = f.Src, f.File.ToString()
+				if d.Kind == trans.TraitDecl { // Its classes check and copy its functions, from its file, expanded.
+					dep.Source, dep.File, dep.Macros = f.Src, f.File.ToString(), macroDeps(files, f.Rel)
 				}
 				deps = append(deps, dep)
 			}
@@ -409,7 +409,7 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 		if g, ok := godot[name]; ok && g.Kind == trans.RefCounted {
 			return trans.RefCounted
 		}
-		if d, ok := decls[name]; ok && d.Kind != trans.EnumDecl && depth < 100 {
+		if d, ok := decls[name]; ok && d.Kind != trans.EnumDecl && d.Kind != trans.StructDecl && depth < 100 {
 			return classKind(d.Base, depth+1)
 		}
 		return trans.Object
@@ -422,6 +422,8 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 			kinds[name] = map[trans.Kind]trans.Kind{trans.Object: trans.Extern, trans.RefCounted: trans.RefCountedExtern}[classKind(d.Base, 0)]
 		case trans.TraitDecl:
 			kinds[name] = map[trans.Kind]trans.Kind{trans.Object: trans.Trait, trans.RefCounted: trans.RefCountedTrait}[classKind(d.Base, 0)]
+		case trans.StructDecl:
+			kinds[name] = trans.Struct
 		default:
 			kinds[name] = trans.Enum
 		}
@@ -486,6 +488,9 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 		for i, d := range opts.Dependencies {
 			if d.Source != "" {
 				opts.Dependencies[i].SourceName = copies[d.File]
+			}
+			for j, m := range d.Macros {
+				d.Macros[j].SourceName = copies[m.File]
 			}
 		}
 		opts = o.transOptions(opts)

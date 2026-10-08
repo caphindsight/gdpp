@@ -1,0 +1,12 @@
+// A struct that a template of another file generates.
+/// A point.
+struct Point {
+  var x: float
+  var y: float
+  @const func length() -> float { return Math::sqrt(x * x + y * y);}
+}
+
+class Walker {
+  extends Node
+  var at: Point
+}

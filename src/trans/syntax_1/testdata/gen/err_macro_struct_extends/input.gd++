@@ -1,0 +1,3 @@
+invoke {
+  gd.struct { name = "Hit", extends = "Node", body = function() end }
+}

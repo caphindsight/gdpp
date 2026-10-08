@@ -1,0 +1,8 @@
+class_name Log
+extends Node
+
+var hits: Array[Hit]
+
+struct Hit {
+  var damage: int
+}

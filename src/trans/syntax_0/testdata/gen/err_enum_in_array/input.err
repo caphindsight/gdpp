@@ -1,4 +1,4 @@
 input.gd++:4:14: Type E can't be used in a typed collection.
  4 | var a: Array[E]
    |              ^
-Hint: Typed collections can hold built-in types and classes, but not enums, externs or traits.
+Hint: Typed collections can hold built-in types and classes, but not enums, externs, traits or structs.

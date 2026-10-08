@@ -1,0 +1,39 @@
+enum DamageKind { FIRE, ICE }
+
+/// A position, nested in Hit.
+struct Spot {
+  var at: Vector3
+}
+
+/// What hit a character.
+struct Hit {
+  var point: Vector3 = Vector3(0, 1, 0)
+  /// Hit points to take.
+  var damage: int = 1
+  var by: Node3D
+  var kind: DamageKind = FIRE
+  var spot: Spot
+  var tags: Array[String]
+  var extra
+  var scale: float = {
+    return 1.5;
+  }
+
+  /// Whether the hit kills a character with hp hit points.
+  @const func is_lethal(hp: int = 10) -> bool { return hp <= damage; }
+  func double_damage() -> void { damage *= 2; }
+  func set_kind(k: DamageKind) -> DamageKind {
+    DamageKind old = kind;
+    kind = k;
+    return old;
+  }
+  @static func none() -> Hit { return Hit{}; }
+  @private func clamp() -> void { assert damage >= 0; }
+
+  decl {
+    int64_t helper_ = 0;
+  }
+  impl {
+    static int unused() { return 1; }
+  }
+}

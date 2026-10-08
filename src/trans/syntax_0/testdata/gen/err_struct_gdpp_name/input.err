@@ -1,0 +1,3 @@
+input.gd++:2:3: Names that start with _gdpp_ are reserved for generated code.
+ 2 |   var _gdpp_fields: int
+   |   ^^^

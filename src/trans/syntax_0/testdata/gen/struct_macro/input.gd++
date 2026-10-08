@@ -1,0 +1,32 @@
+// Structs that macros of another file generate, and invocations in a struct.
+class_name Hero2
+extends Node
+
+var stats: Stats
+var ammo: Ammo
+
+// The vars of the class, which ctx.members lists.
+invoke {
+  local names = {}
+  for _, m in ipairs(ctx.members) do
+    if m.kind == "var" then
+      table.insert(names, m.name)
+    end
+  end
+  gd.func { name = "vars", ret = "String", body = "return \"" .. gd.join(names, " ") .. "\";" }
+}
+
+invoke stat_struct(Stats, [strength, agility])
+
+struct Ammo {
+  var kind: String
+  invoke twice(count)
+  // The struct's members, which ctx.members lists in a struct.
+  invoke {
+    local names = {}
+    for _, m in ipairs(ctx.members) do
+      table.insert(names, m.kind .. " " .. m.name)
+    end
+    gd.func { name = "members", ret = "String", annotations = { "@const" }, body = "return \"" .. ctx.scope .. ": " .. gd.join(names, ", ") .. "\";" }
+  }
+}

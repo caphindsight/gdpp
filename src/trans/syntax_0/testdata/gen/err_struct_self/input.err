@@ -1,0 +1,4 @@
+input.gd++:2:13: Struct Hit can't contain itself.
+ 2 |   var next: Hit
+   |             ^^^
+Hint: A struct holds its fields by value. Use a class instead, which can refer to itself through a Gd.

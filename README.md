@@ -282,6 +282,12 @@ See `gd++ man enums`.
 
 See `gd++ man traits`.
 
+### Structs
+
+<a href="readme/svg/structs.gd++"><img src="readme/svg/structs.svg" alt="GD++ code: structs"></a>
+
+See `gd++ man structs`.
+
 ### Weak references
 
 <a href="readme/svg/weak.gd++"><img src="readme/svg/weak.svg" alt="GD++ code: weak"></a>

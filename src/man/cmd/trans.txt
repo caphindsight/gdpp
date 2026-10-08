@@ -6,7 +6,7 @@ gd++ trans: print a file's generated C++
 gd++ trans FILE [--invoke] [--noline] [--syntax N | --nightly] [--spec NAME | --nospec]
                 [--object NAME[=INCLUDE]] [--refcounted NAME[=INCLUDE]]
                 [--extern NAME[=INCLUDE]] [--refcounted-extern NAME[=INCLUDE]]
-                [--enum NAME[=INCLUDE][:VALUES]] [--macro-timeout SECONDS]
+                [--enum NAME[=INCLUDE][:VALUES]] [--struct NAME[=INCLUDE]] [--macro-timeout SECONDS]
                 [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 gd++ trans --runtime [--syntax N | --nightly]
 ```
@@ -40,7 +40,7 @@ Outside of a package:
 Other facts:
 
 - Errors are shown like in a build.
-- If the file declares nothing, it says "The file declares no classes, externs, traits or enums.".
+- If the file declares nothing, it says "The file declares no classes, externs, traits, structs or enums.".
 - With `--invoke`, it only expands the file's macros and templates, and prints the GD++ source that GD++ then parses, instead of the C++.
 
 # Options
@@ -83,6 +83,9 @@ FILE
 
 --enum NAME[=INCLUDE][:VALUES]
   Declare an enum of another GD++ file, with its values, e.g. `Suit:HEARTS,SPADES=5`. Values without a number count up from the previous one, starting at 0. The include defaults to `"NAME.h"`.
+
+--struct NAME[=INCLUDE]
+  Declare a struct of another GD++ file. The include defaults to `"NAME.h"`.
 
 Facts about these options:
 

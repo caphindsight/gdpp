@@ -32,8 +32,9 @@ func TestGenerate(t *testing.T) {
 			Traits                     []string
 			NoscriptVirtuals           []string `toml:"noscript_virtuals"`
 			Signals                    []meta.Signal
-			File                       string // For macros and templates: their file in testdata/gen.
-			SourceName                 string `toml:"source_name"`
+			File                       string   // For macros and templates: their file in testdata/gen.
+			SourceName                 string   `toml:"source_name"`
+			Macros                     []string // For traits: the names of the deps that their file sees, e.g. the macros that generate them.
 		}
 	}
 	if _, err := toml.DecodeFile("testdata/gen/deps.toml", &file); err != nil {
@@ -42,7 +43,7 @@ func TestGenerate(t *testing.T) {
 	kinds := map[string]meta.Kind{"Object": meta.Object, "RefCounted": meta.RefCounted, "Extern": meta.Extern,
 		"RefCountedExtern": meta.RefCountedExtern, "Enum": meta.Enum, "Other": meta.Other, "GodotEnum": meta.GodotEnum, "Macro": meta.Macro,
 		"Template": meta.Template, "Annotation": meta.Annotation, "Trait": meta.Trait, "RefCountedTrait": meta.RefCountedTrait,
-		"ShaderLibrary": meta.ShaderLibrary}
+		"ShaderLibrary": meta.ShaderLibrary, "Struct": meta.Struct}
 	var opts meta.Options
 	for _, d := range file.Dep {
 		source := ""
@@ -55,6 +56,15 @@ func TestGenerate(t *testing.T) {
 		}
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals,
 			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits, Signals: d.Signals})
+	}
+	for i, d := range file.Dep {
+		for _, name := range d.Macros {
+			j := slices.IndexFunc(opts.Dependencies, func(m meta.Dependency) bool { return m.Name == name })
+			if j < 0 {
+				t.Fatalf("Trait %s sees the unknown dep %s.", d.Name, name)
+			}
+			opts.Dependencies[i].Macros = append(opts.Dependencies[i].Macros, opts.Dependencies[j])
+		}
 	}
 	opts.PackageID, opts.PackagePrefix, opts.CppStandard = "shooter", "Shooter", "c++17"
 	dirs, err := filepath.Glob("testdata/gen/*/input.gd++")

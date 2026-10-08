@@ -196,13 +196,19 @@ func (p *printer) items(items []*topItem) {
 		case item.Extern != nil:
 			e := item.Extern
 			p.body("extern", e.Doc, e.Annotations, e.Name, e.Extends, nil, e.Members)
+		case item.Trait != nil:
+			t := item.Trait
+			p.body("trait", t.Doc, t.Annotations, t.Name, t.Extends, nil, t.Members)
+		case item.Struct != nil:
+			st := item.Struct
+			p.body("struct", st.Doc, st.Annotations, st.Name, nil, nil, st.Members)
 		default:
 			p.member(item.Member)
 		}
 	}
 }
 
-// body writes a class or an extern.
+// body writes a class, an extern, a trait or a struct.
 func (p *printer) body(keyword string, doc *Doc, annotations []*Annotation, name string, extends *Type, implements []*Type, members []*Member) {
 	p.head(doc, annotations)
 	p.write(keyword, " ", name, " {")

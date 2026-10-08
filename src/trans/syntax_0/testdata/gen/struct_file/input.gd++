@@ -1,0 +1,7 @@
+/// A file-level struct.
+struct_name Score
+
+var points: int
+var name: String = "anonymous"
+
+func add(n: int) -> void { points += n; }

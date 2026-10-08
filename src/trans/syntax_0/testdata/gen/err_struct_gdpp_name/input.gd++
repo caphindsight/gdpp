@@ -1,0 +1,3 @@
+struct Hit {
+  var _gdpp_fields: int
+}

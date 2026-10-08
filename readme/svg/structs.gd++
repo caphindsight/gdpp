@@ -1,0 +1,27 @@
+// A C++ value type, which Godot sees as a
+// Dictionary: {"point": ..., "damage": 1}.
+struct Hit {
+  var point: Vector3
+  var damage: int = 1
+
+  // A Callable in the Dictionary, which
+  // scripts call as hit.is_lethal.call(10).
+  @const func is_lethal(hp: int) -> bool {
+    return hp <= damage;
+  }
+}
+
+class Fighter {
+  extends CharacterBody3D
+
+  signal hit_taken(hit: Hit)
+
+  var health: int = 100
+
+  // Scripts pass a Dictionary, e.g.
+  // fighter.take({"damage": 3}).
+  func take(hit: Hit) -> void {
+    health -= hit.damage;
+    emit hit_taken(hit);
+  }
+}

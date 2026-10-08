@@ -33,6 +33,7 @@ func take_damage(amount: int) -> void {
 
 - `emit NAME(ARGS);` sends the signal, like `NAME.emit(ARGS)` in GDScript.
 - Every connected function is called with the arguments.
+- A struct argument arrives as a `Dictionary` of its fields and of `Callable`s of its functions. See `gd++ man structs`.
 - The parentheses are needed, even without arguments: `emit died();`.
 - `emit` makes sending a signal look different from calling a function, on purpose: they do different things.
 - It also works on other objects of GD++ classes, and on externs:

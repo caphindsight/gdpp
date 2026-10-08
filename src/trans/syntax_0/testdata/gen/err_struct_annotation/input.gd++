@@ -1,0 +1,4 @@
+@tool
+struct Hit {
+  var damage: int
+}

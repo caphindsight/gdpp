@@ -128,6 +128,7 @@ See `gd++ man externs`.
 - The channel must be the last argument.
 - In externs, `@rpc` takes no arguments.
 - The class or extern must extend `Node`.
+- A struct argument travels as a `Dictionary` of its fields: the functions' `Callable`s can't go over the network. See `gd++ man structs`.
 
 # See also
 

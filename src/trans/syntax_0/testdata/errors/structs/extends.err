@@ -1,0 +1,4 @@
+errors/structs/extends.gd++:1:12: Expected "{" after the struct name, but found keyword "extends".
+ 1 | struct Hit extends Node {
+   |            ^^^^^^^
+Hint: Structs have no base class. To share fields, hold another struct in a var.

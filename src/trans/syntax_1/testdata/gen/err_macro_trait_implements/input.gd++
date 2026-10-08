@@ -1,0 +1,3 @@
+invoke {
+  gd.trait { name = "Valued", implements = { "Named" }, body = function() end }
+}

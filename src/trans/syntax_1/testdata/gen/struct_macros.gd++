@@ -1,0 +1,48 @@
+// Macros and templates of another file of the package, which generate structs and traits.
+
+// A struct with an int field for each name, and a func that sums them.
+macro stat_struct(name, fields) {
+  gd.struct { name = name, doc = "Stats: " .. gd.join(fields, ", ") .. ".", body = function()
+    for _, f in ipairs(fields) do
+      gd.var { name = f, type = "int", init = 0 }
+    end
+    gd.func { name = "total", ret = "int", annotations = { "@const" }, body = "return " .. gd.join(fields, " + ") .. ";" }
+  end }
+}
+
+// A struct of a 2D point.
+template point_struct(name) {
+  /// A point.
+  struct ${name} {
+    var x: float
+    var y: float
+    @const func length() -> float { return Math::sqrt(x * x + y * y); }
+  }
+}
+
+// A field and its doubled value, inside a struct.
+macro twice(name) {
+  if ctx.scope ~= "struct" then
+    gd.error("twice must be invoked in a struct", "it generates a field and a func")
+  end
+  gd.var { name = name, type = "int", init = 1 }
+  gd.func { name = name .. "_twice", ret = "int", annotations = { "@const" }, body = "return " .. name .. " * 2;" }
+}
+
+// A trait of items with a value, with a default func.
+macro value_trait(name, base) {
+  gd.trait { name = name, extends = base, doc = "An item with a value.", body = function()
+    gd.func { name = "value", ret = "int", annotations = { "@const" } }
+    gd.func { name = "double_value", ret = "int", annotations = { "@const" }, body = "return value() * 2;" }
+  end }
+}
+
+// A trait func that returns a constant.
+template constant_func(name, value) {
+  @const func ${name}() -> int { return ${value}; }
+}
+
+// A C++ statement that adds one to the variable x.
+macro plus_one(x) {
+  gd.text(x .. " += 1;")
+}

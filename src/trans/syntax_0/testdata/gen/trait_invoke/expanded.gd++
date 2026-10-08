@@ -1,0 +1,10 @@
+macro log(text) { gd.text("gd::print(\"" .. text .. "\");") }
+
+// Invocations in a trait: in a default's code, and among its funcs.
+trait Damageable {
+  extends Node
+  func hit() -> void {
+    gd::print("hit");
+  }
+  @const func armor() -> int { return 3;}
+}

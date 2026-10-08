@@ -32,6 +32,7 @@ const (
 	Trait            Kind = 12 // A GD++ trait whose base isn't refcounted, held as Gd<T>. Source and File hold its file.
 	RefCountedTrait  Kind = 13 // A GD++ trait whose base is refcounted, held as Gd<T>. Source and File hold its file.
 	ShaderLibrary    Kind = 14 // The shader blocks of a GD++ file outside of classes, or its shader_library, which every shader of the package uses. It has no Name. Source and File hold its file.
+	Struct           Kind = 15 // A GD++ struct: a C++ value type, which Godot sees as a Dictionary.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -58,6 +59,9 @@ type Dependency struct {
 	File       string   // For Kind Macro, Template, Trait and RefCountedTrait: that file's name, for errors.
 	SourceName string   // For Kind Template, Trait and RefCountedTrait: how #line names that file, like Options.SourceName. Default: File.
 	Traits     []string // For classes of the package: the traits it implements itself, without those of its bases.
+	// For Kind Trait and RefCountedTrait: the macros, templates, macro libraries and user annotations that the
+	// trait's file sees, so the translator can expand its invocations before parsing the trait.
+	Macros []Dependency
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.
@@ -87,6 +91,7 @@ const (
 	// The file's shader blocks outside of classes, "shader { ... }" and shader_library, which every shader of the
 	// package uses. It has no Name.
 	ShaderLibraryDecl DeclKind = 9
+	StructDecl        DeclKind = 10
 )
 
 // Declaration is a class, extern, trait, enum type, macro or template declared in a GD++ file, which other files may use.

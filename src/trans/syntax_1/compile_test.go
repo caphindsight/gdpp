@@ -25,6 +25,12 @@ var stubs = map[string]string{
 	"Hero.h": saveableStub + "class Hero : public Node3D, public Saveable {\n\tGDCLASS(Hero, Node3D)\n\npublic:\n\tstatic void _gdpp_traits(gdpp::TraitsOf<Hero>) {}\n" +
 		"\tvoid _gdpp_destroy() override {}\n\tvoid _gdpp_queue_destroy() override {}\n\tDictionary save() override { return Dictionary(); }\n" +
 		"\tint64_t slot() const override { return 0; }\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
+	"Loot.h": "struct Loot {\n\toperator Variant() const { return Dictionary(); }\n\tDictionary _gdpp_fields() const { return Dictionary(); }\n" +
+		"\tDictionary _gdpp_to_dictionary() const { return Dictionary(); }\n\tstatic Loot _gdpp_from(const Variant &) { return Loot(); }\n};\nGDPP_STRUCT(Loot)\n",
+	"Collectible.h": "class Collectible {\npublic:\n\tusing Base = Node;\n\tvirtual ~Collectible() = default;\n\tvirtual int64_t value() const = 0;\n" +
+		"\tvirtual int64_t double_value() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n",
+	"Weighted.h": "class Weighted {\npublic:\n\tusing Base = Node;\n\tvirtual ~Weighted() = default;\n\tvirtual int64_t weight() = 0;\n" +
+		"\tvirtual int64_t base_weight() const = 0;\n\tvirtual bool heavy() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n",
 	"Settings.h": "class Settings {\npublic:\n\tusing Base = Resource;\n\tstatic constexpr const char *gdpp_name = \"Settings\";\n" +
 		"\texplicit Settings(Base *p_object) :\n\t\t\t_gdpp_base(p_object) {}\n\nprotected:\n\tBase *_gdpp_base;\n};\n",
 }
