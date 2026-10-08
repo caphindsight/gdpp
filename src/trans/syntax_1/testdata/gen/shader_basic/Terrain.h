@@ -23,7 +23,6 @@ public:
 	static void paint(const Vector2i &size, const gdpp::GpuArray<float> &heights, const gdpp::Gd<Texture2D> &src, const gdpp::Gd<Texture2D> &target, const Color &tint);
 	static gdpp::GpuArray<Vector3> grow(const Vector3i &size, const gdpp::Gd<Image> &image);
 	static gdpp::Async<gdpp::Gd<Texture2D>> blank(const Vector2i &size);
-	static gdpp::Gd<Texture2D> _gdpp_body_blank(const Vector2i &size);
 
 protected:
 	static void _bind_methods();

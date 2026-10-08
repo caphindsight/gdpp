@@ -1,28 +1,43 @@
 class_name Baker
 extends RefCounted
 
+/// Returns right away, while the GPU writes the texture.
+shader paint(size: Vector2i, target: Texture2D[rgba8]) -> void {
+  imageStore(target, id, vec4(1.0));
+}
+
 /// Waits until the GPU has written the texture.
+@sync
 shader bake(size: Vector2i, target: Texture2D[rgba8]) -> void {
   imageStore(target, id, vec4(1.0));
 }
 
 /// Returns an Async, which is done once the GPU has written the array.
-@onthread
+@async
 shader fill(n: int, values: GpuArray[float]) -> void {
   values[id] = float(id);
 }
 
-/// Returns an Async, which is done once the dispatch is queued.
-@async @onthread
-shader queue(n: int, values: GpuArray[float]) -> void {
-  values[id] = 0.0;
-}
-
-@onthread
+/// Returns an Async, which holds the image once it's back from the GPU.
+@async
 shader heights(size: Vector2i) -> Image[rf] {
   return float(id.x);
 }
 
+/// Returns an Async, which holds the values once they're back from the GPU.
+@async
+shader scale(n: int, values: PackedFloat32Array, k: float) -> PackedFloat32Array {
+  return values[id] * k;
+}
+
+/// Returns an Async, which holds the array once the GPU has written it.
+@async
+shader seed(n: int) -> GpuArray[int] {
+  return int(id) % 2;
+}
+
+/// Returns an Async, which holds the texture once the GPU has written it.
+@async
 shader blank(size: Vector2i) -> Texture2D[rgbah] {
   return vec4(0.0);
 }

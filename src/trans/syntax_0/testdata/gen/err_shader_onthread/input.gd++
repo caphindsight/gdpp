@@ -1,7 +1,7 @@
 class_name C
 extends RefCounted
 
-@async @onthread
+@onthread
 shader f(size: Vector2i) -> Image[rf] {
   return 1.0;
 }

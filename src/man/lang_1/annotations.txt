@@ -215,10 +215,13 @@ See `gd++ man externs`.
 
 # Shaders
 
-A shader takes `@onthread`, `@trace`, `@profile`, `@notrace`, `@noprofile`, `@game_only` and `@editor_only`, which work like on a function, and:
+A shader takes `@trace`, `@profile`, `@notrace`, `@noprofile`, `@game_only` and `@editor_only`, which work like on a function, and:
 
 @async
-  Calls return right away, while the GPU works. Without it, they wait until the GPU is done with the shader. Only on shaders that return a `GpuArray`, a `Texture2D` or `void`: other results come back from the GPU, so their calls must wait. Combines with `@onthread`, whose task then doesn't wait for the GPU. See "Not waiting for the GPU: @async" in `gd++ man shaders`.
+  Calls return an `Async` of the shader's result right away, which is done once the GPU is done with the call. No thread waits for it. Without it, calls of shaders that return a packed array or an `Image` wait for the GPU, and others return right away. Takes no arguments. See "Not waiting at all: @async" in `gd++ man shaders`.
+
+@sync
+  Calls wait for the GPU, also those of shaders that return a `GpuArray`, a `Texture2D` or `void`, which return right away without it. For timing the GPU's work, rarely else. Not with `@async`, and not on shaders that return a packed array or an `Image`, whose calls wait anyway. See "Waiting for the GPU" in `gd++ man shaders`.
 
 @grid(NAME, SIZES...)
   Both parts are optional, e.g. `@grid(size)`, `@grid(16, 16)` or `@grid(size, 16, 16)`.

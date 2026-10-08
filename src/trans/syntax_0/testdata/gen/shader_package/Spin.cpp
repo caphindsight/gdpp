@@ -94,7 +94,7 @@ struct _gdpp_shader_spin {
 }
 #line 96 "Spin.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Spin.spin", glsl, { 64, 1, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Spin.spin", glsl, { 64, 1, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -134,7 +134,7 @@ struct _gdpp_shader_reduce {
 			"    shared float tile[64];\n"
 			"\n"
 			"void _gdpp_body(int id) {\n"
-			"#line 19 \"input.gd++\"\n"
+			"#line 18 \"input.gd++\"\n"
 			"\n"
 			"    tile[gl_LocalInvocationID.x] = values[id];\n"
 			"    barrier();\n"

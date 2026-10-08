@@ -16,9 +16,10 @@
 			</description>
 		</method>
 		<method name="blank" qualifiers="static">
-			<return type="Texture2D" />
+			<return type="GdppAsync" />
 			<param index="0" name="size" type="Vector2i" />
 			<description>
+				Returns an Async, which holds the texture once the GPU has written it.
 			</description>
 		</method>
 		<method name="fill" qualifiers="static">
@@ -33,14 +34,31 @@
 			<return type="GdppAsync" />
 			<param index="0" name="size" type="Vector2i" />
 			<description>
+				Returns an Async, which holds the image once it's back from the GPU.
 			</description>
 		</method>
-		<method name="queue" qualifiers="static">
+		<method name="paint" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="size" type="Vector2i" />
+			<param index="1" name="target" type="Texture2D" />
+			<description>
+				Returns right away, while the GPU writes the texture.
+			</description>
+		</method>
+		<method name="scale" qualifiers="static">
 			<return type="GdppAsync" />
 			<param index="0" name="n" type="int" />
-			<param index="1" name="values" type="ShooterGpuArray" />
+			<param index="1" name="values" type="PackedFloat32Array" />
+			<param index="2" name="k" type="float" />
 			<description>
-				Returns an Async, which is done once the dispatch is queued.
+				Returns an Async, which holds the values once they're back from the GPU.
+			</description>
+		</method>
+		<method name="seed" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="n" type="int" />
+			<description>
+				Returns an Async, which holds the array once the GPU has written it.
 			</description>
 		</method>
 	</methods>

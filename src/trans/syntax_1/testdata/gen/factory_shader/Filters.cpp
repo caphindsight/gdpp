@@ -66,7 +66,7 @@ struct _gdpp_shader_brighten {
 }
 #line 68 "Filters.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Filters.brighten", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Filters.brighten", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -96,7 +96,7 @@ struct _gdpp_shader_clear {
 			"}\n"
 			"\n"
 			"void _gdpp_body(int id) {\n"
-			"#line 10 \"input.gd++\"\n"
+			"#line 9 \"input.gd++\"\n"
 			"\n"
 			"  values[id] = 0.0;\n"
 			"\n"
@@ -113,7 +113,7 @@ struct _gdpp_shader_clear {
 	int index(int p) const {
 		return p;
 	}
-#line 10 "input.gd++"
+#line 9 "input.gd++"
 	void body(Id id) const {
   values[id] = 0.0;
 }
@@ -178,11 +178,7 @@ gdpp::Gd<Image> Filters::brighten(const Vector2i &size, const gdpp::Gd<Image> &s
 	return _gdpp_call.result_image(gdpp::GpuFormat::rgba8, [&] { return ::_gdpp_gpu_Filters::_gdpp_shader_brighten{ gdpp::glsl::ivec2(size), gdpp::gpu::sampled(src), float(gain) }; });
 }
 
-gdpp::Async<void> Filters::clear(int64_t n, const gdpp::GpuArray<float> &values) {
-	return gdpp::run_task(nullptr, "Filters.clear", [=] { return _gdpp_body_clear(n, values); });
-}
-
-void Filters::_gdpp_body_clear(int64_t n, const gdpp::GpuArray<float> &values) {
+void Filters::clear(int64_t n, const gdpp::GpuArray<float> &values) {
 	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Filters::_gdpp_shader_clear::_gdpp_kernel(), n);
 	_gdpp_call.array(values);
 	_gdpp_call.run([&] { return ::_gdpp_gpu_Filters::_gdpp_shader_clear{ int(n), gdpp::gpu::RwBuffer<float>(values) }; });

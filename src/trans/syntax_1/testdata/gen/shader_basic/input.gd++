@@ -27,7 +27,6 @@ shader noise(size: Vector2i, cell: float = 8.0) -> Image[rf] {
   return hash(ivec2(vec2(id) / cell));
 }
 
-@async
 shader paint(size: Vector2i, heights: GpuArray[float], src: Texture2D, target: Texture2D[rgba8], tint: Color) -> void {
   vec4 c = texture(src, (vec2(id) + 0.5) / vec2(size));
   c.rg *= tint.rg;
@@ -35,12 +34,11 @@ shader paint(size: Vector2i, heights: GpuArray[float], src: Texture2D, target: T
   imageStore(target, id, c * heights[index(id)] + vec4(r.dir, 0.0));
 }
 
-@async
 shader grow(size: Vector3i, image: Image) -> GpuArray[Vector3] {
   return texelFetch(image, id.xy, 0).xyz;
 }
 
-@async @onthread
+@async
 shader blank(size: Vector2i) -> Texture2D[rgbah] {
   return vec4(0.0);
 }

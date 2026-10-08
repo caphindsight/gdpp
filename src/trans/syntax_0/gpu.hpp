@@ -8,8 +8,10 @@
 #include <cmath>
 #include <condition_variable>
 #include <cstring>
+#include <deque>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <thread>
 
 #include <gd++/syntax_0.hpp>
@@ -26,6 +28,17 @@
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/texture2drd.hpp>
+#if __has_include(<godot_cpp/core/version.hpp>)
+#include <godot_cpp/core/version.hpp>
+#endif
+
+// GDPP_GPU_ASYNC is defined where @async shaders work: with Godot 4.4 or later, whose RenderingDevice reads data back
+// without waiting for the GPU.
+#if defined(GODOT_VERSION_MAJOR) && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
+#define GDPP_GPU_ASYNC
+#endif
+// GDPP_GPU_ASYNC_NEEDED is the error for an @async shader without GDPP_GPU_ASYNC.
+#define GDPP_GPU_ASYNC_NEEDED "@async shaders need Godot 4.4 or later, whose RenderingDevice reads data back without waiting for the GPU."
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #include <intrin.h>
@@ -1769,6 +1782,155 @@ inline Ref<Image> image_from_pixels(const Pixels &p_pixels, GpuFormat p_format) 
 	return image;
 }
 
+// CpuQueue keeps the order of the kernels that run on the CPU, like the GPU's queue: the run of an @async call starts
+// after those started before it, and plain calls and GPU arrays' reads and writes wait for them.
+class CpuQueue {
+public:
+	// push starts the run of an @async call with p_start, now or once the runs before it are done. The run calls next
+	// when it's done.
+	void push(std::function<void()> p_start) {
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			if (busy) {
+				waiting.push_back(std::move(p_start));
+				return;
+			}
+			busy = true;
+		}
+		p_start();
+	}
+	// next starts the next waiting run, if any, once one is done.
+	void next() {
+		std::function<void()> start;
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			if (waiting.empty()) {
+				busy = false;
+				cv.notify_all();
+				return;
+			}
+			start = std::move(waiting.front());
+			waiting.pop_front();
+		}
+		start();
+	}
+	// drain waits until the runs of @async calls are done.
+	void drain() {
+		std::unique_lock<std::mutex> lock(mutex);
+		cv.wait(lock, [&] { return !busy; });
+	}
+
+private:
+	std::mutex mutex; // Guards busy and waiting.
+	std::condition_variable cv;
+	bool busy = false; // Whether a run is running.
+	std::deque<std::function<void()>> waiting;
+};
+
+// cpu_queue returns the package's CpuQueue.
+inline CpuQueue &cpu_queue() {
+	static CpuQueue queue;
+	return queue;
+}
+
+// DataCallable is a Callable that gives the bytes that RenderingDevice read back, without waiting, to a function.
+class DataCallable : public CallableCustom {
+public:
+	// A Callable that calls p_f with the bytes.
+	explicit DataCallable(std::function<void(const PackedByteArray &)> p_f) :
+			f(std::move(p_f)) {}
+
+	// The address: each DataCallable is only equal to itself.
+	uint32_t hash() const override { return uint32_t(uintptr_t(this)); }
+	// "gdpp::gpu::DataCallable".
+	String get_as_text() const override { return "gdpp::gpu::DataCallable"; }
+	// Compares addresses.
+	CompareEqualFunc get_compare_equal_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a == p_b; };
+	}
+	// Orders by address.
+	CompareLessFunc get_compare_less_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a < p_b; };
+	}
+	// Always true.
+	bool is_valid() const override { return true; }
+	// None: it isn't bound to an object.
+	ObjectID get_object() const override { return ObjectID(); }
+	// call calls the function with the first argument, the bytes.
+	void call(const Variant **p_arguments, int p_argcount, Variant &, GDExtensionCallError &r_call_error) const override {
+		f(p_argcount > 0 ? PackedByteArray(*p_arguments[0]) : PackedByteArray());
+		r_call_error.error = GDEXTENSION_CALL_OK;
+	}
+
+private:
+	std::function<void(const PackedByteArray &)> f;
+};
+
+// Pending is an @async call of a kernel, until its task is done: once the kernel ran, and the results it reads back
+// are back. It finishes the task with the result then, or abandons it if the task was cancelled.
+struct Pending {
+	Ref<GDPP_ASYNC_CLASS> task;
+	std::atomic<int> left = 1; // What it waits for: the run, and the read backs that it started.
+
+	// The task, as the Async's object.
+	Ref<RefCounted> object() const { return Ref<RefCounted>(task.ptr()); }
+	// set sets the result.
+	void set(const Variant &p_result) {
+		std::lock_guard<std::mutex> lock(mutex);
+		result = p_result;
+	}
+	// wait counts one more thing to wait for, e.g. a read back.
+	void wait() { left.fetch_add(1); }
+	// done counts one thing as done, and finishes the task once all are.
+	void done() {
+		if (left.fetch_sub(1) != 1) {
+			return;
+		}
+		if (task->cancel_flag()->load()) {
+			task->abandon();
+		} else {
+			std::lock_guard<std::mutex> lock(mutex);
+			task->finish(result);
+		}
+	}
+
+private:
+	std::mutex mutex; // Guards result.
+	Variant result;
+};
+
+// pending returns a new Pending, with a new task.
+inline std::shared_ptr<Pending> pending() {
+	std::shared_ptr<Pending> p = std::make_shared<Pending>();
+	p->task.instantiate();
+	p->task->start_pending();
+	return p;
+}
+
+// read_back reads the bytes of p_rid, a buffer, or a texture if p_texture, on p_device, gives them to p_set, and counts
+// it done for p_pending: without waiting on the main device, whose RenderingDevice calls back once they're read, and
+// right away on the local one, which is done with its work.
+inline void read_back(Device &p_device, RID p_rid, bool p_texture, const std::shared_ptr<Pending> &p_pending, std::function<void(const PackedByteArray &)> p_set) {
+	if (!p_device.main) {
+		p_set(p_texture ? p_device.rd->texture_get_data(p_rid, 0) : p_device.rd->buffer_get_data(p_rid));
+		return;
+	}
+#ifdef GDPP_GPU_ASYNC
+	p_pending->wait();
+	// A variable, since memnew puts its argument in a decltype, where C++17 doesn't allow a lambda.
+	auto got = [p_pending, p_set](const PackedByteArray &p_bytes) {
+		p_set(p_bytes);
+		p_pending->done();
+	};
+	Callable callback(memnew(DataCallable(std::move(got))));
+	if (p_texture) {
+		p_device.rd->texture_get_data_async(p_rid, 0, callback);
+	} else {
+		p_device.rd->buffer_get_data_async(p_rid, callback);
+	}
+#endif
+}
+
 } // namespace gpu
 
 // GDPP_GPU_ARRAY_CLASS is the package's class of GPU arrays: arrays of floats, ints or vectors that stay on the GPU,
@@ -1816,6 +1978,7 @@ public:
 	// read returns the array's elements as a packed array, waiting for the kernels that write them.
 	Variant read() const {
 		if (!buffer.is_valid()) {
+			gpu::cpu_queue().drain(); // The runs of @async calls on the CPU, as the GPU would.
 			return gpu::from_cpu(elem, cpu.data(), count);
 		}
 		std::vector<uint8_t> bytes = download();
@@ -1828,6 +1991,9 @@ public:
 		ERR_FAIL_COND_MSG(!gpu::elem_of(p_packed, e) || e != elem, vformat("A GPU array of %s can't be written from a %s.", gpu::info(elem).name, Variant::get_type_name(p_packed.get_type())));
 		std::vector<uint8_t> bytes = gpu::to_cpu(elem, p_packed);
 		ERR_FAIL_COND_MSG(int64_t(bytes.size()) != count * gpu::info(elem).cpu_stride, vformat("A GPU array of size %d can't be written from an array of size %d.", count, int64_t(bytes.size()) / gpu::info(elem).cpu_stride));
+		if (!buffer.is_valid()) {
+			gpu::cpu_queue().drain(); // The runs of @async calls on the CPU, as the GPU would.
+		}
 		upload(bytes);
 	}
 
@@ -2139,10 +2305,60 @@ struct Grid {
 	bool valid() const { return size[0] >= 0 && size[1] >= 0 && size[2] >= 0; }
 };
 
+// cpu_groups sets r_groups to the workgroups of p_kernel over p_grid in each dimension, and returns how many there are.
+inline uint32_t cpu_groups(const Kernel &p_kernel, const Grid &p_grid, uint32_t r_groups[3]) {
+	uint32_t total = 1;
+	for (int i = 0; i < 3; i++) {
+		r_groups[i] = uint32_t((p_grid.size[i] + p_kernel.group_size[i] - 1) / p_kernel.group_size[i]);
+		total *= r_groups[i];
+	}
+	return total;
+}
+
+// cpu_group runs workgroup p_index of kernel p_k over p_grid, of p_groups, on this thread: its invocations one after
+// another. For each cell, p_store gets its flat index and what the body returned.
+template <typename K, typename S>
+void cpu_group(const Kernel &p_kernel, const K &p_k, const Grid &p_grid, S &p_store, const uint32_t p_groups[3], uint32_t p_index) {
+	Invocation &inv = invocation();
+	inv.kernel = p_kernel.name;
+	inv.groups = uvec3(p_groups[0], p_groups[1], p_groups[2]);
+	inv.group_size = uvec3(p_kernel.group_size[0], p_kernel.group_size[1], p_kernel.group_size[2]);
+	inv.group_id = uvec3(p_index % p_groups[0], p_index / p_groups[0] % p_groups[1], p_index / p_groups[0] / p_groups[1]);
+	for (uint32_t z = 0; z < p_kernel.group_size[2]; z++) {
+		for (uint32_t y = 0; y < p_kernel.group_size[1]; y++) {
+			for (uint32_t x = 0; x < p_kernel.group_size[0]; x++) {
+				inv.local_id = uvec3(x, y, z);
+				inv.local_index = (z * p_kernel.group_size[1] + y) * p_kernel.group_size[0] + x;
+				inv.global_id = inv.group_id * inv.group_size + inv.local_id;
+				const uvec3 &g = inv.global_id;
+				if (g.x >= p_grid.size[0] || g.y >= p_grid.size[1] || g.z >= p_grid.size[2]) {
+					continue;
+				}
+				int64_t flat = (int64_t(g.z) * p_grid.size[1] + int64_t(g.y)) * p_grid.size[0] + int64_t(g.x);
+				typename K::Id id;
+				if constexpr (std::is_same_v<typename K::Id, int>) {
+					id = int(g.x);
+				} else if constexpr (std::is_same_v<typename K::Id, ivec2>) {
+					id = ivec2(g.x, g.y);
+				} else {
+					id = ivec3(g.x, g.y, g.z);
+				}
+				if constexpr (std::is_void_v<decltype(p_k.body(id))>) {
+					p_k.body(id);
+				} else {
+					p_store(flat, p_k.body(id));
+				}
+			}
+		}
+	}
+}
+
 // cpu_run runs kernel p_k on the CPU, over p_grid, on the WorkerThreadPool: one task per workgroup, whose
-// invocations run one after another. For each cell, p_store gets its flat index and what the body returned.
+// invocations run one after another. For each cell, p_store gets its flat index and what the body returned. It runs
+// after the runs of @async calls before it, like on the GPU, and returns once it's done.
 template <typename K, typename S>
 void cpu_run(const Kernel &p_kernel, const K &p_k, const Grid &p_grid, S p_store) {
+	cpu_queue().drain();
 	struct Job {
 		const Kernel *kernel;
 		const K *k;
@@ -2151,48 +2367,13 @@ void cpu_run(const Kernel &p_kernel, const K &p_k, const Grid &p_grid, S p_store
 		uint32_t groups[3];
 	};
 	Job job{ &p_kernel, &p_k, &p_grid, &p_store, {} };
-	uint32_t total = 1;
-	for (int i = 0; i < 3; i++) {
-		job.groups[i] = uint32_t((p_grid.size[i] + p_kernel.group_size[i] - 1) / p_kernel.group_size[i]);
-		total *= job.groups[i];
-	}
+	uint32_t total = cpu_groups(p_kernel, p_grid, job.groups);
 	if (total == 0) {
 		return;
 	}
 	auto group = [](void *p_job, uint32_t p_index) {
 		const Job &j = *static_cast<const Job *>(p_job);
-		Invocation &inv = invocation();
-		inv.kernel = j.kernel->name;
-		inv.groups = uvec3(j.groups[0], j.groups[1], j.groups[2]);
-		inv.group_size = uvec3(j.kernel->group_size[0], j.kernel->group_size[1], j.kernel->group_size[2]);
-		inv.group_id = uvec3(p_index % j.groups[0], p_index / j.groups[0] % j.groups[1], p_index / j.groups[0] / j.groups[1]);
-		for (uint32_t z = 0; z < j.kernel->group_size[2]; z++) {
-			for (uint32_t y = 0; y < j.kernel->group_size[1]; y++) {
-				for (uint32_t x = 0; x < j.kernel->group_size[0]; x++) {
-					inv.local_id = uvec3(x, y, z);
-					inv.local_index = (z * j.kernel->group_size[1] + y) * j.kernel->group_size[0] + x;
-					inv.global_id = inv.group_id * inv.group_size + inv.local_id;
-					const uvec3 &g = inv.global_id;
-					if (g.x >= j.grid->size[0] || g.y >= j.grid->size[1] || g.z >= j.grid->size[2]) {
-						continue;
-					}
-					int64_t flat = (int64_t(g.z) * j.grid->size[1] + int64_t(g.y)) * j.grid->size[0] + int64_t(g.x);
-					typename K::Id id;
-					if constexpr (std::is_same_v<typename K::Id, int>) {
-						id = int(g.x);
-					} else if constexpr (std::is_same_v<typename K::Id, ivec2>) {
-						id = ivec2(g.x, g.y);
-					} else {
-						id = ivec3(g.x, g.y, g.z);
-					}
-					if constexpr (std::is_void_v<decltype(j.k->body(id))>) {
-						j.k->body(id);
-					} else {
-						(*j.store)(flat, j.k->body(id));
-					}
-				}
-			}
-		}
+		cpu_group(*j.kernel, *j.k, *j.grid, *j.store, j.groups, p_index);
 	};
 	if (total == 1) {
 		group(&job, 0);
@@ -2200,6 +2381,70 @@ void cpu_run(const Kernel &p_kernel, const K &p_k, const Grid &p_grid, S p_store
 	}
 	WorkerThreadPool *pool = WorkerThreadPool::get_singleton();
 	pool->wait_for_group_task_completion(pool->add_native_group_task(group, &job, int(total), -1, true, p_kernel.name));
+}
+
+// cpu_run_async runs the kernel that p_make makes on the CPU, over p_grid, like cpu_run, but returns right away: it
+// runs in the CpuQueue's order, on the WorkerThreadPool. Once it's done, it destroys the kernel, which writes its GPU
+// arrays and textures, and calls p_done. No thread waits for it: its last workgroup calls p_done.
+template <typename F, typename S>
+void cpu_run_async(Kernel &p_kernel, const Grid &p_grid, F p_make, S p_store, std::function<void()> p_done) {
+	using K = std::invoke_result_t<F>;
+	struct Run {
+		Kernel *kernel = nullptr;
+		std::optional<K> k;
+		std::optional<Grid> grid;
+		std::optional<S> store;
+		std::function<void()> done;
+		uint32_t groups[3] = {};
+		std::atomic<uint32_t> left = 0;
+		std::atomic<int64_t> id = -1;
+		std::shared_ptr<Run> self; // Keeps it alive until Godot's wait for its group task.
+
+		// end runs once the last workgroup is done.
+		void end() {
+			k.reset();
+			store.reset(); // Both may write back, e.g. a GPU array's elements, before the call is done.
+			done();
+			running_tasks.fetch_sub(1);
+			cpu_queue().next();
+		}
+	};
+	std::shared_ptr<Run> run = std::make_shared<Run>();
+	run->kernel = &p_kernel;
+	run->k.emplace(p_make());
+	run->grid.emplace(p_grid);
+	run->store.emplace(std::move(p_store));
+	run->done = std::move(p_done);
+	running_tasks.fetch_add(1);
+	cpu_queue().push([run] {
+		uint32_t total = cpu_groups(*run->kernel, *run->grid, run->groups);
+		if (total == 0) {
+			run->end();
+			return;
+		}
+		run->left = total;
+		run->self = run;
+		auto group = [](void *p_run, uint32_t p_index) {
+			Run &r = *static_cast<Run *>(p_run);
+			cpu_group(*r.kernel, *r.k, *r.grid, *r.store, r.groups, p_index);
+			if (r.left.fetch_sub(1) != 1) {
+				return;
+			}
+			std::shared_ptr<Run> keep = std::move(r.self);
+			keep->end();
+			// Godot requires waiting once for each group task. The main thread does, once the task has its id.
+			auto join = [keep] {
+				while (keep->id.load() < 0) {
+					std::this_thread::yield();
+				}
+				WorkerThreadPool::get_singleton()->wait_for_group_task_completion(keep->id.load());
+				return Variant();
+			};
+			Callable(memnew(TaskCallable(std::move(join)))).call_deferred();
+		};
+		WorkerThreadPool *pool = WorkerThreadPool::get_singleton();
+		run->id = pool->add_native_group_task(group, run.get(), int(total), -1, true, run->kernel->name);
+	});
 }
 
 // Binding is an argument of a kernel on the GPU, other than a scalar, which goes into the uniform block.
@@ -2342,14 +2587,12 @@ public:
 		if (Ref<Texture2DRD> rd = p_texture; rd.is_valid()) {
 			b.rid = rd->get_texture_rd_rid();
 		} else if (Ref<ImageTexture> it = p_texture; it.is_valid()) {
-			// The CPU writes an ImageTexture as it is. The GPU copies it there and back, which only a shader without
-			// @async can wait for: see gpu().
+			// The CPU writes an ImageTexture as it is. The GPU copies it there and back: a plain call waits for that,
+			// see waits(), and an @async one's task is done once it's back.
 			image_texture = true;
-			if (kernel.sync) {
-				b.image = it->get_image()->duplicate();
-				b.image->convert(info(p_format).image);
-				b.write_back = it;
-			}
+			b.image = it->get_image()->duplicate();
+			b.image->convert(info(p_format).image);
+			b.write_back = it;
 		} else {
 			ERR_PRINT(vformat("Kernel %s writes a texture, which must be a Texture2DRD or an ImageTexture.", kernel.name));
 			failed = true;
@@ -2398,11 +2641,7 @@ public:
 			bindings.push_back(out);
 			PackedByteArray result;
 			dispatch(*d, true, [&](const std::vector<RID> &p_rids) { result = d->rd->texture_get_data(p_rids.back(), 0); });
-			Ref<Image> image = Image::create_from_data(std::max(size.x, 1), std::max(size.y, 1), false, info(p_format).image, result);
-			if (image.is_valid() && info(p_format).final != info(p_format).image) {
-				image->convert(info(p_format).final); // An RGB format, which the GPU wrote as RGBA.
-			}
-			return image;
+			return image_from_bytes(size, p_format, result);
 		}
 		return image_from_pixels(*cpu_pixels(p_make), p_format);
 	}
@@ -2414,7 +2653,7 @@ public:
 		GpuArray<T> result(grid.cells());
 		if (Device *d = gpu()) {
 			array(result);
-			dispatch(*d, kernel.sync, nullptr);
+			dispatch(*d, waits(), nullptr);
 			return result;
 		}
 		using V = typename ElemOf<T>::Glsl;
@@ -2431,39 +2670,162 @@ public:
 	Ref<Texture2D> result_texture(GpuFormat p_format, F p_make) {
 		Vector2i size(int(grid.size[0]), int(grid.size[1]));
 		if (Device *d = gpu()) {
-			Ref<GDPP_GPU_TEXTURE_CLASS> texture;
-			texture.instantiate();
-			texture->format = p_format;
-			GDPP_GPU_TEXTURE_CLASS *self = texture.ptr();
-			d->run([d, self, size, p_format] {
-				self->owned = create_texture(*d, size, info(p_format).rd, texture_usage, PackedByteArray());
-				self->set_texture_rd_rid(self->owned);
-			},
-					false);
-			Binding out;
-			out.kind = Binding::IMAGE;
-			out.format = info(p_format).rd;
-			out.holder = texture;
-			bindings.push_back(out);
-			dispatch(*d, kernel.sync, nullptr, self);
+			Ref<GDPP_GPU_TEXTURE_CLASS> texture = output_texture(*d, size, p_format);
+			dispatch(*d, waits(), nullptr, texture.ptr());
 			return texture;
 		}
 		return ImageTexture::create_from_image(image_from_pixels(*cpu_pixels(p_make), p_format));
 	}
 
-	// run runs a kernel that returns nothing: it writes its GPU arrays and textures. It waits for the GPU unless
-	// @async.
+	// run runs a kernel that returns nothing: it writes its GPU arrays and textures. It waits for the GPU only with
+	// @sync, or to copy an ImageTexture back.
 	template <typename F>
 	void run(F p_make) {
 		using K = std::invoke_result_t<F>;
 		if (Device *d = gpu()) {
-			dispatch(*d, kernel.sync, nullptr);
+			dispatch(*d, waits(), nullptr);
 			return;
 		}
 		if (cpu_ready()) {
 			K k = p_make();
 			cpu_run(kernel, k, grid, [](int64_t, const auto &) {});
 		}
+	}
+
+	// The calls of @async shaders. Each returns the task of the call's Async right away, which gets the result once
+	// the kernel ran: on the GPU, where no thread waits for it, or else on the CPU, on the WorkerThreadPool, in the
+	// CpuQueue's order. See Pending.
+
+	// async_buffer is result_buffer for an @async shader.
+	template <typename P, typename F>
+	Ref<RefCounted> async_buffer(F p_make) {
+#ifdef GDPP_GPU_ASYNC
+		using K = std::invoke_result_t<F>;
+		using T = decltype(std::declval<K>().body(std::declval<typename K::Id>()));
+		std::shared_ptr<Pending> p = pending();
+		Elem e;
+		elem_of(Variant(P()), e);
+		int64_t count = std::max<int64_t>(grid.cells(), 0);
+		if (Device *d = gpu()) {
+			Binding out;
+			out.kind = Binding::BUFFER;
+			out.bytes.resize(std::max<int64_t>(count * info(e).gpu_stride, 16));
+			bindings.push_back(out);
+			dispatch(*d, false, [d, p, e, count](const std::vector<RID> &p_rids) {
+				read_back(*d, p_rids.back(), false, p, [p, e, count](const PackedByteArray &p_bytes) {
+					std::vector<uint8_t> bytes = cpu_layout(e, p_bytes, count);
+					p->set(P(from_cpu(e, bytes.data(), count)));
+				});
+			},
+					nullptr, p);
+			return p->object();
+		}
+		std::shared_ptr<std::vector<T>> values = std::make_shared<std::vector<T>>(size_t(count));
+		auto finish = [p, e, values] {
+			p->set(P(from_cpu(e, reinterpret_cast<const uint8_t *>(values->data()), int64_t(values->size()))));
+			p->done();
+		};
+		on_cpu(p_make, [values](int64_t p_index, const T &p_value) { (*values)[size_t(p_index)] = p_value; }, finish);
+		return p->object();
+#else
+		static_assert(always_false<F>, GDPP_GPU_ASYNC_NEEDED);
+		return {};
+#endif
+	}
+
+	// async_image is result_image for an @async shader.
+	template <typename F>
+	Ref<RefCounted> async_image(GpuFormat p_format, F p_make) {
+#ifdef GDPP_GPU_ASYNC
+		std::shared_ptr<Pending> p = pending();
+		Vector2i size(int(grid.size[0]), int(grid.size[1]));
+		if (Device *d = gpu()) {
+			Binding out;
+			out.kind = Binding::IMAGE;
+			out.format = info(p_format).rd;
+			out.image = Image::create_empty(std::max(size.x, 1), std::max(size.y, 1), false, info(p_format).image);
+			bindings.push_back(out);
+			dispatch(*d, false, [d, p, size, p_format](const std::vector<RID> &p_rids) {
+				read_back(*d, p_rids.back(), true, p, [p, size, p_format](const PackedByteArray &p_bytes) { p->set(image_from_bytes(size, p_format, p_bytes)); });
+			},
+					nullptr, p);
+			return p->object();
+		}
+		std::shared_ptr<Pixels> pixels = new_pixels();
+		auto finish = [p, pixels, p_format] {
+			p->set(image_from_pixels(*pixels, p_format));
+			p->done();
+		};
+		on_cpu(p_make, pixel_store(pixels), finish);
+		return p->object();
+#else
+		static_assert(always_false<F>, GDPP_GPU_ASYNC_NEEDED);
+		return {};
+#endif
+	}
+
+	// async_array is result_array for an @async shader.
+	template <typename T, typename F>
+	Ref<RefCounted> async_array(F p_make) {
+#ifdef GDPP_GPU_ASYNC
+		std::shared_ptr<Pending> p = pending();
+		GpuArray<T> result(grid.cells());
+		p->set(Variant(result));
+		if (Device *d = gpu()) {
+			array(result);
+			dispatch(*d, false, nullptr, nullptr, p);
+			return p->object();
+		}
+		using V = typename ElemOf<T>::Glsl;
+		RwBuffer<V> out(result);
+		on_cpu(p_make, [out](int64_t p_index, const V &p_value) { out[int(p_index)] = p_value; }, [p] { p->done(); });
+		return p->object();
+#else
+		static_assert(always_false<F>, GDPP_GPU_ASYNC_NEEDED);
+		return {};
+#endif
+	}
+
+	// async_texture is result_texture for an @async shader.
+	template <typename F>
+	Ref<RefCounted> async_texture(GpuFormat p_format, F p_make) {
+#ifdef GDPP_GPU_ASYNC
+		std::shared_ptr<Pending> p = pending();
+		Vector2i size(int(grid.size[0]), int(grid.size[1]));
+		if (Device *d = gpu()) {
+			Ref<GDPP_GPU_TEXTURE_CLASS> texture = output_texture(*d, size, p_format);
+			p->set(texture);
+			dispatch(*d, false, nullptr, texture.ptr(), p);
+			return p->object();
+		}
+		std::shared_ptr<Pixels> pixels = new_pixels();
+		auto finish = [p, pixels, p_format] {
+			p->set(ImageTexture::create_from_image(image_from_pixels(*pixels, p_format)));
+			p->done();
+		};
+		on_cpu(p_make, pixel_store(pixels), finish);
+		return p->object();
+#else
+		static_assert(always_false<F>, GDPP_GPU_ASYNC_NEEDED);
+		return {};
+#endif
+	}
+
+	// async_run is run for an @async shader.
+	template <typename F>
+	Ref<RefCounted> async_run(F p_make) {
+#ifdef GDPP_GPU_ASYNC
+		std::shared_ptr<Pending> p = pending();
+		if (Device *d = gpu()) {
+			dispatch(*d, false, nullptr, nullptr, p);
+			return p->object();
+		}
+		on_cpu(p_make, [](int64_t, const auto &) {}, [p] { p->done(); });
+		return p->object();
+#else
+		static_assert(always_false<F>, GDPP_GPU_ASYNC_NEEDED);
+		return {};
+#endif
 	}
 
 private:
@@ -2506,17 +2868,29 @@ private:
 		if (failed || !grid.valid()) {
 			return nullptr;
 		}
-		Device *d = kernel.device();
-		if (d && image_texture && !kernel.sync) {
-			// It writes an ImageTexture, which needs a copy back that the call can't wait for: the CPU writes it instead.
-			if (!kernel.warned_image_texture.exchange(true)) {
-				WARN_PRINT(vformat("Shader %s writes an ImageTexture, so it runs on the CPU: an @async shader returns before the GPU is done, "
-								   "and can't copy it back. Pass a texture that a shader or gpu_texture() made, or remove @async.",
-						kernel.name));
-			}
-			return nullptr;
+		return kernel.device();
+	}
+
+	// waits reports whether a plain call that returns a GpuArray, a Texture2D or nothing waits for the GPU: with
+	// @sync, or when it writes an ImageTexture, which it copies back.
+	bool waits() {
+		if (image_texture && !kernel.sync && !kernel.warned_image_texture.exchange(true)) {
+			WARN_PRINT(vformat("Shader %s writes an ImageTexture, so its calls wait for the GPU, to copy it back. Pass a texture that a shader or "
+							   "gpu_texture() made, which stays on the GPU, or make the shader @async.",
+					kernel.name));
 		}
-		return d;
+		return kernel.sync || image_texture;
+	}
+
+	// on_cpu runs the kernel that p_make makes on the CPU for an @async call, without waiting, and calls p_finish once
+	// it's done: right away if it can't run on the CPU.
+	template <typename F, typename S>
+	void on_cpu(F p_make, S p_store, std::function<void()> p_finish) {
+		if (!cpu_ready()) {
+			p_finish();
+			return;
+		}
+		cpu_run_async(kernel, grid, p_make, std::move(p_store), std::move(p_finish));
 	}
 
 	// cpu_ready reports whether the kernel can run on the CPU.
@@ -2535,30 +2909,72 @@ private:
 	template <typename F>
 	std::shared_ptr<Pixels> cpu_pixels(F p_make) {
 		using K = std::invoke_result_t<F>;
-		std::shared_ptr<Pixels> pixels = std::make_shared<Pixels>();
-		pixels->width = int(std::max<int64_t>(grid.size[0], 1));
-		pixels->height = int(std::max<int64_t>(grid.size[1], 1));
-		pixels->data.resize(size_t(pixels->width) * size_t(pixels->height), vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		std::shared_ptr<Pixels> pixels = new_pixels();
 		if (cpu_ready()) {
 			K k = p_make();
-			cpu_run(kernel, k, grid, [&](int64_t p_index, const auto &p_value) {
-				vec4 &px = pixels->data[size_t(p_index)];
-				if constexpr (is_vec<std::decay_t<decltype(p_value)>>::value) {
-					for (int i = 0; i < components<std::decay_t<decltype(p_value)>>::value; i++) {
-						px.data[i] = float(p_value.data[i]);
-					}
-				} else {
-					px.x = float(p_value);
-				}
-			});
+			cpu_run(kernel, k, grid, pixel_store(pixels));
 		}
 		return pixels;
 	}
 
+	// new_pixels returns the pixels of the grid, all black.
+	std::shared_ptr<Pixels> new_pixels() const {
+		std::shared_ptr<Pixels> pixels = std::make_shared<Pixels>();
+		pixels->width = int(std::max<int64_t>(grid.size[0], 1));
+		pixels->height = int(std::max<int64_t>(grid.size[1], 1));
+		pixels->data.resize(size_t(pixels->width) * size_t(pixels->height), vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		return pixels;
+	}
+
+	// pixel_store returns the store of a kernel's run on the CPU that puts what the body returns into p_pixels.
+	static auto pixel_store(std::shared_ptr<Pixels> p_pixels) {
+		return [p_pixels](int64_t p_index, const auto &p_value) {
+			vec4 &px = p_pixels->data[size_t(p_index)];
+			if constexpr (is_vec<std::decay_t<decltype(p_value)>>::value) {
+				for (int i = 0; i < components<std::decay_t<decltype(p_value)>>::value; i++) {
+					px.data[i] = float(p_value.data[i]);
+				}
+			} else {
+				px.x = float(p_value);
+			}
+		};
+	}
+
+	// image_from_bytes returns the Image of p_format and p_size from the bytes of the texture that a kernel wrote.
+	static Ref<Image> image_from_bytes(Vector2i p_size, GpuFormat p_format, const PackedByteArray &p_bytes) {
+		Ref<Image> image = Image::create_from_data(std::max(p_size.x, 1), std::max(p_size.y, 1), false, info(p_format).image, p_bytes);
+		if (image.is_valid() && info(p_format).final != info(p_format).image) {
+			image->convert(info(p_format).final); // An RGB format, which the GPU wrote as RGBA.
+		}
+		return image;
+	}
+
+	// output_texture returns a new texture of p_format and p_size on p_device, which the kernel writes, and binds it.
+	Ref<GDPP_GPU_TEXTURE_CLASS> output_texture(Device &p_device, Vector2i p_size, GpuFormat p_format) {
+		Ref<GDPP_GPU_TEXTURE_CLASS> texture;
+		texture.instantiate();
+		texture->format = p_format;
+		GDPP_GPU_TEXTURE_CLASS *self = texture.ptr();
+		Device *d = &p_device;
+		d->run([d, self, p_size, p_format] {
+			self->owned = create_texture(*d, p_size, info(p_format).rd, texture_usage, PackedByteArray());
+			self->set_texture_rd_rid(self->owned);
+		},
+				false);
+		Binding out;
+		out.kind = Binding::IMAGE;
+		out.format = info(p_format).rd;
+		out.holder = texture;
+		bindings.push_back(out);
+		return texture;
+	}
+
 	// dispatch runs the kernel on p_device with the bindings, then p_after with their resources, before freeing
-	// those it made. It waits for that if p_wait, and else returns right away. p_texture, if any, is a texture
-	// result, which it binds last.
-	void dispatch(Device &p_device, bool p_wait, std::function<void(const std::vector<RID> &)> p_after, GDPP_GPU_TEXTURE_CLASS *p_texture = nullptr) {
+	// those it made. It waits for that if p_wait, and for the GPU, and else returns right away. p_texture, if any, is
+	// a texture result, which it binds last. With p_pending, an @async call's, it reads the ImageTextures it writes
+	// back without waiting, and counts the run done for p_pending once the GPU is.
+	void dispatch(Device &p_device, bool p_wait, std::function<void(const std::vector<RID> &)> p_after, GDPP_GPU_TEXTURE_CLASS *p_texture = nullptr,
+			std::shared_ptr<Pending> p_pending = nullptr) {
 		Device *d = &p_device;
 		Kernel *k = &kernel;
 		uint32_t groups[3];
@@ -2569,7 +2985,7 @@ private:
 		uniforms.resize((uniforms.size() + 15) / 16 * 16);
 		std::vector<Binding> bs = bindings;
 		Ref<GDPP_GPU_TEXTURE_CLASS> texture = p_texture;
-		auto work = [d, k, groups, uniforms, bs, texture, p_after] {
+		auto work = [d, k, groups, uniforms, bs, texture, p_after, p_wait, p_pending] {
 			RenderingDevice *rd = d->rd;
 			std::vector<RID> rids, made;
 			TypedArray<RDUniform> list;
@@ -2634,18 +3050,38 @@ private:
 			if (!d->main) {
 				rd->submit();
 				rd->sync();
-			} else if (k->sync && !p_after) {
+			} else if (p_wait && !p_after && !p_pending) {
 				// Reading any buffer back makes the main device run its queued work, and wait for the GPU to finish it.
 				rd->buffer_get_data(ubo, 0, 4);
 			}
 			for (size_t i = 0; i < bs.size(); i++) {
-				if (bs[i].write_back.is_valid()) {
-					PackedByteArray bytes = rd->texture_get_data(rids[i], 0);
-					bs[i].write_back->update(Image::create_from_data(bs[i].image->get_width(), bs[i].image->get_height(), false, bs[i].image->get_format(), bytes));
+				if (bs[i].write_back.is_null()) {
+					continue;
+				}
+				Ref<ImageTexture> to = bs[i].write_back;
+				Ref<Image> like = bs[i].image;
+				auto update = [to, like](const PackedByteArray &p_bytes) {
+					to->update(Image::create_from_data(like->get_width(), like->get_height(), false, like->get_format(), p_bytes));
+				};
+				if (p_pending) {
+					read_back(*d, rids[i], true, p_pending, update);
+				} else {
+					update(rd->texture_get_data(rids[i], 0));
 				}
 			}
 			if (p_after) {
 				p_after(rids);
+			}
+			if (p_pending) {
+#ifdef GDPP_GPU_ASYNC
+				if (d->main) {
+					// Commands run in order, so once a read back after the kernel's is done, the GPU is done with it.
+					p_pending->wait();
+					auto probed = [p_pending](const PackedByteArray &) { p_pending->done(); }; // A variable, for memnew.
+					rd->buffer_get_data_async(ubo, Callable(memnew(DataCallable(std::move(probed)))), 0, 4);
+				}
+#endif
+				p_pending->done();
 			}
 			rd->free_rid(set);
 			for (RID rid : made) {

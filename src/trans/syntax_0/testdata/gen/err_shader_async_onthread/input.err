@@ -1,4 +1,0 @@
-input.gd++:4:1: Shader f returns an Image, which comes back from the GPU, so it can't be @async.
- 4 | @async @onthread
-   | ^^^^^^
-Hint: Remove @async: its task waits for the GPU, while the caller gets an Async right away. Or return a Texture2D[rf] instead: it stays on the GPU, so it can be @async.

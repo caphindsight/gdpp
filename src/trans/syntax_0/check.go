@@ -136,7 +136,7 @@ type funcModel struct {
 	// @override of a @virtual function. Empty for others.
 	virtualOf string
 	trait     string    // For a class's function: the trait whose function it implements, or copies as a default. Else empty.
-	gpu       *gpuModel // For a shader: what runs it, else nil. Its function, and the body of an @onthread one, run it.
+	gpu       *gpuModel // For a shader: what runs it, else nil. Its function runs it.
 }
 
 // rpcModel is the configuration from @rpc, as C++ values. Empty in externs, whose defining class configures it.
@@ -368,7 +368,7 @@ func usesAsync(c *Class) bool {
 			return isAsync(m.Func.Return) || hasAsync(m.Func.Params) ||
 				slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "onthread" || a.Name == "async" })
 		case m.Shader != nil:
-			return slices.ContainsFunc(m.Shader.Annotations, func(a *Annotation) bool { return a.Name == "onthread" })
+			return slices.ContainsFunc(m.Shader.Annotations, func(a *Annotation) bool { return a.Name == "async" })
 		case m.On != nil:
 			return slices.ContainsFunc(m.On.Annotations, func(a *Annotation) bool { return a.Name == "async" })
 		case m.Signal != nil:
@@ -1312,7 +1312,7 @@ var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 var knownAnnotations = []string{"abstract", "async", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "sync", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}

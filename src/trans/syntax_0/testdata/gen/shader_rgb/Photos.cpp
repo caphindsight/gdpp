@@ -64,7 +64,7 @@ struct _gdpp_shader_opaque {
 }
 #line 66 "Photos.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Photos.opaque", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Photos.opaque", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -114,7 +114,7 @@ struct _gdpp_shader_normals {
 }
 #line 116 "Photos.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Photos.normals", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Photos.normals", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
 	}
 };

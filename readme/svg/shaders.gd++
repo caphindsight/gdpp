@@ -8,10 +8,8 @@ shader {
   }
 }
 
-// Runs on the GPU, once for each pixel. @async:
-// the texture stays on the GPU, so the call
-// returns it right away, while the GPU fills it.
-@async
+// Runs on the GPU, once for each pixel. The texture
+// stays on the GPU, so the call returns it right away.
 shader noise(size: Vector2i, scale: float) -> Texture2D[r8] {
   vec2 p = vec2(id) / scale;
   vec2 c = floor(p), f = fract(p);

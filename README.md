@@ -216,7 +216,7 @@ See `gd++ man async`.
 
 <a href="readme/svg/shaders.gd++"><img src="readme/svg/shaders.svg" alt="GD++ code: shaders"></a>
 
-Shaders are functions written in GLSL, which run on the GPU. Without one, e.g. on a dedicated server, they run on the CPU. A call waits for the GPU, unless the shader is `@async`.
+Shaders are functions written in GLSL, which run on the GPU. Without one, e.g. on a dedicated server, they run on the CPU. A call waits for results that come back to the CPU, e.g. an `Image`, and returns others right away. With `@async`, it returns an `Async` instead, which is done once the GPU is.
 
 See `gd++ man shaders`.
 

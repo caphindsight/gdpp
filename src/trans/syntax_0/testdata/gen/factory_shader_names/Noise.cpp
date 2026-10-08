@@ -64,7 +64,7 @@ struct _gdpp_shader_fill {
 }
 #line 66 "Noise.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Noise.fill", glsl, { 64, 1, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Noise.fill", glsl, { 64, 1, 1 }, false, true, false);
 		return kernel;
 	}
 };

@@ -1694,11 +1694,11 @@ public:
 		return value;
 	}
 
-	// wait waits for the job to finish, and returns its result. A coroutine's task can't be waited for, since the
-	// coroutine may need the waiting thread to go on.
+	// wait waits for the job to finish, and returns its result. The task of an @async func or shader can't be waited
+	// for, since its coroutine or the GPU may need the waiting thread to go on.
 	Variant wait() {
-		if (coroutine && !done.load(std::memory_order_acquire)) {
-			ERR_FAIL_V_MSG(Variant(), "The task is an @async func's, which can't be waited for: await it, or test is_done() each frame.");
+		if (pending && !done.load(std::memory_order_acquire)) {
+			ERR_FAIL_V_MSG(Variant(), "The task is an @async func's or shader's, which can't be waited for: await it, or test is_done() each frame.");
 		}
 		join();
 		return get_result();
@@ -1746,9 +1746,10 @@ public:
 	// cancel_flag is the flag that cancel sets, which gdpp::is_cancelled() reads.
 	const std::atomic<bool> *cancel_flag() const { return &cancel_requested; }
 
-	// start_coroutine makes this the task of an @async func's coroutine, which calls finish or abandon.
-	void start_coroutine() {
-		coroutine = started = true;
+	// start_pending makes this a task whose job runs elsewhere, and calls finish or abandon: an @async func's coroutine,
+	// or an @async shader's kernel, on the GPU or the CPU.
+	void start_pending() {
+		pending = started = true;
 		claimed.store(false, std::memory_order_relaxed);
 	}
 
@@ -1820,7 +1821,7 @@ private:
 	std::mutex mutex;
 	bool waited = false; // Godot requires waiting for each task once.
 	bool started = false; // Whether it runs a job or a coroutine.
-	bool coroutine = false; // Whether it's an @async func's task.
+	bool pending = false; // Whether its job runs elsewhere, e.g. an @async func's coroutine. See start_pending.
 	std::mutex signal_mutex; // Guards emitted.
 	bool emitted = false; // Whether finished was emitted.
 
@@ -2318,7 +2319,7 @@ Async<T> run_coroutine(const Object *p_self, Coroutine<T> p_body) {
 	static_cast<void>(hooked);
 	Ref<GDPP_ASYNC_CLASS> task;
 	task.instantiate();
-	task->start_coroutine();
+	task->start_pending();
 	auto handle = p_body.release();
 	CoroutinePromise &promise = handle.promise();
 	promise.task = task;

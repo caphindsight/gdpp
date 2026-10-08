@@ -1,5 +1,0 @@
-class_name C
-extends RefCounted
-
-@onthread("detached")
-shader f(n: int) -> PackedFloat32Array {}

@@ -1,0 +1,4 @@
+input.gd++:4:1: Shader f returns a PackedFloat32Array, which comes back from the GPU, so its calls wait for it anyway.
+ 4 | @sync
+   | ^^^^^
+Hint: Remove @sync.

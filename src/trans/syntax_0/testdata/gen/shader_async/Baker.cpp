@@ -17,7 +17,7 @@ float wrap_angle(float a) {
 
 #line 19 "Baker.cpp"
 
-struct _gdpp_shader_bake {
+struct _gdpp_shader_paint {
 	using Id = ivec2;
 	static constexpr const char *glsl =
 			"#version 450\n"
@@ -63,6 +63,57 @@ struct _gdpp_shader_bake {
 }
 #line 65 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.paint", glsl, { 8, 8, 1 }, true, true, false);
+		return kernel;
+	}
+};
+
+struct _gdpp_shader_bake {
+	using Id = ivec2;
+	static constexpr const char *glsl =
+			"#version 450\n"
+			"#extension GL_GOOGLE_cpp_style_line_directive : require\n"
+			"layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;\n"
+			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
+			"\tivec2 size;\n"
+			"};\n"
+			"layout(set = 0, binding = 1, rgba8) uniform image2D target;\n"
+			"int index(ivec2 p) {\n"
+			"\treturn p.y * size.x + p.x;\n"
+			"}\n"
+			"#line 2 \"shader_library.gd++\"\n"
+			"\n"
+			"\n"
+			"const float TAU = 6.28318530;\n"
+			"\n"
+			"float wrap_angle(float a) {\n"
+			"  return mod(a, TAU);\n"
+			"}\n"
+			"\n"
+			"void _gdpp_body(ivec2 id) {\n"
+			"#line 11 \"input.gd++\"\n"
+			"\n"
+			"  imageStore(target, id, vec4(1.0));\n"
+			"\n"
+			"}\n"
+			"void main() {\n"
+			"\tivec2 id = ivec2(gl_GlobalInvocationID.xy);\n"
+			"\tif (any(greaterThanEqual(id, size))) {\n"
+			"\t\treturn;\n"
+			"\t}\n"
+			"\t_gdpp_body(id);\n"
+			"}\n";
+	ivec2 size;
+	image2D target;
+	int index(ivec2 p) const {
+		return p.y * size.x + p.x;
+	}
+#line 11 "input.gd++"
+	void body(Id id) const {
+  imageStore(target, id, vec4(1.0));
+}
+#line 116 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Baker.bake", glsl, { 8, 8, 1 }, true, true, true);
 		return kernel;
 	}
@@ -93,7 +144,7 @@ struct _gdpp_shader_fill {
 			"}\n"
 			"\n"
 			"void _gdpp_body(int id) {\n"
-			"#line 11 \"input.gd++\"\n"
+			"#line 17 \"input.gd++\"\n"
 			"\n"
 			"  values[id] = float(id);\n"
 			"\n"
@@ -110,66 +161,13 @@ struct _gdpp_shader_fill {
 	int index(int p) const {
 		return p;
 	}
-#line 11 "input.gd++"
+#line 17 "input.gd++"
 	void body(Id id) const {
   values[id] = float(id);
 }
-#line 118 "Baker.cpp"
+#line 169 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Baker.fill", glsl, { 64, 1, 1 }, true, true, true);
-		return kernel;
-	}
-};
-
-struct _gdpp_shader_queue {
-	using Id = int;
-	static constexpr const char *glsl =
-			"#version 450\n"
-			"#extension GL_GOOGLE_cpp_style_line_directive : require\n"
-			"layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
-			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
-			"\tint n;\n"
-			"};\n"
-			"layout(set = 0, binding = 1, std430) buffer _gdpp_Buffer1 {\n"
-			"\tfloat values[];\n"
-			"};\n"
-			"int index(int p) {\n"
-			"\treturn p;\n"
-			"}\n"
-			"#line 2 \"shader_library.gd++\"\n"
-			"\n"
-			"\n"
-			"const float TAU = 6.28318530;\n"
-			"\n"
-			"float wrap_angle(float a) {\n"
-			"  return mod(a, TAU);\n"
-			"}\n"
-			"\n"
-			"void _gdpp_body(int id) {\n"
-			"#line 17 \"input.gd++\"\n"
-			"\n"
-			"  values[id] = 0.0;\n"
-			"\n"
-			"}\n"
-			"void main() {\n"
-			"\tint id = int(gl_GlobalInvocationID.x);\n"
-			"\tif (id >= n) {\n"
-			"\t\treturn;\n"
-			"\t}\n"
-			"\t_gdpp_body(id);\n"
-			"}\n";
-	int n;
-	gdpp::gpu::RwBuffer<float> values;
-	int index(int p) const {
-		return p;
-	}
-#line 17 "input.gd++"
-	void body(Id id) const {
-  values[id] = 0.0;
-}
-#line 171 "Baker.cpp"
-	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Baker.queue", glsl, { 64, 1, 1 }, true, true, false);
+		static gdpp::gpu::Kernel kernel("Baker.fill", glsl, { 64, 1, 1 }, true, true, false);
 		return kernel;
 	}
 };
@@ -197,7 +195,7 @@ struct _gdpp_shader_heights {
 			"}\n"
 			"\n"
 			"float _gdpp_body(ivec2 id) {\n"
-			"#line 22 \"input.gd++\"\n"
+			"#line 23 \"input.gd++\"\n"
 			"\n"
 			"  return float(id.x);\n"
 			"\n"
@@ -213,13 +211,123 @@ struct _gdpp_shader_heights {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 22 "input.gd++"
+#line 23 "input.gd++"
 	float body(Id id) const {
   return float(id.x);
 }
-#line 221 "Baker.cpp"
+#line 219 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Baker.heights", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Baker.heights", glsl, { 8, 8, 1 }, false, true, false);
+		return kernel;
+	}
+};
+
+struct _gdpp_shader_scale {
+	using Id = int;
+	static constexpr const char *glsl =
+			"#version 450\n"
+			"#extension GL_GOOGLE_cpp_style_line_directive : require\n"
+			"layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
+			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
+			"\tint n;\n"
+			"\tfloat k;\n"
+			"};\n"
+			"layout(set = 0, binding = 1, std430) restrict readonly buffer _gdpp_Buffer1 {\n"
+			"\tfloat values[];\n"
+			"};\n"
+			"layout(set = 0, binding = 2, std430) restrict writeonly buffer _gdpp_Result {\n"
+			"\tfloat _gdpp_result[];\n"
+			"};\n"
+			"int index(int p) {\n"
+			"\treturn p;\n"
+			"}\n"
+			"#line 2 \"shader_library.gd++\"\n"
+			"\n"
+			"\n"
+			"const float TAU = 6.28318530;\n"
+			"\n"
+			"float wrap_angle(float a) {\n"
+			"  return mod(a, TAU);\n"
+			"}\n"
+			"\n"
+			"float _gdpp_body(int id) {\n"
+			"#line 29 \"input.gd++\"\n"
+			"\n"
+			"  return values[id] * k;\n"
+			"\n"
+			"}\n"
+			"void main() {\n"
+			"\tint id = int(gl_GlobalInvocationID.x);\n"
+			"\tif (id >= n) {\n"
+			"\t\treturn;\n"
+			"\t}\n"
+			"\t_gdpp_result[index(id)] = _gdpp_body(id);\n"
+			"}\n";
+	int n;
+	gdpp::gpu::ReadBuffer<float> values;
+	float k;
+	int index(int p) const {
+		return p;
+	}
+#line 29 "input.gd++"
+	float body(Id id) const {
+  return values[id] * k;
+}
+#line 277 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.scale", glsl, { 64, 1, 1 }, false, true, false);
+		return kernel;
+	}
+};
+
+struct _gdpp_shader_seed {
+	using Id = int;
+	static constexpr const char *glsl =
+			"#version 450\n"
+			"#extension GL_GOOGLE_cpp_style_line_directive : require\n"
+			"layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
+			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
+			"\tint n;\n"
+			"};\n"
+			"layout(set = 0, binding = 1, std430) restrict writeonly buffer _gdpp_Result {\n"
+			"\tint _gdpp_result[];\n"
+			"};\n"
+			"int index(int p) {\n"
+			"\treturn p;\n"
+			"}\n"
+			"#line 2 \"shader_library.gd++\"\n"
+			"\n"
+			"\n"
+			"const float TAU = 6.28318530;\n"
+			"\n"
+			"float wrap_angle(float a) {\n"
+			"  return mod(a, TAU);\n"
+			"}\n"
+			"\n"
+			"int _gdpp_body(int id) {\n"
+			"#line 35 \"input.gd++\"\n"
+			"\n"
+			"  return int(id) % 2;\n"
+			"\n"
+			"}\n"
+			"void main() {\n"
+			"\tint id = int(gl_GlobalInvocationID.x);\n"
+			"\tif (id >= n) {\n"
+			"\t\treturn;\n"
+			"\t}\n"
+			"\t_gdpp_result[index(id)] = _gdpp_body(id);\n"
+			"}\n";
+	int n;
+	int index(int p) const {
+		return p;
+	}
+#line 35 "input.gd++"
+	int body(Id id) const {
+  return int(id) % 2;
+}
+#line 329 "Baker.cpp"
+	static gdpp::gpu::Kernel &_gdpp_kernel() {
+		static gdpp::gpu::Kernel kernel("Baker.seed", glsl, { 64, 1, 1 }, true, true, false);
 		return kernel;
 	}
 };
@@ -247,7 +355,7 @@ struct _gdpp_shader_blank {
 			"}\n"
 			"\n"
 			"vec4 _gdpp_body(ivec2 id) {\n"
-			"#line 26 \"input.gd++\"\n"
+			"#line 41 \"input.gd++\"\n"
 			"\n"
 			"  return vec4(0.0);\n"
 			"\n"
@@ -263,13 +371,13 @@ struct _gdpp_shader_blank {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 26 "input.gd++"
+#line 41 "input.gd++"
 	vec4 body(Id id) const {
   return vec4(0.0);
 }
-#line 271 "Baker.cpp"
+#line 379 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Baker.blank", glsl, { 8, 8, 1 }, true, true, true);
+		static gdpp::gpu::Kernel kernel("Baker.blank", glsl, { 8, 8, 1 }, true, true, false);
 		return kernel;
 	}
 };
@@ -281,11 +389,19 @@ namespace godot {
 #define This Baker
 
 void Baker::_bind_methods() {
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("paint", "size", "target"), &Baker::paint);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("bake", "size", "target"), &Baker::bake);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("fill", "n", "values"), &Baker::fill);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("queue", "n", "values"), &Baker::queue);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("heights", "size"), &Baker::heights);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("scale", "n", "values", "k"), &Baker::scale);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("seed", "n"), &Baker::seed);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("blank", "size"), &Baker::blank);
+}
+
+void Baker::paint(const Vector2i &size, const gdpp::Gd<Texture2D> &target) {
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_paint::_gdpp_kernel(), size);
+	_gdpp_call.image(target, gdpp::GpuFormat::rgba8);
+	_gdpp_call.run([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_paint{ gdpp::glsl::ivec2(size), gdpp::gpu::writable(target, gdpp::GpuFormat::rgba8) }; });
 }
 
 void Baker::bake(const Vector2i &size, const gdpp::Gd<Texture2D> &target) {
@@ -295,37 +411,31 @@ void Baker::bake(const Vector2i &size, const gdpp::Gd<Texture2D> &target) {
 }
 
 gdpp::Async<void> Baker::fill(int64_t n, const gdpp::GpuArray<float> &values) {
-	return gdpp::run_task(nullptr, "Baker.fill", [=] { return _gdpp_body_fill(n, values); });
-}
-
-void Baker::_gdpp_body_fill(int64_t n, const gdpp::GpuArray<float> &values) {
 	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_fill::_gdpp_kernel(), n);
 	_gdpp_call.array(values);
-	_gdpp_call.run([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_fill{ int(n), gdpp::gpu::RwBuffer<float>(values) }; });
-}
-
-gdpp::Async<void> Baker::queue(int64_t n, const gdpp::GpuArray<float> &values) {
-	return gdpp::run_task(nullptr, "Baker.queue", [=] { return _gdpp_body_queue(n, values); });
-}
-
-void Baker::_gdpp_body_queue(int64_t n, const gdpp::GpuArray<float> &values) {
-	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_queue::_gdpp_kernel(), n);
-	_gdpp_call.array(values);
-	_gdpp_call.run([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_queue{ int(n), gdpp::gpu::RwBuffer<float>(values) }; });
+	return gdpp::Async<void>(_gdpp_call.async_run([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_fill{ int(n), gdpp::gpu::RwBuffer<float>(values) }; }));
 }
 
 gdpp::Async<gdpp::Gd<Image>> Baker::heights(const Vector2i &size) {
-	return gdpp::run_task(nullptr, "Baker.heights", [=] { return _gdpp_body_heights(size); });
-}
-
-gdpp::Gd<Image> Baker::_gdpp_body_heights(const Vector2i &size) {
 	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_heights::_gdpp_kernel(), size);
-	return _gdpp_call.result_image(gdpp::GpuFormat::rf, [&] { return ::_gdpp_gpu_Baker::_gdpp_shader_heights{ gdpp::glsl::ivec2(size) }; });
+	return gdpp::Async<gdpp::Gd<Image>>(_gdpp_call.async_image(gdpp::GpuFormat::rf, [&] { return ::_gdpp_gpu_Baker::_gdpp_shader_heights{ gdpp::glsl::ivec2(size) }; }));
 }
 
-gdpp::Gd<Texture2D> Baker::blank(const Vector2i &size) {
+gdpp::Async<PackedFloat32Array> Baker::scale(int64_t n, const PackedFloat32Array &values, double k) {
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_scale::_gdpp_kernel(), n);
+	_gdpp_call.input(values);
+	_gdpp_call.uniform(k);
+	return gdpp::Async<PackedFloat32Array>(_gdpp_call.async_buffer<PackedFloat32Array>([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_scale{ int(n), gdpp::gpu::ReadBuffer<float>(values), float(k) }; }));
+}
+
+gdpp::Async<gdpp::GpuArray<int32_t>> Baker::seed(int64_t n) {
+	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_seed::_gdpp_kernel(), n);
+	return gdpp::Async<gdpp::GpuArray<int32_t>>(_gdpp_call.async_array<int32_t>([&] { return ::_gdpp_gpu_Baker::_gdpp_shader_seed{ int(n) }; }));
+}
+
+gdpp::Async<gdpp::Gd<Texture2D>> Baker::blank(const Vector2i &size) {
 	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Baker::_gdpp_shader_blank::_gdpp_kernel(), size);
-	return _gdpp_call.result_texture(gdpp::GpuFormat::rgbah, [&] { return ::_gdpp_gpu_Baker::_gdpp_shader_blank{ gdpp::glsl::ivec2(size) }; });
+	return gdpp::Async<gdpp::Gd<Texture2D>>(_gdpp_call.async_texture(gdpp::GpuFormat::rgbah, [&] { return ::_gdpp_gpu_Baker::_gdpp_shader_blank{ gdpp::glsl::ivec2(size) }; }));
 }
 
 #undef This

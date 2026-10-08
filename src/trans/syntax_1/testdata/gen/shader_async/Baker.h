@@ -18,14 +18,13 @@ class Baker : public RefCounted {
 	GDCLASS(Baker, RefCounted)
 
 public:
+	static void paint(const Vector2i &size, const gdpp::Gd<Texture2D> &target);
 	static void bake(const Vector2i &size, const gdpp::Gd<Texture2D> &target);
 	static gdpp::Async<void> fill(int64_t n, const gdpp::GpuArray<float> &values);
-	static void _gdpp_body_fill(int64_t n, const gdpp::GpuArray<float> &values);
-	static gdpp::Async<void> queue(int64_t n, const gdpp::GpuArray<float> &values);
-	static void _gdpp_body_queue(int64_t n, const gdpp::GpuArray<float> &values);
 	static gdpp::Async<gdpp::Gd<Image>> heights(const Vector2i &size);
-	static gdpp::Gd<Image> _gdpp_body_heights(const Vector2i &size);
-	static gdpp::Gd<Texture2D> blank(const Vector2i &size);
+	static gdpp::Async<PackedFloat32Array> scale(int64_t n, const PackedFloat32Array &values, double k);
+	static gdpp::Async<gdpp::GpuArray<int32_t>> seed(int64_t n);
+	static gdpp::Async<gdpp::Gd<Texture2D>> blank(const Vector2i &size);
 
 protected:
 	static void _bind_methods();

@@ -119,7 +119,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
   - `@async` makes a function a coroutine, which can `await` signals and tasks, like GDScript's `await`, and returns an `Async` too.
 - Shaders: `shader name(grid, params) -> type { GLSL }` runs GLSL on the GPU, once for each cell of a grid, and on the CPU without a GPU. See `gd++ man shaders`.
   - `shader { ... }` blocks and `shader_library` files hold GLSL that shaders share.
-  - Calls wait for the GPU. `@async` makes them return right away, on shaders whose result stays on the GPU.
+  - Calls wait for results that come back to the CPU, and return others right away. `@async` makes them return an `Async`, and `@sync` makes them wait.
   - `GpuArray[T]` keeps an array on the GPU, between calls.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
 - Traits: `trait Name { extends Base ... }` lists functions that classes with any base share, with `implements Name`. `as` casts objects to them. See `gd++ man traits`.

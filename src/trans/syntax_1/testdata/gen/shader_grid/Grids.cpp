@@ -64,7 +64,7 @@ struct _gdpp_shader_fill {
 }
 #line 66 "Grids.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Grids.fill", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Grids.fill", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -122,7 +122,7 @@ struct _gdpp_shader_ramp {
 }
 #line 124 "Grids.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Grids.ramp", glsl, { 128, 1, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Grids.ramp", glsl, { 128, 1, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -174,7 +174,7 @@ struct _gdpp_shader_volume {
 }
 #line 176 "Grids.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Grids.volume", glsl, { 4, 4, 4 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Grids.volume", glsl, { 4, 4, 4 }, false, true, false);
 		return kernel;
 	}
 };

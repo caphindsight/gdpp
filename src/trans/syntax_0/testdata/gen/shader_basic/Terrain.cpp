@@ -104,7 +104,7 @@ struct _gdpp_shader_scale {
 }
 #line 106 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Terrain.scale", glsl, { 256, 1, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Terrain.scale", glsl, { 256, 1, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -172,7 +172,7 @@ struct _gdpp_shader_noise {
 }
 #line 174 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Terrain.noise", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Terrain.noise", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -221,7 +221,7 @@ struct _gdpp_shader_paint {
 			"  }\n"
 			"\n"
 			"void _gdpp_body(ivec2 id) {\n"
-			"#line 31 \"input.gd++\"\n"
+			"#line 30 \"input.gd++\"\n"
 			"\n"
 			"  vec4 c = texture(src, (vec2(id) + 0.5) / vec2(size));\n"
 			"  c.rg *= tint.rg;\n"
@@ -244,7 +244,7 @@ struct _gdpp_shader_paint {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 31 "input.gd++"
+#line 30 "input.gd++"
 	void body(Id id) const {
   vec4 c = texture(src, (vec2(id) + 0.5) / vec2(size));
   c.swizzle_ref<0, 1>() *= tint.swizzle<0, 1>();
@@ -300,7 +300,7 @@ struct _gdpp_shader_grow {
 			"  }\n"
 			"\n"
 			"vec3 _gdpp_body(ivec3 id) {\n"
-			"#line 39 \"input.gd++\"\n"
+			"#line 37 \"input.gd++\"\n"
 			"\n"
 			"  return texelFetch(image, id.xy, 0).xyz;\n"
 			"\n"
@@ -317,7 +317,7 @@ struct _gdpp_shader_grow {
 	int index(ivec3 p) const {
 		return (p.z * size.y + p.y) * size.x + p.x;
 	}
-#line 39 "input.gd++"
+#line 37 "input.gd++"
 	vec3 body(Id id) const {
   return texelFetch(image, id.swizzle<0, 1>(), 0).swizzle<0, 1, 2>();
 }
@@ -367,7 +367,7 @@ struct _gdpp_shader_blank {
 			"  }\n"
 			"\n"
 			"vec4 _gdpp_body(ivec2 id) {\n"
-			"#line 44 \"input.gd++\"\n"
+			"#line 42 \"input.gd++\"\n"
 			"\n"
 			"  return vec4(0.0);\n"
 			"\n"
@@ -383,7 +383,7 @@ struct _gdpp_shader_blank {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 44 "input.gd++"
+#line 42 "input.gd++"
 	vec4 body(Id id) const {
   return vec4(0.0);
 }
@@ -443,12 +443,8 @@ gdpp::GpuArray<Vector3> Terrain::grow(const Vector3i &size, const gdpp::Gd<Image
 }
 
 gdpp::Async<gdpp::Gd<Texture2D>> Terrain::blank(const Vector2i &size) {
-	return gdpp::run_task(nullptr, "Terrain.blank", [=] { return _gdpp_body_blank(size); });
-}
-
-gdpp::Gd<Texture2D> Terrain::_gdpp_body_blank(const Vector2i &size) {
 	gdpp::gpu::Call _gdpp_call(::_gdpp_gpu_Terrain::_gdpp_shader_blank::_gdpp_kernel(), size);
-	return _gdpp_call.result_texture(gdpp::GpuFormat::rgbah, [&] { return ::_gdpp_gpu_Terrain::_gdpp_shader_blank{ gdpp::glsl::ivec2(size) }; });
+	return gdpp::Async<gdpp::Gd<Texture2D>>(_gdpp_call.async_texture(gdpp::GpuFormat::rgbah, [&] { return ::_gdpp_gpu_Terrain::_gdpp_shader_blank{ gdpp::glsl::ivec2(size) }; }));
 }
 
 #undef This

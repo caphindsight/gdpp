@@ -1,4 +1,0 @@
-input.gd++:5:1: The @onthread("detached") shader f must return void.
- 5 | shader f(n: int) -> PackedFloat32Array {}
-   | ^^^^^^
-Hint: Nothing waits for its task, so its calls can't return a value.

@@ -1,0 +1,7 @@
+class_name C
+extends RefCounted
+
+@async("detached")
+shader f(n: int, values: GpuArray[float]) -> void {
+  values[id] = 1.0;
+}

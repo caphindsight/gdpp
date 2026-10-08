@@ -74,7 +74,7 @@ The function is declared as          Callers get
     Hint: Its callers get an Async of the type its body returns.
 ```
 
-Shaders take `@onthread` too: the call then runs the shader from a worker thread, and returns an `Async` of its result. See "@async and @onthread" in `gd++ man shaders`.
+Shaders take `@async` too: the call then returns an `Async` of the shader's result, done once the GPU is done, with no thread waiting for it. See "Not waiting at all: @async" in `gd++ man shaders`.
 
 An `@onthread` function:
 

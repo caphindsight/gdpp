@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotations @sync and @async can't be used together.
+ 4 | @sync @async
+   | ^^^^^
+Hint: An @async shader's Async is done once the GPU is done with the call, so it needs no @sync.

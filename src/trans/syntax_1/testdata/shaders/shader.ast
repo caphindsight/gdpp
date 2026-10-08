@@ -12,7 +12,7 @@ File: @1:1
               Args:
                 - @5:7 16
                 - @5:11 16
-            - @5:15 onthread
+            - @5:15 async
           Name: blur
           Params:
             - @6:13

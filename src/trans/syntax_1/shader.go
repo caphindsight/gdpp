@@ -22,7 +22,8 @@ type gpuModel struct {
 	grid   int         // The index of its grid in params: its first parameter, or the one that @grid names.
 	ret    gpuResult
 	main   bool // Whether it runs on the main RenderingDevice, since it uses GPU arrays or textures.
-	async  bool // With @async: a call returns right away, while the GPU works, instead of once it's done with the shader.
+	sync   bool // With @sync: a call that returns a GpuArray, a Texture2D or nothing waits for the GPU too.
+	async  bool // With @async: a call returns an Async right away, done once the GPU is done with it.
 }
 
 // gpuParam is a parameter of a shader.
@@ -99,7 +100,7 @@ func formatChannels(n int) string {
 
 // buildShader checks s, a shader of the class named owner, and returns it as the static function that runs it.
 func (u *unit) buildShader(s *Shader, owner string) (*funcModel, error) {
-	a, err := u.annotations(s.Annotations, "a shader", "async", "editor_only", "game_only", "grid", "noprofile", "notrace", "onthread", "profile", "static", "trace")
+	a, err := u.annotations(s.Annotations, "a shader", "async", "editor_only", "game_only", "grid", "noprofile", "notrace", "profile", "static", "sync", "trace")
 	if err != nil {
 		return nil, err
 	}
@@ -111,19 +112,6 @@ func (u *unit) buildShader(s *Shader, owner string) (*funcModel, error) {
 		static: true, gpu: g}
 	if m.only, err = u.onlyOf(a, owner); err != nil {
 		return nil, err
-	}
-	if a["onthread"] != nil {
-		m.deferral = "onthread"
-	}
-	for _, arg := range argsOf(a["onthread"]) {
-		name, _ := strconv.Unquote(arg.Value)
-		switch {
-		case name != "detached":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @onthread takes \"detached\".", "E.g. @onthread(\"detached\").")
-		case m.detached:
-			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @onthread takes %s only once.", arg.Value), "")
-		}
-		m.detached = true
 	}
 	if m.trace, err = u.debugOn(a["trace"], owner); err != nil {
 		return nil, err
@@ -170,25 +158,21 @@ func (u *unit) buildShader(s *Shader, owner string) (*funcModel, error) {
 		return nil, err
 	}
 	g.main = g.main || g.ret.kind == "array" || g.ret.kind == "texture"
-	if m.detached && !m.ret.void {
-		return nil, u.errorAt(s.Pos, len("shader"), fmt.Sprintf("The @onthread(\"detached\") shader %s must return void.", s.Name),
-			"Nothing waits for its task, so its calls can't return a value.")
-	}
-	g.async = a["async"] != nil
-	if args := argsOf(a["async"]); len(args) > 0 {
-		return nil, u.errorAt(args[0].Pos, len(args[0].Value), "Annotation @async takes no arguments on a shader.", "")
-	}
-	if g.async && (g.ret.kind == "buffer" || g.ret.kind == "image") {
+	g.async, g.sync = a["async"] != nil, a["sync"] != nil
+	switch sy := a["sync"]; {
+	case len(argsOf(a["async"])) > 0:
+		arg := argsOf(a["async"])[0]
+		return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @async takes no arguments on a shader.", "")
+	case g.async && g.sync:
+		return nil, u.errorAt(sy.Pos, len(sy.Name)+1, "Annotations @sync and @async can't be used together.",
+			"An @async shader's Async is done once the GPU is done with the call, so it needs no @sync.")
+	case g.sync && (g.ret.kind == "buffer" || g.ret.kind == "image"):
 		what := map[string]string{"buffer": "a " + s.Return.Name, "image": "an Image"}[g.ret.kind]
-		hint := "Remove @async. Or use @onthread instead, so the caller gets an Async and doesn't wait."
-		if m.deferral == "onthread" {
-			hint = "Remove @async: its task waits for the GPU, while the caller gets an Async right away."
-		}
-		if g.ret.kind == "image" {
-			hint += fmt.Sprintf(" Or return a Texture2D[%s] instead: it stays on the GPU, so it can be @async.", g.ret.format)
-		}
-		as := a["async"]
-		return nil, u.errorAt(as.Pos, len(as.Name)+1, fmt.Sprintf("Shader %s returns %s, which comes back from the GPU, so it can't be @async.", s.Name, what), hint)
+		return nil, u.errorAt(sy.Pos, len(sy.Name)+1, fmt.Sprintf("Shader %s returns %s, which comes back from the GPU, so its calls wait for it anyway.", s.Name, what),
+			"Remove @sync.")
+	}
+	if g.async {
+		m.ret = u.async(m.ret) // Callers get an Async of the shader's result.
 	}
 	g.group = gpuDefaultGroups[g.dims]
 	if wg := a["grid"]; len(sizes) > 0 {
@@ -508,7 +492,7 @@ func (u *unit) shaderDefs(w *writer, c *classModel) {
 		}
 		w.ln("\tstatic gdpp::gpu::Kernel &_gdpp_kernel() {")
 		w.ln("\t\tstatic gdpp::gpu::Kernel kernel(%q, glsl, { %d, %d, %d }, %t, %t, %t);", c.name+"."+g.s.Name,
-			g.group[0], g.group[1], g.group[2], g.main, u.hasCPU(c, f), !g.async)
+			g.group[0], g.group[1], g.group[2], g.main, u.hasCPU(c, f), g.sync)
 		w.ln("\t\treturn kernel;")
 		w.ln("\t}")
 		w.ln("};")
@@ -694,6 +678,17 @@ func (u *unit) shaderCall(w *writer, c *classModel, f *funcModel) {
 		}
 	}
 	make := fmt.Sprintf("[&] { return %s{ %s }; }", kernel, strings.Join(members, ", "))
+	if g.async {
+		call := map[string]string{
+			"void":    fmt.Sprintf("_gdpp_call.async_run(%s)", make),
+			"buffer":  fmt.Sprintf("_gdpp_call.async_buffer<%s>(%s)", g.ret.cpp, make),
+			"array":   fmt.Sprintf("_gdpp_call.async_array<%s>(%s)", g.ret.cpp, make),
+			"image":   fmt.Sprintf("_gdpp_call.async_image(gdpp::GpuFormat::%s, %s)", g.ret.format, make),
+			"texture": fmt.Sprintf("_gdpp_call.async_texture(gdpp::GpuFormat::%s, %s)", g.ret.format, make),
+		}[g.ret.kind]
+		w.ln("\treturn %s(%s);", f.ret.cpp, call)
+		return
+	}
 	switch g.ret.kind {
 	case "void":
 		w.ln("\t_gdpp_call.run(%s);", make)

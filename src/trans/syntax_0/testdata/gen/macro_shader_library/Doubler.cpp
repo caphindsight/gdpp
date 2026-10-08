@@ -94,7 +94,7 @@ struct _gdpp_shader_run {
 }
 #line 96 "Doubler.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Doubler.run", glsl, { 64, 1, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Doubler.run", glsl, { 64, 1, 1 }, false, true, false);
 		return kernel;
 	}
 };

@@ -24,8 +24,7 @@ public:
 	static gdpp::Async<void> compile_shaders_async();
 	static void compile_shaders_detached();
 	static gdpp::Gd<Image> brighten(const Vector2i &size, const gdpp::Gd<Image> &src, double gain);
-	static gdpp::Async<void> clear(int64_t n, const gdpp::GpuArray<float> &values);
-	static void _gdpp_body_clear(int64_t n, const gdpp::GpuArray<float> &values);
+	static void clear(int64_t n, const gdpp::GpuArray<float> &values);
 
 protected:
 	static void _bind_methods();

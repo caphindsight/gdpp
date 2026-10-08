@@ -66,7 +66,7 @@ struct _gdpp_shader_night {
 	vec4 body(Id id) const {return texelFetch(src, id, 0) * vec4(0.4, 0.5, 1.0, 1.0) * STRENGTH;}
 #line 68 "Tints.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Tints.night", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Tints.night", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
 	}
 };
@@ -116,7 +116,7 @@ struct _gdpp_shader_sepia {
 	vec4 body(Id id) const {return texelFetch(src, id, 0) * vec4(1.0, 0.85, 0.6, 1.0) * STRENGTH;}
 #line 118 "Tints.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
-		static gdpp::gpu::Kernel kernel("Tints.sepia", glsl, { 8, 8, 1 }, false, true, true);
+		static gdpp::gpu::Kernel kernel("Tints.sepia", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
 	}
 };
