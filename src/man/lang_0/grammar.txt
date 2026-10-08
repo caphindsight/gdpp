@@ -69,6 +69,7 @@ Externs only allow `Func`, `Signal` and `Var` members, without bodies, initial v
 
 - Traits only allow `Func` members, without default values. A trait needs `extends`. See `gd++ man traits`.
 - `Implements` comes after `extends`, and any number of times.
+- In an `on` block, `Ident '.' Ident` is a signal's callback, e.g. `on button.pressed`: the first `Ident` is a variable of the class, or `this`. A `ParamList` may leave out types, and parameters at its end. `'->' Type` is only for property callbacks, e.g. `on get`. See `gd++ man callbacks`.
 
 # Macros and templates
 

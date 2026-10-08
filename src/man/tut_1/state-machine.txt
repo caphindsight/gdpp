@@ -122,6 +122,7 @@ How it works:
 - Each state has an update function, e.g. `update_idle`, which returns the next state.
 - `update_state` calls the current state's update every physics frame, and changes the state when the update returns another one.
 - `change_state` runs the code that starts a state, e.g. `enter_jump`, and emits `state_changed`, e.g. for a HUD or a sound effect.
+- `string_name "jump"` names an input action. With `actions = "Action"` in the package's `[names]`, `Action::jump` does too, and the compiler checks it. See `gd++ man project-names`.
 
 Build the package, set the root of `player.tscn` to `Player`, and play. For one character, this is fine: don't reach for a macro yet.
 

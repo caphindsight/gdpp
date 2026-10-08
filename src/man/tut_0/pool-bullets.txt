@@ -34,7 +34,7 @@ on physics_process(delta: float) {
   }
 }
 
-func _on_body_entered(body: Node3D) -> void {
+on this.body_entered(body) {
   Gd<Enemy> enemy = body as Gd<Enemy>;
   if (enemy) {
     enemy->take_damage(damage);
@@ -47,7 +47,8 @@ A bullet destroys itself when it hits an enemy or its lifetime runs out. Step 2 
 
 1. Build the package.
 2. Change the type of the scene's root to `Bullet`.
-3. Connect its `body_entered` signal to `_on_body_entered` in the Node dock.
+
+`on this.body_entered` runs when the bullet's own `body_entered` signal fires, with its argument, a `Node3D`. No connection in the Node dock is needed. See "Connecting to signals" in `gd++ man signals`.
 
 `@scene` makes `create Bullet` instantiate `bullet.tscn`. So each bullet comes with its mesh and collision shape. See "@scene" in `gd++ man classes`.
 

@@ -84,7 +84,8 @@ on physics_process {
 ```
 
 - The top lines are GD++: a class, a property shown in the inspector, and a signal.
-- `on physics_process` runs every physics frame. Its body is C++.
+- `on physics_process` is a callback: it runs every physics frame. Its body is C++. See `gd++ man callbacks`.
+- `string_name "ui_left"` names an input action. To have the C++ compiler check such names, a package can generate them, e.g. `Action::ui_left`. See `gd++ man project-names`.
 - `emit` sends the signal. It's a GD++ rewrite.
 - You didn't write a header, `#include` lines, `_bind_methods`, a getter and setter for `speed`, or class registration.
 

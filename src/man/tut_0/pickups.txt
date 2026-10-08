@@ -147,7 +147,18 @@ The player finds out which item it touched with a cast. In `player.tscn`, add an
 /// Emitted when the player picks up an item.
 signal picked_up(item: Pickup)
 
-func _on_grabber_entered(node: Node3D) -> void {
+@onready var grabber: Area3D = $Grabber
+
+// Coins and health packs are areas, and keys are bodies.
+on grabber.area_entered(area) {
+  grab(area);
+}
+
+on grabber.body_entered(body) {
+  grab(body);
+}
+
+func grab(node: Node3D) -> void {
   Gd<Pickup> item = node as Gd<Pickup>;
   if (item && item->apply(this)) {
     emit picked_up(item);
@@ -156,8 +167,7 @@ func _on_grabber_entered(node: Node3D) -> void {
 }
 ```
 
-In the Node dock, connect both of the grabber's signals, `area_entered` and `body_entered`, to `_on_grabber_entered`. Coins and health packs are areas, and keys are bodies.
-
+- `on grabber.area_entered` and `on grabber.body_entered` run when the grabber's signals fire. They stay connected to the node in `grabber`. See "Connecting to signals" in `gd++ man signals`.
 - In C++ code, `Gd<Pickup>` is the type of a trait value, like for any object. See `gd++ man gd`.
 - `node as Gd<Pickup>` gives the item, or null if the node's class doesn't implement `Pickup`, e.g. for a wall.
 - `item->apply(this)` calls the item's own `apply`, whatever its class.

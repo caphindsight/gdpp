@@ -105,4 +105,5 @@ Facts about pages:
 - GD++ file: a file with the extension `.gd++`, `.gdpp` or `.gg`.
 - Build cache: a package's `.gd++build` directory, where builds happen. See `gd++ man build-cache`.
 - Transpile: turn GD++ code into C++ code.
+- Callback: an `on` block, code that the engine runs for an object: at a notification, e.g. `on ready`, at a signal, e.g. `on button.pressed`, or for a property, e.g. `on get`. See `gd++ man callbacks`.
 - Rewrite: one of GD++'s few additions to C++ code, e.g. `emit` or `as`, which GD++ turns into plain C++. See `gd++ man rewrites`.

@@ -102,13 +102,16 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Variables: `var name: type = value`. See `gd++ man variables`. Also:
   - node paths, like `@onready var label: Label = $Hud/Score`,
   - properties with their own `get` and `set`.
-- Exports: `@export` and its family, to show variables in the inspector. See `gd++ man exports`.
-- Signals: `signal name(params)`, sent with `emit`, and handled with `on`, e.g. `on button.pressed { }`. See `gd++ man signals`.
+- Exports: `@export` and all of GDScript's export annotations, e.g. `@export_range` or `@export_tool_button`, to show variables in the inspector. See `gd++ man exports`.
+- Signals: `signal name(params)`, sent with `emit`, and handled with `on`, e.g. `on button.pressed { }`, which stays connected to whatever the variable holds. See `gd++ man signals`.
+- Callables: `callable` makes a `Callable` of a function, a method, a name or a lambda, e.g. `callable on_hit` or `callable [this] { hide(); }`. See "Callables" in `gd++ man rewrites`.
 - Enums and constants: `enum Name { A, B, C }`, `@bitfield enum Name { A, B, C }` and `enum NAME = 42`. See `gd++ man enums`.
 - Object lifecycle: `ctor { }`, `dtor { }` and `@onready`. See `gd++ man lifecycle`.
 - Callbacks: `on` blocks, e.g. `on ready { }`, `on process { }` or `on predelete { }`, which run code at the engine's notifications, and add to the base's. Property callbacks too, e.g. `on get(name) { }`. See `gd++ man callbacks`.
 - Abstract classes: `@abstract` makes a class only a base for other classes. See `gd++ man classes`.
 - Classes of scenes: `@scene` makes `create` instantiate a scene. See `gd++ man classes`.
+- Singletons: `@singleton` makes the package create a class's one object, which scripts reach by the class's name. See `gd++ man classes`.
+- Editor plugins: a `@tool` class that extends `EditorPlugin` is added to the editor. See `gd++ man classes`.
 - Pools: `@pool`, `@recycle ctor`, `@recycle dtor`, `@recycle var`, `@recycle on ready`, `GENERATION`, `create`, `destroy` and `queue_destroy`. See `gd++ man pools`.
 - Methods for scripts: `@factory`, `@factory_pool` and `@factory_scene` give a class methods that do what `create`, `destroy` and `queue_destroy` do, and manage its pool and scene. See `gd++ man classes`. `@factory_shader` gives it methods that compile its shaders ahead of time. See `gd++ man shaders`.
 - Weak references: `Weak[T]`, a reference that knows when its object is gone. See `gd++ man weak`.
@@ -116,7 +119,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Threads: see `gd++ man async`.
   - `@onthread` runs a function on a worker thread, and returns an `Async` task with its result.
   - `@onthread("detached")` returns nothing, for work that nobody waits for.
-  - `@async` makes a function a coroutine, which can `await` signals and tasks, like GDScript's `await`, and returns an `Async` too.
+  - `@async` makes a function a coroutine, which can `await` signals and tasks, like GDScript's `await`, and returns an `Async` too. Awaiting a signal gives its arguments with their types.
 - Shaders: `shader name(grid, params) -> type { GLSL }` runs GLSL on the GPU, once for each cell of a grid, and on the CPU without a GPU. See `gd++ man shaders`.
   - `shader { ... }` blocks and `shader_library` files hold GLSL that shaders share.
   - Calls wait for results that come back to the CPU, and return others right away. `@async` makes them return an `Async`, and `@sync` makes them wait.
@@ -134,6 +137,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
   - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `await`, `create`, `destroy`, `queue_destroy`, `as` and `callable`,
   - `assert`, with its fallbacks `assert_void` and `assert_val`.
 - Includes: automatic, with `import` and `noimport` to adjust them. See `gd++ man includes`.
+- Project names: C++ names for the project settings' input actions, groups and layers, e.g. `Action::jump`, which a package can turn on. See `gd++ man project-names`.
 - Doc comments: `///` and `/** */`, which become the editor's help. See `gd++ man docs`.
 
 # Syntax versions

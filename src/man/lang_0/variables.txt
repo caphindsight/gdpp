@@ -21,6 +21,7 @@ var anything
 For each simple variable, GD++ generates:
 
 - a public field of the C++ class, with the variable's name and C++ type, e.g. `int64_t health{};`. Your C++ code reads and writes it directly.
+  - A variable whose signals `on` blocks handle, e.g. `on button.pressed`, has a `gdpp::Followed` field instead: a `Gd` whose every assignment connects the blocks to the new object. See "Connecting to signals" in `gd++ man signals`.
 - a getter, `int64_t get_health() const;`, and a setter, `void set_health(int64_t p_value);`. Public methods, which Godot calls.
 - the binding of both in `_bind_methods`, and the property that uses them.
 

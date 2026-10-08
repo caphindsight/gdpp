@@ -137,23 +137,24 @@ Compiler errors in your bodies point to the lines of `coin.gd++`. Once it builds
 3. Check that the values in the inspector are still the ones you set.
 4. Check that the Node dock still connects `body_entered` to `_on_body_entered`.
 
-# 6. Connect signals in the scene
+# 6. Connect signals
 
-- Keep connecting signals in the scene, in the editor's Node dock, as with scripts.
-- GD++ binds every `func`. So the editor lists the functions of `Coin`, and connects signals to them by name.
-- Connections in the scene are visible in the editor, and the code needs none.
-- Connect in code only where the scene can't, e.g. for nodes that the code creates.
-- For an object in a variable of the class, write an `on` block. It stays connected to whatever the variable holds:
+The connections in the scene, in the editor's Node dock, keep working: GD++ binds every `func`, so the editor lists the functions of `Coin`, and connects signals to them by name.
+
+Or move them into the code, with an `on` block. For the coin's own signal:
 
 ```gd++
-var coin: Coin
-
-on coin.collected {
-  score++;
+on this.body_entered(body) {
+  Gd<Player> player = body as Gd<Player>;
+  ...
 }
 ```
 
-- Elsewhere, use `connect`, with `callable` for a function of the class:
+- `on this.SIGNAL` handles a signal of the object itself, and `on VAR.SIGNAL` one of the object in a variable of the class, e.g. `on hud.closed`. The block stays connected to whatever the variable holds.
+- The parameters' types come from the signal, so `body` is a `Gd<Node2D>`.
+- Then remove the connection from the Node dock, or the signal runs both.
+
+For an object that isn't in a variable, e.g. one the code creates, call `connect`, with `callable` for a function of the class:
 
 ```gd++
 Gd<Coin> coin = create Coin;

@@ -174,8 +174,13 @@ Class Counter and its bases have no notification ready.
 Class Mob and its bases have no notification unhandled_input.
   unhandled_input isn't a notification, but a virtual function of Node: write "@override func _unhandled_input(...)".
 An on predelete block takes no parameters.
-Parameter delta needs its type, float.
-  Write "delta: float".
+Parameter dt is a float, but found int.
+  Leave out the type, which GD++ knows, or write "dt: float".
+The on set block is Godot's _set, which returns a bool, not void: true if it set the property, or false if the class doesn't have the property.
+  Leave out the return type, which GD++ knows, or write "-> bool".
+Class Control and its bases have no signal resize.
+  Did you mean "resized"?
+Variable box is a property, so the on block can't follow its value.
 Write notification READY in lower case.
   E.g. "on ready { ... }".
 Class Mob has two on process blocks.

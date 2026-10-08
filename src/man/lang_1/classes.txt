@@ -475,12 +475,12 @@ Game.add(10)
 - Godot knows it by the class's name, like its own singletons. So scripts write `Game.add(10)`, and `Engine.get_singleton("Game")` returns it.
 - GD++ code gets it with the static function `get_singleton()`. Its name is taken: a member can't be named `get_singleton`.
 - Without `@tool`, the object exists in the editor too, so that scripts that use it parse, but its code doesn't run there: it's guarded like a `@game_only` class. See "@game_only" above.
-- It can be a node. Then it's an orphan node, outside the scene tree:
-  - It gets no `on ready`, no `on process` and no other notifications of the tree, and `get_tree()` returns null. It can have children, which are orphans too.
-  - Code can add it to the tree, e.g. `get_tree()->get_root()->add_child(Game::get_singleton())`. The package deletes it when it's unloaded, wherever it is.
-  - Don't free it yourself, e.g. with `queue_free()`: Godot would keep the deleted object as its singleton.
-  - Godot's report of orphan nodes, `Node.print_orphan_nodes()`, lists it.
+- Don't delete it yourself, e.g. with `destroy` or `queue_free()`: Godot would keep the deleted object as its singleton.
 - It can be refcounted, e.g. extend `RefCounted` or `Resource`. Then the package holds a reference to it, which keeps it alive until the package is unloaded. Other references may keep it alive longer.
+- It can be a node. Then it starts as an orphan node, outside the scene tree:
+  - Until code adds it to the tree, e.g. `get_tree()->get_root()->add_child(Game::get_singleton())`, it gets no `on ready`, no `on process` and no other notifications of the tree, and `get_tree()` returns null.
+  - The package deletes it when it's unloaded, wherever it is.
+  - Godot's report of orphan nodes, `Node.print_orphan_nodes()`, lists it while it's out of the tree.
 - Not with `@abstract`, `@pool`, `@scene`, `@factory`, `@factory_pool` or `@factory_scene`, since the package creates its one object.
 - `gd++ ls` shows it with the tag `@singleton`.
 

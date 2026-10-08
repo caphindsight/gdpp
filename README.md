@@ -128,7 +128,9 @@ See `gd++ man variables`.
 
 ### Callbacks
 
-<a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
+<a href="readme/svg/callbacks.gd++"><img src="readme/svg/callbacks.svg" alt="GD++ code: callbacks"></a>
+
+Callbacks are `on` blocks: code that the engine runs for an object, at a notification like these, at a signal (see [Signal handlers](#signal-handlers)), or for a property (see [Property callbacks](#property-callbacks)).
 
 See `gd++ man callbacks`.
 

@@ -71,6 +71,22 @@ var count: int {
 
 See "Properties" in `gd++ man variables`.
 
+To change how the inspector shows a setting, e.g. to gray out `count` while `random` is off, write a property callback:
+
+```gd++
+@export var random: bool = true
+
+on validate_property(property) {
+  if (property["name"] == "count" && !random) {
+    property["usage"] = int64_t(property["usage"]) | PROPERTY_USAGE_READ_ONLY;
+  }
+}
+```
+
+- `on validate_property` runs for each property that the inspector shows, and its changes to the `Dictionary` change how it's shown.
+- The inspector asks again when the property list changes. To have it ask when `random` changes, make `random` a property whose `set` block calls `notify_property_list_changed()`, like `count` above.
+- See "Property callbacks" in `gd++ man callbacks`.
+
 # 3. Keep game code out of the editor
 
 A tool class runs all its code in the editor, including code meant for the game, e.g. rocks that roll away when the player comes close. Mark such functions and variables `@game_only`:

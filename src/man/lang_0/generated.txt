@@ -153,7 +153,7 @@ In order:
    - `class NAME : public BASE`, followed by `public TRAIT` for each trait it implements itself,
    - `GDCLASS(NAME, BASE)`,
    - each `decl` block, after `private:`,
-   - `public:` the fields of simple variables, value-initialized with `{}`,
+   - `public:` the fields of simple variables, value-initialized with `{}`. A variable whose signals `on` blocks handle is a `gdpp::Followed`, a `Gd` whose assignments call its `_gdpp_follow_VAR`, which comes right before it,
    - `private:` the `decl` blocks of properties,
    - `public:` integer constants as `static constexpr int64_t`, the constructor and destructor if any, the hooks of traits if it implements any, `GDVIRTUAL` declarations of `@virtual` functions, the functions except `@private` ones, RPC helpers, getters and setters, and the emit functions of signals,
    - `protected:` `static void _bind_methods()`, and `void _notification(int WHAT)` if the class has `on` blocks or `@onready` variables,
@@ -246,11 +246,19 @@ pool_reserve                 @factory_pool's static method, which fills the pool
 pool_clear                   @factory_pool's static method, which empties the pool
 scene_cache                  @factory_scene's static method, which loads the scene
 scene_evict                  @factory_scene's static method, which drops the scene
-compile_shader               @factory_shader's static method, which compiles a shader, and its _async and _detached forms
 compile_shaders              @factory_shader's static method, which compiles all shaders, and its _async and _detached forms
+compile_shader               @factory_shader's static method, which compiles a shader, and its _async and _detached forms
+get_singleton                @singleton's static method, which returns the class's object
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
 _gdpp_body_FUNC              the body of a @deferred, @thread_safe, @onthread or @async function, or set block, which its deferred call or task runs
+_gdpp_body__NAME             the method of an on block, e.g. _gdpp_body__ready for on ready, _gdpp_body__get for on get, and
+                             _gdpp_body__on_VAR_SIGNAL for on VAR.SIGNAL
+_gdpp_follow_VAR             the method that connects the on blocks of a variable's signals to its object
+_gdpp_paramN                 the N-th parameter, from 0, that an on block leaves out
+_gdpp_connected_VAR_SIGNAL   the ID of the object that an on block of a variable's signal is connected to
+_gdpp_singleton              a @singleton class's object, which get_singleton returns
+_gdpp_signal_CLASS_SIGNAL    the struct of a signal's arguments, which await gives for a signal with more than one
 _gdpp_FUNC                   the wrapper that binds a function with enums in its signature
 _gdpp_get_NAME, _gdpp_set_NAME   the wrappers that bind a variable of an enum type
 _gdpp_CLASS_ENUM             a class's stand-in type for an enum
@@ -274,6 +282,9 @@ _gdpp_body, _gdpp_result     in a shader's GLSL: its body, and what main stores 
 - `This` is a macro, defined around each class's code.
 - `GENERATION` is a local constant of an `on` block, `@recycle ctor`, `@recycle dtor` or `@override` `@recycle _ready` that uses it.
 - The setter's parameter is `p_value`, unless a property's `set` block names it.
+- `gdpp_signal_args` is declared in the sources that await signals by name, once for each class with such a signal: its result is what `await` gives. See "Awaiting signals" in `gd++ man async`.
+- `_gdpp_names.h` is the header of the C++ names that a package's `[names]` generates from `project.godot`, e.g. `Action`. See `gd++ man project-names`.
+- The callbacks of properties are godot-cpp's methods of the same name, e.g. `_get` and `_set`, which call their on blocks' methods.
 
 # #line directives
 

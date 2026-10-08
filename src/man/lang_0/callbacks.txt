@@ -223,21 +223,22 @@ Facts:
 
 # How they work
 
-- GD++ generates the class's `_notification` from its `on` blocks and its `@onready` variables. So a class can't declare its own `_notification`.
-- Each `on` block's body is a method of its own, which `_notification` calls when `WHAT` is its notification.
-- Within `_notification`: the `@onready` initial values first, then `on ready`, then the other `on` blocks, in file order.
+- Each callback's body is a method of its own, e.g. `_gdpp_body__ready`. See "Generated names" in `gd++ man generated`.
+- GD++ generates the class's `_notification` from its notifications' callbacks and its `@onready` variables, so a class can't declare its own `_notification`. It calls each block when `WHAT` is its notification: the `@onready` initial values first, then `on ready`, then the other blocks, in file order.
+- A property callback's method is called by godot-cpp's method of the same name, e.g. `_get` for `on get`.
+- A signal's callback is connected to the signal. See "Connecting to signals" in `gd++ man signals`.
 - A `return` ends only its own block.
-- `on` blocks aren't functions of the class: C++ code and scripts can't call them.
+- Callbacks aren't functions of the class: scripts can't call them, and C++ code shouldn't.
 - They can read `GENERATION`. See "Getting ready again" in `gd++ man pools`.
 
 # Annotations
 
-`on` blocks take only:
+Callbacks take only:
 
 - `@trace`, `@profile`, `@notrace` and `@noprofile`,
 - `@game_only` or `@editor_only`,
 - `@recycle`, on `on ready` in a `@pool` class,
-- `@async`, see "Awaiting in on blocks" below.
+- `@async`, see "Awaiting in on blocks" below, except on property callbacks, whose result Godot needs right away.
 
 ```gd++
 @trace
@@ -261,6 +262,7 @@ on ready {
 }
 ```
 
+- The same goes for the callbacks of signals, e.g. `@async on button.pressed`: each emission starts a coroutine.
 - At the notification, the block runs until its first `await` that waits. Then the notification goes on, and the rest of the block runs once the signal comes.
 - Nothing waits for the block, like for an `@async("detached")` function. So `@async` takes no arguments here.
 - Only the part before the first `await` runs in the notification's order, e.g. before a script's `_ready`. The rest runs later.
