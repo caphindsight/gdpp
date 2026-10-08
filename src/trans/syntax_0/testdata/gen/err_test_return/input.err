@@ -1,0 +1,4 @@
+input.gd++:6:17: The @test function works must return void.
+ 6 | func works() -> int {
+   |                 ^^^
+Hint: Drop the return type: tests return nothing.

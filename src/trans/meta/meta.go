@@ -62,6 +62,8 @@ type Dependency struct {
 	// For Kind Trait and RefCountedTrait: the macros, templates, macro libraries and user annotations that the
 	// trait's file sees, so the translator can expand its invocations before parsing the trait.
 	Macros []Dependency
+	// For classes of the package: whether @test makes it a class of tests, which only other @test classes may use.
+	Test bool
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.
@@ -117,6 +119,8 @@ type Declaration struct {
 	Notifications []string
 	Traits        []string // For classes: the traits it implements itself, without those of its bases.
 	Signals       []Signal // For classes and externs: their own signals, which on blocks connect to.
+	Tests         []string // For classes: the names of their tests, which gd++ test runs.
+	Test          bool     // For classes: whether @test makes it a class of tests, which only gd++ test registers.
 }
 
 // Signal is a signal of a class or extern. Stable: additive changes only.

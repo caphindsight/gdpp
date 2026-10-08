@@ -20,6 +20,8 @@ const (
 
 	// Temporary directories live here, inside the ephemeral directory.
 	tempDirName = "temp"
+	// Engines compiled for gd++ test live here, inside the ephemeral directory.
+	engineBuildsDirName = "godot"
 
 	// A package's build cache, at the package root.
 	packageBuildCacheDirName = ".gd++build"

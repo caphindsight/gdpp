@@ -48,7 +48,7 @@ func (c *CmdBuild) Run() {
 			cleanPackage(pkg.Root, true)
 		}
 		pkg.HideInGodot()
-		buildExtension(p, pkg, c.BuildOptions, targets)
+		buildExtension(p, pkg, c.BuildOptions, targets, false)
 	}
 }
 

@@ -295,11 +295,14 @@ func preparePackage(p Project, pkg Package, bindArgs []string, o BuildOptions) (
 }
 
 // buildExtension compiles the package into GDExtension libraries for
-// targets, and generates its .gdextension file.
-func buildExtension(p Project, pkg Package, o BuildOptions, targets []string) {
+// targets, and generates its .gdextension file. With testing, for gd++ test,
+// the libraries also register the @test classes and the runner of tests. It
+// returns the package's tests.
+func buildExtension(p Project, pkg Package, o BuildOptions, targets []string, testing bool) []gdppTest {
 	// The first build's arguments, so the full build finds the generated bindings up to date.
-	_, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o)
-	generateRegisterTypes(pkg, classes)
+	files, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o)
+	tests := gdppTests(files)
+	generateRegisterTypes(pkg, classes, testing)
 	for _, target := range targets {
 		// With several targets, the task names the one it builds.
 		name := pkg.Root.ToString()
@@ -309,6 +312,7 @@ func buildExtension(p Project, pkg Package, o BuildOptions, targets []string) {
 		Exec("Building "+name+"...", pkg.BuildCache, "scons", o.sconsArgs(target)...)
 	}
 	generateGdextension(pkg, classes)
+	return tests
 }
 
 // generateBuildCache syncs the package's bindings and API spec into its build
@@ -327,7 +331,8 @@ func generateBuildCache(p Project, pkg Package) {
 	cache := pkg.BuildCache
 	state := cache.Cd("build.toml")
 	config := pkg.Config
-	config.Classes, config.Hidden, config.Names = nil, nil, ProjectNames{} // Names only affect the generated files.
+	// Names only affect the generated files, and the engine only runs tests.
+	config.Classes, config.Hidden, config.Names, config.Engine = nil, nil, ProjectNames{}, ""
 	stateText := encodeToml(struct {
 		Id     string        `toml:"id"`
 		Config PackageConfig `toml:"config"`
@@ -352,6 +357,7 @@ func generateBuildCache(p Project, pkg Package) {
 		"ProjectRoot":     relPath(cache, p.Root),
 		"Sources":         cppSources(p, pkg),
 		"AsyncClass":      pkg.AsyncClass(),
+		"TestsClass":      pkg.TestsClass(),
 		"GpuArrayClass":   pkg.GpuArrayClass(),
 		"GpuTextureClass": pkg.GpuTextureClass(),
 		"QuitTimeout":     int64(math.Round(pkg.QuitTimeout() * 1e6)),
@@ -400,11 +406,12 @@ func syncSources(p Project, pkg Package, files []gdppFile) {
 // which registers the package's classes: those in its config, and the GD++
 // classes, which must not clash with them, and the class of tasks, if a GD++
 // class uses Async. With GD++ classes, it unloads them with the runtime's
-// gdpp::uninitialize. Runtime classes don't run their code in the editor:
+// gdpp::uninitialize. With testing, for gd++ test, it registers the @test
+// classes too, and the package's runner of tests. Runtime classes don't run their code in the editor:
 // classes without tool or abstract, unless they extend a class with one of
 // those, see nonRuntimeClasses. It creates the object of each @singleton
 // class, which Godot knows by the class's name.
-func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
+func generateRegisterTypes(pkg Package, gdpp []gdppClass, testing bool) {
 	var decls []trans.Declaration
 	for _, class := range gdpp {
 		decls = append(decls, class.Declaration)
@@ -444,6 +451,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		asyncClass = pkg.AsyncClass()
 		added[asyncClass] = "Async types"
 	}
+	added[pkg.TestsClass()] = "running tests" // Even without testing, so that gd++ test doesn't break the build.
 	if slices.ContainsFunc(gdpp, func(c gdppClass) bool { return c.Gpu }) {
 		var err error
 		gpuRuntimeName, _, err = trans.GpuRuntimeHeader(pkg.Config.Syntax)
@@ -461,6 +469,9 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 			class.Name, class.File.File.ToString(), what, pkg.Root.ToString())
 		Assert(!slices.Contains(classes, class.Name), "Class %s is declared in %s and in %s.",
 			class.Name, class.File.File.ToString(), pkg.Root.Cd(packageFileName).ToString())
+		if class.Test && !testing {
+			continue // Builds compile @test classes, but only gd++ test registers them.
+		}
 		add(class.Name, class.Abstract)
 		includes = append(includes, `"`+class.Name+`.h"`)
 		if class.Singleton {
@@ -500,6 +511,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		"SceneClasses":    slices.DeleteFunc(slices.Clone(classes), func(c string) bool { return slices.Contains(editor, c) }),
 		"EditorClasses":   editor,
 		"EditorPlugins":   plugins,
+		"Testing":         testing,
 	}) {
 		LogInfo("Registering classes for %s...", pkg.Root.ToString())
 	}

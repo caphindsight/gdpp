@@ -27,6 +27,7 @@ A TOML file. It has no `.toml` extension, so the Godot editor doesn't show it.
 ```toml
 bind = "10.0.0-stable"
 spec = "4.7.2-stable"
+engine = "4.7.2-stable"
 syntax = 1
 std = "c++20"
 prefix = "Foo"
@@ -53,6 +54,13 @@ spec (required)
   - It describes the classes of one Godot version, and decides which classes and methods your code can use.
   - The library needs at least that Godot version. The generated `.gdextension` file says so, and older Godot versions refuse to load it.
   - The bindings are generated from the spec. Their version doesn't need to match the spec's exactly, but they must support it.
+
+engine (optional)
+  The Godot engine that runs the package's tests, e.g. `"4.7.2-stable"`.
+  - `gd++ test` compiles it the first time, and runs the tests in it. See `gd++ man test`.
+  - It doesn't change builds: changing it rebuilds nothing.
+  - Without it, `gd++ test` needs `--engine`, e.g. the path of an installed Godot.
+  - `gd++ fetch --missing` downloads it, like the bindings and the spec.
 
 syntax (optional, default 0)
   The GD++ language version of the package's GD++ files.

@@ -1,0 +1,41 @@
+// A @test class: helpers and tests that only gd++ test registers. Other @test classes may use it in declarations.
+@test
+class_name Spawner
+extends Node
+
+var spawned: int
+
+func spawn() -> Node {
+  Gd<Node> n = create Node;
+  add_child(n);
+  spawned++;
+  return n;
+}
+
+@test
+func spawns() {
+  assert spawn();
+  assert spawned == 1;
+}
+
+@test
+class BigSpawner {
+  extends Spawner
+  var helper: Spawner
+}
+
+// Another @test class, which tests with the helpers of the first one.
+@test
+class Spawned {
+  extends Node
+
+  var spawner: Spawner
+
+  @test
+  func counts() {
+    spawner = create Spawner;
+    add_child(spawner);
+    spawner->spawn();
+    assert spawner->spawned == 1;
+  }
+}

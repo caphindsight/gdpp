@@ -1,0 +1,4 @@
+input.gd++:5:1: Function waits uses coroutines, which need C++20 or later, but the package uses c++17.
+ 5 | @async
+   | ^^^^^^
+Hint: Set the standard with gd++ init PATH --update --std c++20.

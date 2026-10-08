@@ -59,6 +59,9 @@ func (k rmKind) paths(name string) (paths []Path) {
 	if k.ephemeral && k.cache.IsEphemeral(name) {
 		paths = append(paths, k.cache.EphemeralDir.Cd(name))
 	}
+	if k.cache.Name == "engine" && len(paths) > 0 && engineBuildDir(k.cache, name).IsDir() {
+		paths = append(paths, engineBuildDir(k.cache, name)) // Its compiled copy goes with it.
+	}
 	return paths
 }
 

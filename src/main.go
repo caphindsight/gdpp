@@ -22,6 +22,7 @@ type cliArgs struct {
 	Ls       *CmdLs      `arg:"subcommand:ls" help:"show an overview of the project, its dependencies and packages"`
 	Man      *CmdMan     `arg:"subcommand:man" help:"read the reference manual of GD++ and its language, or list its pages"`
 	Rm       *CmdRm      `arg:"subcommand:rm" help:"remove dependencies from the project cache, or packages from the project"`
+	Test     *CmdTest    `arg:"subcommand:test" help:"build packages and run their tests in a headless Godot"`
 	Trans    *CmdTrans   `arg:"subcommand:trans" help:"transpile a GD++ file and print the C++ it generates, to try out GD++; in a package, with its dependencies"`
 	Vendor   *CmdVendor  `arg:"subcommand:vendor" help:"copy a dependency into or out of the project's cache"`
 	Quiet    bool        `arg:"-q,--quiet" help:"print fewer logs"`
@@ -106,6 +107,8 @@ func main() {
 		Args.Man.Run()
 	case Args.Rm != nil:
 		Args.Rm.Run()
+	case Args.Test != nil:
+		Args.Test.Run()
 	case Args.Trans != nil:
 		Args.Trans.Run()
 	case Args.Vendor != nil:

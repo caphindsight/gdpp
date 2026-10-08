@@ -1,0 +1,4 @@
+input.gd++:4:1: Class A has no @test, so it can't have @test functions.
+ 4 | @test
+   | ^^^^^
+Hint: Tests go in @test classes, which only gd++ test registers. Move the test to one, or add @test to the class.

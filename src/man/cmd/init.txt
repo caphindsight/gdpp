@@ -4,8 +4,8 @@ gd++ init: set up projects, packages and classes
 
 ```sh
 gd++ init [--vcs none|git] [--presets | --nopresets]
-gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --bind NAME --spec NAME [--engine NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--engine NAME | --noengine] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--abstract | --noabstract] [--ptr | --ref | --nogdpp] [--update]
 ```
 
@@ -48,14 +48,14 @@ Writes `res://.gd++proj`, with the project's settings. See `gd++ man projects`.
 # Creating a package
 
 ```sh
-gd++ init PATH --bind NAME --spec NAME [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --bind NAME --spec NAME [--engine NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
 ```
 
 - Creates the directory PATH if needed, and writes `PATH/.gd++pkg`.
 - PATH must be inside a project.
 - `.` makes the current directory a package, e.g. the project root.
 - If the project uses git, it also writes the package-level block into `PATH/.gitignore`.
-- If the project's caches lack the bindings or the spec, it warns, and tells you to run `gd++ fetch --missing`.
+- If the project's caches lack the bindings, the spec or the engine, it warns, and tells you to run `gd++ fetch --missing`.
 - `gd++ fetch --index` lists the bindings and specs that exist.
 
 See `gd++ man packages`.
@@ -65,6 +65,12 @@ See `gd++ man packages`.
 
 --spec NAME
   The package's Godot API spec, e.g. `4.7.2-stable`. Required for a new package.
+
+--engine NAME
+  The Godot engine that runs the package's tests, e.g. `4.7.2-stable`. See `gd++ man test`.
+
+--noengine
+  Remove the package's Godot engine.
 
 --syntax N
   The package's GD++ syntax version. Default for a new package: the latest stable one.
@@ -105,7 +111,7 @@ See `gd++ man packages`.
 # Updating a package
 
 ```sh
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--engine NAME | --noengine] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
 ```
 
 - Changes the given settings of the existing package at PATH, and keeps the others.
@@ -180,12 +186,12 @@ A new class:
 
 - `--vcs`, `--presets` and `--nopresets` work only without PATH.
 - `--presets` and `--nopresets` can't be used together.
-- `--update`, `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth`, `--hide` and `--class` need PATH.
+- `--update`, `--bind`, `--spec`, `--engine`, `--noengine`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth`, `--hide` and `--class` need PATH.
 - `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool`, `--notool`, `--abstract`, `--noabstract`, `--ptr`, `--ref` and `--nogdpp` need `--class`.
-- `--bind`, `--spec`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth` and `--hide` can't be used with `--class`.
+- `--bind`, `--spec`, `--engine`, `--noengine`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth` and `--hide` can't be used with `--class`.
 - `--quit-timeout` and `--syntax` can't be negative.
 - `--macro-depth` must be positive.
-- `--syntax` and `--nightly` can't be used together.
+- `--syntax` and `--nightly` can't be used together, and neither can `--engine` and `--noengine`.
 - `--include` and `--noinclude`, `--icon` and `--noicon`, `--tool` and `--notool`, `--abstract` and `--noabstract`, and `--ptr`, `--ref` and `--nogdpp` can't be used together.
 - `--ptr` and `--ref` need a class with an include.
 

@@ -86,7 +86,7 @@ Dependencies:
 
 - Per kind: how many are checked in, cached (in the ephemeral cache) and unused (named by no package).
 - With `--deps`: one row per dependency, newest first, with its cache and whether it's unused.
-- Godot engines are shown only with `-a`.
+- Godot engines are shown only with `-a`, or if a package names one.
 
 Package:
 

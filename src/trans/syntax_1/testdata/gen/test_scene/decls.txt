@@ -1,0 +1,1 @@
+{Name:ArenaTest Kind:1 Base:Node3D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[] Tests:[has_its_scene] Test:true}

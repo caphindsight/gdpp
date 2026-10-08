@@ -1,0 +1,4 @@
+input.gd++:6:1: The abstract class A can't have @test functions.
+ 6 | @test
+   | ^^^^^
+Hint: gd++ test calls a test on a new object of its class. Move the test to a subclass.

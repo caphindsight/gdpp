@@ -58,7 +58,10 @@
 #ifdef DEBUG_ENABLED
 #include <algorithm>
 
+#include <godot_cpp/classes/class_db_singleton.hpp>
+#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/performance.hpp>
+#include <godot_cpp/classes/time.hpp>
 #endif
 
 // The C++ type of Godot's float.
@@ -726,6 +729,11 @@ Gd<T> create_ext() {
 	ERR_FAIL_COND_V_MSG(!result, nullptr, String("Failed to create an object of the extern ") + T::gdpp_name + ".");
 	return result;
 }
+
+#ifdef DEBUG_ENABLED
+// failed_assertions counts the assertions that failed, in all threads. A test fails if it grows while the test runs.
+inline std::atomic<uint64_t> failed_assertions{ 0 };
+#endif
 
 // assert_message is the error printed by a failed assertion. It has no location, since Godot shows that below it.
 inline String assert_message(const char *p_condition) {
@@ -2219,6 +2227,102 @@ private:
 	}
 };
 
+#ifdef DEBUG_ENABLED
+// GDPP_TESTS_CLASS is the name of the package's runner of tests, e.g. FooTests: its prefix and Tests. The package
+// registers it in the builds of gd++ test, and the build defines this macro.
+#ifndef GDPP_TESTS_CLASS
+#define GDPP_TESTS_CLASS GdppTests
+#endif
+
+// GDPP_TESTS_CLASS runs the package's tests, as the main loop of the Godot that gd++ test starts:
+// `godot --headless --path ROOT --script RUNNER -- [--gdpp-timeout SECONDS] CLASS.NAME...`, where the script RUNNER only
+// extends this class. A test is a bound method of a @test class, a Node, without parameters, which returns an Async if
+// it's @async. The runner runs one test per frame, on a new object of its class in the tree, which it frees after. The
+// class's static _gdpp_create makes the object, like create does: for a @scene class, an instance of its scene. The
+// runner prints a line to stdout when each test starts and ends, which gd++ reads, and quits with exit code 1 if a
+// test failed: an assertion failed while it ran, or it timed out.
+class GDPP_TESTS_CLASS : public SceneTree {
+	GDPP_GDCLASS(GDPP_TESTS_CLASS, SceneTree)
+
+	PackedStringArray names; // The tests to run, in order, e.g. "Player.takes_damage".
+	int64_t next = 0; // The index of the test that runs, or runs next.
+	bool failed = false;
+	uint64_t timeout = 10000000; // How long an @async test may run, in usec.
+	Node *test = nullptr; // The object of the test that runs, or null.
+	Variant task; // The Async of an @async test that runs.
+	uint64_t start = 0; // When the test started, in usec.
+	uint64_t failures = 0; // failed_assertions when the test started.
+
+	// report prints a line for gd++: "\x1fgdpp-test WHAT NAME USEC". The unit separator keeps it apart from the tests' output.
+	static void report(const char *p_what, const String &p_name, uint64_t p_usec) {
+		std::printf("\x1fgdpp-test %s %s %llu\n", p_what, p_name.utf8().get_data(), static_cast<unsigned long long>(p_usec));
+		std::fflush(stdout);
+	}
+
+	void finish(const char *p_result) {
+		report(p_result, names[next], Time::get_singleton()->get_ticks_usec() - start);
+		failed = failed || String(p_result) != "pass";
+		if (test) {
+			test->queue_free();
+		}
+		test = nullptr;
+		task = Variant();
+		next++;
+	}
+
+	void run() {
+		report("start", names[next], 0);
+		start = Time::get_singleton()->get_ticks_usec();
+		failures = failed_assertions.load();
+		StringName class_name = names[next].get_slice(".", 0), method = names[next].get_slice(".", 1);
+		test = Object::cast_to<Node>(ClassDBSingleton::get_singleton()->class_call_static(class_name, GDPP_STRING_NAME("_gdpp_create")).operator Object *());
+		if (!test || !test->has_method(method)) {
+			finish("missing");
+			return;
+		}
+		get_root()->add_child(test);
+		Variant result = test->call(method);
+		if (result.get_type() == Variant::OBJECT) {
+			task = result;
+		} else {
+			finish(failed_assertions.load() == failures ? "pass" : "fail");
+		}
+	}
+
+public:
+	// _initialize reads the tests to run from the command line, before the tree enters the root.
+	void _initialize() override {
+		// Tests start from an empty tree, with the autoloads, but without the main scene.
+		unload_current_scene();
+		PackedStringArray args = OS::get_singleton()->get_cmdline_user_args();
+		for (int64_t i = 0; i < args.size(); i++) {
+			if (args[i] == "--gdpp-timeout" && i + 1 < args.size()) {
+				timeout = static_cast<uint64_t>(args[++i].to_float() * 1000000);
+			} else {
+				names.push_back(args[i]);
+			}
+		}
+	}
+
+	// _process starts a test, or finishes one that's done, or quits after the last one.
+	bool _process(double p_delta) override {
+		if (test == nullptr && next == names.size()) {
+			quit(failed ? 1 : 0);
+		} else if (test == nullptr) {
+			run();
+		} else if (task.call(GDPP_STRING_NAME("is_done"))) {
+			finish(failed_assertions.load() == failures ? "pass" : "fail");
+		} else if (Time::get_singleton()->get_ticks_usec() - start > timeout) {
+			finish("timeout");
+		}
+		return false;
+	}
+
+protected:
+	static void _bind_methods() {}
+};
+#endif
+
 // Async<T> is the C++ type of Async[T]: a task, whose result has type T, e.g. the call of an @onthread function,
 // which runs on the WorkerThreadPool. It references an object of the package's class of tasks, and calls its
 // methods by name, so it works with the tasks of other packages too. Copies share the task, like references to the
@@ -2772,6 +2876,7 @@ using gdpp::Weak;
 #define GDPP_ASSERT_(m_text, m_exit, ...) \
 	if (!(__VA_ARGS__)) { \
 		::godot::_err_print_error("", __FILE__, __LINE__, gdpp::assert_message(m_text)); \
+		gdpp::failed_assertions.fetch_add(1, std::memory_order_relaxed); \
 		GDPP_TRACE_ASSERT(m_text); \
 		m_exit; \
 	} else \

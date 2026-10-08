@@ -336,6 +336,20 @@ Soldier.pick_target        main         600       41.82       41.82       69.70 
 
 See `gd++ man debugging`.
 
+### Tests
+
+<a href="readme/svg/tests.gd++"><img src="readme/svg/tests.svg" alt="GD++ code: tests"></a>
+
+`gd++ test` builds the package, and runs the tests of its `@test` classes in a headless Godot. Only it registers them, and release builds leave them out:
+
+```out
+[•] Testing res://.
+[•] Passed WalletTest.pays in 0.1 ms.
+[•] All 1 test passed.
+```
+
+See `gd++ man tests`.
+
 ### Externs
 
 <a href="readme/svg/externs.gd++"><img src="readme/svg/externs.svg" alt="GD++ code: externs"></a>
@@ -382,7 +396,7 @@ See `gd++ man annotations`.
 
 - A **project** is a normal Godot project.
 - A **package** is a directory with a `.gd++pkg` file. It builds into one GDExtension library.
-- **Dependencies** are the Godot C++ bindings (godot-cpp) and the Godot API specs.
+- **Dependencies** are the Godot C++ bindings (godot-cpp), the Godot API specs, and the Godot engines that run tests.
 
 ```sh
 gd++ init --vcs git                                       # keep GD++'s files out of git
@@ -397,6 +411,7 @@ gd++ vendor --spec my-4.7 --from my-4.7   # add a custom one, e.g. from your own
 gd++ build                    # build the packages in the current directory, for this machine, in debug mode
 gd++ build res://...          # build every package of the project
 gd++ build --ship --for l.x64 w.x64   # release builds for Linux and Windows
+gd++ test                     # build them, and run their tests in a headless Godot
 gd++ clean                    # delete their build caches
 
 gd++ ls                       # an overview of the project

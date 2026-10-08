@@ -1,0 +1,132 @@
+gd++ test: build packages and run their tests
+
+# Synopsis
+
+```sh
+gd++ test [PATH...] [--run NAME...] [--engine NAME|PATH] [--timeout SECONDS]
+          [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [--nogpu] [-j N]
+          [--cc COMPILER] [--asan] [--ubsan] [--tsan] [--macro-timeout SECONDS]
+          [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
+```
+
+# Description
+
+- Builds the package that contains each PATH, like `gd++ build`: for this machine, in debug mode.
+- Then runs the package's tests in a headless Godot: without a window or sound.
+- Shows each test while it runs, then its result. A failed test's output follows its result.
+- Exits with an error if any test failed, which names them.
+- Only `gd++ test` registers the `@test` classes, which hold the tests: `gd++ build` doesn't. So switching between them recompiles one file.
+
+For tests themselves, see `gd++ man tests`.
+
+# Which tests run
+
+- A package's path, or `DIR/...`, runs all tests of those packages, like `gd++ build` builds them.
+- A GD++ file's path runs only the tests that the file declares.
+- `--run` keeps only the tests whose names, `CLASS.NAME`, match one of its patterns.
+- Tests run one at a time, sorted by name.
+
+# Which Godot runs them
+
+- By default, the package's Godot engine: its `engine` setting in `.gd++pkg`. See `gd++ man packages`.
+  - An engine dependency is Godot's source code. The first `gd++ test` compiles it, which takes a while: a headless editor for this machine.
+  - It compiles a copy, in `res://.gd++cache/godot/NAME`, and reuses the binary after.
+  - `gd++ rm` of the engine deletes the copy too.
+- `--engine NAME` runs another engine dependency instead.
+- `--engine PATH` runs a Godot binary instead, e.g. your own build, or the Godot that you have installed. It needs no engine setting, and nothing is downloaded or compiled.
+- A Godot that runs tests must load the package's library: the same Godot version as the package's spec, or a newer one.
+- Godot only loads the libraries that it found while scanning the project. Before the first run, `gd++ test` has Godot scan it, with `--import`.
+
+# Options
+
+PATH...
+  Run the tests of the packages that contain these paths, or only those of these GD++ files. Default: `...`.
+  - `DIR/...` runs the tests of every package in `DIR`, e.g. `res://...` those of the whole project.
+  - All packages must be in one Godot project.
+
+--run NAME...
+  Run only the tests whose names, `CLASS.NAME`, match one of these patterns. A pattern may have the wildcards `*`, `?` and `[...]`, e.g. `PlayerTest.*` for a class's tests. Quote them for the shell.
+
+--engine NAME|PATH
+  Run the tests in this Godot.
+  - A value with a path separator, `/` or `\`, is a Godot binary, e.g. `./godot` or `/usr/bin/godot`.
+  - Anything else is an engine dependency in the project's cache, e.g. `4.7.2-stable`, which `gd++ test` compiles the first time.
+  - Default: the package's engine.
+
+--timeout SECONDS
+  Fail an `@async` test that runs longer than this. Default: 10.
+
+--opt, --small, --noopt, --doc, --nodoc, --nowarn, --nogpu, -j N, --cc COMPILER, --asan, --ubsan, --tsan, --macro-timeout SECONDS, --trace GROUP..., --profile GROUP..., --print, --period SECONDS, --fps FPS
+  Build like `gd++ build` does with them. See `gd++ man build`. Debug builds only: tests can't run in release builds, so there's no `--ship`.
+  - `-j N` also compiles the engine with N jobs.
+
+# Output
+
+First the build, as `gd++ build` logs it. Then, for each package, a line per test, as it ends:
+
+```out
+[•] Testing res://.
+[•] Passed PlayerTest.takes_damage in 0.1 ms.
+[•] Passed PlayerTest.dies in 16.7 ms.
+[×] Failed InventoryTest.stacks_potions in 0.2 ms.
+    ERROR: Failed GD++ assertion: `inv->count(string_name "potion") == 5`.
+       at:  (package/inventory_test.gd++:12)
+[×] Failed 1 of 3 tests: InventoryTest.stacks_potions.
+```
+
+- On a terminal, the test that runs shows as a task, with its latest output below it. When it ends, its result replaces it.
+- A failed test's output follows its result. That of a test that passed is dropped.
+- At the end: "All N tests passed.", or an error with the number of failed tests, and their names.
+- With `-q`, passed tests leave no line.
+
+Other results:
+
+- "Failed NAME: it ran longer than 10 seconds." An `@async` test timed out.
+- "Failed NAME: Godot exited while it ran." Godot crashed, or quit. Its output follows.
+- "Godot exited before it ran N of the M tests of PKG, after this output." Godot didn't get to the tests, e.g. because it failed to load the library. Its output follows.
+
+# Examples
+
+Run the tests of the packages in the current directory:
+
+```sh
+gd++ test
+```
+
+Run those of the whole project:
+
+```sh
+gd++ test res://...
+```
+
+Run the tests of one file, and only those of one class:
+
+```sh
+gd++ test tests.gd++ --run 'PlayerTest.*'
+```
+
+Run them in the Godot that you have installed:
+
+```sh
+gd++ test --engine "$(which godot)"
+```
+
+Look for memory errors while the tests run:
+
+```sh
+gd++ test --asan
+```
+
+# Errors
+
+- "Package PKG has no Godot engine to run its tests, set one with `gd++ init PKG --update --engine NAME`, or name a Godot binary with --engine PATH."
+- "Missing Godot engine NAME, run `gd++ fetch --missing` to fix this."
+- "Invalid arguments: PATH is not a file." The binary that `--engine` names doesn't exist.
+- "Invalid arguments: gd++ test cannot use --ship, since release builds have no tests."
+- "Invalid arguments: --timeout must be positive."
+- "Invalid arguments: \"a[\" is not a valid name pattern."
+- The building tasks fail, like those of `gd++ build`. The engine's compiler output follows, like for packages.
+
+# See also
+
+`gd++ man tests`, `gd++ man build`, `gd++ man packages`, `gd++ man dependencies`.

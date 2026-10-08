@@ -28,6 +28,7 @@ func TestGenerate(t *testing.T) {
 			Name, Include, Kind, Base  string
 			Values                     []meta.EnumValue
 			Gdpp, Bitfield, NonRuntime bool
+			Test                       bool
 			Virtuals, Notifications    []string
 			Traits                     []string
 			NoscriptVirtuals           []string `toml:"noscript_virtuals"`
@@ -55,7 +56,7 @@ func TestGenerate(t *testing.T) {
 			source = string(data)
 		}
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals,
-			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits, Signals: d.Signals})
+			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits, Signals: d.Signals, Test: d.Test})
 	}
 	for i, d := range file.Dep {
 		for _, name := range d.Macros {

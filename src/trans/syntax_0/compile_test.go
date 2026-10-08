@@ -31,6 +31,7 @@ var stubs = map[string]string{
 		"\tvirtual int64_t double_value() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n",
 	"Weighted.h": "class Weighted {\npublic:\n\tusing Base = Node;\n\tvirtual ~Weighted() = default;\n\tvirtual int64_t weight() const = 0;\n" +
 		"\tvirtual int64_t base_weight() const = 0;\n\tvirtual bool heavy() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n",
+	"Fixtures.h": "class Fixtures : public Node {\n\tGDCLASS(Fixtures, Node)\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
 	"Settings.h": "class Settings {\npublic:\n\tusing Base = Resource;\n\tstatic constexpr const char *gdpp_name = \"Settings\";\n" +
 		"\texplicit Settings(Base *p_object) :\n\t\t\t_gdpp_base(p_object) {}\n\nprotected:\n\tBase *_gdpp_base;\n};\n",
 }
@@ -75,6 +76,12 @@ func TestCompile(t *testing.T) {
 			}
 			if out, err := exec.Command(cxx, args...).CombinedOutput(); err != nil {
 				t.Errorf("%s failed to compile:\n%s", file, out)
+			}
+			// Tests and @test classes only exist in debug builds, so their code needs a debug build too.
+			if text, _ := os.ReadFile(file); strings.Contains(string(text), "#ifdef DEBUG_ENABLED") {
+				if out, err := exec.Command(cxx, append([]string{"-DDEBUG_ENABLED"}, args...)...).CombinedOutput(); err != nil {
+					t.Errorf("%s failed to compile in a debug build:\n%s", file, out)
+				}
 			}
 		})
 	}

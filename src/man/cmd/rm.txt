@@ -43,10 +43,10 @@ Facts:
   Remove all ephemeral Godot C++ bindings, from `res://.gd++cache`.
 
 --bind-unused
-  Remove all Godot C++ bindings that no package of the project uses, from both caches. Confirmed once. Packages don't choose engines, so `--engine-unused` removes all engines.
+  Remove all Godot C++ bindings that no package of the project uses, from both caches. Confirmed once.
 
 --spec..., --engine...
-  The same, for Godot API specs and Godot engines.
+  The same, for Godot API specs and Godot engines. Removing an engine also removes its copy that `gd++ test` compiled, in `res://.gd++cache/godot`.
 
 --dep-all, --dep-checked-in, --dep-ephemeral, --dep-unused
   The same, for all dependencies of all kinds at once. Confirmed once. Not with the options above.

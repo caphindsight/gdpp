@@ -1,1 +1,1 @@
-{Name:Heightmap Kind:1 Base:Sprite2D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:true Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[]}
+{Name:Heightmap Kind:1 Base:Sprite2D Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:true Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[] Tests:[] Test:false}

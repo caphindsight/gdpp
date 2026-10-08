@@ -1,1 +1,1 @@
-{Name:Noise Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:true EditorOnly:false Abstract:false Singleton:false Async:true Gpu:true Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[]}
+{Name:Noise Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:true EditorOnly:false Abstract:false Singleton:false Async:true Gpu:true Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[] Tests:[] Test:false}

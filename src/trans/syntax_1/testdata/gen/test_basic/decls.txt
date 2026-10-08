@@ -1,0 +1,2 @@
+{Name:CounterTest Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[] Tests:[adds clamps] Test:true}
+{Name:GaugeTest Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[] Tests:[starts_empty] Test:true}

@@ -112,6 +112,24 @@ func gdppClasses(files []gdppFile) []gdppClass {
 	return classes
 }
 
+// gdppTest is a @test function of a class declared in a GD++ file.
+type gdppTest struct {
+	Name string // CLASS.NAME, e.g. "Player.takes_damage".
+	File gdppFile
+}
+
+// gdppTests returns the tests of the classes that files declare, sorted by name.
+func gdppTests(files []gdppFile) []gdppTest {
+	var tests []gdppTest
+	for _, class := range gdppClasses(files) {
+		for _, name := range class.Tests {
+			tests = append(tests, gdppTest{class.Name + "." + name, class.File})
+		}
+	}
+	slices.SortStableFunc(tests, func(a, b gdppTest) int { return strings.Compare(a.Name, b.Name) })
+	return tests
+}
+
 // godotNamesVersion is the version of the names cache's format and of the
 // scanner that fills it. Bump it when either changes, to rescan.
 const godotNamesVersion = 6
@@ -354,7 +372,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 		for _, d := range f.Decls {
 			if f.Rel != self {
 				dep := trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals, Notifications: d.Notifications,
-					NonRuntime: nonRuntime[d.Name], Traits: d.Traits, Signals: d.Signals}
+					NonRuntime: nonRuntime[d.Name], Traits: d.Traits, Signals: d.Signals, Test: d.Test}
 				if d.Kind == trans.TraitDecl { // Its classes check and copy its functions, from its file, expanded.
 					dep.Source, dep.File, dep.Macros = f.Src, f.File.ToString(), macroDeps(files, f.Rel)
 				}
@@ -500,6 +518,10 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 			FailWithText(err)
 		}
 		for _, gen := range generated {
+			// The sources of @test classes go in gdpp/test, which release builds don't compile.
+			if name, ok := strings.CutSuffix(gen.Name, ".cpp"); ok && slices.ContainsFunc(f.Decls, func(d trans.Declaration) bool { return d.Name == name && d.Test }) {
+				gen.Name = "test/" + gen.Name
+			}
 			write(gen.Name, gen.Text)
 		}
 		for _, d := range f.Decls {

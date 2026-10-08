@@ -1,0 +1,49 @@
+// Tests are methods of @test classes: gd++ test calls each one on a new object, in the tree. They see the class's
+// private members, its helpers, and its imports.
+@test
+class_name CounterTest
+extends Node
+
+import AnimationPlayer
+
+var count: int
+
+func add(n: int) -> int {
+  count += n;
+  return clamp_count();
+}
+
+@private
+func clamp_count() -> int {
+  count = MIN(count, LIMIT);
+  return count;
+}
+
+enum LIMIT = 10
+
+@test
+func adds() {
+  add(2);
+  assert add(3) == 5;
+}
+
+@test
+func clamps() {
+  count = 9;
+  assert clamp_count() == 9;
+  add(5);
+  assert(get_count() == LIMIT);
+}
+
+@test
+class GaugeTest {
+  extends Node
+
+  var level: float
+
+  @test
+  func starts_empty() {
+    assert level == 0;
+    assert is_inside_tree();
+  }
+}

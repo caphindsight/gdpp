@@ -18,7 +18,7 @@ spec: Godot API specs
   - the oldest Godot version that can load the library.
 
 engine: Godot engines
-  The Godot engine. Currently unused: packages don't use it, and you don't need to download it.
+  The source code of the Godot engine, which runs tests. A package may name one in `.gd++pkg`, e.g. `engine = "4.7.2-stable"`, but doesn't need to. See `gd++ man test`.
 
 Names:
 
@@ -144,6 +144,7 @@ See `gd++ man rm`.
 - Before a build, `gd++` copies the package's bindings and spec into its build cache, and builds there.
 - So builds never change the caches, and many packages can share dependencies.
 - Changing a package's `bind` or `spec` makes its next build start from scratch. See `gd++ man build-cache`.
+- Engines don't take part in builds. `gd++ test` compiles a copy of the package's engine, once, in `res://.gd++cache/godot/NAME`, and runs the tests in it.
 - Missing dependencies fail the build:
 
 ```out

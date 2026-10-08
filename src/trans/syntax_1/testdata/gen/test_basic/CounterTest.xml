@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CounterTest" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add">
+			<return type="int" />
+			<param index="0" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="adds">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="clamps">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="count" type="int" setter="set_count" getter="get_count">
+		</member>
+	</members>
+	<constants>
+		<constant name="LIMIT" value="10">
+		</constant>
+	</constants>
+</class>

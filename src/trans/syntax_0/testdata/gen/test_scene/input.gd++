@@ -1,0 +1,14 @@
+// A @test class with a scene: gd++ test runs each test on an instance of the scene, like create makes.
+@test
+@scene("pkg://tests/arena.tscn")
+class_name ArenaTest
+extends Node3D
+
+@onready
+var spawn: Node3D = $Spawn
+
+@test
+func has_its_scene() {
+  assert spawn;
+  assert get_child_count() > 0;
+}

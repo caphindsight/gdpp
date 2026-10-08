@@ -1,0 +1,4 @@
+input.gd++:6:1: Annotations @test and @static can't be used together.
+ 6 | @static
+   | ^^^^^^^
+Hint: gd++ test calls a test on a new object of its class, in the tree. It only takes @async, to await.

@@ -14,12 +14,14 @@ my_package/.gd++build/
   godot-cpp/                a copy of the package's bindings
   extension_api.json        a copy of the package's API spec
   SConstruct                the build script
-  __register_types__.cpp    registers the package's classes with Godot
+  __register_types__.cpp    registers the package's classes with Godot, and with gd++ test, the @test classes
+  tests.gd                  the script that gd++ test runs, which runs the tests
   godot_names.toml          what godot-cpp declares, for GD++
   package/                  copies of the package's GD++ and C/C++ files
   gdpp/                     the C++ that GD++ generates from the GD++ files
     gd++/syntax_N.hpp       the GD++ runtime header, for syntax N
     Player.h, Player.cpp    a header and a source per class
+    test/PlayerTest.cpp     the source of a @test class, which release builds don't compile
     Suit.h                  a header per enum, extern and trait
     doc_classes/Player.xml  a class's documentation, in debug builds
   build/                    what SCons builds: godot-cpp and object files
@@ -65,7 +67,7 @@ To transpile GD++ code, GD++ must know every name that godot-cpp declares, e.g. 
 Each build transpiles every GD++ file of the package into the `gdpp` directory:
 
 - a header per class, extern, trait and enum,
-- a source per class,
+- a source per class, in `gdpp/test` for `@test` classes,
 - the runtime header.
 
 Facts:

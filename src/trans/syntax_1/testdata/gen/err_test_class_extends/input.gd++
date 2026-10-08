@@ -1,0 +1,7 @@
+@test
+class_name Helper
+extends Node
+
+class User {
+  extends Helper
+}

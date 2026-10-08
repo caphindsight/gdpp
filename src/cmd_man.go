@@ -41,18 +41,18 @@ var toolManPages = []string{
 	"tool", "tool/cli", "tool/paths", "tool/projects", "tool/packages", "tool/dependencies", "tool/building", "tool/build-cache",
 	"tool/cpp-classes", "tool/vcs", "tool/shipping",
 	"cmd", "cmd/build", "cmd/cat", "cmd/checkin", "cmd/clean", "cmd/doc", "cmd/fetch", "cmd/fix", "cmd/init", "cmd/install", "cmd/ls", "cmd/man",
-	"cmd/rm", "cmd/trans", "cmd/vendor",
+	"cmd/rm", "cmd/test", "cmd/trans", "cmd/vendor",
 }
 
 // tutManPages lists the paths of the tutorials' pages, in reading order, for
 // each syntax version N, like langManPages.
 var tutManPages = map[int][]string{
 	0: {
-		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
+		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/testing", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
 		"tut/threads", "tut/sequences", "tut/gpu", "tut/multiplayer", "tut/editor-tool", "tut/state-machine", "tut/pickups", "tut/upgrade", "tut/custom-godot",
 	},
 	1: {
-		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
+		"tut", "tut/port-gdscript", "tut/team-git", "tut/multi-package", "tut/mix-cpp", "tut/ship", "tut/testing", "tut/hunt-bugs", "tut/optimize", "tut/pool-bullets",
 		"tut/threads", "tut/sequences", "tut/gpu", "tut/multiplayer", "tut/editor-tool", "tut/state-machine", "tut/pickups", "tut/upgrade", "tut/custom-godot",
 	},
 }
@@ -64,12 +64,12 @@ var tutManPages = map[int][]string{
 var langManPages = map[int][]string{
 	0: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/gd", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
-		"lang/signals", "lang/enums", "lang/structs", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/performance",
+		"lang/signals", "lang/enums", "lang/structs", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/tests", "lang/performance",
 		"lang/code", "lang/templates", "lang/macros", "lang/lua", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 	1: {
 		"lang", "lang/syntax", "lang/files", "lang/classes", "lang/types", "lang/gd", "lang/cast", "lang/functions", "lang/variables", "lang/exports",
-		"lang/signals", "lang/enums", "lang/structs", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/performance",
+		"lang/signals", "lang/enums", "lang/structs", "lang/project-names", "lang/lifecycle", "lang/callbacks", "lang/pools", "lang/weak", "lang/rpc", "lang/async", "lang/shaders", "lang/externs", "lang/traits", "lang/debugging", "lang/tests", "lang/performance",
 		"lang/code", "lang/templates", "lang/macros", "lang/lua", "lang/rewrites", "lang/includes", "lang/annotations", "lang/docs", "lang/runtime", "lang/generated", "lang/errors", "lang/grammar",
 	},
 }

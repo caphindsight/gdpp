@@ -1,0 +1,12 @@
+@test
+class_name WalletTest
+extends Node
+
+@test
+func pays() {
+  Gd<Wallet> w = create Wallet;
+  add_child(w);
+  w->set_coins(10);
+  assert w->pay(4);
+  assert w->get_coins() == 6;
+}

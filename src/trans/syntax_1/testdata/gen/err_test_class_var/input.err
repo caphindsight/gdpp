@@ -1,0 +1,4 @@
+input.gd++:7:15: Class Helper is a @test class, which only other @test classes can use.
+ 7 |   var helper: Helper
+   |               ^^^^^^
+Hint: Only gd++ test registers @test classes, and release builds don't have them.

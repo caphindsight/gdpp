@@ -1,0 +1,4 @@
+input.gd++:6:1: Annotations @test and @onthread can't be used together.
+ 6 | @onthread
+   | ^^^^^^^^^
+Hint: gd++ test calls a test on a new object of its class, in the tree. It only takes @async, to await.

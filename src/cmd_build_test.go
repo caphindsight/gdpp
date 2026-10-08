@@ -60,7 +60,7 @@ func TestGenerateBuildCache(t *testing.T) {
 	p := LoadProject(Cwd())
 	captureStderr(t, func() {
 		generateBuildCache(p, LoadPackage(Cwd()))
-		generateRegisterTypes(LoadPackage(Cwd()), nil)
+		generateRegisterTypes(LoadPackage(Cwd()), nil, false)
 	})
 	after := subtree(m.tree(), "/games/my_game/src/pkg/.gd++build/")
 
@@ -171,7 +171,7 @@ func TestGenerateBuildCacheLogs(t *testing.T) {
 	generate := func() string {
 		return captureStderr(t, func() {
 			generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd()))
-			generateRegisterTypes(LoadPackage(Cwd()), nil)
+			generateRegisterTypes(LoadPackage(Cwd()), nil, false)
 		})
 	}
 	sync := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: syncing dependencies for res://src/pkg...\n[-] Task succeeded: syncing dependencies for res://src/pkg\n"
@@ -421,7 +421,7 @@ func TestGenerateRegisterTypesAbstract(t *testing.T) {
 	withBuildFS(t)
 	pkg := NewPath("/games/my_game/src/pkg")
 	pkg.Cd(packageFileName).WriteString(strings.Replace(buildPkgConfig, "name = \"Hidden\"", "name = \"Hidden\"\n  abstract = true", 1))
-	captureStderr(t, func() { generateRegisterTypes(LoadPackage(Cwd()), nil) })
+	captureStderr(t, func() { generateRegisterTypes(LoadPackage(Cwd()), nil, false) })
 	register := pkg.Cd(".gd++build", "__register_types__.cpp").ReadString()
 	for _, want := range []string{
 		"gdpp_is_runtime_class = false || std::is_same_v<T, Enemy> || std::is_same_v<T, Helper>;",
@@ -439,7 +439,7 @@ func TestGenerateRegisterTypesRuntimeSubclass(t *testing.T) {
 		isTTY = false
 		withBuildFS(t)
 		NewPath("/games/my_game/src/pkg/enemy/enemy.h").WriteString("class Helper : public Actor {};\n")
-		generateRegisterTypes(LoadPackage(Cwd()), nil)
+		generateRegisterTypes(LoadPackage(Cwd()), nil, false)
 		return
 	}
 	out, code := runFailHelper(t, "TestGenerateRegisterTypesRuntimeSubclass")

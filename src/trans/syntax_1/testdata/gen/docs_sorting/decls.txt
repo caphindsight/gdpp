@@ -1,1 +1,1 @@
-{Name:Sorted Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[{Name:s2 Params:[]} {Name:S1 Params:[]}]}
+{Name:Sorted Kind:1 Base:RefCounted Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[{Name:s2 Params:[]} {Name:S1 Params:[]}] Tests:[] Test:false}

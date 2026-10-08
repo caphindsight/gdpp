@@ -169,6 +169,8 @@ In release builds:
 - So the condition must not do anything that the code needs, e.g. call a function for its effect.
 - It must still compile.
 
+In a test, a failed assertion also fails the test, even in code that the test calls. See `gd++ man tests`.
+
 C++'s own `assert(x);` is an assertion too: GD++ rewrites it like `assert x;`. So GD++ code never uses the `assert` macro of `<cassert>`.
 
 How an assertion returns:

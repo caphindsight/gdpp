@@ -1,0 +1,6 @@
+struct A {
+  var x: int
+  @test
+  func works() {
+  }
+}

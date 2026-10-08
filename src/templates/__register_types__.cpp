@@ -100,6 +100,10 @@ static void gdpp_initialize(ModuleInitializationLevel p_level) {
 {{- range .Singletons}}
 	gdpp::add_singleton("{{.}}", {{.}}::_gdpp_singleton);
 {{- end}}
+{{- if .Testing}}
+	// The runner of tests, which gd++ test runs as the main loop.
+	GDREGISTER_CLASS(gdpp::GDPP_TESTS_CLASS);
+{{- end}}
 }
 
 static void gdpp_uninitialize(ModuleInitializationLevel p_level) {

@@ -36,6 +36,7 @@ type symbol struct {
 	notifications    []string      // For dependency classes: the names of their own notifications, see meta.Dependency.
 	signals          []meta.Signal // For dependency classes and externs: their own signals, see meta.Dependency.
 	nonRuntime       bool          // For dependency classes: see meta.Dependency.
+	test             bool          // For dependency classes: whether @test makes them classes of tests.
 	class            *Class        // Set for classes in the file.
 	extern           *Extern       // Set for externs in the file.
 	trait            *Trait        // Set for traits in the file.

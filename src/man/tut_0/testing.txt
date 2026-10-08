@@ -1,0 +1,154 @@
+Tutorial: test your game
+
+This tutorial adds tests to a game, and runs them on every change:
+
+- a Godot to run them in,
+- a first test, in a class of tests,
+- tests that wait for signals,
+- running some tests, or all of them on a build machine.
+
+It assumes a project that builds, as in `gd++ man tour`.
+
+# 1. Choose a Godot for the tests
+
+`gd++ test` runs tests in a headless Godot: without a window or sound. Either name the Godot you have installed:
+
+```sh
+gd++ test --engine "$(which godot)"
+```
+
+Or have `gd++` download Godot's source, and compile it for the tests, once:
+
+```sh
+gd++ init . --update --engine 4.7.2-stable
+gd++ fetch --missing
+gd++ test
+```
+
+- The first way is quick. The second one gives everyone on the team, and the build machine, the same Godot.
+- The first `gd++ test` with an engine compiles it. That takes a while, but later runs reuse it.
+- Pick an engine as new as the package's `spec`, or newer: older ones can't load the library.
+
+See "Which Godot runs them" in `gd++ man test`.
+
+# 2. Write a first test
+
+Say the game has a wallet:
+
+```gd++
+class_name Wallet
+extends Node
+
+signal emptied
+
+var coins: int
+
+func pay(amount: int) -> bool {
+  if (amount > coins) {
+    return false;
+  }
+  coins -= amount;
+  if (coins == 0) {
+    emit emptied();
+  }
+  return true;
+}
+```
+
+Tests go in a class with `@test`, e.g. in `wallet_test.gd++`, next to it:
+
+```gd++
+@test
+class_name WalletTest
+extends Node
+
+// A helper, for the tests below: a wallet in the tree.
+func wallet(coins: int) -> Wallet {
+  Gd<Wallet> w = create Wallet;
+  add_child(w);
+  w->set_coins(coins);
+  return w;
+}
+
+@test
+func pays() {
+  Gd<Wallet> w = wallet(10);
+  assert w->pay(4);
+  assert w->get_coins() == 6;
+}
+
+@test
+func refuses_debt() {
+  assert !wallet(0)->pay(1);
+}
+```
+
+```sh
+gd++ test
+```
+
+```out
+[•] Testing res://.
+[•] Passed WalletTest.pays in 0.1 ms.
+[•] Passed WalletTest.refuses_debt in 0.0 ms.
+[•] All 2 tests passed.
+```
+
+- A test is a `@test` function: C++ like any function body.
+- `gd++ test` calls each one on a new `WalletTest` in the scene tree, so `add_child` works. It's freed after the test, with its children.
+- `assert` checks what must be true. A failed assertion fails the test, and shows where.
+- Only `gd++ test` registers `@test` classes, so the editor and the game never see them.
+
+See `gd++ man tests`.
+
+# 3. Wait for signals
+
+Game code reacts to signals and frames. An `@async` test can `await` them:
+
+```gd++
+@test
+@async
+func says_when_empty() {
+  Gd<Wallet> w = wallet(5);
+  w->call_deferred("pay", 5);
+  await w->emptied;
+  assert w->get_coins() == 0;
+}
+```
+
+- The test ends when its coroutine does.
+- If the signal never comes, the test fails after 10 seconds. `gd++ test --timeout 2` fails it sooner.
+- `await get_tree()->process_frame;` waits for a frame, e.g. for physics to settle.
+
+# 4. Run only some tests
+
+```sh
+gd++ test wallet_test.gd++         # the tests of one file
+gd++ test --run 'WalletTest.*'     # the tests whose names match
+gd++ test res://...                # the tests of every package of the project
+```
+
+When a test fails, read its output, under its result. To see more, trace the code it calls:
+
+```sh
+gd++ test --run WalletTest.pays --trace Wallet
+```
+
+See `gd++ man debugging`.
+
+# 5. Run them on a build machine
+
+`gd++ test` exits with an error if a test fails. So a build machine can run it before shipping:
+
+```sh
+#!/bin/sh
+set -e
+gd++ fetch --missing
+gd++ test res://...
+gd++ build res://... --ship --for l.x64 w.x64
+```
+
+- With an engine in `.gd++pkg`, the build machine compiles the same Godot as everyone else, once. Keep `res://.gd++cache` between runs, so it doesn't compile it again.
+- Release builds don't compile `@test` classes, so the shipped libraries don't contain them.
+
+See `gd++ man ship`.

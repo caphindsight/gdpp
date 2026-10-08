@@ -1,0 +1,25 @@
+// An @async test is a coroutine, in a @test class with @trace and @profile, which leave tests alone.
+@trace
+@profile
+@test
+class_name Alarm
+extends Node
+
+signal rang
+
+func ring() -> void {
+  emit rang();
+}
+
+@test
+@async
+func rings() {
+  call_deferred("ring");
+  await rang;
+  assert is_inside_tree();
+}
+
+@test
+func rings_now() {
+  ring();
+}

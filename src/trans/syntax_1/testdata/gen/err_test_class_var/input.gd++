@@ -1,0 +1,8 @@
+@test
+class_name Helper
+extends Node
+
+class User {
+  extends Node
+  var helper: Helper
+}

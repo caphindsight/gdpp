@@ -28,6 +28,7 @@ Building:
 
 ```
 gd++ build      compile packages into GDExtension libraries
+gd++ test       build packages and run their tests
 gd++ clean      delete build caches
 ```
 

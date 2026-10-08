@@ -1,2 +1,2 @@
-{Name:Valuable Kind:8 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[]}
-{Name:Gem Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[Valuable] Signals:[]}
+{Name:Valuable Kind:8 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[] Signals:[] Tests:[] Test:false}
+{Name:Gem Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Singleton:false Async:false Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[Valuable] Signals:[] Tests:[] Test:false}

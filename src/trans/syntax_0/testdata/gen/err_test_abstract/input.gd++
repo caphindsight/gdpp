@@ -1,0 +1,8 @@
+@abstract
+@test
+class_name A
+extends Node
+
+@test
+func works() {
+}

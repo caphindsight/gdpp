@@ -1,0 +1,4 @@
+input.gd++:8:3: Function waits awaits, so it needs @async.
+ 8 |   await get_tree()->process_frame;
+   |   ^^^^^
+Hint: Add @async: the function becomes a coroutine, and its callers get an Async of its result.

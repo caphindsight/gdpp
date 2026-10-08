@@ -21,6 +21,8 @@ type CmdInit struct {
 	Update      bool     `arg:"--update" help:"update an existing package or class instead of creating one"`
 	Bind        string   `arg:"--bind" placeholder:"NAME" help:"the package's Godot C++ bindings"`
 	Spec        string   `arg:"--spec" placeholder:"NAME" help:"the package's Godot API spec"`
+	Engine      string   `arg:"--engine" placeholder:"NAME" help:"the Godot engine that runs the package's tests"`
+	NoEngine    bool     `arg:"--noengine" help:"remove the package's Godot engine"`
 	Syntax      *int     `arg:"--syntax" placeholder:"N" help:"the package's GD++ syntax version"`
 	Nightly     bool     `arg:"--nightly" help:"the same as --syntax 0, the nightly syntax"`
 	Std         string   `arg:"--std" placeholder:"STD" help:"the package's C++ standard, e.g. c++20"`
@@ -47,21 +49,22 @@ type CmdInit struct {
 func (c *CmdInit) Run() {
 	c.Syntax = chosenSyntax(c.Syntax, c.Nightly)
 	if c.Path == "" {
-		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0 && c.Class == "",
-			"Invalid arguments: --update, --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path.")
+		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Engine == "" && !c.NoEngine && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0 && c.Class == "",
+			"Invalid arguments: --update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path.")
 		c.assertNoClassFlags()
 		c.initProject()
 		return
 	}
 	Assert(c.Vcs == "" && !c.Presets && !c.NoPresets, "Invalid arguments: --vcs, --presets and --nopresets cannot be used with a package path.")
 	if c.Class != "" {
-		Assert(c.Bind == "" && c.Spec == "" && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0,
-			"Invalid arguments: --bind, --spec, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class.")
+		Assert(c.Bind == "" && c.Spec == "" && c.Engine == "" && !c.NoEngine && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0,
+			"Invalid arguments: --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class.")
 		c.initClass(ParsePath(c.Path))
 		return
 	}
 	c.assertNoClassFlags()
-	for _, name := range []string{c.Bind, c.Spec} {
+	Assert(c.Engine == "" || !c.NoEngine, "Invalid arguments: --engine and --noengine cannot be used together.")
+	for _, name := range []string{c.Bind, c.Spec, c.Engine} {
 		if name != "" {
 			assertDepName(name)
 		}
@@ -275,6 +278,11 @@ func (c *CmdInit) setPackageFlags(config *PackageConfig) (changes []string) {
 	}
 	set(&config.Bindings, c.Bind, "the Godot C++ bindings")
 	set(&config.ApiSpec, c.Spec, "the Godot API spec")
+	set(&config.Engine, c.Engine, "the Godot engine")
+	if c.NoEngine && config.Engine != "" {
+		config.Engine = ""
+		changes = append(changes, "the Godot engine to none")
+	}
 	if c.Syntax != nil && *c.Syntax != config.Syntax {
 		config.Syntax = *c.Syntax
 		changes = append(changes, "the GD++ syntax to "+strconv.Itoa(*c.Syntax))

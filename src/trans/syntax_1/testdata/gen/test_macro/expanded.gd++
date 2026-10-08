@@ -1,0 +1,21 @@
+// Tests that macros and templates of another file generate in a class, and invocations in a test.
+@test
+class_name Sums
+extends Node
+
+@test func sums_small() {assert 1 + 2 + 3 == 6;}
+@test func lengths_match() {
+    assert String("abc").length() == 3;
+}
+@test @async func frames_pass() {add_child(create Node); await get_tree()->process_frame;}
+
+@test
+
+func increments() {
+  int x = 1;
+  x += 1;
+  assert x == 2;
+}
+
+// The tests that ctx.members lists: funcs with @test.
+@static func tests() -> String {return "sums_small lengths_match frames_pass increments";}

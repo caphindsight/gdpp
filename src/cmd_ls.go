@@ -113,7 +113,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 // uses the dep name. Without packages, nothing is unused.
 func isUnused(cache ProjectDepCache, name string, pkgs []lsPackage) bool {
 	for _, pkg := range pkgs {
-		if dep, ok := pkg.Config.Dep(cache.Name); !ok || dep == name {
+		if dep, ok := pkg.Config.Dep(cache.Name); ok && dep == name {
 			return false
 		}
 	}
@@ -125,8 +125,10 @@ func lsSep() string             { return Styled(unicodeOr("  •  ", "  *  "), B
 func lsMissing(s string) string { return Styled(s, Red) }
 
 // lsProject renders the overview of p and its packages. With deps, it lists
-// every dependency instead of counting them. With all, it shows the engines.
+// every dependency instead of counting them. It shows the engines with all, or
+// if a package uses one.
 func lsProject(p Project, pkgs []lsPackage, deps, all bool) string {
+	all = all || slices.ContainsFunc(pkgs, func(pkg lsPackage) bool { return pkg.Config.Engine != "" })
 	caches := slices.DeleteFunc(slices.Clone(p.Caches), func(c ProjectDepCache) bool { return !all && c.Name == "engine" })
 	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
 }

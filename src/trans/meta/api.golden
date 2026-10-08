@@ -92,3 +92,6 @@ field Declaration.Singleton bool
 const Struct Kind = 15
 field Dependency.Macros []Dependency
 const StructDecl DeclKind = 10
+field Declaration.Tests []string
+field Dependency.Test bool
+field Declaration.Test bool

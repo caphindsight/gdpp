@@ -1,0 +1,27 @@
+// Tests that macros and templates of another file generate in a class, and invocations in a test.
+@test
+class_name Sums
+extends Node
+
+invoke sum_test(sums_small, [1, 2, 3], 6)
+invoke equal_test(lengths_match, String("abc").length(), 3)
+invoke frame_test(frames_pass)
+
+@test
+
+func increments() {
+  int x = 1;
+  invoke plus_one(x);
+  assert x == 2;
+}
+
+// The tests that ctx.members lists: funcs with @test.
+invoke {
+  local names = {}
+  for _, m in ipairs(ctx.members) do
+    if m.kind == "func" and m.annotations and m.annotations[1] == "@test" then
+      table.insert(names, m.name)
+    end
+  end
+  gd.func { name = "tests", annotations = { "@static" }, ret = "String", body = "return \"" .. gd.join(names, " ") .. "\";" }
+}

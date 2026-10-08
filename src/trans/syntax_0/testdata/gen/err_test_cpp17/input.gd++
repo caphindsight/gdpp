@@ -1,0 +1,9 @@
+@test
+class_name A
+extends Node
+
+@async
+@test
+func waits() {
+  await get_tree()->process_frame;
+}

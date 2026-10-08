@@ -511,12 +511,26 @@ For debugging:
 
 See `gd++ man debugging`.
 
+# @test
+
+```gd++
+@test
+class_name InventoryTest
+extends Node
+```
+
+- The class holds tests, `@test` functions, and their helpers.
+- Only `gd++ test` registers it, and release builds don't compile it.
+- It must extend `Node`.
+- Only other `@test` classes may use it.
+- See "@test classes" in `gd++ man tests`.
+
 # Annotations and doc comments
 
 Before `class_name` or `class`, a class can have, in any order:
 
 - `@tool`, `@tool("editor_only")`, `@editor_only @tool` or `@game_only`,
-- `@abstract`, `@icon`, `@pool`, `@scene`, `@singleton`, `@trace` and `@profile`,
+- `@abstract`, `@icon`, `@pool`, `@scene`, `@singleton`, `@test`, `@trace` and `@profile`,
 - a doc comment.
 
 ```gd++

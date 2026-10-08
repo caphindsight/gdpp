@@ -1,0 +1,4 @@
+input.gd++:2:1: Annotations @test and @tool can't be used together.
+ 2 | @tool
+   | ^^^^^
+Hint: Only gd++ test registers a @test class, so neither the editor nor the game has it.

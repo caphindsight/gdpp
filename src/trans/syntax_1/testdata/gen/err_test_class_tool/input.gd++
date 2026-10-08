@@ -1,0 +1,4 @@
+@test
+@tool
+class_name Helper
+extends Node

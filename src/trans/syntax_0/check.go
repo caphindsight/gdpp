@@ -54,6 +54,7 @@ type classModel struct {
 	pool       *poolModel        // Its @pool, or nil.
 	scene      string            // The res:// path of its @scene, or "".
 	abstract   bool              // Whether @abstract keeps the editor and GD++ code from creating its objects.
+	test       bool              // Whether @test makes it a class of tests, which only gd++ test registers.
 	singleton  bool              // Whether @singleton makes the package create its one object, which get_singleton returns.
 	factory    map[string]string // The methods its @factory, @factory_pool, @factory_scene and @factory_shader declare: their names by role, e.g. "create". See factoryRoles.
 	ctor, dtor *Block
@@ -125,6 +126,7 @@ type funcModel struct {
 	final, super, private              bool        // With @override("final"), "super" on @override or @virtual, and @virtual("private").
 	noscript                           bool        // With "noscript" on @virtual or @override: a C++ virtual function, which scripts can't override.
 	isPrivate                          bool        // With @private: a private method, which isn't bound.
+	test                               bool        // With @test: a test, which gd++ test runs.
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string      // "deferred", "thread_safe", "onthread" or "async" with that annotation, else empty.
 	detached                           bool        // With @onthread("detached") or @async("detached"): a call starts a task that nobody waits for, and returns nothing.
@@ -347,7 +349,8 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			c := s.class
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
 				Abstract: hasAnnotation(c, "abstract"), Singleton: hasAnnotation(c, "singleton"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c), Gpu: usesGpuTypes(c) || usesGpuNames(u.src),
-				Virtuals: classVirtuals(c, false), NoscriptVirtuals: classVirtuals(c, true), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements), Signals: ownSignals(c.Members)})
+				Virtuals: classVirtuals(c, false), NoscriptVirtuals: classVirtuals(c, true), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements), Signals: ownSignals(c.Members),
+				Tests: classTests(c), Test: hasAnnotation(c, "test")})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends), Signals: ownSignals(s.extern.Members)})
 		case s.trait != nil:
@@ -359,6 +362,78 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 		}
 	}
 	return decls, nil
+}
+
+// useNoTestClass reports a @test class in the declarations of c, a class without @test: only gd++ test registers @test
+// classes, and release builds lack them.
+func (u *unit) useNoTestClass(c *Class) error {
+	types := []*Type{c.Extends}
+	for _, m := range c.Members {
+		switch {
+		case m.Var != nil:
+			types = append(types, m.Var.Type)
+		case m.Func != nil:
+			types = append(types, m.Func.Return)
+			for _, p := range m.Func.Params {
+				types = append(types, p.Type)
+			}
+		case m.Signal != nil:
+			for _, p := range m.Signal.Params {
+				types = append(types, p.Type)
+			}
+		}
+	}
+	for len(types) > 0 {
+		t := types[0]
+		types = types[1:]
+		if t == nil {
+			continue
+		}
+		if s := u.symbols[t.Name]; s != nil && (s.test || s.class != nil && hasAnnotation(s.class, "test")) {
+			return u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Class %s is a @test class, which only other @test classes can use.", t.Name),
+				"Only gd++ test registers @test classes, and release builds don't have them.")
+		}
+		types = append(types, t.Args...)
+	}
+	return nil
+}
+
+// classTests returns the names of c's @test functions.
+func classTests(c *Class) []string {
+	var names []string
+	for _, m := range c.Members {
+		if m.Func != nil && slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "test" }) {
+			names = append(names, m.Func.Name)
+		}
+	}
+	return names
+}
+
+// checkTest reports what's wrong with f, a @test function of the class named owner, with the annotations a, t among
+// them. The runner of tests creates an object of the class, adds it to the tree, and calls f. So the class is a @test
+// class, which can be created, and f takes no parameters, and no other annotation than @async.
+func (u *unit) checkTest(f *Func, owner string, t *Annotation, a map[string]*Annotation) error {
+	class := u.symbols[owner].class
+	for _, other := range f.Annotations {
+		if a[other.Name] == other && other.Name != "test" && other.Name != "async" {
+			return u.errorAt(other.Pos, len(other.Name)+1, fmt.Sprintf("Annotations @test and @%s can't be used together.", other.Name),
+				"gd++ test calls a test on a new object of its class, in the tree. It only takes @async, to await.")
+		}
+	}
+	switch {
+	case len(t.Args) > 0:
+		return u.errorAt(t.Pos, len(t.Name)+1, "Annotation @test takes no arguments.", "")
+	case len(f.Params) > 0:
+		return u.errorAt(f.Params[0].Pos, len(f.Params[0].Name), fmt.Sprintf("The @test function %s can't take parameters.", f.Name),
+			"gd++ test calls it without arguments. For a test per value, have a macro generate them.")
+	case !hasAnnotation(class, "test"):
+		return u.errorAt(t.Pos, len(t.Name)+1, fmt.Sprintf("Class %s has no @test, so it can't have @test functions.", owner),
+			"Tests go in @test classes, which only gd++ test registers. Move the test to one, or add @test to the class.")
+	case hasAnnotation(class, "abstract"):
+		return u.errorAt(t.Pos, len(t.Name)+1, fmt.Sprintf("The abstract class %s can't have @test functions.", owner),
+			"gd++ test calls a test on a new object of its class. Move the test to a subclass.")
+	}
+	return nil
 }
 
 // usesAsync reports whether class c uses Async: has an @onthread or @async function or on block, an Async type in a signature, or
@@ -726,7 +801,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				"Names must differ from Godot's, and from those of the package's other classes, externs, traits, structs and enums.")
 		}
 		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
-			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits, signals: d.Signals}
+			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits, signals: d.Signals, test: d.Test}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}
@@ -1325,7 +1400,7 @@ var knownAnnotations = []string{"abstract", "async", "bitfield", "const", "defer
 	"export_exp_easing", "export_file", "export_file_path", "export_flags", "export_flags_2d_navigation", "export_flags_2d_physics", "export_flags_2d_render", "export_flags_3d_navigation",
 	"export_flags_3d_physics", "export_flags_3d_render", "export_flags_avoidance", "export_global_dir", "export_global_file", "export_group", "export_multiline", "export_node_path",
 	"export_placeholder", "export_range", "export_storage", "export_subgroup", "export_tool_button", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "singleton", "static", "sync", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "singleton", "static", "sync", "test", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -1431,7 +1506,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	allowed := []string{"async", "const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "private", "profile", "recycle", "rpc", "static",
-		"thread_safe", "trace", "virtual"}
+		"test", "thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "thread_safe", "trace"}
 	}
@@ -1519,6 +1594,13 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	m.notrace, m.noprofile = a["notrace"] != nil, a["noprofile"] != nil
+	if t := a["test"]; t != nil {
+		if err := u.checkTest(f, owner, t, a); err != nil {
+			return nil, err
+		}
+		// A test isn't traced or profiled, since it isn't part of the game.
+		m.test, m.notrace, m.noprofile = true, true, true
+	}
 	for _, name := range []string{"deferred", "thread_safe", "onthread", "async"} {
 		if a[name] != nil {
 			m.deferral = name
@@ -1550,10 +1632,16 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 				"Parameters with default values must come last.")
 		}
 	}
-	if m.ret, err = u.resolve(f.Return, true); err != nil {
+	ret := f.Return
+	if m.test && ret == nil {
+		ret = &Type{Pos: f.Pos, Name: "void"} // A test's result means nothing.
+	}
+	if m.ret, err = u.resolve(ret, true); err != nil {
 		return nil, err
 	}
 	switch {
+	case m.test && !m.ret.void:
+		return nil, u.errorAt(f.Return.Pos, len(f.Return.Name), fmt.Sprintf("The @test function %s must return void.", f.Name), "Drop the return type: tests return nothing.")
 	case ext && f.Body != nil:
 		return nil, u.errorAt(f.Body.Pos, 1, "Extern functions can't have a body.", "Externs only declare what another package defines.")
 	case m.detached && !m.ret.void:
@@ -2985,11 +3073,25 @@ func (u *unit) buildClasses() error {
 func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	m := &classModel{name: c.Name, cls: c, base: baseName(c.Extends), refCounted: u.symbols[c.Name].kind == meta.RefCounted,
 		node: u.extends(c.Name, "Node")}
-	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "icon", "pool", "profile", "scene", "singleton", "tool", "trace")
+	a, err := u.annotations(c.Annotations, "a class", "abstract", "editor_only", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "icon", "pool", "profile", "scene", "singleton", "test", "tool", "trace")
 	if err != nil {
 		return nil, err
 	}
-	m.abstract, m.singleton = a["abstract"] != nil, a["singleton"] != nil
+	m.abstract, m.singleton, m.test = a["abstract"] != nil, a["singleton"] != nil, a["test"] != nil
+	for _, name := range []string{"tool", "editor_only", "singleton"} {
+		if m.test && a[name] != nil {
+			return nil, u.errorAt(a[name].Pos, len(name)+1, fmt.Sprintf("Annotations @test and @%s can't be used together.", name),
+				"Only gd++ test registers a @test class, so neither the editor nor the game has it.")
+		}
+	}
+	if err := u.requireBase(a["test"], c.Name, "gd++ test calls tests on new objects of their classes, in the tree.", "Node"); err != nil {
+		return nil, err
+	}
+	if !m.test {
+		if err := u.useNoTestClass(c); err != nil {
+			return nil, err
+		}
+	}
 	// Godot doesn't let runtime classes extend non-runtime ones, so classes without @tool below those are guarded instead.
 	if m.only, err = u.onlyOf(a, c.Name); err != nil {
 		return nil, err
@@ -3177,7 +3279,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				}
 				// The body does the work, so it's what @trace and @profile follow.
 				bm := &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static, gpu: f.gpu,
-					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, only: f.only}
+					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, only: f.only, test: f.test}
 				if f.deferral == "async" {
 					// The body is a coroutine. Its time would span its awaits, so it isn't profiled.
 					bm.coro, bm.ret, bm.profile = f.ret, &gtype{cpp: "gdpp::Coroutine<" + f.ret.cpp + ">"}, false
@@ -3264,7 +3366,7 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 	// always in the implicit group named after them without the underscore, process or physics_process.
 	for _, f := range m.funcs {
 		f.only = cmp.Or(f.only, m.only)
-		if f.deferral == "" {
+		if f.deferral == "" && !f.test {
 			name := strings.TrimPrefix(f.f.Name, "_gdpp_body_")
 			perFrame := (f.override || f.hidden == "notif") && processing[name] != ""
 			f.trace = f.trace || !f.notrace && (m.trace && !perFrame || perFrame && slices.Contains(u.opts.Trace, name[1:]))

@@ -1,0 +1,175 @@
+Tests: @test classes and gd++ test
+
+A test is a function that checks that your code works. GD++ runs it in a real Godot, with your classes, scenes and autoloads.
+
+```gd++
+@test
+class_name PlayerTest
+extends Node
+
+@test
+func takes_damage() {
+  Gd<Player> player = create Player;
+  add_child(player);
+  player->hurt(30);
+  assert player->get_health() == 70;
+}
+```
+
+```sh
+gd++ test
+```
+
+```out
+[•] Testing res://.
+[•] Passed PlayerTest.takes_damage in 0.1 ms.
+[•] All 1 test passed.
+```
+
+- A test is a function with `@test`, in a class with `@test`: no registration, no main function, no extra files.
+- `gd++ test` builds the package and runs its tests. See `gd++ man test`.
+
+# @test classes
+
+A class with `@test` holds tests, and the helpers they share:
+
+```gd++
+@test
+class_name InventoryTest
+extends Node
+
+// A helper, for the tests below.
+func full_inventory() -> Inventory {
+  Gd<Inventory> inv = create Inventory;
+  add_child(inv);
+  inv->add(string_name "potion", 99);
+  return inv;
+}
+
+@test
+func refuses_more_when_full() {
+  assert !full_inventory()->add(string_name "potion", 1);
+}
+```
+
+- It must extend `Node`. It can't have `@tool`, `@editor_only` or `@singleton`.
+- Only `gd++ test` registers it with Godot. So neither the editor nor the game sees it, not even in debug builds.
+- Release builds don't compile it at all, so it costs a shipped game nothing.
+- Other `@test` classes may use it. Other classes can't name it in their declarations, e.g. as a base, or the type of a variable or parameter: GD++ reports it. Don't use it in their code either: release builds fail to compile it.
+
+# @test functions
+
+For each test, `gd++ test`:
+
+1. creates a new object of the test's class, like `create` does: for a `@scene` class, an instance of its scene,
+2. adds it to the scene tree,
+3. calls the test,
+4. frees the object, with everything added to it.
+
+So:
+
+- `this` is a fresh object in the tree: `add_child`, `get_tree()` and the class's helpers work. With `@scene`, its scene's nodes and its `@onready` variables are there too.
+- Add what the test creates to it, e.g. with `add_child`, and the next test starts clean.
+- A test takes no parameters, and returns nothing. Without `->`, it returns `void`, unlike other functions.
+- Its class can't be `@abstract`, since `gd++ test` creates its objects.
+- For a test per value, have a macro or template generate them. See "Tests from macros" below.
+- Its full name is `CLASS.NAME`, e.g. `InventoryTest.refuses_more_when_full`.
+
+# Checks
+
+Tests check with `assert`:
+
+```gd++
+@test
+func stacks_potions() {
+  Gd<Inventory> inv = create Inventory;
+  add_child(inv);
+  inv->add(string_name "potion", 2);
+  inv->add(string_name "potion", 3);
+  assert inv->count(string_name "potion") == 5;
+}
+```
+
+A test fails if, while it runs:
+
+- an assertion fails: in the test, or in any code it calls. The failed assertion also ends the test, like it ends any function.
+- it's `@async`, and doesn't end before the timeout.
+- Godot crashes.
+
+Otherwise it passes. Godot's own errors, e.g. from `push_error`, are shown with a failed test's output, but don't fail a test.
+
+See "Assertions" in `gd++ man rewrites`.
+
+# @async tests
+
+With `@async`, a test is a coroutine, which can `await` signals and tasks, like any `@async` function:
+
+```gd++
+@test
+@async
+func timer_times_out() {
+  Gd<Timer> timer = create Timer;
+  timer->set_wait_time(0.1);
+  add_child(timer);
+  timer->start();
+  await timer->timeout;
+  assert timer->is_stopped();
+}
+```
+
+- The test ends when its coroutine ends.
+- It fails if it runs longer than 10 seconds. `gd++ test --timeout SECONDS` changes this.
+- `await get_tree()->process_frame;` waits for the next frame.
+- `@async` is the only annotation that combines with `@test`.
+
+See `gd++ man async`.
+
+# Tests from macros
+
+Macros generate tests with `gd.func` and `"@test"`, and templates by writing them:
+
+```gd++
+template equal_test(name, a, b) {
+  @test
+  func ${name}() {
+    assert ${a} == ${b};
+  }
+}
+
+macro sum_test(name, numbers, total) {
+  gd.func { name = name, annotations = { "@test" }, body = "assert " .. gd.join(numbers, " + ") .. " == " .. total .. ";" }
+}
+
+@test
+class_name MathTest
+extends Node
+
+invoke equal_test(lengths_match, String("abc").length(), 3)
+invoke sum_test(sums_small, [1, 2, 3], 6)
+```
+
+See `gd++ man templates` and `gd++ man macros`.
+
+# How tests run
+
+- `gd++ test` runs a headless Godot, without a window or sound, in the project.
+- The scene tree has the project's autoloads, and the package's `@singleton` classes, but not the main scene.
+- Tests run one at a time, one per frame, sorted by name.
+- Each test's output, e.g. from `gd::print`, is shown only if it fails.
+- `@trace` and `@profile` leave tests out, also those of the class.
+- See `gd++ man test` for which tests run, and which Godot runs them.
+
+# What GD++ generates
+
+A `@test` class is a class like any other, with its tests as plain methods:
+
+- Its header and source file are in `#ifdef DEBUG_ENABLED`.
+- Its source file goes in the build cache's `gdpp/test` directory, which release builds don't compile.
+- Its static method `_gdpp_create` makes the objects that `gd++ test` runs tests on, like `create`.
+- `gd++ test` registers it, and the runtime's runner of tests, a class named after the package's prefix, e.g. `FooTests`. `gd++ build` registers neither.
+
+`gd++ trans FILE` prints them. See `gd++ man generated`.
+
+# See also
+
+`gd++ man test`, `gd++ man rewrites`, `gd++ man async`, `gd++ man functions`, `gd++ man classes`.

@@ -533,3 +533,28 @@ gdpp = true
 file = "generated_traits.gd++"
 source_name = "package/generated_traits.gd++"
 macros = ["value_trait", "constant_func", "plus_one"]
+
+[[dep]]
+name = "sum_test"
+kind = "Macro"
+file = "test_macros.gd++"
+
+[[dep]]
+name = "equal_test"
+kind = "Template"
+file = "test_macros.gd++"
+source_name = "package/test_macros.gd++"
+
+[[dep]]
+name = "frame_test"
+kind = "Macro"
+file = "test_macros.gd++"
+
+# A @test class of another file, which only debug builds have.
+[[dep]]
+name = "Fixtures"
+include = "\"Fixtures.h\""
+kind = "Object"
+base = "Node"
+gdpp = true
+test = true

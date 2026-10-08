@@ -23,7 +23,7 @@ See `gd++ man dependencies`.
 # Options
 
 --missing
-  Fetch the bindings and specs that the project's packages name in their `.gd++pkg` files, but that neither cache has.
+  Fetch the bindings, specs and engines that the project's packages name in their `.gd++pkg` files, but that neither cache has.
   - The usual way to set up a project after cloning it.
   - If nothing is missing, it says "No dependencies are missing." and doesn't touch the network.
   - Combines with the options below, to fetch more.
@@ -38,7 +38,7 @@ See `gd++ man dependencies`.
   The same, for Godot API specs.
 
 --engine NAME..., --engine-all
-  The same, for Godot engines. Engines are currently unused.
+  The same, for Godot engines, which run tests. See `gd++ man test`.
 
 --checkin
   Fetch into the checked in cache instead of the ephemeral one.

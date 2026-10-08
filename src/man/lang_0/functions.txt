@@ -456,6 +456,23 @@ func launch() -> void {
 
 See `gd++ man classes`.
 
+# @test
+
+```gd++
+@test
+func takes_damage() {
+  Gd<Player> player = create Player;
+  add_child(player);
+  player->hurt(30);
+  assert player->get_health() == 70;
+}
+```
+
+- Makes the function a test, which `gd++ test` calls on a new object of the class, in the tree.
+- Only in a `@test` class. See `gd++ man classes`.
+- It takes no parameters, and returns nothing.
+- See `gd++ man tests`.
+
 # @trace and @profile
 
 ```gd++
@@ -504,6 +521,7 @@ A function with the name of a virtual function of the base class, without @overr
 @deferred with @thread_safe or @onthread
 @thread_safe with @onthread
 @async with @onthread, @deferred, @thread_safe, @rpc or @profile
+@test with any annotation but @async
 ```
 
 - `@trace`, `@game_only` and `@editor_only` combine with all of them, and `@profile` with all but `@async`.

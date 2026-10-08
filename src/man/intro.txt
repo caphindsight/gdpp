@@ -100,6 +100,7 @@ Facts about pages:
 - Project: a Godot project, i.e. a directory with a `project.godot` file. See `gd++ man projects`.
 - Package: a directory in a project with a `.gd++pkg` file. It builds into one GDExtension library. See `gd++ man packages`.
 - Dependency: a versioned download that packages need: Godot C++ bindings, a Godot API spec or a Godot engine. See `gd++ man dependencies`.
+- Test: a `@test` function of a `@test` class, which checks other code, and which `gd++ test` runs in a headless Godot. See `gd++ man tests`.
 - Bindings: godot-cpp, the C++ library that GDExtensions are written against.
 - API spec: `extension_api.json`, the description of every class of one Godot version.
 - GD++ file: a file with the extension `.gd++`, `.gdpp` or `.gg`.

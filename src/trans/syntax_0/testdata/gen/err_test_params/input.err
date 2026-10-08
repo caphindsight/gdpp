@@ -1,0 +1,4 @@
+input.gd++:7:12: The @test function works can't take parameters.
+ 7 | func works(times: int) {
+   |            ^^^^^
+Hint: gd++ test calls it without arguments. For a test per value, have a macro generate them.

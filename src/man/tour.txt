@@ -110,7 +110,37 @@ See `gd++ man building` and `gd++ man build`.
 - Its doc comment shows up in the editor's help.
 - Debug builds support hot reload: change the code, run `gd++ build`, and the editor picks up the changes when its window gets focus.
 
-# 8. Look under the hood
+# 8. Test it
+
+Save this as `player_test.gd++`, next to `player.gd++`:
+
+```gd++
+@test
+class_name PlayerTest
+extends Node
+
+@test
+func starts_at_full_speed() {
+  Gd<Player> player = create Player;
+  add_child(player);
+  assert player->get_speed() == 300.0;
+}
+```
+
+Run it in the Godot that you have installed:
+
+```sh
+gd++ test --engine "$(which godot)"
+```
+
+- `gd++ test` builds the package, and runs its tests in a headless Godot.
+- A test is a `@test` function of a `@test` class. Each one runs on a new object of its class, in the tree. `assert` checks what must be true.
+- Only `gd++ test` registers `@test` classes, and shipped games don't have them.
+- To have `gd++` download and build a Godot for the tests, set the package's engine: `gd++ init . --update --engine 4.7.2-stable`.
+
+See `gd++ man tests` and `gd++ man test`.
+
+# 9. Look under the hood
 
 ```sh
 gd++ trans player.gd++
@@ -124,7 +154,7 @@ gd++ ls
 
 This shows the project's dependencies, packages and classes. See `gd++ man ls`.
 
-# 9. Ship
+# 10. Ship
 
 Build in release mode, for each target platform:
 

@@ -128,6 +128,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
 - Traits: `trait Name { extends Base ... }` lists functions that classes with any base share, with `implements Name`. `as` casts objects to them. See `gd++ man traits`.
 - Debugging: `@trace` prints calls and changes, and `@profile` times code. See `gd++ man debugging`.
+- Tests: `@test` functions in `@test` classes check code with `assert`, and `gd++ test` runs them in a headless Godot. See `gd++ man tests`.
 - Performance: how fast GD++ code runs, compared to GDScript. See `gd++ man performance`.
 - Plain C++: `decl`, `impl` and `@global` blocks. See `gd++ man code`.
 - Templates: GD++ code with holes, which generates code where `invoke name(...)` invokes it. See `gd++ man templates`.

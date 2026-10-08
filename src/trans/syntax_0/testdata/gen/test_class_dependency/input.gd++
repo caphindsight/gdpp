@@ -1,0 +1,11 @@
+// A @test class whose tests use a @test class of another file.
+@test
+class_name Arena
+extends Node
+
+@test
+func has_fixtures() {
+  Gd<Fixtures> f = create Fixtures;
+  add_child(f);
+  assert f->is_inside_tree();
+}

@@ -1,0 +1,19 @@
+// Macros and templates of another file of the package, which generate tests.
+
+// A test that the sum of numbers is total.
+macro sum_test(name, numbers, total) {
+  gd.func { name = name, annotations = { "@test" }, body = "assert " .. gd.join(numbers, " + ") .. " == " .. total .. ";" }
+}
+
+// A test that two expressions are equal.
+template equal_test(name, a, b) {
+  @test
+  func ${name}() {
+    assert ${a} == ${b};
+  }
+}
+
+// An @async test that adds a node to the tree, and waits for a frame.
+macro frame_test(name) {
+  gd.func { name = name, annotations = { "@test", "@async" }, body = "add_child(create Node); await get_tree()->process_frame;" }
+}

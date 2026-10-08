@@ -23,8 +23,9 @@ type Package struct {
 
 // PackageConfig holds the settings from a package's .gd++pkg.
 type PackageConfig struct {
-	Bindings    string         `toml:"bind"` // mandatory
-	ApiSpec     string         `toml:"spec"` // mandatory
+	Bindings    string         `toml:"bind"`             // mandatory
+	ApiSpec     string         `toml:"spec"`             // mandatory
+	Engine      string         `toml:"engine,omitempty"` // the engine that runs the tests; default: none
 	Syntax      int            `toml:"syntax"`
 	CppStandard string         `toml:"std"`
 	Prefix      string         `toml:"prefix,omitempty"`       // default: the package ID in PascalCase
@@ -65,6 +66,12 @@ func (pkg Package) Prefix() string {
 // types name, e.g. FooAsync.
 func (pkg Package) AsyncClass() string {
 	return pkg.Prefix() + "Async"
+}
+
+// TestsClass returns the name of the package's runner of tests, which gd++
+// test runs as Godot's main loop, e.g. FooTests.
+func (pkg Package) TestsClass() string {
+	return pkg.Prefix() + "Tests"
 }
 
 // GpuArrayClass returns the name of the package's class of GPU arrays, which
@@ -170,6 +177,8 @@ func (c PackageConfig) Dep(kind string) (string, bool) {
 		return c.Bindings, true
 	case "spec":
 		return c.ApiSpec, true
+	case "engine":
+		return c.Engine, c.Engine != ""
 	}
 	return "", false
 }

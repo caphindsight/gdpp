@@ -1,0 +1,6 @@
+class_name User
+extends Node
+
+func make() -> Array[Fixtures] {
+  return {};
+}

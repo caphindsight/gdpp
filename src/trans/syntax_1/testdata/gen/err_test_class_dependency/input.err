@@ -1,0 +1,4 @@
+input.gd++:4:22: Class Fixtures is a @test class, which only other @test classes can use.
+ 4 | func make() -> Array[Fixtures] {
+   |                      ^^^^^^^^
+Hint: Only gd++ test registers @test classes, and release builds don't have them.
