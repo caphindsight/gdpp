@@ -1852,17 +1852,53 @@ void follow(ObjectID &r_connected, const T &p_object, const StringName &p_signal
 	}
 }
 
-// Defer runs a function when it goes out of scope, e.g. on every return of a set block.
-template <typename F>
-struct Defer {
-	// Runs p_fn when it goes out of scope.
-	explicit Defer(F p_fn) :
-			fn(std::move(p_fn)) {}
-	// Runs the function.
-	~Defer() { fn(); }
-	// The function.
-	F fn;
+// Followed is the field of a variable whose signals on blocks handle, e.g. on button.pressed: a Gd, G, whose every
+// change, e.g. `button = other;`, runs F, the owner's method that connects the blocks to the new object, and
+// disconnects them from the old one. Otherwise it's the Gd itself.
+template <typename G, auto F>
+class Followed : public G {
+	using Owner = typename method_class<decltype(F)>::type;
+
+public:
+	// A null Gd, owned by p_owner, whose F it runs.
+	explicit Followed(Owner *p_owner) :
+			owner(p_owner) {}
+	// A copy, which follows for the same owner.
+	Followed(const Followed &) = default;
+	// Assigns p_value, and runs F.
+	template <typename U>
+	Followed &operator=(U &&p_value) {
+		G::operator=(std::forward<U>(p_value));
+		(owner->*F)();
+		return *this;
+	}
+	// Assigns p_other's object, and runs F.
+	Followed &operator=(const Followed &p_other) { return *this = static_cast<const G &>(p_other); }
+	// Like Gd::create, then runs F.
+	void create() {
+		G::create();
+		(owner->*F)();
+	}
+	// Like Gd::destroy, then runs F.
+	void destroy() {
+		G::destroy();
+		(owner->*F)();
+	}
+	// Like Gd::queue_destroy, then runs F.
+	void queue_destroy() {
+		G::queue_destroy();
+		(owner->*F)();
+	}
+
+private:
+	Owner *owner;
 };
+template <typename G, auto F>
+struct is_gd<Followed<G, F>> : std::true_type {};
+template <typename G, auto F>
+struct is_gd_trait<Followed<G, F>> : is_gd_trait<G> {};
+template <typename G, auto F>
+struct object_class<Followed<G, F>> : object_class<G> {};
 
 #define GDPP_GDCLASS(m_class, m_inherits) GDCLASS(m_class, m_inherits) // Expands m_class before GDCLASS quotes it.
 

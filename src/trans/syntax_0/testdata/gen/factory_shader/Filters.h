@@ -17,12 +17,12 @@ class Filters : public RefCounted {
 	GDCLASS(Filters, RefCounted)
 
 public:
-	static void compile_shader(const StringName &p_shader);
-	static gdpp::Async<void> compile_shader_async(const StringName &p_shader);
-	static void compile_shader_detached(const StringName &p_shader);
 	static void compile_shaders();
+	static void compile_shader(const StringName &p_shader);
 	static gdpp::Async<void> compile_shaders_async();
+	static gdpp::Async<void> compile_shader_async(const StringName &p_shader);
 	static void compile_shaders_detached();
+	static void compile_shader_detached(const StringName &p_shader);
 	static gdpp::Gd<Image> brighten(const Vector2i &size, const gdpp::Gd<Image> &src, double gain);
 	static void clear(int64_t n, const gdpp::GpuArray<float> &values);
 

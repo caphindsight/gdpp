@@ -57,9 +57,9 @@ func _score() -> int
   Declare the class's static methods that load and drop its scene: `scene_cache()` and `scene_evict()` by default. Only with `@scene`. See `gd++ man classes`.
   - With arguments: up to two names, as strings, e.g. `@factory_scene("preload_scene")`. An empty string `""`, or a missing name at the end, leaves that method out.
 
-@factory_shader and @factory_shader(SHADER, SHADER_ASYNC, SHADER_DETACHED, SHADERS, SHADERS_ASYNC, SHADERS_DETACHED)
-  Declare the class's static methods that compile its shaders ahead of time: `compile_shader(shader)`, `compile_shader_async(shader)`, `compile_shader_detached(shader)`, `compile_shaders()`, `compile_shaders_async()` and `compile_shaders_detached()` by default. Only for classes with a shader. See `gd++ man shaders`.
-  - With arguments: up to six names, as strings, e.g. `@factory_shader("", "", "", "warm_up")`. An empty string `""`, or a missing name at the end, leaves that method out.
+@factory_shader and @factory_shader(SHADERS, SHADER, SHADERS_ASYNC, SHADER_ASYNC, SHADERS_DETACHED, SHADER_DETACHED)
+  Declare the class's static methods that compile its shaders ahead of time: `compile_shaders()`, `compile_shader(shader)`, `compile_shaders_async()`, `compile_shader_async(shader)`, `compile_shaders_detached()` and `compile_shader_detached(shader)` by default. Only for classes with a shader. See `gd++ man shaders`.
+  - With arguments: up to six names, as strings, e.g. `@factory_shader("warm_up")` for `compile_shaders`. An empty string `""`, or a missing name at the end, leaves that method out.
 
 @icon(PATH)
   The class's icon in the editor: a string with a `res://` or `pkg://` path. See `gd++ man classes`.
@@ -146,7 +146,7 @@ func _score() -> int
 @async
   The function is a coroutine: its body can `await` signals and tasks. Every call runs the body until an `await` that waits, and returns an `Async` of the function's type, done once the body returns. See `gd++ man async`.
   - Argument `"detached"`, for a function that returns `void`: calls return nothing.
-  - On an `on` block, e.g. `@async on ready`, the block is a coroutine that nothing waits for. Not on per-frame blocks, e.g. `on process`, unless you know exactly what you're doing. See "Awaiting in on blocks" in `gd++ man notifications`.
+  - On an `on` block, e.g. `@async on ready`, the block is a coroutine that nothing waits for. Not on per-frame blocks, e.g. `on process`, unless you know exactly what you're doing. See "Awaiting in on blocks" in `gd++ man callbacks`.
 
 @trace(GROUPS...)
   Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.

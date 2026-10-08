@@ -148,7 +148,7 @@ on ready {
 - A coroutine needs C++20. With an older C++ standard, `@async` and `await` are errors. See `gd++ man packages`.
 - `await` in a function without `@async` is an error: "Function f awaits, so it needs @async."
 
-An `on` block can be `@async` too, e.g. `@async on ready { ... }`. Nothing waits for it. Don't make the per-frame blocks, e.g. `on process`, `@async`: each frame would start another coroutine. See "Awaiting in on blocks" in `gd++ man notifications`.
+An `on` block can be `@async` too, e.g. `@async on ready { ... }`. Nothing waits for it. Don't make the per-frame blocks, e.g. `on process`, `@async`: each frame would start another coroutine. See "Awaiting in on blocks" in `gd++ man callbacks`.
 
 An `@async` function:
 

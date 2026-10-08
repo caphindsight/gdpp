@@ -1,8 +1,0 @@
-class_name A
-extends Node
-
-var box: Control {
-  get { return nullptr; }
-}
-
-on box.resized {}

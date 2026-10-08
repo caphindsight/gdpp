@@ -48,7 +48,7 @@ NAME.MEMBER
   List every type that godot-cpp and the GD++ runtime declare: its kind (e.g. class, struct, enum, template class or alias), its name, and its base class or what it aliases. The default without a name. Not with a name.
 
 --notifications
-  List the notifications of each Godot class in the package's API spec, as `on` blocks name them, e.g. `ready` for `on ready { ... }`. Each class is followed by its own notifications, without its bases', one per line, indented by the tab width. Not with a name or `--index`. See `gd++ man notifications`.
+  List the notifications of each Godot class in the package's API spec, as `on` blocks name them, e.g. `ready` for `on ready { ... }`. Each class is followed by its own notifications, without its bases', one per line, indented by the tab width. Not with a name or `--index`. See `gd++ man callbacks`.
 
 # Output
 
@@ -133,4 +133,4 @@ gd++ doc --notifications             # the notifications of all classes
 
 # See also
 
-`gd++ man types`, `gd++ man includes`, `gd++ man runtime`, `gd++ man notifications`.
+`gd++ man types`, `gd++ man includes`, `gd++ man runtime`, `gd++ man callbacks`.

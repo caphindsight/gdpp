@@ -75,7 +75,7 @@ on ready {
 ```
 
 - `@async` works on `on` blocks too. Here, the trap arms itself when it gets ready, and nothing waits for the block.
-- Don't put it on per-frame blocks, e.g. `on process`: each frame would start another coroutine. See "Awaiting in on blocks" in `gd++ man notifications`.
+- Don't put it on per-frame blocks, e.g. `on process`: each frame would start another coroutine. See "Awaiting in on blocks" in `gd++ man callbacks`.
 - `body_entered` has one argument, so `await` gives it, with its type, a `Gd<Node3D>`.
 - A signal without arguments gives nothing, and one with more a struct of them, e.g. `auto [from, to] = await anim->animation_changed;`. See "Awaiting signals" in `gd++ man async`.
 - A signal of the class itself takes no object: `await sprung;` waits for the trap's own `sprung`.
@@ -207,4 +207,4 @@ func _on_alarm() -> void {
 
 # See also
 
-`gd++ man async`, `gd++ man signals`, `gd++ man notifications`, `gd++ man threads`, `gd++ man state-machine`.
+`gd++ man async`, `gd++ man signals`, `gd++ man callbacks`, `gd++ man threads`, `gd++ man state-machine`.

@@ -102,11 +102,11 @@ on this.resized {
 
 The block follows its variable: it's always connected to the object that the variable holds.
 
-- GD++ connects it right after each assignment of the variable: its initial value in the constructor, its `@onready` value, its `@recycle` value, and every call of its setter, e.g. from scripts, the inspector, scenes and C++'s `set_player(p)`.
+- GD++ connects it whenever the variable changes, however it does: its initial value, its `@onready` value, its `@recycle` value, its setter, e.g. from scripts, the inspector and scenes, and C++ code that assigns it, e.g. `player = p;`.
 - When the variable gets another object, GD++ disconnects the block from the old one, if it's still there.
-- C++ code that assigns the field itself, e.g. `player = p;`, skips the setter. Then the block stays connected to the old object. Call the setter instead: `set_player(p);`.
+- That's since the variable's C++ field is a `gdpp::Followed`: a `Gd` whose assignments, `create()`, `destroy()` and `queue_destroy()` connect the blocks. Otherwise, C++ code uses it like any `Gd`, e.g. `player->hurt(1)`, `if (player)` or `player.ptr()`.
 - A null variable connects nothing, without an error.
-- The variable must be a simple variable, or a property with a `set` block that isn't `@deferred` or `@thread_safe`.
+- The variable must be a simple variable of the class, not a property: a property's `get` and `set` blocks may keep the object anywhere, so GD++ can't follow it.
 - `on this.SIGNAL` connects once, in the constructor.
 
 Facts:

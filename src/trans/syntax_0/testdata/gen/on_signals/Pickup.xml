@@ -6,12 +6,18 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="swap">
+			<return type="void" />
+			<param index="0" name="other" type="Control" />
+			<description>
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="hud" type="Control" setter="set_hud" getter="get_hud">
 		</member>
 		<member name="panel" type="Control" setter="set_panel" getter="get_panel">
-		</member>
-		<member name="target" type="Control" setter="set_target" getter="get_target">
 		</member>
 	</members>
 	<signals>

@@ -1908,11 +1908,9 @@ func (u *unit) buildSignalOn(o *On, owner string) (*funcModel, error) {
 		case v == nil:
 			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Class %s has no variable %s.", owner, o.Source),
 				fmt.Sprintf("An on block connects to a signal of a variable of the class, e.g. \"on button.pressed\", or of the object itself, e.g. \"on this.%s\".", o.Name))
-		case v.Property != nil && !slices.ContainsFunc(v.Property.Accessors, func(a *Accessor) bool { return a.Set != nil }):
-			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Property %s has no set block, so the on block can't follow its value.", o.Source),
-				"An on block connects to the object in the variable each time the variable is set.")
-		case v.Property != nil && slices.ContainsFunc(v.Property.Accessors, func(a *Accessor) bool { return a.Set != nil && len(a.Set.Annotations) > 0 }):
-			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Property %s has a @deferred or @thread_safe set block, so the on block can't follow its value.", o.Source), "")
+		case v.Property != nil:
+			return nil, u.errorAt(o.Pos, len(o.Source)+3, fmt.Sprintf("Variable %s is a property, so the on block can't follow its value.", o.Source),
+				"Its get and set blocks may keep the object anywhere. Make it a simple variable, e.g. \"var "+o.Source+": "+typeString(v.Type)+"\", whose every assignment connects the block.")
 		}
 		t := u.symbols[baseName(v.Type)]
 		if v.Type == nil || len(v.Type.Args) > 0 || t == nil || !slices.Contains([]meta.Kind{meta.Object, meta.RefCounted, meta.Extern, meta.RefCountedExtern, meta.Trait, meta.RefCountedTrait}, t.kind) {
@@ -2120,7 +2118,7 @@ func (u *unit) sceneOf(a *Annotation, owner string) (string, error) {
 // factoryRoles are the methods that @factory, @factory_pool, @factory_scene and @factory_shader can declare, in order.
 // Each one's default name is the role itself.
 var factoryRoles = []string{"create", "destroy", "queue_destroy", "pool_reserve", "pool_clear", "scene_cache", "scene_evict",
-	"compile_shader", "compile_shader_async", "compile_shader_detached", "compile_shaders", "compile_shaders_async", "compile_shaders_detached"}
+	"compile_shaders", "compile_shader", "compile_shaders_async", "compile_shader_async", "compile_shaders_detached", "compile_shader_detached"}
 
 // factoryAnnotations are the annotations that declare methods, with their roles.
 var factoryAnnotations = map[string][]string{"factory": factoryRoles[:3], "factory_pool": factoryRoles[3:5], "factory_scene": factoryRoles[5:7],

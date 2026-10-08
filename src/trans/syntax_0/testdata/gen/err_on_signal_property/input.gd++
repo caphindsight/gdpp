@@ -1,0 +1,10 @@
+class_name A
+extends Node
+
+var box: Control {
+  decl { Gd<Control> box_; }
+  get { return box_; }
+  set(value) { box_ = value; }
+}
+
+on box.resized {}

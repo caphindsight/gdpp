@@ -1,6 +1,10 @@
-Notifications: on ready, on process and the like
+Callbacks: on ready, on process and the like
 
-`on` blocks run code when an object gets a notification from the engine, e.g. when a node gets ready, processes a frame, draws, or is about to be deleted.
+Callbacks are `on` blocks: code that the engine runs for an object.
+
+- Most run at a notification from the engine, e.g. when a node gets ready, processes a frame, draws, or is about to be deleted. This page covers those.
+- Some run when an object emits a signal, e.g. `on button.pressed`. See "Connecting to signals" in `gd++ man signals`.
+- Some decide about the object's properties, e.g. `on get(name)`. See "Property callbacks" below.
 
 # Syntax
 
@@ -19,15 +23,14 @@ on predelete {
 ```
 
 - `on`, the notification's name, then the body: C++ in braces.
-- With a variable and a dot, e.g. `on button.pressed`, an `on` block runs at a signal instead. See "Connecting to signals" in `gd++ man signals`.
 - The name is the engine's constant without `NOTIFICATION_`, in lower case: `on predelete` runs at `NOTIFICATION_PREDELETE`.
 - No return type. Property callbacks return a value, whose type GD++ knows. See "Property callbacks" below.
-- A class has at most one `on` block per notification.
+- A class has at most one callback per notification.
 - Notification names stay free as names elsewhere, e.g. `var ready: bool`.
 
 # Adding, not replacing
 
-`on` blocks add up:
+Callbacks add up:
 
 - Godot sends each notification to every class in the chain of bases.
 - So a base's `on ready` and a subclass's both run: the base's first, or last for notifications that Godot sends in reverse, e.g. `predelete`.

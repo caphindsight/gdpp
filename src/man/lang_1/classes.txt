@@ -543,7 +543,7 @@ signal     signals                        gd++ man signals
 enum       enums and integer constants    gd++ man enums
 ctor       the constructor                gd++ man lifecycle
 dtor       the destructor                 gd++ man lifecycle
-on         notification handlers          gd++ man notifications
+on         callbacks                      gd++ man callbacks
 decl, impl plain C++                      gd++ man code
 shader { } GLSL that shaders share        gd++ man shaders
 import     force an include               gd++ man includes

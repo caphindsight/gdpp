@@ -373,12 +373,12 @@ func _ready():
 ```
 
 ```
-compile_shader(shader: StringName)            compiles the class's shader of that name, and returns once it's compiled
-compile_shader_async(shader: StringName)      the same on a worker thread: returns an Async right away, done once it's compiled
-compile_shader_detached(shader: StringName)   the same on a worker thread: returns nothing, and nothing waits for it
 compile_shaders()                             compiles all the class's shaders, and returns once they're compiled
-compile_shaders_async()                       the same on a worker thread: returns an Async right away, done once they're compiled
-compile_shaders_detached()                    the same on a worker thread: returns nothing, and nothing waits for it
+compile_shader(shader: StringName)            compiles the class's shader of that name, and returns once it's compiled
+compile_shaders_async()                       the same as compile_shaders on a worker thread: returns an Async right away, done once they're compiled
+compile_shader_async(shader: StringName)      the same as compile_shader on a worker thread: returns an Async right away, done once it's compiled
+compile_shaders_detached()                    the same as compile_shaders on a worker thread: returns nothing, and nothing waits for it
+compile_shader_detached(shader: StringName)   the same as compile_shader on a worker thread: returns nothing, and nothing waits for it
 ```
 
 - A class with `@factory_shader` needs a shader.
@@ -388,7 +388,7 @@ compile_shaders_detached()                    the same on a worker thread: retur
 - A name that isn't one of the class's shaders prints an error.
 - GLSL errors show up then, instead of on the first call. See "Errors" below.
 - GD++ code calls them the same way: `Filters::compile_shaders();`.
-- Other names: `@factory_shader` takes up to six strings, for the six methods in the order above, e.g. `@factory_shader("", "", "", "warm_up")`. An empty string `""`, or a missing name at the end, leaves that method out.
+- Other names: `@factory_shader` takes up to six strings, for the six methods in the order above, e.g. `@factory_shader("warm_up")` for `compile_shaders`, or `@factory_shader("", "warm_up_one")` for `compile_shader` alone. An empty string `""`, or a missing name at the end, leaves that method out.
 - Don't make the main thread wait for the `Async`, e.g. with `wait()`: compiling for the main RenderingDevice needs the main thread, unless the project renders on its own thread. Test `is_done` each frame instead.
 
 # Workgroups

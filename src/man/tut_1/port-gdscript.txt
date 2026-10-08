@@ -83,7 +83,7 @@ What changed:
 - Engine properties are getters and setters in C++: `sprite.rotation += x` becomes `sprite->set_rotation(sprite->get_rotation() + x)`. Your own GD++ variables are plain fields, so `player->score += value` works.
 - `as` casts like in GDScript, but names a C++ type: `body as Gd<Player>`. A failed downcast gives null. See `gd++ man cast`.
 - Signals are sent with `emit NAME(ARGS);`. See `gd++ man signals`.
-- `func _process(delta)` becomes `on process(delta: float)`, `func _ready()` becomes `on ready`, and the like. `on` blocks add to the base's, and scripts can't replace them. See `gd++ man notifications`.
+- `func _process(delta)` becomes `on process(delta: float)`, `func _ready()` becomes `on ready`, and the like. `on` blocks add to the base's, and scripts can't replace them. See `gd++ man callbacks`.
 - Other virtual functions of the engine, e.g. `_unhandled_input`, need `@override`. See `gd++ man functions`.
 
 # 3. Look up the API

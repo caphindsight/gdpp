@@ -16,8 +16,8 @@ class Noise : public Node {
 	GDCLASS(Noise, Node)
 
 public:
-	static void warm_up(const StringName &p_shader);
 	static void warm_up_all();
+	static void warm_up(const StringName &p_shader);
 	static PackedFloat32Array fill(int64_t n);
 
 protected:

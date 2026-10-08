@@ -82,17 +82,8 @@ namespace godot {
 
 void Noise::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("fill", "n"), &Noise::fill);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("warm_up", "shader"), &Noise::warm_up);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("warm_up_all"), &Noise::warm_up_all);
-}
-
-void Noise::warm_up(const StringName &p_shader) {
-#ifdef DEBUG_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-#endif
-	gdpp::gpu::compile(::_gdpp_gpu_Noise::_gdpp_shaders, "Noise", p_shader);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("warm_up", "shader"), &Noise::warm_up);
 }
 
 void Noise::warm_up_all() {
@@ -102,6 +93,15 @@ void Noise::warm_up_all() {
 	}
 #endif
 	gdpp::gpu::compile(::_gdpp_gpu_Noise::_gdpp_shaders);
+}
+
+void Noise::warm_up(const StringName &p_shader) {
+#ifdef DEBUG_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+#endif
+	gdpp::gpu::compile(::_gdpp_gpu_Noise::_gdpp_shaders, "Noise", p_shader);
 }
 
 PackedFloat32Array Noise::fill(int64_t n) {

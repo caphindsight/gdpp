@@ -18,15 +18,10 @@ class Pickup : public Area2D {
 	GDCLASS(Pickup, Area2D)
 
 public:
-	gdpp::Gd<Control> hud{};
-	gdpp::Gd<Control> panel{};
-
-private:
-#line 11 "input.gd++"
-
-    Gd<Control> target_;
-
-#line 30 "Pickup.h"
+	void _gdpp_follow_hud();
+	gdpp::Followed<gdpp::Gd<Control>, &Pickup::_gdpp_follow_hud> hud{ this };
+	void _gdpp_follow_panel();
+	gdpp::Followed<gdpp::Gd<Control>, &Pickup::_gdpp_follow_panel> panel{ this };
 
 public:
 	Pickup();
@@ -35,13 +30,11 @@ public:
 	void _gdpp_body__on_this_collected(gdpp::Gd<Node2D> _gdpp_param0, int64_t _gdpp_param1);
 	void _gdpp_body__on_hud_resized();
 	void _gdpp_body__on_panel_gui_input(gdpp::Gd<InputEvent> event);
-	void _gdpp_body__on_target_resized();
+	void swap(gdpp::Gd<Control> other);
 	gdpp::Gd<Control> get_hud() const;
 	void set_hud(gdpp::Gd<Control> p_value);
 	gdpp::Gd<Control> get_panel() const;
 	void set_panel(gdpp::Gd<Control> p_value);
-	gdpp::Gd<Control> get_target() const;
-	void set_target(gdpp::Gd<Control> value);
 	gdpp::Emitted collected(gdpp::Gd<Node2D> by, int64_t points);
 
 protected:
@@ -49,9 +42,8 @@ protected:
 	void _notification(int WHAT);
 
 private:
-	ObjectID _gdpp_follow_hud_resized;
-	ObjectID _gdpp_follow_panel_gui_input;
-	ObjectID _gdpp_follow_target_resized;
+	ObjectID _gdpp_connected_hud_resized;
+	ObjectID _gdpp_connected_panel_gui_input;
 };
 #undef This
 

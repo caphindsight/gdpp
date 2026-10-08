@@ -139,36 +139,36 @@ namespace godot {
 void Filters::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("brighten", "size", "src", "gain"), &Filters::brighten);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("clear", "n", "values"), &Filters::clear);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shader", "shader"), &Filters::compile_shader);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shader_async", "shader"), &Filters::compile_shader_async);
-	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shader_detached", "shader"), &Filters::compile_shader_detached);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shaders"), &Filters::compile_shaders);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shader", "shader"), &Filters::compile_shader);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shaders_async"), &Filters::compile_shaders_async);
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shader_async", "shader"), &Filters::compile_shader_async);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shaders_detached"), &Filters::compile_shaders_detached);
-}
-
-void Filters::compile_shader(const StringName &p_shader) {
-	gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders, "Filters", p_shader);
-}
-
-gdpp::Async<void> Filters::compile_shader_async(const StringName &p_shader) {
-	return gdpp::run_task(nullptr, "Filters.compile_shader_async", [=] { gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders, "Filters", p_shader); });
-}
-
-void Filters::compile_shader_detached(const StringName &p_shader) {
-	gdpp::run_detached(nullptr, "Filters.compile_shader_detached", [=] { gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders, "Filters", p_shader); });
+	ClassDB::bind_static_method(get_class_static(), D_METHOD("compile_shader_detached", "shader"), &Filters::compile_shader_detached);
 }
 
 void Filters::compile_shaders() {
 	gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders);
 }
 
+void Filters::compile_shader(const StringName &p_shader) {
+	gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders, "Filters", p_shader);
+}
+
 gdpp::Async<void> Filters::compile_shaders_async() {
 	return gdpp::run_task(nullptr, "Filters.compile_shaders_async", [=] { gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders); });
 }
 
+gdpp::Async<void> Filters::compile_shader_async(const StringName &p_shader) {
+	return gdpp::run_task(nullptr, "Filters.compile_shader_async", [=] { gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders, "Filters", p_shader); });
+}
+
 void Filters::compile_shaders_detached() {
 	gdpp::run_detached(nullptr, "Filters.compile_shaders_detached", [=] { gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders); });
+}
+
+void Filters::compile_shader_detached(const StringName &p_shader) {
+	gdpp::run_detached(nullptr, "Filters.compile_shader_detached", [=] { gdpp::gpu::compile(::_gdpp_gpu_Filters::_gdpp_shaders, "Filters", p_shader); });
 }
 
 gdpp::Gd<Image> Filters::brighten(const Vector2i &size, const gdpp::Gd<Image> &src, double gain) {

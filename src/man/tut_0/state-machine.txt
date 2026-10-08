@@ -643,4 +643,4 @@ Macros make code shorter, but harder to follow. Some habits help:
 
 # See also
 
-`gd++ man templates`, `gd++ man macros`, `gd++ man enums`, `gd++ man notifications`, `gd++ man rewrites`, `gd++ man trans`.
+`gd++ man templates`, `gd++ man macros`, `gd++ man enums`, `gd++ man callbacks`, `gd++ man rewrites`, `gd++ man trans`.

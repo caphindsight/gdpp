@@ -304,7 +304,13 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		w.ln("")
 		w.ln("public:")
 		for _, v := range fields {
-			w.ln("\t%s%s{};", withSpace(v.t.cpp), v.v.Name)
+			if len(follows(c, v.v.Name, v.v.Name)) == 0 {
+				w.ln("\t%s%s{};", withSpace(v.t.cpp), v.v.Name)
+				continue
+			}
+			// Every assignment connects the on blocks of its signals to the new object, through its follow method.
+			w.ln("\tvoid %s();", followMethod(v))
+			w.ln("\tgdpp::Followed<%s, &%s::%s> %s{ this };", v.t.cpp, c.name, followMethod(v), v.v.Name)
 		}
 	}
 	// The editor only loads debug builds, so only those need the stand-ins of @game_only properties.

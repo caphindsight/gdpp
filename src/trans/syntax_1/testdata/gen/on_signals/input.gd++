@@ -7,21 +7,6 @@ signal collected(by: Node2D, points: int)
 
 @onready var panel: Control = $Panel
 
-var target: Control {
-  decl {
-    Gd<Control> target_;
-  }
-  get {
-    return target_;
-  }
-  set(value) {
-    if (value == target_) {
-      return;
-    }
-    target_ = value;
-  }
-}
-
 on this.body_entered(body) {
   emit collected(body, 1);
 }
@@ -42,4 +27,17 @@ on panel.gui_input(event: InputEvent) {
   gd::print(event);
 }
 
-on target.resized {}
+
+func swap(other: Control) -> void {
+  hud = other;                      // reconnects on hud.resized
+  panel = nullptr;
+  hud->set_visible(true);
+  if (hud && hud != panel) {
+    Gd<Control> copy = hud;
+    Control *raw = hud.ptr();
+    Gd<Node> node = hud as Gd<Node>;
+    gd::print(copy, raw, node);
+  }
+  panel.create();
+  panel.queue_destroy();
+}

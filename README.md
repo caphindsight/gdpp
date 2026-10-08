@@ -126,11 +126,11 @@ See `gd++ man variables`.
 
 See `gd++ man variables`.
 
-### Notifications
+### Callbacks
 
 <a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
 
-See `gd++ man notifications`.
+See `gd++ man callbacks`.
 
 ### Overrides
 
@@ -236,7 +236,7 @@ See `gd++ man rewrites`.
 
 <a href="readme/svg/property_callbacks.gd++"><img src="readme/svg/property_callbacks.svg" alt="GD++ code: property_callbacks"></a>
 
-See `gd++ man notifications`.
+See `gd++ man callbacks`.
 
 ### Singletons
 

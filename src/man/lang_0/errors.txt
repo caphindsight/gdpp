@@ -38,7 +38,7 @@ GDScript habits are the most common mistakes. GD++ recognizes them, and says wha
 
 ```
 func greet() -> void:          Bodies use braces: func greet() -> void { ... }
-func _process(delta):          on blocks: on process(delta: float) { ... }, see gd++ man notifications
+func _process(delta):          on blocks: on process(delta: float) { ... }, see gd++ man callbacks
 var x := 5                     No type inference: var x: int = 5
 const X = 5                    No const: enum X = 5
 static func f()                Attributes are annotations: @static func f()

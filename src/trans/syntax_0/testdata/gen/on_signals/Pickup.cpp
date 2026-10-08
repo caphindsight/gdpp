@@ -2,20 +2,20 @@
 
 #include "Pickup.h"
 
+#include <godot_cpp/classes/node.hpp>
+
 namespace godot {
 
 #define This Pickup
 
 void Pickup::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("swap", "other"), &Pickup::swap);
 	ClassDB::bind_method(D_METHOD("get_hud"), &Pickup::get_hud);
 	ClassDB::bind_method(D_METHOD("set_hud", "value"), &Pickup::set_hud);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Control>>("hud", PROPERTY_USAGE_DEFAULT), "set_hud", "get_hud");
 	ClassDB::bind_method(D_METHOD("get_panel"), &Pickup::get_panel);
 	ClassDB::bind_method(D_METHOD("set_panel", "value"), &Pickup::set_panel);
 	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Control>>("panel", PROPERTY_USAGE_NONE), "set_panel", "get_panel");
-	ClassDB::bind_method(D_METHOD("get_target"), &Pickup::get_target);
-	ClassDB::bind_method(D_METHOD("set_target", "value"), &Pickup::set_target);
-	ClassDB::add_property(get_class_static(), gdpp::info<gdpp::Gd<Control>>("target", PROPERTY_USAGE_NONE), "set_target", "get_target");
 	ClassDB::add_signal(get_class_static(), MethodInfo("collected", gdpp::info<gdpp::Gd<Node2D>>("by"), gdpp::info<int64_t>("points")));
 }
 
@@ -30,54 +30,65 @@ void Pickup::_notification(int WHAT) {
 #line 8 "input.gd++"
 		panel = get_node<Control>("Panel");
 #line 33 "Pickup.cpp"
-		gdpp::follow(_gdpp_follow_panel_gui_input, panel, GDPP_STRING_NAME("gui_input"), callable_mp(this, &Pickup::_gdpp_body__on_panel_gui_input));
 	}
 }
 
 void Pickup::_gdpp_body__on_this_body_entered(gdpp::Gd<Node2D> body) {
-#line 25 "input.gd++"
+#line 10 "input.gd++"
 
   (void) collected(body, 1);
 
-#line 43 "Pickup.cpp"
+#line 42 "Pickup.cpp"
 }
 
 void Pickup::_gdpp_body__on_this_body_shape_entered(const RID &rid, gdpp::Gd<Node2D> body, int64_t _gdpp_param2, int64_t _gdpp_param3) {
-#line 29 "input.gd++"
+#line 14 "input.gd++"
 
   gd::print(rid, body);
 
-#line 51 "Pickup.cpp"
+#line 50 "Pickup.cpp"
 }
 
 void Pickup::_gdpp_body__on_this_collected(gdpp::Gd<Node2D> _gdpp_param0, int64_t _gdpp_param1) {
-#line 33 "input.gd++"
+#line 18 "input.gd++"
 
   gdpp::queue_destroy(this);
 
-#line 59 "Pickup.cpp"
+#line 58 "Pickup.cpp"
 }
 
 void Pickup::_gdpp_body__on_hud_resized() {
-#line 37 "input.gd++"
+#line 22 "input.gd++"
 
   gd::print("Resized.");
 
-#line 67 "Pickup.cpp"
+#line 66 "Pickup.cpp"
 }
 
 void Pickup::_gdpp_body__on_panel_gui_input(gdpp::Gd<InputEvent> event) {
-#line 41 "input.gd++"
+#line 26 "input.gd++"
 
   gd::print(event);
 
-#line 75 "Pickup.cpp"
+#line 74 "Pickup.cpp"
 }
 
-void Pickup::_gdpp_body__on_target_resized() {
-#line 45 "input.gd++"
+void Pickup::swap(gdpp::Gd<Control> other) {
+#line 31 "input.gd++"
 
-#line 81 "Pickup.cpp"
+  hud = other;
+  panel = nullptr;
+  hud->set_visible(true);
+  if (hud && hud != panel) {
+    Gd<Control> copy = hud;
+    Control *raw = hud.ptr();
+    Gd<Node> node = gdpp::cast<Gd<Node>>(hud);
+    gd::print(copy, raw, node);
+  }
+  panel.create();
+  panel.queue_destroy();
+
+#line 92 "Pickup.cpp"
 }
 
 gdpp::Gd<Control> Pickup::get_hud() const {
@@ -86,7 +97,6 @@ gdpp::Gd<Control> Pickup::get_hud() const {
 
 void Pickup::set_hud(gdpp::Gd<Control> p_value) {
 	hud = p_value;
-	gdpp::follow(_gdpp_follow_hud_resized, hud, GDPP_STRING_NAME("resized"), callable_mp(this, &Pickup::_gdpp_body__on_hud_resized));
 }
 
 gdpp::Gd<Control> Pickup::get_panel() const {
@@ -95,27 +105,14 @@ gdpp::Gd<Control> Pickup::get_panel() const {
 
 void Pickup::set_panel(gdpp::Gd<Control> p_value) {
 	panel = p_value;
-	gdpp::follow(_gdpp_follow_panel_gui_input, panel, GDPP_STRING_NAME("gui_input"), callable_mp(this, &Pickup::_gdpp_body__on_panel_gui_input));
 }
 
-gdpp::Gd<Control> Pickup::get_target() const {
-#line 14 "input.gd++"
-
-    return target_;
-
-#line 107 "Pickup.cpp"
+void Pickup::_gdpp_follow_hud() {
+	gdpp::follow(_gdpp_connected_hud_resized, hud, GDPP_STRING_NAME("resized"), callable_mp(this, &Pickup::_gdpp_body__on_hud_resized));
 }
 
-void Pickup::set_target(gdpp::Gd<Control> value) {
-	gdpp::Defer _gdpp_follow([this] { gdpp::follow(_gdpp_follow_target_resized, get_target(), GDPP_STRING_NAME("resized"), callable_mp(this, &Pickup::_gdpp_body__on_target_resized)); });
-#line 17 "input.gd++"
-
-    if (value == target_) {
-      return;
-    }
-    target_ = value;
-
-#line 119 "Pickup.cpp"
+void Pickup::_gdpp_follow_panel() {
+	gdpp::follow(_gdpp_connected_panel_gui_input, panel, GDPP_STRING_NAME("gui_input"), callable_mp(this, &Pickup::_gdpp_body__on_panel_gui_input));
 }
 
 gdpp::Emitted Pickup::collected(gdpp::Gd<Node2D> by, int64_t points) {

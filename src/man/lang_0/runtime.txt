@@ -174,6 +174,8 @@ The code that GD++ generates uses these. Your code rarely needs them:
   - `gdpp::uninitialize()` prepares the package's library to be unloaded. It calls `gdpp::finish_tasks()`, and removes the hooks that `gdpp::on_unload(unhook)` added.
   - `gdpp::connect_until_unload(object, signal, callable)` connects a signal until then.
   - The package's generated registration code calls `gdpp::uninitialize()`.
+- Signals' on blocks. See "Connecting to signals" in `gd++ man signals`.
+  - `gdpp::Followed<G, F>` is the field of a variable whose signals `on` blocks handle: a `Gd` whose every assignment runs F, which connects the blocks to the new object with `gdpp::follow`.
 - Objects. See `gd++ man gd`.
   - `gdpp::kind::Object`, `RefCounted`, `Extern`, `RefCountedExtern`, `Trait` and `RefCountedTrait` are the kinds of `T` that pick how a `Gd<T>` holds its object.
   - Generated headers declare the kind of each class, extern and trait next to its forward declaration, e.g. `gdpp::kind::Object gdpp_kind(Player *);`, so a `Gd<Player>` works while `Player` is incomplete. Other types get their kind from their definition.

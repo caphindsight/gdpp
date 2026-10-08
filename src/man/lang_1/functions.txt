@@ -146,7 +146,7 @@ Scripts:
 
 - A script that extends the class and defines a function of the same name replaces the override. The engine calls the script's version, never the GD++ one.
 - A script can't call the GD++ version with `super`, e.g. `super._unhandled_input(event)`: Godot doesn't allow `super` calls of the engine's virtual functions.
-- For `_ready`, `_process` and the like, use `on` blocks instead, which scripts can't replace. See `gd++ man notifications`.
+- For `_ready`, `_process` and the like, use `on` blocks instead, which scripts can't replace. See `gd++ man callbacks`.
 - For the others, use `@override("super")`.
 
 # @override("super")
@@ -177,7 +177,7 @@ func _unhandled_input(event):
 - An `on` block adds to the base's. The base's and the subclass's both run, and scripts can't replace them.
 - So to run code at `_ready`, `_process` and the like, write `on` blocks, e.g. `on ready { ... }` and `on process(delta: float) { ... }`, not overrides.
 
-See `gd++ man notifications`.
+See `gd++ man callbacks`.
 
 # @virtual
 

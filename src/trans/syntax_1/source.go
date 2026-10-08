@@ -279,6 +279,7 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 	for _, v := range c.vars {
 		u.accessorDefs(w, c, v)
 	}
+	followDefs(w, c)
 	for _, s := range c.signals {
 		w.ln("")
 		w.ln("gdpp::Emitted %s::%s(%s) {", c.name, s.s.Name, params(nil, s.params, s.s.Params))
@@ -394,8 +395,8 @@ func (u *unit) signalArgDecls() (decls, names []string) {
 	return decls, names
 }
 
-// initializer writes the assignment of var v's initial value, or of its type's default if it has none, and connects
-// the on blocks of its signals to it.
+// initializer writes the assignment of var v's initial value, or of its type's default if it has none. A variable
+// whose signals on blocks handle connects them to it then, see followMethod.
 func initializer(w *writer, c *classModel, v *varModel, indent string) {
 	switch init := v.v.Init; {
 	case init == nil:
@@ -405,8 +406,25 @@ func initializer(w *writer, c *classModel, v *varModel, indent string) {
 	default:
 		w.user(init.Pos, init.Origin, indent+v.v.Name+" = ", init.Expr, ";", assertValue)
 	}
-	for _, line := range follows(c, v.v.Name, v.v.Name) {
-		w.ln("%s%s", indent, line)
+}
+
+// followMethod returns the name of the method that connects the on blocks of v's signals, e.g. on button.pressed, to
+// its object, which its field, a gdpp::Followed, runs on every assignment.
+func followMethod(v *varModel) string {
+	return "_gdpp_follow_" + v.v.Name
+}
+
+// followDefs defines the follow methods of c's simple variables whose signals on blocks handle. See followMethod.
+func followDefs(w *writer, c *classModel) {
+	for _, v := range c.vars {
+		if lines := follows(c, v.v.Name, v.v.Name); v.v.Property == nil && len(lines) > 0 {
+			w.ln("")
+			w.ln("void %s::%s() {", c.name, followMethod(v))
+			for _, line := range lines {
+				w.ln("\t%s", line)
+			}
+			w.ln("}")
+		}
 	}
 }
 
@@ -425,7 +443,7 @@ func follows(c *classModel, name, value string) []string {
 // followField returns the name of the field that holds the ID of the object that f, an on block of a variable's
 // signal, is connected to.
 func followField(f *funcModel) string {
-	return "_gdpp_follow_" + f.on.Source + "_" + f.on.Name
+	return "_gdpp_connected_" + f.on.Source + "_" + f.on.Name
 }
 
 // recycler writes the method of @pool class c that its pool calls when it reuses an object, for the keyword ctor, or
@@ -754,12 +772,6 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 			}
 			watch(w, c, v.setter)
 		}
-		lines := follows(c, v.v.Name, v.v.Name)
-		if v.set != nil && len(lines) > 0 { // Runs on every return of the set block.
-			lines = follows(c, v.v.Name, v.getter+"()")
-			w.ln("\tgdpp::Defer _gdpp_follow([this] { %s });", strings.Join(lines, " "))
-			lines = nil
-		}
 		switch {
 		case v.deferral != "":
 			w.ln("\t%s;", deferredCall(v.deferral, "this", "_gdpp_body_"+v.setter, []*gtype{v.t}, []*Param{v.set.Param}))
@@ -767,9 +779,6 @@ func (u *unit) accessorDefs(w *writer, c *classModel, v *varModel) {
 			w.block(v.set.Body, "", "", assertVoid)
 		default:
 			w.ln("\t%s = p_value;", v.v.Name)
-		}
-		for _, line := range lines {
-			w.ln("\t%s", line)
 		}
 		w.ln("}")
 	}

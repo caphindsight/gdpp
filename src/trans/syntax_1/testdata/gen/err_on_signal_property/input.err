@@ -1,0 +1,4 @@
+input.gd++:10:1: Variable box is a property, so the on block can't follow its value.
+ 10 | on box.resized {}
+    | ^^^^^^
+Hint: Its get and set blocks may keep the object anywhere. Make it a simple variable, e.g. "var box: Control", whose every assignment connects the block.

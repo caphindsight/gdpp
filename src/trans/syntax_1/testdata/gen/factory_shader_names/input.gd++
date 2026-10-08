@@ -1,4 +1,4 @@
-@factory_shader("warm_up", "", "", "warm_up_all")
+@factory_shader("warm_up_all", "warm_up")
 @game_only
 class_name Noise
 extends Node

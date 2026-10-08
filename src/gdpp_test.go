@@ -235,7 +235,7 @@ func TestTranspilePackageRegistration(t *testing.T) {
 	if strings.Contains(register, "\tgdpp_register_class<Dock>();\n\tgdpp_register_class<Game>();") {
 		t.Errorf("__register_types__.cpp = %s\nwant Dock registered only at the editor's level", register)
 	}
-	if gen := m.tree()[pkgDir+".gd++build/gdpp/Dock.cpp"]; !strings.Contains(gen, `gdpp::follow(_gdpp_follow_button_pressed, button, GDPP_STRING_NAME("pressed")`) {
+	if gen := m.tree()[pkgDir+".gd++build/gdpp/Dock.cpp"]; !strings.Contains(gen, `gdpp::follow(_gdpp_connected_button_pressed, button, GDPP_STRING_NAME("pressed")`) {
 		t.Errorf("Dock.cpp = %s\nwant the on block to follow button, with the spec's signal", gen)
 	}
 }

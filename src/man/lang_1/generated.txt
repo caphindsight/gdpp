@@ -190,7 +190,7 @@ The destructor, if the class has a `dtor` block, a `@trace` that's on, or `@pool
 - the `@recycle dtor` block without `"only"`, as `if (!_gdpp_pool_slot.given) { ... }`, so that an object resting in its pool skips it,
 - the `dtor` block.
 
-`_notification`, if the class has `on` blocks or `@onready` variables, in order (see `gd++ man notifications`):
+`_notification`, if the class has `on` blocks or `@onready` variables, in order (see `gd++ man callbacks`):
 
 - the `@onready` initial values, as `if (WHAT == NOTIFICATION_POST_ENTER_TREE && !is_node_ready()) { ... }`,
 - the call of the `on ready` block,
