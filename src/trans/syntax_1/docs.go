@@ -526,11 +526,17 @@ func documentAsyncClass(name string) string {
 	x.ln(0, fmt.Sprintf(`<class name="%s" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">`,
 		xmlEscape(name, true)))
 	x.ln(1, "<brief_description>")
-	x.ln(2, "A task: a job that runs on the [WorkerThreadPool], e.g. a call of an [code]@onthread[/code] function, and its result.")
+	x.ln(2, "A task: a job that runs on the [WorkerThreadPool], e.g. a call of an [code]@onthread[/code] function, or a coroutine, a call of an [code]@async[/code] function, and its result.")
 	x.ln(1, "</brief_description>")
 	x.ln(1, "<description>")
 	text(2, `GD++ provides this class: its runtime defines it, and the package registers it. Run [code]gd++ man async[/code] to read how to use it, and [code]gd++ trans --runtime[/code] to see how it's implemented.
 A call of an [code]@onthread[/code] function of a GD++ class returns an object of this class: a task. Its job, the function's body, runs on the [WorkerThreadPool], while the caller goes on. Once the job is done, the caller takes its result.
+A call of an [code]@async[/code] function returns a task too. Its job is a coroutine: the function's body, which runs on the caller's thread until it awaits a signal or another task, and goes on once that's done.
+To wait for a task in a script, await [method until_done], which gives the result:
+[codeblock]
+var path = await $Pathfinder.find_path(position, target).until_done()
+[/codeblock]
+[code]await[/code] on the task itself doesn't wait: a task is no signal, so it returns the task right away.
 A task is in one of three states. It goes through them in this order, and never goes back:
 [b]1. Running:[/b] the job runs.
 - [member valid] is [code]true[/code], and [member done] is [code]false[/code].
@@ -572,7 +578,7 @@ func _process(_delta):
 func _on_cancel_pressed():
 	loading.cancel()
 [/codeblock]
-When the last reference to a task is gone, it waits for its job to finish, if it still runs: so keep the task until [member done] is [code]true[/code]. All its members are thread-safe. Each package whose GD++ classes use Async has its own class of tasks, named after its prefix, e.g. [code]FooAsync[/code]. In GD++ code, the type [code]Async[T][/code] names it.`)
+When the last reference to an [code]@onthread[/code] function's task is gone, it waits for its job to finish, if it still runs: so keep the task until [member done] is [code]true[/code]. A coroutine goes on without its task. All its members are thread-safe. Each package whose GD++ classes use Async has its own class of tasks, named after its prefix, e.g. [code]FooAsync[/code]. In GD++ code, the type [code]Async[T][/code] names it.`)
 	x.ln(1, "</description>")
 	x.ln(1, "<tutorials>")
 	x.ln(1, "</tutorials>")
@@ -580,7 +586,8 @@ When the last reference to a task is gone, it waits for its job to finish, if it
 	for _, m := range []struct{ name, ret, doc string }{
 		{"cancel", "void", "Asks the job to stop, while the task is Running: in the job, [code]is_cancelled[/code] is [code]true[/code] from now on, so it can return early. What it returns then is its result, as usual, and the task gets Done. Does nothing when the task is Done or Claimed."},
 		{"claim", "Variant", "Returns the result, and lets go of it: the task moves from Done to Claimed, so each result is claimed once. Call it when [member done] is [code]true[/code]. While the task is Running, or once it's Claimed, it's an error: in debug builds, it prints a message and returns [code]null[/code]; in release builds, it's undefined behavior."},
-		{"wait", "Variant", "Returns the result, and keeps it, like [member result], but while the task is Running, it first blocks until the job is done. On the main thread, the game freezes while it waits, so prefer checking [member done] once a frame. Once the task is Claimed, it's an error: in debug builds, it prints a message and returns [code]null[/code]; in release builds, it's undefined behavior."},
+		{"until_done", "Signal", "Returns a signal that's emitted once the task is Done, with its result: [signal finished], or, if that was emitted already, a signal that's emitted at the end of the frame. So [code]await task.until_done()[/code] gives the result, whenever it's called on the main thread. A task made with [code]new()[/code] is never Done: it's an error."},
+		{"wait", "Variant", "Returns the result, and keeps it, like [member result], but while the task is Running, it first blocks until the job is done. On the main thread, the game freezes while it waits, so prefer checking [member done] once a frame, or awaiting [method until_done]. A coroutine's task can't be waited for, since the coroutine may need the waiting thread: while it's Running, it's an error. Once the task is Claimed, it's an error: in debug builds, it prints a message and returns [code]null[/code]; in release builds, it's undefined behavior."},
 	} {
 		x.ln(2, fmt.Sprintf("<method name=\"%s\">", m.name))
 		x.ln(3, fmt.Sprintf("<return type=\"%s\" />", m.ret))
@@ -601,6 +608,14 @@ When the last reference to a task is gone, it waits for its job to finish, if it
 		x.ln(2, "</member>")
 	}
 	x.ln(1, "</members>")
+	x.ln(1, "<signals>")
+	x.ln(2, `<signal name="finished">`)
+	x.ln(3, `<param index="0" name="result" type="Variant" />`)
+	x.ln(3, "<description>")
+	x.ln(4, "Emitted once, when the task gets Done, with its result, on the main thread, at the end of the frame: never during the call that started the task, so its caller can always connect first. To await a task that may be Done already, await [method until_done] instead. If the coroutine of an [code]@async[/code] function is destroyed before it returns, e.g. since the object it awaited a signal of was freed, its task gets Claimed, and is never emitted.")
+	x.ln(3, "</description>")
+	x.ln(2, "</signal>")
+	x.ln(1, "</signals>")
 	x.ln(0, "</class>")
 	return x.sb.String()
 }

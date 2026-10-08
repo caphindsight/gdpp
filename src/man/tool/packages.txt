@@ -60,6 +60,7 @@ syntax (optional, default 0)
 std (optional, default `"c++20"`)
   The C++ standard, e.g. `"c++17"`, `"c++20"` or `"c++23"`.
   - It becomes `-std=...` for GCC and Clang, and `/std:...` for MSVC.
+  - `@async` functions need C++20 or later, for coroutines. With an older one, they're errors. See `gd++ man async`.
   - It must be at least C++17, which godot-cpp needs.
 
 prefix (optional, default: the package's id in PascalCase)

@@ -1,0 +1,19 @@
+var anim: AnimationPlayer
+
+// A coroutine: await waits for a signal or a
+// task, without blocking. A call returns right
+// away, with an Async task.
+@async
+func open() -> int {
+  anim->play("open");
+  await anim->animation_finished;
+  await get_tree()->create_timer(1.0)->timeout;
+  return gd::randi_range(10, 50);
+}
+
+// Detached: returns nothing, nobody waits.
+@async("detached")
+func loot(chest: Chest) -> void {
+  int64_t gold = await chest->open();
+  add_gold(gold);
+}

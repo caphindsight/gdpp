@@ -1,0 +1,4 @@
+input.gd++:5:1: The @async("detached") function f must return void.
+ 5 | func f() -> int {
+   | ^^^^
+Hint: Nothing waits for its task, so its calls can't return a value.

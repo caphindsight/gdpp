@@ -20,13 +20,12 @@ A shader looks like a function, with `shader` instead of `func`:
 class_name Effects
 extends RefCounted
 
-@sync
 shader scale(n: int, values: PackedFloat32Array, k: float) -> PackedFloat32Array {
   return values[id] * k;
 }
 ```
 
-- `@sync` says that a call waits for the GPU. Here it must: the result comes back to the CPU. Step 3 shows calls that don't wait.
+- A call waits for the GPU. Here it must: the result comes back to the CPU. Step 2 shows calls that don't wait.
 - The first parameter is the grid: the shader runs once for each of its `n` cells. `@grid(name)` makes another parameter the grid.
 - `id` is the cell that the body runs for: here, an `int` from 0 to `n - 1`.
 - The body returns the cell's result. Together, the results make the `PackedFloat32Array` that the call returns.
@@ -56,7 +55,6 @@ Over a 2D grid, a shader makes images. Here, a heightmap of value noise:
 class_name Heightmap
 extends Sprite2D
 
-@sync
 shader noise(size: Vector2i, scale: float) -> Image[rf] {
   vec2 p = vec2(id) / scale;
   vec2 c = floor(p), f = fract(p);
@@ -80,6 +78,7 @@ float h = heights->get_pixel(10, 20).r;
 To show it, return a texture instead: it stays on the GPU, and a sprite draws it with no copy:
 
 ```gd++
+@async
 shader noise_texture(size: Vector2i, scale: float) -> Texture2D[r8] {
   // the same body
 }
@@ -90,7 +89,7 @@ on ready {
 ```
 
 - `r8` is one 8-bit channel per pixel, from 0 to 1, like a grayscale image.
-- No `@sync`: the texture stays on the GPU, so the call returns it right away, while the GPU fills it. The sprite draws it after that.
+- `@async`: the texture stays on the GPU, so the call can return it right away, while the GPU fills it. The sprite draws it after that. Without `@async`, the call would wait for the GPU.
 - The texture is a `Texture2DRD`. Materials and shader parameters use it like any texture.
 
 # 3. Keep a simulation on the GPU
@@ -106,10 +105,12 @@ enum SIZE = 256
 var cells: GpuArray[int]
 var next: GpuArray[int]
 
+@async
 shader seed(size: Vector2i) -> GpuArray[int] {
   return fract(sin(dot(vec2(id), vec2(12.9898, 78.233))) * 43758.5453) < 0.3 ? 1 : 0;
 }
 
+@async
 shader advance(size: Vector2i, from: GpuArray[int], to: GpuArray[int], target: Texture2D[rgba8]) -> void {
   int alive = 0;
   for (int y = -1; y <= 1; y++) {
@@ -124,6 +125,7 @@ shader advance(size: Vector2i, from: GpuArray[int], to: GpuArray[int], target: T
   imageStore(target, id, vec4(vec3(float(now)), 1.0));
 }
 
+@async
 shader blank(size: Vector2i) -> Texture2D[rgba8] {
   return vec4(0.0, 0.0, 0.0, 1.0);
 }
@@ -144,7 +146,7 @@ on process(delta: float) {
 - `advance` reads one array, and writes the other and the texture. It returns `void`: it only writes its GPU arrays and its texture.
 - `index(p)` is the element of the cell `p`, row by row.
 - `on process` swaps the two arrays, so each step reads what the last one wrote.
-- `advance` has no `@sync`, so it returns right away, while the GPU works. Nothing in the frame waits for it.
+- The three shaders are `@async`, so they return right away, while the GPU works. Nothing in the frame waits for them.
 - In C++, a `GpuArray[int]` is a `GpuArray<int32_t>`: GPUs compute with 32 bits.
 
 To look at the cells on the CPU, e.g. to count them, `read()` copies them back, once:
@@ -168,6 +170,7 @@ A shader samples images and textures with GLSL's `texture` and `texelFetch`. A `
 ```gd++
 @export var source: Texture2D
 
+@async
 shader blur(size: Vector2i, src: Texture2D, radius: int) -> Texture2D[rgba8] {
   vec4 sum = vec4(0.0);
   for (int y = -radius; y <= radius; y++) {
@@ -216,12 +219,12 @@ A block's functions can't use a shader's parameters: pass what they need as argu
 
 # 6. Don't hold up the game
 
-A `@sync` shader waits for the GPU. For a big one, e.g. a 4096x4096 heightmap, that's a hitch. Add `@onthread`, and the call runs on a worker thread instead, and returns an `Async`:
+A shader without `@async` waits for the GPU. For a big one, e.g. a 4096x4096 heightmap, that's a hitch. Add `@onthread`, and the call runs on a worker thread instead, and returns an `Async`:
 
 ```gd++
 var pending: Async[Image]
 
-@sync @onthread
+@onthread
 shader big_noise(size: Vector2i, scale: float) -> Image[rf] {
   // the body of noise
 }
@@ -238,8 +241,8 @@ on process(delta: float) {
 ```
 
 - Each frame checks whether the image is ready, as with any `@onthread` function. See `gd++ man threads`.
-- `@sync` stays: it's the task that waits for the GPU now, not the caller. So the `Async` is done once the image is ready.
-- Shaders without `@sync` don't need `@onthread`: they return right away anyway.
+- The task waits for the GPU now, not the caller. So the `Async` is done once the image is ready.
+- `@async` shaders don't need `@onthread`: they return right away anyway.
 
 # 7. Debug a shader, and run without a GPU
 

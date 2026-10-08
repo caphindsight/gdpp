@@ -1,4 +1,4 @@
-input.gd++:11:3: Shader apply can't implement func apply of trait Filter, since shaders are static.
- 11 |   shader apply(n: int, values: PackedFloat32Array) -> PackedFloat32Array {
+input.gd++:10:3: Shader apply can't implement func apply of trait Filter, since shaders are static.
+ 10 |   shader apply(n: int, values: PackedFloat32Array) -> PackedFloat32Array {
     |   ^^^^^^
 Hint: Rename the shader, and implement the trait's func with a func that calls it: "func apply(n: int, values: PackedFloat32Array) -> PackedFloat32Array { return my_apply(...); }".

@@ -11,11 +11,11 @@ class Spin {
     shared float tile[64];
   }
 
-  @sync
   shader spin(n: int, points: PackedVector2Array, angle: float) -> PackedVector2Array {
     return rotate(points[id], wrap_angle(angle));
   }
 
+  @async
   shader reduce(n: int, values: GpuArray[float]) -> void {
     tile[gl_LocalInvocationID.x] = values[id];
     barrier();

@@ -1,0 +1,213 @@
+Tutorial: script sequences with @async and await
+
+Gameplay is full of sequences: a door opens, waits, and closes; a trap waits for the player, then springs; a chest plays its animation, then gives its loot. Callbacks and timers split such code into pieces. This tutorial writes each sequence as one function instead, like GDScript's `await`:
+
+- waits for signals with `@async` and `await`,
+- returns results, and awaits other functions,
+- awaits work on a worker thread,
+- awaits GD++ functions from GDScript, and the other way around,
+- shows what happens when the nodes go away.
+
+It assumes a project that builds, as in `gd++ man tour`. `@async` needs C++20, the default. See `gd++ man packages`.
+
+# 1. A door that opens, waits, and closes
+
+```gd++
+class_name Door
+extends Node3D
+
+var anim: AnimationPlayer
+
+on ready {
+  anim = get_node<AnimationPlayer>("AnimationPlayer");
+}
+
+@async
+func cycle() -> void {
+  anim->play("open");
+  await anim->animation_finished;
+  await get_tree()->create_timer(2.0)->timeout;
+  anim->play("close");
+}
+```
+
+- `@async` makes `cycle` a coroutine: its body can `await`.
+- `await anim->animation_finished` waits for the signal `animation_finished` of `anim`. The game goes on meanwhile.
+- When the signal comes, the body goes on where it stopped.
+- `get_tree()->create_timer(2.0)` returns a `SceneTreeTimer`, whose `timeout` comes 2 seconds later.
+
+A call runs the body until the first `await`, then returns an `Async`: a task, done once the body returns. See `gd++ man async`.
+
+# 2. Start it, and forget it
+
+Nothing needs `cycle`'s task. `Async` is `[[nodiscard]]`, so a plain `cycle();` makes the compiler warn. Make the function detached instead:
+
+```gd++
+@async("detached")
+func cycle() -> void { ... }
+
+func _on_switch_pressed() -> void {
+  cycle();
+}
+```
+
+- `@async("detached")` calls return nothing, for a function that returns `void`.
+- The coroutine runs on without its task.
+
+# 3. Wait for the player
+
+A signal's arguments are what `await` gives, like in GDScript:
+
+```gd++
+class_name Trap
+extends Node3D
+
+signal sprung(victim: Node3D)
+
+var area: Area3D
+
+on ready {
+  area = get_node<Area3D>("Area3D");
+  arm();
+}
+
+@async("detached")
+func arm() -> void {
+  Variant body = await area->body_entered;
+  Gd<Node3D> victim = body as Gd<Node3D>;
+  emit sprung(victim);
+}
+```
+
+- `body_entered` has one argument, so `await` gives it, as a `Variant`. `as` converts it. See `gd++ man cast`.
+- A signal without arguments gives nothing, and one with more an `Array` of them.
+- A signal of the class itself takes no object: `await sprung;` waits for the trap's own `sprung`.
+
+# 4. Return a result, and await it
+
+An `@async` function returns its result through its task. Another `@async` function awaits the task, and gets the result:
+
+```gd++
+class_name Chest
+extends Node3D
+
+var anim: AnimationPlayer
+
+@async
+func open() -> int {
+  anim->play("open");
+  await anim->animation_finished;
+  return gd::randi_range(10, 50);
+}
+```
+
+```gd++
+@async("detached")
+func loot(chest: Chest) -> void {
+  int64_t gold = await chest->open();
+  add_gold(gold);
+}
+```
+
+- `open` returns an `Async[int]` to its callers. Its body returns a plain `int`.
+- `await chest->open()` waits until the task is done, and gives its result.
+- To await a task that a field holds through `->`, write `await (this->task)`: `await X->NAME` alone awaits a signal NAME.
+
+# 5. Await work on a thread
+
+`await` takes the tasks of `@onthread` functions too. So a sequence can wait for heavy work without blocking the game, and without checking `is_done` each frame:
+
+```gd++
+@onthread @static
+func compute_heights(coords: Vector2i, size: int) -> PackedFloat32Array { ... }
+
+@async("detached")
+func build() -> void {
+  PackedFloat32Array heights = await compute_heights(coords, 64);
+  set_mesh(build_mesh(heights));
+}
+```
+
+- The body of `compute_heights` runs on a worker thread. See `gd++ man threads`.
+- `build` goes on at the end of the frame in which the heights are ready, on the main thread, where it can change the scene.
+
+# 6. From GDScript
+
+Scripts get a task object from `@async` functions. Await its `until_done()`, which gives the result:
+
+```gdscript
+func _on_chest_clicked():
+    var gold = await $Chest.open().until_done()
+    $Hud.show_gold(gold)
+```
+
+- `until_done()` works whenever the script calls it, even after the task is done.
+- `await $Chest.open()` alone doesn't wait: GDScript only waits for signals and its own functions, so it gives the task right away.
+
+The other way around, GD++ awaits script functions, whether they await or not:
+
+```gd++
+Variant level = await loader->call("load_level", "forest");
+```
+
+# 7. Let scripts customize a sequence
+
+A `@virtual @async` function lets a script replace a step, with or without its own `await`:
+
+```gd++
+@virtual @async
+func _unlock() -> bool {
+  return true;
+}
+
+@async("detached")
+func cycle() -> void {
+  if (!(await _unlock())) {
+    return;
+  }
+  anim->play("open");
+  ...
+}
+```
+
+```gdscript
+extends Door
+
+func _unlock():
+    await $Keypad.code_entered
+    return $Keypad.code == "1234"
+```
+
+- In GD++, `_unlock()` returns an `Async[bool]`, whether the script's function awaits or not.
+- Scripts see its return type as `Variant`, since a script function that awaits returns its state.
+
+# 8. When nodes go away
+
+A waiting coroutine belongs to the signal it waits for. So:
+
+- If the door is freed while `cycle` waits, `cycle` stops: its locals are destroyed, and the rest of its body never runs.
+- The same happens if the object whose signal it waits for is freed, e.g. the `AnimationPlayer`.
+- Its task then never gets done, and what awaits it stops too.
+
+That's usually what a sequence should do. To stop one on purpose, keep its task, and cancel it. So `cycle` isn't detached now:
+
+```gd++
+var opening: Async[void]
+
+@async
+func cycle() -> void { ... }
+
+func _on_switch_pressed() -> void {
+  opening = cycle();
+}
+
+func _on_alarm() -> void {
+  cancel opening;
+}
+```
+
+- In `cycle`, `is_cancelled` is then `true`. Check it after an `await`, and return.
+
+# See also
+
+`gd++ man async`, `gd++ man signals`, `gd++ man threads`, `gd++ man state-machine`.

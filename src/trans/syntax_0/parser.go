@@ -629,8 +629,8 @@ func parseValue(lex *lexer.PeekingLexer, closer string) (*Value, error) {
 	v := &Value{Pos: t.Pos}
 	var err error
 	switch {
-	case t.Type == tokIdent && t.Value == "code" && isPunct(*lex.Peek(), "{"):
-		v.Kind, v.Code = "code", &Block{}
+	case t.Type == tokIdent && (t.Value == "code" || t.Value == "glsl") && isPunct(*lex.Peek(), "{"):
+		v.Kind, v.Code = t.Value, &Block{}
 		err = v.Code.Parse(lex)
 	case isPunct(t, "["):
 		v.Kind = "list"

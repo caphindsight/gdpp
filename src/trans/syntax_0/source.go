@@ -42,6 +42,11 @@ func (u *unit) source(name string) string {
 }
 
 func (u *unit) classDefs(w *writer, c *classModel) {
+	w.signals = nil // A bare `await NAME` awaits the class's signal NAME.
+	for _, s := range c.signals {
+		w.signals = append(w.signals, s.s.Name)
+	}
+	defer func() { w.signals = nil }()
 	w.ln("")
 	w.ln("#define This %s", c.name)
 	w.ln("")
@@ -436,7 +441,9 @@ func cast(c *classModel, t *gtype, expr string, toTag bool) string {
 func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
 	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
-	guard(w, f.only, f.ret.cpp)
+	if f.coro == nil { // The func that starts a coroutine guards it.
+		guard(w, f.only, f.ret.cpp)
+	}
 	if f.once && f.override {
 		w.ln("\tif (_gdpp_pool_slot.readied) {")
 		w.ln("\t\treturn;")
@@ -450,18 +457,24 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 			w.ln("\tconstexpr uint64_t GENERATION = 0;")
 		}
 	}
-	// A traced function that returns a value runs as a lambda, so the trace gets the value.
-	wrap := f.trace && !f.ret.void
+	// A traced function that returns a value runs as a lambda, so the trace gets the value. A coroutine can't.
+	wrap := f.trace && !f.ret.void && f.coro == nil
 	if wrap {
 		w.ln("\treturn _gdpp_trace.ret([&]() -> %s {", f.ret.cpp)
 	}
 	if f.virtualOf != "" {
 		owner := &classModel{name: f.virtualOf} // Its GDVIRTUAL uses its enum tags.
 		callArgs := castList(owner, f.params, f.f.Params, true)
-		if f.ret.void {
+		switch {
+		case f.ret.void:
 			w.ln("\tif (GDVIRTUAL_CALL(%s)) {", strings.Join(slices.DeleteFunc([]string{f.f.Name, callArgs}, func(s string) bool { return s == "" }), ", "))
 			w.ln("\t\treturn;")
-		} else {
+		case f.deferral == "async":
+			// A script's override returns its result, its task, or, if it awaits, its function's state.
+			w.ln("\tVariant _gdpp_ret;")
+			w.ln("\tif (GDVIRTUAL_CALL(%s)) {", strings.Join(slices.DeleteFunc([]string{f.f.Name, callArgs, "_gdpp_ret"}, func(s string) bool { return s == "" }), ", "))
+			w.ln("\t\treturn gdpp::async_of<%s>(_gdpp_ret);", f.ret.async.cpp)
+		default:
 			w.ln("\t%s _gdpp_ret;", tagged(owner, f.ret))
 			w.ln("\tif (GDVIRTUAL_CALL(%s)) {", strings.Join(slices.DeleteFunc([]string{f.f.Name, callArgs, "_gdpp_ret"}, func(s string) bool { return s == "" }), ", "))
 			w.ln("\t\treturn %s;", cast(owner, f.ret, "_gdpp_ret", false))
@@ -473,6 +486,16 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t%s(%s);", f.calls.f.Name, strings.Join(paramNames(f.f.Params), ", "))
 	case f.calls != nil:
 		w.ln("\treturn %s(%s);", f.calls.f.Name, strings.Join(paramNames(f.f.Params), ", "))
+	case f.deferral == "async":
+		self := "this"
+		if f.static {
+			self = "nullptr"
+		}
+		run := "return gdpp::run_coroutine"
+		if f.detached {
+			run = "gdpp::run_detached_coroutine"
+		}
+		w.ln("\t%s(%s, %s(%s));", run, self, bodyName(f), strings.Join(paramNames(f.f.Params), ", "))
 	case f.deferral == "onthread":
 		self, capture := "this", "=, this"
 		if f.static {
@@ -490,6 +513,8 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\t%s;", deferredCall(f.deferral, "this", bodyName(f), f.params, f.f.Params))
 	case f.gpu != nil:
 		u.shaderCall(w, c, f)
+	case f.f.Body != nil && f.coro != nil:
+		w.block(f.f.Body, "", "", assertCoFor(f.coro.void))
 	case f.f.Body != nil:
 		w.block(f.f.Body, "", "", assertFor(f.ret.void))
 	case !f.ret.void:
@@ -629,7 +654,7 @@ func info(c *classModel, t *gtype, name, usage, hint, hintString string) string 
 // bindings writes the body of _bind_methods.
 func (u *unit) bindings(w *writer, c *classModel) {
 	for _, f := range c.funcs {
-		if f.hidden == "onthread" || f.hidden == "notif" || f.isPrivate {
+		if f.hidden == "onthread" || f.hidden == "async" || f.hidden == "notif" || f.isPrivate {
 			continue // Its func, or _notification, calls it directly. Or it's @private.
 		}
 		// The method, followed by the default values of its parameters.

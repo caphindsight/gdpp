@@ -48,6 +48,9 @@ gd
 float64_t
   A name for `double`, the C++ type of Godot's `float`, to match `int64_t`.
 
+float32_t
+  A name for `float`, a 32-bit float, e.g. GLSL's `float`, which shaders compute with.
+
 gdpp::cast<T>(VALUE)
   Converts VALUE to T, whatever the two types are: numbers, enums, `Variant`s, and objects. Upcasts are static. Downcasts are checked, giving null if the class doesn't match. Your code writes it `VALUE as T`, which GD++ rewrites into this, so it keeps its prefix. See `gd++ man cast`.
 

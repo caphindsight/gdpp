@@ -82,6 +82,35 @@ func TestCpp(t *testing.T) {
 	if got, want := cpp("f([&]() -> int { assert x; return 1; });", assertVoid), `f([&]() -> int { GDPP_ASSERT_VALUE("x", x); return 1; });`; got != want {
 		t.Errorf("cpp with GDPP_ASSERT_VOID = %q, want %q", got, want)
 	}
+	// In a coroutine, whose class has the signal died.
+	for code, want := range map[string]string{
+		"await anim->animation_finished;":                                   `co_await gdpp::signal(anim, GDPP_STRING_NAME("animation_finished"));`,
+		"await get_tree()->create_timer(1.0)->timeout;":                     `co_await gdpp::signal(get_tree()->create_timer(1.0), GDPP_STRING_NAME("timeout"));`,
+		"await died; await this->died;":                                     `co_await gdpp::signal(this, GDPP_STRING_NAME("died")); co_await gdpp::signal(this, GDPP_STRING_NAME("died"));`,
+		"await pending; await (this->task); await s.task; await f(x);":      "co_await pending; co_await (this->task); co_await s.task; co_await f(x);",
+		`await a->string_name "x"; await string_name "y";`:                  `co_await gdpp::signal(a, GDPP_STRING_NAME("x")); co_await gdpp::signal(this, GDPP_STRING_NAME("y"));`,
+		`await a->string_name(p + "_f"); await string_name(n[i]);`:          `co_await gdpp::signal(a, StringName(p + "_f")); co_await gdpp::signal(this, StringName(n[i]));`,
+		`await string_name(string_name "a"); int n = await count(claim t);`: `co_await gdpp::signal(this, StringName(GDPP_STRING_NAME("a"))); int n = co_await count(t.claim());`,
+		"await\n  a->b;":                        "co_await gdpp::signal(\n  a, GDPP_STRING_NAME(\"b\"));",
+		"await = 1; x.await; await; await -1;":  "await = 1; x.await; await; await -1;",
+		"return 1; [] { return 2; }; assert x;": `co_return 1; [] { return 2; }; GDPP_ASSERT_CO_VALUE("x", x);`,
+	} {
+		if got := cpp(code, assertCoValue, "died"); got != want {
+			t.Errorf("cpp(%q) = %q, want %q", code, got, want)
+		}
+	}
+	if got, want := cpp("return; assert x;", assertCoVoid), `co_return; GDPP_ASSERT_CO_VOID("x", x);`; got != want {
+		t.Errorf("cpp with GDPP_ASSERT_CO_VOID = %q, want %q", got, want)
+	}
+}
+
+func TestHasCoroutines(t *testing.T) {
+	for std, want := range map[string]bool{"": true, "c++20": true, "gnu++2a": true, "c++23": true, "/std:c++latest": true, "C++26": true,
+		"c++17": false, "gnu++14": false, "c++11": false, "c++98": false, "c++03": false} {
+		if got := hasCoroutines(std); got != want {
+			t.Errorf("hasCoroutines(%q) = %v, want %v", std, got, want)
+		}
+	}
 }
 
 // TestAssertMacros rewrites the C++ code in each testdata/assert/<context>/<case>.cpp as code in its context: the body

@@ -1,0 +1,43 @@
+class_name Hatch
+extends Node
+
+signal opened(by: Node)
+
+var anim: AnimationPlayer
+var area: Area2D
+
+/// Opens the door, and returns who opened it.
+@async
+func open(names: Array, slow: bool) -> Node {
+  await anim->animation_finished;
+  await get_tree()->create_timer(1.0)->timeout;
+  Variant body = await area->body_entered;
+  await opened;
+  await anim->string_name "animation_finished";
+  await string_name "opened";
+  await anim->string_name(String(names[0]) + "_finished");
+  int64_t n = await count(slow);
+  assert n > 0;
+  auto twice = [](int64_t x) { return x * 2; };
+  if (is_cancelled) {
+    return nullptr;
+  }
+  return body as Node *;
+}
+
+@async @static
+func count(slow: bool) -> int {
+  return 1;
+}
+
+@async @const
+func wait_a_bit() -> void {
+  await get_tree()->create_timer(0.5)->timeout;
+  assert true;
+  return;
+}
+
+@async @game_only
+func show(text: String) -> String {
+  return text;
+}

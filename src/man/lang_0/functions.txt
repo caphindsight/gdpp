@@ -364,7 +364,7 @@ func clamped(damage: int) -> int {
 - GD++ doesn't bind it, so Godot doesn't know it: scripts, `call()` and signals connected by name can't reach it, and the editor's help leaves it out.
 - To connect it to a signal, use `callable_mp(this, &This::clamped)`.
 - Like a method in a `decl` block, but written as a `func`. See `gd++ man code`.
-- Combines with `@static`, `@const`, `@deferred`, `@thread_safe` and `@onthread`. Their `_gdpp_body_NAME` is still bound, since their calls run it by name or from a task.
+- Combines with `@static`, `@const`, `@deferred`, `@thread_safe`, `@onthread` and `@async`. Their `_gdpp_body_NAME` is still bound, since their calls run it by name or from a task, except for `@onthread` and `@async`.
 
 # @rpc
 
@@ -410,6 +410,26 @@ func find_path(from: Vector2, to: Vector2) -> PackedVector2Array {
 
 See `gd++ man async`.
 
+# @async
+
+```gd++
+@async
+func open() -> void {
+  anim->play("open");
+  await anim->animation_finished;
+  emit opened();
+}
+```
+
+- The function is a coroutine: `await` waits for a signal or a task, without blocking. Meanwhile, the call returns.
+- The call runs the body until it awaits, and returns an `Async` of the function's return type. Here: an `Async[void]`.
+- The body goes on once what it awaits is done, and the `Async` is done once the body returns.
+- `@async("detached")`, for a function that returns `void`: calls return nothing.
+- It needs C++20.
+- GD++ puts the body in a second method, `_gdpp_body_NAME`, a C++ coroutine, which the call starts.
+
+See `gd++ man async`.
+
 # @game_only
 
 ```gd++
@@ -428,7 +448,7 @@ func launch() -> void {
 ```
 
 - The function only runs in the game, never in the editor. E.g. to keep a few functions of a `@tool` class out of the editor.
-- In debug builds, which the editor loads, its body starts with a check. In the editor, the function returns right away, with a default value. An `@onthread` function returns an empty `Async`.
+- In debug builds, which the editor loads, its body starts with a check. In the editor, the function returns right away, with a default value. An `@onthread` or `@async` function returns an empty `Async`.
 - `on` blocks, e.g. `on process(delta: float) { ... }`, take it too.
 - In a `@game_only` class, every function already has it.
 - `@editor_only` is the opposite: the function only runs in the editor. Only in a `@tool` class.
@@ -477,16 +497,18 @@ A function with the name of a virtual function of the base class, without @overr
 @virtual or @override on a function that implements or overrides a trait's function
 @recycle on a function other than an @override _ready
 @override with @rpc, @deferred, @thread_safe or @onthread
+@override with @async on a function that overrides one of the engine's
 @rpc with @onthread
 @private with @virtual, @override or @rpc
 @deferred with @thread_safe or @onthread
 @thread_safe with @onthread
+@async with @onthread, @deferred, @thread_safe, @rpc or @profile
 ```
 
-- `@trace`, `@profile`, `@game_only` and `@editor_only` combine with all of them.
+- `@trace`, `@game_only` and `@editor_only` combine with all of them, and `@profile` with all but `@async`.
 - `@game_only` doesn't combine with `@editor_only`.
 - Each annotation can be used once per function.
-- Only `@override`, `@virtual`, `@rpc`, `@trace` and `@profile` take arguments.
+- Only `@override`, `@virtual`, `@rpc`, `@onthread`, `@async`, `@trace` and `@profile` take arguments.
 
 # Enums in signatures
 

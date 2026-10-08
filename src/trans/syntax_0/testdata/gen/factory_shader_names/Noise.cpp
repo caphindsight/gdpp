@@ -42,7 +42,7 @@ struct _gdpp_shader_fill {
 			"}\n"
 			"\n"
 			"float _gdpp_body(int id) {\n"
-			"#line 7 \"input.gd++\"\n"
+			"#line 6 \"input.gd++\"\n"
 			"\n"
 			"  return float(id);\n"
 			"\n"
@@ -58,7 +58,7 @@ struct _gdpp_shader_fill {
 	int index(int p) const {
 		return p;
 	}
-#line 7 "input.gd++"
+#line 6 "input.gd++"
 	float body(Id id) const {
   return float(id);
 }

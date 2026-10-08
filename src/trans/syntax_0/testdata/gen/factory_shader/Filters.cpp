@@ -42,7 +42,7 @@ struct _gdpp_shader_brighten {
 			"}\n"
 			"\n"
 			"vec4 _gdpp_body(ivec2 id) {\n"
-			"#line 6 \"input.gd++\"\n"
+			"#line 5 \"input.gd++\"\n"
 			"\n"
 			"  return texelFetch(src, id, 0) * gain;\n"
 			"\n"
@@ -60,7 +60,7 @@ struct _gdpp_shader_brighten {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 6 "input.gd++"
+#line 5 "input.gd++"
 	vec4 body(Id id) const {
   return texelFetch(src, id, 0) * gain;
 }
@@ -96,7 +96,7 @@ struct _gdpp_shader_clear {
 			"}\n"
 			"\n"
 			"void _gdpp_body(int id) {\n"
-			"#line 11 \"input.gd++\"\n"
+			"#line 10 \"input.gd++\"\n"
 			"\n"
 			"  values[id] = 0.0;\n"
 			"\n"
@@ -113,7 +113,7 @@ struct _gdpp_shader_clear {
 	int index(int p) const {
 		return p;
 	}
-#line 11 "input.gd++"
+#line 10 "input.gd++"
 	void body(Id id) const {
   values[id] = 0.0;
 }

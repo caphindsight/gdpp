@@ -1,9 +1,10 @@
-Async: @onthread and Async tasks
+Async: @onthread, @async, await and Async tasks
 
-Some work is too slow for one frame: finding a path, generating terrain, loading and parsing a file.
+Some work is too slow for one frame: finding a path, generating terrain, loading and parsing a file. Other work waits for things to happen: an animation to end, a timer, a player to enter an area.
 
-- `@onthread` runs such a function on another thread.
-- A call returns right away, with an `Async`: a task that tells when the work is done, and holds its result.
+- `@onthread` runs a function on another thread.
+- `@async` makes a function a coroutine, which can `await` signals and other tasks, like GDScript's `await`.
+- Both kinds of call return right away, with an `Async`: a task that tells when the work is done, and holds its result.
 
 # A first example
 
@@ -73,7 +74,7 @@ The function is declared as          Callers get
     Hint: Its callers get an Async of the type its body returns.
 ```
 
-Shaders take `@onthread` too: the call then runs the shader from a worker thread, and returns an `Async` of its result. See "@sync and @onthread" in `gd++ man shaders`.
+Shaders take `@onthread` too: the call then runs the shader from a worker thread, and returns an `Async` of its result. See "@async and @onthread" in `gd++ man shaders`.
 
 An `@onthread` function:
 
@@ -83,7 +84,7 @@ An `@onthread` function:
 - can't be `@rpc`, `@deferred` or `@thread_safe`,
 - exists only in classes. An extern declares that a function returns an `Async` instead. See "Across packages" below.
 
-For work whose result nobody waits for, see `@onthread("detached")` below.
+For work whose result nobody waits for, see `@onthread("detached")` below. For work that waits for signals, see `@async` below.
 
 # @onthread("detached")
 
@@ -117,6 +118,164 @@ func _on_save_pressed() -> void {
     Hint: Nothing waits for its task, so its calls can't return a value.
 ```
 
+# @async and await
+
+An `@async` function is a coroutine: its body can wait for a signal, or for another task, with `await`, like in GDScript. Waiting doesn't block: the function returns to its caller, and goes on where it stopped once the signal comes.
+
+```gd++
+class_name Door
+extends Node3D
+
+var anim: AnimationPlayer
+
+@async
+func open() -> void {
+  anim->play("open");
+  await anim->animation_finished;
+  await get_tree()->create_timer(2.0)->timeout;
+  anim->play("close");
+}
+
+on ready {
+  open();   // returns at the first await
+}
+```
+
+- A call runs the body right away, on the caller's thread, until the first `await` that waits. Then it returns an `Async`, like an `@onthread` function.
+- The body goes on when the signal comes, on the thread that emits it, which is the main thread for most signals.
+- The `Async` is done once the body returns, and holds what it returned.
+- Like with `@onthread`, the body is written for the plain type, and GD++ adds the `Async`. `-> Async[int]` is an error: write `-> int`.
+- A coroutine needs C++20. With an older C++ standard, `@async` and `await` are errors. See `gd++ man packages`.
+- `await` in a function without `@async` is an error: "Function f awaits, so it needs @async."
+
+An `@async` function:
+
+- can be `@static`, `@const`, `@virtual`, `@trace`, `@game_only` and `@editor_only`. `@trace` prints the call when it starts and when it ends.
+- can't be `@onthread`, `@deferred`, `@thread_safe`, `@rpc` or `@profile`, whose time would span its awaits.
+- can `@override` an `@async` `@virtual` function of a GD++ class, but no function of the engine, which doesn't take an `Async`. Call an `@async` function from such a function instead.
+- uses `return` like any function. GD++ makes it `co_return`, but not in lambdas.
+
+`@async("detached")`, for a function that returns `void`: calls return nothing, like `@onthread("detached")`. `Async` is `[[nodiscard]]`, so this is the way to start a coroutine without keeping its task:
+
+```gd++
+@async("detached")
+func flash() -> void {
+  set_visible(false);
+  await get_tree()->create_timer(0.1)->timeout;
+  set_visible(true);
+}
+```
+
+Without `"detached"`, a call whose `Async` isn't kept makes the compiler warn. Dropping the `Async` doesn't stop the coroutine, though: it goes on without it. See "Coroutines' lifetimes" below.
+
+# Awaiting signals
+
+`await` waits for a signal, and gives its arguments, like GDScript's `await`:
+
+```
+await OBJECT->NAME;                         signal NAME of OBJECT, e.g. await anim->animation_finished
+await NAME;                                 signal NAME of this class
+await OBJECT->string_name "NAME";           signal NAME of OBJECT, named by a string
+await string_name "NAME";                   signal NAME of this object, named by a string
+await OBJECT->string_name(EXPR);            the signal of OBJECT whose name EXPR gives, a String or StringName
+await string_name(EXPR);                    the signal of this object whose name EXPR gives
+await SIGNAL;                               a Signal value, e.g. Signal(button, "pressed")
+```
+
+- OBJECT is a pointer, a `Ref` or a `Gd`, e.g. `anim`, `get_tree()->create_timer(1.0)` or `this`.
+- A signal without arguments gives nothing. One with one argument gives it, and one with more gives an `Array` of them. The type is `Variant`:
+
+```gd++
+Variant body = await area->body_entered;
+Array names = await anim->animation_changed;   // its old name and its new one
+```
+
+- `string_name` names signals that the first form can't, e.g. a signal of a base class that GD++ doesn't know, or one whose name is computed at runtime, e.g. `await enemy->string_name("died_" + kind)`.
+- A missing object, or an object without the signal, prints an error, and `await` gives `null` right away.
+
+How GD++ tells a signal from a task:
+
+- `await X->NAME`, where a name follows the last `->` and nothing follows the name, awaits a signal.
+- `await NAME` awaits a signal if the class declares one named NAME, else the value of NAME, e.g. a task in a variable.
+- Everything else awaits a value: a task, a `Signal`, a `Variant`, e.g. `await task`, `await find(a)` or `await state.task`.
+- So to await a task in a field through `->`, write `await task` or `await (this->task)`.
+
+# Awaiting tasks and values
+
+`await` on an `Async` waits until its task is done, and gives its result, which it keeps, like `TASK.result()`:
+
+```gd++
+@async
+func load_level() -> int {
+  PackedVector2Array path = await find_path(start, goal);   // an @onthread function's task
+  int coins = await count_coins();                          // another @async function's task
+  return coins;
+}
+```
+
+- A task that's done already gives its result right away.
+- Else, the coroutine goes on at the end of the frame in which the task got done, on the main thread.
+- An empty or claimed `Async` prints an error, and gives the type's default value.
+
+`await` on a `Variant` works like GDScript's `await`:
+
+- a task, of any package: until it's done, and gives its result,
+- a `Signal`: until it's emitted, and gives its arguments,
+- the state of a GDScript function that awaits: until the function returns, and gives what it returned,
+- anything else: right away, and gives the value.
+
+So GD++ code can await script functions that await, or not:
+
+```gd++
+Variant level = await loader->call("load_level", "forest");
+```
+
+# @async in scripts
+
+Scripts get a task object from `@async` functions, like from `@onthread` ones. To wait for it, await `until_done()`:
+
+```gdscript
+var coins = await $Level.count_coins().until_done()
+```
+
+- `until_done()` returns a signal that's emitted once the task is done, with its result. It works whenever the script calls it, also after the task is done.
+- `await task` alone doesn't wait. GDScript only waits for signals and its own functions, so it gives the task object right away.
+- The task object also has a `finished` signal, emitted once, at the end of the frame in which the task got done. To await a task that may be done already, use `until_done()`.
+- Await from the main thread, where the signals come.
+
+`@virtual @async` functions can be overridden by scripts, with or without `await`:
+
+```gd++
+@virtual @async
+func _open() -> bool {
+  await anim->animation_finished;
+  return true;
+}
+```
+
+```gdscript
+func _open():
+    await $Lock.unlocked
+    return true
+```
+
+- The function returns an `Async[bool]` in GD++ code, whichever runs.
+- Scripts see its return type as `Variant`, since a script function that awaits returns its state, not its result. The override's own type, e.g. `-> bool`, is fine.
+- The task gets done when the script's function returns, with what it returned.
+
+# Coroutines' lifetimes
+
+A coroutine that waits belongs to the signal it waits for, not to its `Async`:
+
+- Dropping the `Async` doesn't stop it, and doesn't wait for it. A coroutine whose `Async` nobody holds goes on, and its result is dropped.
+- If the object the function was called on is refcounted, the coroutine keeps it alive.
+- If the object the function was called on is freed while it waits, e.g. a node, the coroutine stops: its locals are destroyed, and the rest of its body never runs.
+- The same happens if the object that would send the signal is freed first, e.g. an enemy whose `died` the coroutine awaits.
+- A stopped coroutine's task is abandoned: it gets Claimed, and is never done. What awaits it stops too: other coroutines, and scripts' awaits, like with a freed object's signal in GDScript.
+- When the package's library is unloaded, e.g. by a hot reload, its waiting coroutines stop the same way, since their code goes away.
+
+`cancel` works on coroutines' tasks too: `is_cancelled` is `true` in the body from then on. Like with `@onthread`, it only asks: the body checks it, e.g. after each `await`.
+
 # Async types
 
 - `Async[T]`: a task whose result has type T.
@@ -147,7 +306,7 @@ var task: Async[int, String]           Type Async takes one type argument, the t
 
 An `Async` goes through three states, in order, and never goes back:
 
-1. Running: the body runs on a worker thread.
+1. Running: the body runs on a worker thread, or, for `@async`, it runs or awaits.
 2. Done: the body has returned, and the task holds its result.
 3. Claimed: the result was taken. A new `Async`, which never had a task, is Claimed too.
 
@@ -161,6 +320,7 @@ claim TASK          task.claim()        returns the result, and claims it
 TASK.result()       task.result         returns the result, and keeps it
 TASK.wait()         task.wait()         waits until the task is Done, then returns the result, and keeps it
 cancel TASK         task.cancel()       asks the body to stop
+await TASK          await task.until_done()   waits until the task is Done, without blocking, then returns the result, and keeps it
 ```
 
 What each does in each state, in GD++ code and in scripts alike:
@@ -172,6 +332,7 @@ is_done TASK, task.done       false                      true                   
 claim TASK, task.claim()      error                      returns the result, and claims   error
 TASK.result(), task.result    error                      returns the result               error
 TASK.wait(), task.wait()      blocks, then returns it    returns the result               error
+await                         waits, then returns it     returns the result               error
 cancel TASK, task.cancel()    asks the body to stop      does nothing                     does nothing
 ```
 
@@ -187,7 +348,8 @@ Facts:
   - In debug builds, an error prints a message, and returns the type's default value in GD++ code, e.g. `0` or an empty array, and `null` in scripts. The `Async` stays as it is.
   - Release builds don't check: an error is undefined behavior. Test the `Async` first.
 - The result has the function's type in GD++ code, e.g. `PackedVector2Array` for an `Async[PackedVector2Array]`. In scripts, it's a `Variant`, and an enum result is an `int`.
-- Tasks have no signal for when they finish. Test `is_done`, e.g. once a frame.
+- `wait` on the Running task of an `@async` function is an error: the coroutine may need the waiting thread, so it would never get Done. Await it instead.
+- To act once a task is Done: await it, in an `@async` function or a script, or test `is_done`, e.g. once a frame.
 - For `cancel`, see "Stopping tasks" below.
 
 # In GD++ code
@@ -216,7 +378,7 @@ Waiting:
 
 - Godot requires waiting once for each `WorkerThreadPool` task. `claim` does it for you. Since the task is done, that doesn't block.
 - `TASK.wait()` waits for real, and keeps the result. So `TASK.wait(); auto path = claim TASK;` waits for the result, then takes it.
-- On the main thread, the game stops while it waits. Prefer testing `is_done` each frame.
+- On the main thread, the game stops while it waits. Prefer `await` in an `@async` function, or testing `is_done` each frame.
 
 A loop that keeps one search running, and follows each path it finds:
 
@@ -244,9 +406,12 @@ FooAsync, extends RefCounted
   claim() -> Variant                   take the result, while Done, like `claim TASK`
   wait() -> Variant                    wait until Done, then return the result, which it keeps
   cancel() -> void                     ask the body to stop, while Running
+  until_done() -> Signal               a signal emitted once Done, with the result: `await task.until_done()`
+  signal finished(result)              emitted once, at the end of the frame in which the task got Done
 ```
 
 - Test `valid`, not the task object: `if task:` is true for any task object, even a Claimed one.
+- To wait without blocking, await `until_done()`. See "@async in scripts" above.
 - The property getters, `is_valid()`, `is_done()` and `get_result()`, can be called too.
 - When you inspect a task while the game runs, e.g. from the debugger's Stack Variables or its remote scene tree, the inspector shows `valid` and `done`, but not `result`. It would read `result` again and again, also before the task is done.
 
@@ -293,7 +458,8 @@ Sharing:
 
 Dropping:
 
-- When the last reference to a task is gone, from C++ or from a script, it waits for the task to finish, unless that already happened.
+- When the last reference to an `@onthread` function's task is gone, from C++ or from a script, it waits for the task to finish, unless that already happened.
+- An `@async` function's coroutine doesn't wait: it goes on without its task. See "Coroutines' lifetimes" above.
 - So dropping an `Async` whose task still runs blocks until the task is done. Dropping a claimed or finished one doesn't.
 - Keep the `Async` until `is_done` is `true`, like `pending` in the first example.
 - `Async` is `[[nodiscard]]`. The compiler warns about a call whose `Async` isn't kept, e.g. `find_path(a, b);`, which would wait for the task right away.
@@ -363,7 +529,7 @@ Godot sees every `Async` as an object of one class of the package: the class of 
 
 - Its name is the package's prefix followed by `Async`.
 - GD++ provides it: you don't write it.
-- A package gets one when its GD++ classes use `Async`: an `@onthread` function, or an `Async` type in a variable, a signal, or a function's parameters or return type. Other packages don't register it.
+- A package gets one when its GD++ classes use `Async`: an `@onthread` or `@async` function, or an `Async` type in a variable, a signal, or a function's parameters or return type. Other packages don't register it.
 - The prefix is set in `.gd++pkg`. It defaults to the package's id in PascalCase, e.g. `MyGame` for `my_game`, giving `MyGameAsync`.
 - Set it with `gd++ init PATH --update --prefix NAME`. See `gd++ man packages`.
 
@@ -415,20 +581,29 @@ With `@onthread("detached")`:
 - `f` returns `void`, and calls `gdpp::run_detached`, which starts the task like `gdpp::run_task`, but returns nothing.
 - Once the body is done, the task schedules the wait with `call_deferred`. So it doesn't matter who drops the last reference to it.
 
+For an `@async` function `f`, GD++ generates:
+
+- `f` itself, which returns an `Async` of the function's type. It calls `gdpp::run_coroutine`, which creates an object of the package's class of tasks, and starts the coroutine. `@async("detached")` calls `gdpp::run_detached_coroutine` instead, which returns nothing.
+- `_gdpp_body_f`, the body: a C++20 coroutine, which returns a `gdpp::Coroutine` of the function's type. Its parameters are values, not references, since references would dangle once it awaits. It isn't bound.
+- In the body, `await` becomes `co_await`, and `return` becomes `co_return`. `await X->NAME` becomes `co_await gdpp::signal(X, GDPP_STRING_NAME("NAME"))`.
+- Each `await` that waits connects the signal, once, to a `gdpp::SignalWait`: a `Callable` that owns the coroutine, and resumes it. Its target is the object the function was called on, so Godot drops it when either object is freed, which destroys the coroutine.
+- Awaiting a task connects to its `until_done()` signal.
+
 The task object:
 
 - Stores the body's result as a `Variant`. The `Async` converts it back to the function's type.
 - Godot requires waiting once for each `WorkerThreadPool` task, with `wait_for_task_completion`. The object does so in `wait`, which `claim` calls, or else when it's freed.
 - A task can't wait for itself. If it frees the last reference to itself, e.g. by freeing the object that held it, the main thread waits for it instead, right after.
+- Once done, it emits `finished` with `call_deferred`, which holds a reference to it until then.
 
 Quitting:
 
 - From the package's first task on, the runtime watches the root window. The window leaves the scene tree when the game starts quitting, before any node is freed.
 - From then on, `is_cancelled` is `true`, and waiting for a task ends the game when the grace period is over.
-- When the package's library is unloaded, it also waits for the package's running tasks, within the same grace period, since their code must not be unloaded while they run.
+- When the package's library is unloaded, it also waits for the package's running tasks, within the same grace period, since their code must not be unloaded while they run. It disconnects the awaits of waiting coroutines, which destroys them.
 
 `gd++ trans FILE` shows the code. `gd++ trans --runtime` shows the class of tasks and `Async<T>`. See also `gd++ man generated` and `gd++ man runtime`.
 
 # See also
 
-`gd++ man functions`, `gd++ man types`, `gd++ man rewrites`, `gd++ man externs`, `gd++ man debugging`, `gd++ man packages`.
+`gd++ man functions`, `gd++ man signals`, `gd++ man types`, `gd++ man rewrites`, `gd++ man externs`, `gd++ man debugging`, `gd++ man packages`.

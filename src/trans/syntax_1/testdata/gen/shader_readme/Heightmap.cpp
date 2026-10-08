@@ -55,7 +55,7 @@ struct _gdpp_shader_noise {
 			"  }\n"
 			"\n"
 			"float _gdpp_body(ivec2 id) {\n"
-			"#line 12 \"input.gd++\"\n"
+			"#line 15 \"input.gd++\"\n"
 			"\n"
 			"  vec2 p = vec2(id) / scale;\n"
 			"  vec2 c = floor(p), f = fract(p);\n"
@@ -76,7 +76,7 @@ struct _gdpp_shader_noise {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 12 "input.gd++"
+#line 15 "input.gd++"
 	float body(Id id) const {
   vec2 p = vec2(id) / scale;
   vec2 c = floor(p), f = fract(p);
@@ -114,7 +114,7 @@ gdpp::Gd<Texture2D> Heightmap::noise(const Vector2i &size, double scale) {
 }
 
 void Heightmap::_gdpp_body__ready() {
-#line 20 "input.gd++"
+#line 23 "input.gd++"
 
   set_texture(noise(Vector2i(512, 512), 32.0));
 

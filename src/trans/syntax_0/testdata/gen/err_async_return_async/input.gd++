@@ -1,0 +1,7 @@
+class_name C
+extends Node
+
+@async
+func f() -> Async[int] {
+  return 1;
+}

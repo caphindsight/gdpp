@@ -1,0 +1,18 @@
+class_name Chest
+extends Node
+
+/// Opens the chest. Scripts may override it, and await in it.
+@virtual @async
+func _open(force: int) -> bool {
+  await get_tree()->create_timer(1.0)->timeout;
+  return force > 0;
+}
+
+@async
+func loot(loader: Node) -> Variant {
+  bool opened = await open(1);
+  Variant level = await loader->call("load_level", "forest");
+  Signal ready_signal(loader.ptr(), "ready");
+  await ready_signal;
+  return level;
+}

@@ -13,7 +13,6 @@ File: @1:1
                 - @5:7 16
                 - @5:11 16
             - @5:15 onthread
-            - @5:25 sync
           Name: blur
           Params:
             - @6:13

@@ -2,12 +2,11 @@
 class_name Filters
 extends RefCounted
 
-@sync
 shader brighten(size: Vector2i, src: Image, gain: float) -> Image[rgba8] {
   return texelFetch(src, id, 0) * gain;
 }
 
-@onthread
+@async @onthread
 shader clear(n: int, values: GpuArray[float]) -> void {
   values[id] = 0.0;
 }

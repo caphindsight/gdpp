@@ -54,14 +54,15 @@ const (
 	// What macros see in Lua, besides their parameters.
 	luaGlobalWords = "gd ctx"
 	// GD++'s rewrites in C++ code that are keywords wherever they appear.
-	rewriteWords = "emit rpc is_cancelled assert assert_void assert_val"
+	rewriteWords = "emit rpc is_cancelled assert assert_void assert_val await"
 	// GD++'s rewrites in C++ code that are also method or variable names, e.g. in task.is_done(): they're keywords only
 	// where a name follows them, which is where GD++ rewrites them.
 	rewriteOperatorWords = "is_done claim cancel as create destroy queue_destroy"
 	// GD++'s invocations of macros and templates, e.g. invoke log("hit"). C++ code may also use it as a name, e.g. in
 	// std::invoke(f), so it's a keyword only where a name follows it, like the words above.
 	invokeWord = "invoke"
-	// GD++'s rewrites in C++ code that are keywords only where a string follows them, which is where GD++ rewrites them.
+	// GD++'s rewrites in C++ code that are keywords only where a string follows them, which is where GD++ rewrites them,
+	// and where "(" follows them in an await, e.g. await string_name(name) or await x->string_name(name).
 	rewriteStringWords = "string_name"
 	// C++'s and godot-cpp's ways to create and delete objects, which stay plain, so that GD++'s create and destroy stand
 	// out as the way to do it.
@@ -73,7 +74,7 @@ const (
 	cppTypeWords = "bool int float void char double long short unsigned signed size_t int8_t int16_t int32_t int64_t uint8_t uint16_t " +
 		"uint32_t uint64_t"
 	// Godot's names for types that aren't written in PascalCase, which is how highlightGdpp spots other types.
-	godotTypeWords = "float64_t real_t gd RID AABB"
+	godotTypeWords = "float32_t float64_t real_t gd RID AABB"
 	// GLSL's types, in shaders and shader blocks.
 	glslTypeWords = "uint vec2 vec3 vec4 ivec2 ivec3 ivec4 uvec2 uvec3 uvec4 bvec2 bvec3 bvec4 mat2 mat3 mat4 mat2x2 mat2x3 mat2x4 mat3x2 " +
 		"mat3x3 mat3x4 mat4x2 mat4x3 mat4x4 sampler2D image2D"
@@ -117,6 +118,9 @@ func highlightGdpp(code string, gdscript bool) string {
 
 // shaderHeadRegexp matches the start of a shader block, "shader {", or of a shader, "shader NAME(".
 var shaderHeadRegexp = regexp.MustCompile(`^shader(\s*\{|\s+\w+\s*\()`)
+
+// glslBlockRegexp matches the start of a macro's GLSL argument, "glsl {".
+var glslBlockRegexp = regexp.MustCompile(`^glsl\s*\{`)
 
 // shaderLibraryRegexp matches a file-level shader library's keyword, which only starts one before any declaration.
 var shaderLibraryRegexp = regexp.MustCompile(`^shader_library\b`)
@@ -177,6 +181,13 @@ func highlightCodeOf(code string, gdscript, glsl bool) string {
 				highlightCodeOf(rest[open+1:end], false, true) + rest[end:min(end+1, len(rest))])
 			i += min(end+1, len(rest))
 			continue
+		case !gdscript && !glsl && glslBlockRegexp.MatchString(rest) && (i == 0 || !isIdentByte(code[i-1])):
+			// GLSL passed to a macro: glsl { ... }.
+			open := strings.IndexByte(rest, '{')
+			end := closingBrace(rest, open)
+			out.WriteString(Styled("glsl", CodeKeyword) + rest[len("glsl"):open+1] + highlightCodeOf(rest[open+1:end], false, true) + rest[end:min(end+1, len(rest))])
+			i += min(end+1, len(rest))
+			continue
 		case c == '$' || c == '%' && strings.HasSuffix(strings.TrimRight(code[:i], " \t"), "="):
 			n, style = nodePathLen(rest), []Style{CodeLiteral}
 		case c >= '0' && c <= '9':
@@ -222,7 +233,8 @@ func highlightCodeOf(code string, gdscript, glsl bool) string {
 			case !gdscript && word == "code" && strings.HasPrefix(after, "{"):
 				style = []Style{CodeKeyword}
 			case isOn, codeKeywords[word], codeOperators[word] && identLen(strings.TrimLeft(rest[n:], " \t\n")) > 0,
-				codeStringOps[word] && strings.HasPrefix(strings.TrimLeft(rest[n:], " \t\n"), "\""):
+				codeStringOps[word] && strings.HasPrefix(after, "\""),
+				codeStringOps[word] && strings.HasPrefix(after, "(") && (lastWord(code[:i]) == "await" || strings.HasSuffix(strings.TrimRight(code[:i], " \t\n"), "->")):
 				style = []Style{CodeKeyword}
 			case codePlain[word]:
 			case codeTypes[word] || word[0] >= 'A' && word[0] <= 'Z' && strings.ToUpper(word) != word:

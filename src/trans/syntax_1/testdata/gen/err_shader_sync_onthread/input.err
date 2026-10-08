@@ -1,4 +1,0 @@
-input.gd++:5:1: Shader f returns an Image, which comes back from the GPU, so it needs @sync.
- 5 | shader f(size: Vector2i) -> Image[rf] {
-   | ^^^^^^
-Hint: Add @sync: its task waits for the GPU, while the caller gets an Async right away. Or return a Texture2D[rf] instead: it stays on the GPU, so it needs no @sync.

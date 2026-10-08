@@ -1,0 +1,6 @@
+class_name C
+extends Node
+
+func f() -> void {
+  await get_tree()->create_timer(1.0)->timeout;
+}

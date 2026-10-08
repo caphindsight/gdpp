@@ -1176,7 +1176,7 @@ func valueLen(v *Value) int {
 	switch {
 	case v.Text != "":
 		return utf8.RuneCountInString(v.Text)
-	case v.Kind == "code":
+	case v.Kind == "code" || v.Kind == "glsl":
 		return 4
 	}
 	return 1

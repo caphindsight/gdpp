@@ -140,6 +140,10 @@ func _score() -> int
   Every call, from C++ or from Godot, runs the body on the `WorkerThreadPool`, and returns an `Async` of the function's type. The caller waits for the body and gets its result through it. See `gd++ man async`.
   - Argument `"detached"`, for a function that returns `void`: calls return nothing, and nothing waits for the task.
 
+@async
+  The function is a coroutine: its body can `await` signals and tasks. Every call runs the body until an `await` that waits, and returns an `Async` of the function's type, done once the body returns. See `gd++ man async`.
+  - Argument `"detached"`, for a function that returns `void`: calls return nothing.
+
 @trace(GROUPS...)
   Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.
 
@@ -212,8 +216,8 @@ See `gd++ man externs`.
 
 A shader takes `@onthread`, `@trace`, `@profile`, `@notrace`, `@noprofile`, `@game_only` and `@editor_only`, which work like on a function, and:
 
-@sync
-  Calls wait until the GPU is done with the shader. Without it, they return right away, while the GPU works. Required on shaders that return a packed array or an `Image`, and optional on the others. Combines with `@onthread`, whose task then waits. See "Waiting for the GPU: @sync" in `gd++ man shaders`.
+@async
+  Calls return right away, while the GPU works. Without it, they wait until the GPU is done with the shader. Only on shaders that return a `GpuArray`, a `Texture2D` or `void`: other results come back from the GPU, so their calls must wait. Combines with `@onthread`, whose task then doesn't wait for the GPU. See "Not waiting for the GPU: @async" in `gd++ man shaders`.
 
 @grid(NAME, SIZES...)
   Both parts are optional, e.g. `@grid(size)`, `@grid(16, 16)` or `@grid(size, 16, 16)`.

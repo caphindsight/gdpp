@@ -1,0 +1,14 @@
+class_name Tinter
+extends RefCounted
+
+// A shader that maps each pixel of an image with body, GLSL.
+macro pixel_shader(name, body) {
+  gd.shader { name = name, params = { "size: Vector2i", "src: Image" }, ret = "Image[rgba8]", body = body }
+}
+
+invoke pixel_shader(warm, glsl {
+  // Less blue.
+  return texelFetch(src, id, 0) * vec4(1.0, 0.9, 0.8, 1.0);
+})
+
+invoke pixel_shader(gray, glsl { vec4 c = texelFetch(src, id, 0); return vec4(vec3(dot(c.rgb, vec3(0.299, 0.587, 0.114))), c.a); })

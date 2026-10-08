@@ -13,20 +13,18 @@ File: @1:1
                 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
       - @8:1
-        Shader: @9:1
-          Annotations:
-            - @8:1 sync
+        Shader: @8:1
           Name: noise
           Params:
-            - @9:14
+            - @8:14
               Name: size
-              Type: @9:20 Vector2i
-          Return: @9:33
+              Type: @8:20 Vector2i
+          Return: @8:33
             Name: Image
             Args:
-              - @9:39 rf
-          Body: @9:43
-            TextPos: 9:44
+              - @8:39 rf
+          Body: @8:43
+            TextPos: 8:44
             Text: |
 
                 return hash(vec2(id));

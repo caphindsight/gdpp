@@ -308,10 +308,10 @@ enum Suit { HEARTS }
 class Foo {
   extends RefCounted
   shader { const float K = 2.0; }
-  @sync shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K; }
+  shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K; }
 }
 `, []string{"class FooCopy {", "shader { const float K = 2.0;}",
-			"@sync shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K;}"}},
+			"shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K;}"}},
 		// A class's traits, read as implements, and passed on to a generated class.
 		{`invoke {
   for _, c in ipairs(ctx.members) do
@@ -361,7 +361,7 @@ func TestLuaShaderLibraries(t *testing.T) {
 	const main = `macro consts(k) { gd.shader_library { body = "const float K = " .. k .. ";" } }
 class Foo {
   extends RefCounted
-  @sync shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K; }
+  shader twice(n: int, v: PackedFloat32Array) -> PackedFloat32Array { return v[id] * K; }
 }
 `
 	const other = "invoke consts(2)\n"

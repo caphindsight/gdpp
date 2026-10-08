@@ -1,0 +1,4 @@
+input.gd++:5:13: The @async function f already returns an Async: write -> int.
+ 5 | func f() -> Async[int] {
+   |             ^^^^^
+Hint: Its callers get an Async of the type its body returns.

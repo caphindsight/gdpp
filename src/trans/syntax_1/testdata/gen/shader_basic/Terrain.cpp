@@ -149,7 +149,7 @@ struct _gdpp_shader_noise {
 			"  }\n"
 			"\n"
 			"float _gdpp_body(ivec2 id) {\n"
-			"#line 27 \"input.gd++\"\n"
+			"#line 26 \"input.gd++\"\n"
 			"\n"
 			"  return hash(ivec2(vec2(id) / cell));\n"
 			"\n"
@@ -166,7 +166,7 @@ struct _gdpp_shader_noise {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 27 "input.gd++"
+#line 26 "input.gd++"
 	float body(Id id) const {
   return hash(ivec2(vec2(id) / cell));
 }
@@ -300,7 +300,7 @@ struct _gdpp_shader_grow {
 			"  }\n"
 			"\n"
 			"vec3 _gdpp_body(ivec3 id) {\n"
-			"#line 38 \"input.gd++\"\n"
+			"#line 39 \"input.gd++\"\n"
 			"\n"
 			"  return texelFetch(image, id.xy, 0).xyz;\n"
 			"\n"
@@ -317,7 +317,7 @@ struct _gdpp_shader_grow {
 	int index(ivec3 p) const {
 		return (p.z * size.y + p.y) * size.x + p.x;
 	}
-#line 38 "input.gd++"
+#line 39 "input.gd++"
 	vec3 body(Id id) const {
   return texelFetch(image, id.swizzle<0, 1>(), 0).swizzle<0, 1, 2>();
 }
@@ -367,7 +367,7 @@ struct _gdpp_shader_blank {
 			"  }\n"
 			"\n"
 			"vec4 _gdpp_body(ivec2 id) {\n"
-			"#line 43 \"input.gd++\"\n"
+			"#line 44 \"input.gd++\"\n"
 			"\n"
 			"  return vec4(0.0);\n"
 			"\n"
@@ -383,7 +383,7 @@ struct _gdpp_shader_blank {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 43 "input.gd++"
+#line 44 "input.gd++"
 	vec4 body(Id id) const {
   return vec4(0.0);
 }
@@ -422,7 +422,7 @@ gdpp::Gd<Image> Terrain::noise(const Vector2i &size, double cell) {
 }
 
 double Terrain::_gdpp_default_noise_cell() {
-#line 27 "input.gd++"
+#line 26 "input.gd++"
 	return 8.0;
 #line 428 "Terrain.cpp"
 }

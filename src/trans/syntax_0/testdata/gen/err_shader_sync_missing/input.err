@@ -1,4 +1,0 @@
-input.gd++:4:1: Shader f returns a PackedFloat32Array, which comes back from the GPU, so it needs @sync.
- 4 | shader f(n: int) -> PackedFloat32Array {
-   | ^^^^^^
-Hint: Add @sync, or also @onthread, so the caller gets an Async and doesn't wait.

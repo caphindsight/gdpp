@@ -60,7 +60,7 @@ GpuArray[T]                   GpuArray<T>                    const GpuArray<T> &
 - "Passed as": how function parameters and setters take the type.
 - Return values and fields always use the plain C++ type.
 - Every object type is a `Gd<T>`, whatever its kind. See "Objects" below.
-- Godot's `float` is a 64-bit `double`. The runtime header defines `float64_t` as `double`, to match `int64_t`.
+- Godot's `float` is a 64-bit `double`. The runtime header defines `float64_t` as `double`, to match `int64_t`, and `float32_t` as `float`, e.g. for GLSL's `float`.
 - godot-cpp's vector types use `real_t`, which is `float` in default builds. So e.g. the components of a `Vector3` are 32-bit.
 
 # Built-in types

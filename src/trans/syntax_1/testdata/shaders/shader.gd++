@@ -2,7 +2,7 @@ class_name Blur
 extends RefCounted
 
 /// Blurs an image.
-@grid(16, 16) @onthread @sync
+@grid(16, 16) @onthread
 shader blur(size: Vector2i, src: Image, radius: int = 2) -> Image[rgba8] {
   vec4 sum = vec4(0.0);
   return sum / float(radius);

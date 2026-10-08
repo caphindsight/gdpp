@@ -16,6 +16,14 @@
 #include <utility>
 #include <vector>
 
+// GDPP_COROUTINES is defined where C++20 coroutines are, which @async funcs need. GD++ checks the package's C++
+// standard, so the code of others compiles without them.
+#if defined(__cpp_impl_coroutine) && __has_include(<coroutine>)
+#include <algorithm>
+#include <coroutine>
+#define GDPP_COROUTINES
+#endif
+
 #if defined(MACOS_ENABLED) && defined(HOT_RELOAD_ENABLED)
 #include <pthread.h>
 #endif
@@ -50,6 +58,8 @@
 
 // The C++ type of Godot's float.
 typedef double float64_t;
+// A 32-bit float, e.g. the type of GLSL's float, which shaders use.
+typedef float float32_t;
 
 // Godot's global scope functions, e.g. gd::print("Hello!").
 using gd = godot::UtilityFunctions;
@@ -866,6 +876,8 @@ inline std::atomic<bool> quitting = false;
 inline std::atomic<bool> watching_quit = false;
 // quit_deadline_usec is when the quit timeout runs out, in now_usec() time.
 inline std::atomic<int64_t> quit_deadline_usec = 0;
+// unloading is whether uninitialize has started: deferred calls would run after the library's code is gone.
+inline std::atomic<bool> unloading = false;
 // running_tasks counts the package's tasks whose jobs are running.
 inline std::atomic<int64_t> running_tasks = 0;
 // current_cancel() is the cancel flag of this thread's task.
@@ -1604,6 +1616,7 @@ inline void finish_tasks() {
 // uninitialize prepares the package's library to be unloaded: it waits for the package's running tasks, and removes
 // its hooks. The package's generated registration code calls it.
 inline void uninitialize() {
+	unloading = true;
 	finish_tasks();
 	trait_entries().clear();
 	std::lock_guard<std::mutex> lock(unhooks_mutex);
@@ -1679,10 +1692,41 @@ public:
 		return value;
 	}
 
-	// wait waits for the job to finish, and returns its result.
+	// wait waits for the job to finish, and returns its result. A coroutine's task can't be waited for, since the
+	// coroutine may need the waiting thread to go on.
 	Variant wait() {
+		if (coroutine && !done.load(std::memory_order_acquire)) {
+			ERR_FAIL_V_MSG(Variant(), "The task is an @async func's, which can't be waited for: await it, or test is_done() each frame.");
+		}
 		join();
 		return get_result();
+	}
+
+	// until_done returns a signal that's emitted once the task is done, with its result: finished, or, if that was
+	// emitted already, a signal that it emits again for this call, at the end of the frame. So scripts can await it at
+	// any time on the main thread, e.g. `await task.until_done()`.
+	Signal until_done() {
+		std::lock_guard<std::mutex> lock(signal_mutex);
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND_V_MSG(!started, Signal(this, GDPP_STRING_NAME("finished")), "The task runs nothing, so it's never done.");
+#endif
+		if (!emitted) {
+			return Signal(this, GDPP_STRING_NAME("finished"));
+		}
+		callable_mp_static(&GDPP_ASYNC_CLASS::emit_late).call_deferred(Ref<GDPP_ASYNC_CLASS>(this));
+		return Signal(this, GDPP_STRING_NAME("_finished_late"));
+	}
+
+	// on_done connects p_make(name), once, to the signal named name that until_done returns. Unlike until_done, it's
+	// race-free on any thread.
+	template <typename F>
+	void on_done(F p_make) {
+		std::lock_guard<std::mutex> lock(signal_mutex);
+		const StringName &name = emitted ? GDPP_STRING_NAME("_finished_late") : GDPP_STRING_NAME("finished");
+		connect(name, p_make(name), CONNECT_ONE_SHOT);
+		if (emitted) {
+			callable_mp_static(&GDPP_ASYNC_CLASS::emit_late).call_deferred(Ref<GDPP_ASYNC_CLASS>(this));
+		}
 	}
 
 	// get_result returns the result. The job must be done: debug builds check it, release builds don't.
@@ -1697,6 +1741,34 @@ public:
 	// cancel asks the job to stop: gdpp::is_cancelled() is true in it from now on.
 	void cancel() { cancel_requested.store(true, std::memory_order_relaxed); }
 
+	// cancel_flag is the flag that cancel sets, which gdpp::is_cancelled() reads.
+	const std::atomic<bool> *cancel_flag() const { return &cancel_requested; }
+
+	// start_coroutine makes this the task of an @async func's coroutine, which calls finish or abandon.
+	void start_coroutine() {
+		coroutine = started = true;
+		claimed.store(false, std::memory_order_relaxed);
+	}
+
+	// finish makes the coroutine's task done, with result p_result.
+	void finish(const Variant &p_result) {
+		result = p_result;
+		done.store(true, std::memory_order_release);
+		schedule_finished();
+	}
+
+	// abandon ends the task of a coroutine that was destroyed before it returned, e.g. since the object it awaited a
+	// signal of was freed: the task is claimed, and never done. What awaits it is dropped too: C++ coroutines are
+	// destroyed, and scripts' awaits never return, like with a freed object's signal.
+	void abandon() {
+		claimed.store(true, std::memory_order_relaxed);
+		if (unloading) {
+			disconnect_all(Ref<GDPP_ASYNC_CLASS>(this));
+		} else {
+			callable_mp_static(&GDPP_ASYNC_CLASS::disconnect_all).call_deferred(Ref<GDPP_ASYNC_CLASS>(this));
+		}
+	}
+
 	// start runs p_job on the WorkerThreadPool, as the task named p_name. If p_detached, nothing waits for the task:
 	// once the job is done, the main thread waits for it, so the task can be dropped while it runs, without blocking.
 	void start(const Callable &p_job, const String &p_name, bool p_detached = false) {
@@ -1705,6 +1777,7 @@ public:
 #endif
 		job = p_job;
 		detached = p_detached;
+		started = true;
 		running = Ref<RefCounted>(this);
 		claimed.store(false, std::memory_order_relaxed); // Before the task starts, and before other threads see the object.
 		id = WorkerThreadPool::get_singleton()->add_task(callable_mp(this, &GDPP_ASYNC_CLASS::run), false, p_name);
@@ -1721,6 +1794,9 @@ protected:
 		ClassDB::bind_method(D_METHOD("get_result"), &GDPP_ASYNC_CLASS::get_result);
 		ClassDB::bind_method(D_METHOD("claim"), &GDPP_ASYNC_CLASS::claim);
 		ClassDB::bind_method(D_METHOD("cancel"), &GDPP_ASYNC_CLASS::cancel);
+		ClassDB::bind_method(D_METHOD("until_done"), &GDPP_ASYNC_CLASS::until_done);
+		ADD_SIGNAL(MethodInfo("finished", PropertyInfo(Variant::NIL, "result", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NIL_IS_VARIANT)));
+		ADD_SIGNAL(MethodInfo("_finished_late", PropertyInfo(Variant::NIL, "result", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NIL_IS_VARIANT)));
 		// Read-only. result isn't for the inspector or the debugger, which would read it before the job is done.
 		ClassDB::add_property(get_class_static(), PropertyInfo(Variant::BOOL, "done", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY),
 				"", "is_done");
@@ -1741,6 +1817,40 @@ private:
 	std::atomic<bool> claimed = true; // Whether claim took the result. Until started: an object that runs nothing, e.g. from new(), holds nothing.
 	std::mutex mutex;
 	bool waited = false; // Godot requires waiting for each task once.
+	bool started = false; // Whether it runs a job or a coroutine.
+	bool coroutine = false; // Whether it's an @async func's task.
+	std::mutex signal_mutex; // Guards emitted.
+	bool emitted = false; // Whether finished was emitted.
+
+	// schedule_finished emits finished at the end of the frame, on the main thread, never during the call that started
+	// the task, so the caller can always connect to it first. The call holds the task until then.
+	void schedule_finished() {
+		callable_mp_static(&GDPP_ASYNC_CLASS::emit_finished).call_deferred(Ref<GDPP_ASYNC_CLASS>(this));
+	}
+
+	static void emit_finished(const Ref<GDPP_ASYNC_CLASS> &p_task) {
+		{
+			std::lock_guard<std::mutex> lock(p_task->signal_mutex);
+			p_task->emitted = true;
+		}
+		p_task->emit_signal(GDPP_STRING_NAME("finished"), p_task->value());
+	}
+
+	static void emit_late(const Ref<GDPP_ASYNC_CLASS> &p_task) {
+		p_task->emit_signal(GDPP_STRING_NAME("_finished_late"), p_task->value());
+	}
+
+	static void disconnect_all(const Ref<GDPP_ASYNC_CLASS> &p_task) {
+		for (const StringName &name : { GDPP_STRING_NAME("finished"), GDPP_STRING_NAME("_finished_late") }) {
+			TypedArray<Dictionary> connections = p_task->get_signal_connection_list(name);
+			for (int64_t i = 0; i < connections.size(); i++) {
+				p_task->disconnect(name, Dictionary(connections[i])["callable"]);
+			}
+		}
+	}
+
+	// value is the result that finished gives: null once it's claimed.
+	Variant value() const { return claimed.load() ? Variant() : result; }
 
 	void run() {
 		running_tasks.fetch_add(1);
@@ -1749,6 +1859,7 @@ private:
 		current_cancel() = nullptr;
 		job = Callable(); // Frees what the job holds, e.g. the object it was called on.
 		done.store(true, std::memory_order_release);
+		schedule_finished();
 		if (detached) {
 			// The main thread waits for the task, since nothing else does. Its id comes from the pool, since start may not
 			// have stored it yet. Before the last reference, maybe this one, is dropped, so the destructor doesn't wait.
@@ -1896,6 +2007,340 @@ void run_detached(const Object *p_self, const char *p_name, F p_job) {
 	static_cast<void>(run_task(p_self, p_name, std::move(p_job), true));
 }
 
+#ifdef GDPP_COROUTINES
+// The coroutines of @async funcs. Each call starts a coroutine, the func's body, whose task its Async references. A
+// coroutine runs on its caller's thread until it awaits, i.e. waits for a signal: every await is one, e.g. a task's
+// until_done. The signal's connection then owns the coroutine, until the signal resumes it. If the connection goes
+// away first, e.g. since the object that sends the signal, or the one the func was called on, is freed, the coroutine
+// is destroyed, and its task abandoned.
+
+// is_task reports whether p_object is a task: an object of a package's class of tasks.
+inline bool is_task(Object *p_object) {
+	return Object::cast_to<GDPP_ASYNC_CLASS>(p_object) || (p_object && p_object->has_method(GDPP_STRING_NAME("until_done")) &&
+			p_object->has_method(GDPP_STRING_NAME("claim")) && p_object->has_signal(GDPP_STRING_NAME("finished")));
+}
+
+// CoroutinePromise is what the promise of an @async func's coroutine holds, whatever its result.
+struct CoroutinePromise {
+	Ref<GDPP_ASYNC_CLASS> task; // Null until run_coroutine starts the coroutine.
+	ObjectID self; // The object the func was called on, if any: when it's freed, its awaits, and so the coroutine, go.
+	Ref<RefCounted> keep; // The object, if it's refcounted: the coroutine keeps it alive.
+	bool finished = false; // Whether the body returned.
+
+	// The task is abandoned if the coroutine is destroyed before its body returns.
+	~CoroutinePromise() {
+		if (task.is_valid() && !finished) {
+			task->abandon();
+		}
+	}
+	// finish makes the task done, with the body's result.
+	void finish(const Variant &p_result) {
+		finished = true;
+		task->finish(p_result);
+	}
+	// The body starts once run_coroutine has set up the promise.
+	std::suspend_always initial_suspend() noexcept { return {}; }
+	// The coroutine is destroyed once its body returns.
+	std::suspend_never final_suspend() noexcept { return {}; }
+	// Godot builds without exceptions.
+	void unhandled_exception() { std::abort(); }
+};
+
+// CoroutineResult adds the return of a T, which is the task's result, to a promise.
+template <typename T>
+struct CoroutineResult : CoroutinePromise {
+	void return_value(T p_value) {
+		if constexpr (std::is_enum_v<T>) {
+			finish(static_cast<int64_t>(p_value));
+		} else {
+			finish(Variant(p_value));
+		}
+	}
+};
+template <>
+struct CoroutineResult<void> : CoroutinePromise {
+	void return_void() { finish(Variant()); }
+};
+
+// Coroutine<T> is the C++ type of the body of an @async func that returns a T: a coroutine that run_coroutine starts.
+template <typename T>
+class [[nodiscard]] Coroutine {
+public:
+	struct promise_type : CoroutineResult<T> {
+		Coroutine get_return_object() { return Coroutine(std::coroutine_handle<promise_type>::from_promise(*this)); }
+	};
+
+	Coroutine(Coroutine &&p_other) noexcept :
+			handle(std::exchange(p_other.handle, nullptr)) {}
+	Coroutine &operator=(Coroutine &&) = delete;
+	// Destroys a coroutine that never started.
+	~Coroutine() {
+		if (handle) {
+			handle.destroy();
+		}
+	}
+	// release returns the coroutine, which the caller owns from now on.
+	std::coroutine_handle<promise_type> release() { return std::exchange(handle, nullptr); }
+
+private:
+	explicit Coroutine(std::coroutine_handle<promise_type> p_handle) :
+			handle(p_handle) {}
+	std::coroutine_handle<promise_type> handle;
+};
+
+// resume resumes the coroutine p_handle, whose promise is p_promise, on this thread, where gdpp::is_cancelled() then
+// reads its task's cancel flag. The coroutine may be destroyed after.
+inline void resume(std::coroutine_handle<> p_handle, CoroutinePromise &p_promise) {
+	const std::atomic<bool> *outer = current_cancel();
+	current_cancel() = p_promise.task->cancel_flag();
+	p_handle.resume();
+	current_cancel() = outer;
+}
+
+// waits are the connections of the package's awaits, which own their coroutines, by address: uninitialize destroys
+// them, before the library's code goes away.
+class SignalWait;
+inline std::mutex waits_mutex;
+inline std::vector<SignalWait *> waits;
+
+// SignalWait is a Callable that resumes a coroutine which awaits a signal, once. It's the signal's connection, whose
+// target is the object the func was called on, so it goes when either object is freed. If it goes before the signal
+// is emitted, it destroys the coroutine.
+class SignalWait : public CallableCustom {
+public:
+	// A Callable that resumes p_handle, whose promise is p_promise, with the signal's arguments in r_result. It's
+	// connected to p_signal of the object p_emitter.
+	SignalWait(std::coroutine_handle<> p_handle, CoroutinePromise *p_promise, Variant *r_result, ObjectID p_emitter, const StringName &p_signal) :
+			handle(p_handle), promise(p_promise), result(r_result), self(p_promise->self), emitter(p_emitter), signal(p_signal) {
+		std::lock_guard<std::mutex> lock(waits_mutex);
+		waits.push_back(this);
+	}
+	~SignalWait() override {
+		{
+			std::lock_guard<std::mutex> lock(waits_mutex);
+			waits.erase(std::find(waits.begin(), waits.end(), this));
+		}
+		if (!resumed) {
+			handle.destroy();
+		}
+	}
+
+	// The address: each SignalWait is only equal to itself.
+	uint32_t hash() const override { return uint32_t(uintptr_t(this)); }
+	// "gdpp::SignalWait".
+	String get_as_text() const override { return "gdpp::SignalWait"; }
+	// Compares addresses.
+	CompareEqualFunc get_compare_equal_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a == p_b; };
+	}
+	// Orders by address.
+	CompareLessFunc get_compare_less_func() const override {
+		return [](const CallableCustom *p_a, const CallableCustom *p_b) { return p_a < p_b; };
+	}
+	// Always true.
+	bool is_valid() const override { return true; }
+	// The object the func was called on, if any.
+	ObjectID get_object() const override { return self; }
+	// call resumes the coroutine, once, where await gives the arguments like GDScript's: nothing, the argument, or an
+	// Array of them.
+	void call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, GDExtensionCallError &r_call_error) const override {
+		r_call_error.error = GDEXTENSION_CALL_OK;
+		if (resumed) {
+			return;
+		}
+		resumed = true;
+		if (p_argcount == 1) {
+			*result = *p_arguments[0];
+		} else if (p_argcount > 1) {
+			Array arguments;
+			for (int i = 0; i < p_argcount; i++) {
+				arguments.push_back(*p_arguments[i]);
+			}
+			*result = arguments;
+		}
+		resume(handle, *promise);
+	}
+
+	// disconnect_all disconnects the package's awaits, which destroys their coroutines.
+	static void disconnect_all() {
+		std::vector<std::pair<ObjectID, StringName>> signals;
+		{
+			std::lock_guard<std::mutex> lock(waits_mutex);
+			for (SignalWait *wait : waits) {
+				signals.emplace_back(wait->emitter, wait->signal);
+			}
+		}
+		for (const auto &[id, name] : signals) {
+			Object *object = ObjectDB::get_instance(id);
+			if (!object) {
+				continue;
+			}
+			TypedArray<Dictionary> connections = object->get_signal_connection_list(name);
+			for (int64_t i = 0; i < connections.size(); i++) {
+				Callable callable = Dictionary(connections[i])["callable"];
+				if (callable.is_custom() && is_wait(uint32_t(callable.hash()))) {
+					object->disconnect(name, callable);
+				}
+			}
+		}
+	}
+
+private:
+	std::coroutine_handle<> handle;
+	CoroutinePromise *promise;
+	Variant *result; // In the coroutine's awaiter.
+	ObjectID self, emitter;
+	StringName signal;
+	mutable bool resumed = false;
+
+	// is_wait reports whether p_hash is the hash of a SignalWait that's still waiting.
+	static bool is_wait(uint32_t p_hash) {
+		std::lock_guard<std::mutex> lock(waits_mutex);
+		return std::any_of(waits.begin(), waits.end(), [&](SignalWait *p_wait) { return p_wait->hash() == p_hash; });
+	}
+};
+
+// SignalAwaiter awaits the signal p_signal of p_object: `await object->name` in an @async func. It gives the
+// signal's arguments, like GDScript's await. Without the object or the signal, it prints an error, and doesn't wait.
+struct SignalAwaiter {
+	Object *object;
+	StringName signal;
+	Variant result;
+
+	bool await_ready() {
+		ERR_FAIL_NULL_V_MSG(object, true, vformat("There is no object whose signal %s to await.", signal));
+		ERR_FAIL_COND_V_MSG(!object->has_signal(signal), true, vformat("Class %s has no signal %s to await.", object->get_class(), signal));
+		return false;
+	}
+	template <typename P>
+	void await_suspend(std::coroutine_handle<P> p_handle) {
+		object->connect(signal, Callable(memnew(SignalWait(p_handle, &p_handle.promise(), &result, object->get_instance_id(), signal))), Object::CONNECT_ONE_SHOT);
+	}
+	Variant await_resume() { return result; }
+};
+
+// signal returns the awaiter of the signal p_signal of p_object, a pointer, Ref or Gd.
+template <typename T>
+SignalAwaiter signal(const T &p_object, const StringName &p_signal) {
+	return SignalAwaiter{ const_cast<Object *>(static_cast<const Object *>(object_ptr(p_object))), p_signal, Variant() };
+}
+
+// VariantAwaiter awaits a Variant, like GDScript's await: a task until it's done, giving its result, a GDScript
+// function's state until it completes, giving its return value, and a Signal until it's emitted, giving its
+// arguments. Other values are given right away.
+struct VariantAwaiter {
+	Variant value;
+	Variant result;
+	Signal signal;
+
+	bool await_ready() {
+		if (value.get_type() == Variant::SIGNAL) {
+			signal = value;
+			ERR_FAIL_NULL_V_MSG(signal.get_object(), true, "There is no object whose signal to await.");
+			return false;
+		}
+		Object *object = value.get_type() == Variant::OBJECT ? value.operator Object *() : nullptr;
+		if (is_task(object)) {
+			if (object->call(GDPP_STRING_NAME("is_done"))) {
+				result = object->call(GDPP_STRING_NAME("get_result"));
+				return true;
+			}
+			signal = object->call(GDPP_STRING_NAME("until_done"));
+			return false;
+		}
+		if (object && object->is_class("GDScriptFunctionState")) {
+			signal = Signal(object, GDPP_STRING_NAME("completed"));
+			return false;
+		}
+		result = value;
+		return true;
+	}
+	template <typename P>
+	void await_suspend(std::coroutine_handle<P> p_handle) {
+		Object *object = signal.get_object();
+		object->connect(signal.get_name(), Callable(memnew(SignalWait(p_handle, &p_handle.promise(), &result, object->get_instance_id(), signal.get_name()))),
+				Object::CONNECT_ONE_SHOT);
+	}
+	Variant await_resume() { return result; }
+};
+
+// TaskAwaiter awaits an Async until its task is done, and gives its result, which it keeps, like result().
+template <typename T>
+struct TaskAwaiter {
+	Async<T> task;
+	Variant result;
+
+	bool await_ready() { return !task || task.is_done(); }
+	template <typename P>
+	void await_suspend(std::coroutine_handle<P> p_handle) {
+		Ref<RefCounted> object = task.object();
+		auto wait = [&](const StringName &p_signal) {
+			return Callable(memnew(SignalWait(p_handle, &p_handle.promise(), &result, object->get_instance_id(), p_signal)));
+		};
+		if (GDPP_ASYNC_CLASS *own = Object::cast_to<GDPP_ASYNC_CLASS>(object.ptr())) {
+			own->on_done(wait);
+		} else {
+			Signal signal = object->call(GDPP_STRING_NAME("until_done"));
+			object->connect(signal.get_name(), wait(signal.get_name()), Object::CONNECT_ONE_SHOT);
+		}
+	}
+	T await_resume() { return task.result(); }
+};
+
+// run_coroutine starts p_body, the coroutine of an @async func called on p_self, or on nothing if null, and returns
+// its Async. The body runs until it awaits.
+template <typename T>
+Async<T> run_coroutine(const Object *p_self, Coroutine<T> p_body) {
+	static const bool hooked = (on_unload(&SignalWait::disconnect_all), true); // Once per library.
+	static_cast<void>(hooked);
+	Ref<GDPP_ASYNC_CLASS> task;
+	task.instantiate();
+	task->start_coroutine();
+	auto handle = p_body.release();
+	CoroutinePromise &promise = handle.promise();
+	promise.task = task;
+	if (p_self) {
+		promise.self = p_self->get_instance_id();
+		promise.keep = Ref<RefCounted>(Object::cast_to<RefCounted>(const_cast<Object *>(p_self)));
+	}
+	resume(handle, promise);
+	return Async<T>(Ref<RefCounted>(task.ptr()));
+}
+
+// run_detached_coroutine starts the coroutine of an @async("detached") func, like run_coroutine, but returns nothing.
+template <typename T>
+void run_detached_coroutine(const Object *p_self, Coroutine<T> p_body) {
+	static_cast<void>(run_coroutine(p_self, std::move(p_body)));
+}
+
+// await_value is the coroutine that awaits p_value, like `await` on a Variant, and returns it as a T.
+template <typename T>
+Coroutine<T> await_value(Variant p_value) {
+	Variant value = co_await VariantAwaiter{ std::move(p_value) };
+	if constexpr (std::is_void_v<T>) {
+		co_return;
+	} else {
+		co_return value.get_type() == Variant::NIL ? T() : cast<T>(value);
+	}
+}
+
+// async_of returns an Async of p_value, which a script's override of an @async @virtual func returned: the task, if
+// it's one, else a task that's done once await_value is.
+template <typename T>
+Async<T> async_of(const Variant &p_value) {
+	if (p_value.get_type() == Variant::OBJECT && is_task(p_value.operator Object *())) {
+		return Async<T>(Ref<RefCounted>(p_value));
+	}
+	return run_coroutine<T>(nullptr, await_value<T>(p_value));
+}
+
+// An Async is awaited with TaskAwaiter.
+template <typename T>
+TaskAwaiter<T> operator co_await(const Async<T> &p_task) {
+	return TaskAwaiter<T>{ p_task, Variant() };
+}
+#endif
+
 // Masked is what & returns for a bitfield E: it converts to E, and tests as true if any flag is set, so
 // if (mask & Layer::ENEMY) works.
 template <typename E>
@@ -1930,7 +2375,8 @@ using gdpp::Weak;
 // GDPP_ASSERT is what `assert condition;` becomes: in debug builds, a failed condition prints an error and returns from
 // the function, with T() in one that returns a T, and a lasting T() in one that returns a T &. It tells them apart by
 // GDPP_SIGNATURE, and without one, doesn't compile. GDPP_ASSERT_VOID, GDPP_ASSERT_VALUE and GDPP_ASSERT_REFERENCE do
-// the same in code where GD++ knows the function's return type, and
+// the same in code where GD++ knows the function's return type, GDPP_ASSERT_CO_VOID and GDPP_ASSERT_CO_VALUE in the
+// coroutine of an @async func, and
 // GDPP_ASSERT_DEDUCED doesn't compile, since no return does in a function whose return type C++ deduces from its value.
 // The error has no function name, since that of generated code, e.g. `_gdpp_body__ready` or a lambda's, would
 // confuse. With GDPP_TRACING, the error is also a trace line, see below. Release builds don't evaluate the condition.
@@ -1958,6 +2404,8 @@ using gdpp::Weak;
 #endif
 #define GDPP_ASSERT_VOID(m_text, ...) GDPP_ASSERT_(m_text, return, __VA_ARGS__)
 #define GDPP_ASSERT_VALUE(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::Default{}, __VA_ARGS__)
+#define GDPP_ASSERT_CO_VOID(m_text, ...) GDPP_ASSERT_(m_text, co_return, __VA_ARGS__)
+#define GDPP_ASSERT_CO_VALUE(m_text, ...) GDPP_ASSERT_(m_text, co_return gdpp::Default{}, __VA_ARGS__)
 #define GDPP_ASSERT_REFERENCE(m_text, ...) GDPP_ASSERT_(m_text, return gdpp::DefaultRef{}, __VA_ARGS__)
 #define GDPP_ASSERT_DEDUCED(m_text, ...) static_assert(false, "C++ deduces this function's return type from its returns, so assert can't return from it. Write the return type, e.g. `-> int` for a lambda.")
 
@@ -2101,6 +2549,18 @@ struct VariantCaster<gdpp::Async<T>> {
 		return gdpp::Async<T>(Ref<RefCounted>(p_variant));
 	}
 };
+
+#ifdef GDPP_COROUTINES
+// In an @async func, a Variant is awaited like in GDScript: a task, a GDScript function's state, or a Signal until it's
+// done, and other values right away.
+inline gdpp::VariantAwaiter operator co_await(const Variant &p_value) {
+	return gdpp::VariantAwaiter{ p_value, Variant(), Signal() };
+}
+// A Signal is awaited until it's emitted, and gives its arguments, like in GDScript.
+inline gdpp::VariantAwaiter operator co_await(const Signal &p_signal) {
+	return gdpp::VariantAwaiter{ p_signal, Variant(), Signal() };
+}
+#endif
 
 } // namespace godot
 

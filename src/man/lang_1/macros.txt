@@ -66,6 +66,7 @@ invoke spawner { enemy = "Slime", waves = 4, count = function(w) return 3 + w * 
 - Parameters have no types: they're Lua values. A macro checks what it needs, and reports problems with `gd.error_at`. See "Lua: errors" below.
 - A default is a Lua expression, evaluated at each invocation.
 - GD++ data becomes Lua values: numbers, strings, names and types as strings, lists and dictionaries as tables, and C++ code as Code values.
+- `code { ... }` passes C++ statements, and `glsl { ... }` GLSL, e.g. a shader's body. Both become Code values. `gd++ cat` and editors highlight each in its language. See `gd.shader` below.
 - A Code value converts to its C++ text with `tostring` or `..`. Emitted as a body, it keeps its own line, so compiler errors point at it.
 - `invoke name { ... }` takes a Lua table constructor, for data that needs Lua: computed values, nested tables, functions.
 
@@ -305,8 +306,19 @@ end }
 gd.shader { name, params, ret, body, doc, annotations }
   A shader. Its `body` is GLSL, not C++. See `gd++ man shaders`.
 ```lua
-gd.shader { name = "double_all", annotations = { "@sync" }, params = { "n: int", "values: PackedFloat32Array" },
+gd.shader { name = "double_all", annotations = { "@grid(64)" }, params = { "n: int", "values: PackedFloat32Array" },
   ret = "PackedFloat32Array", body = "return values[id] * 2.0;" }
+```
+  To pass GLSL to a macro, e.g. a shader's body, write it in `glsl { ... }`:
+```gd++
+// A shader that maps each pixel of an image with body, GLSL.
+macro pixel_shader(name, body) {
+  gd.shader { name = name, params = { "size: Vector2i", "src: Image" }, ret = "Image[rgba8]", body = body }
+}
+
+invoke pixel_shader(warm, glsl {
+  return texelFetch(src, id, 0) * vec4(1.0, 0.9, 0.8, 1.0);
+})
 ```
 
 gd.shader_library { body, annotations }

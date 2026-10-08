@@ -1,0 +1,4 @@
+input.gd++:4:1: Function f uses coroutines, which need C++20 or later, but the package uses c++17.
+ 4 | @async
+   | ^^^^^^
+Hint: Set the standard with gd++ init PATH --update --std c++20.

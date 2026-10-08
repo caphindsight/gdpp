@@ -1,0 +1,1 @@
+{Name:Hatch Kind:1 Base:Node Values:[] Icon: Tool:false Bitfield:false GameOnly:false EditorOnly:false Abstract:false Async:true Gpu:false Virtuals:[] NoscriptVirtuals:[] Notifications:[] Traits:[]}

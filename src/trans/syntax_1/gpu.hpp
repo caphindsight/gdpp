@@ -1600,8 +1600,8 @@ inline Device *local_device(bool p_make = true) {
 class Kernel {
 public:
 	// The kernel named p_name, e.g. "Terrain.blur", with p_glsl, workgroups of p_group_size, and a CPU fallback if
-	// p_cpu. If p_main, it runs on the main device, since it uses GPU-resident arguments or results. If p_sync, from
-	// @sync, its calls return only once the GPU is done with it.
+	// p_cpu. If p_main, it runs on the main device, since it uses GPU-resident arguments or results. If p_sync, unless
+	// @async, its calls return only once the GPU is done with it.
 	Kernel(const char *p_name, const char *p_glsl, std::array<uint32_t, 3> p_group_size, bool p_main, bool p_cpu, bool p_sync) :
 			name(p_name), glsl(p_glsl), group_size(p_group_size), main(p_main), cpu(p_cpu), sync(p_sync) {
 		std::lock_guard<std::mutex> lock(registry_mutex());
@@ -2337,8 +2337,8 @@ public:
 		if (Ref<Texture2DRD> rd = p_texture; rd.is_valid()) {
 			b.rid = rd->get_texture_rd_rid();
 		} else if (Ref<ImageTexture> it = p_texture; it.is_valid()) {
-			// The CPU writes an ImageTexture as it is. The GPU copies it there and back, which only a @sync shader can
-			// wait for: see gpu().
+			// The CPU writes an ImageTexture as it is. The GPU copies it there and back, which only a shader without
+			// @async can wait for: see gpu().
 			image_texture = true;
 			if (kernel.sync) {
 				b.image = it->get_image()->duplicate();
@@ -2443,8 +2443,8 @@ public:
 		return ImageTexture::create_from_image(image_from_pixels(*cpu_pixels(p_make), p_format));
 	}
 
-	// run runs a kernel that returns nothing: it writes its GPU arrays and textures. It waits for the GPU only with
-	// @sync.
+	// run runs a kernel that returns nothing: it writes its GPU arrays and textures. It waits for the GPU unless
+	// @async.
 	template <typename F>
 	void run(F p_make) {
 		using K = std::invoke_result_t<F>;
@@ -2502,8 +2502,8 @@ private:
 		if (d && image_texture && !kernel.sync) {
 			// It writes an ImageTexture, which needs a copy back that the call can't wait for: the CPU writes it instead.
 			if (!kernel.warned_image_texture.exchange(true)) {
-				WARN_PRINT(vformat("Shader %s writes an ImageTexture, so it runs on the CPU: a shader without @sync returns before the GPU is done, "
-								   "and can't copy it back. Pass a texture that a shader or gpu_texture() made, or add @sync.",
+				WARN_PRINT(vformat("Shader %s writes an ImageTexture, so it runs on the CPU: an @async shader returns before the GPU is done, "
+								   "and can't copy it back. Pass a texture that a shader or gpu_texture() made, or remove @async.",
 						kernel.name));
 			}
 			return nullptr;

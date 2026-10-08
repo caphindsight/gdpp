@@ -94,6 +94,21 @@ func on_died() -> void {
 - Functions declared with `func` are bound. So you can also connect them by name, e.g. with `Callable(this, "on_died")`, or in the editor's Node dock.
 - In GDScript, connect as usual: `player.died.connect(_on_player_died)`.
 
+# Awaiting signals
+
+An `@async` function waits for a signal with `await`, like GDScript:
+
+```gd++
+@async
+func hide_hit() -> void {
+  await anim->animation_finished;   // a signal of another object
+  await died;                       // a signal of this class
+  set_visible(false);
+}
+```
+
+See "Awaiting signals" in `gd++ man async`.
+
 # Enums in signals
 
 - A signal parameter can be a GD++ enum.
@@ -147,4 +162,4 @@ func _pressed() -> void {
 
 # See also
 
-`gd++ man functions`, `gd++ man externs`, `gd++ man code`, `gd++ man debugging`.
+`gd++ man functions`, `gd++ man async`, `gd++ man externs`, `gd++ man code`, `gd++ man debugging`.

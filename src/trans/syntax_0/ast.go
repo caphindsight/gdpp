@@ -349,10 +349,10 @@ type MacroArg struct {
 // Value is a value passed to a macro.
 type Value struct {
 	Pos   lexer.Position
-	Kind  string      // "string", "number", "name", "list", "dict", "code" or "expr" (a C++ expression).
+	Kind  string      // "string", "number", "name", "list", "dict", "code", "glsl" (GLSL code) or "expr" (a C++ expression).
 	Text  string      // For strings (with their quotes), numbers and names: true, false, null, or a type, e.g. Array[int].
 	Items []*MacroArg // For lists (without keys) and dicts.
-	Code  *Block      // For code { ... } blocks and C++ expressions.
+	Code  *Block      // For code { ... } and glsl { ... } blocks, and C++ expressions.
 }
 
 // Block is a C++ block in braces. Text is the C++ code between the braces, with comments removed.

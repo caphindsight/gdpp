@@ -16,7 +16,6 @@ template glsl_const(name, value) {
 class Doubler {
   extends RefCounted
 
-  @sync
   shader run(n: int, v: PackedFloat32Array) -> PackedFloat32Array {
     return twice(v[id]) + OFFSET;
   }

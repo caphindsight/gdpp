@@ -1,0 +1,4 @@
+input.gd++:5:3: Function f uses coroutines, which need C++20 or later, but the package uses c++17.
+ 5 |   await get_tree()->create_timer(1.0)->timeout;
+   |   ^^^^^
+Hint: Set the standard with gd++ init PATH --update --std c++20.

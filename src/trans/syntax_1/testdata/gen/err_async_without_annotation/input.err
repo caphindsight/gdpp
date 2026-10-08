@@ -1,0 +1,4 @@
+input.gd++:5:3: Function f awaits, so it needs @async.
+ 5 |   await get_tree()->create_timer(1.0)->timeout;
+   |   ^^^^^
+Hint: Add @async: the function becomes a coroutine, and its callers get an Async of its result.

@@ -66,30 +66,6 @@ Blocks use braces, and every value has a static Godot type. Most examples show a
 
 See `gd++ man classes` and `gd++ man includes`.
 
-### Creating and deleting objects
-
-<a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
-
-See `gd++ man classes` and `gd++ man gd`.
-
-### Notifications
-
-<a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
-
-See `gd++ man notifications`.
-
-### Tool classes
-
-<a href="readme/svg/tool.gd++"><img src="readme/svg/tool.svg" alt="GD++ code: tool"></a>
-
-See `gd++ man classes`.
-
-### Scene classes
-
-<a href="readme/svg/scene.gd++"><img src="readme/svg/scene.svg" alt="GD++ code: scene"></a>
-
-See `gd++ man classes`.
-
 ### Functions
 
 <a href="readme/svg/functions.gd++"><img src="readme/svg/functions.svg" alt="GD++ code: functions"></a>
@@ -101,6 +77,36 @@ See `gd++ man functions`.
 <a href="readme/svg/variables.gd++"><img src="readme/svg/variables.svg" alt="GD++ code: variables"></a>
 
 See `gd++ man variables`.
+
+### Signals
+
+<a href="readme/svg/signals.gd++"><img src="readme/svg/signals.svg" alt="GD++ code: signals"></a>
+
+See `gd++ man signals`.
+
+### Exports
+
+<a href="readme/svg/exports.gd++"><img src="readme/svg/exports.svg" alt="GD++ code: exports"></a>
+
+See `gd++ man exports`.
+
+### Default values
+
+<a href="readme/svg/defaults.gd++"><img src="readme/svg/defaults.svg" alt="GD++ code: defaults"></a>
+
+See `gd++ man functions`.
+
+### Enums and constants
+
+<a href="readme/svg/enums.gd++"><img src="readme/svg/enums.svg" alt="GD++ code: enums"></a>
+
+See `gd++ man enums`.
+
+### Bitfield enums
+
+<a href="readme/svg/bitfield.gd++"><img src="readme/svg/bitfield.svg" alt="GD++ code: bitfield"></a>
+
+See `gd++ man enums`.
 
 ### Properties
 
@@ -114,41 +120,11 @@ See `gd++ man variables`.
 
 See `gd++ man variables`.
 
-### Typed arrays and dictionaries
+### Notifications
 
-<a href="readme/svg/typed_collections.gd++"><img src="readme/svg/typed_collections.svg" alt="GD++ code: typed_collections"></a>
+<a href="readme/svg/engine.gd++"><img src="readme/svg/engine.svg" alt="GD++ code: engine"></a>
 
-See `gd++ man types`.
-
-### Casts
-
-<a href="readme/svg/cast.gd++"><img src="readme/svg/cast.svg" alt="GD++ code: cast"></a>
-
-See `gd++ man cast`.
-
-### Traits
-
-<a href="readme/svg/traits.gd++"><img src="readme/svg/traits.svg" alt="GD++ code: traits"></a>
-
-See `gd++ man traits`.
-
-### Exports
-
-<a href="readme/svg/exports.gd++"><img src="readme/svg/exports.svg" alt="GD++ code: exports"></a>
-
-See `gd++ man exports`.
-
-### Inspector sections
-
-<a href="readme/svg/sections.gd++"><img src="readme/svg/sections.svg" alt="GD++ code: sections"></a>
-
-See `gd++ man exports`.
-
-### Signals
-
-<a href="readme/svg/signals.gd++"><img src="readme/svg/signals.svg" alt="GD++ code: signals"></a>
-
-See `gd++ man signals`.
+See `gd++ man notifications`.
 
 ### Overrides
 
@@ -156,11 +132,35 @@ See `gd++ man signals`.
 
 See `gd++ man functions`.
 
-### Virtual functions
+### Typed arrays and dictionaries
 
-<a href="readme/svg/virtual.gd++"><img src="readme/svg/virtual.svg" alt="GD++ code: virtual"></a>
+<a href="readme/svg/typed_collections.gd++"><img src="readme/svg/typed_collections.svg" alt="GD++ code: typed_collections"></a>
 
-See `gd++ man functions`.
+See `gd++ man types`.
+
+### Creating and deleting objects
+
+<a href="readme/svg/create.gd++"><img src="readme/svg/create.svg" alt="GD++ code: create"></a>
+
+See `gd++ man classes` and `gd++ man gd`.
+
+### Casts
+
+<a href="readme/svg/cast.gd++"><img src="readme/svg/cast.svg" alt="GD++ code: cast"></a>
+
+See `gd++ man cast`.
+
+### Assertions
+
+<a href="readme/svg/asserts.gd++"><img src="readme/svg/asserts.svg" alt="GD++ code: asserts"></a>
+
+See `gd++ man rewrites`.
+
+### Doc comments
+
+<a href="readme/svg/docs.gd++"><img src="readme/svg/docs.svg" alt="GD++ code: docs"></a>
+
+See `gd++ man docs`.
 
 ### Const and static functions
 
@@ -168,11 +168,23 @@ See `gd++ man functions`.
 
 See `gd++ man functions`.
 
-### Default values
+### Inspector sections
 
-<a href="readme/svg/defaults.gd++"><img src="readme/svg/defaults.svg" alt="GD++ code: defaults"></a>
+<a href="readme/svg/sections.gd++"><img src="readme/svg/sections.svg" alt="GD++ code: sections"></a>
+
+See `gd++ man exports`.
+
+### Virtual functions
+
+<a href="readme/svg/virtual.gd++"><img src="readme/svg/virtual.svg" alt="GD++ code: virtual"></a>
 
 See `gd++ man functions`.
+
+### Constructors and destructors
+
+<a href="readme/svg/ctor_dtor.gd++"><img src="readme/svg/ctor_dtor.svg" alt="GD++ code: ctor_dtor"></a>
+
+See `gd++ man lifecycle`.
 
 ### Deferred functions
 
@@ -192,23 +204,33 @@ See `gd++ man functions`.
 
 See `gd++ man async`.
 
-### Remote procedure calls
+### Coroutines and await
 
-<a href="readme/svg/rpc.gd++"><img src="readme/svg/rpc.svg" alt="GD++ code: rpc"></a>
+<a href="readme/svg/async.gd++"><img src="readme/svg/async.svg" alt="GD++ code: async"></a>
 
-See `gd++ man rpc`.
+Like GDScript's `await`. Scripts await a task with `await task.until_done()`.
 
-### Enums and constants
+See `gd++ man async`.
 
-<a href="readme/svg/enums.gd++"><img src="readme/svg/enums.svg" alt="GD++ code: enums"></a>
+### Shaders
 
-See `gd++ man enums`.
+<a href="readme/svg/shaders.gd++"><img src="readme/svg/shaders.svg" alt="GD++ code: shaders"></a>
 
-### Bitfield enums
+Shaders are functions written in GLSL, which run on the GPU. Without one, e.g. on a dedicated server, they run on the CPU. A call waits for the GPU, unless the shader is `@async`.
 
-<a href="readme/svg/bitfield.gd++"><img src="readme/svg/bitfield.svg" alt="GD++ code: bitfield"></a>
+See `gd++ man shaders`.
 
-See `gd++ man enums`.
+### Tool classes
+
+<a href="readme/svg/tool.gd++"><img src="readme/svg/tool.svg" alt="GD++ code: tool"></a>
+
+See `gd++ man classes`.
+
+### Scene classes
+
+<a href="readme/svg/scene.gd++"><img src="readme/svg/scene.svg" alt="GD++ code: scene"></a>
+
+See `gd++ man classes`.
 
 ### Extending enums
 
@@ -216,11 +238,11 @@ See `gd++ man enums`.
 
 See `gd++ man enums`.
 
-### Constructors and destructors
+### Traits
 
-<a href="readme/svg/ctor_dtor.gd++"><img src="readme/svg/ctor_dtor.svg" alt="GD++ code: ctor_dtor"></a>
+<a href="readme/svg/traits.gd++"><img src="readme/svg/traits.svg" alt="GD++ code: traits"></a>
 
-See `gd++ man lifecycle`.
+See `gd++ man traits`.
 
 ### Weak references
 
@@ -228,17 +250,17 @@ See `gd++ man lifecycle`.
 
 See `gd++ man types`.
 
+### Remote procedure calls
+
+<a href="readme/svg/rpc.gd++"><img src="readme/svg/rpc.svg" alt="GD++ code: rpc"></a>
+
+See `gd++ man rpc`.
+
 ### Object pools
 
 <a href="readme/svg/pools.gd++"><img src="readme/svg/pools.svg" alt="GD++ code: pools"></a>
 
 See `gd++ man pools`.
-
-### Externs
-
-<a href="readme/svg/externs.gd++"><img src="readme/svg/externs.svg" alt="GD++ code: externs"></a>
-
-See `gd++ man externs`.
 
 ### Tracing
 
@@ -270,6 +292,18 @@ Soldier.pick_target        main         600       41.82       41.82       69.70 
 
 See `gd++ man debugging`.
 
+### Externs
+
+<a href="readme/svg/externs.gd++"><img src="readme/svg/externs.svg" alt="GD++ code: externs"></a>
+
+See `gd++ man externs`.
+
+### Cached string names
+
+<a href="readme/svg/string_name.gd++"><img src="readme/svg/string_name.svg" alt="GD++ code: string_name"></a>
+
+See `gd++ man runtime`.
+
 ### C++ blocks
 
 <a href="readme/svg/code_blocks.gd++"><img src="readme/svg/code_blocks.svg" alt="GD++ code: code_blocks"></a>
@@ -281,24 +315,6 @@ See `gd++ man code`.
 <a href="readme/svg/import.gd++"><img src="readme/svg/import.svg" alt="GD++ code: import"></a>
 
 See `gd++ man includes`.
-
-### Doc comments
-
-<a href="readme/svg/docs.gd++"><img src="readme/svg/docs.svg" alt="GD++ code: docs"></a>
-
-See `gd++ man docs`.
-
-### Assertions
-
-<a href="readme/svg/asserts.gd++"><img src="readme/svg/asserts.svg" alt="GD++ code: asserts"></a>
-
-See `gd++ man rewrites`.
-
-### Cached string names
-
-<a href="readme/svg/string_name.gd++"><img src="readme/svg/string_name.svg" alt="GD++ code: string_name"></a>
-
-See `gd++ man runtime`.
 
 ### Templates
 
@@ -317,14 +333,6 @@ See `gd++ man macros`.
 <a href="readme/svg/user_annotations.gd++"><img src="readme/svg/user_annotations.svg" alt="GD++ code: user_annotations"></a>
 
 See `gd++ man annotations`.
-
-### Shaders
-
-<a href="readme/svg/shaders.gd++"><img src="readme/svg/shaders.svg" alt="GD++ code: shaders"></a>
-
-Shaders are functions written in GLSL, which run on the GPU. Without one, e.g. on a dedicated server, they run on the CPU.
-
-See `gd++ man shaders`.
 
 ## The build tool
 

@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotations @async and @onthread can't be used together.
+ 4 | @async @onthread
+   | ^^^^^^
+Hint: An @async func runs on its caller's thread, and awaits instead of blocking. To wait for work on a thread, await an @onthread func's Async.

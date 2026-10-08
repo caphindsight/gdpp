@@ -70,7 +70,7 @@ struct _gdpp_shader_spin {
 			"    shared float tile[64];\n"
 			"\n"
 			"vec2 _gdpp_body(int id) {\n"
-			"#line 15 \"input.gd++\"\n"
+			"#line 14 \"input.gd++\"\n"
 			"\n"
 			"    return rotate(points[id], wrap_angle(angle));\n"
 			"\n"
@@ -88,7 +88,7 @@ struct _gdpp_shader_spin {
 	int index(int p) const {
 		return p;
 	}
-#line 15 "input.gd++"
+#line 14 "input.gd++"
 	vec2 body(Id id) const {
     return rotate(points[id], wrap_angle(angle));
 }

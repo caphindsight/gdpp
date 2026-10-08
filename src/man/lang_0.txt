@@ -71,7 +71,7 @@ A GD++ file mixes two languages, and a third one for shaders:
 - GD++ declarations: classes, functions, variables, signals, enums and so on. GD++ parses them, and turns them into C++ declarations and bindings.
 - C++ code, in braces: function bodies, getters and setters, constructors, initial values, and `decl` and `impl` blocks. GD++ copies it into the generated C++ almost unchanged. It only:
   - removes comments,
-  - applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy`, `as` and `assert`.
+  - applies its rewrites: `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `await`, `create`, `destroy`, `queue_destroy`, `as` and `assert`.
 
 In C++ code, all of godot-cpp works: Godot's classes, `Variant`, `memnew`, `Ref`, `UtilityFunctions` and so on. GD++ adds a few helpers. See `gd++ man runtime`.
 
@@ -116,9 +116,10 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - Threads: see `gd++ man async`.
   - `@onthread` runs a function on a worker thread, and returns an `Async` task with its result.
   - `@onthread("detached")` returns nothing, for work that nobody waits for.
+  - `@async` makes a function a coroutine, which can `await` signals and tasks, like GDScript's `await`, and returns an `Async` too.
 - Shaders: `shader name(grid, params) -> type { GLSL }` runs GLSL on the GPU, once for each cell of a grid, and on the CPU without a GPU. See `gd++ man shaders`.
   - `shader { ... }` blocks and `shader_library` files hold GLSL that shaders share.
-  - `@sync` makes calls wait for the GPU. It's required on shaders whose result comes back to the CPU.
+  - Calls wait for the GPU. `@async` makes them return right away, on shaders whose result stays on the GPU.
   - `GpuArray[T]` keeps an array on the GPU, between calls.
 - Externs: use classes of other packages and GDExtensions at runtime. See `gd++ man externs`.
 - Traits: `trait Name { extends Base ... }` lists functions that classes with any base share, with `implements Name`. `as` casts objects to them. See `gd++ man traits`.
@@ -130,7 +131,7 @@ Each class becomes a C++ class in namespace `godot`, with `GDCLASS`, in a header
 - User annotations: `annotation save` declares `@@save`, which marks declarations for macros, e.g. `@@save var health: int`. GD++ itself ignores them. See `gd++ man annotations`.
   - Both are advanced features: use them seldom. Generated code is harder to read and debug than code you write out.
 - Rewrites: GD++'s few additions to C++ code. See `gd++ man rewrites`.
-  - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as`,
+  - `emit`, `rpc`, `is_cancelled`, `string_name`, `is_done`, `claim`, `cancel`, `await`, `create`, `destroy`, `queue_destroy` and `as`,
   - `assert`, with its fallbacks `assert_void` and `assert_val`.
 - Includes: automatic, with `import` and `noimport` to adjust them. See `gd++ man includes`.
 - Doc comments: `///` and `/** */`, which become the editor's help. See `gd++ man docs`.

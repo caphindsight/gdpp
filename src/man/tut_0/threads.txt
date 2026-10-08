@@ -146,6 +146,21 @@ func _process(_delta):
 
 The task object's class is named after the package's prefix, e.g. `MyGameAsync`. See "In scripts" in `gd++ man async`.
 
+To wait for the result without checking each frame, await it, from an `@async` function in GD++, or with `until_done()` in a script:
+
+```gd++
+@async("detached")
+func build() -> void {
+  set_mesh(build_mesh(await compute_heights(coords, 64)));
+}
+```
+
+```gdscript
+var heights = await Chunk.compute_heights(Vector2i(3, 4), 64).until_done()
+```
+
+See `gd++ man sequences`.
+
 # 7. Check for races
 
 Code on threads has bugs of its own: data races, where two threads use the same data at once. ThreadSanitizer finds them:
@@ -164,4 +179,4 @@ See `gd++ man hunt-bugs` and `gd++ man debugging`.
 
 # See also
 
-`gd++ man async`, `gd++ man functions`, `gd++ man optimize`, `gd++ man hunt-bugs`.
+`gd++ man async`, `gd++ man sequences`, `gd++ man functions`, `gd++ man optimize`, `gd++ man hunt-bugs`.

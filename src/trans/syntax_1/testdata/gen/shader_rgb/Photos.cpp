@@ -41,7 +41,7 @@ struct _gdpp_shader_opaque {
 			"}\n"
 			"\n"
 			"vec3 _gdpp_body(ivec2 id) {\n"
-			"#line 6 \"input.gd++\"\n"
+			"#line 5 \"input.gd++\"\n"
 			"\n"
 			"  return texelFetch(src, id, 0).rgb;\n"
 			"\n"
@@ -58,7 +58,7 @@ struct _gdpp_shader_opaque {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 6 "input.gd++"
+#line 5 "input.gd++"
 	vec3 body(Id id) const {
   return texelFetch(src, id, 0).swizzle<0, 1, 2>();
 }
@@ -92,7 +92,7 @@ struct _gdpp_shader_normals {
 			"}\n"
 			"\n"
 			"vec3 _gdpp_body(ivec2 id) {\n"
-			"#line 11 \"input.gd++\"\n"
+			"#line 9 \"input.gd++\"\n"
 			"\n"
 			"  return normalize(vec3(vec2(id) / vec2(size) - 0.5, 1.0));\n"
 			"\n"
@@ -108,7 +108,7 @@ struct _gdpp_shader_normals {
 	int index(ivec2 p) const {
 		return p.y * size.x + p.x;
 	}
-#line 11 "input.gd++"
+#line 9 "input.gd++"
 	vec3 body(Id id) const {
   return normalize(vec3(vec2(id) / vec2(size) - 0.5, 1.0));
 }

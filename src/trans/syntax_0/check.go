@@ -122,8 +122,9 @@ type funcModel struct {
 	noscript                           bool        // With "noscript" on @virtual or @override: a C++ virtual function, which scripts can't override.
 	isPrivate                          bool        // With @private: a private method, which isn't bound.
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
-	deferral                           string      // "deferred", "thread_safe" or "onthread" with that annotation, else empty.
-	detached                           bool        // With @onthread("detached"): a call starts a task that nobody waits for, and returns nothing.
+	deferral                           string      // "deferred", "thread_safe", "onthread" or "async" with that annotation, else empty.
+	detached                           bool        // With @onthread("detached") or @async("detached"): a call starts a task that nobody waits for, and returns nothing.
+	coro                               *gtype      // For the body of an @async func, a coroutine whose ret is its Coroutine: the result's type. Else nil.
 	hidden                             string      // For the generated body of a class's func with a deferral: that deferral. "notif" for an on block.
 	trace, profile                     bool        // Whether its @trace or @profile, or its class's, is on.
 	notrace, noprofile                 bool        // Whether it has @notrace or @noprofile, which leave it out of its class's.
@@ -153,7 +154,7 @@ func (f *funcModel) scripted() bool {
 // trampolined reports whether the function's signature mentions an enum, so it's bound through a trampoline. The
 // body of an @onthread func and a @private func aren't bound at all.
 func (f *funcModel) trampolined() bool {
-	return f.hidden != "onthread" && !f.isPrivate && (f.ret.enum != nil || slices.ContainsFunc(f.params, func(t *gtype) bool { return t.enum != nil }))
+	return f.hidden != "onthread" && f.hidden != "async" && !f.isPrivate && (f.ret.enum != nil || slices.ContainsFunc(f.params, func(t *gtype) bool { return t.enum != nil }))
 }
 
 type varModel struct {
@@ -351,7 +352,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 	return decls, nil
 }
 
-// usesAsync reports whether class c uses Async: has an @onthread function, an Async type in a signature, or
+// usesAsync reports whether class c uses Async: has an @onthread or @async function, an Async type in a signature, or
 // @factory_shader, whose methods return one.
 func usesAsync(c *Class) bool {
 	if hasAnnotation(c, "factory_shader") {
@@ -365,7 +366,7 @@ func usesAsync(c *Class) bool {
 		switch {
 		case m.Func != nil:
 			return isAsync(m.Func.Return) || hasAsync(m.Func.Params) ||
-				slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "onthread" })
+				slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "onthread" || a.Name == "async" })
 		case m.Shader != nil:
 			return slices.ContainsFunc(m.Shader.Annotations, func(a *Annotation) bool { return a.Name == "onthread" })
 		case m.Signal != nil:
@@ -530,6 +531,10 @@ func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
 		arg := args[slices.IndexFunc(args, func(arg *Arg) bool { return arg.Value == `"final"` })]
 		return u.errorAt(arg.Pos, len(arg.Value), "Annotation @override(\"final\") only works on overrides of a GD++ @virtual function.",
 			"The engine lets scripts override its own virtual functions, so GD++ can't stop that.")
+	case f.override && f.deferral == "async" && kind == "engine":
+		a := annotationNamed(f.f, "async")
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s overrides a virtual function of %s, which the engine calls, so it can't be @async.", f.f.Name, owner),
+			"The engine doesn't take an Async. Call an @async func from it instead.")
 	case f.scripted():
 		f.virtualOf = class
 	case f.override && !f.final && kind == "script": // Without a GDVIRTUAL_CALL, scripts' overrides never run.
@@ -1300,9 +1305,9 @@ func cppString(s string) string {
 
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
-var knownAnnotations = []string{"abstract", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
+var knownAnnotations = []string{"abstract", "async", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_dir", "export_enum", "export_file", "export_flags",
 	"export_group", "export_multiline", "export_placeholder", "export_range", "export_storage", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "sync", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "static", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -1322,7 +1327,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can't be used on %s.", a.Name, kind), "")
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
-		case len(a.Args) > 0 && !slices.Contains([]string{"export_category", "export_enum", "export_file", "export_flags", "export_group",
+		case len(a.Args) > 0 && !slices.Contains([]string{"async", "export_category", "export_enum", "export_file", "export_flags", "export_group",
 			"export_placeholder", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
@@ -1407,7 +1412,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "private", "profile", "recycle", "rpc", "static",
+	allowed := []string{"async", "const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "private", "profile", "recycle", "rpc", "static",
 		"thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "thread_safe", "trace"}
@@ -1443,15 +1448,29 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		m.super = m.super || name == "super"
 		m.noscript = m.noscript || name == "noscript"
 	}
-	for _, arg := range argsOf(a["onthread"]) {
-		name, _ := strconv.Unquote(arg.Value)
-		switch {
-		case name != "detached":
-			return nil, u.errorAt(arg.Pos, len(arg.Value), "Annotation @onthread takes \"detached\".", "E.g. @onthread(\"detached\").")
-		case m.detached:
-			return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @onthread takes %s only once.", arg.Value), "")
+	for _, kind := range []string{"onthread", "async"} {
+		for _, arg := range argsOf(a[kind]) {
+			name, _ := strconv.Unquote(arg.Value)
+			switch {
+			case name != "detached":
+				return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @%s takes \"detached\".", kind), fmt.Sprintf("E.g. @%s(\"detached\").", kind))
+			case m.detached:
+				return nil, u.errorAt(arg.Pos, len(arg.Value), fmt.Sprintf("Annotation @%s takes %s only once.", kind, arg.Value), "")
+			}
+			m.detached = true
 		}
-		m.detached = true
+	}
+	if as := a["async"]; as != nil {
+		for _, other := range []string{"onthread", "deferred", "thread_safe", "rpc", "profile"} {
+			if a[other] != nil {
+				return nil, u.errorAt(as.Pos, len(as.Name)+1, fmt.Sprintf("Annotations @async and @%s can't be used together.", other), asyncHints[other])
+			}
+		}
+		if err := u.requireCoroutines(as.Pos, len(as.Name)+1, f.Name); err != nil {
+			return nil, err
+		}
+	} else if err := u.checkNoAwait(f.Body, f.Name); err != nil {
+		return nil, err
 	}
 	for _, arg := range argsOf(a["virtual"]) {
 		name, _ := strconv.Unquote(arg.Value)
@@ -1482,7 +1501,7 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	m.notrace, m.noprofile = a["notrace"] != nil, a["noprofile"] != nil
-	for _, name := range []string{"deferred", "thread_safe", "onthread"} {
+	for _, name := range []string{"deferred", "thread_safe", "onthread", "async"} {
 		if a[name] != nil {
 			m.deferral = name
 		}
@@ -1520,10 +1539,10 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	case ext && f.Body != nil:
 		return nil, u.errorAt(f.Body.Pos, 1, "Extern functions can't have a body.", "Externs only declare what another package defines.")
 	case m.detached && !m.ret.void:
-		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @onthread(\"detached\") function %s must return void.", f.Name),
+		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @%s(\"detached\") function %s must return void.", m.deferral, f.Name),
 			"Nothing waits for its task, so its calls can't return a value.")
-	case m.deferral == "onthread" && m.ret.async != nil:
-		return nil, u.errorAt(f.Return.Pos, len(f.Return.Name), fmt.Sprintf("The @onthread function %s already returns an Async: write -> %s.", f.Name, typeString(asyncArg(f.Return))),
+	case (m.deferral == "onthread" || m.deferral == "async") && m.ret.async != nil:
+		return nil, u.errorAt(f.Return.Pos, len(f.Return.Name), fmt.Sprintf("The @%s function %s already returns an Async: write -> %s.", m.deferral, f.Name, typeString(asyncArg(f.Return))),
 			"Its callers get an Async of the type its body returns.")
 	case (m.deferral == "deferred" || m.deferral == "thread_safe") && !m.ret.void:
 		return nil, u.errorAt(f.Pos, 4, fmt.Sprintf("The @%s function %s must return void.", m.deferral, f.Name), "Its calls run later, so they can't return a value.")
@@ -1535,6 +1554,74 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// asyncHints explain why @async can't be used with another annotation.
+var asyncHints = map[string]string{
+	"onthread":    "An @async func runs on its caller's thread, and awaits instead of blocking. To wait for work on a thread, await an @onthread func's Async.",
+	"deferred":    "Calls of an @async func run right away, until they await.",
+	"thread_safe": "Calls of an @async func run right away, until they await.",
+	"rpc":         "Other peers can't get the Async that a call returns.",
+	"profile":     "Its time would span its awaits. Profile the funcs it calls instead.",
+}
+
+// requireCoroutines returns an error at pos, n long, unless the package's C++ standard has coroutines, which func
+// f, an @async func or one that awaits, needs.
+func (u *unit) requireCoroutines(pos lexer.Position, n int, f string) error {
+	if hasCoroutines(u.opts.CppStandard) {
+		return nil
+	}
+	return u.errorAt(pos, n, fmt.Sprintf("Function %s uses coroutines, which need C++20 or later, but the package uses %s.", f, u.opts.CppStandard),
+		"Set the standard with gd++ init PATH --update --std c++20.")
+}
+
+// hasCoroutines reports whether the C++ standard std, e.g. "c++17", "gnu++2a" or "/std:c++latest", has coroutines.
+// An empty one is the default, which does.
+func hasCoroutines(std string) bool {
+	std = strings.ToLower(std)
+	for _, prefix := range []string{"/std:", "gnu++", "c++"} {
+		std = strings.TrimPrefix(std, prefix)
+	}
+	if slices.Contains([]string{"", "latest", "2a", "2b", "2c"}, std) {
+		return true
+	}
+	year, err := strconv.Atoi(std)
+	return err == nil && year >= 20 && year < 98
+}
+
+// checkNoAwait returns an error if body b of func f, which isn't @async, awaits.
+func (u *unit) checkNoAwait(b *Block, f string) error {
+	if b == nil {
+		return nil
+	}
+	lex, err := gdppLexer.LexString("", b.Text)
+	if err != nil {
+		return nil
+	}
+	var ts []lexer.Token
+	for t, err := lex.Next(); err == nil && !t.EOF(); t, err = lex.Next() {
+		ts = append(ts, t)
+	}
+	for i, t := range ts {
+		j := skipSpace(ts, i+1)
+		if t.Type != tokIdent || t.Value != "await" || isMember(ts, i) || j == len(ts) || ts[j].Type != tokIdent && !isPunct(ts[j], "(") {
+			continue
+		}
+		pos := b.TextPos
+		pos.Offset += t.Pos.Offset
+		pos.Line += t.Pos.Line - 1
+		if t.Pos.Line == 1 {
+			pos.Column += t.Pos.Column - 1
+		} else {
+			pos.Column = t.Pos.Column
+		}
+		if err := u.requireCoroutines(pos, len("await"), f); err != nil {
+			return err
+		}
+		return u.errorAt(pos, len("await"), fmt.Sprintf("Function %s awaits, so it needs @async.", f),
+			"Add @async: the function becomes a coroutine, and its callers get an Async of its result.")
+	}
+	return nil
 }
 
 // onParams are the on blocks that take a parameter, by name: the parameter's type, and its C++ value. The nameless
@@ -1880,7 +1967,8 @@ func (u *unit) poolOf(a *Annotation, owner string) (*poolModel, error) {
 	return p, nil
 }
 
-// bodyName is the name of the method that holds the body of a class's @deferred, @thread_safe or @onthread func f.
+// bodyName is the name of the method that holds the body of a class's @deferred, @thread_safe, @onthread or @async
+// func f.
 func bodyName(f *funcModel) string {
 	return "_gdpp_body_" + f.f.Name
 }
@@ -2486,7 +2574,7 @@ func (u *unit) traitOwner(class, trait string) string {
 // which, e.g. "implements func hit of trait Damageable".
 func (u *unit) checkTraitFunc(f, tf *funcModel, trait, what string) error {
 	banned := slices.IndexFunc(f.f.Annotations, func(a *Annotation) bool {
-		return slices.Contains([]string{"static", "virtual", "override", "deferred", "thread_safe", "onthread", "private"}, a.Name)
+		return slices.Contains([]string{"static", "virtual", "override", "deferred", "thread_safe", "onthread", "async", "private"}, a.Name)
 	})
 	same := len(f.params) == len(tf.params) && f.ret.cpp == tf.ret.cpp && f.isConst == tf.isConst &&
 		!slices.ContainsFunc(f.f.Params, func(p *Param) bool { return p.Default != nil })
@@ -2701,12 +2789,14 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 			default:
 				m.funcs = append(m.funcs, f)
 			}
+			var caller *funcModel
 			if err == nil && f.scripted() && !f.private {
 				// GDVIRTUAL_BIND doesn't make the function callable, so scripts call it through this one.
-				caller := *f.f
-				caller.Name, caller.Annotations = f.f.Name[1:], nil
-				m.funcs = append(m.funcs, &funcModel{f: &caller, params: f.params, ret: f.ret, isConst: f.isConst, calls: f, only: f.only})
-				err = u.unique(names, f.f.Pos, "func", caller.Name)
+				callerFunc := *f.f
+				callerFunc.Name, callerFunc.Annotations = f.f.Name[1:], nil
+				caller = &funcModel{f: &callerFunc, params: f.params, ret: f.ret, isConst: f.isConst, calls: f, only: f.only}
+				m.funcs = append(m.funcs, caller)
+				err = u.unique(names, f.f.Pos, "func", callerFunc.Name)
 			}
 			if err == nil && f.deferral != "" {
 				// The deferred call runs the body, a separate method.
@@ -2719,11 +2809,25 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 					body.Params = append(body.Params, &p)
 				}
 				// The body does the work, so it's what @trace and @profile follow.
-				m.funcs = append(m.funcs, &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static, gpu: f.gpu,
-					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, only: f.only})
+				bm := &funcModel{f: &body, params: f.params, ret: f.ret, isConst: f.isConst, static: f.static, gpu: f.gpu,
+					hidden: f.deferral, trace: f.trace || m.trace && !f.notrace, profile: f.profile || m.profile && !f.noprofile, only: f.only}
+				if f.deferral == "async" {
+					// The body is a coroutine. Its time would span its awaits, so it isn't profiled.
+					bm.coro, bm.ret, bm.profile = f.ret, &gtype{cpp: "gdpp::Coroutine<" + f.ret.cpp + ">"}, false
+					bm.params = nil
+					for _, t := range f.params {
+						t := *t
+						t.byRef = false // References would dangle once the coroutine awaits.
+						bm.params = append(bm.params, &t)
+					}
+				}
+				m.funcs = append(m.funcs, bm)
 				f.trace, f.profile = false, false
-				if f.deferral == "onthread" && !f.detached {
+				if (f.deferral == "onthread" || f.deferral == "async") && !f.detached {
 					f.ret = u.async(f.ret) // Callers get an Async of the body's result.
+					if caller != nil {
+						caller.ret = f.ret
+					}
 				}
 				err = u.unique(names, f.f.Pos, "func", body.Name)
 			}

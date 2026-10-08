@@ -10,10 +10,11 @@ import (
 
 // writer builds a generated C++ file, counting lines so it can emit #line directives around user code.
 type writer struct {
-	sb     strings.Builder
-	lines  int    // Lines written so far.
-	self   string // How #line names the generated file.
-	source string // How #line names the GD++ file.
+	sb      strings.Builder
+	lines   int      // Lines written so far.
+	self    string   // How #line names the generated file.
+	source  string   // How #line names the GD++ file.
+	signals []string // The signals of the class whose code it writes, which a bare `await NAME` awaits.
 }
 
 // ln writes a line, formatted like fmt.Sprintf.
@@ -32,7 +33,7 @@ func (w *writer) user(pos lexer.Position, origin Origin, prefix, code, suffix, a
 		line, source = origin.Line, origin.Source
 	}
 	w.ln("#line %d %q", line, source)
-	w.ln("%s", prefix+cpp(code, assert)+suffix)
+	w.ln("%s", prefix+cpp(code, assert, w.signals...)+suffix)
 	w.ln("#line %d %q", w.lines+2, w.self)
 }
 
@@ -46,7 +47,7 @@ func (w *writer) block(b *Block, prefix, suffix, assert string) {
 	}
 	at := fmt.Sprintf("#line %d %q", b.TextPos.Line, w.source)
 	w.ln("%s", at)
-	w.ln("%s", strings.ReplaceAll(prefix+cpp(b.Text, assert)+suffix, "\n", "\n"+at+"\n"))
+	w.ln("%s", strings.ReplaceAll(prefix+cpp(b.Text, assert, w.signals...)+suffix, "\n", "\n"+at+"\n"))
 	w.ln("#line %d %q", w.lines+2, w.self)
 }
 
@@ -63,6 +64,9 @@ const (
 	assertReference = "GDPP_ASSERT_REFERENCE"
 	assertAny       = "GDPP_ASSERT"
 	assertDeduced   = "GDPP_ASSERT_DEDUCED"
+	// In the body of an @async func, a coroutine, which co_returns.
+	assertCoVoid  = "GDPP_ASSERT_CO_VOID"
+	assertCoValue = "GDPP_ASSERT_CO_VALUE"
 )
 
 // assertFor returns the assert macro for code in a function that returns void or not.
@@ -71,6 +75,14 @@ func assertFor(void bool) string {
 		return assertVoid
 	}
 	return assertValue
+}
+
+// assertCoFor returns the assert macro for code in a coroutine whose result is void or not.
+func assertCoFor(void bool) string {
+	if void {
+		return assertCoVoid
+	}
+	return assertCoValue
 }
 
 // cpp turns user C++ into plain C++:
@@ -85,8 +97,13 @@ func assertFor(void bool) string {
 //   - `assert x;` becomes `GDPP_ASSERT("x", x);`, where assert names the macro, e.g. GDPP_ASSERT_VOID in a void function,
 //     and a lambda's own return type picks it in the lambda (see assertMacros), while the fallbacks `assert_void x;`
 //     and `assert_val x;` always become GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE,
+//   - `await x` becomes `co_await x`, and awaits a signal instead in these forms, for the object x and the class's
+//     signals: `await x->name`, `await x->string_name "name"`, `await x->string_name(expr)`, and, on this,
+//     `await name`, `await string_name "name"` and `await string_name(expr)`,
+//   - in a coroutine, whose assert macro is assertCoVoid or assertCoValue, `return` becomes `co_return`, though not
+//     in lambdas,
 //   - a `,` before `)` is dropped, so calls may end with a trailing comma.
-func cpp(code, assert string) string {
+func cpp(code, assert string, signals ...string) string {
 	lex, err := gdppLexer.LexString("", code)
 	if err != nil {
 		return code
@@ -112,6 +129,15 @@ func cpp(code, assert string) string {
 		}
 		if ts[i].Type == tokIdent && ts[i].Value == "emit" {
 			out[i] = "(void)"
+		}
+		if ts[i].Type == tokIdent && ts[i].Value == "return" && (macros[i] == assertCoVoid || macros[i] == assertCoValue) {
+			out[i] = "co_return"
+		}
+		if ts[i].Type == tokIdent && ts[i].Value == "await" && !isMember(ts, i) {
+			if j := skipSpace(ts, i+1); j < len(ts) && (ts[j].Type == tokIdent || isPunct(ts[j], "(")) {
+				i = awaitRewrite(ts, out, i, j, signals) - 1 // The operand may hold more rewrites.
+				continue
+			}
 		}
 		if ts[i].Type == tokIdent && ts[i].Value == "is_cancelled" && !isMember(ts, i) {
 			if next := skipSpace(ts, i+1); next == len(ts) || !isPunct(ts[next], "(") {
@@ -228,6 +254,85 @@ func cpp(code, assert string) string {
 		i = paren
 	}
 	return strings.Join(out, "")
+}
+
+// awaitRewrite rewrites `await` at ts[i], whose operand starts at ts[j], into out, and returns where the rewrites
+// go on: the operand. See cpp.
+func awaitRewrite(ts []lexer.Token, out []string, i, j int, signals []string) int {
+	// drop drops the spaces in ts[from:to], but keeps a line break and the indentation after it.
+	drop := func(from, to int) {
+		for k := from; k < to && ts[k].Type != tokNewline; k++ {
+			out[k] = ""
+		}
+	}
+	// named rewrites `string_name "name"` or `string_name(expr)` at ts[n] into the name's StringName, and reports
+	// whether it found one.
+	named := func(n int) bool {
+		if ts[n].Type != tokIdent || ts[n].Value != "string_name" {
+			return false
+		}
+		k := skipSpace(ts, n+1)
+		switch {
+		case k < len(ts) && ts[k].Type == tokString && ts[k].Value[0] == '"':
+			drop(n+1, k)
+			out[n], out[k] = "GDPP_STRING_NAME(", ts[k].Value+"))"
+		case k < len(ts) && isPunct(ts[k], "(") && closing(ts, k) < len(ts):
+			drop(n+1, k)
+			out[n] = "StringName"
+			out[closing(ts, k)] = "))"
+		default:
+			return false
+		}
+		return true
+	}
+	if named(j) {
+		drop(i+1, j)
+		out[i] = "co_await gdpp::signal(this, "
+		return j + 1
+	}
+	// Walk the operand, a name followed by member accesses, scopes, calls and subscripts, to its last member.
+	arrow, last, end := -1, j, j+1 // The "->" before the last name, if it's one, and the last name.
+walk:
+	for ts[j].Type == tokIdent {
+		k := skipSpace(ts, end)
+		switch {
+		case k < len(ts) && (isPunct(ts[k], "(") || isPunct(ts[k], "[")) && closing(ts, k) < len(ts):
+			if arrow >= 0 && ts[last].Value == "string_name" && isPunct(ts[k], "(") {
+				break walk
+			}
+			arrow, end = -1, closing(ts, k)+1
+		case k+1 < len(ts) && (isPunct(ts[k], "->") || isPunct(ts[k], ".") || isPunct(ts[k], ":") && isPunct(ts[k+1], ":")):
+			op := k
+			if isPunct(ts[k], ":") {
+				k++
+			}
+			m := skipSpace(ts, k+1)
+			if m == len(ts) || ts[m].Type != tokIdent {
+				break walk
+			}
+			arrow, last, end = -1, m, m+1
+			if isPunct(ts[op], "->") {
+				arrow = op
+			}
+		default:
+			break walk
+		}
+	}
+	switch {
+	case arrow >= 0 && named(last):
+	case arrow >= 0 && last == end-1:
+		out[last] = "GDPP_STRING_NAME(\"" + ts[last].Value + "\"))"
+	case last == j && end == j+1 && slices.Contains(signals, ts[j].Value):
+		drop(i+1, j)
+		out[i], out[j] = "co_await gdpp::signal(this, ", "GDPP_STRING_NAME(\""+ts[j].Value+"\"))"
+		return j + 1
+	default:
+		out[i] = "co_await"
+		return j
+	}
+	drop(i+1, j)
+	out[i], out[arrow] = "co_await gdpp::signal(", ", "
+	return j
 }
 
 // destroyWords are the words that call the runtime's function of the same name: `destroy x` is `gdpp::destroy(x)`.

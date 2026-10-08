@@ -1,0 +1,8 @@
+class_name Saver
+extends RefCounted
+
+@async("detached")
+func save_later(slot: int) -> void {
+  await Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop())->string_name "process_frame";
+  gd::print(slot);
+}

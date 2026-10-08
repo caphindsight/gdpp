@@ -95,6 +95,7 @@ health, Array[int], Node.ProcessMode   a string: a name or a type
 [a, b]                                 a list: a table with keys 1, 2, ...
 {key = v, other = w}                   a table with string keys
 code { x++; }                          a Code value: C++ statements
+glsl { return c * 2.0; }               a Code value: GLSL, e.g. a shader's body
 a + b * 2                              a Code value: a C++ expression
 ```
 

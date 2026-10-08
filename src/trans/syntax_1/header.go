@@ -479,7 +479,12 @@ func (v *varModel) setterParam() string {
 func gdvirtual(c *classModel, f *funcModel) string {
 	name := fmt.Sprintf("GDVIRTUAL%d", len(f.params))
 	args := []string{f.f.Name}
-	if !f.ret.void {
+	switch {
+	case f.ret.void:
+	case f.deferral == "async": // Scripts' overrides return a value, a task, or their function's state.
+		name += "R"
+		args = append([]string{"Variant"}, args...)
+	default:
 		name += "R"
 		args = append([]string{tagged(c, f.ret)}, args...)
 	}

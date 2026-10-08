@@ -2,7 +2,6 @@
 class_name A
 extends RefCounted
 
-@sync
 shader f(n: int) -> PackedFloat32Array {
   return float(id);
 }

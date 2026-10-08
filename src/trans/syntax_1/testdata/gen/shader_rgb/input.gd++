@@ -2,12 +2,10 @@ class_name Photos
 extends RefCounted
 
 /// Keeps the colors of an image, without its alpha: an RGB8 image, written on the GPU as RGBA8.
-@sync
 shader opaque(size: Vector2i, src: Image) -> Image[rgb8] {
   return texelFetch(src, id, 0).rgb;
 }
 
-@sync
 shader normals(size: Vector2i) -> Image[rgbf] {
   return normalize(vec3(vec2(id) / vec2(size) - 0.5, 1.0));
 }

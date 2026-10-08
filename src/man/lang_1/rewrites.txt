@@ -13,6 +13,11 @@ string_name "NAME"             GDPP_STRING_NAME("NAME")           a StringName c
 is_done TASK                   TASK.is_done()                     test whether an Async holds a task that's done
 claim TASK                     TASK.claim()                       take an Async's result
 cancel TASK                    TASK.cancel()                      ask an Async's task to stop
+await VALUE                    co_await VALUE                     wait for a task or a value, in an @async function, see `gd++ man async`
+await OBJECT->NAME             co_await gdpp::signal(OBJECT,      wait for a signal, in an @async function
+                                 GDPP_STRING_NAME("NAME"))
+await NAME                     the same, on this                  wait for a signal of this class
+return                         co_return                          in an @async function, but not in its lambdas
 create T                       gdpp::create<T>()                  create an object, see `gd++ man classes`
 destroy OBJECT                 gdpp::destroy(OBJECT)              delete an object, or give it back to its pool
 queue_destroy NODE             gdpp::queue_destroy(NODE)          destroy a node at the end of the frame
@@ -26,7 +31,7 @@ assert_val COND;               GDPP_ASSERT_VALUE("COND", COND);
 
 - They are rare on purpose, and mostly trivial: most just call a method.
 - What they add is the look. These places stand out when you read the code:
-  - Sending a signal, calling a remote function, and polling or stopping a task look different from a plain function call.
+  - Sending a signal, calling a remote function, and polling, stopping or awaiting a task look different from a plain function call.
   - `is_cancelled` reads like a flag.
   - `string_name "NAME"` reads like a typed literal.
   - A conversion reads like GDScript's.
@@ -41,7 +46,9 @@ Rewrites only happen in C++ code, never in comments or strings. Each applies in 
 - `emit`: everywhere. So it's reserved: don't use `emit` as a name in your C++ code, and don't call methods named `emit`, e.g. `Signal::emit`.
 - `is_cancelled`: everywhere except as a member, e.g. `state.is_cancelled`, a name in a scope, e.g. `gdpp::is_cancelled`, or a call, e.g. `is_cancelled()`. So it's reserved too: a variable or field named `is_cancelled` doesn't compile.
 - `rpc`: only when a call follows it, or a peer in parentheses and then a call. Elsewhere it's left alone, e.g. in Godot's own `rpc("ping")`.
-- `string_name`: only when a string literal follows it, e.g. `string_name "update"`. Elsewhere it's left alone, e.g. a variable named `string_name`.
+- `string_name`: only when a string literal follows it, e.g. `string_name "update"`, and after `await`, when `(` follows it, e.g. `await string_name(name)`. Elsewhere it's left alone, e.g. a variable named `string_name`.
+- `await`: where a name or `(` follows it, and it isn't a member. Elsewhere it's left alone, e.g. in `x.await` or `await = 1`. It's for `@async` functions: elsewhere, GD++ reports it. "Awaiting signals" in `gd++ man async` lists its forms.
+- `return`: in the body of an `@async` function, outside of lambdas.
 - `is_done`, `claim` and `cancel`: only when a name follows them. Elsewhere they're left alone, e.g. a variable named `claim`, or the call `task.is_done()`.
 - `create`, `destroy` and `queue_destroy`: only when a name follows them, and they aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
 - `as`: only when a value comes before it and a type after it.
@@ -68,7 +75,7 @@ Other facts:
 
 - Rewrites also apply to the C++ that macros generate. GD++ expands macros first. See `gd++ man macros`.
 - A rewrite keeps the code's line breaks. So line numbers in errors still match the GD++ file.
-- `gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it.
+- `gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it, or `(` in an await.
 
 # Assertions
 

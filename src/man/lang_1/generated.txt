@@ -170,7 +170,7 @@ In order:
 
 `_bind_methods` binds:
 
-- each function, with its default values, except `@private` functions, and the bodies of `@onthread` functions, which their tasks call directly,
+- each function, with its default values, except `@private` functions, and the bodies of `@onthread` and `@async` functions, which their tasks call directly,
 - each variable's getter and setter, and its property, after the inspector sections it starts,
 - each signal and each integer constant,
 - each value of each exposed enum, as a bitfield flag for a bitfield.
@@ -206,6 +206,7 @@ Each function:
   - for the function that GD++ binds for a `@virtual` function, e.g. `think` for `_think`, the call of the `@virtual` function,
   - for `@deferred` and `@thread_safe`, the call that runs `_gdpp_body_NAME` later,
   - for `@onthread`, `gdpp::run_task`, which starts a task that runs it on the `WorkerThreadPool`. See `gd++ man async`.
+  - for `@async`, `gdpp::run_coroutine`, which starts the coroutine `_gdpp_body_NAME`. See `gd++ man async`.
 - then its enum wrapper, default value functions and RPC helper.
 
 Then:
@@ -249,7 +250,7 @@ compile_shader               @factory_shader's static method, which compiles a s
 compile_shaders              @factory_shader's static method, which compiles all shaders, and its _async and _detached forms
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
-_gdpp_body_FUNC              the body of a @deferred, @thread_safe or @onthread function, or set block, which its deferred call or task runs
+_gdpp_body_FUNC              the body of a @deferred, @thread_safe, @onthread or @async function, or set block, which its deferred call or task runs
 _gdpp_FUNC                   the wrapper that binds a function with enums in its signature
 _gdpp_get_NAME, _gdpp_set_NAME   the wrappers that bind a variable of an enum type
 _gdpp_CLASS_ENUM             a class's stand-in type for an enum

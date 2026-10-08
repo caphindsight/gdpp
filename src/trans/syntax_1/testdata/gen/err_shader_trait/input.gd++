@@ -7,7 +7,6 @@ class Doubler {
   extends RefCounted
   implements Filter
 
-  @sync
   shader apply(n: int, values: PackedFloat32Array) -> PackedFloat32Array {
     return values[id] * 2.0;
   }

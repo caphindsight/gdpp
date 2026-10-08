@@ -1,0 +1,7 @@
+class_name C
+extends Node
+
+@async @onthread
+func f() -> int {
+  return 1;
+}

@@ -13,7 +13,6 @@ Some work runs the same small piece of code on many values: blurring an image, e
 class_name Filters
 extends RefCounted
 
-@sync
 shader brighten(size: Vector2i, src: Image, gain: float) -> Image[rgba8] {
   return texelFetch(src, id, 0) * gain;
 }
@@ -22,7 +21,7 @@ shader brighten(size: Vector2i, src: Image, gain: float) -> Image[rgba8] {
 - `size` is the grid: the shader runs once for each of its cells, here each pixel of a `size.x` by `size.y` image.
 - `id` is the cell that the body runs for, an `ivec2` here.
 - `return` gives the cell's result: here, its pixel. Together, the results make the image that the call returns.
-- `@sync` says that a call waits for the GPU: here, for the image, which comes back to the CPU. See "Waiting for the GPU: @sync" below.
+- A call waits for the GPU: here, for the image, which comes back to the CPU. See "Not waiting for the GPU: @async" below.
 
 C++ code calls it like any function:
 
@@ -73,7 +72,7 @@ size: Vector3i           3D            ivec3    volumes, e.g. voxels
 `@grid` names another parameter as the grid, e.g. to keep the order of an existing function's parameters:
 
 ```gd++
-@grid(size) @sync
+@grid(size)
 shader fill(color: Color, size: Vector2i) -> Image[rgba8] {
   return color;
 }
@@ -85,7 +84,6 @@ shader fill(color: Color, size: Vector2i) -> Image[rgba8] {
 `index(p)` turns a cell into the index of an array element, row by row: `p.y * size.x + p.x` in 2D. Use it to read an array over a 2D or 3D grid:
 
 ```gd++
-@sync
 shader double_all(size: Vector2i, values: PackedFloat32Array) -> PackedFloat32Array {
   return values[index(id)] * 2.0;
 }
@@ -165,6 +163,7 @@ extends Node
 var cells: GpuArray[float]
 var next: GpuArray[float]
 
+@async
 shader diffuse(n: int, from: GpuArray[float], to: GpuArray[float]) -> void {
   float left = from[max(id - 1, 0)], right = from[min(id + 1, n - 1)];
   to[id] = mix(from[id], (left + right) * 0.5, 0.5);
@@ -223,12 +222,14 @@ Shaders read and write Godot's textures. A texture they write stays on the GPU, 
 class_name Ripples
 extends Sprite2D
 
+@async
 shader paint(size: Vector2i, time: float, target: Texture2D[rgba8]) -> void {
   vec2 p = vec2(id) / vec2(size) - 0.5;
   float wave = 0.5 + 0.5 * sin(length(p) * 40.0 - time * 4.0);
   imageStore(target, id, vec4(wave, wave, 1.0, 1.0));
 }
 
+@async
 shader blank(size: Vector2i) -> Texture2D[rgba8] {
   return vec4(0.0);
 }
@@ -260,7 +261,7 @@ A `Texture2D[FORMAT]` parameter takes:
 
 - a texture that a shader returned, or that `gpu_texture` made, of that format,
 - any `Texture2DRD` whose texture has that format and can be used as storage,
-- an `ImageTexture`, which a `@sync` shader copies to the GPU and back: slow, but it works. A shader without `@sync` can't wait for the copy back, so it runs on the CPU instead, and warns once.
+- an `ImageTexture`, which a shader copies to the GPU and back: slow, but it works. An `@async` shader can't wait for the copy back, so it runs on the CPU instead, and warns once.
 
 Other textures are errors, e.g. imported ones, since the GPU can't write them.
 
@@ -268,73 +269,73 @@ A `Texture2D` parameter, without a format, takes any texture, e.g. an imported o
 
 Linear filtering of 32-bit float textures doesn't work on every GPU. For textures that you draw, prefer `rgba8` or `rgbah`.
 
-# Waiting for the GPU: @sync
+# Not waiting for the GPU: @async
 
-A call of a shader waits for the GPU if, and only if, the shader has `@sync`:
+A call of a shader waits for the GPU, unless the shader has `@async`:
 
-- With `@sync`, the call returns once the GPU is done with the shader, and its results are written.
-- Without it, the call only queues the shader for the GPU, and returns right away, while the GPU works.
+- By default, the call returns once the GPU is done with the shader, and its results are written.
+- With `@async`, the call only queues the shader for the GPU, and returns right away, while the GPU works.
 
-`@sync` is required on shaders whose result comes back to the CPU, since the call can't return it before the GPU is done:
+`@async` only works on shaders whose result stays on the GPU. A result that comes back to the CPU can't be returned before the GPU is done:
 
 ```
-The shader returns          @sync        A call without @sync
-a packed array              required     doesn't compile
-Image[FORMAT]               required     doesn't compile
-GpuArray[T]                 optional     returns the array right away, while the GPU fills it
-Texture2D[FORMAT]           optional     returns the texture right away, while the GPU fills it
-void                        optional     returns right away, while the GPU writes the GPU arrays and textures
+The shader returns          By default       With @async
+a packed array              waits            doesn't compile
+Image[FORMAT]               waits            doesn't compile
+GpuArray[T]                 waits            returns the array right away, while the GPU fills it
+Texture2D[FORMAT]           waits            returns the texture right away, while the GPU fills it
+void                        waits            returns right away, while the GPU writes the GPU arrays and textures
 ```
 
 ```gd++
-@sync
 shader scale(n: int, values: PackedFloat32Array, k: float) -> PackedFloat32Array { ... }   // waits
 
+@async
 shader advance(size: Vector2i, from: GpuArray[int], to: GpuArray[int]) -> void { ... }     // returns right away
 
-@sync
 shader bake(size: Vector2i, target: Texture2D[rgba8]) -> void { ... }                      // waits until the texture is written
 ```
 
-Without `@sync`, nothing sees the difference but the clock:
+With `@async`, nothing sees the difference but the clock:
 
 - The GPU runs the shader before everything that comes after it: other shaders, drawing, `read()` and `get_image()`. So a texture that a shader returns can be drawn right away, and a GPU array passed to the next shader.
 - `GpuArray::read()` and `Texture2D::get_image()` are the places that wait, for all the shaders before them.
 
-Use `@sync` on a shader that doesn't need it when something outside the GPU's order needs its results done, e.g. to time the GPU's work, or to tell when it's done with `@onthread`. See below.
+Leave `@async` off a shader that could have it when something outside the GPU's order needs its results done, e.g. to time the GPU's work, or to tell when it's done with `@onthread`. See below.
 
 Other facts:
 
-- Waiting on the main RenderingDevice stalls rendering until the GPU catches up, like `read()` does. Keep `@sync` off shaders that run every frame, unless they must.
+- Waiting on the main RenderingDevice stalls rendering until the GPU catches up, like `read()` does. Put `@async` on shaders that run every frame, unless they must wait.
 - The first call of a shader also waits once, while Godot compiles its GLSL. `@factory_shader` compiles it ahead of time. See "Compiling ahead of time: @factory_shader" below.
-- Without a GPU, every call runs on the CPU, so it returns once it's done, with or without `@sync`. See "Without a GPU" below.
-- `@sync` takes no arguments.
+- Without a GPU, every call runs on the CPU, so it returns once it's done, with or without `@async`. See "Without a GPU" below.
+- On a shader, `@async` takes no arguments.
+- On a func, `@async` means something else: the func is a coroutine, which can `await`. See `gd++ man async`. On both, it says the caller doesn't wait.
 
 Shaders run on one of two RenderingDevices, Godot's interface to the GPU:
 
 - Shaders that use GPU arrays or textures run on the main one, which also renders the game, so they share its resources.
 - Other shaders run on the package's own one, so they don't hold up rendering.
 
-# @sync and @onthread
+# @async and @onthread
 
 `@onthread` runs a shader's call on a worker thread, and the caller gets an `Async` right away, like with an `@onthread` func. See `gd++ man async`.
 
-- `@sync` says what the call does: wait for the GPU, or not.
+- `@async` says what the call does: wait for the GPU, or not.
 - `@onthread` says who waits for the call: a worker thread, instead of the caller.
 
 So they combine, and the `Async` is done when the call is done:
 
 ```
-@sync @onthread shader f(...) -> Image[rf]    the Async is done once the image is ready, and holds it
-@onthread shader f(...) -> Image[rf]          doesn't compile: the image needs @sync
-@sync @onthread shader f(...) -> void         the Async is done once the GPU is done with the shader
-@onthread shader f(...) -> void               the Async is done once the shader is queued
+@onthread shader f(...) -> Image[rf]          the Async is done once the image is ready, and holds it
+@async @onthread shader f(...) -> Image[rf]   doesn't compile: the image must come back from the GPU
+@onthread shader f(...) -> void               the Async is done once the GPU is done with the shader
+@async @onthread shader f(...) -> void        the Async is done once the shader is queued
 ```
 
 ```gd++
 var pending: Async[Image]
 
-@sync @onthread
+@onthread
 shader big_noise(size: Vector2i, scale: float) -> Image[rf] { ... }
 
 on ready {
@@ -348,10 +349,10 @@ on process(delta: float) {
 }
 ```
 
-- Without `@sync`, `@onthread` still takes the call's own work off the caller: copying packed arrays and images to the GPU, and compiling the shader on the first call.
+- With `@async`, `@onthread` still takes the call's own work off the caller: copying packed arrays and images to the GPU, and compiling the shader on the first call.
 - `@onthread("detached")` works too, for a shader that returns `void`.
 
-Avoid a deadlock: the main RenderingDevice runs on the main thread, unless the project renders on its own thread. So a worker thread waits for the main thread when it calls a shader that uses GPU arrays or textures, and with `@sync`, until the GPU is done. Don't make the main thread wait for that worker then, e.g. with `wait()`. Test `is_done` each frame instead.
+Avoid a deadlock: the main RenderingDevice runs on the main thread, unless the project renders on its own thread. So a worker thread waits for the main thread when it calls a shader that uses GPU arrays or textures, and without `@async`, until the GPU is done. Don't make the main thread wait for that worker then, e.g. with `wait()`. Test `is_done` each frame instead.
 
 `@trace` and `@profile` work on shaders too. They time the whole call, copies included. See `gd++ man debugging`.
 
@@ -364,10 +365,8 @@ Godot compiles a shader's GLSL on its first call, which then waits for it, e.g. 
 class_name Filters
 extends RefCounted
 
-@sync
 shader brighten(size: Vector2i, src: Image, gain: float) -> Image[rgba8] { ... }
 
-@sync
 shader blur(size: Vector2i, src: Image) -> Image[rgba8] { ... }
 ```
 
@@ -394,7 +393,7 @@ compile_shaders_detached()                    the same on a worker thread: retur
 - GLSL errors show up then, instead of on the first call. See "Errors" below.
 - GD++ code calls them the same way: `Filters::compile_shaders();`.
 - Other names: `@factory_shader` takes up to six strings, for the six methods in the order above, e.g. `@factory_shader("", "", "", "warm_up")`. An empty string `""`, or a missing name at the end, leaves that method out.
-- Don't make the main thread wait for the `Async`, e.g. with `wait()`: compiling for the main RenderingDevice needs the main thread, unless the project renders on its own thread. Test `is_done` each frame instead. See "@sync and @onthread" above.
+- Don't make the main thread wait for the `Async`, e.g. with `wait()`: compiling for the main RenderingDevice needs the main thread, unless the project renders on its own thread. Test `is_done` each frame instead. See "@async and @onthread" above.
 
 # Workgroups
 
@@ -407,10 +406,10 @@ A GPU runs a shader's cells in groups, its workgroups. GD++ picks a size that wo
 `@grid` sets another size, one number per dimension, after the name of the grid's parameter, if any:
 
 ```gd++
-@grid(16, 16) @sync
+@grid(16, 16)
 shader blur(size: Vector2i, src: Image) -> Image[rgba8] { ... }
 
-@grid(size, 16, 16) @sync
+@grid(size, 16, 16)
 shader sharpen(src: Image, size: Vector2i) -> Image[rgba8] { ... }
 ```
 

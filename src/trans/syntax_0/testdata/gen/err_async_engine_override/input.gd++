@@ -1,0 +1,6 @@
+class_name C
+extends Node
+
+@override @async
+func _ready() -> void {
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Hatch" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="count" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="slow" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="open">
+			<return type="GdppAsync" />
+			<param index="0" name="names" type="Array" />
+			<param index="1" name="slow" type="bool" />
+			<description>
+				Opens the door, and returns who opened it.
+			</description>
+		</method>
+		<method name="show">
+			<return type="GdppAsync" />
+			<param index="0" name="text" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="wait_a_bit" qualifiers="const">
+			<return type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="anim" type="AnimationPlayer" setter="set_anim" getter="get_anim">
+		</member>
+		<member name="area" type="Area2D" setter="set_area" getter="get_area">
+		</member>
+	</members>
+	<signals>
+		<signal name="opened">
+			<param index="0" name="by" type="Node" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

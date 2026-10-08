@@ -71,7 +71,7 @@ struct _gdpp_shader_run {
 			"}\n"
 			"\n"
 			"float _gdpp_body(int id) {\n"
-			"#line 16 \"input.gd++\"\n"
+			"#line 15 \"input.gd++\"\n"
 			"\n"
 			"    return twice(v[id]) + OFFSET;\n"
 			"\n"
@@ -88,7 +88,7 @@ struct _gdpp_shader_run {
 	int index(int p) const {
 		return p;
 	}
-#line 16 "input.gd++"
+#line 15 "input.gd++"
 	float body(Id id) const {
     return twice(v[id]) + OFFSET;
 }
