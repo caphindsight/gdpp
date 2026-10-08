@@ -183,11 +183,11 @@ Rules:
 
 # Externs
 
-@pool
-  The extern's class has `@pool`: `create`, `destroy` and `queue_destroy` use its pool, through its methods for scripts. No arguments: the class configures its pool. Only for externs that extend `Node`. See "Pools and scenes" in `gd++ man externs`.
+@factory and @factory(CREATE, DESTROY, QUEUE_DESTROY)
+  Make `create`, `destroy` and `queue_destroy` call these methods of the extern's class. See "Factory methods" in `gd++ man externs`.
 
-@scene
-  The extern's class has `@scene`: `create` instantiates its scene, through its method for scripts. No arguments: the class names its scene. Only for externs that extend `Node`. See "Pools and scenes" in `gd++ man externs`.
+@singleton
+  The extern's class has one object, which Godot knows by the class's name, e.g. a GD++ `@singleton` class of another package. GD++ code gets it with `get_singleton()`. See "Singletons" in `gd++ man externs`.
 
 Externs also take `@trace` and `@profile`, which work like a class's on their functions, variables and signals. See "@trace and @profile" below.
 
@@ -195,6 +195,9 @@ Externs also take `@trace` and `@profile`, which work like a class's on their fu
 
 @const
   The function is a const method of the class.
+
+@static
+  The function is a static method of the class: call it on the extern, e.g. `Terrain::seed_for(name)`. See "Static functions" in `gd++ man externs`.
 
 @deferred
   Call the function with `call_deferred`. It must return `void`.
@@ -422,7 +425,7 @@ Other facts:
 # No annotations
 
 - Enum values, integer constants, `ctor`, `dtor`, `import` and `noimport` take no annotations.
-- Externs themselves only take `@pool`, `@scene`, `@trace` and `@profile`. See "Externs" above.
+- Externs themselves only take `@factory`, `@singleton`, `@trace` and `@profile`. See "Externs" above.
 - Traits themselves only take `@group`. See "Traits" above.
 
 # Errors

@@ -249,7 +249,7 @@ scene_cache                  @factory_scene's static method, which loads the sce
 scene_evict                  @factory_scene's static method, which drops the scene
 compile_shaders              @factory_shader's static method, which compiles all shaders, and its _async and _detached forms
 compile_shader               @factory_shader's static method, which compiles a shader, and its _async and _detached forms
-get_singleton                @singleton's static method, which returns the class's object
+get_singleton                @singleton's static method, which returns the class's or extern's object
 _gdpp_default_FUNC_PARAM     a static function that returns a parameter's default value
 _gdpp_rpc_FUNC               an @rpc function's helper, which rpc calls
 _gdpp_body_FUNC              the body of a @deferred, @thread_safe, @onthread or @async function, or set block, which its deferred call or task runs

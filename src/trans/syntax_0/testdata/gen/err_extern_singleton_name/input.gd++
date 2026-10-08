@@ -1,0 +1,8 @@
+class_name A
+extends Node
+
+@singleton
+extern B {
+  extends Node
+  func get_singleton() -> B
+}

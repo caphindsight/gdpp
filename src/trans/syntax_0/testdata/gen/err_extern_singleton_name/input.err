@@ -1,0 +1,4 @@
+input.gd++:7:3: The name "get_singleton" is already used by another member.
+ 7 |   func get_singleton() -> B
+   |   ^^^^
+Hint: Members share one namespace. A var x also declares get_x and set_x, a signal declares its emit function, a @virtual func _x declares x, @factory declares methods, e.g. create, and @singleton declares get_singleton.

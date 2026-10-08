@@ -102,6 +102,7 @@ type externModel struct {
 	trace      bool              // Whether its @trace is on: it traces all its funcs and signals.
 	profile    bool              // Whether its @profile is on: it profiles all its funcs, except deferred ones, and vars.
 	factory    map[string]string // The methods of its class that its @factory names, by role. See factoryRoles.
+	singleton  bool              // Whether @singleton promises that Godot knows its one object by its name, which get_singleton returns.
 	funcs      []*funcModel
 	vars       []*varModel
 	signals    []*signalModel
@@ -1508,7 +1509,7 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	allowed := []string{"async", "const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "private", "profile", "recycle", "rpc", "static",
 		"test", "thread_safe", "trace", "virtual"}
 	if ext {
-		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "thread_safe", "trace"}
+		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "static", "thread_safe", "trace"}
 	}
 	kind := "a func"
 	if ext {
@@ -2726,7 +2727,7 @@ func (u *unit) buildExterns() error {
 	for _, e := range externs {
 		s := u.symbols[e.Name]
 		m := &externModel{name: e.Name, ext: e, base: baseName(e.Extends), refCounted: s.kind == meta.RefCountedExtern}
-		a, err := u.annotations(e.Annotations, "an extern", "factory", "profile", "trace")
+		a, err := u.annotations(e.Annotations, "an extern", "factory", "profile", "singleton", "trace")
 		if err != nil {
 			return err
 		}
@@ -2739,7 +2740,8 @@ func (u *unit) buildExterns() error {
 		if m.profile, err = u.debugOn(a["profile"], e.Name); err != nil {
 			return err
 		}
-		names := map[string]bool{}
+		m.singleton = a["singleton"] != nil
+		names := map[string]bool{"get_singleton": m.singleton}
 		for _, member := range e.Members {
 			if err := u.checkNoDebug(member, "extern "+e.Name, a["trace"] != nil, a["profile"] != nil); err != nil {
 				return err

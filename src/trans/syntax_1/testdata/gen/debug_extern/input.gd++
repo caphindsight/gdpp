@@ -6,6 +6,7 @@ extern Terrain {
   extends Node3D
   @profile func height(x: float, z: float) -> float
   @deferred func rebuild() -> void
+  @static func noise(x: float) -> float
   var size: int
   signal changed(ok: bool)
 }

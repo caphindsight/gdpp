@@ -113,7 +113,7 @@ func adder(n: int) -> Callable {
 A function or a method:
 
 - `callable NAME`: a function of this class or its bases, e.g. `callable start` or `callable queue_free`. In a `@static` function, only a `@static` function.
-- `callable T::NAME`: a static function of the class T, e.g. `callable Bullet::spawn`, or a method of T, a base of this class.
+- `callable T::NAME`: a static function of the class or extern T, e.g. `callable Bullet::spawn`, or a method of T, a base of this class.
 - `callable OBJECT->NAME`: a method of another object, held by a `Gd`, a pointer, a `Ref` or a `Weak`. On an extern or a trait, it calls the method by name, since its class isn't known to C++.
 - Unlike godot-cpp's `callable_mp`, it doesn't need the class's name, and it works for every kind of function.
 

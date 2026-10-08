@@ -3285,11 +3285,11 @@ public:
 		start(begin, false, (p_self ? describe(p_self) : String(p_class)) + "." + p_func, p_args...);
 	}
 
-	// The same for a call through an extern, which needs p_self.
+	// The same for a call through an extern.
 	template <typename... Args>
-	Trace(ViaExtern, const Object *p_self, const char *p_func, const Args &...p_args) {
+	Trace(ViaExtern, const char *p_class, const Object *p_self, const char *p_func, const Args &...p_args) {
 		int64_t begin = now();
-		start(begin, true, describe(p_self) + "." + p_func, p_args...);
+		start(begin, true, (p_self ? describe(p_self) : String(p_class)) + "." + p_func, p_args...);
 	}
 
 	// ret records the result, which the function returns.

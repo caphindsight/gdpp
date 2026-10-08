@@ -609,10 +609,17 @@ func (u *unit) externDecl(w *writer, e *externModel) {
 	} else {
 		w.ln("\t\t\t_gdpp_base(p_object) {}")
 	}
-	if len(e.funcs)+len(e.vars)+len(e.signals) > 0 {
+	if e.singleton || len(e.funcs)+len(e.vars)+len(e.signals) > 0 {
 		w.ln("")
 	}
+	if e.singleton {
+		w.ln("\tstatic %s get_singleton();", gd(e.name))
+	}
 	for _, f := range e.funcs {
+		if f.static {
+			w.ln("\tstatic %s%s(%s);", withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params))
+			continue
+		}
 		w.ln("\t%s%s(%s) const;", withSpace(f.ret.cpp), f.f.Name, params(nil, f.params, f.f.Params))
 		if f.rpc != nil {
 			w.ln("\tError %s const;", rpcDecl(f, params(nil, f.params, f.f.Params)))
@@ -666,19 +673,31 @@ func (e *externModel) debugging() bool {
 		slices.ContainsFunc(e.signals, func(s *signalModel) bool { return s.trace })
 }
 
-// externDefs defines the members of an extern's wrapper class, which call the object's members by name.
+// externDefs defines the members of an extern's wrapper class, which call the object's members by name, and the
+// class's static methods and singleton through Godot's ClassDB and Engine.
 // Their @profile and @trace hooks say "extern", since they only see the calls through this extern.
 func (u *unit) externDefs(w *writer, e *externModel) {
+	if e.singleton {
+		w.ln("")
+		w.ln("inline %s %s::get_singleton() {", gd(e.name), e.name)
+		w.ln("\treturn Object::cast_to<Base>(Engine::get_singleton()->get_singleton(GDPP_STRING_NAME(%q)));", e.name)
+		w.ln("}")
+	}
 	for _, f := range e.funcs {
 		w.ln("")
-		w.ln("inline %s%s::%s(%s) const {", withSpace(f.ret.cpp), e.name, f.f.Name, params(nil, f.params, f.f.Params))
+		self, qualifier := "_gdpp_base", " const"
+		call := fmt.Sprintf("_gdpp_base->call(GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params, false))
+		if f.static {
+			self, qualifier = "nullptr", ""
+			call = fmt.Sprintf("ClassDB::class_call_static(GDPP_STRING_NAME(%q), GDPP_STRING_NAME(%q)%s)", e.name, f.f.Name, args(f.params, f.f.Params, false))
+		}
+		w.ln("inline %s%s::%s(%s)%s {", withSpace(f.ret.cpp), e.name, f.f.Name, params(nil, f.params, f.f.Params), qualifier)
 		if f.profile {
 			u.profile(w, "extern "+e.name+"."+f.f.Name)
 		}
 		if f.trace {
-			w.ln("\tgdpp::Trace _gdpp_trace(gdpp::via_extern, _gdpp_base, %q%s);", f.f.Name, namedArgs(f.f.Params))
+			w.ln("\tgdpp::Trace _gdpp_trace(gdpp::via_extern, %q, %s, %q%s);", e.name, self, f.f.Name, namedArgs(f.f.Params))
 		}
-		call := fmt.Sprintf("_gdpp_base->call(GDPP_STRING_NAME(%q)%s)", f.f.Name, args(f.params, f.f.Params, false))
 		switch {
 		case f.deferral != "":
 			w.ln("\t%s;", deferredCall(f.deferral, "_gdpp_base", f.f.Name, f.params, f.f.Params))

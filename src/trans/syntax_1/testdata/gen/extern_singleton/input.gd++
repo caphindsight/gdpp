@@ -1,0 +1,22 @@
+class_name Hud
+extends Node
+
+@singleton
+extern Save {
+  extends Node
+  func store(slot: int) -> void
+  var slots: int
+  signal saved
+}
+
+@singleton
+extern Stats {
+  extends RefCounted
+}
+
+func use() -> void {
+  Save::get_singleton()->store(1);
+  gd::print(Save::get_singleton()->get_slots());
+  emit Save::get_singleton()->saved();
+  Gd<Stats> stats = Stats::get_singleton();
+}

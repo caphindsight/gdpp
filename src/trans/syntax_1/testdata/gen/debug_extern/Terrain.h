@@ -21,6 +21,7 @@ public:
 
 	double height(double x, double z) const;
 	void rebuild() const;
+	static double noise(double x);
 	int64_t get_size() const;
 	void set_size(int64_t p_value) const;
 	gdpp::Emitted changed(bool ok) const;
@@ -30,13 +31,18 @@ protected:
 };
 
 inline double Terrain::height(double x, double z) const {
-	gdpp::Trace _gdpp_trace(gdpp::via_extern, _gdpp_base, "height", "x", x, "z", z);
+	gdpp::Trace _gdpp_trace(gdpp::via_extern, "Terrain", _gdpp_base, "height", "x", x, "z", z);
 	return _gdpp_trace.ret(gdpp::cast<double>(_gdpp_base->call(GDPP_STRING_NAME("height"), x, z)));
 }
 
 inline void Terrain::rebuild() const {
-	gdpp::Trace _gdpp_trace(gdpp::via_extern, _gdpp_base, "rebuild");
+	gdpp::Trace _gdpp_trace(gdpp::via_extern, "Terrain", _gdpp_base, "rebuild");
 	_gdpp_base->call_deferred(GDPP_STRING_NAME("rebuild"));
+}
+
+inline double Terrain::noise(double x) {
+	gdpp::Trace _gdpp_trace(gdpp::via_extern, "Terrain", nullptr, "noise", "x", x);
+	return _gdpp_trace.ret(gdpp::cast<double>(ClassDB::class_call_static(GDPP_STRING_NAME("Terrain"), GDPP_STRING_NAME("noise"), x)));
 }
 
 inline int64_t Terrain::get_size() const {

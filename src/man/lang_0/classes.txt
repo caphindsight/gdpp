@@ -483,6 +483,7 @@ Game.add(10)
   - Godot's report of orphan nodes, `Node.print_orphan_nodes()`, lists it while it's out of the tree.
 - Not with `@abstract`, `@pool`, `@scene`, `@factory`, `@factory_pool` or `@factory_scene`, since the package creates its one object.
 - `gd++ ls` shows it with the tag `@singleton`.
+- Other packages get it through a `@singleton` extern. See "Singletons" in `gd++ man externs`.
 
 A node that every scene reaches and that processes every frame, e.g. a game manager, is simpler as an autoload, which Godot adds to the tree. GDExtensions can't register autoloads, but a scene can be one:
 

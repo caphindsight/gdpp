@@ -1,0 +1,22 @@
+class_name Arena
+extends Node
+
+extern Spawner {
+  extends Node3D
+  @static func spawn_at(where: Vector3, name: String) -> Spawner
+  @static func reset() -> void
+  func count() -> int
+}
+
+extern Dice {
+  @static func roll(sides: int) -> int
+  @static func seed() -> void
+}
+
+func use() -> void {
+  Gd<Spawner> s = Spawner::spawn_at(Vector3(), "a");
+  Spawner::reset();
+  gd::print(s->count() + Dice::roll(6));
+  Dice::seed();
+  Callable c = callable Spawner::reset;
+}
