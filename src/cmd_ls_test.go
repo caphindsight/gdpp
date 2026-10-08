@@ -119,7 +119,7 @@ const lsFooOut = "" +
 	"  GD++ syntax:         1\n" +
 	"  C++ standard:        c++20\n" +
 	"  Class prefix:        Foo\n" +
-	"  Quit timeout:        1 second\n" +
+	"  Quit timeout:        1 second\n  Test timeout:        10 seconds\n" +
 	"  Hot reload:          on\n" +
 	"  Macro depth:         64\n"
 
@@ -205,7 +205,7 @@ func TestLsCmdGdppClasses(t *testing.T) {
 	want := "" +
 		"  C++ standard:        c++20\n" +
 		"  Class prefix:        Foo\n" +
-		"  Quit timeout:        1 second\n" +
+		"  Quit timeout:        1 second\n  Test timeout:        10 seconds\n" +
 		"  Hot reload:          on\n" +
 		"  Macro depth:         64\n" +
 		"\n" +
@@ -232,7 +232,7 @@ func TestLsCmdAllPackages(t *testing.T) {
 		"  GD++ syntax:         1\n" +
 		"  C++ standard:        c++20\n" +
 		"  Class prefix:        Icons\n" +
-		"  Quit timeout:        1 second\n" +
+		"  Quit timeout:        1 second\n  Test timeout:        10 seconds\n" +
 		"  Hot reload:          on\n" +
 		"  Macro depth:         64\n" +
 		"\n" +
@@ -269,7 +269,7 @@ func TestLsPackages(t *testing.T) {
 		"  GD++ syntax:         0 (nightly, not for production)\n" +
 		"  C++ standard:        c++23\n" +
 		"  Class prefix:        Pk\n" +
-		"  Quit timeout:        2.5 seconds\n" +
+		"  Quit timeout:        2.5 seconds\n  Test timeout:        10 seconds\n" +
 		"  Hot reload:          on\n" +
 		"  Macro depth:         64\n" +
 		"\n" +

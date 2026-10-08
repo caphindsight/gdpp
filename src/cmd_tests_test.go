@@ -170,9 +170,9 @@ func TestTestInvalidArgs(t *testing.T) {
 		c    CmdTest
 		want string
 	}{
-		"ship":    {CmdTest{Timeout: 1, BuildOptions: BuildOptions{Ship: true}}, "gd++ test cannot use --ship, since release builds have no tests"},
-		"timeout": {CmdTest{}, "--timeout must be positive"},
-		"pattern": {CmdTest{Timeout: 1, Names: []string{"a["}}, `"a[" is not a valid name pattern`},
+		"ship":    {CmdTest{BuildOptions: BuildOptions{Ship: true}}, "gd++ test cannot use --ship, since release builds have no tests"},
+		"timeout": {CmdTest{Timeout: ptr(0.0)}, "--timeout must be positive"},
+		"pattern": {CmdTest{Names: []string{"a["}}, `"a[" is not a valid name pattern`},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

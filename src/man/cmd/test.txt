@@ -54,7 +54,7 @@ PATH...
   - Default: the package's engine.
 
 --timeout SECONDS
-  Fail an `@async` test that runs longer than this. Default: 10.
+  Fail an `@async` test that runs longer than this. Default: the package's `test_timeout` setting, or else 10. See `gd++ man packages`.
 
 --opt, --small, --noopt, --doc, --nodoc, --nowarn, --nogpu, -j N, --cc COMPILER, --asan, --ubsan, --tsan, --macro-timeout SECONDS, --trace GROUP..., --profile GROUP..., --print, --period SECONDS, --fps FPS
   Build like `gd++ build` does with them. See `gd++ man build`. Debug builds only: tests can't run in release builds, so there's no `--ship`.

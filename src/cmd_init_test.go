@@ -211,6 +211,17 @@ func TestInitPackageQuitTimeout(t *testing.T) {
 	}
 }
 
+func TestInitPackageTestTimeout(t *testing.T) {
+	pkgs := map[string]string{"src/pkg": "bind = \"4.3\"\nspec = \"4.3\"\n"}
+	out, after := runInit(t, CmdInit{Path: "src/pkg", Update: true, TestTimeout: ptr(30.0)}, pkgs)
+	if want := "[-] Set the test timeout to 30 seconds.\n"; !strings.HasPrefix(out, want) {
+		t.Errorf("output = %q, want it to start with %q", out, want)
+	}
+	if got, want := after["src/pkg/"+packageFileName], "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\ntest_timeout = 30.0\n"; got != want {
+		t.Errorf("config = %q, want %q", got, want)
+	}
+}
+
 func TestInitPackageHotReload(t *testing.T) {
 	base := "bind = \"4.3\"\nspec = \"4.3\"\nsyntax = 0\nstd = \"c++20\"\n"
 	off := base + "hot_reload = false\n"
@@ -304,24 +315,24 @@ func TestInitInvalidArgs(t *testing.T) {
 		c    CmdInit
 		want string
 	}{
-		"project_bind":        {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
-		"project_update":      {CmdInit{Update: true}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
-		"project_prefix":      {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"project_bind":        {CmdInit{Bind: "4.3"}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"project_update":      {CmdInit{Update: true}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"project_prefix":      {CmdInit{Prefix: "Foo"}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
 		"package_prefix":      {CmdInit{Path: "src/pkg", Prefix: "my pkg"}, `"my pkg" is not a valid class name prefix`},
 		"negative_quit":       {CmdInit{Path: "src/pkg", QuitTimeout: ptr(-1.0)}, "--quit-timeout cannot be negative"},
 		"hotreload_both":      {CmdInit{Path: "src/pkg", HotReload: true, NoHotReload: true}, "--hotreload and --nohotreload cannot be used together"},
 		"zero_macro_depth":    {CmdInit{Path: "src/pkg", MacroDepth: ptr(0)}, "--macro-depth must be positive"},
-		"project_reload":      {CmdInit{NoHotReload: true}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
-		"class_reload":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", HotReload: true}, "--bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
+		"project_reload":      {CmdInit{NoHotReload: true}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"class_reload":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", HotReload: true}, "--bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
 		"hide_outside":        {CmdInit{Path: "src/pkg", Hide: []string{"../x"}}, "../x is not a directory inside the package"},
 		"hide_res":            {CmdInit{Path: "src/pkg", Hide: []string{"res://x"}}, "res://x is not a directory inside the package"},
 		"negative_syntax":     {CmdInit{Path: "src/pkg", Syntax: ptr(-1)}, "--syntax cannot be negative"},
 		"syntax_nightly":      {CmdInit{Path: "src/pkg", Syntax: ptr(1), Nightly: true}, "--syntax and --nightly cannot be used together"},
-		"project_quit":        {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
-		"class_prefix":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
+		"project_quit":        {CmdInit{QuitTimeout: ptr(1.0)}, "--update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path"},
+		"class_prefix":        {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Prefix: "Foo"}, "--bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
 		"project_icon":        {CmdInit{Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
 		"package_icon":        {CmdInit{Path: "src/pkg", Icon: "pkg://a.svg"}, "--include, --noinclude, --icon, --noicon, --tool, --notool, --abstract, --noabstract, --ptr, --ref and --nogdpp require --class"},
-		"class_bind":          {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
+		"class_bind":          {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", Bind: "4.3"}, "--bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class"},
 		"class_name":          {CmdInit{Path: "src/pkg", Class: "my node", Include: "pkg://a.h"}, `"my node" is not a valid class name`},
 		"class_include":       {CmdInit{Path: "src/pkg", Class: "B"}, "a new class requires --include or --noinclude"},
 		"class_noinclude":     {CmdInit{Path: "src/pkg", Class: "A", Include: "pkg://a.h", NoInclude: true}, "--include and --noinclude cannot be used together"},

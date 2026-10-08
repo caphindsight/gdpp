@@ -118,7 +118,7 @@ func timer_times_out() {
 ```
 
 - The test ends when its coroutine ends.
-- It fails if it runs longer than 10 seconds. `gd++ test --timeout SECONDS` changes this.
+- It fails if it runs longer than the package's `test_timeout` setting, 10 seconds by default. See `gd++ man packages`. `gd++ test --timeout SECONDS` overrides it.
 - `await get_tree()->process_frame;` waits for the next frame.
 - `@async` is the only annotation that combines with `@test`.
 

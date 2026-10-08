@@ -97,6 +97,7 @@ func TestLoadPackageFails(t *testing.T) {
 		{"ClassName", classes(`name = "a-b"`), "[x] Invalid class name \"a-b\" in res://pkg/.gd++pkg.\n"},
 		{"ClassDup", classes(`name = "A"`+"\ninclude = \"pkg://a.h\"", `name = "A"`+"\ninclude = \"pkg://a.h\""), "[x] Duplicate class A in res://pkg/.gd++pkg.\n"},
 		{"QuitTimeout", "bind = \"a\"\nspec = \"b\"\nquit_timeout = -1.5\n", "[x] Invalid quit_timeout -1.5 in res://pkg/.gd++pkg: it can't be negative.\n"},
+		{"TestTimeout", "bind = \"a\"\nspec = \"b\"\ntest_timeout = 0\n", "[x] Invalid test_timeout 0 in res://pkg/.gd++pkg: it must be positive.\n"},
 		{"MacroDepth", "bind = \"a\"\nspec = \"b\"\nmacro_depth = 0\n", "[x] Invalid macro_depth 0 in res://pkg/.gd++pkg: it must be positive.\n"},
 		{"ClassIcon", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nicon = \"a.svg\""), "[x] Path a.svg of class A in res://pkg/.gd++pkg must start with pkg:// or res://.\n"},
 		{"ClassKind", classes(`name = "A"` + "\ninclude = \"pkg://a.h\"\nkind = \"val\""), "[x] Invalid kind \"val\" of class A in res://pkg/.gd++pkg: it must be ptr or ref.\n"},

@@ -331,8 +331,8 @@ func generateBuildCache(p Project, pkg Package) {
 	cache := pkg.BuildCache
 	state := cache.Cd("build.toml")
 	config := pkg.Config
-	// Names only affect the generated files, and the engine only runs tests.
-	config.Classes, config.Hidden, config.Names, config.Engine = nil, nil, ProjectNames{}, ""
+	// Names only affect the generated files, and the engine and the test timeout only run tests.
+	config.Classes, config.Hidden, config.Names, config.Engine, config.TestTimeout = nil, nil, ProjectNames{}, "", nil
 	stateText := encodeToml(struct {
 		Id     string        `toml:"id"`
 		Config PackageConfig `toml:"config"`

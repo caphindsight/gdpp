@@ -32,6 +32,7 @@ syntax = 1
 std = "c++20"
 prefix = "Foo"
 quit_timeout = 2.5
+test_timeout = 30
 hot_reload = false
 macro_depth = 100
 hide = ["src"]
@@ -86,6 +87,13 @@ quit_timeout (optional, default 1)
   - `0`: the game exits right away, even if tasks still run.
   - It can't be negative.
   - See "When the game quits" in `gd++ man async`.
+
+test_timeout (optional, default 10)
+  How many seconds `gd++ test` lets an `@async` test of the package run, before it fails it, e.g. `30`.
+  - It must be positive.
+  - `gd++ test --timeout` overrides it.
+  - It doesn't change builds: changing it rebuilds nothing.
+  - See `gd++ man test`.
 
 hot_reload (optional, default `true`)
   Whether the editor reloads the package's library when a build changes it, without a restart.

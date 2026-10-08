@@ -23,14 +23,14 @@ type CmdTest struct {
 	Paths   []string `arg:"positional" placeholder:"PATH" help:"run the tests of the packages containing these paths, or only those of these GD++ files; PATH/... runs those of all packages inside PATH, e.g. res://... the whole project [default: ..., all packages in the current directory]"`
 	Names   []string `arg:"--run" placeholder:"NAME" help:"run only the tests with these names, CLASS.NAME, which may have wildcards, e.g. 'Player.*'"`
 	Engine  string   `arg:"--engine" placeholder:"NAME|PATH" help:"run the tests in this Godot engine of the project's cache, or in this Godot binary if it has a path separator, e.g. ./godot [default: the package's engine]"`
-	Timeout float64  `arg:"--timeout" placeholder:"SECONDS" default:"10" help:"fail an @async test that runs longer than this"`
+	Timeout *float64 `arg:"--timeout" placeholder:"SECONDS" help:"fail an @async test that runs longer than this [default: the package's test_timeout, or 10]"`
 	BuildOptions
 }
 
 func (c *CmdTest) Run() {
 	c.validate()
 	Assert(!c.Ship, "Invalid arguments: gd++ test cannot use --ship, since release builds have no tests.")
-	Assert(c.Timeout > 0, "Invalid arguments: --timeout must be positive.")
+	Assert(c.Timeout == nil || *c.Timeout > 0, "Invalid arguments: --timeout must be positive.")
 	for _, glob := range c.Names {
 		_, err := path.Match(glob, "")
 		Assert(err == nil, "Invalid arguments: %q is not a valid name pattern.", glob)
@@ -60,7 +60,11 @@ func (c *CmdTest) Run() {
 			LogWarn("No tests to run in %s.", pkg.Root.ToString())
 			continue
 		}
-		r, f := runTests(p, pkg, c.godot(p, pkg), tests, c.Timeout)
+		timeout := pkg.TestTimeout()
+		if c.Timeout != nil {
+			timeout = *c.Timeout
+		}
+		r, f := runTests(p, pkg, c.godot(p, pkg), tests, timeout)
 		ran, failed = ran+r, append(failed, f...)
 	}
 	if len(failed) > 0 {

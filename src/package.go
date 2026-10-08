@@ -30,6 +30,7 @@ type PackageConfig struct {
 	CppStandard string         `toml:"std"`
 	Prefix      string         `toml:"prefix,omitempty"`       // default: the package ID in PascalCase
 	QuitTimeout *float64       `toml:"quit_timeout,omitempty"` // seconds; default: 1
+	TestTimeout *float64       `toml:"test_timeout,omitempty"` // seconds; default: 10
 	HotReload   *bool          `toml:"hot_reload,omitempty"`   // default: true
 	MacroDepth  *int           `toml:"macro_depth,omitempty"`  // default: defaultPackageMacroDepth
 	Hidden      []string       `toml:"hide,omitempty"`         // package-relative directories Godot skips
@@ -101,6 +102,15 @@ func (pkg Package) QuitTimeout() float64 {
 		return *pkg.Config.QuitTimeout
 	}
 	return 1
+}
+
+// TestTimeout returns how many seconds an @async test of the package may run
+// before gd++ test fails it.
+func (pkg Package) TestTimeout() float64 {
+	if pkg.Config.TestTimeout != nil {
+		return *pkg.Config.TestTimeout
+	}
+	return 10
 }
 
 // HotReload reports whether the editor reloads the package's library when it
@@ -249,6 +259,9 @@ func LoadPackage(p Path) Package {
 	}
 	if q := config.QuitTimeout; q != nil {
 		Assert(*q >= 0, "Invalid quit_timeout %v in %s: it can't be negative.", *q, file.ToString())
+	}
+	if t := config.TestTimeout; t != nil {
+		Assert(*t > 0, "Invalid test_timeout %v in %s: it must be positive.", *t, file.ToString())
 	}
 	if d := config.MacroDepth; d != nil {
 		Assert(*d > 0, "Invalid macro_depth %d in %s: it must be positive.", *d, file.ToString())

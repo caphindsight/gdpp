@@ -117,7 +117,7 @@ func says_when_empty() {
 ```
 
 - The test ends when its coroutine does.
-- If the signal never comes, the test fails after 10 seconds. `gd++ test --timeout 2` fails it sooner.
+- If the signal never comes, the test fails after 10 seconds. `gd++ init . --update --test-timeout 2` makes the package's tests fail sooner, and `gd++ test --timeout 2` does it for one run.
 - `await get_tree()->process_frame;` waits for a frame, e.g. for physics to settle.
 
 # 4. Run only some tests

@@ -28,6 +28,7 @@ type CmdInit struct {
 	Std         string   `arg:"--std" placeholder:"STD" help:"the package's C++ standard, e.g. c++20"`
 	Prefix      string   `arg:"--prefix" placeholder:"NAME" help:"the prefix of the classes GD++ adds to the package, e.g. Foo for FooAsync [default: the package directory's name in PascalCase]"`
 	QuitTimeout *float64 `arg:"--quit-timeout" placeholder:"SECONDS" help:"how long the package's tasks may still run after the game started quitting, before it exits anyway [default: 1]"`
+	TestTimeout *float64 `arg:"--test-timeout" placeholder:"SECONDS" help:"how long gd++ test lets an @async test of the package run, before it fails it [default: 10]"`
 	HotReload   bool     `arg:"--hotreload" help:"make the editor reload the package's library when it changes (default)"`
 	NoHotReload bool     `arg:"--nohotreload" help:"make the editor load the package's library only once, e.g. to work around Godot crashing on reload"`
 	MacroDepth  *int     `arg:"--macro-depth" placeholder:"LEVELS" help:"how deeply the package's macro and template invocations may nest [default: 64]"`
@@ -49,16 +50,16 @@ type CmdInit struct {
 func (c *CmdInit) Run() {
 	c.Syntax = chosenSyntax(c.Syntax, c.Nightly)
 	if c.Path == "" {
-		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Engine == "" && !c.NoEngine && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0 && c.Class == "",
-			"Invalid arguments: --update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path.")
+		Assert(!c.Update && c.Bind == "" && c.Spec == "" && c.Engine == "" && !c.NoEngine && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && c.TestTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0 && c.Class == "",
+			"Invalid arguments: --update, --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth, --hide and --class require a package path.")
 		c.assertNoClassFlags()
 		c.initProject()
 		return
 	}
 	Assert(c.Vcs == "" && !c.Presets && !c.NoPresets, "Invalid arguments: --vcs, --presets and --nopresets cannot be used with a package path.")
 	if c.Class != "" {
-		Assert(c.Bind == "" && c.Spec == "" && c.Engine == "" && !c.NoEngine && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0,
-			"Invalid arguments: --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class.")
+		Assert(c.Bind == "" && c.Spec == "" && c.Engine == "" && !c.NoEngine && c.Syntax == nil && c.Std == "" && c.Prefix == "" && c.QuitTimeout == nil && c.TestTimeout == nil && !c.HotReload && !c.NoHotReload && c.MacroDepth == nil && len(c.Hide) == 0,
+			"Invalid arguments: --bind, --spec, --engine, --noengine, --syntax, --std, --prefix, --quit-timeout, --test-timeout, --hotreload, --nohotreload, --macro-depth and --hide cannot be used with --class.")
 		c.initClass(ParsePath(c.Path))
 		return
 	}
@@ -71,6 +72,7 @@ func (c *CmdInit) Run() {
 	}
 	Assert(c.Prefix == "" || classNameRegexp.MatchString(c.Prefix), "Invalid arguments: %q is not a valid class name prefix.", c.Prefix)
 	Assert(c.QuitTimeout == nil || *c.QuitTimeout >= 0, "Invalid arguments: --quit-timeout cannot be negative.")
+	Assert(c.TestTimeout == nil || *c.TestTimeout > 0, "Invalid arguments: --test-timeout must be positive.")
 	Assert(!c.HotReload || !c.NoHotReload, "Invalid arguments: --hotreload and --nohotreload cannot be used together.")
 	Assert(c.MacroDepth == nil || *c.MacroDepth > 0, "Invalid arguments: --macro-depth must be positive.")
 	if s := c.Syntax; s != nil {
@@ -292,6 +294,10 @@ func (c *CmdInit) setPackageFlags(config *PackageConfig) (changes []string) {
 	if q := c.QuitTimeout; q != nil && (config.QuitTimeout == nil || *config.QuitTimeout != *q) {
 		config.QuitTimeout = q
 		changes = append(changes, "the quit timeout to "+seconds(*q))
+	}
+	if q := c.TestTimeout; q != nil && (config.TestTimeout == nil || *config.TestTimeout != *q) {
+		config.TestTimeout = q
+		changes = append(changes, "the test timeout to "+seconds(*q))
 	}
 	if (c.HotReload || c.NoHotReload) && c.HotReload != (config.HotReload == nil || *config.HotReload) {
 		config.HotReload = nil // on, the default

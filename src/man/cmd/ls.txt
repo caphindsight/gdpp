@@ -58,6 +58,7 @@ Package: res://gameplay
   C++ standard:        c++20
   Class prefix:        Gameplay
   Quit timeout:        1 second
+  Test timeout:        10 seconds
   Hot reload:          on
   Macro depth:         64
 
@@ -92,9 +93,9 @@ Package:
 
 - Its path, and for the root package, its id in brackets.
 - An expanded package shows:
-  - its bindings and spec, marked "missing" if the project doesn't have them,
+  - its bindings and spec, and its engine if it names one, marked "missing" if the project doesn't have them,
   - its GD++ syntax, marked "(nightly, not for production)" if it's 0,
-  - its C++ standard, class prefix, quit timeout and hot reload setting (see `gd++ man packages`),
+  - its C++ standard, class prefix, quit timeout, test timeout and hot reload setting (see `gd++ man packages`),
   - its classes.
 - A collapsed package shows "missing dependencies" if it lacks any.
 

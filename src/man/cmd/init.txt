@@ -4,8 +4,8 @@ gd++ init: set up projects, packages and classes
 
 ```sh
 gd++ init [--vcs none|git] [--presets | --nopresets]
-gd++ init PATH --bind NAME --spec NAME [--engine NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--engine NAME | --noengine] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --bind NAME --spec NAME [--engine NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--test-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--engine NAME | --noengine] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--test-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
 gd++ init PATH --class NAME (--include PATH | --noinclude) [--icon PATH | --noicon] [--tool | --notool] [--abstract | --noabstract] [--ptr | --ref | --nogdpp] [--update]
 ```
 
@@ -48,7 +48,7 @@ Writes `res://.gd++proj`, with the project's settings. See `gd++ man projects`.
 # Creating a package
 
 ```sh
-gd++ init PATH --bind NAME --spec NAME [--engine NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --bind NAME --spec NAME [--engine NAME] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--test-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
 ```
 
 - Creates the directory PATH if needed, and writes `PATH/.gd++pkg`.
@@ -91,6 +91,9 @@ See `gd++ man packages`.
 --quit-timeout SECONDS
   How many seconds the package's tasks may still run after the game starts quitting, before it exits anyway, e.g. `2.5`. Default: `1`. See "When the game quits" in `gd++ man async`.
 
+--test-timeout SECONDS
+  How many seconds `gd++ test` lets an `@async` test of the package run, before it fails it, e.g. `30`. Default: `10`. See `gd++ man test`.
+
 --hotreload
   Make the editor reload the package's library when a build changes it. The default.
 
@@ -111,7 +114,7 @@ See `gd++ man packages`.
 # Updating a package
 
 ```sh
-gd++ init PATH --update [--bind NAME] [--spec NAME] [--engine NAME | --noengine] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
+gd++ init PATH --update [--bind NAME] [--spec NAME] [--engine NAME | --noengine] [--syntax N | --nightly] [--std STD] [--prefix NAME] [--quit-timeout SECONDS] [--test-timeout SECONDS] [--hotreload | --nohotreload] [--macro-depth LEVELS] [--hide DIR...]
 ```
 
 - Changes the given settings of the existing package at PATH, and keeps the others.
@@ -186,10 +189,10 @@ A new class:
 
 - `--vcs`, `--presets` and `--nopresets` work only without PATH.
 - `--presets` and `--nopresets` can't be used together.
-- `--update`, `--bind`, `--spec`, `--engine`, `--noengine`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth`, `--hide` and `--class` need PATH.
+- `--update`, `--bind`, `--spec`, `--engine`, `--noengine`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--test-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth`, `--hide` and `--class` need PATH.
 - `--include`, `--noinclude`, `--icon`, `--noicon`, `--tool`, `--notool`, `--abstract`, `--noabstract`, `--ptr`, `--ref` and `--nogdpp` need `--class`.
-- `--bind`, `--spec`, `--engine`, `--noengine`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth` and `--hide` can't be used with `--class`.
-- `--quit-timeout` and `--syntax` can't be negative.
+- `--bind`, `--spec`, `--engine`, `--noengine`, `--syntax`, `--std`, `--prefix`, `--quit-timeout`, `--test-timeout`, `--hotreload`, `--nohotreload`, `--macro-depth` and `--hide` can't be used with `--class`.
+- `--quit-timeout` and `--syntax` can't be negative, and `--test-timeout` must be positive.
 - `--macro-depth` must be positive.
 - `--syntax` and `--nightly` can't be used together, and neither can `--engine` and `--noengine`.
 - `--include` and `--noinclude`, `--icon` and `--noicon`, `--tool` and `--notool`, `--abstract` and `--noabstract`, and `--ptr`, `--ref` and `--nogdpp` can't be used together.
