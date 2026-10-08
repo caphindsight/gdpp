@@ -4,14 +4,14 @@ extends Wall
 extern Lock {
   extends Node
   func owner() -> Gate
-  func key() -> Key
+  func key() -> Keycard
 }
 
 var door: Door
-var keys: Array[Key]
+var keys: Array[Keycard]
 var level: Level
 var lock: Lock
 
-func open(key: Key) -> Door {
+func open(key: Keycard) -> Door {
   return door;
 }

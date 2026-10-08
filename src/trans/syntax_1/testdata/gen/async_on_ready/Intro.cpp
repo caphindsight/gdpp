@@ -2,6 +2,10 @@
 
 #include "Intro.h"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wsubobject-linkage"
+#endif
+
 namespace godot {
 
 #define This Intro
@@ -44,7 +48,7 @@ gdpp::Coroutine<void> Intro::_gdpp_body__ready() {
   GDPP_ASSERT_CO_VOID("anim != nullptr", anim != nullptr);
   (void) finished();
 
-#line 48 "Intro.cpp"
+#line 52 "Intro.cpp"
 }
 
 gdpp::Coroutine<void> Intro::_gdpp_body__enter_tree() {
@@ -58,7 +62,7 @@ gdpp::Coroutine<void> Intro::_gdpp_body__enter_tree() {
   co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());
   gd::print("Entered a second ago.");
 
-#line 62 "Intro.cpp"
+#line 66 "Intro.cpp"
 }
 
 void Intro::_gdpp_body__exit_tree() {
@@ -66,7 +70,7 @@ void Intro::_gdpp_body__exit_tree() {
 
   gd::print("Bye.");
 
-#line 70 "Intro.cpp"
+#line 74 "Intro.cpp"
 }
 
 gdpp::Coroutine<void> Intro::_gdpp_body__physics_process(double delta) {
@@ -75,7 +79,7 @@ gdpp::Coroutine<void> Intro::_gdpp_body__physics_process(double delta) {
   co_await gdpp::signal(get_tree(), gdpp::string_name<"process_frame">());
   gd::print(delta);
 
-#line 79 "Intro.cpp"
+#line 83 "Intro.cpp"
 }
 
 gdpp::Gd<AnimationPlayer> Intro::get_anim() const {

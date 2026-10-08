@@ -3,7 +3,10 @@ extends Node
 
 func call_twice(f: Callable) -> void {
   std::invoke([&]() { f.call(); });
-  invoke(f, 1);
+  {
+    using std::invoke;
+    invoke([&](int64_t n) { f.call(n); }, 1);
+  }
   int invoke = 2;
   invoke *= 2;
 }

@@ -8,15 +8,10 @@ namespace godot {
 
 void Counter::_bind_methods() {
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("create"), &Counter::create);
-	ClassDB::bind_method(D_METHOD("queue_destroy"), &Counter::queue_destroy);
 }
 
 gdpp::Gd<Counter> Counter::create() {
 	return gdpp::create<Counter>();
-}
-
-void Counter::queue_destroy() {
-	gdpp::queue_destroy(this);
 }
 
 #undef This

@@ -1,0 +1,4 @@
+input.gd++:1:1: Annotation @scene can only be used in classes that extend Node, which A doesn't.
+ 1 | @scene("res://a.tscn")
+   | ^^^^^^
+Hint: A scene's root is a node.

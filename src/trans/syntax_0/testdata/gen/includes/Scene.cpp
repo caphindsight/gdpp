@@ -17,10 +17,12 @@ void Scene::ready() {
 #line 11 "input.gd++"
 
   if (Engine::get_singleton()->is_editor_hint()) return;
+#ifdef GDPP_2D
   Gd<MeshInstance2D> m;
+#endif
   Gd<Texture2D> t;
 
-#line 24 "Scene.cpp"
+#line 26 "Scene.cpp"
 }
 
 #undef This

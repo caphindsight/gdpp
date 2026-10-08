@@ -4,7 +4,7 @@
 
 #include <gd++/syntax_0.hpp>
 #include "Door.h"
-#include "Key.h"
+#include "Keycard.h"
 #include <godot_cpp/classes/node.hpp>
 
 namespace godot {
@@ -17,9 +17,9 @@ class Lock : public Node {
 	GDCLASS(Lock, Node)
 
 public:
-	GDVIRTUAL1R(gdpp::Gd<Door>, _open, gdpp::Gd<Key>)
-	virtual gdpp::Gd<Door> _open(const gdpp::Gd<Key> &key);
-	gdpp::Gd<Door> open(const gdpp::Gd<Key> &key);
+	GDVIRTUAL1R(gdpp::Gd<Door>, _open, gdpp::Gd<Keycard>)
+	virtual gdpp::Gd<Door> _open(const gdpp::Gd<Keycard> &key);
+	gdpp::Gd<Door> open(const gdpp::Gd<Keycard> &key);
 
 protected:
 	static void _bind_methods();

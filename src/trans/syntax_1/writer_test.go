@@ -91,6 +91,7 @@ func TestCpp(t *testing.T) {
 		`await a->string_name "x"; await string_name "y";`:                  `co_await gdpp::signal(a, gdpp::string_name<"x">()); co_await gdpp::signal(this, gdpp::string_name<"y">());`,
 		`await a->string_name(p + "_f"); await string_name(n[i]);`:          `co_await gdpp::signal(a, StringName(p + "_f")); co_await gdpp::signal(this, StringName(n[i]));`,
 		`await string_name(string_name "a"); int n = await count(claim t);`: `co_await gdpp::signal(this, StringName(gdpp::string_name<"a">())); int n = co_await count(t.claim());`,
+		`await get_node<AnimationPlayer>("A")->animation_finished; await Object::cast_to<SceneTree>(l)->string_name "f"; await a < b;`: `co_await gdpp::signal(get_node<AnimationPlayer>("A"), gdpp::string_name<"animation_finished">()); co_await gdpp::signal(Object::cast_to<SceneTree>(l), gdpp::string_name<"f">()); co_await a < b;`,
 		"await\n  a->b;":                                        "co_await gdpp::signal(\n  a, gdpp::string_name<\"b\">());",
 		"await = 1; x.await; await; await -1;":                  "await = 1; x.await; await; await -1;",
 		"return 1; [] { return 2; }; assert x;":                 `co_return 1; [] { return 2; }; GDPP_ASSERT_CO_VALUE("x", x);`,

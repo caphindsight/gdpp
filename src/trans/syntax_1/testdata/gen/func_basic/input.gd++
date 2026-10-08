@@ -1,4 +1,4 @@
-class_name Math
+class_name Calc
 
 func add(a: int, b: int) -> int {
   return a + b;

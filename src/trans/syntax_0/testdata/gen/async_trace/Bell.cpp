@@ -3,6 +3,10 @@
 #define GDPP_DEBUGGING
 #include "Bell.h"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wsubobject-linkage"
+#endif
+
 namespace godot {
 
 #define This Bell
@@ -40,7 +44,7 @@ gdpp::Coroutine<int64_t> Bell::_gdpp_body_ring(int64_t times) {
   co_await gdpp::signal(get_tree(), gdpp::string_name<"process_frame">());
   co_return rings;
 
-#line 44 "Bell.cpp"
+#line 48 "Bell.cpp"
 }
 
 gdpp::Coroutine<void> Bell::_gdpp_body__ready() {
@@ -50,7 +54,7 @@ gdpp::Coroutine<void> Bell::_gdpp_body__ready() {
   co_await gdpp::signal(get_tree(), gdpp::string_name<"process_frame">());
   rings = 0;
 
-#line 54 "Bell.cpp"
+#line 58 "Bell.cpp"
 }
 
 int64_t Bell::get_rings() const {

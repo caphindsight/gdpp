@@ -9,13 +9,13 @@
 	<methods>
 		<method name="_open" qualifiers="virtual">
 			<return type="Door" />
-			<param index="0" name="key" type="Key" />
+			<param index="0" name="key" type="Keycard" />
 			<description>
 			</description>
 		</method>
 		<method name="open">
 			<return type="Door" />
-			<param index="0" name="key" type="Key" />
+			<param index="0" name="key" type="Keycard" />
 			<description>
 			</description>
 		</method>

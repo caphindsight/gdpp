@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Calc" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add">
+			<return type="int" />
+			<param index="0" name="a" type="int" />
+			<param index="1" name="b" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="identity">
+			<return type="Variant" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="log">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="nothing">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

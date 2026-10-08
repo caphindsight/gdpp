@@ -5,6 +5,10 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wsubobject-linkage"
+#endif
+
 namespace godot {
 
 #define This Saver
@@ -20,10 +24,10 @@ void Saver::save_later(int64_t slot) {
 gdpp::Coroutine<void> Saver::_gdpp_body_save_later(int64_t slot) {
 #line 5 "input.gd++"
 
-  co_await Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop())->string_name "process_frame";
+  co_await gdpp::signal(Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop()), gdpp::string_name<"process_frame">());
   gd::print(slot);
 
-#line 27 "Saver.cpp"
+#line 31 "Saver.cpp"
 }
 
 #undef This

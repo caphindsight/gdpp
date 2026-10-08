@@ -366,7 +366,7 @@ template <typename A, typename B>
 struct common {
 	using type = std::conditional_t<std::is_floating_point_v<A> || std::is_floating_point_v<B>, float,
 			std::conditional_t<std::is_same_v<A, bool> && std::is_same_v<B, bool>, bool,
-					std::conditional_t<std::is_unsigned_v<A> && !std::is_same_v<A, bool> || std::is_unsigned_v<B> && !std::is_same_v<B, bool>, uint, int>>>;
+					std::conditional_t<(std::is_unsigned_v<A> && !std::is_same_v<A, bool>) || (std::is_unsigned_v<B> && !std::is_same_v<B, bool>), uint, int>>>;
 };
 template <typename T, int N, typename B>
 struct common<vec<T, N>, B> {
@@ -1750,7 +1750,7 @@ inline std::shared_ptr<Pixels> pixels_from_image(const Ref<Image> &p_image) {
 	pixels->height = image->get_height();
 	pixels->data.resize(size_t(pixels->width) * size_t(pixels->height));
 	PackedByteArray bytes = image->get_data();
-	std::memcpy(pixels->data.data(), bytes.ptr(), std::min(size_t(bytes.size()), pixels->data.size() * sizeof(vec4)));
+	std::memcpy(static_cast<void *>(pixels->data.data()), bytes.ptr(), std::min(size_t(bytes.size()), pixels->data.size() * sizeof(vec4)));
 	return pixels;
 }
 
@@ -2013,7 +2013,7 @@ public:
 		if (elem_of(packed, e)) {
 			std::vector<uint8_t> bytes = to_cpu(e, packed);
 			data.resize(bytes.size() / sizeof(T));
-			std::memcpy(data.data(), bytes.data(), data.size() * sizeof(T));
+			std::memcpy(static_cast<void *>(data.data()), bytes.data(), data.size() * sizeof(T));
 		}
 	}
 	const T &operator[](int p_index) const {
@@ -2208,7 +2208,7 @@ struct Binding {
 		BUFFER,  // A storage buffer: of bytes to upload, or a GPU array's.
 		SAMPLER, // A sampled texture: of an image to upload, or a Texture2D's.
 		IMAGE,   // A written texture: a Texture2DRD's, or an ImageTexture's, which it uploads and reads back.
-	} kind;
+	} kind = BUFFER;
 	PackedByteArray bytes;          // To upload: a buffer's elements.
 	Ref<Image> image;               // To upload: a sampled or written image, in a format that the device can use.
 	Ref<RefCounted> holder;         // What owns the GPU resource, which stays alive until the kernel ran.
@@ -2298,14 +2298,16 @@ public:
 		Variant packed = p_packed;
 		elem_of(packed, e);
 		std::vector<uint8_t> cpu_bytes = to_cpu(e, packed);
-		Binding b{ Binding::BUFFER };
+		Binding b;
+		b.kind = Binding::BUFFER;
 		b.bytes = gpu_layout(e, cpu_bytes.data(), int64_t(cpu_bytes.size()) / info(e).cpu_stride);
 		bindings.push_back(b);
 	}
 	// A GPU array, which the kernel reads and writes.
 	template <typename G>
 	void array(const GpuArray<G> &p_array) {
-		Binding b{ Binding::BUFFER };
+		Binding b;
+		b.kind = Binding::BUFFER;
 		if (p_array) {
 			b.rid = p_array.ptr()->buffer;
 			b.holder = p_array.ptr();
@@ -2314,12 +2316,14 @@ public:
 	}
 	// An image or texture, which the kernel samples.
 	void sampler(const Ref<Image> &p_image) {
-		Binding b{ Binding::SAMPLER };
+		Binding b;
+		b.kind = Binding::SAMPLER;
 		b.image = sampleable(p_image, b.format);
 		bindings.push_back(b);
 	}
 	void sampler(const Ref<Texture2D> &p_texture) {
-		Binding b{ Binding::SAMPLER };
+		Binding b;
+		b.kind = Binding::SAMPLER;
 		if (p_texture.is_valid()) {
 			b.rid = RenderingServer::get_singleton()->texture_get_rd_texture(p_texture->get_rid());
 			b.holder = p_texture;
@@ -2331,7 +2335,8 @@ public:
 	}
 	// A texture of p_format, which the kernel writes.
 	void image(const Ref<Texture2D> &p_texture, GpuFormat p_format) {
-		Binding b{ Binding::IMAGE };
+		Binding b;
+		b.kind = Binding::IMAGE;
 		b.format = info(p_format).rd;
 		b.holder = p_texture;
 		if (Ref<Texture2DRD> rd = p_texture; rd.is_valid()) {
@@ -2363,7 +2368,8 @@ public:
 		elem_of(Variant(P()), e);
 		if (Device *d = gpu()) {
 			int64_t count = grid.cells();
-			Binding out{ Binding::BUFFER };
+			Binding out;
+			out.kind = Binding::BUFFER;
 			out.bytes.resize(std::max<int64_t>(count * info(e).gpu_stride, 16));
 			bindings.push_back(out);
 			PackedByteArray result;
@@ -2385,7 +2391,8 @@ public:
 	Ref<Image> result_image(GpuFormat p_format, F p_make) {
 		Vector2i size(int(grid.size[0]), int(grid.size[1]));
 		if (Device *d = gpu()) {
-			Binding out{ Binding::IMAGE };
+			Binding out;
+			out.kind = Binding::IMAGE;
 			out.format = info(p_format).rd;
 			out.image = Image::create_empty(std::max(size.x, 1), std::max(size.y, 1), false, info(p_format).image);
 			bindings.push_back(out);
@@ -2433,7 +2440,8 @@ public:
 				self->set_texture_rd_rid(self->owned);
 			},
 					false);
-			Binding out{ Binding::IMAGE };
+			Binding out;
+			out.kind = Binding::IMAGE;
 			out.format = info(p_format).rd;
 			out.holder = texture;
 			bindings.push_back(out);

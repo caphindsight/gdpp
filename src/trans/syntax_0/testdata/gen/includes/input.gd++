@@ -10,6 +10,8 @@ decl {
 
 func ready() -> void {
   if (Engine::get_singleton()->is_editor_hint()) return;
-  Gd<MeshInstance2D> m;
+#ifdef GDPP_2D
+  Gd<MeshInstance2D> m; // noimport keeps its include out, for builds without GDPP_2D.
+#endif
   Gd<Texture2D> t;
 }

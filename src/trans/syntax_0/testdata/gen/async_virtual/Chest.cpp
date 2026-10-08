@@ -2,6 +2,10 @@
 
 #include "Chest.h"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wsubobject-linkage"
+#endif
+
 namespace godot {
 
 #define This Chest
@@ -30,7 +34,7 @@ gdpp::Coroutine<bool> Chest::_gdpp_body__open(int64_t force) {
   co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());
   co_return force > 0;
 
-#line 34 "Chest.cpp"
+#line 38 "Chest.cpp"
 }
 
 gdpp::Async<Variant> Chest::loot(gdpp::Gd<Node> loader) {
@@ -46,7 +50,7 @@ gdpp::Coroutine<Variant> Chest::_gdpp_body_loot(gdpp::Gd<Node> loader) {
   co_await ready_signal;
   co_return level;
 
-#line 50 "Chest.cpp"
+#line 54 "Chest.cpp"
 }
 
 #undef This

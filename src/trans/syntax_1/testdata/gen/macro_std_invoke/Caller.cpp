@@ -14,11 +14,14 @@ void Caller::call_twice(const Callable &f) {
 #line 4 "input.gd++"
 
   std::invoke([&]() { f.call(); });
-  invoke(f, 1);
+  {
+    using std::invoke;
+    invoke([&](int64_t n) { f.call(n); }, 1);
+  }
   int invoke = 2;
   invoke *= 2;
 
-#line 22 "Caller.cpp"
+#line 25 "Caller.cpp"
 }
 
 #undef This

@@ -1652,7 +1652,7 @@ public:
 	// None: it isn't bound to an object.
 	ObjectID get_object() const override { return ObjectID(); }
 	// call runs the body, once, and returns its result. It takes no arguments.
-	void call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, GDExtensionCallError &r_call_error) const override {
+	void call(const Variant **, int, Variant &r_return_value, GDExtensionCallError &r_call_error) const override {
 		r_return_value = run();
 		run = nullptr;
 		r_call_error.error = GDEXTENSION_CALL_OK;
@@ -2165,7 +2165,7 @@ public:
 	ObjectID get_object() const override { return self; }
 	// call resumes the coroutine, once, where await gives the arguments like GDScript's: nothing, the argument, or an
 	// Array of them.
-	void call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, GDExtensionCallError &r_call_error) const override {
+	void call(const Variant **p_arguments, int p_argcount, Variant &, GDExtensionCallError &r_call_error) const override {
 		r_call_error.error = GDEXTENSION_CALL_OK;
 		if (resumed) {
 			return;

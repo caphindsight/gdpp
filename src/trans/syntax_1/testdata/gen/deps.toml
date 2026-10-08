@@ -67,6 +67,12 @@ kind = "Object"
 base = "Object"
 
 [[dep]]
+name = "Input"
+include = "<godot_cpp/classes/input.hpp>"
+kind = "Object"
+base = "Object"
+
+[[dep]]
 name = "Camera3D"
 include = "<godot_cpp/classes/camera3d.hpp>"
 kind = "Object"
@@ -148,8 +154,8 @@ base = "Node"
 nonruntime = true
 
 [[dep]]
-name = "Key"
-include = '"Key.h"'
+name = "Keycard"
+include = '"Keycard.h"'
 kind = "RefCounted"
 gdpp = true
 base = "Resource"

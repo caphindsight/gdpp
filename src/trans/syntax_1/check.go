@@ -1779,7 +1779,7 @@ func (u *unit) extends(owner string, bases ...string) bool {
 		switch {
 		case slices.Contains(bases, name):
 			return true
-		case u.symbols[name] == nil: // Also a dependency whose base isn't known.
+		case name == "" || u.symbols[name] == nil: // The root, or a dependency whose base isn't known.
 			return false
 		}
 		name = u.baseOf(name)

@@ -1,0 +1,4 @@
+input.gd++:1:1: Annotation @pool can only be used in classes that extend Node, which A doesn't.
+ 1 | @pool(10)
+   | ^^^^^
+Hint: A pool takes its objects out of the scene tree, so they must be nodes.

@@ -81,6 +81,9 @@ const (
 	// GLSL's keywords and qualifiers, and the cell of a shader's body, in shaders and shader blocks.
 	glslWords = "if else for while do return switch case break continue default const struct true false discard in out inout " +
 		"uniform buffer shared layout highp mediump lowp precise coherent volatile restrict readonly writeonly id"
+	// What GD++ adds to GLSL besides the cell id: index(p), the element of a cell in an array. It's a keyword only where
+	// "(" follows, like vim's, since GLSL code may also use it as a name.
+	glslIndexWord = "index"
 	// The formats of images and textures that shaders write, which are types in brackets, e.g. Texture2D[rgba8].
 	gpuFormatWords = "r8 rg8 rgb8 rgba8 rf rgf rgbh rgbah rgbf rgbaf"
 )
@@ -225,6 +228,8 @@ func highlightCodeOf(code string, gdscript, glsl bool) string {
 				style = []Style{CodeKeyword}
 			case glsl && glslTypes[word]:
 				style = []Style{CodeType}
+			case glsl && word == glslIndexWord && strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "("):
+				style = []Style{CodeKeyword}
 			case glsl && strings.HasPrefix(strings.TrimLeft(rest[n:], " "), "("):
 				style = []Style{CodeFunction}
 			case glsl:

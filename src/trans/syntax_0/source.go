@@ -27,6 +27,16 @@ func (u *unit) source(name string) string {
 			w.ln("#include %s", inc)
 		}
 	}
+	if slices.ContainsFunc(u.classes, func(c *classModel) bool {
+		return slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.coro != nil })
+	}) {
+		// GCC warns about the types without linkage in a coroutine's frame, e.g. of a lambda in a variable that lives
+		// across an await, though the frame never leaves this file.
+		w.ln("")
+		w.ln("#if defined(__GNUC__) && !defined(__clang__)")
+		w.ln("#pragma GCC diagnostic ignored \"-Wsubobject-linkage\"")
+		w.ln("#endif")
+	}
 	u.globals(w, false)
 	for _, c := range u.classes {
 		u.shaderDefs(w, c)

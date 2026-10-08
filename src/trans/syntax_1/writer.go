@@ -300,6 +300,12 @@ walk:
 	for ts[j].Type == tokIdent {
 		k := skipSpace(ts, end)
 		switch {
+		case k < len(ts) && isPunct(ts[k], "<") && templateEnd(ts, k) > k:
+			// Template arguments of a call, e.g. get_node<AnimationPlayer>("Anim").
+			if c := skipSpace(ts, templateEnd(ts, k)); c == len(ts) || !isPunct(ts[c], "(") {
+				break walk
+			}
+			arrow, end = -1, templateEnd(ts, k)
 		case k < len(ts) && (isPunct(ts[k], "(") || isPunct(ts[k], "[")) && closing(ts, k) < len(ts):
 			if arrow >= 0 && ts[last].Value == "string_name" && isPunct(ts[k], "(") {
 				break walk

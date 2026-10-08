@@ -2,6 +2,10 @@
 
 #include "Hatch.h"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wsubobject-linkage"
+#endif
+
 namespace godot {
 
 #define This Hatch
@@ -42,7 +46,7 @@ gdpp::Coroutine<gdpp::Gd<Node>> Hatch::_gdpp_body_open(Array names, bool slow) {
   }
   co_return gdpp::cast<Node *>(body);
 
-#line 46 "Hatch.cpp"
+#line 50 "Hatch.cpp"
 }
 
 gdpp::Async<int64_t> Hatch::count(bool slow) {
@@ -54,7 +58,7 @@ gdpp::Coroutine<int64_t> Hatch::_gdpp_body_count(bool slow) {
 
   co_return 1;
 
-#line 58 "Hatch.cpp"
+#line 62 "Hatch.cpp"
 }
 
 gdpp::Async<void> Hatch::wait_a_bit() const {
@@ -68,7 +72,7 @@ gdpp::Coroutine<void> Hatch::_gdpp_body_wait_a_bit() const {
   GDPP_ASSERT_CO_VOID("true", true);
   co_return;
 
-#line 72 "Hatch.cpp"
+#line 76 "Hatch.cpp"
 }
 
 gdpp::Async<String> Hatch::show(const String &text) {
@@ -85,7 +89,7 @@ gdpp::Coroutine<String> Hatch::_gdpp_body_show(String text) {
 
   co_return text;
 
-#line 89 "Hatch.cpp"
+#line 93 "Hatch.cpp"
 }
 
 gdpp::Gd<AnimationPlayer> Hatch::get_anim() const {

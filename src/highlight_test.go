@@ -38,6 +38,11 @@ func TestHighlightCode(t *testing.T) {
 		{"gd++", "call(string_name \"f\"); string_name = 1;", Styled("call", CodeFunction) + "(" + Styled("string_name", CodeKeyword) + " " +
 			Styled("\"f\"", CodeLiteral) + "); string_name = " + Styled("1", CodeLiteral) + ";"},
 		{"gd++", "assert x > 0;", Styled("assert", CodeKeyword) + " x > " + Styled("0", CodeLiteral) + ";"},
+		{"gd++", "shader f(n: int) -> float { return a[index(id)] + index; }", Styled("shader", CodeKeyword) + " " + Styled("f", CodeFunction) + "(n: " +
+			Styled("int", CodeType) + ") -> " + Styled("float", CodeType) + " { " + Styled("return", CodeKeyword) + " a[" + Styled("index", CodeKeyword) + "(" +
+			Styled("id", CodeKeyword) + ")] + index; }"},
+		{"gd++", "invoke f(glsl { x = index(id); });", Styled("invoke", CodeKeyword) + " " + Styled("f", CodeFunction) + "(" + Styled("glsl", CodeKeyword) + " { x = " +
+			Styled("index", CodeKeyword) + "(" + Styled("id", CodeKeyword) + "); });"},
 		{"gd++", "invoke f(glsl { float x; }); glsl = 1;", Styled("invoke", CodeKeyword) + " " + Styled("f", CodeFunction) + "(" + Styled("glsl", CodeKeyword) + " { " +
 			Styled("float", CodeType) + " x; }); glsl = " + Styled("1", CodeLiteral) + ";"},
 		{"gd++", "await a->done; await string_name(n); x.string_name(n);", Styled("await", CodeKeyword) + " a->done; " + Styled("await", CodeKeyword) + " " +

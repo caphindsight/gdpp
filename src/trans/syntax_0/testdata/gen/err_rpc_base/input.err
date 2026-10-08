@@ -1,0 +1,4 @@
+input.gd++:3:1: Annotation @rpc can only be used in classes that extend Node, which A doesn't.
+ 3 | @rpc
+   | ^^^^
+Hint: rpc and rpc_config are methods of Node.
