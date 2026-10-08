@@ -59,6 +59,7 @@ func TestCompile(t *testing.T) {
 			continue // The tutorial's C++ is illustrative, e.g. it uses my_value, which it never declares.
 		}
 		t.Run(filepath.Base(dir)+"/"+filepath.Base(file), func(t *testing.T) {
+			t.Parallel()
 			args := []string{"-std=c++20", "-fsyntax-only", "-Wno-pragma-once-outside-header", "-I", dir, "-I", include,
 				"-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"), "-I", filepath.Join(root, "gdextension"), "-x", "c++", file}
 			if out, err := exec.Command(cxx, args...).CombinedOutput(); err != nil {

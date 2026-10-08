@@ -56,6 +56,7 @@ func TestCompile(t *testing.T) {
 	for _, file := range files {
 		dir := filepath.Dir(file)
 		t.Run(filepath.Base(dir)+"/"+filepath.Base(file), func(t *testing.T) {
+			t.Parallel()
 			args := []string{"-std=c++20", "-fsyntax-only", "-Wno-pragma-once-outside-header", "-I", dir, "-I", include,
 				"-I", filepath.Join(root, "include"), "-I", filepath.Join(root, "gen", "include"), "-I", filepath.Join(root, "gdextension"), "-x", "c++", file}
 			if out, err := exec.Command(cxx, args...).CombinedOutput(); err != nil {
