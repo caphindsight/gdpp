@@ -14,8 +14,8 @@ is_done TASK                   TASK.is_done()                     test whether a
 claim TASK                     TASK.claim()                       take an Async's result
 cancel TASK                    TASK.cancel()                      ask an Async's task to stop
 await VALUE                    co_await VALUE                     wait for a task or a value, in an @async function, see `gd++ man async`
-await OBJECT->NAME             co_await gdpp::signal(OBJECT,      wait for a signal, in an @async function
-                                 gdpp::string_name<"NAME">())
+await OBJECT->NAME             co_await gdpp::signal<"NAME">(     wait for a signal, in an @async function, and get its
+                                 OBJECT)                          arguments with their types
 await NAME                     the same, on this                  wait for a signal of this class
 return                         co_return                          in an @async function, but not in its lambdas
 create T                       gdpp::create<T>()                  create an object, see `gd++ man classes`

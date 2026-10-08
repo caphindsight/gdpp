@@ -204,7 +204,7 @@ func checkLines(t *testing.T, sources map[string]string, self, text string) {
 				if !slices.Contains([]string{"void", "gdpp", "GDPP_STRING_NAME", "GDPP_ASSERT", "GDPP_ASSERT_VOID", "GDPP_ASSERT_VALUE", "GDPP_ASSERT_CO_VOID", "GDPP_ASSERT_CO_VALUE", "claim", "is_done", "cancel", "cast",
 					"co_await", "co_return", "signal", "StringName", "string_name", "this",
 					"callable", "callable_method", "callable_member", "callable_name", "This", "nullptr", "auto", "o", "return", "std", "remove_pointer_t", "decltype",
-					"swizzle", "swizzle_ref", "glsl_not", "static", "template", "int", "I", "if", "else", "constexpr", "is_same_v", "integer_sequence", "const"}, id) && !swizzleRegexp.MatchString(id) && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
+					"swizzle", "swizzle_ref", "glsl_not", "static", "template", "char", "C", "if", "else", "constexpr", "is_same_v", "integer_sequence", "const"}, id) && !swizzleRegexp.MatchString(id) && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
 					t.Errorf("%s:%d: %q is not on line %d of the source: %q", self, i+2+k, id, n+k, srcLines[n+k-1])
 				}
 			}

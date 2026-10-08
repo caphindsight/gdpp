@@ -473,7 +473,7 @@ So a shader's body must be GLSL that also compiles as C++, with GD++'s help:
 - It turns what C++ lacks into C++: swizzles, e.g. `v.xy`, `out` and `inout` parameters, `not`, and a struct's constructor, e.g. `Ray(o, d)`.
 - Write array constructors in braces: `float w[3] = {1.0, 2.0, 1.0};`, not `float[3](...)`.
 - C++ checks more strictly than GLSL in places, and the other way around. So a body that compiles on the CPU can still fail to compile on a GPU, at runtime. See "Errors" below.
-- A struct field can have the name of a swizzle, e.g. `xy` or `rgb`. But two fields of one struct can't have swizzle names with the same components, e.g. `xy` and `rg`: the copy for the CPU can't tell them apart, and fails to compile.
+- A struct field can have the name of a swizzle, e.g. `xy` or `rgb`, like in GLSL. The copy for the CPU tells it from a vector's swizzle, and from other fields, e.g. `rg`, by its letters.
 
 `barrier()` and `shared` variables have no CPU fallback, since the CPU runs a workgroup's cells one after another:
 

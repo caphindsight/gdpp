@@ -7,9 +7,10 @@ import (
 
 func TestProjectNames(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
-		"a.gd++": "class_name Mover\nextends Node\n\nvar mask: Physics3D = PLAYER | WORLD\n\nfunc tick() -> void {\n  StringName s = Action::jump;\n}\n",
+		"a.gd++": "class_name Mover\nextends Node\n\n@export_flags_3d_physics var mask: int = Physics3D::PLAYER_BODY | Physics3D::WORLD\n\nfunc tick() -> void {\n  StringName s = Action::jump;\n}\n",
 	})
-	m.nodes["/games/my_game/.gd++proj"] = &memNode{data: []byte("vcs = \"none\"\npresets = true\n\n[names]\nactions = \"Action\"\ngroups = \"Group\"\nphysics_layers_3d = \"Physics3D\"\n")}
+	config := m.nodes[pkgDir+packageFileName]
+	config.data = append(config.data, []byte("\n[names]\nactions = \"Action\"\ngroups = \"Group\"\nphysics_layers_3d = \"Physics3D\"\n")...)
 	m.nodes["/games/my_game/project.godot"].data = append(m.nodes["/games/my_game/project.godot"].data, []byte(`
 [global_group]
 
@@ -35,14 +36,14 @@ jump={
 `)...)
 	withTTY(t, false)
 	withQuiet(t, false)
-	transpileTestPackage(t, false)
+	transpileTestPackage(t, true)
 	gen := subtree(m.tree(), pkgDir+".gd++build/gdpp/")
 	for file, wants := range map[string][]string{
 		"_gdpp_names.h": {"namespace Action {\nnamespace _gdpp_text {\n\tinline constexpr char ui_accept[] = \"ui_accept\";",
 			"\tinline constexpr char jump[] = \"jump\";\n\tinline constexpr char move_left[] = \"move left\";\n}",
-			"inline constexpr gdpp::Name<_gdpp_text::move_left> move_left{};", "namespace Group {\nnamespace _gdpp_text {\n\tinline constexpr char enemies[] = \"enemies\";\n}"},
-		"Physics3D.h": {"PLAYER_BODY = 1,", "WORLD = 4,"},
-		"Mover.cpp":   {`#include "_gdpp_names.h"`},
+			"inline constexpr gdpp::Name<_gdpp_text::move_left> move_left{};", "namespace Group {\nnamespace _gdpp_text {\n\tinline constexpr char enemies[] = \"enemies\";\n}",
+			"namespace Physics3D {\ninline constexpr int64_t PLAYER_BODY = 1; // Layer 1, \"Player Body\".\ninline constexpr int64_t WORLD = 4; // Layer 3, \"World\".\n}"},
+		"Mover.cpp": {`#include "_gdpp_names.h"`},
 	} {
 		for _, want := range wants {
 			if !strings.Contains(gen[file], want) {
@@ -51,7 +52,23 @@ jump={
 		}
 	}
 	if strings.Contains(gen["_gdpp_names.h"], "Ignored") || strings.Contains(gen["_gdpp_names.h"], "deadzone") {
-		t.Errorf("_gdpp_names.h = %s\nwant only actions and groups", gen["_gdpp_names.h"])
+		t.Errorf("_gdpp_names.h = %s\nwant only actions, groups and 3D physics layers", gen["_gdpp_names.h"])
+	}
+	// C++ only: no generated file binds them, documents them or registers them.
+	for file, text := range gen {
+		if file == "_gdpp_names.h" || strings.HasPrefix(file, "gd++/") {
+			continue
+		}
+		for _, name := range []string{"Action", "Group", "Physics3D"} {
+			for _, bound := range []string{`"` + name, name + `"`, "bind_integer_constant(get_class_static(), \"" + name} {
+				if strings.Contains(text, bound) {
+					t.Errorf("%s shows %s to Godot: %s", file, name, text)
+				}
+			}
+		}
+	}
+	if register := m.tree()[pkgDir+".gd++build/__register_types__.cpp"]; strings.Contains(register, "Physics3D") || strings.Contains(register, "Action") {
+		t.Errorf("__register_types__.cpp = %s\nwant no generated names", register)
 	}
 }
 

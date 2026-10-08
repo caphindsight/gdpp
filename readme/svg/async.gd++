@@ -6,7 +6,8 @@ var anim: AnimationPlayer
 @async
 func open() -> int {
   anim->play("open");
-  await anim->animation_finished;
+  // Gives the signal's arguments, with their types.
+  StringName done = await anim->animation_finished;
   await get_tree()->create_timer(1.0)->timeout;
   return gd::randi_range(10, 50);
 }

@@ -8,6 +8,12 @@
 
 namespace godot {
 
+// The arguments' types of the signals that the file awaits, which gdpp::signal looks up.
+class Area2D;
+gdpp::Gd<Node2D> gdpp_signal_args(Area2D *, gdpp::SignalName<"body_entered">);
+class Gate2;
+void gdpp_signal_args(Gate2 *, gdpp::SignalName<"opened">);
+
 #define This Gate2
 
 void Gate2::_bind_methods() {
@@ -26,10 +32,10 @@ void Gate2::_gdpp_body__on_this_body_entered(gdpp::Gd<Node2D> body) {
 gdpp::Coroutine<void> Gate2::_gdpp_body__gdpp_body__on_this_body_entered(gdpp::Gd<Node2D> body) {
 #line 7 "input.gd++"
 
-  co_await gdpp::signal(this, gdpp::string_name<"opened">());
+  co_await gdpp::signal<"opened">(this);
   gd::print(body);
 
-#line 33 "Gate2.cpp"
+#line 39 "Gate2.cpp"
 }
 
 void Gate2::_gdpp_body__on_this_ready() {
@@ -39,9 +45,9 @@ void Gate2::_gdpp_body__on_this_ready() {
 gdpp::Coroutine<void> Gate2::_gdpp_body__gdpp_body__on_this_ready() {
 #line 13 "input.gd++"
 
-  co_await gdpp::signal(this, gdpp::string_name<"body_entered">());
+  co_await gdpp::signal<"body_entered">(this);
 
-#line 45 "Gate2.cpp"
+#line 51 "Gate2.cpp"
 }
 
 gdpp::Emitted Gate2::opened() {

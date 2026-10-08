@@ -244,19 +244,31 @@ struct vec : vec_storage<T, N> {
 	T &operator[](int p_index) { return data[p_index]; }
 	const T &operator[](int p_index) const { return data[p_index]; }
 
-	// A swizzle, e.g. v.xy, which GD++ writes as v.swizzle<0, 1>(): a copy of the components.
-	template <int... I>
-	vec<T, int(sizeof...(I))> swizzle() const {
-		if constexpr (sizeof...(I) == 1) {
-			return vec<T, 1>(data[I]...);
+	// A swizzle, e.g. v.xy, which GD++ writes as v.swizzle<'x', 'y'>(): a copy of the components. GD++ keeps the
+	// letters, so a struct's field named like a swizzle, e.g. xy or rg, is told apart from the others.
+	template <char... C>
+	vec<T, int(sizeof...(C))> swizzle() const {
+		static_assert(((component(C) < N) && ...), "The swizzle names a component that the vector doesn't have.");
+		if constexpr (sizeof...(C) == 1) {
+			return vec<T, 1>(data[component(C)]...);
 		} else {
-			return vec<T, int(sizeof...(I))>(data[I]...);
+			return vec<T, int(sizeof...(C))>(data[component(C)]...);
 		}
 	}
-	// A swizzle that's assigned to, e.g. v.xy = w, which GD++ writes as v.swizzle_ref<0, 1>() = w.
-	template <int... I>
-	SwizzleRef<vec, int(sizeof...(I))> swizzle_ref() {
-		return SwizzleRef<vec, int(sizeof...(I))>{ *this, { I... } };
+	// A swizzle that's assigned to, e.g. v.xy = w, which GD++ writes as v.swizzle_ref<'x', 'y'>() = w.
+	template <char... C>
+	SwizzleRef<vec, int(sizeof...(C))> swizzle_ref() {
+		static_assert(((component(C) < N) && ...), "The swizzle names a component that the vector doesn't have.");
+		return SwizzleRef<vec, int(sizeof...(C))>{ *this, { component(C)... } };
+	}
+	// component returns the index of a swizzle's letter: 0 for x, r and s, up to 3 for w, a and q.
+	static constexpr int component(char p_letter) {
+		switch (p_letter) {
+			case 'x': case 'r': case 's': return 0;
+			case 'y': case 'g': case 't': return 1;
+			case 'z': case 'b': case 'p': return 2;
+			default: return 3;
+		}
 	}
 
 	// GLSL's v.length() is the number of components. Not to be confused with length(v).
@@ -307,7 +319,7 @@ private:
 	}
 };
 
-// vec<T, 1> is a swizzle of one component, e.g. v.swizzle<2>(): it converts to T.
+// vec<T, 1> is a swizzle of one component, e.g. v.swizzle<'z'>(): it converts to T.
 template <typename T>
 struct vec<T, 1> {
 	T data[1];

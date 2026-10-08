@@ -94,15 +94,15 @@ func TestCpp(t *testing.T) {
 	}
 	// In a coroutine, whose class has the signal died.
 	for code, want := range map[string]string{
-		"await anim->animation_finished;":                                   `co_await gdpp::signal(anim, gdpp::string_name<"animation_finished">());`,
-		"await get_tree()->create_timer(1.0)->timeout;":                     `co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());`,
-		"await died; await this->died;":                                     `co_await gdpp::signal(this, gdpp::string_name<"died">()); co_await gdpp::signal(this, gdpp::string_name<"died">());`,
+		"await anim->animation_finished;":                                   `co_await gdpp::signal<"animation_finished">(anim);`,
+		"await get_tree()->create_timer(1.0)->timeout;":                     `co_await gdpp::signal<"timeout">(get_tree()->create_timer(1.0));`,
+		"await died; await this->died;":                                     `co_await gdpp::signal<"died">(this); co_await gdpp::signal<"died">(this);`,
 		"await pending; await (this->task); await s.task; await f(x);":      "co_await pending; co_await (this->task); co_await s.task; co_await f(x);",
-		`await a->string_name "x"; await string_name "y";`:                  `co_await gdpp::signal(a, gdpp::string_name<"x">()); co_await gdpp::signal(this, gdpp::string_name<"y">());`,
+		`await a->string_name "x"; await string_name "y";`:                  `co_await gdpp::signal<"x">(a); co_await gdpp::signal<"y">(this);`,
 		`await a->string_name(p + "_f"); await string_name(n[i]);`:          `co_await gdpp::signal(a, StringName(p + "_f")); co_await gdpp::signal(this, StringName(n[i]));`,
 		`await string_name(string_name "a"); int n = await count(claim t);`: `co_await gdpp::signal(this, StringName(gdpp::string_name<"a">())); int n = co_await count(t.claim());`,
-		`await get_node<AnimationPlayer>("A")->animation_finished; await Object::cast_to<SceneTree>(l)->string_name "f"; await a < b;`: `co_await gdpp::signal(get_node<AnimationPlayer>("A"), gdpp::string_name<"animation_finished">()); co_await gdpp::signal(Object::cast_to<SceneTree>(l), gdpp::string_name<"f">()); co_await a < b;`,
-		"await\n  a->b;":                                        "co_await gdpp::signal(\n  a, gdpp::string_name<\"b\">());",
+		`await get_node<AnimationPlayer>("A")->animation_finished; await Object::cast_to<SceneTree>(l)->string_name "f"; await a < b;`: `co_await gdpp::signal<"animation_finished">(get_node<AnimationPlayer>("A")); co_await gdpp::signal<"f">(Object::cast_to<SceneTree>(l)); co_await a < b;`,
+		"await\n  a->b;":                                        "co_await gdpp::signal<\"b\">(\n  a);",
 		"await = 1; x.await; await; await -1;":                  "await = 1; x.await; await; await -1;",
 		"return 1; [] { return 2; }; assert x;":                 `co_return 1; [] { return 2; }; GDPP_ASSERT_CO_VALUE("x", x);`,
 		`call(string_name "f"); [] { call(string_name "g"); };`: `call(gdpp::string_name<"f">()); [] { call(GDPP_STRING_NAME("g")); };`,
@@ -158,13 +158,21 @@ func TestAssertMacros(t *testing.T) {
 }
 
 func TestGlslToCpp(t *testing.T) {
+	// The swizzle methods of a struct with the fields xy and rg, which only their letters tell apart.
+	foo := "template <char... C> decltype(auto) swizzle() {" +
+		" if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'x', 'y'>>) { return (xy); }" +
+		" else if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'r', 'g'>>) { return (rg); } }" +
+		" template <char... C> decltype(auto) swizzle() const {" +
+		" if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'x', 'y'>>) { return (xy); }" +
+		" else if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'r', 'g'>>) { return (rg); } }" +
+		" template <char... C> decltype(auto) swizzle_ref() { return swizzle<C...>(); } "
 	for code, want := range map[string]string{
-		"v.xy":                  "v.swizzle<0, 1>()",
-		"c.rgb * 2.0":           "c.swizzle<0, 1, 2>() * 2.0",
-		"p.stpq.x":              "p.swizzle<0, 1, 2, 3>().x",
+		"v.xy":                  "v.swizzle<'x', 'y'>()",
+		"c.rgb * 2.0":           "c.swizzle<'r', 'g', 'b'>() * 2.0",
+		"p.stpq.x":              "p.swizzle<'s', 't', 'p', 'q'>().x",
 		"v.x + v.r + v.s":       "v.x + v.r + v.s",
-		"v.xy = w; v.zw += w;":  "v.swizzle_ref<0, 1>() = w; v.swizzle_ref<2, 3>() += w;",
-		"if (v.xy == w)":        "if (v.swizzle<0, 1>() == w)",
+		"v.xy = w; v.zw += w;":  "v.swizzle_ref<'x', 'y'>() = w; v.swizzle_ref<'z', 'w'>() += w;",
+		"if (v.xy == w)":        "if (v.swizzle<'x', 'y'>() == w)",
 		"v.xr; s.size; v.xyzwx": "v.xr; s.size; v.xyzwx",
 		"void f(in vec3 a, out vec3 b, inout float c)": "void f(vec3 a, vec3 &b, float &c)",
 		"highp float x; lowp vec2 y;":                  "float x; vec2 y;",
@@ -173,22 +181,9 @@ func TestGlslToCpp(t *testing.T) {
 		"Ray r = Ray(o, vec3(0.0));":                   "Ray r = Ray{o, vec3(0.0)};",
 		"struct Ray { vec3 o; };":                      "struct Ray { vec3 o; };",
 		"Ray make(vec3 o)":                             "Ray make(vec3 o)",
-		"v.xy\n  = w;":                                 "v.swizzle_ref<0, 1>()\n  = w;",
-		"struct Foo { int xy; float zw[2]; }; f.xy = 1;": "struct Foo { int xy; float zw[2]; template <int... I> decltype(auto) swizzle() {" +
-			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
-			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 2, 3>>) { return (zw); } }" +
-			" template <int... I> decltype(auto) swizzle() const {" +
-			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
-			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 2, 3>>) { return (zw); } }" +
-			" template <int... I> decltype(auto) swizzle_ref() { return swizzle<I...>(); } }; f.swizzle_ref<0, 1>() = 1;",
-		"struct S { int xy, rg; };": "struct S { int xy, rg; static_assert(sizeof(int) == 0, \"The fields xy and rg of a struct read alike to the CPU copy of shaders, which turns both into swizzle<0, 1>(). Rename one.\"); " +
-			"template <int... I> decltype(auto) swizzle() {" +
-			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
-			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (rg); } }" +
-			" template <int... I> decltype(auto) swizzle() const {" +
-			" if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); }" +
-			" else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (rg); } }" +
-			" template <int... I> decltype(auto) swizzle_ref() { return swizzle<I...>(); } };",
+		"v.xy\n  = w;":                                 "v.swizzle_ref<'x', 'y'>()\n  = w;",
+		"struct Foo { int xy; float rg[2]; }; f.xy = 1; f.rg[0] = v.rg.x;": "struct Foo { int xy; float rg[2]; " + foo +
+			"}; f.swizzle_ref<'x', 'y'>() = 1; f.swizzle<'r', 'g'>()[0] = v.swizzle<'r', 'g'>().x;",
 	} {
 		if got := glslToCpp(code, []string{"Ray"}); got != want {
 			t.Errorf("glslToCpp(%q) = %q, want %q", code, got, want)

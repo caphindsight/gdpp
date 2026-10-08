@@ -2,7 +2,7 @@ Project names: input actions, groups and layers by name
 
 Code often names what the project settings declare: input actions, e.g. `"jump"`, global groups, e.g. `"enemies"`, and layers, e.g. layer 3 of 3D physics. As strings and numbers, they're easy to misspell, and nothing checks them.
 
-GD++ can generate names for them from `res://project.godot`, which the C++ compiler checks:
+GD++ can generate C++ names for them from `res://project.godot`, which the C++ compiler checks:
 
 ```gd++
 if (Input::get_singleton()->is_action_pressed(Action::jump)) { ... }   // not string_name "jump"
@@ -12,7 +12,7 @@ set_collision_mask(Physics3D::PLAYER | Physics3D::WORLD);              // not 1 
 
 # Turning it on
 
-It's off by default: GD++ generates nothing until `[names]` in `res://.gd++proj` names what to generate. See `gd++ man projects`.
+It's off by default: a package generates nothing until `[names]` in its `.gd++pkg` names what to generate. See `gd++ man packages`.
 
 ```toml
 [names]
@@ -21,51 +21,58 @@ groups = "Group"
 physics_layers_3d = "Physics3D"
 ```
 
-- Each key turns on one kind, and its value is the name of what GD++ generates, e.g. `Action`.
+- Each key turns on one kind, and its value is the name of the C++ namespace that GD++ generates, e.g. `Action`.
 - A missing key, or `""`, turns its kind off.
-- Every package of the project gets the names.
-- `gd++ ls --all` lists them.
+- Each package chooses its own names. E.g. a package that comes from another project, and already uses `Action` for something else, can name its actions `Input_`, or generate none.
+- `gd++ ls --all` lists them, under each package.
 
 The keys:
 
 ```
 KEY                   FROM project.godot                     GENERATES
-actions               the input actions                      a namespace of names
-groups                the global groups                      a namespace of names
-physics_layers_2d     the names of the 2D physics layers     a @bitfield enum
-physics_layers_3d     the names of the 3D physics layers     a @bitfield enum
-render_layers_2d      the names of the 2D render layers      a @bitfield enum
-render_layers_3d      the names of the 3D render layers      a @bitfield enum
-navigation_layers_2d  the names of the 2D navigation layers  a @bitfield enum
-navigation_layers_3d  the names of the 3D navigation layers  a @bitfield enum
-avoidance_layers      the names of the avoidance layers      a @bitfield enum
+actions               the input actions                      a namespace of StringNames
+groups                the global groups                      a namespace of StringNames
+physics_layers_2d     the names of the 2D physics layers     a namespace of bits
+physics_layers_3d     the names of the 3D physics layers     a namespace of bits
+render_layers_2d      the names of the 2D render layers      a namespace of bits
+render_layers_3d      the names of the 3D render layers      a namespace of bits
+navigation_layers_2d  the names of the 2D navigation layers  a namespace of bits
+navigation_layers_3d  the names of the 3D navigation layers  a namespace of bits
+avoidance_layers      the names of the avoidance layers      a namespace of bits
 ```
+
+# C++ only
+
+The names are C++ only: Godot never sees them.
+
+- They're C++ namespaces, not GD++ types. So declarations can't use them as types: a variable, parameter or signal can't be an `Action` or a `Physics3D`.
+- No class binds them, so scripts, the inspector and the editor's help never show them.
+- So two packages with the same names don't clash in Godot either.
 
 # Actions and groups
 
-`actions` and `groups` generate a C++ namespace, with a name for each action or group:
+`actions` and `groups` generate a namespace with a name for each action or group:
 
 - The names are the actions' and groups' own, e.g. `Action::jump`. Characters that names can't have become `_`, e.g. `Action::move_left` for "move left".
 - Each one converts to a `StringName`, created the first time it's used. So it passes to the engine's functions, e.g. `is_action_pressed(Action::jump)`, at the cost of `string_name "jump"`.
 - `actions` also has Godot's built-in actions, e.g. `Action::ui_accept`, which `project.godot` only lists once they're changed.
-- They're C++ names, for C++ code. Declarations, e.g. variables, can't use them as types.
 
 # Layers
 
-The keys of layers generate a GD++ `@bitfield` enum, with a value for each layer that has a name in the project settings, e.g. under "Layer Names > 3D Physics":
+The keys of layers generate a namespace with an `int64_t` constant for each layer that has a name in the project settings, e.g. under "Layer Names > 3D Physics":
 
 ```gd++
-@export var mask: Physics3D = PLAYER | WORLD
+@export_flags_3d_physics var mask: int = Physics3D::PLAYER | Physics3D::WORLD
 
 on ready {
-  set_collision_mask(mask as int);
+  set_collision_mask(mask);
 }
 ```
 
-- The values are the layers' names in UPPER_SNAKE_CASE, e.g. `PLAYER_BODY` for "Player Body", and their bits, e.g. `4` for layer 3.
-- Layers without a name get no value.
-- It's an enum like those of GD++ files: a type for variables, parameters and signals, with checkboxes in the inspector. See `gd++ man enums`.
-- `as int` converts it for the engine's functions, which take an `int`.
+- The constants are the layers' names in UPPER_SNAKE_CASE, e.g. `PLAYER_BODY` for "Player Body", and their values are their bits, e.g. `4` for layer 3.
+- Layers without a name get no constant.
+- They combine with `|`, like the engine's functions expect.
+- To edit layers in the inspector, export an `int` with `@export_flags_3d_physics` and the like, which shows the layers' names. See `gd++ man exports`.
 
 # Errors
 
@@ -80,4 +87,4 @@ Rename them in the project settings.
 
 # See also
 
-`gd++ man projects`, `gd++ man enums`, `gd++ man rewrites`.
+`gd++ man packages`, `gd++ man exports`, `gd++ man rewrites`.

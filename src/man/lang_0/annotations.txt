@@ -79,7 +79,7 @@ func _score() -> int
   - `@factory_scene` declares methods that load the scene ahead of time, and drop it.
 
 @singleton
-  Make the package create the class's one object, which Godot knows by the class's name, and GD++ code gets with `get_singleton()`. Not for classes that extend `Node`. See "@singleton" in `gd++ man classes`.
+  Make the package create the class's one object, which Godot knows by the class's name, and GD++ code gets with `get_singleton()`. A node is an orphan node, outside the scene tree. See "@singleton" in `gd++ man classes`.
 
 @trace(GROUPS...)
   Trace all its functions, variables and signals, and print the creation and destruction of its objects. Except `on process`, `on physics_process` and overrides of `_process` and `_physics_process`. See "@trace and @profile" below.

@@ -41,7 +41,7 @@ gdpp::Coroutine<int64_t> Bell::_gdpp_body_ring(int64_t times) {
 #line 9 "input.gd++"
 
   rings += times;
-  co_await gdpp::signal(get_tree(), gdpp::string_name<"process_frame">());
+  co_await gdpp::signal<"process_frame">(get_tree());
   co_return rings;
 
 #line 48 "Bell.cpp"
@@ -51,7 +51,7 @@ gdpp::Coroutine<void> Bell::_gdpp_body__ready() {
 	gdpp::trace_coroutine("Bell", this, "_ready");
 #line 16 "input.gd++"
 
-  co_await gdpp::signal(get_tree(), gdpp::string_name<"process_frame">());
+  co_await gdpp::signal<"process_frame">(get_tree());
   rings = 0;
 
 #line 58 "Bell.cpp"

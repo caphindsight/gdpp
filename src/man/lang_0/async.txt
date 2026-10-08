@@ -185,12 +185,25 @@ await SIGNAL;                               a Signal value, e.g. Signal(button, 
 ```
 
 - OBJECT is a pointer, a `Ref` or a `Gd`, e.g. `anim`, `get_tree()->create_timer(1.0)` or `this`.
-- A signal without arguments gives nothing. One with one argument gives it, and one with more gives an `Array` of them. The type is `Variant`:
+What `await` gives, for a signal named in the code, i.e. all forms but those with `string_name(EXPR)` and `SIGNAL`:
+
+- nothing, for a signal without arguments,
+- the argument, with its type, for a signal with one, e.g. a `Gd<Node2D>` for `body_entered`,
+- a struct of the arguments, for a signal with more, with a field per argument, named like the signal's parameters:
 
 ```gd++
-Variant body = await area->body_entered;
-Array names = await anim->animation_changed;   // its old name and its new one
+Gd<Node2D> body = await area->body_entered;
+
+auto names = await anim->animation_changed;    // its old name and its new one
+gd::print(names.old_name, " -> ", names.new_name);
+
+auto [from, to] = await anim->animation_changed;
 ```
+
+- The struct converts to an `Array` of the arguments, and to a `Variant`, e.g. `Array names = await anim->animation_changed;`.
+- The types come from the signal's declaration: the engine's, from the API spec, or a GD++ class's. The C++ compiler finds the signal from the object's class, so GD++ needn't know it, e.g. in `await get_tree()->create_timer(1.0)->timeout`.
+- Engine enums are `int`, as in GD++ code.
+- Where the types aren't known, `await` gives a `Variant`, or an `Array` of them for several arguments, like GDScript's: for a signal that only a script declares, an extern's own signal, a signal named by `string_name(EXPR)`, and a `Signal` value.
 
 - `string_name` names signals that the first form can't, e.g. a signal of a base class that GD++ doesn't know, or one whose name is computed at runtime, e.g. `await enemy->string_name("died_" + kind)`.
 - A missing object, or an object without the signal, prints an error, and `await` gives `null` right away.

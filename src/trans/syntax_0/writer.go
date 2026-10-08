@@ -111,7 +111,8 @@ func assertCoFor(void bool) string {
 //     and a lambda's own return type picks it in the lambda (see assertMacros), while the fallbacks `assert_void x;`
 //     and `assert_val x;` always become GDPP_ASSERT_VOID and GDPP_ASSERT_VALUE,
 //   - `await x` becomes `co_await x`, and awaits a signal instead in these forms, for the object x and the class's
-//     signals: `await x->name`, `await x->string_name "name"`, `await x->string_name(expr)`, and, on this,
+//     signals: `await x->name` and `await x->string_name "name"`, which become `co_await gdpp::signal<"name">(x)`,
+//     whose result has the signal's arguments' types, `await x->string_name(expr)`, a Variant, and, on this,
 //     `await name`, `await string_name "name"` and `await string_name(expr)`,
 //   - in a coroutine, whose assert macro is assertCoVoid or assertCoValue, `return` becomes `co_return`, though not
 //     in lambdas,
@@ -438,6 +439,25 @@ func awaitRewrite(ts []lexer.Token, out []string, i, j int, signals []string) in
 		}
 		return true
 	}
+	// blank drops ts[from:to], keeping their newlines so the lines still match.
+	blank := func(from, to int) {
+		for k := from; k < to; k++ {
+			out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
+		}
+	}
+	// literal returns the index of the string after `string_name` at ts[n], or -1 if there's none.
+	literal := func(n int) int {
+		if k := skipSpace(ts, n+1); ts[n].Type == tokIdent && ts[n].Value == "string_name" && k < len(ts) && ts[k].Type == tokString && ts[k].Value[0] == '"' {
+			return k
+		}
+		return -1
+	}
+	// A signal whose name is known: its arguments' types are too, see gdpp::signal<"name">.
+	if k := literal(j); k >= 0 {
+		blank(i+1, k+1)
+		out[i] = "co_await gdpp::signal<" + ts[k].Value + ">(this)"
+		return k + 1
+	}
 	if named(j) {
 		drop(i+1, j)
 		out[i] = "co_await gdpp::signal(this, "
@@ -478,12 +498,21 @@ walk:
 		}
 	}
 	switch {
+	case arrow >= 0 && literal(last) >= 0:
+		k := literal(last)
+		drop(i+1, j)
+		blank(arrow+1, k+1)
+		out[i], out[arrow] = "co_await gdpp::signal<"+ts[k].Value+">(", ")"
+		return j
 	case arrow >= 0 && named(last):
 	case arrow >= 0 && last == end-1:
-		out[last] = "gdpp::string_name<\"" + ts[last].Value + "\">())"
-	case last == j && end == j+1 && slices.Contains(signals, ts[j].Value):
 		drop(i+1, j)
-		out[i], out[j] = "co_await gdpp::signal(this, ", "gdpp::string_name<\""+ts[j].Value+"\">())"
+		blank(arrow+1, last+1)
+		out[i], out[arrow] = "co_await gdpp::signal<\""+ts[last].Value+"\">(", ")"
+		return j
+	case last == j && end == j+1 && slices.Contains(signals, ts[j].Value):
+		blank(i+1, j+1)
+		out[i] = "co_await gdpp::signal<\"" + ts[j].Value + "\">(this)"
 		return j + 1
 	default:
 		out[i] = "co_await"

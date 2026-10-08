@@ -72,18 +72,17 @@ func TestLsCmdVCS(t *testing.T) {
 
 func TestLsCmdNames(t *testing.T) {
 	withLsProject(t)
-	NewPath("/games/my_game").Cd(projectConfigFileName).WriteString("[names]\nactions = \"Action\"\nphysics_layers_3d = \"Physics3D\"\n")
+	NewPath("/games/my_game").Cd(packageFileName).WriteString("bind = \"b\"\nspec = \"4.3-stable\"\nsyntax = 1\n\n[names]\nactions = \"Action\"\nphysics_layers_3d = \"Physics3D\"\n")
 	project := NewPath("/games/my_game").Cd(projectFileName)
 	project.WriteString(project.ReadString() + "\n[input]\n\njump={\n}\n\n[layer_names]\n\n3d_physics/layer_2=\"World\"\n")
-	if out := captureStdout(t, (&CmdLs{}).Run); strings.Contains(out, "Names:") {
+	if out := captureStdout(t, (&CmdLs{}).Run); strings.Contains(out, "C++ names:") {
 		t.Errorf("output = %q, want no names without --all", out)
 	}
 	out := captureStdout(t, (&CmdLs{All: true}).Run)
-	want := "  Manage presets:  yes\n" +
-		"  Names:           Action     input actions      ui_accept ui_select ui_cancel ui_focus_next ui_focus_prev ui_left ui_right ui_up ui_down ui_page_up ui_page_down ui_home ui_end ui_cut ui_copy ui_paste ui_undo ui_redo jump\n" +
-		"                   Physics3D  3D physics layers  WORLD\n"
-	if !strings.Contains(out, want) {
-		t.Errorf("output = %q, want it to contain %q", out, want)
+	for _, want := range []string{"  C++ names:", "Action", "input actions", "ui_accept ui_select ui_cancel", "ui_redo jump\n", "Physics3D", "3D physics layers", "WORLD\n"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output = %q, want it to contain %q", out, want)
+		}
 	}
 }
 

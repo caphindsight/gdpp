@@ -302,7 +302,7 @@ func buildExtension(p Project, pkg Package, o BuildOptions, targets []string) {
 	generateRegisterTypes(pkg, classes)
 	for _, target := range targets {
 		// With several targets, the task names the one it builds.
-		name := styledPackageName(pkg.Root)
+		name := pkg.Root.ToString()
 		if len(targets) > 1 {
 			name += " for " + target
 		}
@@ -323,11 +323,11 @@ func generateBuildCache(p Project, pkg Package) {
 		return cache.GetPath(name)
 	}
 	bind, spec := dep(p.Caches[0], pkg.Config.Bindings), dep(p.Caches[1], pkg.Config.ApiSpec)
-	name := styledPackageName(pkg.Root)
+	name := pkg.Root.ToString()
 	cache := pkg.BuildCache
 	state := cache.Cd("build.toml")
 	config := pkg.Config
-	config.Classes, config.Hidden = nil, nil
+	config.Classes, config.Hidden, config.Names = nil, nil, ProjectNames{} // Names only affect the generated files.
 	stateText := encodeToml(struct {
 		Id     string        `toml:"id"`
 		Config PackageConfig `toml:"config"`
@@ -501,7 +501,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass) {
 		"EditorClasses":   editor,
 		"EditorPlugins":   plugins,
 	}) {
-		LogInfo("Registering classes for %s...", styledPackageName(pkg.Root))
+		LogInfo("Registering classes for %s...", pkg.Root.ToString())
 	}
 }
 
@@ -588,7 +588,7 @@ func generateGdextension(pkg Package, gdpp []gdppClass) {
 	// editor reload the extension, when the editor window gets focus.
 	file.WriteString(text.String())
 	if writeIfChanged(pkg.Root.Cd(pkg.Id+".gdextension.uid"), godotUid(packageName(pkg.Root))+"\n") || changed {
-		LogInfo("Generating .gdextension for %s...", styledPackageName(pkg.Root))
+		LogInfo("Generating .gdextension for %s...", pkg.Root.ToString())
 	}
 }
 

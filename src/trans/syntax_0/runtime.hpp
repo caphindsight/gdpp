@@ -2445,10 +2445,53 @@ struct SignalAwaiter {
 	Variant await_resume() { return result; }
 };
 
-// signal returns the awaiter of the signal p_signal of p_object, a pointer, Ref or Gd.
+// signal returns the awaiter of the signal p_signal of p_object, a pointer, Ref or Gd, which gives a Variant: for
+// signals named at runtime, e.g. `await x->string_name(name)`.
 template <typename T>
 SignalAwaiter signal(const T &p_object, const StringName &p_signal) {
 	return SignalAwaiter{ const_cast<Object *>(static_cast<const Object *>(object_ptr(p_object))), p_signal, Variant() };
+}
+
+// SignalName<"name"> names the signal name in the declarations of gdpp_signal_args, which give its arguments' types.
+template <Literal S>
+struct SignalName {};
+
+// UntypedSignal is what gdpp_signal_args gives for a signal whose arguments' types GD++ doesn't know, e.g. a script's:
+// then await gives a Variant, like GDScript's.
+struct UntypedSignal {};
+
+// SignalArguments is the base of the structs that hold the arguments of signals with more than one, which await gives.
+struct SignalArguments {};
+
+// gdpp_signal_args is the fallback. The sources that await signals declare an overload for each class with a signal of
+// that name, in namespace godot, whose result is what await gives: nothing, the one argument, or a struct of them.
+// Overload resolution picks the class of the object, or its nearest base with the signal.
+UntypedSignal gdpp_signal_args(...);
+
+// TypedSignalAwaiter awaits a signal whose arguments' types GD++ knows, and gives R: nothing, the one argument, or a
+// SignalArguments struct of them.
+template <typename R>
+struct TypedSignalAwaiter : SignalAwaiter {
+	R await_resume() {
+		if constexpr (std::is_base_of_v<SignalArguments, R>) {
+			return R::from(result);
+		} else if constexpr (!std::is_void_v<R>) {
+			return cast<R>(result);
+		}
+	}
+};
+
+// signal<"name">(p_object) returns the awaiter of the signal name of p_object, a pointer, Ref or Gd: `await
+// object->name` in an @async func. It gives the signal's arguments with their types, if GD++ knows them, else a Variant.
+template <Literal S, typename T>
+auto signal(const T &p_object) {
+	using R = decltype(gdpp_signal_args(static_cast<std::remove_cv_t<typename object_class<T>::type> *>(nullptr), SignalName<S>()));
+	SignalAwaiter awaiter = signal(p_object, string_name<S>());
+	if constexpr (std::is_same_v<R, UntypedSignal>) {
+		return awaiter;
+	} else {
+		return TypedSignalAwaiter<R>{ awaiter };
+	}
 }
 
 // VariantAwaiter awaits a Variant, like GDScript's await: a task until it's done, giving its result, a GDScript

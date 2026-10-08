@@ -875,3 +875,22 @@ func TestHighlightMatches(t *testing.T) {
 		}
 	}
 }
+
+func TestWrapHanging(t *testing.T) {
+	for _, c := range []struct {
+		text  string
+		width int
+		want  string
+	}{
+		{"  Names:  Action  ui_accept ui_select ui_cancel jump", 40, "  Names:  Action  ui_accept ui_select\n                  ui_cancel jump"},
+		{"  short line", 40, "  short line"},
+		{"    one two three four five six", 16, "    one two\n    three four\n    five six"},
+		{"  Key:  \x1b[36maa bb cc dd ee ff gg hh ii jj kk\x1b[0m", 30, "  Key:  \x1b[36maa bb cc dd ee ff gg\x1b[0m\n        \x1b[36mhh ii jj kk\x1b[0m"},
+		// A last column too far right for its width: under the line's text instead.
+		{"  a                         b c d e f", 20, "  a                 \n  b c d e f"},
+	} {
+		if got := WrapHanging(c.text, c.width); got != c.want {
+			t.Errorf("WrapHanging(%q, %d) = %q, want %q", c.text, c.width, got, c.want)
+		}
+	}
+}

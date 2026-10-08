@@ -60,7 +60,7 @@ struct _gdpp_shader_opaque {
 	}
 #line 5 "input.gd++"
 	vec3 body(Id id) const {
-  return texelFetch(src, id, 0).swizzle<0, 1, 2>();
+  return texelFetch(src, id, 0).swizzle<'r', 'g', 'b'>();
 }
 #line 66 "Photos.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {

@@ -32,6 +32,7 @@ type PackageConfig struct {
 	HotReload   *bool          `toml:"hot_reload,omitempty"`   // default: true
 	MacroDepth  *int           `toml:"macro_depth,omitempty"`  // default: defaultPackageMacroDepth
 	Hidden      []string       `toml:"hide,omitempty"`         // package-relative directories Godot skips
+	Names       ProjectNames   `toml:"names,omitempty"`        // the C++ names generated from project.godot, see names.go
 	Classes     []PackageClass `toml:"class,omitempty"`
 }
 
@@ -267,24 +268,14 @@ func LoadPackage(p Path) Package {
 	}
 }
 
-// packageName describes the package at root in logs: its path, plus its id
-// for the project root package, whose path doesn't show it.
+// packageName names the package at root for its .gdextension.uid: its path,
+// plus its id for the project root package, whose path doesn't show it.
 func packageName(root Path) string {
 	name := root.ToString()
 	if name == "res://" {
 		name += " [" + root.Name() + "]"
 	}
 	return name
-}
-
-// styledPackageName is packageName styled like `gd++ ls` shows packages.
-func styledPackageName(root Path) string {
-	name := root.ToString()
-	styled := Styled(name, Bold, Cyan)
-	if name == "res://" {
-		styled += " " + Styled("["+root.Name()+"]", Gray)
-	}
-	return styled
 }
 
 // packageGarbage returns what cleaning the package at root deletes: its build
@@ -313,7 +304,7 @@ func cleanPackage(root Path, bin bool) {
 	if len(garbage) == 0 {
 		return
 	}
-	t := LogTask("Cleaning %s...", styledPackageName(root))
+	t := LogTask("Cleaning %s...", root.ToString())
 	for _, p := range garbage {
 		p.Remove()
 	}

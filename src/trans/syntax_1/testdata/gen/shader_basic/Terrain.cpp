@@ -29,7 +29,7 @@ float wrap_angle(float a) {
   }
 
   void split(vec4 c, vec3 &rgb, float &alpha) {
-    rgb = c.swizzle<0, 1, 2>();
+    rgb = c.swizzle<'r', 'g', 'b'>();
     alpha *= c.a;
   }
 
@@ -247,7 +247,7 @@ struct _gdpp_shader_paint {
 #line 30 "input.gd++"
 	void body(Id id) const {
   vec4 c = texture(src, (vec2(id) + 0.5) / vec2(size));
-  c.swizzle_ref<0, 1>() *= tint.swizzle<0, 1>();
+  c.swizzle_ref<'r', 'g'>() *= tint.swizzle<'r', 'g'>();
   Ray r = Ray{vec3(0.0), vec3(0.0, 1.0, 0.0)};
   imageStore(target, id, c * heights[index(id)] + vec4(r.dir, 0.0));
 }
@@ -319,7 +319,7 @@ struct _gdpp_shader_grow {
 	}
 #line 37 "input.gd++"
 	vec3 body(Id id) const {
-  return texelFetch(image, id.swizzle<0, 1>(), 0).swizzle<0, 1, 2>();
+  return texelFetch(image, id.swizzle<'x', 'y'>(), 0).swizzle<'x', 'y', 'z'>();
 }
 #line 325 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {

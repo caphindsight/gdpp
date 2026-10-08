@@ -111,7 +111,7 @@ struct _gdpp_shader_gray {
 		return p.y * size.x + p.x;
 	}
 #line 14 "input.gd++"
-	vec4 body(Id id) const { vec4 c = texelFetch(src, id, 0); return vec4(vec3(dot(c.swizzle<0, 1, 2>(), vec3(0.299, 0.587, 0.114))), c.a);}
+	vec4 body(Id id) const { vec4 c = texelFetch(src, id, 0); return vec4(vec3(dot(c.swizzle<'r', 'g', 'b'>(), vec3(0.299, 0.587, 0.114))), c.a);}
 #line 116 "Tinter.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Tinter.gray", glsl, { 8, 8, 1 }, false, true, false);

@@ -1,0 +1,5 @@
+@singleton
+class_name Director
+extends Node
+
+var level: int

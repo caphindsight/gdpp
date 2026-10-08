@@ -66,7 +66,7 @@ Otherwise, they fail with "There is no GD++ package at ...".
 - Paths inside the project are `res://` paths, e.g. `res://src/player.gd++`.
 - Other paths are relative to the current directory, e.g. `../other_game`.
 - `gd++` never prints absolute paths, so logs don't reveal your file system layout, and are safe to share.
-- Packages are shown by their path. The package at the project root is `res://` followed by the project directory's name in brackets, e.g. "res:// [my_game]".
+- Packages are shown by their path, e.g. `res://src/game`, or `res://` for the package at the project root. `gd++ ls` also shows the project directory's name after it, in brackets, e.g. "res:// [my_game]".
 
 # Skipped directories
 

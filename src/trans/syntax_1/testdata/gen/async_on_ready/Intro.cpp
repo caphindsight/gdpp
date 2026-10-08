@@ -41,7 +41,7 @@ gdpp::Coroutine<void> Intro::_gdpp_body__ready() {
 
   anim = get_node<AnimationPlayer>("AnimationPlayer");
   anim->play("intro");
-  co_await gdpp::signal(anim, gdpp::string_name<"animation_finished">());
+  co_await gdpp::signal<"animation_finished">(anim);
   if (gdpp::is_cancelled()) {
     co_return;
   }
@@ -59,7 +59,7 @@ gdpp::Coroutine<void> Intro::_gdpp_body__enter_tree() {
 #endif
 #line 21 "input.gd++"
 
-  co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());
+  co_await gdpp::signal<"timeout">(get_tree()->create_timer(1.0));
   gd::print("Entered a second ago.");
 
 #line 66 "Intro.cpp"
@@ -76,7 +76,7 @@ void Intro::_gdpp_body__exit_tree() {
 gdpp::Coroutine<void> Intro::_gdpp_body__physics_process(double delta) {
 #line 32 "input.gd++"
 
-  co_await gdpp::signal(get_tree(), gdpp::string_name<"process_frame">());
+  co_await gdpp::signal<"process_frame">(get_tree());
   gd::print(delta);
 
 #line 83 "Intro.cpp"

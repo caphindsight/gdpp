@@ -2,11 +2,19 @@
 
 #include "Hatch.h"
 
+#include <godot_cpp/classes/node2d.hpp>
+
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wsubobject-linkage"
 #endif
 
 namespace godot {
+
+// The arguments' types of the signals that the file awaits, which gdpp::signal looks up.
+class Area2D;
+gdpp::Gd<Node2D> gdpp_signal_args(Area2D *, gdpp::SignalName<"body_entered">);
+class Hatch;
+gdpp::Gd<Node> gdpp_signal_args(Hatch *, gdpp::SignalName<"opened">);
 
 #define This Hatch
 
@@ -31,12 +39,12 @@ gdpp::Async<gdpp::Gd<Node>> Hatch::open(const Array &names, bool slow) {
 gdpp::Coroutine<gdpp::Gd<Node>> Hatch::_gdpp_body_open(Array names, bool slow) {
 #line 11 "input.gd++"
 
-  co_await gdpp::signal(anim, gdpp::string_name<"animation_finished">());
-  co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());
-  Variant body = co_await gdpp::signal(area, gdpp::string_name<"body_entered">());
-  co_await gdpp::signal(this, gdpp::string_name<"opened">());
-  co_await gdpp::signal(anim, gdpp::string_name<"animation_finished">());
-  co_await gdpp::signal(this, gdpp::string_name<"opened">());
+  co_await gdpp::signal<"animation_finished">(anim);
+  co_await gdpp::signal<"timeout">(get_tree()->create_timer(1.0));
+  Variant body = co_await gdpp::signal<"body_entered">(area);
+  co_await gdpp::signal<"opened">(this);
+  co_await gdpp::signal<"animation_finished">(anim);
+  co_await gdpp::signal<"opened">(this);
   co_await gdpp::signal(anim, StringName(String(names[0]) + "_finished"));
   int64_t n = co_await count(slow);
   GDPP_ASSERT_CO_VALUE("n > 0", n > 0);
@@ -47,7 +55,7 @@ gdpp::Coroutine<gdpp::Gd<Node>> Hatch::_gdpp_body_open(Array names, bool slow) {
   }
   co_return gdpp::cast<Node *>(body);
 
-#line 51 "Hatch.cpp"
+#line 59 "Hatch.cpp"
 }
 
 gdpp::Async<int64_t> Hatch::count(bool slow) {
@@ -59,7 +67,7 @@ gdpp::Coroutine<int64_t> Hatch::_gdpp_body_count(bool slow) {
 
   co_return 1;
 
-#line 63 "Hatch.cpp"
+#line 71 "Hatch.cpp"
 }
 
 gdpp::Async<void> Hatch::wait_a_bit() const {
@@ -69,11 +77,11 @@ gdpp::Async<void> Hatch::wait_a_bit() const {
 gdpp::Coroutine<void> Hatch::_gdpp_body_wait_a_bit() const {
 #line 35 "input.gd++"
 
-  co_await gdpp::signal(get_tree()->create_timer(0.5), gdpp::string_name<"timeout">());
+  co_await gdpp::signal<"timeout">(get_tree()->create_timer(0.5));
   GDPP_ASSERT_CO_VOID("true", true);
   co_return;
 
-#line 77 "Hatch.cpp"
+#line 85 "Hatch.cpp"
 }
 
 gdpp::Async<String> Hatch::show(const String &text) {
@@ -90,7 +98,7 @@ gdpp::Coroutine<String> Hatch::_gdpp_body_show(String text) {
 
   co_return text;
 
-#line 94 "Hatch.cpp"
+#line 102 "Hatch.cpp"
 }
 
 gdpp::Gd<AnimationPlayer> Hatch::get_anim() const {

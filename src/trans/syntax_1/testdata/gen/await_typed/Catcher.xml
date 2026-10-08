@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Catcher" inherits="Area2D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="watch">
+			<return type="GdppAsync" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="scored">
+			<param index="0" name="points" type="int" />
+			<param index="1" name="by" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

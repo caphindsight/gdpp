@@ -52,7 +52,6 @@ func listGdppFiles(p Project, pkg Package, macroTimeout int) []gdppFile {
 		macros, err := trans.ListMacros(file.ToString(), src, pkg.Config.Syntax)
 		files = append(files, gdppFile{File: file, Rel: rel, Src: src, Macros: macros, Err: err})
 	}
-	files = append(files, loadProjectNames(p, pkg).files...)
 	// Macros may generate classes, so listing those needs every file's macros.
 	for i, f := range files {
 		if f.Err == nil {
@@ -145,7 +144,7 @@ func loadGodotNames(pkg Package, generateBindings func()) []godotName {
 	}
 	generateBindings()
 	s := Silence()
-	t := LogTask("Scanning bindings for %s...", styledPackageName(pkg.Root))
+	t := LogTask("Scanning bindings for %s...", pkg.Root.ToString())
 	names := scanGodotNames(bindingRoots(pkg))
 	file.WriteString(encodeToml(godotNamesCache{godotNamesVersion, names}))
 	t.Done()
@@ -165,7 +164,7 @@ func bindingNames(pkg Package, bindArgs []string) []godotName {
 	return loadGodotNames(pkg, func() {
 		assertScons()
 		s := Silence()
-		Exec("Compiling bindings for "+styledPackageName(pkg.Root)+"...", pkg.BuildCache, "scons", append(bindArgs, "--gdpp-bindings")...)
+		Exec("Compiling bindings for "+pkg.Root.ToString()+"...", pkg.BuildCache, "scons", append(bindArgs, "--gdpp-bindings")...)
 		s.End()
 	})
 }
@@ -438,7 +437,7 @@ func gdppKinds(files []gdppFile, godot map[string]godotName) map[string]trans.Ki
 func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildOptions) []gdppClass {
 	dir := pkg.BuildCache.Cd(gdppDirName)
 	s := Silence()
-	t := LogTask("Transpiling GD++ code for %s...", styledPackageName(pkg.Root))
+	t := LogTask("Transpiling GD++ code for %s...", pkg.Root.ToString())
 	owner := map[string]gdppFile{}
 	for _, f := range files {
 		if f.Err != nil {

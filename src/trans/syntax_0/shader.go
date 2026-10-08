@@ -782,7 +782,7 @@ var glslDropped = map[string]bool{"in": true, "highp": true, "mediump": true, "l
 
 // glslToCpp turns GLSL code, a shader's body or shader block, into C++ that gdpp::glsl compiles, for the CPU. It
 // keeps every line where it is. structs are the names of the structs that the class's shader blocks declare.
-//   - a swizzle of 2 to 4 components, e.g. `v.xy`, becomes `v.swizzle<0, 1>()`, or `v.swizzle_ref<0, 1>()` where
+//   - a swizzle of 2 to 4 components, e.g. `v.xy`, becomes `v.swizzle<'x', 'y'>()`, or `v.swizzle_ref<'x', 'y'>()` where
 //     it's assigned to,
 //   - `out T x` and `inout T x` become `T &x`, and `in`, precision and memory qualifiers are dropped,
 //   - `not(v)` becomes `glsl_not(v)`, since not is a C++ keyword, and `shared` becomes `static`,
@@ -821,7 +821,7 @@ func glslToCpp(code string, structs []string) string {
 			if j := skipSpace(ts, i+1); j < len(ts) && assigns(ts, j) {
 				method = "swizzle_ref"
 			}
-			out[i] = method + "<" + swizzleIndices(t.Value) + ">()"
+			out[i] = method + "<" + swizzleLetters(t.Value) + ">()"
 		case member:
 		case t.Value == "struct":
 			if open := skipSpace(ts, skipSpace(ts, i+1)+1); open < len(ts) && isPunct(ts[open], "{") {
@@ -858,18 +858,19 @@ func glslToCpp(code string, structs []string) string {
 	return strings.Join(out, "")
 }
 
-// swizzleIndices returns the indices of the components of the swizzle name, e.g. "0, 1" for xy.
-func swizzleIndices(name string) string {
-	var idx []string
+// swizzleLetters returns the letters of the swizzle name as template arguments, e.g. "'x', 'y'" for xy. GD++ keeps
+// the letters, not the components' indices, so that a struct's fields named like swizzles, e.g. xy and rg, stay apart.
+func swizzleLetters(name string) string {
+	var letters []string
 	for _, r := range name {
-		idx = append(idx, strconv.Itoa(strings.IndexRune("xyzw", r)+strings.IndexRune("rgba", r)+strings.IndexRune("stpq", r)+2))
+		letters = append(letters, "'"+string(r)+"'")
 	}
-	return strings.Join(idx, ", ")
+	return strings.Join(letters, ", ")
 }
 
-// structSwizzles returns the methods swizzle and swizzle_ref of a struct whose body is ts, which return its fields named like
-// swizzles, e.g. xy, by their indices: since `s.xy` becomes `s.swizzle<0, 1>()` like a vector's swizzle, they make
-// it the field. It returns "" if there are no such fields.
+// structSwizzles returns the methods swizzle and swizzle_ref of a struct whose body is ts, which return its fields
+// named like swizzles, e.g. xy: since `s.xy` becomes `s.swizzle<'x', 'y'>()` like a vector's swizzle, they make it
+// the field. It returns "" if there are no such fields.
 func structSwizzles(ts []lexer.Token) string {
 	var fields []string
 	for k, t := range ts {
@@ -882,24 +883,17 @@ func structSwizzles(ts []lexer.Token) string {
 		return ""
 	}
 	var sb strings.Builder
-	for k, f := range fields {
-		for _, g := range fields[:k] {
-			if swizzleIndices(f) == swizzleIndices(g) {
-				fmt.Fprintf(&sb, "static_assert(sizeof(int) == 0, \"The fields %s and %s of a struct read alike to the CPU copy of shaders, which turns both into swizzle<%s>(). Rename one.\"); ", g, f, swizzleIndices(f))
-			}
-		}
-	}
 	for _, qualifier := range []string{"", " const"} {
-		sb.WriteString("template <int... I> decltype(auto) swizzle()" + qualifier + " {")
+		sb.WriteString("template <char... C> decltype(auto) swizzle()" + qualifier + " {")
 		for k, f := range fields {
 			if k > 0 {
 				sb.WriteString(" else")
 			}
-			fmt.Fprintf(&sb, " if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, %s>>) { return (%s); }", swizzleIndices(f), f)
+			fmt.Fprintf(&sb, " if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, %s>>) { return (%s); }", swizzleLetters(f), f)
 		}
 		sb.WriteString(" } ")
 	}
-	return sb.String() + "template <int... I> decltype(auto) swizzle_ref() { return swizzle<I...>(); } "
+	return sb.String() + "template <char... C> decltype(auto) swizzle_ref() { return swizzle<C...>(); } "
 }
 
 // braceEnd returns the index of the "}" that closes the "{" at ts[open], or len(ts) if there's none.

@@ -146,7 +146,7 @@ func hide_hit() -> void {
 }
 ```
 
-See "Awaiting signals" in `gd++ man async`.
+`await` gives the signal's arguments, with their types: e.g. `Gd<Node2D> body = await area->body_entered;`. See "Awaiting signals" in `gd++ man async`.
 
 # Enums in signals
 

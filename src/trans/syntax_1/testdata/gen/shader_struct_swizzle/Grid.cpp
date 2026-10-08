@@ -21,10 +21,11 @@ float wrap_angle(float a) {
 
   struct Cell {
     int xy;
+    int rg;
     vec2 rgb;
-  template <int... I> decltype(auto) swizzle() { if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); } else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1, 2>>) { return (rgb); } } template <int... I> decltype(auto) swizzle() const { if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1>>) { return (xy); } else if constexpr (std::is_same_v<std::integer_sequence<int, I...>, std::integer_sequence<int, 0, 1, 2>>) { return (rgb); } } template <int... I> decltype(auto) swizzle_ref() { return swizzle<I...>(); } };
+  template <char... C> decltype(auto) swizzle() { if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'x', 'y'>>) { return (xy); } else if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'r', 'g'>>) { return (rg); } else if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'r', 'g', 'b'>>) { return (rgb); } } template <char... C> decltype(auto) swizzle() const { if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'x', 'y'>>) { return (xy); } else if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'r', 'g'>>) { return (rg); } else if constexpr (std::is_same_v<std::integer_sequence<char, C...>, std::integer_sequence<char, 'r', 'g', 'b'>>) { return (rgb); } } template <char... C> decltype(auto) swizzle_ref() { return swizzle<C...>(); } };
 
-#line 28 "Grid.cpp"
+#line 29 "Grid.cpp"
 
 struct _gdpp_shader_sum {
 	using Id = int;
@@ -57,16 +58,18 @@ struct _gdpp_shader_sum {
 			"\n"
 			"  struct Cell {\n"
 			"    int xy;\n"
+			"    int rg;\n"
 			"    vec2 rgb;\n"
 			"  };\n"
 			"\n"
 			"float _gdpp_body(int id) {\n"
-			"#line 12 \"input.gd++\"\n"
+			"#line 13 \"input.gd++\"\n"
 			"\n"
-			"  Cell c = Cell(1, vec2(2.0, 3.0));\n"
+			"  Cell c = Cell(1, 2, vec2(2.0, 3.0));\n"
 			"  c.xy += 1;\n"
+			"  c.rg = c.xy * 2;\n"
 			"  vec2 v = c.rgb.yx;\n"
-			"  return values[id] + float(c.xy) + v.x;\n"
+			"  return values[id] + float(c.xy + c.rg) + v.x;\n"
 			"\n"
 			"}\n"
 			"void main() {\n"
@@ -81,14 +84,15 @@ struct _gdpp_shader_sum {
 	int index(int p) const {
 		return p;
 	}
-#line 12 "input.gd++"
+#line 13 "input.gd++"
 	float body(Id id) const {
-  Cell c = Cell{1, vec2(2.0, 3.0)};
-  c.swizzle_ref<0, 1>() += 1;
-  vec2 v = c.swizzle<0, 1, 2>().swizzle<1, 0>();
-  return values[id] + float(c.swizzle<0, 1>()) + v.x;
+  Cell c = Cell{1, 2, vec2(2.0, 3.0)};
+  c.swizzle_ref<'x', 'y'>() += 1;
+  c.swizzle_ref<'r', 'g'>() = c.swizzle<'x', 'y'>() * 2;
+  vec2 v = c.swizzle<'r', 'g', 'b'>().swizzle<'y', 'x'>();
+  return values[id] + float(c.swizzle<'x', 'y'>() + c.swizzle<'r', 'g'>()) + v.x;
 }
-#line 92 "Grid.cpp"
+#line 96 "Grid.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Grid.sum", glsl, { 64, 1, 1 }, false, true, false);
 		return kernel;

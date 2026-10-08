@@ -1,9 +1,12 @@
 package main
 
 import (
+	"os"
 	"slices"
 	"strconv"
 	"strings"
+
+	"golang.org/x/term"
 
 	"gd++/trans"
 )
@@ -24,6 +27,7 @@ type lsPackage struct {
 	Package
 	Expanded bool
 	Classes  []lsClass
+	Names    []nameList // With --all: the C++ names that it generates from project.godot.
 }
 
 // lsClass is a class of a package. A zero File or Icon means the class has
@@ -58,9 +62,17 @@ func (c *CmdLs) Run() {
 		if expanded {
 			classes = lsClasses(p, pkg)
 		}
-		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: expanded, Classes: classes})
+		var names []nameList
+		if expanded && c.All {
+			names = projectNameLists(p, pkg.Config.Names)
+		}
+		pkgs = append(pkgs, lsPackage{Package: pkg, Expanded: expanded, Classes: classes, Names: names})
 	}
-	PrintResult(lsProject(p, pkgs, c.Deps || c.All, c.All))
+	out := lsProject(p, pkgs, c.Deps || c.All, c.All)
+	if width, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && isTerminal(os.Stdout) {
+		out = WrapHanging(out, width)
+	}
+	PrintResult(out)
 }
 
 // lsClasses returns the classes of the package: those in its config, then
@@ -116,22 +128,13 @@ func lsMissing(s string) string { return Styled(s, Red) }
 // every dependency instead of counting them. With all, it shows the engines.
 func lsProject(p Project, pkgs []lsPackage, deps, all bool) string {
 	caches := slices.DeleteFunc(slices.Clone(p.Caches), func(c ProjectDepCache) bool { return !all && c.Name == "engine" })
-	return lsSummary(p, all) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
+	return lsSummary(p) + "\n" + Styled("Dependencies:", Bold, BrightBlue) + "\n" + lsDeps(caches, pkgs, deps) + lsPackages(p.Caches, pkgs)
 }
 
-// lsSummary renders the project's name and settings, and with all, the names that GD++ generates from project.godot.
-func lsSummary(p Project, all bool) string {
+// lsSummary renders the project's name and settings.
+func lsSummary(p Project) string {
 	rows := [][]string{{lsKey("Godot"), p.GodotVersion}, {lsKey("VCS"), p.Config.VCS},
 		{lsKey("Manage presets"), map[bool]string{true: "yes", false: "no"}[p.Config.Presets]}}
-	if all {
-		for i, l := range projectNameLists(p) {
-			label := ""
-			if i == 0 {
-				label = lsKey("Names")
-			}
-			rows = append(rows, []string{label, Styled(l.decl, Cyan), Styled(l.what, Gray), strings.Join(l.idents, " ")})
-		}
-	}
 	return Styled("Project:", Bold, BrightBlue) + " " + Styled(p.Name, Bold, Cyan) + " " + Styled("["+p.Id+"]", Gray) + "\n" +
 		AlignColumns(rows, "  ")
 }
@@ -238,6 +241,13 @@ func lsPackageRows(caches []ProjectDepCache, pkg lsPackage) (rows [][]string, mi
 		[]string{lsKey("Hot reload"), onOff(pkg.HotReload())}, []string{lsKey("Macro depth"), strconv.Itoa(pkg.MacroDepth())})
 	if len(pkg.Config.Hidden) > 0 {
 		rows = append(rows, []string{lsKey("Hidden from Godot"), strings.Join(pkg.Config.Hidden, ", ")})
+	}
+	for i, l := range pkg.Names {
+		label := ""
+		if i == 0 {
+			label = lsKey("C++ names")
+		}
+		rows = append(rows, []string{label, Styled(l.decl, Cyan), Styled(l.what, Gray), strings.Join(l.idents, " ")})
 	}
 	return rows, missing
 }

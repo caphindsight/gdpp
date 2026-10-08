@@ -35,7 +35,9 @@ PATH
 
 -a, --all
   Show all details, like `--deps` and `--pkgs` together.
-  Also lists the names that GD++ generates from `project.godot`, e.g. `Action` and its input actions. See `gd++ man project-names`.
+  Also lists, for each expanded package, the C++ names that it generates from `project.godot`, e.g. `Action` and its input actions. See `gd++ man project-names`.
+
+In a terminal, lines longer than its width wrap. A wrapped line goes on under its last column, e.g. under a list of names, or else under its text.
 
 # Output
 

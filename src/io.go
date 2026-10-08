@@ -165,6 +165,62 @@ func WrapText(text string, width int) string {
 	return out.String()
 }
 
+// WrapHanging wraps each line of text, like WrapText, to width columns. A continuation line starts where the line's
+// last column does, i.e. after its last run of two or more spaces, e.g. under a list of names in a table, or else
+// where the line's text does, so wrapping keeps the indentation. ANSI escape codes count as zero width.
+func WrapHanging(text string, width int) string {
+	if width < 1 {
+		return text
+	}
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if visibleLen(line) <= width {
+			continue
+		}
+		plain := []rune(strings.TrimRight(stripStyles(line), " "))
+		hang := len(plain) - len([]rune(strings.TrimLeft(string(plain), " ")))
+		for k := len(plain) - 1; k > hang; k-- {
+			if plain[k] == ' ' && plain[k-1] == ' ' {
+				hang = k + 1
+				break
+			}
+		}
+		if width-hang < 20 { // Too narrow for the column: under the line's text, if that leaves room.
+			hang = min(len(plain)-len([]rune(strings.TrimLeft(string(plain), " "))), width/2)
+		}
+		head, tail := splitAtColumn(line, hang)
+		parts := strings.Split(WrapText(tail, width-hang), "\n")
+		for k := 1; k < len(parts); k++ { // Without the spaces that a break leaves, after the codes that restyle it.
+			codes, text := splitAtColumn(parts[k], 0)
+			parts[k] = strings.Repeat(" ", hang) + codes + strings.TrimLeft(text, " ")
+		}
+		lines[i] = head + strings.Join(parts, "\n")
+	}
+	return strings.Join(lines, "\n")
+}
+
+// splitAtColumn splits line where its visible text reaches column col, ignoring ANSI escape codes. Those right
+// before the split stay with the text after it, which they style.
+func splitAtColumn(line string, col int) (string, string) {
+	inEsc, n, run := false, 0, -1 // run is where the escape codes right before i start, or -1.
+	for i, r := range line {
+		if isEscape(r, &inEsc) {
+			if run < 0 {
+				run = i
+			}
+			continue
+		}
+		if n == col {
+			if run >= 0 {
+				i = run
+			}
+			return line[:i], line[i:]
+		}
+		n, run = n+1, -1
+	}
+	return line, ""
+}
+
 // AlignColumns renders rows as lines starting with indent, with each column
 // padded to its widest cell plus two spaces, and no trailing spaces. ANSI
 // escape codes count as zero width, so styled cells stay aligned.

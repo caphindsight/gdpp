@@ -5,6 +5,10 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/alecthomas/participle/v2/lexer"
+
+	"gd++/trans/meta"
 )
 
 // source returns the C++ source <name>.cpp of the unit's one class, named name: method definitions and bindings.
@@ -21,7 +25,8 @@ func (u *unit) source(name string) string {
 	for _, name := range names {
 		header[name] = true
 	}
-	if incs := u.includes(u.sourceNames(), header); len(incs) > 0 {
+	decls, declNames := u.signalArgDecls()
+	if incs := u.includes(append(u.sourceNames(), declNames...), header); len(incs) > 0 {
 		w.ln("")
 		for _, inc := range incs {
 			w.ln("#include %s", inc)
@@ -43,6 +48,13 @@ func (u *unit) source(name string) string {
 	}
 	w.ln("")
 	w.ln("namespace godot {")
+	if len(decls) > 0 {
+		w.ln("")
+		w.ln("// The arguments' types of the signals that the file awaits, which gdpp::signal looks up.")
+		for _, d := range decls {
+			w.ln("%s", d)
+		}
+	}
 	for _, c := range u.classes {
 		u.classDefs(w, c)
 	}
@@ -289,6 +301,98 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 
 // generationRegexp matches the use of GENERATION, which on blocks and @recycle ctor, dtor and _ready can read.
 var generationRegexp = regexp.MustCompile(`\bGENERATION\b`)
+
+// awaitedSignalPattern matches the await of a signal by name, as the rewrite of await writes it.
+var awaitedSignalPattern = regexp.MustCompile(`gdpp::signal<"(\w+)">`)
+
+// signalArgDecls returns the declarations of gdpp_signal_args for the signals that the file's coroutines await by name:
+// an overload for each class with a signal of that name, whose result is what await gives. It also returns the names
+// they use, whose headers the source includes.
+func (u *unit) signalArgDecls() (decls, names []string) {
+	var awaited []string
+	for _, c := range u.classes {
+		var signals []string
+		for _, sig := range c.signals {
+			signals = append(signals, sig.s.Name)
+		}
+		for _, f := range c.funcs {
+			if f.coro != nil && f.f.Body != nil {
+				for _, m := range awaitedSignalPattern.FindAllStringSubmatch(cpp(f.f.Body.Text, assertCoVoid, "this", signals...), -1) {
+					if !slices.Contains(awaited, m[1]) {
+						awaited = append(awaited, m[1])
+					}
+				}
+			}
+		}
+	}
+	if len(awaited) == 0 {
+		return nil, nil
+	}
+	var classes []string
+	for name, s := range u.symbols {
+		if s.class != nil || s.kind == meta.Object || s.kind == meta.RefCounted {
+			classes = append(classes, name)
+		}
+	}
+	slices.Sort(classes)
+	declared := map[string]bool{}
+	forward := func(class string) []string {
+		if declared[class] {
+			return nil
+		}
+		declared[class] = true
+		return []string{fmt.Sprintf("class %s;", class)}
+	}
+	for _, class := range classes {
+		s := u.symbols[class]
+		signals := s.signals
+		if s.class != nil {
+			signals = ownSignals(s.class.Members)
+		}
+		for _, sig := range signals {
+			if !slices.Contains(awaited, sig.Name) {
+				continue
+			}
+			var types []*gtype
+			for _, p := range sig.Params {
+				t, err := u.resolve(typeAt(p.Type, lexer.Position{}), false)
+				if err != nil {
+					types = nil
+					break
+				}
+				types, names = append(types, t), append(names, typeNames(typeAt(p.Type, lexer.Position{}))...)
+			}
+			if len(types) < len(sig.Params) {
+				continue // A type that GD++ doesn't know: await gives a Variant.
+			}
+			head := fmt.Sprintf("gdpp_signal_args(%s *, gdpp::SignalName<%q>);", class, sig.Name)
+			switch len(types) {
+			case 0:
+				decls = append(append(decls, forward(class)...), "void "+head)
+			case 1:
+				decls = append(append(decls, forward(class)...), types[0].cpp+" "+head)
+			default:
+				name := "_gdpp_signal_" + class + "_" + sig.Name
+				var fields, casts, pushes []string
+				for i, p := range sig.Params {
+					fields = append(fields, fmt.Sprintf("\t%s %s;", types[i].cpp, p.Name))
+					casts = append(casts, fmt.Sprintf("gdpp::cast<%s>(a[%d])", types[i].cpp, i))
+					pushes = append(pushes, fmt.Sprintf("a.push_back(%s);", p.Name))
+				}
+				decls = append(append(decls, forward(class)...), fmt.Sprintf("struct %s : gdpp::SignalArguments {", name))
+				decls = append(decls, fields...)
+				decls = append(decls,
+					// Without the arguments, e.g. since the object was missing, every field has its type's default.
+					fmt.Sprintf("\tstatic %s from(const Variant &p_args) {\n\t\tArray a = p_args;\n\t\tif (a.size() < %d) {\n\t\t\treturn {};\n\t\t}\n\t\treturn %s{ {}, %s };\n\t}",
+						name, len(types), name, strings.Join(casts, ", ")),
+					fmt.Sprintf("\toperator Array() const {\n\t\tArray a;\n\t\t%s\n\t\treturn a;\n\t}", strings.Join(pushes, "\n\t\t")),
+					"\toperator Variant() const { return operator Array(); }",
+					"};", name+" "+head)
+			}
+		}
+	}
+	return decls, names
+}
 
 // initializer writes the assignment of var v's initial value, or of its type's default if it has none, and connects
 // the on blocks of its signals to it.

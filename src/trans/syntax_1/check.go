@@ -3048,10 +3048,6 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				return nil, u.errorAt(a[name].Pos, len(name)+1, fmt.Sprintf("Annotations @singleton and @%s can't be used together.", name), "The package creates the one object of a @singleton class.")
 			}
 		}
-		if m.node {
-			return nil, u.errorAt(s.Pos, len(s.Name)+1, fmt.Sprintf("A @singleton class can't extend Node, which %s does.", c.Name),
-				"Godot's singletons aren't in the scene tree. For a node that every scene can reach, add a scene with it as an autoload in Godot's project settings.")
-		}
 	}
 	for _, name := range []string{"pool", "scene"} {
 		if m.abstract && a[name] != nil {

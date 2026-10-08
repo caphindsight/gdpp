@@ -1,0 +1,19 @@
+class_name Catcher
+extends Area2D
+
+signal scored(points: int, by: String)
+
+@async
+func watch() -> void {
+  Gd<Node2D> body = await this->body_entered;
+  Variant old = await this->body_entered;
+  auto shape = await this->body_shape_entered;
+  int64_t index = shape.body_shape_index;
+  auto [rid, other, a, b] = await this->body_shape_entered;
+  Array args = await this->body_shape_entered;
+  Variant v = await scored;
+  auto [points, by] = await scored;
+  await this->ready;
+  Variant any = await this->string_name(String("score") + "d");
+  gd::print(body, old, index, rid, other, a, b, args, v, points, by, any);
+}

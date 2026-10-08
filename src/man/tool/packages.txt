@@ -35,6 +35,9 @@ hot_reload = false
 macro_depth = 100
 hide = ["src"]
 
+[names]
+actions = "Action"
+
 [[class]]
 name = "Foo"
 include = "pkg://foo.h"
@@ -96,6 +99,12 @@ hide (optional, default none)
   - Use it for files Godot has no use for, e.g. C++ sources and headers, or assets your code generates from.
   - Don't hide what Godot loads, e.g. class icons. Godot also can't load a package inside a hidden directory.
   - `gd++ init PATH --hide DIR...` adds entries, and `gd++ rm PATH --hide DIR...` removes them.
+
+[names] (optional, default none)
+  The C++ names that GD++ generates from `project.godot`: for input actions, global groups and layers. Each key names one namespace, e.g. `actions = "Action"` for `Action::jump`. All off by default.
+  - Each package chooses its own names, e.g. to avoid a name that a package from another project already uses.
+  - They're C++ only: Godot never sees them.
+  - See `gd++ man project-names`.
 
 [[class]] (optional, any number)
   A plain C++ class that the package registers with Godot. Its keys:

@@ -8,12 +8,12 @@ int fails = 0;
 bool near(float a, float b) { return std::fabs(a - b) < 1e-5f; }
 int main() {
 	vec4 v(1.0, 2.0, 3.0, 4.0);
-	v.swizzle_ref<0, 1>() = vec2(5.0, 6.0);
+	v.swizzle_ref<'x', 'y'>() = vec2(5.0, 6.0);
 	CHECK(v.x == 5 && v.y == 6 && v.z == 3);
-	v.swizzle_ref<3, 2>() += vec2(1.0);
+	v.swizzle_ref<'w', 'z'>() += vec2(1.0);
 	CHECK(v.w == 5 && v.z == 4);
 	CHECK(v.r == v.x && v.a == v.w && v.s == v.x);
-	vec2 w = v.swizzle<2, 0>();
+	vec2 w = v.swizzle<'b', 'r'>();
 	CHECK(w.x == 4 && w.y == 5);
 	CHECK(near(mod(-1.0f, 3.0f), 2.0f));
 	CHECK(near(mix(0.0f, 10.0f, 0.25f), 2.5f));

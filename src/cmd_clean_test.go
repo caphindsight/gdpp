@@ -52,7 +52,7 @@ func TestClean(t *testing.T) {
 func TestCleanPaths(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game")
 	out := captureStderr(t, (&CmdClean{Paths: []string{"src/pkg/main.cpp", "res://", "src/other", "src/pkg"}}).Run)
-	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: cleaning res:// [my_game]...\n[-] Task succeeded: cleaning res:// [my_game]\n"; out != want {
+	if want := "[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n[$] Running task: cleaning res://...\n[-] Task succeeded: cleaning res://\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got := buildCaches(m); len(got) > 0 {
@@ -63,7 +63,7 @@ func TestCleanPaths(t *testing.T) {
 func TestCleanRecursive(t *testing.T) {
 	m := withCleanFS(t, "/games/my_game/src/other")
 	out := captureStderr(t, (&CmdClean{Paths: []string{"res://..."}}).Run)
-	if want := "[$] Running task: cleaning res:// [my_game]...\n[-] Task succeeded: cleaning res:// [my_game]\n[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
+	if want := "[$] Running task: cleaning res://...\n[-] Task succeeded: cleaning res://\n[$] Running task: cleaning res://src/pkg...\n[-] Task succeeded: cleaning res://src/pkg\n"; out != want {
 		t.Errorf("output = %q, want %q", out, want)
 	}
 	if got := buildCaches(m); len(got) > 0 {
