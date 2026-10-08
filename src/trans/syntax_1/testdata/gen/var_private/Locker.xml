@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Locker" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="gold" type="int" setter="set_gold" getter="get_gold">
+			In the docs.
+		</member>
+	</members>
+	<constants>
+		<constant name="LOCK_OPEN" value="0" enum="Lock">
+		</constant>
+		<constant name="LOCK_SHUT" value="1" enum="Lock">
+		</constant>
+	</constants>
+</class>

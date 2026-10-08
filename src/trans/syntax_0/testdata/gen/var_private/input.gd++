@@ -1,0 +1,33 @@
+class_name Locker
+extends Node
+
+enum Lock { OPEN, SHUT }
+
+/// In the docs.
+var gold: int
+
+/// Not in the docs: scripts can't see it.
+@private
+var code: int = 42
+
+@private
+var lock: Lock
+
+@private @onready
+var panel: Control = get_node<Control>("Panel")
+
+@private @trace
+var tries: int
+
+@private
+var alarm: bool {
+  decl { bool _alarm = false; }
+  get { return _alarm; }
+  @deferred set(value) { _alarm = value; }
+}
+
+on panel.resized {
+  tries++;
+  lock = Lock::OPEN;
+  set_alarm(get_alarm() || code != 42);
+}

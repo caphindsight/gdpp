@@ -365,6 +365,7 @@ func clamped(damage: int) -> int {
 - GD++ doesn't bind it, so Godot doesn't know it: scripts, `call()` and signals connected by name can't reach it, and the editor's help leaves it out.
 - To connect it to a signal, use `callable clamped`, or an `on` block. See `gd++ man signals`.
 - Like a method in a `decl` block, but written as a `func`. See `gd++ man code`.
+- Variables take `@private` too. See "@private" in `gd++ man variables`.
 - Combines with `@static`, `@const`, `@deferred`, `@thread_safe`, `@onthread` and `@async`. Their `_gdpp_body_NAME` is still bound, since their calls run it by name or from a task, except for `@onthread` and `@async`.
 
 # @rpc

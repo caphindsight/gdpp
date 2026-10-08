@@ -1,0 +1,4 @@
+input.gd++:4:1: Annotations @private and @export_group can't be used together.
+ 4 | @export_group("Stats") @private
+   | ^^^^^^^^^^^^^
+Hint: Godot doesn't know a @private var, so the inspector can't show it.

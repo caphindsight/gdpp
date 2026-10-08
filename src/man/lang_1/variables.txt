@@ -191,6 +191,25 @@ var target: Vector3 {
 
 See "@deferred and @thread_safe" in `gd++ man functions`.
 
+# @private
+
+```gd++
+func open() -> void {
+  tries++;
+}
+
+@private
+var tries: int
+```
+
+- Makes the variable private in C++: its field, getter and setter are in the private section of the class. Only the class's own C++ code uses them.
+- GD++ doesn't bind it, so Godot doesn't know it: scripts, `get()` and `set()` can't reach it, and the editor's help leaves it out.
+- Unlike a field in a `decl` block, it keeps what a `var` has: an initial value, `@onready`, `@trace`, `on` blocks of its signals, and property blocks.
+- Not with an export annotation or a section annotation, since the inspector only shows properties that Godot knows.
+- A `@deferred` or `@thread_safe` set block's `_gdpp_body_set_NAME` is still bound, since its calls run it by name.
+
+See "@private" in `gd++ man functions`.
+
 # Names
 
 A variable `x` declares three names in its class: `x`, `get_x` and `set_x`, even if it's a read-only property. They must not clash with other members:
@@ -202,7 +221,7 @@ func get_speed() -> float { ... }     // error: get_speed is taken
 
 # Visibility in Godot
 
-- Every variable is a property in Godot, so GDScript can get and set it by name.
+- Every variable is a property in Godot, so GDScript can get and set it by name. Except `@private` ones, see above.
 - Only exported variables show up in the inspector, and are saved in scenes and resources.
 
 ```gd++
@@ -223,6 +242,7 @@ Variables take:
 - `@game_only`, which keeps their getter and setter from running in the editor. Not with an export annotation. See `gd++ man classes`.
 - `@editor_only`, which keeps their getter and setter from running in the game. Only in a `@tool` class.
 - `@trace` and `@profile`, for debugging.
+- `@private`, which keeps it out of Godot. See "@private" above.
 
 A doc comment before a variable becomes its description in the editor's help. See `gd++ man docs` and `gd++ man annotations`.
 

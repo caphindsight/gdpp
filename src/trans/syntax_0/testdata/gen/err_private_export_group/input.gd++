@@ -1,0 +1,5 @@
+class_name A
+extends Node
+
+@export_group("Stats") @private
+var x: int

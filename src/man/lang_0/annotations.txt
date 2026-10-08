@@ -260,6 +260,9 @@ See `gd++ man structs`.
 
 # Variables of classes
 
+@private
+  Make the variable's field, getter and setter private in C++, and don't bind them. Only C++ code of the class uses them. Not with export or section annotations. See `gd++ man variables`.
+
 @onready
   Assign the initial value right before the `on ready` block, instead of in the constructor. Only in classes that extend `Node`. In a `@pool` class, only the first time an object gets ready, unless it also has `@recycle`. See `gd++ man lifecycle`.
 

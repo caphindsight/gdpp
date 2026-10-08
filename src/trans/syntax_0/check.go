@@ -169,6 +169,7 @@ type varModel struct {
 	v                *Var
 	t                *gtype
 	onready          bool
+	isPrivate        bool        // With @private: a private field, getter and setter, which aren't bound.
 	notrace          bool        // Whether it has @notrace, which leaves it out of its class's @trace.
 	noprofile        bool        // Whether it has @noprofile, which leaves it out of its class's @profile.
 	recycle          *Annotation // Its @recycle, which resets it when its class's pool reuses an object, or nil.
@@ -2385,7 +2386,7 @@ func (u *unit) buildSignal(s *Signal, owner string) (*signalModel, error) {
 
 // buildVar checks v, a variable of the class or extern named owner.
 func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
-	allowed := append([]string{"onready", "editor_only", "game_only", "noprofile", "notrace", "profile", "recycle", "trace"},
+	allowed := append([]string{"onready", "editor_only", "game_only", "noprofile", "notrace", "private", "profile", "recycle", "trace"},
 		sectionAnnotations...)
 	for _, name := range knownAnnotations {
 		if strings.HasPrefix(name, "export") && !slices.Contains(allowed, name) {
@@ -2400,7 +2401,7 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &varModel{v: v, onready: a["onready"] != nil, recycle: a["recycle"], notrace: a["notrace"] != nil, noprofile: a["noprofile"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
+	m := &varModel{v: v, onready: a["onready"] != nil, isPrivate: a["private"] != nil, recycle: a["recycle"], notrace: a["notrace"] != nil, noprofile: a["noprofile"] != nil, usage: "PROPERTY_USAGE_NONE", hint: "PROPERTY_HINT_NONE"}
 	if m.only, err = u.onlyOf(a, owner); err != nil {
 		return nil, err
 	}
@@ -2432,6 +2433,10 @@ func (u *unit) buildVar(v *Var, owner string, ext bool) (*varModel, error) {
 		return nil, err
 	}
 	for _, e := range v.Annotations {
+		if strings.HasPrefix(e.Name, "export") && m.isPrivate {
+			return nil, u.errorAt(e.Pos, len(e.Name)+1, fmt.Sprintf("Annotations @private and @%s can't be used together.", e.Name),
+				"Godot doesn't know a @private var, so the inspector can't show it.")
+		}
 		if strings.HasPrefix(e.Name, "export") && !slices.Contains(sectionAnnotations, e.Name) && m.only == "game" {
 			return nil, u.errorAt(e.Pos, len(e.Name)+1, fmt.Sprintf("Annotations @game_only and @%s can't be used together.", e.Name),
 				"The editor would read and save the default value, since the getter and setter don't run there.")
@@ -3384,7 +3389,9 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		}
 	}
 	for _, v := range m.vars {
-		api = append(api, v.t)
+		if !v.isPrivate {
+			api = append(api, v.t)
+		}
 	}
 	for _, s := range m.signals {
 		api = append(api, s.params...)

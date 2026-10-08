@@ -395,8 +395,7 @@ func (u *unit) document(c *classModel) string {
 	}
 	x.methods(c, "method", methods)
 
-	if len(c.vars) > 0 {
-		vars := slices.Clone(c.vars)
+	if vars := slices.DeleteFunc(slices.Clone(c.vars), func(v *varModel) bool { return v.isPrivate }); len(vars) > 0 {
 		slices.SortStableFunc(vars, func(a, b *varModel) int {
 			if naturalLess(a.v.Name, b.v.Name) {
 				return -1

@@ -275,7 +275,7 @@ func rpcCall(f *funcModel) string {
 // trampolined reports whether the getter and setter of v are bound through trampolines: for an enum, and for an
 // exported struct, which the inspector and scenes see without its funcs' Callables.
 func (v *varModel) trampolined() bool {
-	return v.t.enum != nil || v.t.strukt != nil && v.usage != "PROPERTY_USAGE_NONE"
+	return !v.isPrivate && (v.t.enum != nil || v.t.strukt != nil && v.usage != "PROPERTY_USAGE_NONE")
 }
 
 // tag returns the type through which the trampolines of v, as class c binds them, pass its value: the class's tag of
@@ -307,17 +307,17 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 			w.block(code.Body, "", "", assertAny)
 		}
 	}
-	var fields []*varModel
 	var decls []*Block
 	for _, v := range c.vars {
-		if v.v.Property == nil {
-			fields = append(fields, v)
-		}
 		decls = append(decls, v.decls...)
 	}
-	if len(fields) > 0 {
+	for _, private := range []bool{false, true} {
+		fields := slices.DeleteFunc(slices.Clone(c.vars), func(v *varModel) bool { return v.v.Property != nil || v.isPrivate != private })
+		if len(fields) == 0 {
+			continue
+		}
 		w.ln("")
-		w.ln("public:")
+		w.ln(map[bool]string{false: "public:", true: "private:"}[private])
 		for _, v := range fields {
 			if len(follows(c, v.v.Name, v.v.Name)) == 0 {
 				w.ln("\t%s%s{};", withSpace(v.t.cpp), v.v.Name)
@@ -425,11 +425,15 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		}
 	}
 	for _, v := range c.vars {
+		accessors := &public
+		if v.isPrivate {
+			accessors = &private
+		}
 		if v.getter != "" {
-			public = append(public, fmt.Sprintf("%s%s() const;", withSpace(v.t.cpp), v.getter))
+			*accessors = append(*accessors, fmt.Sprintf("%s%s() const;", withSpace(v.t.cpp), v.getter))
 		}
 		if v.setter != "" {
-			public = append(public, fmt.Sprintf("void %s(%s%s);", v.setter, withSpace(v.t.param()), v.setterParam()))
+			*accessors = append(*accessors, fmt.Sprintf("void %s(%s%s);", v.setter, withSpace(v.t.param()), v.setterParam()))
 		}
 	}
 	for _, s := range c.signals {

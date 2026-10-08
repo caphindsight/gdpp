@@ -912,6 +912,9 @@ func (u *unit) bindings(w *writer, c *classModel) {
 		}
 	}
 	for _, v := range c.vars {
+		if v.isPrivate {
+			continue
+		}
 		for _, s := range v.sections {
 			if s.ann.Name == "export_category" {
 				w.ln("\tgdpp::add_property_category(get_class_static(), %q);", s.name)
