@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <coroutine>
 #define GDPP_COROUTINES
+// `await get_tree()->create_timer(t)->timeout` is common, and needs the timer's class, which nothing else names.
+#include <godot_cpp/classes/scene_tree_timer.hpp>
 #endif
 
 #if defined(MACOS_ENABLED) && defined(HOT_RELOAD_ENABLED)
@@ -2014,6 +2016,26 @@ void run_detached(const Object *p_self, const char *p_name, F p_job) {
 // away first, e.g. since the object that sends the signal, or the one the func was called on, is freed, the coroutine
 // is destroyed, and its task abandoned.
 
+// Literal is a string literal as a template argument, for string_name.
+template <size_t N>
+struct Literal {
+	char chars[N];
+	constexpr Literal(const char (&p_chars)[N]) {
+		for (size_t i = 0; i < N; i++) {
+			chars[i] = p_chars[i];
+		}
+	}
+};
+
+// string_name<"name">() is the StringName name, created on first use and reused after, like GDPP_STRING_NAME("name"),
+// which coroutines can't use: its lambda would outlive an await in the coroutine's frame, which can't hold a type
+// without linkage. GD++ uses it in @async funcs.
+template <Literal S>
+const StringName &string_name() {
+	static const StringName name(S.chars);
+	return name;
+}
+
 // is_task reports whether p_object is a task: an object of a package's class of tasks.
 inline bool is_task(Object *p_object) {
 	return Object::cast_to<GDPP_ASYNC_CLASS>(p_object) || (p_object && p_object->has_method(GDPP_STRING_NAME("until_done")) &&
@@ -2110,7 +2132,7 @@ class SignalWait : public CallableCustom {
 public:
 	// A Callable that resumes p_handle, whose promise is p_promise, with the signal's arguments in r_result. It's
 	// connected to p_signal of the object p_emitter.
-	SignalWait(std::coroutine_handle<> p_handle, CoroutinePromise *p_promise, Variant *r_result, ObjectID p_emitter, const StringName &p_signal) :
+	SignalWait(std::coroutine_handle<> p_handle, CoroutinePromise *p_promise, Variant *r_result, uint64_t p_emitter, const StringName &p_signal) :
 			handle(p_handle), promise(p_promise), result(r_result), self(p_promise->self), emitter(p_emitter), signal(p_signal) {
 		std::lock_guard<std::mutex> lock(waits_mutex);
 		waits.push_back(this);
@@ -2163,7 +2185,7 @@ public:
 
 	// disconnect_all disconnects the package's awaits, which destroys their coroutines.
 	static void disconnect_all() {
-		std::vector<std::pair<ObjectID, StringName>> signals;
+		std::vector<std::pair<uint64_t, StringName>> signals;
 		{
 			std::lock_guard<std::mutex> lock(waits_mutex);
 			for (SignalWait *wait : waits) {
@@ -2189,7 +2211,8 @@ private:
 	std::coroutine_handle<> handle;
 	CoroutinePromise *promise;
 	Variant *result; // In the coroutine's awaiter.
-	ObjectID self, emitter;
+	ObjectID self;
+	uint64_t emitter; // The instance id of the object whose signal it's connected to.
 	StringName signal;
 	mutable bool resumed = false;
 
@@ -2300,7 +2323,7 @@ Async<T> run_coroutine(const Object *p_self, Coroutine<T> p_body) {
 	CoroutinePromise &promise = handle.promise();
 	promise.task = task;
 	if (p_self) {
-		promise.self = p_self->get_instance_id();
+		promise.self = ObjectID(p_self->get_instance_id());
 		promise.keep = Ref<RefCounted>(Object::cast_to<RefCounted>(const_cast<Object *>(p_self)));
 	}
 	resume(handle, promise);
@@ -2316,7 +2339,7 @@ void run_detached_coroutine(const Object *p_self, Coroutine<T> p_body) {
 // await_value is the coroutine that awaits p_value, like `await` on a Variant, and returns it as a T.
 template <typename T>
 Coroutine<T> await_value(Variant p_value) {
-	Variant value = co_await VariantAwaiter{ std::move(p_value) };
+	Variant value = co_await VariantAwaiter{ std::move(p_value), Variant(), Signal() };
 	if constexpr (std::is_void_v<T>) {
 		co_return;
 	} else {
@@ -2830,6 +2853,16 @@ void trace_emit(const Object *p_self, const char *p_signal, const Args &...p_arg
 	String line = String(U"⚡ ") + describe(p_self) + " emits " + p_signal + "(";
 	add_args(line, p_args...);
 	debug_print(line + ")");
+}
+
+// trace_coroutine prints the start of a call of an @async func or on block, whose coroutine outlives the call. It prints
+// no end: a Trace would keep the depth of all trace lines raised while the coroutine waits.
+template <typename... Args>
+void trace_coroutine(const char *p_class, const Object *p_self, const char *p_func, const Args &...p_args) {
+	Untimed untimed;
+	String line = String(U"▶ ") + (p_self ? describe(p_self) : String(p_class)) + "." + p_func + "(";
+	add_args(line, p_args...);
+	debug_print(line + ")  [color=gray](coroutine)[/color]");
 }
 
 // The same for a signal emitted through an extern.

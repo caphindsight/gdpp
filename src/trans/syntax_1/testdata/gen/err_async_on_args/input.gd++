@@ -1,0 +1,6 @@
+class_name C
+extends Node
+
+@async("detached")
+on ready {
+}

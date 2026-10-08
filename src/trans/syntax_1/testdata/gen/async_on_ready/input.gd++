@@ -1,0 +1,35 @@
+class_name Intro
+extends Node
+
+signal finished
+
+var anim: AnimationPlayer
+
+@async
+on ready {
+  anim = get_node<AnimationPlayer>("AnimationPlayer");
+  anim->play("intro");
+  await anim->animation_finished;
+  if (is_cancelled) {
+    return;
+  }
+  assert anim != nullptr;
+  emit finished();
+}
+
+@async @game_only
+on enter_tree {
+  await get_tree()->create_timer(1.0)->timeout;
+  gd::print("Entered a second ago.");
+}
+
+on exit_tree {
+  gd::print("Bye.");
+}
+
+// Each frame starts another coroutine.
+@async
+on physics_process(delta: float) {
+  await get_tree()->process_frame;
+  gd::print(delta);
+}

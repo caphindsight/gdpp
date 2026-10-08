@@ -201,7 +201,7 @@ func checkLines(t *testing.T, sources map[string]string, self, text string) {
 			want := identifiers(srcLines[n+k-1])
 			for _, id := range identifiers(lines[i+1+k]) {
 				if !slices.Contains([]string{"void", "gdpp", "GDPP_STRING_NAME", "GDPP_ASSERT", "GDPP_ASSERT_VOID", "GDPP_ASSERT_VALUE", "GDPP_ASSERT_CO_VOID", "GDPP_ASSERT_CO_VALUE", "claim", "is_done", "cancel", "cast",
-					"co_await", "co_return", "signal", "StringName", "this",
+					"co_await", "co_return", "signal", "StringName", "string_name", "this",
 					"swizzle", "swizzle_ref", "glsl_not", "static"}, id) && !slices.Contains(want, strings.TrimPrefix(id, "_gdpp_rpc_")) {
 					t.Errorf("%s:%d: %q is not on line %d of the source: %q", self, i+2+k, id, n+k, srcLines[n+k-1])
 				}

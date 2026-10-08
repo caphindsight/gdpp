@@ -15,7 +15,7 @@ claim TASK                     TASK.claim()                       take an Async'
 cancel TASK                    TASK.cancel()                      ask an Async's task to stop
 await VALUE                    co_await VALUE                     wait for a task or a value, in an @async function, see `gd++ man async`
 await OBJECT->NAME             co_await gdpp::signal(OBJECT,      wait for a signal, in an @async function
-                                 GDPP_STRING_NAME("NAME"))
+                                 gdpp::string_name<"NAME">())
 await NAME                     the same, on this                  wait for a signal of this class
 return                         co_return                          in an @async function, but not in its lambdas
 create T                       gdpp::create<T>()                  create an object, see `gd++ man classes`
@@ -75,6 +75,7 @@ Other facts:
 
 - Rewrites also apply to the C++ that macros generate. GD++ expands macros first. See `gd++ man macros`.
 - A rewrite keeps the code's line breaks. So line numbers in errors still match the GD++ file.
+- In an `@async` function, `string_name "NAME"` becomes `gdpp::string_name<"NAME">()` instead, which does the same without a lambda, since a coroutine's frame can't hold one.
 - `gd++ cat` and the code in this manual highlight the rewrites as keywords: `is_done`, `claim`, `cancel`, `create`, `destroy`, `queue_destroy` and `as` only where a name follows them, and `string_name` only where a string follows it, or `(` in an await.
 
 # Assertions

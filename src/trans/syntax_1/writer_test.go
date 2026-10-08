@@ -84,16 +84,17 @@ func TestCpp(t *testing.T) {
 	}
 	// In a coroutine, whose class has the signal died.
 	for code, want := range map[string]string{
-		"await anim->animation_finished;":                                   `co_await gdpp::signal(anim, GDPP_STRING_NAME("animation_finished"));`,
-		"await get_tree()->create_timer(1.0)->timeout;":                     `co_await gdpp::signal(get_tree()->create_timer(1.0), GDPP_STRING_NAME("timeout"));`,
-		"await died; await this->died;":                                     `co_await gdpp::signal(this, GDPP_STRING_NAME("died")); co_await gdpp::signal(this, GDPP_STRING_NAME("died"));`,
+		"await anim->animation_finished;":                                   `co_await gdpp::signal(anim, gdpp::string_name<"animation_finished">());`,
+		"await get_tree()->create_timer(1.0)->timeout;":                     `co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());`,
+		"await died; await this->died;":                                     `co_await gdpp::signal(this, gdpp::string_name<"died">()); co_await gdpp::signal(this, gdpp::string_name<"died">());`,
 		"await pending; await (this->task); await s.task; await f(x);":      "co_await pending; co_await (this->task); co_await s.task; co_await f(x);",
-		`await a->string_name "x"; await string_name "y";`:                  `co_await gdpp::signal(a, GDPP_STRING_NAME("x")); co_await gdpp::signal(this, GDPP_STRING_NAME("y"));`,
+		`await a->string_name "x"; await string_name "y";`:                  `co_await gdpp::signal(a, gdpp::string_name<"x">()); co_await gdpp::signal(this, gdpp::string_name<"y">());`,
 		`await a->string_name(p + "_f"); await string_name(n[i]);`:          `co_await gdpp::signal(a, StringName(p + "_f")); co_await gdpp::signal(this, StringName(n[i]));`,
-		`await string_name(string_name "a"); int n = await count(claim t);`: `co_await gdpp::signal(this, StringName(GDPP_STRING_NAME("a"))); int n = co_await count(t.claim());`,
-		"await\n  a->b;":                        "co_await gdpp::signal(\n  a, GDPP_STRING_NAME(\"b\"));",
-		"await = 1; x.await; await; await -1;":  "await = 1; x.await; await; await -1;",
-		"return 1; [] { return 2; }; assert x;": `co_return 1; [] { return 2; }; GDPP_ASSERT_CO_VALUE("x", x);`,
+		`await string_name(string_name "a"); int n = await count(claim t);`: `co_await gdpp::signal(this, StringName(gdpp::string_name<"a">())); int n = co_await count(t.claim());`,
+		"await\n  a->b;":                                        "co_await gdpp::signal(\n  a, gdpp::string_name<\"b\">());",
+		"await = 1; x.await; await; await -1;":                  "await = 1; x.await; await; await -1;",
+		"return 1; [] { return 2; }; assert x;":                 `co_return 1; [] { return 2; }; GDPP_ASSERT_CO_VALUE("x", x);`,
+		`call(string_name "f"); [] { call(string_name "g"); };`: `call(gdpp::string_name<"f">()); [] { call(GDPP_STRING_NAME("g")); };`,
 	} {
 		if got := cpp(code, assertCoValue, "died"); got != want {
 			t.Errorf("cpp(%q) = %q, want %q", code, got, want)

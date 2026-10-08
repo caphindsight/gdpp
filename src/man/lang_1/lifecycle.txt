@@ -127,7 +127,7 @@ For a node created by a scene, Godot:
 1. creates the object: the constructor runs, with the initial values of variables, then `on postinitialize`,
 2. sets the properties saved in the scene, i.e. the exported variables, through their setters,
 3. adds it to the scene tree: `on enter_tree` runs,
-4. once its children are ready: the `@onready` initial values are set, then `on ready` runs, then a script's `_ready`,
+4. once its children are ready: the `@onready` initial values are set, then `on ready` runs, then a script's `_ready`. An `@async` `on ready` only runs until its first `await` here, and the rest later. See `gd++ man notifications`.
 5. every frame: `on process` and `on physics_process` run,
 6. removes it from the tree: `on exit_tree` runs,
 7. deletes it: `on predelete` runs, then the destructor.

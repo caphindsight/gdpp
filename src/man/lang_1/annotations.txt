@@ -143,6 +143,7 @@ func _score() -> int
 @async
   The function is a coroutine: its body can `await` signals and tasks. Every call runs the body until an `await` that waits, and returns an `Async` of the function's type, done once the body returns. See `gd++ man async`.
   - Argument `"detached"`, for a function that returns `void`: calls return nothing.
+  - On an `on` block, e.g. `@async on ready`, the block is a coroutine that nothing waits for. Not on per-frame blocks, e.g. `on process`, unless you know exactly what you're doing. See "Awaiting in on blocks" in `gd++ man notifications`.
 
 @trace(GROUPS...)
   Print each call when it starts, with its arguments, and when it returns, with its result and time. See "@trace and @profile" below.
@@ -172,7 +173,7 @@ Rules:
 - `@deferred` doesn't combine with `@thread_safe` or `@onthread`.
 - `@thread_safe` doesn't combine with `@onthread`.
 - `@game_only` doesn't combine with `@editor_only`.
-- `on` blocks only take `@trace`, `@profile`, `@notrace`, `@noprofile`, `@game_only` and `@editor_only`. `on ready` also takes `@recycle`.
+- `on` blocks only take `@trace`, `@profile`, `@notrace`, `@noprofile`, `@game_only`, `@editor_only` and `@async`. `on ready` also takes `@recycle`.
 - `@override("final")` only works on an override of a GD++ `@virtual` function.
 - A `@virtual` function's name must start with `_`.
 - A function named like a virtual function of the base class needs `@override`.

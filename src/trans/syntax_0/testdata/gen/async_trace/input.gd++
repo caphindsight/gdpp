@@ -1,0 +1,19 @@
+@trace
+class_name Bell
+extends Node
+
+@trace
+var rings: int
+
+@async
+func ring(times: int) -> int {
+  rings += times;
+  await get_tree()->process_frame;
+  return rings;
+}
+
+@async
+on ready {
+  await get_tree()->process_frame;
+  rings = 0;
+}

@@ -368,14 +368,18 @@ func (u *unit) debugHooks(w *writer, c *classModel, f *funcModel) {
 	if f.profile {
 		u.profile(w, c.name+"."+name)
 	}
-	if f.trace {
-		self := "this"
-		if f.static {
-			self = "nullptr"
-		}
+	self := "this"
+	if f.static {
+		self = "nullptr"
+	}
+	switch {
+	case f.trace && f.coro != nil: // A Trace or Watch would outlive the call, in the coroutine's frame.
+		w.ln("\tgdpp::trace_coroutine(%q, %s, %q%s);", c.name, self, name, namedArgs(f.f.Params))
+		return
+	case f.trace:
 		w.ln("\tgdpp::Trace _gdpp_trace(%q, %s, %q%s);", c.name, self, name, namedArgs(f.f.Params))
 	}
-	if !f.static && !f.isConst && f.deferral == "" {
+	if !f.static && !f.isConst && f.deferral == "" && f.coro == nil {
 		watch(w, c, name)
 	}
 }
@@ -441,8 +445,11 @@ func cast(c *classModel, t *gtype, expr string, toTag bool) string {
 func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
 	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
-	if f.coro == nil { // The func that starts a coroutine guards it.
+	switch {
+	case f.coro == nil:
 		guard(w, f.only, f.ret.cpp)
+	case f.hidden == "notif": // Else the func that starts the coroutine guards it.
+		guardWith(w, f.only, "co_return;")
 	}
 	if f.once && f.override {
 		w.ln("\tif (_gdpp_pool_slot.readied) {")

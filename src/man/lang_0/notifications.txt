@@ -157,7 +157,8 @@ See "Integer constants" in `gd++ man enums`.
 
 - `@trace`, `@profile`, `@notrace` and `@noprofile`,
 - `@game_only` or `@editor_only`,
-- `@recycle`, on `on ready` in a `@pool` class.
+- `@recycle`, on `on ready` in a `@pool` class,
+- `@async`, see "Awaiting in on blocks" below.
 
 ```gd++
 @trace
@@ -167,6 +168,36 @@ on physics_process(delta: float) {
 ```
 
 The groups `process` and `physics_process` turn on the tracing and profiling of all `on process` and `on physics_process` blocks, even without annotations. See `gd++ man debugging`.
+
+# Awaiting in on blocks
+
+With `@async`, an `on` block is a coroutine: it can `await` signals and tasks, like an `@async` function.
+
+```gd++
+@async
+on ready {
+  anim->play("intro");
+  await anim->animation_finished;
+  start_level();
+}
+```
+
+- At the notification, the block runs until its first `await` that waits. Then the notification goes on, and the rest of the block runs once the signal comes.
+- Nothing waits for the block, like for an `@async("detached")` function. So `@async` takes no arguments here.
+- Only the part before the first `await` runs in the notification's order, e.g. before a script's `_ready`. The rest runs later.
+- If the node is freed while the block waits, the block stops there.
+- It doesn't combine with `@profile`. With `@trace`, only its start is traced, like an `@async` function's.
+- The nameless block, `on(what: int)`, can't be `@async`: it runs at every notification.
+- An `await` in a block without `@async` is an error.
+
+Don't make the per-frame blocks `@async`: `on process`, `on physics_process`, `on internal_process` and `on internal_physics_process`. Unless you know exactly what you're doing:
+
+- Each frame starts another coroutine, while those of earlier frames may still wait.
+- So they pile up, and each one runs the rest of the block later, e.g. 60 of them a second after a 1-second `await`.
+- GDScript's `await` in `_process` has the same pitfall.
+- To run a sequence that spans frames, start one `@async` function from `on ready` instead, and loop in it, e.g. with `await get_tree()->process_frame`.
+
+See `gd++ man async`.
 
 # Overrides
 

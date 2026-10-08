@@ -1,0 +1,4 @@
+input.gd++:4:8: Annotation @async takes no arguments on an on block.
+ 4 | @async("detached")
+   |        ^^^^^^^^^^
+Hint: An @async on block is always detached: the engine, which sends the notification, doesn't take an Async.

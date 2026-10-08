@@ -92,7 +92,7 @@ func assertCoFor(void bool) string {
 //   - `create T`, `destroy x` and `queue_destroy x` become `gdpp::create<T>()`, `gdpp::destroy(x)` and
 //     `gdpp::queue_destroy(x)`,
 //   - `is_cancelled`, a bare word, becomes `gdpp::is_cancelled()`,
-//   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`,
+//   - `string_name "x"` becomes `GDPP_STRING_NAME("x")`, or in a coroutine `gdpp::string_name<"x">()`,
 //   - `x as T` becomes `gdpp::cast<T>(x)`,
 //   - `assert x;` becomes `GDPP_ASSERT("x", x);`, where assert names the macro, e.g. GDPP_ASSERT_VOID in a void function,
 //     and a lambda's own return type picks it in the lambda (see assertMacros), while the fallbacks `assert_void x;`
@@ -150,7 +150,11 @@ func cpp(code, assert string, signals ...string) string {
 				for k := i + 1; k < j; k++ {
 					out[k] = strings.Repeat("\n", strings.Count(ts[k].Value, "\n"))
 				}
-				out[i], out[j] = "GDPP_STRING_NAME(", out[j]+")"
+				if macros[i] == assertCoVoid || macros[i] == assertCoValue {
+					out[i], out[j] = "gdpp::string_name<", out[j]+">()" // A coroutine's frame can't hold GDPP_STRING_NAME's lambda.
+				} else {
+					out[i], out[j] = "GDPP_STRING_NAME(", out[j]+")"
+				}
 				i = j
 				continue
 			}
@@ -275,7 +279,7 @@ func awaitRewrite(ts []lexer.Token, out []string, i, j int, signals []string) in
 		switch {
 		case k < len(ts) && ts[k].Type == tokString && ts[k].Value[0] == '"':
 			drop(n+1, k)
-			out[n], out[k] = "GDPP_STRING_NAME(", ts[k].Value+"))"
+			out[n], out[k] = "gdpp::string_name<", ts[k].Value+">())"
 		case k < len(ts) && isPunct(ts[k], "(") && closing(ts, k) < len(ts):
 			drop(n+1, k)
 			out[n] = "StringName"
@@ -321,10 +325,10 @@ walk:
 	switch {
 	case arrow >= 0 && named(last):
 	case arrow >= 0 && last == end-1:
-		out[last] = "GDPP_STRING_NAME(\"" + ts[last].Value + "\"))"
+		out[last] = "gdpp::string_name<\"" + ts[last].Value + "\">())"
 	case last == j && end == j+1 && slices.Contains(signals, ts[j].Value):
 		drop(i+1, j)
-		out[i], out[j] = "co_await gdpp::signal(this, ", "GDPP_STRING_NAME(\""+ts[j].Value+"\"))"
+		out[i], out[j] = "co_await gdpp::signal(this, ", "gdpp::string_name<\""+ts[j].Value+"\">())"
 		return j + 1
 	default:
 		out[i] = "co_await"

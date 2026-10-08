@@ -1,0 +1,4 @@
+input.gd++:5:3: An on ready block awaits, so it needs @async.
+ 5 |   await get_tree()->process_frame;
+   |   ^^^^^
+Hint: Add @async: the block becomes a coroutine, which the notification starts.

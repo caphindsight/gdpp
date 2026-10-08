@@ -1,4 +1,4 @@
 input.gd++:4:11: Function _ready overrides a virtual function of Node, which the engine calls, so it can't be @async.
  4 | @override @async
    |           ^^^^^^
-Hint: The engine doesn't take an Async. Call an @async func from it instead.
+Hint: The engine doesn't take an Async. Write "@async on ready { ... }" instead: it starts a coroutine at the notification.

@@ -1,0 +1,6 @@
+class_name C
+extends Node
+
+on ready {
+  await get_tree()->process_frame;
+}

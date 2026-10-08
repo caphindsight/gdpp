@@ -1,0 +1,2 @@
+cppstandard = "c++20"
+trace = ["all"]

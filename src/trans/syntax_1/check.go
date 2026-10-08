@@ -352,7 +352,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 	return decls, nil
 }
 
-// usesAsync reports whether class c uses Async: has an @onthread or @async function, an Async type in a signature, or
+// usesAsync reports whether class c uses Async: has an @onthread or @async function or on block, an Async type in a signature, or
 // @factory_shader, whose methods return one.
 func usesAsync(c *Class) bool {
 	if hasAnnotation(c, "factory_shader") {
@@ -369,6 +369,8 @@ func usesAsync(c *Class) bool {
 				slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "onthread" || a.Name == "async" })
 		case m.Shader != nil:
 			return slices.ContainsFunc(m.Shader.Annotations, func(a *Annotation) bool { return a.Name == "onthread" })
+		case m.On != nil:
+			return slices.ContainsFunc(m.On.Annotations, func(a *Annotation) bool { return a.Name == "async" })
 		case m.Signal != nil:
 			return hasAsync(m.Signal.Params)
 		case m.Var != nil:
@@ -533,8 +535,11 @@ func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
 			"The engine lets scripts override its own virtual functions, so GD++ can't stop that.")
 	case f.override && f.deferral == "async" && kind == "engine":
 		a := annotationNamed(f.f, "async")
-		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s overrides a virtual function of %s, which the engine calls, so it can't be @async.", f.f.Name, owner),
-			"The engine doesn't take an Async. Call an @async func from it instead.")
+		hint := "The engine doesn't take an Async. Call an @async func from it instead."
+		if notif, _ := u.notificationOf(class, strings.ToUpper(f.f.Name[1:])); notif != "" {
+			hint = fmt.Sprintf("The engine doesn't take an Async. Write \"@async on %s { ... }\" instead: it starts a coroutine at the notification.", f.f.Name[1:])
+		}
+		return u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Function %s overrides a virtual function of %s, which the engine calls, so it can't be @async.", f.f.Name, owner), hint)
 	case f.scripted():
 		f.virtualOf = class
 	case f.override && !f.final && kind == "script": // Without a GDVIRTUAL_CALL, scripts' overrides never run.
@@ -1466,10 +1471,10 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 				return nil, u.errorAt(as.Pos, len(as.Name)+1, fmt.Sprintf("Annotations @async and @%s can't be used together.", other), asyncHints[other])
 			}
 		}
-		if err := u.requireCoroutines(as.Pos, len(as.Name)+1, f.Name); err != nil {
+		if err := u.requireCoroutines(as.Pos, len(as.Name)+1, "Function "+f.Name); err != nil {
 			return nil, err
 		}
-	} else if err := u.checkNoAwait(f.Body, f.Name); err != nil {
+	} else if err := u.checkNoAwait(f.Body, "Function "+f.Name, "Add @async: the function becomes a coroutine, and its callers get an Async of its result."); err != nil {
 		return nil, err
 	}
 	for _, arg := range argsOf(a["virtual"]) {
@@ -1565,13 +1570,13 @@ var asyncHints = map[string]string{
 	"profile":     "Its time would span its awaits. Profile the funcs it calls instead.",
 }
 
-// requireCoroutines returns an error at pos, n long, unless the package's C++ standard has coroutines, which func
-// f, an @async func or one that awaits, needs.
-func (u *unit) requireCoroutines(pos lexer.Position, n int, f string) error {
+// requireCoroutines returns an error at pos, n long, unless the package's C++ standard has coroutines, which what
+// needs, e.g. "Function f": an @async func or on block, or one that awaits.
+func (u *unit) requireCoroutines(pos lexer.Position, n int, what string) error {
 	if hasCoroutines(u.opts.CppStandard) {
 		return nil
 	}
-	return u.errorAt(pos, n, fmt.Sprintf("Function %s uses coroutines, which need C++20 or later, but the package uses %s.", f, u.opts.CppStandard),
+	return u.errorAt(pos, n, fmt.Sprintf("%s uses coroutines, which need C++20 or later, but the package uses %s.", what, u.opts.CppStandard),
 		"Set the standard with gd++ init PATH --update --std c++20.")
 }
 
@@ -1589,8 +1594,8 @@ func hasCoroutines(std string) bool {
 	return err == nil && year >= 20 && year < 98
 }
 
-// checkNoAwait returns an error if body b of func f, which isn't @async, awaits.
-func (u *unit) checkNoAwait(b *Block, f string) error {
+// checkNoAwait returns an error with hint if b, the body of what, e.g. "Function f", which isn't @async, awaits.
+func (u *unit) checkNoAwait(b *Block, what, hint string) error {
 	if b == nil {
 		return nil
 	}
@@ -1615,11 +1620,10 @@ func (u *unit) checkNoAwait(b *Block, f string) error {
 		} else {
 			pos.Column = t.Pos.Column
 		}
-		if err := u.requireCoroutines(pos, len("await"), f); err != nil {
+		if err := u.requireCoroutines(pos, len("await"), what); err != nil {
 			return err
 		}
-		return u.errorAt(pos, len("await"), fmt.Sprintf("Function %s awaits, so it needs @async.", f),
-			"Add @async: the function becomes a coroutine, and its callers get an Async of its result.")
+		return u.errorAt(pos, len("await"), what+" awaits, so it needs @async.", hint)
 	}
 	return nil
 }
@@ -1652,14 +1656,30 @@ func (u *unit) buildOn(o *On, owner string) (*funcModel, error) {
 	if o.Name != "" {
 		what = "an on " + o.Name + " block"
 	}
-	allowed := []string{"editor_only", "game_only", "noprofile", "notrace", "profile", "trace"}
+	allowed := []string{"async", "editor_only", "game_only", "noprofile", "notrace", "profile", "trace"}
 	if o.Name == "ready" {
 		allowed = append(allowed, "recycle")
 	}
-	if _, err := u.annotations(o.Annotations, what, allowed...); err != nil {
+	a, err := u.annotations(o.Annotations, what, allowed...)
+	if err != nil {
 		return nil, err
 	}
 	param, takesParam := onParams[o.Name]
+	if as := a["async"]; as != nil {
+		switch {
+		case len(as.Args) > 0:
+			return nil, u.errorAt(as.Args[0].Pos, len(as.Args[0].Value), "Annotation @async takes no arguments on an on block.",
+				"An @async on block is always detached: the engine, which sends the notification, doesn't take an Async.")
+		case o.Name == "":
+			return nil, u.errorAt(as.Pos, len(as.Name)+1, "The nameless on block can't be @async.",
+				"It runs at every notification, so each would start another coroutine. Write @async on the block of one notification, e.g. \"@async on ready { ... }\".")
+		}
+		if err := u.requireCoroutines(as.Pos, len(as.Name)+1, "The on "+o.Name+" block"); err != nil {
+			return nil, err
+		}
+	} else if err := u.checkNoAwait(o.Body, strings.ToUpper(what[:1])+what[1:], "Add @async: the block becomes a coroutine, which the notification starts."); err != nil {
+		return nil, err
+	}
 	switch upper := strings.ToUpper(o.Name); {
 	case strings.HasPrefix(upper, "NOTIFICATION_"):
 		short := strings.ToLower(upper[len("NOTIFICATION_"):])
@@ -1721,6 +1741,9 @@ func onNotif(f *funcModel) *notifModel {
 			key = "" // The nameless block.
 		}
 		n.call = fmt.Sprintf("%s(%s)", bodyName(f), onParams[key].value)
+	}
+	if f.deferral == "async" { // An @async on block starts a coroutine, which nothing waits for.
+		n.call = "gdpp::run_detached_coroutine(this, " + n.call + ")"
 	}
 	return n
 }
@@ -2778,6 +2801,10 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 				body := *f.f
 				body.Name = bodyName(f)
 				f.f = &body
+				if f.deferral == "async" {
+					// The body is a coroutine, which the notification starts. Its time would span its awaits, so it isn't profiled.
+					f.coro, f.ret, f.deferral, f.profile = f.ret, &gtype{cpp: "gdpp::Coroutine<void>"}, "", false
+				}
 				m.funcs = append(m.funcs, f)
 			case f.super:
 				// The bound function has the body, so scripts can call it in place of super.

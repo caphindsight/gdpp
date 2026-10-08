@@ -27,7 +27,7 @@ gdpp::Async<bool> Chest::open(int64_t force) {
 gdpp::Coroutine<bool> Chest::_gdpp_body__open(int64_t force) {
 #line 6 "input.gd++"
 
-  co_await gdpp::signal(get_tree()->create_timer(1.0), GDPP_STRING_NAME("timeout"));
+  co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());
   co_return force > 0;
 
 #line 34 "Chest.cpp"

@@ -66,19 +66,17 @@ signal sprung(victim: Node3D)
 
 var area: Area3D
 
+@async
 on ready {
   area = get_node<Area3D>("Area3D");
-  arm();
-}
-
-@async("detached")
-func arm() -> void {
   Variant body = await area->body_entered;
   Gd<Node3D> victim = body as Gd<Node3D>;
   emit sprung(victim);
 }
 ```
 
+- `@async` works on `on` blocks too. Here, the trap arms itself when it gets ready, and nothing waits for the block.
+- Don't put it on per-frame blocks, e.g. `on process`: each frame would start another coroutine. See "Awaiting in on blocks" in `gd++ man notifications`.
 - `body_entered` has one argument, so `await` gives it, as a `Variant`. `as` converts it. See `gd++ man cast`.
 - A signal without arguments gives nothing, and one with more an `Array` of them.
 - A signal of the class itself takes no object: `await sprung;` waits for the trap's own `sprung`.
@@ -210,4 +208,4 @@ func _on_alarm() -> void {
 
 # See also
 
-`gd++ man async`, `gd++ man signals`, `gd++ man threads`, `gd++ man state-machine`.
+`gd++ man async`, `gd++ man signals`, `gd++ man notifications`, `gd++ man threads`, `gd++ man state-machine`.

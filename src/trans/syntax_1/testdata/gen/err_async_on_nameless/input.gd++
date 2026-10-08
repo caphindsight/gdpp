@@ -1,0 +1,6 @@
+class_name C
+extends Node
+
+@async
+on(what: int) {
+}

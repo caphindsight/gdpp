@@ -1,0 +1,4 @@
+input.gd++:4:1: The nameless on block can't be @async.
+ 4 | @async
+   | ^^^^^^
+Hint: It runs at every notification, so each would start another coroutine. Write @async on the block of one notification, e.g. "@async on ready { ... }".

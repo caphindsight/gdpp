@@ -148,11 +148,13 @@ on ready {
 - A coroutine needs C++20. With an older C++ standard, `@async` and `await` are errors. See `gd++ man packages`.
 - `await` in a function without `@async` is an error: "Function f awaits, so it needs @async."
 
+An `on` block can be `@async` too, e.g. `@async on ready { ... }`. Nothing waits for it. Don't make the per-frame blocks, e.g. `on process`, `@async`: each frame would start another coroutine. See "Awaiting in on blocks" in `gd++ man notifications`.
+
 An `@async` function:
 
-- can be `@static`, `@const`, `@virtual`, `@trace`, `@game_only` and `@editor_only`. `@trace` prints the call when it starts and when it ends.
+- can be `@static`, `@const`, `@virtual`, `@trace`, `@game_only` and `@editor_only`. `@trace` prints the call when it starts, marked "(coroutine)". It prints no end, and no changes of the class's `@trace` variables, since the coroutine outlives the call.
 - can't be `@onthread`, `@deferred`, `@thread_safe`, `@rpc` or `@profile`, whose time would span its awaits.
-- can `@override` an `@async` `@virtual` function of a GD++ class, but no function of the engine, which doesn't take an `Async`. Call an `@async` function from such a function instead.
+- can `@override` an `@async` `@virtual` function of a GD++ class, but no function of the engine, which doesn't take an `Async`. For a notification, write an `@async` `on` block instead, e.g. `@async on ready`. Else call an `@async` function from the override.
 - uses `return` like any function. GD++ makes it `co_return`, but not in lambdas.
 
 `@async("detached")`, for a function that returns `void`: calls return nothing, like `@onthread("detached")`. `Async` is `[[nodiscard]]`, so this is the way to start a coroutine without keeping its task:
@@ -192,6 +194,7 @@ Array names = await anim->animation_changed;   // its old name and its new one
 
 - `string_name` names signals that the first form can't, e.g. a signal of a base class that GD++ doesn't know, or one whose name is computed at runtime, e.g. `await enemy->string_name("died_" + kind)`.
 - A missing object, or an object without the signal, prints an error, and `await` gives `null` right away.
+- The object's class must be complete in C++. GD++ includes the classes that the code names, but not those it only reaches through calls, e.g. `Tween` in `await create_tween()->finished`. Then add `import Tween`. See `gd++ man includes`. `SceneTreeTimer`, for `await get_tree()->create_timer(1.0)->timeout`, is always included.
 
 How GD++ tells a signal from a task:
 
@@ -585,7 +588,8 @@ For an `@async` function `f`, GD++ generates:
 
 - `f` itself, which returns an `Async` of the function's type. It calls `gdpp::run_coroutine`, which creates an object of the package's class of tasks, and starts the coroutine. `@async("detached")` calls `gdpp::run_detached_coroutine` instead, which returns nothing.
 - `_gdpp_body_f`, the body: a C++20 coroutine, which returns a `gdpp::Coroutine` of the function's type. Its parameters are values, not references, since references would dangle once it awaits. It isn't bound.
-- In the body, `await` becomes `co_await`, and `return` becomes `co_return`. `await X->NAME` becomes `co_await gdpp::signal(X, GDPP_STRING_NAME("NAME"))`.
+- In the body, `await` becomes `co_await`, and `return` becomes `co_return`. `await X->NAME` becomes `co_await gdpp::signal(X, gdpp::string_name<"NAME">())`.
+- In the body, `string_name "NAME"` becomes `gdpp::string_name<"NAME">()`, not `GDPP_STRING_NAME("NAME")`: that macro's lambda would outlive an `await` in the coroutine's frame, which GCC rejects.
 - Each `await` that waits connects the signal, once, to a `gdpp::SignalWait`: a `Callable` that owns the coroutine, and resumes it. Its target is the object the function was called on, so Godot drops it when either object is freed, which destroys the coroutine.
 - Awaiting a task connects to its `until_done()` signal.
 

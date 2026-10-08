@@ -27,12 +27,12 @@ gdpp::Async<gdpp::Gd<Node>> Hatch::open(const Array &names, bool slow) {
 gdpp::Coroutine<gdpp::Gd<Node>> Hatch::_gdpp_body_open(Array names, bool slow) {
 #line 11 "input.gd++"
 
-  co_await gdpp::signal(anim, GDPP_STRING_NAME("animation_finished"));
-  co_await gdpp::signal(get_tree()->create_timer(1.0), GDPP_STRING_NAME("timeout"));
-  Variant body = co_await gdpp::signal(area, GDPP_STRING_NAME("body_entered"));
-  co_await gdpp::signal(this, GDPP_STRING_NAME("opened"));
-  co_await gdpp::signal(anim, GDPP_STRING_NAME("animation_finished"));
-  co_await gdpp::signal(this, GDPP_STRING_NAME("opened"));
+  co_await gdpp::signal(anim, gdpp::string_name<"animation_finished">());
+  co_await gdpp::signal(get_tree()->create_timer(1.0), gdpp::string_name<"timeout">());
+  Variant body = co_await gdpp::signal(area, gdpp::string_name<"body_entered">());
+  co_await gdpp::signal(this, gdpp::string_name<"opened">());
+  co_await gdpp::signal(anim, gdpp::string_name<"animation_finished">());
+  co_await gdpp::signal(this, gdpp::string_name<"opened">());
   co_await gdpp::signal(anim, StringName(String(names[0]) + "_finished"));
   int64_t n = co_await count(slow);
   GDPP_ASSERT_CO_VALUE("n > 0", n > 0);
@@ -64,7 +64,7 @@ gdpp::Async<void> Hatch::wait_a_bit() const {
 gdpp::Coroutine<void> Hatch::_gdpp_body_wait_a_bit() const {
 #line 34 "input.gd++"
 
-  co_await gdpp::signal(get_tree()->create_timer(0.5), GDPP_STRING_NAME("timeout"));
+  co_await gdpp::signal(get_tree()->create_timer(0.5), gdpp::string_name<"timeout">());
   GDPP_ASSERT_CO_VOID("true", true);
   co_return;
 
