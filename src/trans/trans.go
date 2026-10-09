@@ -11,15 +11,16 @@ import (
 )
 
 type (
-	Declaration = meta.Declaration
-	DeclKind    = meta.DeclKind
-	Dependency  = meta.Dependency
-	EnumValue   = meta.EnumValue
-	File        = meta.File
-	Kind        = meta.Kind
-	Options     = meta.Options
-	Signal      = meta.Signal
-	SignalParam = meta.SignalParam
+	Declaration  = meta.Declaration
+	DeclKind     = meta.DeclKind
+	Dependency   = meta.Dependency
+	EnumValue    = meta.EnumValue
+	File         = meta.File
+	Kind         = meta.Kind
+	Options      = meta.Options
+	Signal       = meta.Signal
+	SignalParam  = meta.SignalParam
+	SizedVirtual = meta.SizedVirtual
 )
 
 const (

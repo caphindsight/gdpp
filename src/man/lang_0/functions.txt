@@ -129,7 +129,10 @@ Rules:
 - The signature must match the engine's exactly, in C++ terms, including the return type. Without `-> void`, the function returns a `Variant`, and the C++ compiler reports that it doesn't override anything.
 - `gd++ doc Node._input` shows a signature.
 - A const engine function, e.g. `_get_configuration_warnings`, needs `@const` too: `@const @override`.
-- The engine's `float` parameters are `double`, like GD++'s `float`.
+- Write parameters and the return value with GD++ types. GD++ converts them to the engine's C++ types:
+  - objects: `InputEvent` to `Ref<InputEvent>`, `Camera3D` to `Camera3D *`,
+  - sized numbers, from the API spec: `int` to e.g. `int32_t`, `float` to `float`.
+- In the function's body, parameters keep their GD++ types, e.g. `Gd<InputEvent>` and `int64_t`.
 
 ```out
 [×] res://player.gd++:4:1: Function _unhandled_input overrides a virtual function of Node, so it needs @override.

@@ -95,3 +95,8 @@ const StructDecl DeclKind = 10
 field Declaration.Tests []string
 field Dependency.Test bool
 field Declaration.Test bool
+field Dependency.SizedVirtuals []SizedVirtual
+type SizedVirtual struct
+field SizedVirtual.Name string
+field SizedVirtual.Params []string
+field SizedVirtual.Return string

@@ -128,6 +128,7 @@ type funcModel struct {
 	noscript                           bool        // With "noscript" on @virtual or @override: a C++ virtual function, which scripts can't override.
 	isPrivate                          bool        // With @private: a private method, which isn't bound.
 	test                               bool        // With @test: a test, which gd++ test runs.
+	engine                             bool        // An @override of an engine virtual function: see engineSignature.
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string      // "deferred", "thread_safe", "onthread" or "async" with that annotation, else empty.
 	detached                           bool        // With @onthread("detached") or @async("detached"): a call starts a task that nobody waits for, and returns nothing.
@@ -672,8 +673,31 @@ func (u *unit) setVirtualOf(f *funcModel, class, base string) error {
 		f.virtualOf = class
 	case f.override && !f.final && kind == "script": // Without a GDVIRTUAL_CALL, scripts' overrides never run.
 		f.virtualOf = owner
+	case f.override && kind == "engine":
+		f.engine = true
+		sized := u.symbols[owner].sizedVirtuals
+		if i := slices.IndexFunc(sized, func(v meta.SizedVirtual) bool { return v.Name == f.f.Name }); i >= 0 {
+			f.params = slices.Clone(f.params)
+			for j, t := range sized[i].Params {
+				if j < len(f.params) {
+					f.params[j] = sizedAs(f.params[j], t)
+				}
+			}
+			f.ret = sizedAs(f.ret, sized[i].Return)
+		}
 	}
 	return nil
+}
+
+// sizedAs returns t, GD++'s int or float, as the engine passes it: as the sized type cpp, e.g. "int32_t". It returns
+// other types as they are, which the C++ compiler then rejects, if they don't match the engine's.
+func sizedAs(t *gtype, cpp string) *gtype {
+	if cpp == "" || t.cpp != "int64_t" && t.cpp != "double" {
+		return t
+	}
+	s := *t
+	s.engine = cpp
+	return &s
 }
 
 // annotationNamed returns f's annotation named name, or nil.
@@ -803,7 +827,8 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				"Names must differ from Godot's, and from those of the package's other classes, externs, traits, structs and enums.")
 		}
 		s := &symbol{name: d.Name, kind: d.Kind, include: d.Include, values: d.Values, base: d.Base, gdpp: d.Gdpp, bitfield: d.Bitfield,
-			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits, signals: d.Signals, test: d.Test}
+			virtuals: d.Virtuals, noscriptVirtuals: d.NoscriptVirtuals, notifications: d.Notifications, nonRuntime: d.NonRuntime, traits: d.Traits, signals: d.Signals, test: d.Test,
+			sizedVirtuals: d.SizedVirtuals}
 		if d.Kind == meta.GodotEnum {
 			s.values, s.godotNames = godotValues(d.Name, d.Values)
 		}

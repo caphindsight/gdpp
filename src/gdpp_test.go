@@ -241,6 +241,25 @@ func TestTranspilePackageRegistration(t *testing.T) {
 	}
 }
 
+func TestTranspilePackageSizedVirtuals(t *testing.T) {
+	m := withGdppFS(t, map[string]string{
+		"mob.gd++": "class_name Mob\nextends Node\n\n@override\nfunc _process(delta: float) -> void {}\n\n@override\nfunc _hit(shape: int, force: float) -> int {\n  return shape;\n}\n",
+	})
+	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Node", "methods": [
+		{"name": "_process", "is_virtual": true, "arguments": [{"name": "delta", "type": "float", "meta": "double"}]},
+		{"name": "_hit", "is_virtual": true, "arguments": [{"name": "shape", "type": "int", "meta": "int32"}, {"name": "force", "type": "float", "meta": "float"}],
+			"return_value": {"type": "int", "meta": "uint64"}}]}]}`)
+	withTTY(t, false)
+	withQuiet(t, false)
+	transpileTestPackage(t, false)
+	header := m.tree()[pkgDir+".gd++build/gdpp/Mob.h"]
+	for _, want := range []string{"\tvoid _process(double delta) override;", "\tuint64_t _hit(int32_t _gdpp_shape, float _gdpp_force) override;"} {
+		if !strings.Contains(header, want) {
+			t.Errorf("Mob.h = %s\nwant it to contain %q", header, want)
+		}
+	}
+}
+
 func TestTranspilePackageEnumBitfields(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
 		"a.gd++": "@bitfield enum Sizes { extends Control.SizeFlags HUGE }\n",

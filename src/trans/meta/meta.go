@@ -64,6 +64,17 @@ type Dependency struct {
 	Macros []Dependency
 	// For classes of the package: whether @test makes it a class of tests, which only other @test classes may use.
 	Test bool
+	// For Godot classes: their own virtual methods whose numbers godot-cpp passes as sized types, e.g. Node3D's
+	// _input_event, whose shape_idx is an int32_t.
+	SizedVirtuals []SizedVirtual
+}
+
+// SizedVirtual is a virtual method of a Godot class, with the C++ types of its numbers that aren't GD++'s int64_t
+// and double, e.g. "int32_t", "uint64_t" or "float". Stable: additive changes only.
+type SizedVirtual struct {
+	Name   string   // E.g. "_input_event".
+	Params []string // Each parameter's sized type, or "" for others.
+	Return string   // The return value's sized type, or "" for others.
 }
 
 // EnumValue is one value of a GD++ enum. Stable: additive changes only.

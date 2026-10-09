@@ -261,11 +261,12 @@ func fileDecls(files []gdppFile) []trans.Declaration {
 
 // apiSpec is what GD++ code needs from the API spec file.
 type apiSpec struct {
-	enums    []trans.Dependency        // The enums, which GD++ enums may extend: those of classes, e.g. Node.ProcessMode, and global ones, e.g. Error.
-	virtuals map[string][]string       // Each class's own virtual methods, e.g. _input for Node, which GD++ code overrides with @override.
-	notifs   map[string][]string       // Each class's own notifications, without NOTIFICATION_, e.g. READY for Node, which on blocks handle.
-	signals  map[string][]trans.Signal // Each class's own signals, which on blocks connect to.
-	editor   map[string]bool           // The editor's classes, e.g. EditorPlugin, which only exist in the editor.
+	enums    []trans.Dependency              // The enums, which GD++ enums may extend: those of classes, e.g. Node.ProcessMode, and global ones, e.g. Error.
+	virtuals map[string][]string             // Each class's own virtual methods, e.g. _input for Node, which GD++ code overrides with @override.
+	sized    map[string][]trans.SizedVirtual // Each class's own virtual methods that pass sized numbers.
+	notifs   map[string][]string             // Each class's own notifications, without NOTIFICATION_, e.g. READY for Node, which on blocks handle.
+	signals  map[string][]trans.Signal       // Each class's own signals, which on blocks connect to.
+	editor   map[string]bool                 // The editor's classes, e.g. EditorPlugin, which only exist in the editor.
 }
 
 // readSpec reads the API spec file. Returns an empty spec if there is no file.
@@ -288,8 +289,10 @@ func readSpec(file Path) apiSpec {
 				Name string `json:"name"`
 			} `json:"constants"`
 			Methods []struct {
-				Name      string `json:"name"`
-				IsVirtual bool   `json:"is_virtual"`
+				Name      string     `json:"name"`
+				IsVirtual bool       `json:"is_virtual"`
+				Arguments []specMeta `json:"arguments"`
+				Return    specMeta   `json:"return_value"`
 			} `json:"methods"`
 			Signals []struct {
 				Name      string `json:"name"`
@@ -301,7 +304,7 @@ func readSpec(file Path) apiSpec {
 		} `json:"classes"`
 	}
 	Check(json.Unmarshal([]byte(file.ReadString()), &api), "Failed to parse %s", file.ToString())
-	spec := apiSpec{virtuals: map[string][]string{}, notifs: map[string][]string{}, signals: map[string][]trans.Signal{}, editor: map[string]bool{}}
+	spec := apiSpec{virtuals: map[string][]string{}, sized: map[string][]trans.SizedVirtual{}, notifs: map[string][]string{}, signals: map[string][]trans.Signal{}, editor: map[string]bool{}}
 	for _, e := range api.GlobalEnums {
 		spec.enums = append(spec.enums, trans.Dependency{Name: e.Name, Kind: trans.GodotEnum, Values: e.Values, Bitfield: e.IsBitfield})
 	}
@@ -315,8 +318,18 @@ func readSpec(file Path) apiSpec {
 			}
 		}
 		for _, m := range c.Methods {
-			if m.IsVirtual {
-				spec.virtuals[c.Name] = append(spec.virtuals[c.Name], m.Name)
+			if !m.IsVirtual {
+				continue
+			}
+			spec.virtuals[c.Name] = append(spec.virtuals[c.Name], m.Name)
+			v := trans.SizedVirtual{Name: m.Name, Return: sizedType(m.Return.Meta)}
+			sized := v.Return != ""
+			for _, a := range m.Arguments {
+				v.Params = append(v.Params, sizedType(a.Meta))
+				sized = sized || sizedType(a.Meta) != ""
+			}
+			if sized {
+				spec.sized[c.Name] = append(spec.sized[c.Name], v)
 			}
 		}
 		spec.editor[c.Name] = c.APIType == "editor"
@@ -329,6 +342,23 @@ func readSpec(file Path) apiSpec {
 		}
 	}
 	return spec
+}
+
+// specMeta is a parameter or return value of a method of the API spec. Meta is its C++ size for a number, e.g. "int32".
+type specMeta struct {
+	Meta string `json:"meta"`
+}
+
+// sizedType returns godot-cpp's C++ type for a number with meta meta, e.g. "int32_t" for "int32", or "" for GD++'s
+// int64_t and double, and for others.
+func sizedType(meta string) string {
+	switch meta {
+	case "int8", "int16", "int32", "uint8", "uint16", "uint32", "uint64", "char16", "char32":
+		return meta + "_t"
+	case "float":
+		return "float"
+	}
+	return ""
 }
 
 // specType returns the GD++ type of a type of the API spec, e.g. "Array[Node]" for "typedarray::Node", or "int" for
@@ -364,6 +394,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 		dep := trans.Dependency{Name: n.Name, Include: n.Include, Kind: n.Kind, NonRuntime: nonRuntime[n.Name]}
 		if n.Kind != trans.Other {
 			dep.Base, dep.Virtuals, dep.Notifications, dep.Signals = n.Base, spec.virtuals[n.Name], spec.notifs[n.Name], spec.signals[n.Name]
+			dep.SizedVirtuals = spec.sized[n.Name]
 		}
 		deps = append(deps, dep)
 	}

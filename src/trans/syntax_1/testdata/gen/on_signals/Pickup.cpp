@@ -65,7 +65,7 @@ void Pickup::_gdpp_body__on_hud_resized() {
 #line 66 "Pickup.cpp"
 }
 
-void Pickup::_gdpp_body__on_panel_gui_input(gdpp::Gd<InputEvent> event) {
+void Pickup::_gdpp_body__on_panel_gui_input(const gdpp::Gd<InputEvent> &event) {
 #line 26 "input.gd++"
 
   gd::print(event);

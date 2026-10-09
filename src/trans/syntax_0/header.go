@@ -1,6 +1,7 @@
 package syntax_0
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -185,6 +186,21 @@ func declParams(f *funcModel) string {
 		ps = append(ps, p)
 	}
 	return strings.Join(ps, ", ")
+}
+
+// engineSignature returns the return type and parameters with which f overrides an engine virtual function: objects
+// pass as the engine passes them, as a Ref or a pointer. Their parameters get a _gdpp_ prefix: funcDef holds them in
+// Gds with the plain names.
+func engineSignature(f *funcModel) (string, string) {
+	var ps []string
+	for i, t := range f.params {
+		name := f.f.Params[i].Name
+		if t.engine != "" {
+			t, name = &gtype{cpp: t.engine, byRef: t.byRef}, "_gdpp_"+name
+		}
+		ps = append(ps, withSpace(t.param())+name)
+	}
+	return cmp.Or(f.ret.engine, f.ret.cpp), strings.Join(ps, ", ")
 }
 
 // defaultName is the name of the static method that returns the default value of parameter p of f.
@@ -414,7 +430,11 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 		if f.isConst {
 			suffix = " const" + suffix
 		}
-		decl := fmt.Sprintf("%s%s%s(%s)%s;", prefix, withSpace(f.ret.cpp), f.f.Name, declParams(f), suffix)
+		ret, ps := f.ret.cpp, declParams(f)
+		if f.engine {
+			ret, ps = engineSignature(f)
+		}
+		decl := fmt.Sprintf("%s%s%s(%s)%s;", prefix, withSpace(ret), f.f.Name, ps, suffix)
 		if f.isPrivate {
 			private = append(private, decl)
 			continue

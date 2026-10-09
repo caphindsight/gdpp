@@ -1,0 +1,57 @@
+class_name Player
+extends Node
+
+@override
+func _unhandled_input(event: InputEvent) -> void {
+  if (event->is_action_pressed(string_name "jump")) {
+    get_viewport()->set_input_as_handled();
+  }
+}
+
+class Hud {
+  extends Control
+
+  @override
+  func _gui_input(event: InputEvent) -> void {
+    accept_event();
+  }
+
+  @const @override
+  func _make_custom_tooltip(for_text: String) -> Object {
+    return get_child(0);
+  }
+}
+
+@trace("combat")
+class TracedHud {
+  extends Control
+
+  @const @override
+  func _make_custom_tooltip(for_text: String) -> Object {
+    return nullptr;
+  }
+}
+
+class Target {
+  extends CollisionObject3D
+
+  @override
+  func _input_event(camera: Camera3D, event: InputEvent, event_position: Vector3, normal: Vector3, shape_idx: int) -> void {
+    print(camera, event, shape_idx);
+  }
+}
+
+class Noise {
+  extends Texture3D
+
+  @const @override
+  func _get_width() -> int {
+    return 64;
+  }
+
+  @const @override
+  @trace("combat")
+  func _get_height() -> int {
+    return 64;
+  }
+}

@@ -29,7 +29,7 @@ public:
 	void _gdpp_body__on_this_body_shape_entered(const RID &rid, gdpp::Gd<Node2D> body, int64_t _gdpp_param2, int64_t _gdpp_param3);
 	void _gdpp_body__on_this_collected(gdpp::Gd<Node2D> _gdpp_param0, int64_t _gdpp_param1);
 	void _gdpp_body__on_hud_resized();
-	void _gdpp_body__on_panel_gui_input(gdpp::Gd<InputEvent> event);
+	void _gdpp_body__on_panel_gui_input(const gdpp::Gd<InputEvent> &event);
 	void swap(gdpp::Gd<Control> other);
 	gdpp::Gd<Control> get_hud() const;
 	void set_hud(gdpp::Gd<Control> p_value);

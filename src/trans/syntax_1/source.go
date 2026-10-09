@@ -621,7 +621,17 @@ func cast(c *classModel, t *gtype, expr string, toTag bool) string {
 
 func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 	w.ln("")
-	w.ln("%s {", qualified(c, f.ret.cpp, f.f.Name, params(nil, f.params, f.f.Params), f.isConst))
+	ret, ps := f.ret.cpp, params(nil, f.params, f.f.Params)
+	if f.engine {
+		ret, ps = engineSignature(f)
+	}
+	w.ln("%s {", qualified(c, ret, f.f.Name, ps, f.isConst))
+	for i, t := range f.params {
+		if f.engine && t.engine != "" {
+			name := f.f.Params[i].Name
+			w.ln("\t%s%s = _gdpp_%s;", withSpace(t.param()), name, name)
+		}
+	}
 	switch {
 	case f.coro == nil:
 		guard(w, f.only, f.ret.cpp)
@@ -641,10 +651,15 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 			w.ln("\tconstexpr uint64_t GENERATION = 0;")
 		}
 	}
-	// A traced function that returns a value runs as a lambda, so the trace gets the value. A coroutine can't.
-	wrap := f.trace && !f.ret.void && f.coro == nil
-	if wrap {
+	// A traced function that returns a value runs as a lambda, so the trace gets the value. A coroutine can't. So
+	// does an engine override that returns an object, which returns the lambda's Gd as the engine's pointer or Ref.
+	// A sized number converts by itself.
+	traced, ptr := f.trace && !f.ret.void && f.coro == nil, f.engine && f.ret.engine != "" && strings.HasPrefix(f.ret.cpp, "gdpp::Gd<")
+	switch {
+	case traced:
 		w.ln("\treturn _gdpp_trace.ret([&]() -> %s {", f.ret.cpp)
+	case ptr:
+		w.ln("\treturn [&]() -> %s {", f.ret.cpp)
 	}
 	if f.virtualOf != "" {
 		owner := &classModel{name: f.virtualOf} // Its GDVIRTUAL uses its enum tags.
@@ -707,8 +722,13 @@ func (u *unit) funcDef(w *writer, c *classModel, f *funcModel) {
 		w.ln("\treturn {};")
 	}
 	w.static = false
-	if wrap {
+	switch {
+	case traced && ptr:
+		w.ln("\t}()).ptr();")
+	case traced:
 		w.ln("\t}());")
+	case ptr:
+		w.ln("\t}().ptr();")
 	}
 	w.ln("}")
 	if f.scripted() || f.override || !f.trampolined() {

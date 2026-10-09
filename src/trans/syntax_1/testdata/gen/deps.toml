@@ -35,6 +35,7 @@ name = "Control"
 include = "<godot_cpp/classes/control.hpp>"
 kind = "Object"
 base = "CanvasItem"
+virtuals = ["_gui_input", "_make_custom_tooltip"]
 signals = [{ name = "resized" }, { name = "gui_input", params = [{ name = "event", type = "InputEvent" }] }]
 notifications = ["RESIZED", "MOUSE_ENTER", "MOUSE_EXIT", "MOUSE_ENTER_SELF", "MOUSE_EXIT_SELF", "FOCUS_ENTER", "FOCUS_EXIT", "THEME_CHANGED", "SCROLL_BEGIN", "SCROLL_END", "LAYOUT_DIRECTION_CHANGED"]
 
@@ -108,7 +109,7 @@ base = "RefCounted"
 [[dep]]
 name = "InputEvent"
 include = "<godot_cpp/classes/input_event.hpp>"
-kind = "Object"
+kind = "RefCounted"
 base = "Resource"
 
 [[dep]]
@@ -558,3 +559,19 @@ kind = "Object"
 base = "Node"
 gdpp = true
 test = true
+
+[[dep]]
+name = "CollisionObject3D"
+include = "<godot_cpp/classes/collision_object3d.hpp>"
+kind = "Object"
+base = "Node3D"
+virtuals = ["_input_event", "_mouse_enter", "_mouse_exit"]
+sized_virtuals = [{ name = "_input_event", params = ["", "", "", "", "int32_t"] }]
+
+[[dep]]
+name = "Texture3D"
+include = "<godot_cpp/classes/texture3d.hpp>"
+kind = "RefCounted"
+base = "Resource"
+virtuals = ["_get_width", "_get_height", "_get_depth"]
+sized_virtuals = [{ name = "_get_width", params = [], return = "int32_t" }, { name = "_get_height", params = [], return = "int32_t" }, { name = "_get_depth", params = [], return = "int32_t" }]

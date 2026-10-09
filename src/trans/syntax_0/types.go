@@ -28,24 +28,25 @@ type symbol struct {
 	include          string // What follows #include. Declarations in the file are in "<Name>.h".
 	gdpp             bool   // Whether a GD++ file declares it: this one or another.
 	values           []meta.EnumValue
-	base             string        // For enums: the enum it extends, until enumValues adds the base's values to values. For dependency classes and externs: their base, if known.
-	bitfield         bool          // For enums: whether its values are flags.
-	godotNames       []string      // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
-	virtuals         []string      // For dependency classes: the names of their virtual functions, see meta.Dependency.
-	noscriptVirtuals []string      // For dependency classes: the names of their @virtual("noscript") functions.
-	notifications    []string      // For dependency classes: the names of their own notifications, see meta.Dependency.
-	signals          []meta.Signal // For dependency classes and externs: their own signals, see meta.Dependency.
-	nonRuntime       bool          // For dependency classes: see meta.Dependency.
-	test             bool          // For dependency classes: whether @test makes them classes of tests.
-	class            *Class        // Set for classes in the file.
-	extern           *Extern       // Set for externs in the file.
-	trait            *Trait        // Set for traits in the file.
-	depTrait         *Trait        // For dependency traits: the trait, parsed from its file.
-	traitSource      string        // For dependency traits: how #line names its file.
-	traits           []string      // For dependency classes: the traits they implement themselves, see meta.Dependency.
-	enum             *Enum         // Set for enums in the file.
-	strukt           *Struct       // Set for structs in the file.
-	order            int           // For declarations in the file: how many came before, which orders those at the same position.
+	base             string              // For enums: the enum it extends, until enumValues adds the base's values to values. For dependency classes and externs: their base, if known.
+	bitfield         bool                // For enums: whether its values are flags.
+	godotNames       []string            // For engine enums: Godot's name of each value, e.g. SHADOW_CASTING_SETTING_ON for ON.
+	virtuals         []string            // For dependency classes: the names of their virtual functions, see meta.Dependency.
+	noscriptVirtuals []string            // For dependency classes: the names of their @virtual("noscript") functions.
+	sizedVirtuals    []meta.SizedVirtual // For Godot classes: their virtual functions that pass sized numbers, see meta.Dependency.
+	notifications    []string            // For dependency classes: the names of their own notifications, see meta.Dependency.
+	signals          []meta.Signal       // For dependency classes and externs: their own signals, see meta.Dependency.
+	nonRuntime       bool                // For dependency classes: see meta.Dependency.
+	test             bool                // For dependency classes: whether @test makes them classes of tests.
+	class            *Class              // Set for classes in the file.
+	extern           *Extern             // Set for externs in the file.
+	trait            *Trait              // Set for traits in the file.
+	depTrait         *Trait              // For dependency traits: the trait, parsed from its file.
+	traitSource      string              // For dependency traits: how #line names its file.
+	traits           []string            // For dependency classes: the traits they implement themselves, see meta.Dependency.
+	enum             *Enum               // Set for enums in the file.
+	strukt           *Struct             // Set for structs in the file.
+	order            int                 // For declarations in the file: how many came before, which orders those at the same position.
 }
 
 // local reports whether the file declares s.
@@ -80,6 +81,7 @@ type gtype struct {
 	gpu    string // For GpuArray types: the GLSL type of the elements, e.g. "vec3".
 	weak   bool   // Whether it's a Weak type.
 	trait  string // For traits: the trait's name.
+	engine string // The C++ type through which the engine's virtual functions pass it, if it differs: e.g. "Ref<Resource>" or "Node *" for classes, "int32_t" for a sized int.
 	void   bool
 }
 
@@ -156,9 +158,13 @@ func (u *unit) resolve(t *Type, allowVoid bool) (*gtype, error) {
 		return nil, u.unknownType(t)
 	}
 	switch s.kind {
-	case meta.Object, meta.Extern:
+	case meta.Object:
+		return &gtype{cpp: gd(s.name), doc: s.name, engine: s.name + " *"}, nil
+	case meta.RefCounted:
+		return &gtype{cpp: gd(s.name), doc: s.name, byRef: true, engine: "Ref<" + s.name + ">"}, nil
+	case meta.Extern:
 		return &gtype{cpp: gd(s.name), doc: s.name}, nil
-	case meta.RefCounted, meta.RefCountedExtern:
+	case meta.RefCountedExtern:
 		return &gtype{cpp: gd(s.name), doc: s.name, byRef: true}, nil
 	case meta.Trait, meta.RefCountedTrait:
 		return &gtype{cpp: gd(s.name), doc: u.baseOf(s.name), trait: s.name, byRef: s.kind == meta.RefCountedTrait}, nil

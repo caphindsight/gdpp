@@ -31,7 +31,8 @@ func TestGenerate(t *testing.T) {
 			Test                       bool
 			Virtuals, Notifications    []string
 			Traits                     []string
-			NoscriptVirtuals           []string `toml:"noscript_virtuals"`
+			NoscriptVirtuals           []string            `toml:"noscript_virtuals"`
+			SizedVirtuals              []meta.SizedVirtual `toml:"sized_virtuals"`
 			Signals                    []meta.Signal
 			File                       string   // For macros and templates: their file in testdata/gen.
 			SourceName                 string   `toml:"source_name"`
@@ -56,7 +57,7 @@ func TestGenerate(t *testing.T) {
 			source = string(data)
 		}
 		opts.Dependencies = append(opts.Dependencies, meta.Dependency{Name: d.Name, Include: d.Include, Kind: kinds[d.Kind], Values: d.Values, Base: d.Base, Gdpp: d.Gdpp, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals,
-			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits, Signals: d.Signals, Test: d.Test})
+			Notifications: d.Notifications, NonRuntime: d.NonRuntime, Source: source, File: d.File, SourceName: d.SourceName, Traits: d.Traits, Signals: d.Signals, Test: d.Test, SizedVirtuals: d.SizedVirtuals})
 	}
 	for i, d := range file.Dep {
 		for _, name := range d.Macros {
