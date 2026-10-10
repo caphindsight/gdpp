@@ -244,6 +244,7 @@ func TestTranspilePackageRegistration(t *testing.T) {
 func TestTranspilePackageSizedVirtuals(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
 		"mob.gd++": "class_name Mob\nextends Node\n\n@override\nfunc _process(delta: float) -> void {}\n\n@override\nfunc _hit(shape: int, force: float) -> int {\n  return shape;\n}\n",
+		"boss.gd++": "class_name Boss\nextends Mob\n\n@override\nfunc _hit(shape: int, force: float) -> int {\n  return shape + 1;\n}\n",
 	})
 	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Node", "methods": [
 		{"name": "_process", "is_virtual": true, "arguments": [{"name": "delta", "type": "float", "meta": "double"}]},
@@ -252,10 +253,15 @@ func TestTranspilePackageSizedVirtuals(t *testing.T) {
 	withTTY(t, false)
 	withQuiet(t, false)
 	transpileTestPackage(t, false)
-	header := m.tree()[pkgDir+".gd++build/gdpp/Mob.h"]
-	for _, want := range []string{"\tvoid _process(double delta) override;", "\tuint64_t _hit(int32_t _gdpp_shape, float _gdpp_force) override;"} {
-		if !strings.Contains(header, want) {
-			t.Errorf("Mob.h = %s\nwant it to contain %q", header, want)
+	for name, wants := range map[string][]string{
+		"Mob.h":  {"\tvoid _process(double delta) override;", "\tuint64_t _hit(int32_t _gdpp_shape, float _gdpp_force) override;"},
+		"Boss.h": {"\tuint64_t _hit(int32_t _gdpp_shape, float _gdpp_force) override;"}, // A subclass of Mob, in another file.
+	} {
+		header := m.tree()[pkgDir+".gd++build/gdpp/"+name]
+		for _, want := range wants {
+			if !strings.Contains(header, want) {
+				t.Errorf("%s = %s\nwant it to contain %q", name, header, want)
+			}
 		}
 	}
 }

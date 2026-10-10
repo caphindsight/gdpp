@@ -575,3 +575,25 @@ kind = "RefCounted"
 base = "Resource"
 virtuals = ["_get_width", "_get_height", "_get_depth"]
 sized_virtuals = [{ name = "_get_width", params = [], return = "int32_t" }, { name = "_get_height", params = [], return = "int32_t" }, { name = "_get_depth", params = [], return = "int32_t" }]
+
+[[dep]]
+name = "PhysicsDirectBodyState2D"
+include = "<godot_cpp/classes/physics_direct_body_state2d.hpp>"
+kind = "Object"
+base = "Object"
+
+[[dep]]
+name = "PhysicsDirectBodyState2DExtension"
+include = "<godot_cpp/classes/physics_direct_body_state2d_extension.hpp>"
+kind = "Object"
+base = "PhysicsDirectBodyState2D"
+virtuals = ["_apply_torque", "_apply_torque_impulse"]
+sized_virtuals = [{ name = "_apply_torque", params = ["float"] }, { name = "_apply_torque_impulse", params = ["float"] }]
+
+[[dep]]
+name = "AStar3D"
+include = "<godot_cpp/classes/a_star3d.hpp>"
+kind = "RefCounted"
+base = "RefCounted"
+virtuals = ["_compute_cost", "_estimate_cost"]
+sized_virtuals = [{ name = "_compute_cost", params = ["", ""], return = "float" }, { name = "_estimate_cost", params = ["", ""], return = "float" }]

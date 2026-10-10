@@ -1,0 +1,81 @@
+class_name Turret
+extends CollisionObject3D
+
+@override
+func _unhandled_input(event: InputEvent) -> void {
+  if (event->is_pressed()) {
+    hide();
+  }
+}
+
+@override
+func _input_event(camera: Camera3D, event: InputEvent, event_position: Vector3, normal: Vector3, shape_idx: int) -> void {
+  if (camera && event->is_pressed() && shape_idx == 0) {
+    hide();
+  }
+}
+
+class HeavyTurret {
+  extends Turret
+
+  @override
+  func _unhandled_input(event: InputEvent) -> void {
+    if (event->is_echo()) {
+      show();
+    }
+  }
+
+  @override
+  func _input_event(camera: Camera3D, event: InputEvent, event_position: Vector3, normal: Vector3, shape_idx: int) -> void {
+    if (camera && event->is_echo() && shape_idx == 1) {
+      show();
+    }
+  }
+}
+
+class Doorbell {
+  extends Door
+
+  @override
+  func _unhandled_input(event: InputEvent) -> void {
+    if (event->is_pressed()) {
+      queue_free();
+    }
+  }
+}
+
+class Body {
+  extends PhysicsDirectBodyState2DExtension
+
+  @override
+  func _apply_torque(torque: float) -> void {
+    _apply_torque_impulse(torque * 2.0);
+  }
+}
+
+class HeavyBody {
+  extends Body
+
+  @override
+  func _apply_torque(torque: float) -> void {
+    _apply_torque_impulse(torque * 4.0);
+  }
+}
+
+class Grid {
+  extends AStar3D
+
+  @const @override
+  func _compute_cost(from_id: int, to_id: int) -> float {
+    return 1.5;
+  }
+}
+
+class SteepGrid {
+  extends Grid
+
+  @const @override
+  func _compute_cost(from_id: int, to_id: int) -> float {
+    return 3.5;
+  }
+}
