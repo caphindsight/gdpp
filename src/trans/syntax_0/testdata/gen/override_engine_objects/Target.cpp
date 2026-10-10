@@ -15,9 +15,11 @@ void Target::_input_event(Camera3D *_gdpp_camera, const Ref<InputEvent> &_gdpp_e
 	int64_t shape_idx = _gdpp_shape_idx;
 #line 39 "input.gd++"
 
-    print(camera, event, shape_idx);
+    if (camera && event->is_pressed() && shape_idx == 0) {
+      queue_free();
+    }
 
-#line 21 "Target.cpp"
+#line 23 "Target.cpp"
 }
 
 #undef This

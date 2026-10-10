@@ -11,7 +11,7 @@ void Noise::_bind_methods() {
 }
 
 int32_t Noise::_get_width() const {
-#line 48 "input.gd++"
+#line 50 "input.gd++"
 
     return 64;
 
@@ -21,7 +21,7 @@ int32_t Noise::_get_width() const {
 int32_t Noise::_get_height() const {
 	gdpp::Trace _gdpp_trace("Noise", this, "_get_height");
 	return _gdpp_trace.ret([&]() -> int64_t {
-#line 54 "input.gd++"
+#line 56 "input.gd++"
 
     return 64;
 

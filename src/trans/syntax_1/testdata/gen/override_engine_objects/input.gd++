@@ -37,7 +37,9 @@ class Target {
 
   @override
   func _input_event(camera: Camera3D, event: InputEvent, event_position: Vector3, normal: Vector3, shape_idx: int) -> void {
-    print(camera, event, shape_idx);
+    if (camera && event->is_pressed() && shape_idx == 0) {
+      queue_free();
+    }
   }
 }
 
