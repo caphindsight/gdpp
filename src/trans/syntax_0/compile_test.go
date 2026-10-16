@@ -27,6 +27,14 @@ var stubs = map[string]string{
 		"\tint64_t slot() const override { return 0; }\n\nprotected:\n\tstatic void _bind_methods() {}\n};\n",
 	"Loot.h": "struct Loot {\n\toperator Variant() const { return Dictionary(); }\n\tDictionary _gdpp_fields() const { return Dictionary(); }\n" +
 		"\tDictionary _gdpp_to_dictionary() const { return Dictionary(); }\n\tstatic Loot _gdpp_from(const Variant &) { return Loot(); }\n};\nGDPP_STRUCT(Loot)\n",
+	"Boid.h": "struct Boid {\n\tVector2 position{};\n\tdouble heading{};\n\tString name{};\n\toperator Variant() const { return Dictionary(); }\n" +
+		"\tDictionary _gdpp_fields() const { return Dictionary(); }\n\tDictionary _gdpp_to_dictionary() const { return Dictionary(); }\n" +
+		"\tstatic Boid _gdpp_from(const Variant &) { return Boid(); }\n\tstatic constexpr const char *_gdpp_gpu_name = \"Boid\";\n" +
+		"\ttemplate <typename S, typename F>\n\tstatic void _gdpp_gpu_fields(S &p_s, F &&p_f) { p_f(p_s.position); p_f(p_s.heading); }\n};\nGDPP_STRUCT(Boid)\n",
+	"Score.h": "struct Score {\n\tint64_t speed = 0;\n\tint64_t agility = 0;\n\tint64_t total() const { return speed + agility; }\n\toperator Variant() const { return Dictionary(); }\n" +
+		"\tDictionary _gdpp_fields() const { return Dictionary(); }\n\tDictionary _gdpp_to_dictionary() const { return Dictionary(); }\n" +
+		"\tstatic Score _gdpp_from(const Variant &) { return Score(); }\n\tstatic constexpr const char *_gdpp_gpu_name = \"Score\";\n" +
+		"\ttemplate <typename S, typename F>\n\tstatic void _gdpp_gpu_fields(S &p_s, F &&p_f) { p_f(p_s.speed); p_f(p_s.agility); }\n};\nGDPP_STRUCT(Score)\n",
 	"Collectible.h": "class Collectible {\npublic:\n\tusing Base = Node;\n\tvirtual ~Collectible() = default;\n\tvirtual int64_t value() const = 0;\n" +
 		"\tvirtual int64_t double_value() const = 0;\n\tvirtual void _gdpp_destroy() = 0;\n\tvirtual void _gdpp_queue_destroy() = 0;\n};\n",
 	"Weighted.h": "class Weighted {\npublic:\n\tusing Base = Node;\n\tvirtual ~Weighted() = default;\n\tvirtual int64_t weight() const = 0;\n" +
