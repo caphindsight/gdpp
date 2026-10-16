@@ -1,0 +1,4 @@
+input.gd++:8:26: Shaders can't use struct Sample: its var texture has a name of GLSL.
+ 8 | shader sample(n: int, s: Sample) -> void {
+   |                          ^^^^^^
+Hint: Shaders take vars of types int, float, bool, vectors, Color, Basis, Transform3D, Projection, enums and such structs. Mark others @shader("skip").

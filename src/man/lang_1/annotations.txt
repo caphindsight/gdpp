@@ -245,7 +245,12 @@ Functions of traits only take `@const`. The functions of a class that implement 
 
 # Structs
 
-Structs, and their vars, take no annotations. Functions of structs take:
+Structs take no annotations. Their vars take:
+
+@shader("skip")
+  Leave the var out of the struct that shaders see, e.g. a var of a type that shaders can't take. Takes exactly this argument. See "Structs" in `gd++ man shaders`.
+
+Functions of structs take:
 
 @const
   Make the function a const method, which doesn't change the fields.

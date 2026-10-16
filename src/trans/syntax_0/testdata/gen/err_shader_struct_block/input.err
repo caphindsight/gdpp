@@ -1,0 +1,4 @@
+input.gd++:14:1: The shader blocks of shader trace declare struct Ray, which is a GD++ struct.
+ 14 | shader trace(n: int) -> void {
+    | ^^^^^^
+Hint: Shaders see GD++ structs as GLSL structs already: remove the GLSL declaration, or rename it.

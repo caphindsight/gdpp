@@ -1,0 +1,4 @@
+input.gd++:2:3: Annotation @shader takes one argument on a struct var: "skip".
+ 2 |   @shader("hide") var by: Node3D
+   |   ^^^^^^^
+Hint: @shader("skip") leaves the var out of the struct that shaders see, e.g. for a var of a type that shaders can't take.

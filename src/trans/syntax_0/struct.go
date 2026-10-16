@@ -52,8 +52,13 @@ func (u *unit) buildStruct(st *Struct) (*structModel, error) {
 		switch {
 		case member.Var != nil:
 			v := member.Var
-			if _, err := u.annotations(v.Annotations, "a struct var"); err != nil {
+			a, err := u.annotations(v.Annotations, "a struct var", "shader")
+			if err != nil {
 				return nil, err
+			}
+			if sh := a["shader"]; sh != nil && (len(sh.Args) != 1 || sh.Args[0].Value != `"skip"`) {
+				return nil, u.errorAt(sh.Pos, len(sh.Name)+1, "Annotation @shader takes one argument on a struct var: \"skip\".",
+					"@shader(\"skip\") leaves the var out of the struct that shaders see, e.g. for a var of a type that shaders can't take.")
 			}
 			if v.Property != nil {
 				return nil, u.errorAt(v.Pos, 3, fmt.Sprintf("Struct %s's var %s can't be a property.", st.Name, v.Name),
@@ -167,6 +172,12 @@ func (u *unit) structDecl(w *writer, s *structModel) {
 	w.ln("\tDictionary _gdpp_to_dictionary() const;")
 	w.ln("\t// The struct with the fields of a Dictionary, and the default values of the others.")
 	w.ln("\tstatic %s _gdpp_from(const Variant &p_value);", s.name)
+	if g, problem := u.gpuStructOf(s.name); problem == "" {
+		w.ln("\t// Its name and the vars that shaders see, for GpuArray and shaders' parameters.")
+		for _, m := range gpuStructMembers(g) {
+			w.ln("\t%s", m)
+		}
+	}
 	var private []string
 	for _, f := range s.funcs {
 		for i, p := range f.f.Params {

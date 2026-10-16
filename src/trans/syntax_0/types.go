@@ -46,6 +46,7 @@ type symbol struct {
 	traits           []string            // For dependency classes: the traits they implement themselves, see meta.Dependency.
 	enum             *Enum               // Set for enums in the file.
 	strukt           *Struct             // Set for structs in the file.
+	depStruct        *Struct             // For dependency structs: the struct, parsed from its file, whose fields shaders see.
 	order            int                 // For declarations in the file: how many came before, which orders those at the same position.
 }
 
@@ -62,6 +63,11 @@ func (s *symbol) isExtern() bool {
 // isTrait reports whether s is a trait: of the file or a dependency.
 func (s *symbol) isTrait() bool {
 	return s.trait != nil || s.kind == meta.Trait || s.kind == meta.RefCountedTrait
+}
+
+// structDecl returns the struct s, of the file or parsed from a dependency's file, or nil.
+func (s *symbol) structDecl() *Struct {
+	return cmp.Or(s.strukt, s.depStruct)
 }
 
 // traitDecl returns the trait s, of the file or parsed from a dependency's file, or nil.
@@ -214,9 +220,16 @@ var gpuElements = map[string][2]string{"float": {"float", "float"}, "int": {"int
 
 // gpuArray resolves t, a GpuArray type: an array that stays on the GPU, where shaders read and write it.
 func (u *unit) gpuArray(t *Type) (*gtype, error) {
+	if len(t.Args) == 1 && len(t.Args[0].Args) == 0 && u.isStruct(t.Args[0].Name) {
+		if _, err := u.gpuStructAt(t.Args[0]); err != nil {
+			return nil, err
+		}
+		name := t.Args[0].Name
+		return &gtype{cpp: "gdpp::GpuArray<" + name + ">", doc: u.gpuArrayClass(), byRef: true, gpu: name}, nil
+	}
 	if len(t.Args) != 1 || len(t.Args[0].Args) > 0 || gpuElements[t.Args[0].Name][0] == "" {
-		return nil, u.errorAt(t.Pos, len(t.Name), "Type GpuArray takes one type argument: float, int, Vector2, Vector3, Vector4 or Color, e.g. GpuArray[float].",
-			"GPU arrays hold the elements of packed arrays that shaders can use.")
+		return nil, u.errorAt(t.Pos, len(t.Name), "Type GpuArray takes one type argument: float, int, Vector2, Vector3, Vector4, Color or a struct, e.g. GpuArray[float].",
+			"GPU arrays hold the elements of packed arrays that shaders can use, or structs.")
 	}
 	e := gpuElements[t.Args[0].Name]
 	return &gtype{cpp: "gdpp::GpuArray<" + e[0] + ">", doc: u.gpuArrayClass(), byRef: true, gpu: e[1]}, nil

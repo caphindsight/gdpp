@@ -32,7 +32,7 @@ const (
 	Trait            Kind = 12 // A GD++ trait whose base isn't refcounted, held as Gd<T>. Source and File hold its file.
 	RefCountedTrait  Kind = 13 // A GD++ trait whose base is refcounted, held as Gd<T>. Source and File hold its file.
 	ShaderLibrary    Kind = 14 // The shader blocks of a GD++ file outside of classes, or its shader_library, which every shader of the package uses. It has no Name. Source and File hold its file.
-	Struct           Kind = 15 // A GD++ struct: a C++ value type, which Godot sees as a Dictionary.
+	Struct           Kind = 15 // A GD++ struct: a C++ value type, which Godot sees as a Dictionary. Source and File hold its file, whose fields shaders see.
 )
 
 // Dependency is a class, extern or enum that a GD++ file may use without declaring it.
@@ -55,12 +55,12 @@ type Dependency struct {
 	// subclass of such a class. Godot doesn't let runtime classes extend it, so GD++ guards its subclasses instead.
 	NonRuntime bool
 	Signals    []Signal // For classes and externs: their own signals, which on blocks connect to.
-	Source     string   // For Kind Macro, Template, Trait and RefCountedTrait: the whole GD++ file that declares it, which the translator parses.
-	File       string   // For Kind Macro, Template, Trait and RefCountedTrait: that file's name, for errors.
+	Source     string   // For Kind Macro, Template, Trait, RefCountedTrait and Struct: the whole GD++ file that declares it, which the translator parses.
+	File       string   // For Kind Macro, Template, Trait, RefCountedTrait and Struct: that file's name, for errors.
 	SourceName string   // For Kind Template, Trait and RefCountedTrait: how #line names that file, like Options.SourceName. Default: File.
 	Traits     []string // For classes of the package: the traits it implements itself, without those of its bases.
-	// For Kind Trait and RefCountedTrait: the macros, templates, macro libraries and user annotations that the
-	// trait's file sees, so the translator can expand its invocations before parsing the trait.
+	// For Kind Trait, RefCountedTrait and Struct: the macros, templates, macro libraries and user annotations that
+	// its file sees, so the translator can expand its invocations before parsing it.
 	Macros []Dependency
 	// For classes of the package: whether @test makes it a class of tests, which only other @test classes may use.
 	Test bool

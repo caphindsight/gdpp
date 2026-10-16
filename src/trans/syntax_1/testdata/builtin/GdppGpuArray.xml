@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="GdppGpuArray" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		An array of floats, ints, vectors or colors that stays on the GPU, where shaders read and write it.
+		An array of floats, ints, vectors, colors or structs that stays on the GPU, where shaders read and write it.
 	</brief_description>
 	<description>
 		GD++ provides this class: its runtime defines it, and the package registers it. Run [code]gd++ man shaders[/code] to read how to use it.
-		A GPU array holds the elements of one kind of packed array: [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Shaders read and write its elements in place, so a simulation can run many steps without copying them back and forth. [method read] copies them back, once you need them.
+		A GPU array holds the elements of one kind of packed array: [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray], or GD++ structs, which scripts see as [Dictionary]s. Shaders read and write its elements in place, so a simulation can run many steps without copying them back and forth. [method read] copies them back, once you need them.
 		Without a GPU, e.g. with the Compatibility renderer or [code]--headless[/code], it's an array in memory, and shaders run on the CPU.
 		[codeblock]
 		var heights = GameGpuArray.from(PackedFloat32Array([0.0, 1.0, 2.0]))
@@ -21,13 +21,15 @@
 			<return type="Variant" />
 			<param index="0" name="packed" type="Variant" />
 			<description>
-				Returns a new GPU array with the elements of [param packed]: a [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Its element type is that of [param packed].
+				Returns a new GPU array with the elements of [param packed]: a [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Its element type is that of [param packed]. GPU arrays of structs come from GD++ code.
 			</description>
 		</method>
 		<method name="read">
 			<return type="Variant" />
+			<param index="0" name="offset" type="int" default="0" />
+			<param index="1" name="count" type="int" default="-1" />
 			<description>
-				Returns the elements as a packed array of the GPU array's element type. It waits until the shaders that write them are done.
+				Returns [param count] elements from index [param offset] on, all those after it if [param count] is [code]-1[/code]: a packed array of the GPU array's element type, or an [Array] of [Dictionary]s of a struct's fields. It waits until the shaders that write them are done.
 			</description>
 		</method>
 		<method name="size">
@@ -39,8 +41,9 @@
 		<method name="write">
 			<return type="void" />
 			<param index="0" name="packed" type="Variant" />
+			<param index="1" name="offset" type="int" default="0" />
 			<description>
-				Sets the elements from [param packed], a packed array of the GPU array's element type and size.
+				Sets the elements from index [param offset] on from [param packed]: a packed array of the GPU array's element type, or an [Array] of [Dictionary]s for a struct. They must fit in the GPU array.
 			</description>
 		</method>
 	</methods>

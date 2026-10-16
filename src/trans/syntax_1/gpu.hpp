@@ -1254,6 +1254,7 @@ enum class Elem {
 	VECTOR3,
 	VECTOR4,
 	COLOR,
+	STRUCT, // A GD++ struct, which a StructElem describes.
 };
 
 // ElemInfo describes an Elem: its packed array type, and its size in GPU (std430) and CPU memory.
@@ -1274,8 +1275,16 @@ inline const ElemInfo &info(Elem p_elem) {
 	return infos[int(p_elem)];
 }
 
+// is_gpu_struct tells the structs that shaders take: GD++ structs whose fields fit the GPU, and their copies in a
+// shader's C++ code. Both list those fields with _gdpp_gpu_fields.
+template <typename T, typename = void>
+struct is_gpu_struct : std::false_type {};
+template <typename T>
+struct is_gpu_struct<T, std::void_t<decltype(T::_gdpp_gpu_name)>> : std::true_type {};
+
 // ElemOf maps a GPU array's element type, e.g. float in GpuArray<float>, to its Elem, packed array, and GLSL type.
-template <typename G>
+// A struct's packed array is a std::vector of it.
+template <typename G, typename = void>
 struct ElemOf;
 template <>
 struct ElemOf<float> {
@@ -1313,6 +1322,274 @@ struct ElemOf<Color> {
 	using Packed = PackedColorArray;
 	using Glsl = vec4;
 };
+template <typename G>
+struct ElemOf<G, std::enable_if_t<is_gpu_struct<G>::value>> {
+	static constexpr Elem elem = Elem::STRUCT;
+	using Packed = std::vector<G>;
+};
+
+// Std is a GLSL memory layout: std140 for the uniform block, std430 for buffers.
+enum class Std {
+	STD140,
+	STD430,
+};
+
+// glsl_value returns the GLSL value of a struct's field: an int for an int or an enum, a uint for a bool, a float for
+// a float, a vecN or matCxR for Godot's vectors and matrices. GLSL values stay as they are.
+template <typename V>
+auto glsl_value(const V &p_value) {
+	if constexpr (std::is_same_v<V, bool>) {
+		return uint(p_value);
+	} else if constexpr (std::is_enum_v<V> || std::is_same_v<V, int64_t>) {
+		return int(p_value);
+	} else if constexpr (std::is_same_v<V, double>) {
+		return float(p_value);
+	} else if constexpr (std::is_same_v<V, Vector2>) {
+		return vec2(p_value);
+	} else if constexpr (std::is_same_v<V, Vector2i>) {
+		return ivec2(p_value);
+	} else if constexpr (std::is_same_v<V, Vector3>) {
+		return vec3(p_value);
+	} else if constexpr (std::is_same_v<V, Vector3i>) {
+		return ivec3(p_value);
+	} else if constexpr (std::is_same_v<V, Vector4> || std::is_same_v<V, Color>) {
+		return vec4(p_value);
+	} else if constexpr (std::is_same_v<V, Vector4i>) {
+		return ivec4(p_value);
+	} else if constexpr (std::is_same_v<V, Basis>) {
+		return mat3(p_value);
+	} else if constexpr (std::is_same_v<V, Transform3D>) {
+		return mat4x3(p_value);
+	} else if constexpr (std::is_same_v<V, Projection>) {
+		return mat4(p_value);
+	} else {
+		return p_value;
+	}
+}
+
+// from_glsl sets r_value, a struct's field, from its GLSL value p_glsl: the reverse of glsl_value.
+template <typename V, typename G>
+void from_glsl(const G &p_glsl, V &r_value) {
+	if constexpr (std::is_same_v<V, bool>) {
+		r_value = p_glsl != 0;
+	} else if constexpr (std::is_same_v<V, G>) {
+		r_value = p_glsl;
+	} else if constexpr (std::is_enum_v<V> || std::is_arithmetic_v<V>) {
+		r_value = V(p_glsl);
+	} else if constexpr (std::is_same_v<V, Basis>) {
+		for (int c = 0; c < 3; c++) {
+			r_value.set_column(c, Vector3(p_glsl.cols[c]));
+		}
+	} else if constexpr (std::is_same_v<V, Transform3D>) {
+		for (int c = 0; c < 3; c++) {
+			r_value.basis.set_column(c, Vector3(p_glsl.cols[c]));
+		}
+		r_value.origin = Vector3(p_glsl.cols[3]);
+	} else if constexpr (std::is_same_v<V, Projection>) {
+		for (int c = 0; c < 4; c++) {
+			r_value.columns[c] = Vector4(p_glsl.cols[c]);
+		}
+	} else { // Godot's vectors and Color.
+		for (int i = 0; i < components<G>::value; i++) {
+			r_value[i] = std::decay_t<decltype(r_value[i])>(p_glsl.data[i]);
+		}
+	}
+}
+
+// gpu_align returns the alignment of V in layout L: 4 bytes for scalars, 8 for 2 components, 16 for 3 or 4, 16 for a
+// matrix, whose columns are vectors of 4, and for a struct, its fields' largest one, rounded up to 16 in std140.
+template <Std L, typename V>
+int64_t gpu_align() {
+	if constexpr (is_gpu_struct<V>::value) {
+		int64_t align = 4;
+		V v{};
+		V::_gdpp_gpu_fields(v, [&](const auto &p_field) { align = std::max(align, gpu_align<L, std::decay_t<decltype(p_field)>>()); });
+		return L == Std::STD140 ? (align + 15) / 16 * 16 : align;
+	} else {
+		using G = decltype(glsl_value(std::declval<V>()));
+		if constexpr (is_vec<G>::value) {
+			return components<G>::value == 2 ? 8 : 16;
+		} else if constexpr (std::is_arithmetic_v<G>) {
+			return 4;
+		} else {
+			return 16;
+		}
+	}
+}
+
+// Packer writes values into bytes, laid out like GLSL's layout L, after what they hold already.
+template <Std L, typename B>
+struct Packer {
+	B &bytes; // A PackedByteArray or a std::vector<uint8_t>.
+
+	template <typename V>
+	void put(const V &p_value) {
+		int64_t align = gpu_align<L, V>();
+		if constexpr (is_gpu_struct<V>::value) {
+			pad(align);
+			V::_gdpp_gpu_fields(p_value, [this](const auto &p_field) { put(p_field); });
+			pad(align);
+		} else {
+			auto g = glsl_value(p_value);
+			using G = decltype(g);
+			if constexpr (is_vec<G>::value || std::is_arithmetic_v<G>) {
+				write(align, &g, sizeof(G));
+			} else { // A matrix: each column like a vec4.
+				constexpr int C = sizeof(G) / sizeof(g.cols[0]);
+				constexpr int R = components<std::decay_t<decltype(g.cols[0])>>::value;
+				float columns[4 * C] = {};
+				for (int c = 0; c < C; c++) {
+					for (int r = 0; r < R; r++) {
+						columns[c * 4 + r] = g.cols[c].data[r];
+					}
+				}
+				write(align, columns, sizeof(columns));
+			}
+		}
+	}
+
+private:
+	uint8_t *data() {
+		if constexpr (std::is_same_v<B, PackedByteArray>) {
+			return bytes.ptrw();
+		} else {
+			return bytes.data();
+		}
+	}
+	// pad pads the bytes with zeros to a multiple of p_align.
+	void pad(int64_t p_align) {
+		int64_t size = int64_t(bytes.size());
+		int64_t end = (size + p_align - 1) / p_align * p_align;
+		if (end > size) {
+			bytes.resize(end);
+			std::memset(data() + size, 0, size_t(end - size));
+		}
+	}
+	void write(int64_t p_align, const void *p_bytes, size_t p_size) {
+		pad(p_align);
+		int64_t offset = int64_t(bytes.size());
+		bytes.resize(offset + int64_t(p_size));
+		std::memcpy(data() + offset, p_bytes, p_size);
+	}
+};
+
+// Unpacker reads values back from bytes that a Packer of layout L wrote, from p_offset on.
+template <Std L>
+struct Unpacker {
+	const uint8_t *bytes;
+	int64_t offset = 0;
+
+	template <typename V>
+	void get(V &r_value) {
+		int64_t align = gpu_align<L, V>();
+		if constexpr (is_gpu_struct<V>::value) {
+			skip(align);
+			V::_gdpp_gpu_fields(r_value, [this](auto &p_field) { get(p_field); });
+			skip(align);
+		} else {
+			using G = decltype(glsl_value(r_value));
+			G g;
+			if constexpr (is_vec<G>::value || std::is_arithmetic_v<G>) {
+				read(align, &g, sizeof(G));
+			} else {
+				constexpr int C = sizeof(G) / sizeof(g.cols[0]);
+				constexpr int R = components<std::decay_t<decltype(g.cols[0])>>::value;
+				float columns[4 * C];
+				read(align, columns, sizeof(columns));
+				for (int c = 0; c < C; c++) {
+					for (int r = 0; r < R; r++) {
+						g.cols[c].data[r] = columns[c * 4 + r];
+					}
+				}
+			}
+			from_glsl(g, r_value);
+		}
+	}
+
+private:
+	void skip(int64_t p_align) { offset = (offset + p_align - 1) / p_align * p_align; }
+	void read(int64_t p_align, void *r_bytes, size_t p_size) {
+		skip(p_align);
+		std::memcpy(r_bytes, bytes + offset, p_size);
+		offset += int64_t(p_size);
+	}
+};
+
+// struct_size returns the size of the struct S in std430: the stride of a buffer of them.
+template <typename S>
+int64_t struct_size() {
+	static const int64_t size = [] {
+		std::vector<uint8_t> bytes;
+		Packer<Std::STD430, std::vector<uint8_t>>{ bytes }.put(S{});
+		return int64_t(bytes.size());
+	}();
+	return size;
+}
+
+// pack returns p_values in std430, the layout of a buffer, and unpack returns them back.
+template <typename S>
+std::vector<uint8_t> pack(const S *p_values, int64_t p_count) {
+	std::vector<uint8_t> bytes;
+	bytes.reserve(size_t(p_count * struct_size<S>()));
+	Packer<Std::STD430, std::vector<uint8_t>> packer{ bytes };
+	for (int64_t i = 0; i < p_count; i++) {
+		packer.put(p_values[i]);
+	}
+	return bytes;
+}
+template <typename S>
+std::vector<S> unpack(const uint8_t *p_bytes, int64_t p_count) {
+	std::vector<S> values(static_cast<size_t>(p_count));
+	for (int64_t i = 0; i < p_count; i++) {
+		Unpacker<Std::STD430>{ p_bytes + i * struct_size<S>() }.get(values[size_t(i)]);
+	}
+	return values;
+}
+
+// to_glsl returns the struct p_value as M, its copy in a shader's C++ code, whose fields have the GLSL types.
+template <typename M, typename S>
+M to_glsl(const S &p_value) {
+	return unpack<M>(pack(&p_value, 1).data(), 1)[0];
+}
+
+// StructElem describes a GD++ struct as the element of GPU arrays: its ElemInfo, whose strides are both its std430
+// size, since its elements are in std430 in memory too, and its conversions to and from scripts' Arrays of
+// Dictionaries of its fields.
+struct StructElem {
+	ElemInfo info;
+	Variant (*to_array)(const uint8_t *p_bytes, int64_t p_count);
+	bool (*from_array)(const Variant &p_array, std::vector<uint8_t> &r_bytes);
+};
+
+// struct_elem returns the StructElem of S, or null if S isn't a struct.
+template <typename S>
+const StructElem *struct_elem() {
+	if constexpr (is_gpu_struct<S>::value) {
+		static const StructElem elem{ { Variant::ARRAY, int(struct_size<S>()), int(struct_size<S>()), S::_gdpp_gpu_name },
+			[](const uint8_t *p_bytes, int64_t p_count) {
+				Array result;
+				for (const S &value : unpack<S>(p_bytes, p_count)) {
+					result.push_back(value._gdpp_fields());
+				}
+				return Variant(result);
+			},
+			[](const Variant &p_array, std::vector<uint8_t> &r_bytes) {
+				if (p_array.get_type() != Variant::ARRAY) {
+					return false;
+				}
+				Array array = p_array;
+				std::vector<S> values;
+				for (int64_t i = 0; i < array.size(); i++) {
+					values.push_back(S::_gdpp_from(array[i]));
+				}
+				r_bytes = pack(values.data(), int64_t(values.size()));
+				return true;
+			} };
+		return &elem;
+	} else {
+		return nullptr;
+	}
+}
 
 // elem_of returns the Elem of a packed array, or false for one that a GPU array can't hold.
 inline bool elem_of(const Variant &p_packed, Elem &r_elem) {
@@ -1355,6 +1632,8 @@ inline std::vector<uint8_t> to_cpu(Elem p_elem, const Variant &p_packed) {
 		case Elem::COLOR:
 			put(PackedColorArray(p_packed), [](const Color &p_v) { return vec4(p_v); });
 			break;
+		case Elem::STRUCT: // See StructElem.
+			break;
 	}
 	return bytes;
 }
@@ -1383,14 +1662,15 @@ inline Variant from_cpu(Elem p_elem, const uint8_t *p_bytes, int64_t p_count) {
 			return get(PackedVector4Array(), vec4());
 		case Elem::COLOR:
 			return get(PackedColorArray(), vec4());
+		case Elem::STRUCT: // See StructElem.
+			break;
 	}
 	return Variant();
 }
 
 // gpu_layout converts elements in the CPU's layout to the GPU's, which pads each vec3 to 16 bytes, and cpu_layout
 // converts back.
-inline PackedByteArray gpu_layout(Elem p_elem, const uint8_t *p_bytes, int64_t p_count) {
-	const ElemInfo &e = info(p_elem);
+inline PackedByteArray gpu_layout(const ElemInfo &e, const uint8_t *p_bytes, int64_t p_count) {
 	PackedByteArray result;
 	result.resize(p_count * e.gpu_stride);
 	uint8_t *out = result.ptrw();
@@ -1404,8 +1684,7 @@ inline PackedByteArray gpu_layout(Elem p_elem, const uint8_t *p_bytes, int64_t p
 	}
 	return result;
 }
-inline std::vector<uint8_t> cpu_layout(Elem p_elem, const PackedByteArray &p_gpu, int64_t p_count) {
-	const ElemInfo &e = info(p_elem);
+inline std::vector<uint8_t> cpu_layout(const ElemInfo &e, const PackedByteArray &p_gpu, int64_t p_count) {
 	std::vector<uint8_t> result(size_t(p_count * e.cpu_stride));
 	p_count = std::min<int64_t>(p_count, p_gpu.size() / e.gpu_stride);
 	for (int64_t i = 0; i < p_count; i++) {
@@ -1952,6 +2231,7 @@ class GDPP_GPU_ARRAY_CLASS : public RefCounted {
 
 public:
 	gpu::Elem elem = gpu::Elem::FLOAT;
+	const gpu::StructElem *strukt = nullptr; // For Elem::STRUCT.
 	int64_t count = 0;
 	RID buffer;               // On the main device, with a GPU.
 	std::vector<uint8_t> cpu; // In memory, in the CPU's layout, without a GPU.
@@ -1965,13 +2245,17 @@ public:
 		}
 	}
 
-	// make returns a new array of p_count elements of p_elem, all zero.
-	static Ref<GDPP_GPU_ARRAY_CLASS> make(gpu::Elem p_elem, int64_t p_count) {
+	// info returns what the elements are.
+	const gpu::ElemInfo &info() const { return strukt ? strukt->info : gpu::info(elem); }
+
+	// make returns a new array of p_count elements of p_elem, all zero, of struct p_strukt for Elem::STRUCT.
+	static Ref<GDPP_GPU_ARRAY_CLASS> make(gpu::Elem p_elem, int64_t p_count, const gpu::StructElem *p_strukt = nullptr) {
 		Ref<GDPP_GPU_ARRAY_CLASS> array;
 		array.instantiate();
 		array->elem = p_elem;
+		array->strukt = p_strukt;
 		array->count = std::max<int64_t>(p_count, 0);
-		const gpu::ElemInfo &e = gpu::info(p_elem);
+		const gpu::ElemInfo &e = array->info();
 		if (gpu::Device *d = gpu::main_device()) {
 			GDPP_GPU_ARRAY_CLASS *self = array.ptr();
 			d->run([d, self, e] {
@@ -1987,30 +2271,37 @@ public:
 	// size returns how many elements the array has.
 	int64_t size() const { return count; }
 
-	// read returns the array's elements as a packed array, waiting for the kernels that write them.
-	Variant read() const {
-		if (!buffer.is_valid()) {
-			gpu::cpu_queue().drain(); // The runs of @async calls on the CPU, as the GPU would.
-			return gpu::from_cpu(elem, cpu.data(), count);
+	// read returns p_count elements from p_offset on, all those after it if p_count is -1, as a packed array, or an
+	// Array of Dictionaries for structs. It waits for the kernels that write them.
+	Variant read(int64_t p_offset = 0, int64_t p_count = -1) const {
+		std::vector<uint8_t> bytes;
+		if (!bytes_at(p_offset, p_count, bytes)) {
+			p_count = 0;
 		}
-		std::vector<uint8_t> bytes = download();
-		return gpu::from_cpu(elem, bytes.data(), count);
+		if (strukt) {
+			return strukt->to_array(bytes.data(), p_count);
+		}
+		return gpu::from_cpu(elem, bytes.data(), p_count);
 	}
 
-	// write sets the array's elements from p_packed, a packed array of its element type and size.
-	void write(const Variant &p_packed) {
+	// write sets the elements from p_offset on from p_packed, a packed array of the array's element type, or an Array
+	// of Dictionaries for structs, which must fit in the array.
+	void write(const Variant &p_packed, int64_t p_offset = 0) {
+		std::vector<uint8_t> bytes;
 		gpu::Elem e;
-		ERR_FAIL_COND_MSG(!gpu::elem_of(p_packed, e) || e != elem, vformat("A GPU array of %s can't be written from a %s.", gpu::info(elem).name, Variant::get_type_name(p_packed.get_type())));
-		std::vector<uint8_t> bytes = gpu::to_cpu(elem, p_packed);
-		ERR_FAIL_COND_MSG(int64_t(bytes.size()) != count * gpu::info(elem).cpu_stride, vformat("A GPU array of size %d can't be written from an array of size %d.", count, int64_t(bytes.size()) / gpu::info(elem).cpu_stride));
-		if (!buffer.is_valid()) {
-			gpu::cpu_queue().drain(); // The runs of @async calls on the CPU, as the GPU would.
+		if (strukt) {
+			ERR_FAIL_COND_MSG(!strukt->from_array(p_packed, bytes), vformat("A GPU array of %s can't be written from a %s: use an Array of Dictionaries.", info().name, Variant::get_type_name(p_packed.get_type())));
+		} else {
+			ERR_FAIL_COND_MSG(!gpu::elem_of(p_packed, e) || e != elem, vformat("A GPU array of %s can't be written from a %s.", info().name, Variant::get_type_name(p_packed.get_type())));
+			bytes = gpu::to_cpu(elem, p_packed);
 		}
-		upload(bytes);
+		write_bytes(bytes, p_offset);
 	}
 
 	// from returns a new array with the elements of p_packed, a packed array of floats, ints, vectors or colors.
 	static Ref<GDPP_GPU_ARRAY_CLASS> from(const Variant &p_packed) {
+		ERR_FAIL_COND_V_MSG(p_packed.get_type() == Variant::ARRAY, Ref<GDPP_GPU_ARRAY_CLASS>(),
+				"Scripts can't make GPU arrays of structs: get them from GD++ code, e.g. a shader that returns GpuArray[Particle].");
 		gpu::Elem e;
 		ERR_FAIL_COND_V_MSG(!gpu::elem_of(p_packed, e), Ref<GDPP_GPU_ARRAY_CLASS>(),
 				vformat("A GPU array can't hold the elements of a %s: use a PackedFloat32Array, PackedInt32Array, PackedVector2Array, PackedVector3Array, PackedVector4Array or PackedColorArray.",
@@ -2021,34 +2312,73 @@ public:
 		return array;
 	}
 
-	// download returns the elements in the CPU's layout, from the GPU.
-	std::vector<uint8_t> download() const {
-		PackedByteArray gpu_bytes;
-		gpu::Device *d = gpu::main_device();
-		RID rid = buffer;
-		d->run([&] { gpu_bytes = d->rd->buffer_get_data(rid); }, true);
-		return gpu::cpu_layout(elem, gpu_bytes, count);
+	// bytes_at sets r_bytes to p_count elements from p_offset on, all those after it if p_count is -1, in the CPU's
+	// layout, waiting for the kernels that write them. It returns false, with an error, if they're out of range.
+	bool bytes_at(int64_t p_offset, int64_t &p_count, std::vector<uint8_t> &r_bytes) const {
+		if (p_count == -1) {
+			p_count = count - p_offset;
+		}
+		ERR_FAIL_COND_V_MSG(p_offset < 0 || p_count < 0 || p_offset + p_count > count, false,
+				vformat("Can't read %d elements from index %d of a GPU array of size %d.", p_count, p_offset, count));
+		if (buffer.is_valid()) {
+			r_bytes = download(p_offset, p_count);
+			return true;
+		}
+		gpu::cpu_queue().drain(); // The runs of @async calls on the CPU, as the GPU would.
+		int64_t stride = info().cpu_stride;
+		r_bytes.assign(cpu.begin() + p_offset * stride, cpu.begin() + (p_offset + p_count) * stride);
+		return true;
 	}
-	// upload sets the elements from p_bytes in the CPU's layout.
-	void upload(const std::vector<uint8_t> &p_bytes) {
+
+	// write_bytes sets the elements from p_offset on from p_bytes, in the CPU's layout, which must fit in the array.
+	void write_bytes(const std::vector<uint8_t> &p_bytes, int64_t p_offset) {
+		int64_t n = int64_t(p_bytes.size()) / info().cpu_stride;
+		ERR_FAIL_COND_MSG(p_offset < 0 || p_offset + n > count, vformat("Can't write %d elements from index %d of a GPU array of size %d.", n, p_offset, count));
 		if (!buffer.is_valid()) {
-			cpu = p_bytes;
+			gpu::cpu_queue().drain(); // The runs of @async calls on the CPU, as the GPU would.
+		}
+		upload(p_bytes, p_offset);
+	}
+
+	// download returns p_count elements from p_offset on, all of them by default, in the CPU's layout, from the GPU.
+	std::vector<uint8_t> download(int64_t p_offset = 0, int64_t p_count = -1) const {
+		if (p_count == -1) {
+			p_count = count;
+		}
+		const gpu::ElemInfo &e = info();
+		PackedByteArray gpu_bytes;
+		if (p_count > 0) {
+			gpu::Device *d = gpu::main_device();
+			RID rid = buffer;
+			d->run([&] { gpu_bytes = d->rd->buffer_get_data(rid, uint32_t(p_offset * e.gpu_stride), uint32_t(p_count * e.gpu_stride)); }, true);
+		}
+		return gpu::cpu_layout(e, gpu_bytes, p_count);
+	}
+	// upload sets the elements from p_offset on from p_bytes in the CPU's layout.
+	void upload(const std::vector<uint8_t> &p_bytes, int64_t p_offset = 0) {
+		const gpu::ElemInfo &e = info();
+		int64_t n = int64_t(p_bytes.size()) / e.cpu_stride;
+		if (!buffer.is_valid()) {
+			if (!p_bytes.empty()) {
+				std::memcpy(cpu.data() + p_offset * e.cpu_stride, p_bytes.data(), p_bytes.size());
+			}
 			return;
 		}
-		PackedByteArray gpu_bytes = gpu::gpu_layout(elem, p_bytes.data(), count);
+		PackedByteArray gpu_bytes = gpu::gpu_layout(e, p_bytes.data(), n);
 		if (gpu_bytes.is_empty()) {
 			return;
 		}
 		gpu::Device *d = gpu::main_device();
 		RID rid = buffer;
-		d->run([d, rid, gpu_bytes] { d->rd->buffer_update(rid, 0, uint32_t(gpu_bytes.size()), gpu_bytes); }, false);
+		uint32_t offset = uint32_t(p_offset * e.gpu_stride);
+		d->run([d, rid, offset, gpu_bytes] { d->rd->buffer_update(rid, offset, uint32_t(gpu_bytes.size()), gpu_bytes); }, false);
 	}
 
 protected:
 	static void _bind_methods() {
 		ClassDB::bind_method(D_METHOD("size"), &GDPP_GPU_ARRAY_CLASS::size);
-		ClassDB::bind_method(D_METHOD("read"), &GDPP_GPU_ARRAY_CLASS::read);
-		ClassDB::bind_method(D_METHOD("write", "packed"), &GDPP_GPU_ARRAY_CLASS::write);
+		ClassDB::bind_method(D_METHOD("read", "offset", "count"), &GDPP_GPU_ARRAY_CLASS::read, DEFVAL(0), DEFVAL(-1));
+		ClassDB::bind_method(D_METHOD("write", "packed", "offset"), &GDPP_GPU_ARRAY_CLASS::write, DEFVAL(0));
 		ClassDB::bind_static_method(get_class_static(), D_METHOD("from", "packed"), &GDPP_GPU_ARRAY_CLASS::from);
 	}
 };
@@ -2083,10 +2413,10 @@ protected:
 
 namespace gpu {
 
-// texture_usage is how the textures that GD++ creates are used: sampled, e.g. by materials, written by kernels, and
-// read back and updated.
+// texture_usage is how the textures that GD++ creates are used: sampled, e.g. by materials, written by kernels, read
+// back and updated, and cleared, which needs CAN_COPY_TO.
 inline constexpr int64_t texture_usage = RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT | RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
-		RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT;
+		RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_TO_BIT;
 
 // create_texture creates a texture on p_device, of p_size and p_format, from p_data if it's not empty.
 inline RID create_texture(Device &p_device, Vector2i p_size, RenderingDevice::DataFormat p_format, int64_t p_usage, const PackedByteArray &p_data) {
@@ -2132,8 +2462,9 @@ inline Ref<Texture2D> gpu_texture(Vector2i p_size, GpuFormat p_format) {
 	return texture;
 }
 
-// GpuArray<T> is a GPU array of T: float, int32_t (a GD++ int), Vector2, Vector3, Vector4 or Color. Its elements stay
-// on the GPU, where @gpu functions read and write them, until read() copies them back. Copies share the array.
+// GpuArray<T> is a GPU array of T: float, int32_t (a GD++ int), Vector2, Vector3, Vector4, Color, or a GD++ struct.
+// Its elements stay on the GPU, where @gpu functions read and write them, until read() copies them back. Copies share
+// the array.
 template <typename T>
 class GpuArray {
 public:
@@ -2143,16 +2474,23 @@ public:
 	GpuArray() = default;
 	// An array of p_count elements, all zero.
 	explicit GpuArray(int64_t p_count) :
-			object(GDPP_GPU_ARRAY_CLASS::make(gpu::ElemOf<T>::elem, p_count)) {}
+			object(GDPP_GPU_ARRAY_CLASS::make(gpu::ElemOf<T>::elem, p_count, gpu::struct_elem<T>())) {}
 	// An array with the elements of p_packed.
-	explicit GpuArray(const Packed &p_packed) :
-			object(GDPP_GPU_ARRAY_CLASS::from(p_packed)) {}
+	explicit GpuArray(const Packed &p_packed) {
+		if constexpr (gpu::is_gpu_struct<T>::value) {
+			object = GDPP_GPU_ARRAY_CLASS::make(gpu::Elem::STRUCT, int64_t(p_packed.size()), gpu::struct_elem<T>());
+			object->upload(gpu::pack(p_packed.data(), int64_t(p_packed.size())));
+		} else {
+			object = GDPP_GPU_ARRAY_CLASS::from(p_packed);
+		}
+	}
 	// The array that p_object holds, or none, with an error, if it's not a GPU array of T.
 	explicit GpuArray(const Ref<GDPP_GPU_ARRAY_CLASS> &p_object) {
-		if (p_object.is_valid() && p_object->elem == gpu::ElemOf<T>::elem) {
+		if (p_object.is_valid() && p_object->elem == gpu::ElemOf<T>::elem && p_object->strukt == gpu::struct_elem<T>()) {
 			object = p_object;
 		} else if (p_object.is_valid()) {
-			ERR_PRINT(vformat("Expected a GPU array of %s, but got one of %s.", gpu::info(gpu::ElemOf<T>::elem).name, gpu::info(p_object->elem).name));
+			const char *name = gpu::is_gpu_struct<T>::value ? gpu::struct_elem<T>()->info.name : gpu::info(gpu::ElemOf<T>::elem).name;
+			ERR_PRINT(vformat("Expected a GPU array of %s, but got one of %s.", name, p_object->info().name));
 		}
 	}
 	explicit GpuArray(const Variant &p_value) :
@@ -2163,12 +2501,30 @@ public:
 
 	// size returns how many elements it has.
 	int64_t size() const { return object.is_valid() ? object->count : 0; }
-	// read returns its elements, waiting for the kernels that write them.
-	Packed read() const { return object.is_valid() ? Packed(object->read()) : Packed(); }
-	// write sets its elements from p_packed, which must have its size.
-	void write(const Packed &p_packed) {
+	// read returns p_count elements from p_offset on, all those after it if p_count is -1, waiting for the kernels
+	// that write them.
+	Packed read(int64_t p_offset = 0, int64_t p_count = -1) const {
+		if (object.is_null()) {
+			return Packed();
+		}
+		if constexpr (gpu::is_gpu_struct<T>::value) {
+			std::vector<uint8_t> bytes;
+			if (!object->bytes_at(p_offset, p_count, bytes)) {
+				return Packed();
+			}
+			return gpu::unpack<T>(bytes.data(), p_count);
+		} else {
+			return Packed(object->read(p_offset, p_count));
+		}
+	}
+	// write sets its elements from p_offset on from p_packed, which must fit in it.
+	void write(const Packed &p_packed, int64_t p_offset = 0) {
 		ERR_FAIL_COND_MSG(object.is_null(), "Can't write to an empty GpuArray.");
-		object->write(p_packed);
+		if constexpr (gpu::is_gpu_struct<T>::value) {
+			object->write_bytes(gpu::pack(p_packed.data(), int64_t(p_packed.size())), p_offset);
+		} else {
+			object->write(p_packed, p_offset);
+		}
 	}
 
 	// object returns the GPU array as the package's class of GPU arrays.
@@ -2226,13 +2582,17 @@ public:
 		if (state->array.is_null()) {
 			return;
 		}
+		state->count = int(state->array->count);
 		if (state->array->buffer.is_valid()) {
 			state->copy = state->array->download();
-			state->data = reinterpret_cast<T *>(state->copy.data());
-		} else {
-			state->data = reinterpret_cast<T *>(state->array->cpu.data());
 		}
-		state->count = int(state->array->count);
+		uint8_t *bytes = state->array->buffer.is_valid() ? state->copy.data() : state->array->cpu.data();
+		if constexpr (is_gpu_struct<T>::value) { // Its elements are in std430, which the struct's copy isn't.
+			state->structs = unpack<T>(bytes, state->count);
+			state->data = state->structs.data();
+		} else {
+			state->data = reinterpret_cast<T *>(bytes);
+		}
 	}
 	T &operator[](int p_index) const {
 #ifdef DEBUG_ENABLED
@@ -2250,10 +2610,20 @@ private:
 	struct State {
 		Ref<GDPP_GPU_ARRAY_CLASS> array;
 		std::vector<uint8_t> copy;
+		std::vector<T> structs; // For structs: the elements, unpacked.
 		T *data = nullptr;
 		int count = 0;
 		~State() {
-			if (array.is_valid() && array->buffer.is_valid()) {
+			if (array.is_null()) {
+				return;
+			}
+			if constexpr (is_gpu_struct<T>::value) {
+				copy = pack(structs.data(), count);
+				if (!array->buffer.is_valid()) {
+					array->cpu = copy;
+				}
+			}
+			if (array->buffer.is_valid()) {
 				array->upload(copy);
 			}
 		}
@@ -2547,6 +2917,8 @@ public:
 	void uniform(const Basis &p_value) { put(mat3(p_value)); }
 	void uniform(const Transform3D &p_value) { put(mat4x3(p_value)); }
 	void uniform(const Projection &p_value) { put(mat4(p_value)); }
+	template <typename S, std::enable_if_t<is_gpu_struct<S>::value, int> = 0>
+	void uniform(const S &p_value) { put(p_value); }
 
 	// A packed array, which the kernel reads.
 	template <typename P>
@@ -2557,7 +2929,7 @@ public:
 		std::vector<uint8_t> cpu_bytes = to_cpu(e, packed);
 		Binding b;
 		b.kind = Binding::BUFFER;
-		b.bytes = gpu_layout(e, cpu_bytes.data(), int64_t(cpu_bytes.size()) / info(e).cpu_stride);
+		b.bytes = gpu_layout(info(e), cpu_bytes.data(), int64_t(cpu_bytes.size()) / info(e).cpu_stride);
 		bindings.push_back(b);
 	}
 	// A GPU array, which the kernel reads and writes.
@@ -2629,7 +3001,7 @@ public:
 			bindings.push_back(out);
 			PackedByteArray result;
 			dispatch(*d, true, [&](const std::vector<RID> &p_rids) { result = d->rd->buffer_get_data(p_rids.back()); });
-			std::vector<uint8_t> bytes = cpu_layout(e, result, count);
+			std::vector<uint8_t> bytes = cpu_layout(info(e), result, count);
 			return P(from_cpu(e, bytes.data(), count));
 		}
 		using T = decltype(std::declval<K>().body(std::declval<typename K::Id>()));
@@ -2658,8 +3030,9 @@ public:
 		return image_from_pixels(*cpu_pixels(p_make), p_format);
 	}
 
-	// result_array returns a new GPU array of T, with what the body returns for each cell.
-	template <typename T, typename F>
+	// result_array returns a new GPU array of T, with what the body returns for each cell, of GLSL type V: for a
+	// struct, its copy in the shader's C++ code.
+	template <typename T, typename V = typename ElemOf<T>::Glsl, typename F>
 	GpuArray<T> result_array(F p_make) {
 		using K = std::invoke_result_t<F>;
 		GpuArray<T> result(grid.cells());
@@ -2668,7 +3041,6 @@ public:
 			dispatch(*d, waits(), nullptr);
 			return result;
 		}
-		using V = typename ElemOf<T>::Glsl;
 		if (cpu_ready()) {
 			K k = p_make();
 			RwBuffer<V> out(result);
@@ -2725,7 +3097,7 @@ public:
 			bindings.push_back(out);
 			dispatch(*d, false, [d, p, e, count](const std::vector<RID> &p_rids) {
 				read_back(*d, p_rids.back(), false, p, [p, e, count](const PackedByteArray &p_bytes) {
-					std::vector<uint8_t> bytes = cpu_layout(e, p_bytes, count);
+					std::vector<uint8_t> bytes = cpu_layout(info(e), p_bytes, count);
 					p->set(P(from_cpu(e, bytes.data(), count)));
 				});
 			},
@@ -2777,7 +3149,7 @@ public:
 	}
 
 	// async_array is result_array for an @async shader.
-	template <typename T, typename F>
+	template <typename T, typename V = typename ElemOf<T>::Glsl, typename F>
 	Ref<RefCounted> async_array(F p_make) {
 #ifdef GDPP_GPU_ASYNC
 		std::shared_ptr<Pending> p = pending();
@@ -2788,7 +3160,6 @@ public:
 			dispatch(*d, false, nullptr, nullptr, p);
 			return p->object();
 		}
-		using V = typename ElemOf<T>::Glsl;
 		RwBuffer<V> out(result);
 		on_cpu(p_make, [out](int64_t p_index, const V &p_value) { out[int(p_index)] = p_value; }, [p] { p->done(); });
 		return p->object();
@@ -2848,31 +3219,10 @@ private:
 	bool failed = false;
 	bool image_texture = false; // Whether it writes an ImageTexture.
 
-	// put appends a scalar to the uniform block, aligned like std140: 4 bytes for scalars, 8 for 2 components, 16
-	// for 3 or 4, and each column of a matrix like a vec4.
+	// put appends a value to the uniform block, laid out like std140.
 	template <typename V>
 	void put(const V &p_value) {
-		int64_t align = 4, size = 4;
-		const void *bytes = &p_value;
-		float columns[16] = {};
-		if constexpr (is_vec<V>::value) {
-			size = 4 * components<V>::value;
-			align = components<V>::value == 2 ? 8 : 16;
-		} else if constexpr (!std::is_arithmetic_v<V>) { // A matrix.
-			constexpr int C = sizeof(V) / sizeof(p_value.cols[0]);
-			constexpr int R = components<std::decay_t<decltype(p_value.cols[0])>>::value;
-			for (int c = 0; c < C; c++) {
-				for (int r = 0; r < R; r++) {
-					columns[c * 4 + r] = p_value.cols[c].data[r];
-				}
-			}
-			bytes = columns;
-			align = 16;
-			size = 16 * C;
-		}
-		int64_t offset = (block.size() + align - 1) / align * align;
-		block.resize(offset + size);
-		std::memcpy(block.ptrw() + offset, bytes, size_t(size));
+		Packer<Std::STD140, PackedByteArray>{ block }.put(p_value);
 	}
 
 	// gpu returns the device to run on, or null to run on the CPU.

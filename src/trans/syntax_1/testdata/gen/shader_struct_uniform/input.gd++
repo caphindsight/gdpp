@@ -1,0 +1,36 @@
+// A struct as a shader's uniform: its vars of every kind that shaders take.
+class_name Filters
+extends RefCounted
+
+enum Mode { ADD, SCALE }
+
+struct Wave {
+  var amplitude: float = 1.0
+  var phase: Vector2
+}
+
+struct FilterSettings {
+  var offset: Vector3
+  var gain: float = 2.0
+  var mode: Mode = SCALE
+  var enabled: bool = true
+  var cells: Vector3i
+  var tint: Color
+  var basis: Basis
+  var wave: Wave
+  @shader("skip") var label: String
+  @shader("skip") var target: Node3D
+
+  @const func scaled(x: float) -> float { return x * gain; }
+}
+
+shader apply(n: int, settings: FilterSettings, values: PackedFloat32Array) -> PackedFloat32Array {
+  float v = values[id];
+  if (!settings.enabled) {
+    return v;
+  }
+  if (settings.mode == 1) {
+    v *= settings.gain;
+  }
+  return v + settings.offset.x + settings.wave.amplitude * sin(settings.wave.phase.x);
+}

@@ -404,7 +404,7 @@ func packageDeps(files []gdppFile, names []godotName, spec apiSpec, self string,
 			if f.Rel != self {
 				dep := trans.Dependency{Name: d.Name, Include: `"` + d.Name + `.h"`, Kind: kinds[d.Name], Values: d.Values, Base: d.Base, Gdpp: true, Bitfield: d.Bitfield, Virtuals: d.Virtuals, NoscriptVirtuals: d.NoscriptVirtuals, Notifications: d.Notifications,
 					NonRuntime: nonRuntime[d.Name], Traits: d.Traits, Signals: d.Signals, Test: d.Test}
-				if d.Kind == trans.TraitDecl { // Its classes check and copy its functions, from its file, expanded.
+				if d.Kind == trans.TraitDecl || d.Kind == trans.StructDecl { // Classes check and copy a trait's functions, and shaders see a struct's fields, from its file, expanded.
 					dep.Source, dep.File, dep.Macros = f.Src, f.File.ToString(), macroDeps(files, f.Rel)
 				}
 				deps = append(deps, dep)

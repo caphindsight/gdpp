@@ -844,6 +844,17 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 				}
 			}
 		}
+		if d.Kind == meta.Struct && d.Source != "" {
+			// Like a trait's, for the fields that shaders see.
+			s.depStruct = &Struct{Name: d.Name}
+			structOpts := opts
+			structOpts.Dependencies = d.Macros
+			if f, _, err := parseExpanded(d.File, d.Source, structOpts); err == nil {
+				if i := slices.IndexFunc(fileStructs(f), func(st *Struct) bool { return st.Name == d.Name }); i >= 0 {
+					s.depStruct = fileStructs(f)[i]
+				}
+			}
+		}
 		u.symbols[d.Name] = s
 	}
 	for _, s := range u.sortedSymbols() {
@@ -1427,7 +1438,7 @@ var knownAnnotations = []string{"abstract", "async", "bitfield", "const", "defer
 	"export_exp_easing", "export_file", "export_file_path", "export_flags", "export_flags_2d_navigation", "export_flags_2d_physics", "export_flags_2d_render", "export_flags_3d_navigation",
 	"export_flags_3d_physics", "export_flags_3d_render", "export_flags_avoidance", "export_global_dir", "export_global_file", "export_group", "export_multiline", "export_node_path",
 	"export_placeholder", "export_range", "export_storage", "export_subgroup", "export_tool_button", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
-	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "singleton", "static", "sync", "test", "thread_safe", "tool", "trace", "virtual"}
+	"onthread", "override", "pool", "private", "profile", "recycle", "rpc", "scene", "shader", "singleton", "static", "sync", "test", "thread_safe", "tool", "trace", "virtual"}
 
 // sectionAnnotations start an inspector section at their var, which holds it and the vars after it.
 var sectionAnnotations = []string{"export_category", "export_group", "export_subgroup"}
@@ -1448,7 +1459,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
 		case len(a.Args) > 0 && !slices.Contains([]string{"async", "export_category", "export_custom", "export_enum", "export_exp_easing", "export_file", "export_file_path", "export_flags",
-			"export_global_file", "export_group", "export_node_path", "export_placeholder", "export_tool_button", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "tool", "trace",
+			"export_global_file", "export_group", "export_node_path", "export_placeholder", "export_tool_button", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "shader", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
 		}
@@ -3461,5 +3472,15 @@ func (u *unit) buildClass(c *Class, fileLevel bool) (*classModel, error) {
 		exposed = slices.DeleteFunc(exposed, func(e *symbol) bool { return e == s })
 	}
 	m.enums = exposed
+	for _, f := range m.funcs {
+		if f.gpu == nil {
+			continue
+		}
+		structs, err := u.shaderStructs(m, f)
+		if err != nil {
+			return nil, err
+		}
+		f.gpu.structs = structs
+	}
 	return m, nil
 }

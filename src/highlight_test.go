@@ -79,6 +79,8 @@ func TestHighlightCode(t *testing.T) {
 			Styled("@grid", CodePreProc) + "(size, " + Styled("8", CodeLiteral) + ", " + Styled("8", CodeLiteral) + ")\n" + Styled("shader", CodeKeyword) + " " +
 				Styled("f", CodeFunction) + "(size: " + Styled("Vector2i", CodeType) + ", t: " + Styled("Texture2D", CodeType) + "[" + Styled("rgba8", CodeType) + "]) -> " +
 				Styled("void", CodeType) + " {\n  " + Styled("vec4", CodeType) + " c = " + Styled("vec4", CodeType) + "(" + Styled("id", CodeKeyword) + ");\n  emit x;\n}"},
+		{"gd++", "struct P {\n  @shader(\"skip\") var n: Node\n}", Styled("struct", CodeKeyword) + " P {\n  " + Styled("@shader", CodePreProc) + "(" +
+			Styled("\"skip\"", CodeLiteral) + ") " + Styled("var", CodeKeyword) + " n: " + Styled("Node", CodeType) + "\n}"},
 		{"gd++", "shader {\n  shared float t[4];\n}", Styled("shader", CodeKeyword) + " {\n  " + Styled("shared", CodeKeyword) + " " + Styled("float", CodeType) +
 			" t[" + Styled("4", CodeLiteral) + "];\n}"},
 		{"gd++", "// c\nshader_library\nout vec2 x;", Styled("// c", CodeComment) + "\n" + Styled("shader_library", CodeKeyword) + "\n" + Styled("out", CodeKeyword) + " " +

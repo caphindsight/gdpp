@@ -1,0 +1,15 @@
+class_name Gpu
+extends Node
+
+struct Ray {
+  var origin: Vector3
+}
+
+shader {
+  struct Ray {
+    vec3 origin;
+  };
+}
+
+shader trace(n: int) -> void {
+}

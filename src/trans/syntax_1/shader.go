@@ -22,6 +22,8 @@ type gpuModel struct {
 	grid   int         // The index of its grid in params: its first parameter, or the one that @grid names.
 	ret    gpuResult
 	main   bool // Whether it runs on the main RenderingDevice, since it uses GPU arrays or textures.
+	// The GD++ structs that it sees as GLSL structs, those that others use first. See shaderStructs.
+	structs []*gpuStruct
 	sync   bool // With @sync: a call that returns a GpuArray, a Texture2D or nothing waits for the GPU too.
 	async  bool // With @async: a call returns an Async right away, done once the GPU is done with it.
 }
@@ -30,7 +32,7 @@ type gpuModel struct {
 type gpuParam struct {
 	p      *Param
 	kind   string // "grid" for the grid, "uniform" for scalars, "buffer" for packed arrays, "array" for GPU arrays, "sampler" for an Image or a Texture2D, "image" for a Texture2D[FORMAT].
-	glsl   string // Its GLSL type, e.g. "vec3", or the element type of an array.
+	glsl   string // Its GLSL type, e.g. "vec3", or the element type of an array. A struct's name for a struct.
 	format string // For an image: its format, e.g. "rgba8".
 	main   bool   // Whether it's on the main RenderingDevice.
 }
@@ -39,7 +41,7 @@ type gpuParam struct {
 type gpuResult struct {
 	kind   string // "void", "buffer" for a packed array, "array" for a GPU array, "image" for an Image, "texture" for a Texture2D[FORMAT].
 	glsl   string // The GLSL type that the body returns.
-	cpp    string // For a buffer, the packed array; for an array, its element's C++ type.
+	cpp    string // For a buffer, the packed array; for an array, its element's C++ type, e.g. a struct's name.
 	format string // For an image or a texture: its format.
 }
 
@@ -264,13 +266,20 @@ func (u *unit) shaderParam(p *Param, grid bool) (*gpuParam, *gtype, error) {
 		gt, err := u.resolve(t, false)
 		gp.kind, gp.glsl = "uniform", gpuUniforms[t.Name]
 		return gp, gt, err
+	case u.isStruct(t.Name):
+		if _, err := u.gpuStructAt(t); err != nil {
+			return nil, nil, err
+		}
+		gt, err := u.resolve(t, false)
+		gp.kind, gp.glsl = "uniform", t.Name
+		return gp, gt, err
 	case gpuPacked[t.Name] != "":
 		gt, err := u.resolve(t, false)
 		gp.kind, gp.glsl = "buffer", gpuPacked[t.Name]
 		return gp, gt, err
 	}
 	return nil, nil, u.errorAt(t.Pos, len(t.Name), fmt.Sprintf("Shaders can't take a %s.", typeString(t)),
-		"Shaders take scalars and vectors, e.g. float, Vector3 and Color, packed arrays of floats, ints and vectors, GpuArray[T], Image, Texture2D, and Texture2D[FORMAT] to write.")
+		"Shaders take scalars and vectors, e.g. float, Vector3 and Color, structs, packed arrays of floats, ints and vectors, GpuArray[T], Image, Texture2D, and Texture2D[FORMAT] to write.")
 }
 
 // shaderResult checks the return type of s, whose grid has dims dimensions. It returns the result, and the type that
@@ -308,7 +317,7 @@ func (u *unit) shaderResult(s *Shader, dims int) (gpuResult, *gtype, error) {
 		if err != nil {
 			return gpuResult{}, nil, err
 		}
-		return gpuResult{kind: "array", glsl: gt.gpu, cpp: gpuElements[t.Args[0].Name][0]}, gt, nil
+		return gpuResult{kind: "array", glsl: gt.gpu, cpp: cmpOr(gpuElements[t.Args[0].Name][0], t.Args[0].Name)}, gt, nil
 	case t.Name == "Image" || t.Name == "Texture2D":
 		f, err := format(t.Name, t.Args)
 		switch {
@@ -342,6 +351,162 @@ func cmpOr(a, b string) string {
 // shaderNamespace is the namespace of class c's shaders' code, at global scope.
 func shaderNamespace(c *classModel) string {
 	return "_gdpp_gpu_" + c.name
+}
+
+// gpuStruct is a GD++ struct as shaders see it: a GLSL struct of its vars without @shader("skip").
+type gpuStruct struct {
+	name   string
+	fields []gpuField
+}
+
+// gpuField is a var of a gpuStruct.
+type gpuField struct {
+	name   string
+	glsl   string     // Its GLSL type: the struct's name for a struct.
+	nested *gpuStruct // For a struct.
+}
+
+// gpuStructHint is the hint of the errors of structs that shaders can't use.
+const gpuStructHint = "Shaders take vars of types int, float, bool, vectors, Color, Basis, Transform3D, Projection, enums and such structs. Mark others @shader(\"skip\")."
+
+// isStruct reports whether name is a GD++ struct.
+func (u *unit) isStruct(name string) bool {
+	s := u.symbols[name]
+	return s != nil && s.kind == meta.Struct
+}
+
+// gpuStructOf returns the struct name as shaders see it, or why they can't use it.
+func (u *unit) gpuStructOf(name string) (*gpuStruct, string) {
+	g := &gpuStruct{name: name}
+	var members []*Member
+	if st := u.symbols[name].structDecl(); st != nil {
+		members = st.Members
+	}
+	for _, m := range members {
+		v := m.Var
+		if v == nil || slices.ContainsFunc(v.Annotations, func(a *Annotation) bool { return a.Name == "shader" }) {
+			continue
+		}
+		f := gpuField{name: v.Name}
+		switch t := v.Type; {
+		case t == nil || len(t.Args) > 0:
+		case gpuUniforms[t.Name] != "":
+			f.glsl = gpuUniforms[t.Name]
+		case u.symbols[t.Name] != nil && u.symbols[t.Name].kind == meta.Enum:
+			f.glsl = "int"
+		case u.isStruct(t.Name):
+			nested, problem := u.gpuStructOf(t.Name)
+			if problem != "" {
+				return nil, problem
+			}
+			f.glsl, f.nested = t.Name, nested
+		}
+		if f.glsl == "" {
+			what := "a Variant"
+			if v.Type != nil {
+				what = "a " + typeString(v.Type)
+			}
+			return nil, fmt.Sprintf("Shaders can't use struct %s: its var %s is %s.", name, v.Name, what)
+		}
+		if slices.Contains(glslReserved, v.Name) && v.Name != "id" && v.Name != "index" || strings.HasPrefix(v.Name, "gl_") {
+			return nil, fmt.Sprintf("Shaders can't use struct %s: its var %s has a name of GLSL.", name, v.Name)
+		}
+		g.fields = append(g.fields, f)
+	}
+	if len(g.fields) == 0 {
+		return nil, fmt.Sprintf("Shaders can't use struct %s: it has no vars for shaders.", name)
+	}
+	return g, ""
+}
+
+// gpuStructAt returns the struct that t names as shaders see it, or an error at t.
+func (u *unit) gpuStructAt(t *Type) (*gpuStruct, error) {
+	g, problem := u.gpuStructOf(t.Name)
+	if problem != "" {
+		return nil, u.errorAt(t.Pos, len(t.Name), problem, gpuStructHint)
+	}
+	return g, nil
+}
+
+// shaderStructs returns the GD++ structs that shader f of class c sees: those of its parameters and its result, and
+// those that its body and shader blocks name, with those that others use first.
+func (u *unit) shaderStructs(c *classModel, f *funcModel) ([]*gpuStruct, error) {
+	g := f.gpu
+	names := []string{g.ret.glsl}
+	for _, p := range g.params {
+		names = append(names, p.glsl)
+	}
+	code := []string{g.s.Body.Text}
+	for _, lib := range u.shaderBlocks(c) {
+		code = append(code, lib.b.Text)
+		for _, m := range structRegexp.FindAllStringSubmatch(lib.b.Text, -1) {
+			if u.isStruct(m[1]) {
+				return nil, u.errorAt(g.s.Pos, len("shader"), fmt.Sprintf("The shader blocks of shader %s declare struct %s, which is a GD++ struct.", g.s.Name, m[1]),
+					"Shaders see GD++ structs as GLSL structs already: remove the GLSL declaration, or rename it.")
+			}
+		}
+	}
+	names = append(names, identifiers(strings.Join(code, "\n"))...)
+	var roots []*gpuStruct
+	for _, name := range names {
+		if !u.isStruct(name) || slices.ContainsFunc(roots, func(s *gpuStruct) bool { return s.name == name }) {
+			continue
+		}
+		s, problem := u.gpuStructOf(name)
+		if problem != "" {
+			return nil, u.errorAt(g.s.Pos, len("shader"), problem, gpuStructHint)
+		}
+		roots = append(roots, s)
+	}
+	return orderStructs(roots), nil
+}
+
+// orderStructs returns roots and the structs that they hold, sorted by name, with those that others hold first.
+func orderStructs(roots []*gpuStruct) []*gpuStruct {
+	roots = slices.Clone(roots)
+	slices.SortFunc(roots, func(a, b *gpuStruct) int { return strings.Compare(a.name, b.name) })
+	var out []*gpuStruct
+	var add func(s *gpuStruct)
+	add = func(s *gpuStruct) {
+		if slices.ContainsFunc(out, func(o *gpuStruct) bool { return o.name == s.name }) {
+			return
+		}
+		for _, f := range s.fields {
+			if f.nested != nil {
+				add(f.nested)
+			}
+		}
+		out = append(out, s)
+	}
+	for _, s := range roots {
+		add(s)
+	}
+	return out
+}
+
+// glslStruct returns the GLSL declaration of s.
+func glslStruct(s *gpuStruct) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "struct %s {\n", s.name)
+	for _, f := range s.fields {
+		fmt.Fprintf(&sb, "\t%s %s;\n", f.glsl, f.name)
+	}
+	sb.WriteString("};")
+	return sb.String()
+}
+
+// gpuStructMembers returns the members of the C++ struct of s, the GD++ struct or its copy in shaders' C++ code, that
+// tell the GPU runtime its name and its vars that shaders see.
+func gpuStructMembers(s *gpuStruct) []string {
+	var calls []string
+	for _, f := range s.fields {
+		calls = append(calls, "p_f(p_s."+f.name+");")
+	}
+	return []string{
+		fmt.Sprintf("static constexpr const char *_gdpp_gpu_name = %q;", s.name),
+		"template <typename S, typename F>",
+		"static void _gdpp_gpu_fields(S &p_s, F &&p_f) { " + strings.Join(calls, " ") + " }",
+	}
 }
 
 // shaderStruct is the C++ struct of shader f: its GLSL, and its body as C++, for the CPU.
@@ -449,10 +614,27 @@ func (u *unit) shaderDefs(w *writer, c *classModel) {
 			structs = append(structs, m[1])
 		}
 	}
+	var gpuStructs []*gpuStruct
+	for _, f := range shaders {
+		gpuStructs = append(gpuStructs, f.gpu.structs...)
+	}
+	gpuStructs = orderStructs(gpuStructs)
+	for _, s := range gpuStructs {
+		structs = append(structs, s.name)
+	}
 	w.ln("")
 	w.ln("namespace %s {", shaderNamespace(c))
 	w.ln("")
 	w.ln("using namespace gdpp::glsl;")
+	for _, s := range gpuStructs {
+		// The struct's copy, with GLSL types, and what the runtime needs to convert the struct to it.
+		decl := strings.TrimRight(strings.TrimSuffix(glslToCpp(glslStruct(s), structs), "};"), " ")
+		if !strings.HasSuffix(decl, "\n") { // After the methods of the fields named like swizzles.
+			decl += "\n"
+		}
+		w.ln("")
+		w.ln("%s", decl+"\t"+strings.Join(gpuStructMembers(s), "\n\t")+"\n};")
+	}
 	for _, lib := range u.shaderBlocks(c) {
 		w.ln("")
 		w.gpu(lib.b, lib.source, "", "", structs)
@@ -533,10 +715,14 @@ func cpuType(p *gpuParam) string {
 	return p.glsl
 }
 
-// glslQualified returns the C++ name of a GLSL type outside of the shaders' namespace, e.g. gdpp::glsl::vec3, or float.
-func glslQualified(t string) string {
-	if t == "int" || t == "float" || t == "bool" {
+// glslQualified returns the C++ name of a GLSL type outside of the namespace of class c's shaders, e.g.
+// gdpp::glsl::vec3, or float. A struct's is its copy in the namespace.
+func (u *unit) glslQualified(c *classModel, t string) string {
+	switch {
+	case t == "int" || t == "float" || t == "bool":
 		return t
+	case u.isStruct(t):
+		return "::" + shaderNamespace(c) + "::" + t
 	}
 	return "gdpp::glsl::" + t
 }
@@ -556,6 +742,9 @@ func (u *unit) glsl(c *classModel, f *funcModel) string {
 	ln("#version 450")
 	ln("#extension GL_GOOGLE_cpp_style_line_directive : require")
 	ln("layout(local_size_x = %d, local_size_y = %d, local_size_z = %d) in;", g.group[0], g.group[1], g.group[2])
+	for _, s := range g.structs {
+		ln("%s", glslStruct(s))
+	}
 	ln("layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {")
 	ln("\t%s %s;", g.params[g.grid].glsl, g.params[g.grid].p.Name) // First, as gdpp::gpu::Call puts it.
 	for _, p := range g.params {
@@ -662,13 +851,17 @@ func (u *unit) shaderCall(w *writer, c *classModel, f *funcModel) {
 			if p.kind == "uniform" {
 				w.ln("\t_gdpp_call.uniform(%s);", name)
 			}
-			members = append(members, fmt.Sprintf("%s(%s)", glslQualified(p.glsl), name))
+			if u.isStruct(p.glsl) {
+				members = append(members, fmt.Sprintf("gdpp::gpu::to_glsl<%s>(%s)", u.glslQualified(c, p.glsl), name))
+			} else {
+				members = append(members, fmt.Sprintf("%s(%s)", u.glslQualified(c, p.glsl), name))
+			}
 		case "buffer":
 			w.ln("\t_gdpp_call.input(%s);", name)
-			members = append(members, fmt.Sprintf("gdpp::gpu::ReadBuffer<%s>(%s)", glslQualified(p.glsl), name))
+			members = append(members, fmt.Sprintf("gdpp::gpu::ReadBuffer<%s>(%s)", u.glslQualified(c, p.glsl), name))
 		case "array":
 			w.ln("\t_gdpp_call.array(%s);", name)
-			members = append(members, fmt.Sprintf("gdpp::gpu::RwBuffer<%s>(%s)", glslQualified(p.glsl), name))
+			members = append(members, fmt.Sprintf("gdpp::gpu::RwBuffer<%s>(%s)", u.glslQualified(c, p.glsl), name))
 		case "sampler":
 			w.ln("\t_gdpp_call.sampler(%s);", name)
 			members = append(members, fmt.Sprintf("gdpp::gpu::sampled(%s)", name))
@@ -678,11 +871,15 @@ func (u *unit) shaderCall(w *writer, c *classModel, f *funcModel) {
 		}
 	}
 	make := fmt.Sprintf("[&] { return %s{ %s }; }", kernel, strings.Join(members, ", "))
+	elem := g.ret.cpp // The element type of a GpuArray result, with its GLSL copy for a struct.
+	if u.isStruct(elem) {
+		elem += ", " + u.glslQualified(c, elem)
+	}
 	if g.async {
 		call := map[string]string{
 			"void":    fmt.Sprintf("_gdpp_call.async_run(%s)", make),
 			"buffer":  fmt.Sprintf("_gdpp_call.async_buffer<%s>(%s)", g.ret.cpp, make),
-			"array":   fmt.Sprintf("_gdpp_call.async_array<%s>(%s)", g.ret.cpp, make),
+			"array":   fmt.Sprintf("_gdpp_call.async_array<%s>(%s)", elem, make),
 			"image":   fmt.Sprintf("_gdpp_call.async_image(gdpp::GpuFormat::%s, %s)", g.ret.format, make),
 			"texture": fmt.Sprintf("_gdpp_call.async_texture(gdpp::GpuFormat::%s, %s)", g.ret.format, make),
 		}[g.ret.kind]
@@ -695,7 +892,7 @@ func (u *unit) shaderCall(w *writer, c *classModel, f *funcModel) {
 	case "buffer":
 		w.ln("\treturn _gdpp_call.result_buffer<%s>(%s);", g.ret.cpp, make)
 	case "array":
-		w.ln("\treturn _gdpp_call.result_array<%s>(%s);", g.ret.cpp, make)
+		w.ln("\treturn _gdpp_call.result_array<%s>(%s);", elem, make)
 	case "image":
 		w.ln("\treturn _gdpp_call.result_image(gdpp::GpuFormat::%s, %s);", g.ret.format, make)
 	case "texture":
@@ -951,11 +1148,11 @@ func documentGpuArrayClass(name string) string {
 	x.ln(0, fmt.Sprintf(`<class name="%s" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">`,
 		xmlEscape(name, true)))
 	x.ln(1, "<brief_description>")
-	x.ln(2, "An array of floats, ints, vectors or colors that stays on the GPU, where shaders read and write it.")
+	x.ln(2, "An array of floats, ints, vectors, colors or structs that stays on the GPU, where shaders read and write it.")
 	x.ln(1, "</brief_description>")
 	x.ln(1, "<description>")
 	for _, line := range strings.Split(`GD++ provides this class: its runtime defines it, and the package registers it. Run [code]gd++ man shaders[/code] to read how to use it.
-A GPU array holds the elements of one kind of packed array: [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Shaders read and write its elements in place, so a simulation can run many steps without copying them back and forth. [method read] copies them back, once you need them.
+A GPU array holds the elements of one kind of packed array: [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray], or GD++ structs, which scripts see as [Dictionary]s. Shaders read and write its elements in place, so a simulation can run many steps without copying them back and forth. [method read] copies them back, once you need them.
 Without a GPU, e.g. with the Compatibility renderer or [code]--headless[/code], it's an array in memory, and shaders run on the CPU.
 [codeblock]
 var heights = GameGpuArray.from(PackedFloat32Array([0.0, 1.0, 2.0]))
@@ -969,11 +1166,16 @@ In GD++ code, the type [code]GpuArray[T][/code] names it, e.g. [code]GpuArray[fl
 	x.ln(1, "<tutorials>")
 	x.ln(1, "</tutorials>")
 	x.ln(1, "<methods>")
-	for _, m := range []struct{ name, ret, qualifiers, arg, doc string }{
-		{"from", "Variant", "static", "packed", "Returns a new GPU array with the elements of [param packed]: a [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Its element type is that of [param packed]."},
-		{"read", "Variant", "", "", "Returns the elements as a packed array of the GPU array's element type. It waits until the shaders that write them are done."},
-		{"size", "int", "", "", "Returns how many elements the GPU array has."},
-		{"write", "void", "", "packed", "Sets the elements from [param packed], a packed array of the GPU array's element type and size."},
+	type param struct{ name, def string }
+	for _, m := range []struct {
+		name, ret, qualifiers string
+		params                []param
+		doc                   string
+	}{
+		{"from", "Variant", "static", []param{{"packed", ""}}, "Returns a new GPU array with the elements of [param packed]: a [PackedFloat32Array], [PackedInt32Array], [PackedVector2Array], [PackedVector3Array], [PackedVector4Array] or [PackedColorArray]. Its element type is that of [param packed]. GPU arrays of structs come from GD++ code."},
+		{"read", "Variant", "", []param{{"offset", "0"}, {"count", "-1"}}, "Returns [param count] elements from index [param offset] on, all those after it if [param count] is [code]-1[/code]: a packed array of the GPU array's element type, or an [Array] of [Dictionary]s of a struct's fields. It waits until the shaders that write them are done."},
+		{"size", "int", "", nil, "Returns how many elements the GPU array has."},
+		{"write", "void", "", []param{{"packed", ""}, {"offset", "0"}}, "Sets the elements from index [param offset] on from [param packed]: a packed array of the GPU array's element type, or an [Array] of [Dictionary]s for a struct. They must fit in the GPU array."},
 	} {
 		if m.qualifiers != "" {
 			x.ln(2, fmt.Sprintf(`<method name="%s" qualifiers="%s">`, m.name, m.qualifiers))
@@ -981,8 +1183,13 @@ In GD++ code, the type [code]GpuArray[T][/code] names it, e.g. [code]GpuArray[fl
 			x.ln(2, fmt.Sprintf(`<method name="%s">`, m.name))
 		}
 		x.ln(3, fmt.Sprintf(`<return type="%s" />`, m.ret))
-		if m.arg != "" {
-			x.ln(3, fmt.Sprintf(`<param index="0" name="%s" type="Variant" />`, m.arg))
+		for i, p := range m.params {
+			switch {
+			case p.def != "":
+				x.ln(3, fmt.Sprintf(`<param index="%d" name="%s" type="int" default="%s" />`, i, p.name, p.def))
+			default:
+				x.ln(3, fmt.Sprintf(`<param index="%d" name="%s" type="Variant" />`, i, p.name))
+			}
 		}
 		x.ln(3, "<description>")
 		x.ln(4, m.doc)

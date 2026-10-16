@@ -1,0 +1,9 @@
+class_name Gpu
+extends Node
+
+struct Hit {
+  var damage: int
+  var by: Node3D
+}
+
+var hits: GpuArray[Hit]

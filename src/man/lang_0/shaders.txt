@@ -99,17 +99,19 @@ int, float, bool                           int, float, bool                    r
 Vector2, Vector3, Vector4, Color           vec2, vec3, vec4, vec4              read it
 Vector2i, Vector3i, Vector4i               ivec2, ivec3, ivec4                 read it
 Basis, Transform3D, Projection             mat3, mat4x3, mat4                  read it
+a struct                                   a GLSL struct of the same name      read it
 PackedFloat32Array, PackedInt32Array       float[], int[]                      read its elements
 PackedVector2Array, PackedVector3Array     vec2[], vec3[]                      read its elements
 PackedVector4Array, PackedColorArray       vec4[], vec4[]                      read its elements
 Image, Texture2D                           sampler2D                           sample it, with texture and texelFetch
-GpuArray[T]                                T[], e.g. float[]                   read and write its elements
+GpuArray[T]                                T[], e.g. float[] or Particle[]     read and write its elements
 Texture2D[FORMAT]                          image2D                             read and write it, with imageLoad and imageStore
 ```
 
 - GPUs compute with 32 bits: `int` and `float` arguments become 32-bit, so a value beyond 32 bits loses digits.
 - Arrays have `length()`, e.g. `values.length()`.
 - `texture(src, uv)` samples linearly, clamped to the edges. `texelFetch(src, p, 0)` reads one pixel. Both return a `vec4`, whatever the format.
+- Structs: see "Structs" below.
 - Other types are errors, e.g. `String`, `PackedByteArray` or `Array`.
 - Parameters can't have the names of GLSL keywords and built-ins, e.g. `texture` or `buffer`, nor `id` and `index`.
 
@@ -123,7 +125,7 @@ What the body returns for each cell, put together:
 The shader returns        Each cell's body returns             The call returns
 void                      nothing                              nothing: the body writes its GpuArray and texture parameters
 PackedFloat32Array, ...   an element, e.g. float               a packed array, an element per cell, row by row
-GpuArray[T]               an element, e.g. vec3                a new GpuArray, an element per cell, which stays on the GPU
+GpuArray[T]               an element, e.g. vec3 or a struct    a new GpuArray, an element per cell, which stays on the GPU
 Image[FORMAT]             a pixel: float, vec2, vec3 or vec4   a new Image of the grid's size
 Texture2D[FORMAT]         a pixel: float, vec2 or vec4         a new texture of the grid's size, which stays on the GPU
 ```
@@ -185,7 +187,7 @@ func temperatures() -> PackedFloat32Array {
 }
 ```
 
-`GpuArray[T]` holds elements of type T: `float`, `int`, `Vector2`, `Vector3`, `Vector4` or `Color`. In C++, it's a `GpuArray<T>`, with an `int32_t` for an `int`:
+`GpuArray[T]` holds elements of type T: `float`, `int`, `Vector2`, `Vector3`, `Vector4`, `Color`, or a struct. See "Structs" below. In C++, it's a `GpuArray<T>`, with an `int32_t` for an `int`:
 
 ```
 GpuArray<float> a;                 no array, which tests as false
@@ -193,8 +195,14 @@ GpuArray<float> a(1000);           1000 elements, all zero
 GpuArray<float> a(packed);         the elements of a PackedFloat32Array
 a.size()                           how many elements it has
 a.read()                           its elements, as a PackedFloat32Array
-a.write(packed)                    sets its elements, from a packed array of its size
+a.read(offset, count)              count elements from index offset on
+a.write(packed)                    sets its elements from index 0 on, from a packed array
+a.write(packed, offset)            sets its elements from index offset on
 ```
+
+- `count` defaults to -1: all the elements from `offset` on.
+- A part that doesn't fit in the array is an error: nothing is read or written.
+- A partial `read` and `write` copies only that part, e.g. to update a few elements every frame.
 
 - Copies share the array, like a `Ref`.
 - It's a type like any other: variables, parameters and return values can have it. It can't be exported, nor be in a typed collection.
@@ -210,8 +218,92 @@ print(cells.read())
 ```
 
 - `from(packed)` makes one with the elements of a packed array, whose type sets its element type.
-- `size()`, `read()` and `write(packed)` work like in C++.
+- `size()`, `read(offset, count)` and `write(packed, offset)` work like in C++, with the same defaults.
 - A script's GPU array has the element type that it was made with. A shader that gets one of another type prints an error.
+
+# Structs
+
+Shaders take structs, as parameters and as the elements of GPU arrays. E.g. a particle system:
+
+```gd++
+class_name Particles
+extends Node3D
+
+struct Particle {
+  var pos: Vector3
+  var vel: Vector3
+  var life: float = 1.0
+  @shader("skip") var owner: Node3D
+}
+
+struct Sim {
+  var gravity: Vector3 = Vector3(0, -9.8, 0)
+  var dt: float
+}
+
+var particles: GpuArray[Particle]
+
+shader spawn(n: int, speed: float) -> GpuArray[Particle] {
+  return Particle(vec3(0.0), vec3(0.0, speed, 0.0), 1.0);
+}
+
+shader step(n: int, sim: Sim, ps: GpuArray[Particle]) -> void {
+  Particle p = ps[id];
+  p.vel += sim.gravity * sim.dt;
+  p.pos += p.vel * sim.dt;
+  p.life -= sim.dt;
+  ps[id] = p;
+}
+
+on ready {
+  particles = spawn(1000, 5.0);
+}
+
+on process(delta: float) {
+  Sim sim;
+  sim.dt = delta;
+  step(particles.size(), sim, particles);
+}
+```
+
+- A struct parameter is read-only, like an `int`'s.
+- `GpuArray[Particle]` holds structs: shaders read and write them, and return one per cell.
+- In GLSL, a struct is a GLSL struct of the same name, with its fields in order. Its functions are C++, so shaders don't see them.
+- `Particle(...)` makes one in GLSL, with every field in order.
+
+Fields' types:
+
+- `int`, `float`, `bool`, the vectors, `Color`, `Basis`, `Transform3D` and `Projection`, with the GLSL types of "What shaders take",
+- enums, which are `int`s,
+- other structs that shaders can use, nested.
+
+Other fields are errors, e.g. a `String` or a `Node3D`: "Shaders can't use struct Particle: its var owner is a Node3D." `@shader("skip")` leaves a field out:
+
+- Shaders don't see it.
+- It doesn't go to the GPU: structs that come back, e.g. from `read()`, have its initial value.
+- A struct needs a field that shaders see.
+
+Every shader sees the structs of its parameters and result, the structs that those hold, and the structs that its body and shader blocks name. So shader blocks can take them:
+
+```gd++
+shader {
+  float speed(Particle p) {
+    return length(p.vel);
+  }
+}
+```
+
+- A shader block that declares a GLSL struct with the name of a GD++ struct is an error.
+- Fields can't have the names of GLSL keywords, e.g. `filter`.
+
+GPU arrays of structs:
+
+- In C++, `read()` returns a `std::vector` of the struct, and `write` takes one: `particles.write(std::vector<Particle>{ p }, 10)`.
+- `GpuArray<Particle>(std::vector<Particle>{ ... })` makes one from structs.
+- Scripts see an `Array` of `Dictionary`s of the fields, like in an export: `read()` returns one, and `write` takes one.
+- Scripts can't make one with `from()`, since they don't know the struct. They get it from GD++ code, e.g. from a shader or a variable.
+
+GPUs compute with 32 bits: an `int` field becomes 32-bit, like an `int` parameter. GD++ lays structs out like GLSL does: std140 for parameters, std430 in GPU arrays.
 
 # Textures
 

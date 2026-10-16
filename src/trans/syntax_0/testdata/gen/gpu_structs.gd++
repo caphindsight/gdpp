@@ -1,0 +1,6 @@
+// Structs of another file, which shaders use.
+struct Boid {
+  var position: Vector2
+  var heading: float
+  @shader("skip") var name: String
+}

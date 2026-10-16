@@ -1,0 +1,4 @@
+input.gd++:8:23: Shaders can't use struct Tag: it has no vars for shaders.
+ 8 | shader tag(n: int, t: Tag) -> void {
+   |                       ^^^
+Hint: Shaders take vars of types int, float, bool, vectors, Color, Basis, Transform3D, Projection, enums and such structs. Mark others @shader("skip").

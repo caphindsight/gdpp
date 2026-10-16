@@ -1,0 +1,4 @@
+input.gd++:9:20: Shaders can't use struct Hit: its var by is a Node3D.
+ 9 | var hits: GpuArray[Hit]
+   |                    ^^^
+Hint: Shaders take vars of types int, float, bool, vectors, Color, Basis, Transform3D, Projection, enums and such structs. Mark others @shader("skip").

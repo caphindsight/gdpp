@@ -1,0 +1,9 @@
+class_name Gpu
+extends Node
+
+struct Sample {
+  var texture: float
+}
+
+shader sample(n: int, s: Sample) -> void {
+}

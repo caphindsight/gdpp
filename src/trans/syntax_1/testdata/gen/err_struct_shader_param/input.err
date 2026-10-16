@@ -1,4 +1,4 @@
-input.gd++:4:28: Shaders can't take a Hit.
+input.gd++:4:28: Shaders can't use struct Hit: its var by is a Node3D.
  4 | shader double(n: int, hit: Hit) -> PackedFloat32Array {
    |                            ^^^
-Hint: Shaders take scalars and vectors, e.g. float, Vector3 and Color, packed arrays of floats, ints and vectors, GpuArray[T], Image, Texture2D, and Texture2D[FORMAT] to write.
+Hint: Shaders take vars of types int, float, bool, vectors, Color, Basis, Transform3D, Projection, enums and such structs. Mark others @shader("skip").

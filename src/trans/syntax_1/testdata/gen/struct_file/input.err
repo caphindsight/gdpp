@@ -1,0 +1,4 @@
+input.gd++:2:1: The name "Score" is already declared by a dependency.
+ 2 | struct_name Score
+   | ^
+Hint: Names must differ from Godot's, and from those of the package's other classes, externs, traits, structs and enums.

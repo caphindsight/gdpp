@@ -7,4 +7,5 @@ shader double(n: int, hit: Hit) -> PackedFloat32Array {
 
 struct Hit {
   var damage: int
+  var by: Node3D
 }

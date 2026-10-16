@@ -1,0 +1,9 @@
+// Structs of other files in shaders: one declared there, one that a macro generates there.
+class_name Swarm
+extends Node
+
+shader drift(n: int, boid: Boid, score: Score) -> GpuArray[Boid] {
+  Boid b = boid;
+  b.heading += float(score.speed + score.agility);
+  return b;
+}

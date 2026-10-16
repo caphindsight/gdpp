@@ -24,6 +24,10 @@ struct Stats {
 	Dictionary _gdpp_to_dictionary() const;
 	// The struct with the fields of a Dictionary, and the default values of the others.
 	static Stats _gdpp_from(const Variant &p_value);
+	// Its name and the vars that shaders see, for GpuArray and shaders' parameters.
+	static constexpr const char *_gdpp_gpu_name = "Stats";
+	template <typename S, typename F>
+	static void _gdpp_gpu_fields(S &p_s, F &&p_f) { p_f(p_s.strength); p_f(p_s.agility); }
 };
 #undef This
 GDPP_STRUCT(Stats)

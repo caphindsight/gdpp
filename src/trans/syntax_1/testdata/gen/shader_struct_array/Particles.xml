@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Particles" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="lives" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="ps" type="ShooterGpuArray" />
+			<description>
+			</description>
+		</method>
+		<method name="reset">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="spawn" qualifiers="static">
+			<return type="ShooterGpuArray" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="spawn_async" qualifiers="static">
+			<return type="GdppAsync" />
+			<param index="0" name="n" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="step" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="n" type="int" />
+			<param index="1" name="sim" type="Dictionary" />
+			<param index="2" name="ps" type="ShooterGpuArray" />
+			<description>
+			</description>
+		</method>
+		<method name="update">
+			<return type="void" />
+			<param index="0" name="sim" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="particles" type="ShooterGpuArray" setter="set_particles" getter="get_particles">
+		</member>
+	</members>
+</class>

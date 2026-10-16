@@ -1,0 +1,65 @@
+// GPU arrays of structs: as parameters, results, variables, and in shader blocks.
+class_name Particles
+extends Node3D
+
+struct Particle {
+  var pos: Vector3
+  var vel: Vector3
+  var life: float = 1.0
+  var xy: Vector2
+  @shader("skip") var owner: Node3D
+}
+
+struct Sim {
+  var gravity: Vector3 = Vector3(0, -9.8, 0)
+  var dt: float
+}
+
+/// Not a parameter: the shader blocks name it.
+struct Bounds {
+  var lo: Vector3
+  var hi: Vector3
+}
+
+var particles: GpuArray[Particle]
+
+shader {
+  bool inside(Bounds b, vec3 p) {
+    return all(greaterThanEqual(p, b.lo)) && all(lessThanEqual(p, b.hi));
+  }
+}
+
+shader spawn(n: int, speed: float) -> GpuArray[Particle] {
+  return Particle(vec3(0.0), vec3(0.0, speed, 0.0), 1.0, vec2(0.0));
+}
+
+@async
+shader spawn_async(n: int) -> GpuArray[Particle] {
+  return Particle(vec3(0.0), vec3(0.0), 1.0, vec2(0.0));
+}
+
+shader step(n: int, sim: Sim, ps: GpuArray[Particle]) -> void {
+  Particle p = ps[id];
+  p.vel += sim.gravity * sim.dt;
+  p.pos += p.vel * sim.dt;
+  p.xy = p.pos.xy;
+  if (!inside(Bounds(vec3(-10.0), vec3(10.0)), p.pos)) {
+    p.life = 0.0;
+  }
+  ps[id] = p;
+}
+
+shader lives(n: int, ps: GpuArray[Particle]) -> PackedFloat32Array {
+  return ps[id].life;
+}
+
+func reset(count: int) -> void {
+  particles = spawn(count, 1.0);
+  std::vector<Particle> first = particles.read(0, 1);
+  first[0].life = 2.0;
+  particles.write(first, 0);
+}
+
+func update(sim: Sim) -> void {
+  step(particles.size(), sim, particles);
+}

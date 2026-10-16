@@ -1,0 +1,2 @@
+// A struct that a macro of struct_macros.gd++ generates.
+invoke stat_struct(Score, [speed, agility])

@@ -597,3 +597,22 @@ kind = "RefCounted"
 base = "RefCounted"
 virtuals = ["_compute_cost", "_estimate_cost"]
 sized_virtuals = [{ name = "_compute_cost", params = ["", ""], return = "float" }, { name = "_estimate_cost", params = ["", ""], return = "float" }]
+
+# Structs of other files, whose fields shaders see: one declared there, one that a macro of struct_macros.gd++
+# generates there.
+[[dep]]
+name = "Boid"
+include = "\"Boid.h\""
+kind = "Struct"
+gdpp = true
+file = "gpu_structs.gd++"
+source_name = "package/gpu_structs.gd++"
+
+[[dep]]
+name = "Score"
+include = "\"Score.h\""
+kind = "Struct"
+gdpp = true
+file = "generated_structs.gd++"
+source_name = "package/generated_structs.gd++"
+macros = ["stat_struct"]

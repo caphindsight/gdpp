@@ -79,7 +79,8 @@ struct Hit {
 - `var name: Type`, with an optional initial value, like a variable of a class. See `gd++ man variables`.
 - Without a type, the field is a `Variant`.
 - The initial value is C++: an expression, a block that returns the value, or for an enum field, the enum's values, e.g. `FIRE`.
-- Fields have no annotations, and can't be properties or node paths.
+- Fields have no annotations, except `@shader("skip")`, which leaves them out of the struct that shaders see. See "Structs" in `gd++ man shaders`.
+- Fields can't be properties or node paths.
 
 A field's type can be:
 
@@ -198,7 +199,6 @@ hit.scale.call(2.0)
 # Limits
 
 - A struct can't be in a typed collection, e.g. `Array[Hit]`. Use a plain `Array` of them.
-- Shaders can't take or return structs.
 - A struct can't extend a class or another struct, and a class can't extend a struct.
 - Scripts don't see a struct's name, only `Dictionary`.
 
@@ -225,6 +225,7 @@ GDPP_STRUCT(Hit)
 - The fields, with their initial values, and the functions' declarations.
 - `_gdpp_fields` returns the `Dictionary` of the fields, and `_gdpp_to_dictionary` adds the functions' `Callable`s. A struct converts to a `Variant` with the latter.
 - `_gdpp_from` makes a struct from a `Dictionary`.
+- A struct that shaders can use also gets `_gdpp_gpu_name` and `_gdpp_gpu_fields`, which tell GD++'s runtime of shaders its name and the fields that shaders see. `Hit` has neither: its field `by` is a `Node3D`, which shaders can't take.
 - `GDPP_STRUCT` tells godot-cpp's bindings to pass the struct as a `Dictionary`.
 - The source file defines the functions and the conversions, and holds the `impl` blocks.
 
@@ -236,4 +237,4 @@ Macros generate structs with `gd.struct`, and templates by writing them. Invocat
 
 # See also
 
-`gd++ man types`, `gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man code`, `gd++ man files`.
+`gd++ man types`, `gd++ man variables`, `gd++ man functions`, `gd++ man cast`, `gd++ man code`, `gd++ man files`, `gd++ man shaders`.

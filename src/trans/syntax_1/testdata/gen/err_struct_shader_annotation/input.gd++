@@ -1,0 +1,3 @@
+struct Hit {
+  @shader("hide") var by: Node3D
+}

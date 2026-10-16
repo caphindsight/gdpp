@@ -136,7 +136,7 @@ Emitted
   What a signal's emit function returns: a `[[nodiscard]]` struct with the `Error` of `emit_signal`, in its field `error`. See `gd++ man signals`.
 
 GpuArray<T>
-  An array of T that stays on the GPU, where shaders read and write it: `GpuArray[T]` in GD++. `GpuArray<float> a(1000)` makes one of 1000 zeros, `a.read()` copies its elements back as a packed array, and `a.write(packed)` sets them. See "GPU arrays" in `gd++ man shaders`.
+  An array of T that stays on the GPU, where shaders read and write it: `GpuArray[T]` in GD++. `GpuArray<float> a(1000)` makes one of 1000 zeros, `a.read()` copies its elements back as a packed array, and `a.write(packed)` sets them. `a.read(offset, count)` and `a.write(packed, offset)` do it for a part. T can be a struct too. See "GPU arrays" in `gd++ man shaders`.
 
 gpu_texture(SIZE, FORMAT)
   A new texture of SIZE, a `Vector2i`, and FORMAT, a `GpuFormat`, e.g. `GpuFormat::rgba8`, which shaders write and materials draw. All its pixels are zero. See "Textures" in `gd++ man shaders`.

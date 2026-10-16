@@ -1,0 +1,4 @@
+input.gd++:9:1: Shaders can't use struct Hit: its var tags is a PackedStringArray.
+ 9 | shader damage(n: int) -> PackedFloat32Array {
+   | ^^^^^^
+Hint: Shaders take vars of types int, float, bool, vectors, Color, Basis, Transform3D, Projection, enums and such structs. Mark others @shader("skip").
