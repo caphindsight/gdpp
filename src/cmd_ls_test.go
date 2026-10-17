@@ -222,6 +222,28 @@ func TestLsCmdGdppClasses(t *testing.T) {
 	}
 }
 
+// @test classes only show with --all, tagged @test.
+func TestLsCmdTestClasses(t *testing.T) {
+	withLsProject(t)
+	foo := NewPath("/games/my_game/foo")
+	foo.Cd(packageFileName).WriteString("bind = \"10.0.0-stable\"\nspec = \"4.3-stable\"\nsyntax = 1\n")
+	foo.Cd("player.gd++").WriteString("class_name Player\nextends Node\n")
+	foo.Cd("player_test.gd++").WriteString("@test\nclass_name PlayerTest\nextends Node\n\n@test\nfunc works() {}\n")
+	classes := "" +
+		"  Classes\n" +
+		"    pkg://player.gd++       Player      extends Node\n" +
+		"    pkg://player_test.gd++  PlayerTest  extends Node  @test\n"
+	if out := captureStdout(t, (&CmdLs{Path: "foo", All: true}).Run); !strings.HasSuffix(out, classes) {
+		t.Errorf("--all: output = %q, want it to end with %q", out, classes)
+	}
+	want := "" +
+		"  Classes\n" +
+		"    pkg://player.gd++  Player  extends Node\n"
+	if out := captureStdout(t, (&CmdLs{Path: "foo"}).Run); !strings.HasSuffix(out, want) {
+		t.Errorf("output = %q, want it to end with %q", out, want)
+	}
+}
+
 func TestLsCmdAllPackages(t *testing.T) {
 	want := lsDepsOut +
 		"\n" + lsFooOut +

@@ -43,6 +43,7 @@ type lsClass struct {
 	Kind                                            string   // For C++ classes: "ptr", "ref", or "" if GD++ code can't use it.
 	Gdpp                                            bool
 	Abstract, Tool, GameOnly, EditorOnly, Singleton bool
+	Test                                            bool // A @test class, shown only with --all.
 	Clash                                           bool // Another class has the same name.
 }
 
@@ -60,7 +61,7 @@ func (c *CmdLs) Run() {
 		expanded := all || len(list) == 1 || pkg.Root == root
 		var classes []lsClass
 		if expanded {
-			classes = lsClasses(p, pkg)
+			classes = lsClasses(p, pkg, c.All)
 		}
 		var names []nameList
 		if expanded && c.All {
@@ -77,8 +78,8 @@ func (c *CmdLs) Run() {
 
 // lsClasses returns the classes of the package: those in its config, then
 // those of each GD++ file, in order, and last a class per GD++ file with
-// errors.
-func lsClasses(p Project, pkg Package) []lsClass {
+// errors. Only with tests, it includes the @test classes.
+func lsClasses(p Project, pkg Package, tests bool) []lsClass {
 	var classes, broken []lsClass
 	for _, class := range pkg.Config.Classes {
 		classes = append(classes, lsClass{Name: class.Name, File: pkg.ClassPath(class.Include), Icon: pkg.ClassPath(class.Icon), Tool: class.Tool,
@@ -93,7 +94,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 			if d.Kind == trans.ClassDecl {
 				class := file
 				class.Name, class.Base, class.Traits, class.Icon = d.Name, d.Base, d.Traits, pkg.ClassPath(d.Icon)
-				class.Abstract, class.Tool, class.GameOnly, class.EditorOnly, class.Singleton = d.Abstract, d.Tool, d.GameOnly, d.EditorOnly, d.Singleton
+				class.Abstract, class.Tool, class.GameOnly, class.EditorOnly, class.Singleton, class.Test = d.Abstract, d.Tool, d.GameOnly, d.EditorOnly, d.Singleton, d.Test
 				classes = append(classes, class)
 			}
 		}
@@ -106,7 +107,7 @@ func lsClasses(p Project, pkg Package) []lsClass {
 	for i := range classes {
 		classes[i].Clash = classes[i].Name != "" && count[classes[i].Name] > 1
 	}
-	return classes
+	return slices.DeleteFunc(classes, func(class lsClass) bool { return class.Test && !tests })
 }
 
 // isUnused reports whether packages choose deps of cache's kind, but none
@@ -296,6 +297,8 @@ func lsClassTable(classes []lsClass) string {
 			name, base = lsMissing("has errors"), "see gd++ build"
 		case class.Clash:
 			name = lsMissing(class.Name + ": declared twice")
+		case class.Test:
+			name = Styled(class.Name, Magenta)
 		}
 		rows = append(rows, []string{file, name, base, lsTags(class)})
 	}
@@ -312,7 +315,7 @@ func lsTags(class lsClass) string {
 	for _, t := range []struct {
 		on   bool
 		name string
-	}{{class.Abstract, "@abstract"}, {class.Tool, "@tool"}, {class.GameOnly, "@game_only"}, {class.EditorOnly, "@editor_only"}, {class.Singleton, "@singleton"}} {
+	}{{class.Abstract, "@abstract"}, {class.Tool, "@tool"}, {class.GameOnly, "@game_only"}, {class.EditorOnly, "@editor_only"}, {class.Singleton, "@singleton"}, {class.Test, "@test"}} {
 		if t.on {
 			tags = append(tags, t.name)
 		}
