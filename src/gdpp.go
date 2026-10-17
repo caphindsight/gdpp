@@ -112,17 +112,22 @@ func gdppClasses(files []gdppFile) []gdppClass {
 	return classes
 }
 
-// gdppTest is a @test function of a class declared in a GD++ file.
+// gdppTest is a @test or @bench function of a class declared in a GD++ file.
 type gdppTest struct {
 	Name string // CLASS.NAME, e.g. "Player.takes_damage".
 	File gdppFile
 }
 
-// gdppTests returns the tests of the classes that files declare, sorted by name.
-func gdppTests(files []gdppFile) []gdppTest {
+// gdppTests returns the tests of the classes that files declare, or with
+// bench their benchmarks, sorted by name.
+func gdppTests(files []gdppFile, bench bool) []gdppTest {
 	var tests []gdppTest
 	for _, class := range gdppClasses(files) {
-		for _, name := range class.Tests {
+		names := class.Tests
+		if bench {
+			names = class.Benches
+		}
+		for _, name := range names {
 			tests = append(tests, gdppTest{class.Name + "." + name, class.File})
 		}
 	}

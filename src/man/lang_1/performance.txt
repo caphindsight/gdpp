@@ -6,7 +6,7 @@ GD++ compiles to C++. In release builds:
 - Work with Godot's types, like `Array`, `Dictionary` and `String`, gains only 1.5 to 2.5 times.
 - Engine calls, like creating nodes, gain about 10%.
 
-This page shows measurements, and what they mean for your code.
+This page shows measurements, and what they mean for your code. To time your own code, write benchmarks: see "Benchmarks" in `gd++ man tests`.
 
 # The measurements
 

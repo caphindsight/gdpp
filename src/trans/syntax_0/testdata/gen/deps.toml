@@ -551,6 +551,17 @@ name = "frame_test"
 kind = "Macro"
 file = "test_macros.gd++"
 
+[[dep]]
+name = "sum_bench"
+kind = "Macro"
+file = "test_macros.gd++"
+
+[[dep]]
+name = "equal_bench"
+kind = "Template"
+file = "test_macros.gd++"
+source_name = "package/test_macros.gd++"
+
 # A @test class of another file, which only debug builds have.
 [[dep]]
 name = "Fixtures"

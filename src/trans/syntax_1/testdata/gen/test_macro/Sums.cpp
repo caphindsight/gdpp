@@ -17,19 +17,32 @@ void Sums::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("sums_small"), &Sums::sums_small);
 	ClassDB::bind_method(D_METHOD("lengths_match"), &Sums::lengths_match);
 	ClassDB::bind_method(D_METHOD("frames_pass"), &Sums::frames_pass);
+	ClassDB::bind_method(D_METHOD("sums_fast"), &Sums::sums_fast);
+	ClassDB::bind_method(D_METHOD("lengths_fast"), &Sums::lengths_fast);
 	ClassDB::bind_method(D_METHOD("increments"), &Sums::increments);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("tests"), &Sums::tests);
 	ClassDB::bind_static_method(get_class_static(), D_METHOD("_gdpp_create"), &Sums::_gdpp_create);
+	ClassDB::bind_method(D_METHOD("_gdpp_bench", "name"), &Sums::_gdpp_bench);
 }
 
 Node *Sums::_gdpp_create() {
 	return gdpp::create<Sums>().ptr();
 }
 
+PackedInt64Array Sums::_gdpp_bench(const StringName &p_name) {
+	if (p_name == GDPP_STRING_NAME("sums_fast")) {
+		return gdpp::bench(this, &Sums::sums_fast, 100);
+	}
+	if (p_name == GDPP_STRING_NAME("lengths_fast")) {
+		return gdpp::bench(this, &Sums::lengths_fast, 1);
+	}
+	return {};
+}
+
 void Sums::sums_small() {
 #line 6 "input.gd++"
 GDPP_ASSERT_VOID("1 + 2 + 3 == 6", 1 + 2 + 3 == 6);
-#line 33 "Sums.cpp"
+#line 46 "Sums.cpp"
 }
 
 void Sums::lengths_match() {
@@ -37,7 +50,7 @@ void Sums::lengths_match() {
 
     GDPP_ASSERT_VOID("String(\"abc\").length() == 3", String("abc").length() == 3);
 
-#line 41 "Sums.cpp"
+#line 54 "Sums.cpp"
 }
 
 gdpp::Async<void> Sums::frames_pass() {
@@ -47,23 +60,37 @@ gdpp::Async<void> Sums::frames_pass() {
 gdpp::Coroutine<void> Sums::_gdpp_body_frames_pass() {
 #line 8 "input.gd++"
 add_child(gdpp::create<Node>()); co_await gdpp::signal<"process_frame">(get_tree());
-#line 51 "Sums.cpp"
+#line 64 "Sums.cpp"
+}
+
+void Sums::sums_fast() {
+#line 9 "input.gd++"
+int64_t sum = 4 + 5; GDPP_ASSERT_VOID("sum > 0", sum > 0);
+#line 70 "Sums.cpp"
+}
+
+void Sums::lengths_fast() {
+#line 29 "package/test_macros.gd++"
+
+    GDPP_ASSERT_VOID("String(\"ab\").length() == 2", String("ab").length() == 2);
+
+#line 78 "Sums.cpp"
 }
 
 void Sums::increments() {
-#line 12 "input.gd++"
+#line 14 "input.gd++"
 
   int x = 1;
   x += 1;
   GDPP_ASSERT_VOID("x == 2", x == 2);
 
-#line 61 "Sums.cpp"
+#line 88 "Sums.cpp"
 }
 
 String Sums::tests() {
-#line 19 "input.gd++"
+#line 21 "input.gd++"
 return "sums_small lengths_match frames_pass increments";
-#line 67 "Sums.cpp"
+#line 94 "Sums.cpp"
 }
 
 #undef This

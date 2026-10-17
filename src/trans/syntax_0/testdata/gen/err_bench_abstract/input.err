@@ -1,0 +1,4 @@
+input.gd++:6:1: The abstract class A can't have @bench functions.
+ 6 | @bench
+   | ^^^^^^
+Hint: gd++ test --bench calls a benchmark on a new object of its class. Move the benchmark to a subclass.

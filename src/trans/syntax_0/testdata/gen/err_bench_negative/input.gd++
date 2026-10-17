@@ -1,0 +1,7 @@
+@test
+class_name A
+extends Node
+
+@bench(-5)
+func works() {
+}

@@ -24,8 +24,8 @@ type gpuModel struct {
 	main   bool // Whether it runs on the main RenderingDevice, since it uses GPU arrays or textures.
 	// The GD++ structs that it sees as GLSL structs, those that others use first. See shaderStructs.
 	structs []*gpuStruct
-	sync   bool // With @sync: a call that returns a GpuArray, a Texture2D or nothing waits for the GPU too.
-	async  bool // With @async: a call returns an Async right away, done once the GPU is done with it.
+	sync    bool // With @sync: a call that returns a GpuArray, a Texture2D or nothing waits for the GPU too.
+	async   bool // With @async: a call returns an Async right away, done once the GPU is done with it.
 }
 
 // gpuParam is a parameter of a shader.

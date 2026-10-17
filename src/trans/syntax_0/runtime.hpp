@@ -733,6 +733,35 @@ Gd<T> create_ext() {
 #ifdef DEBUG_ENABLED
 // failed_assertions counts the assertions that failed, in all threads. A test fails if it grows while the test runs.
 inline std::atomic<uint64_t> failed_assertions{ 0 };
+
+// bench runs p_func, a @bench function of p_object, for gd++ test --bench: in batches of calls, each predicted from
+// the time per call so far, until a batch of at least p_calls calls runs for at least a second, or an assertion fails.
+// It returns the last batch's calls, and their time in usec.
+template <typename T>
+godot::PackedInt64Array bench(T *p_object, void (T::*p_func)(), int64_t p_calls) {
+	// A call through a volatile pointer can't be inlined, so the compiler can't drop the function's work.
+	void (T::*volatile func)() = p_func;
+	const int64_t target = 1000000;
+	const uint64_t failures = failed_assertions.load();
+	int64_t calls = 1, usec = 0;
+	for (;;) {
+		uint64_t start = godot::Time::get_singleton()->get_ticks_usec();
+		for (int64_t i = 0; i < calls; i++) {
+			(p_object->*func)();
+		}
+		usec = int64_t(godot::Time::get_singleton()->get_ticks_usec() - start);
+		if (failed_assertions.load() != failures || (calls >= p_calls && usec >= target)) {
+			break;
+		}
+		// The calls for the target time, with 20% to spare, growing at most 100 times.
+		int64_t next = usec == 0 ? calls * 100 : int64_t(double(calls) * 1.2 * double(target) / double(usec));
+		calls = std::max({ std::min(next, calls * 100), calls + 1, p_calls });
+	}
+	godot::PackedInt64Array result;
+	result.push_back(calls);
+	result.push_back(usec);
+	return result;
+}
 #endif
 
 // assert_message is the error printed by a failed assertion. It has no location, since Godot shows that below it.
@@ -2240,26 +2269,34 @@ private:
 // it's @async. The runner runs one test per frame, on a new object of its class in the tree, which it frees after. The
 // class's static _gdpp_create makes the object, like create does: for a @scene class, an instance of its scene. The
 // runner prints a line to stdout when each test starts and ends, which gd++ reads, and quits with exit code 1 if a
-// test failed: an assertion failed while it ran. gd++ kills Godot when a test times out.
+// test failed: an assertion failed while it ran. gd++ kills Godot when a test times out. With --bench before the
+// names, they're benchmarks, which the class's _gdpp_bench runs, and the line of each end has its calls too.
 class GDPP_TESTS_CLASS : public SceneTree {
 	GDPP_GDCLASS(GDPP_TESTS_CLASS, SceneTree)
 
 	PackedStringArray names; // The tests to run, in order, e.g. "Player.takes_damage".
 	int64_t next = 0; // The index of the test that runs, or runs next.
+	bool bench = false; // Whether the tests are benchmarks.
 	bool failed = false;
 	Node *test = nullptr; // The object of the test that runs, or null.
 	Variant task; // The Async of an @async test that runs.
 	uint64_t start = 0; // When the test started, in usec.
 	uint64_t failures = 0; // failed_assertions when the test started.
 
-	// report prints a line for gd++: "\x1fgdpp-test WHAT NAME USEC". The unit separator keeps it apart from the tests' output.
-	static void report(const char *p_what, const String &p_name, uint64_t p_usec) {
-		std::printf("\x1fgdpp-test %s %s %llu\n", p_what, p_name.utf8().get_data(), static_cast<unsigned long long>(p_usec));
+	// report prints a line for gd++: "\x1fgdpp-test WHAT NAME USEC", and " CALLS" for a benchmark's end. The unit
+	// separator keeps it apart from the tests' output.
+	static void report(const char *p_what, const String &p_name, uint64_t p_usec, int64_t p_calls = 0) {
+		std::printf("\x1fgdpp-test %s %s %llu", p_what, p_name.utf8().get_data(), static_cast<unsigned long long>(p_usec));
+		if (p_calls > 0) {
+			std::printf(" %lld", static_cast<long long>(p_calls));
+		}
+		std::printf("\n");
 		std::fflush(stdout);
 	}
 
-	void finish(const char *p_result) {
-		report(p_result, names[next], Time::get_singleton()->get_ticks_usec() - start);
+	// finish ends the test that runs, which ran for p_usec, or since it started. A benchmark's ran p_calls calls.
+	void finish(const char *p_result, uint64_t p_usec = 0, int64_t p_calls = 0) {
+		report(p_result, names[next], p_calls > 0 ? p_usec : Time::get_singleton()->get_ticks_usec() - start, p_calls);
 		failed = failed || String(p_result) != "pass";
 		if (test) {
 			test->queue_free();
@@ -2280,6 +2317,15 @@ class GDPP_TESTS_CLASS : public SceneTree {
 			return;
 		}
 		get_root()->add_child(test);
+		if (bench) {
+			PackedInt64Array result = test->call(GDPP_STRING_NAME("_gdpp_bench"), method);
+			if (result.size() != 2) {
+				finish("missing");
+			} else {
+				finish(failed_assertions.load() == failures ? "pass" : "fail", uint64_t(result[1]), result[0]);
+			}
+			return;
+		}
 		Variant result = test->call(method);
 		if (result.get_type() == Variant::OBJECT) {
 			task = result;
@@ -2294,6 +2340,10 @@ public:
 		// Tests start from an empty tree, with the autoloads, but without the main scene.
 		unload_current_scene();
 		names = OS::get_singleton()->get_cmdline_user_args();
+		bench = names.size() > 0 && names[0] == "--bench";
+		if (bench) {
+			names.remove_at(0);
+		}
 	}
 
 	// _process starts a test, or finishes an @async one that's done, or quits after the last one.

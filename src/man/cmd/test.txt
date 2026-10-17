@@ -3,7 +3,7 @@ gd++ test: build packages and run their tests
 # Synopsis
 
 ```sh
-gd++ test [PATH...] [--run NAME...] [--engine NAME|PATH] [--timeout SECONDS]
+gd++ test [PATH...] [--run NAME...] [--bench] [--engine NAME|PATH] [--timeout SECONDS]
           [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [--nogpu] [-j N]
           [--cc COMPILER] [--asan] [--ubsan] [--tsan] [--macro-timeout SECONDS]
           [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
@@ -16,8 +16,9 @@ gd++ test [PATH...] [--run NAME...] [--engine NAME|PATH] [--timeout SECONDS]
 - Shows each test while it runs, then its result. A failed test's output follows its result.
 - Exits with an error if any test failed, which names them.
 - Only `gd++ test` registers the `@test` classes, which hold the tests: `gd++ build` doesn't. So switching between them recompiles one file.
+- With `--bench`, runs the benchmarks instead: the `@bench` functions, and no tests. It times each one, and shows the time per call.
 
-For tests themselves, see `gd++ man tests`.
+For tests and benchmarks themselves, see `gd++ man tests`.
 
 # Which tests run
 
@@ -25,6 +26,7 @@ For tests themselves, see `gd++ man tests`.
 - A GD++ file's path runs only the tests that the file declares.
 - `--run` keeps only the tests whose names, `CLASS.NAME`, match one of its patterns.
 - Tests run one at a time, sorted by name.
+- With `--bench`, the same goes for the benchmarks, instead of the tests.
 
 # Which Godot runs them
 
@@ -47,6 +49,11 @@ PATH...
 
 --run NAME...
   Run only the tests whose names, `CLASS.NAME`, match one of these patterns. A pattern may have the wildcards `*`, `?` and `[...]`, e.g. `PlayerTest.*` for a class's tests. Quote them for the shell.
+
+--bench
+  Run the benchmarks, the `@bench` functions, instead of the tests.
+  - Builds with `--opt` by default, to time optimized code. `--noopt` or `--small` overrides it.
+  - Each benchmark runs in batches of calls, until a batch takes at least a second. See "Benchmarks" in `gd++ man tests`.
 
 --engine NAME|PATH
   Run the tests in this Godot.
@@ -80,6 +87,17 @@ First the build, as `gd++ build` logs it. Then, for each package, a line per tes
 - At the end: "All N tests passed.", or an error with the number of failed tests, and their names.
 - With `-q`, passed tests leave no line.
 
+With `--bench`, a line per benchmark, with the time per call, and the number of calls, of its last batch:
+
+```out
+[•] Benchmarking res://.
+[•] Benched PathTest.find_path: 2.31 µs per call, 432900 calls.
+[•] Benched PathTest.rebuild: 1.25 ms per call, 960 calls.
+[•] All 2 benchmarks passed.
+```
+
+- A failed assertion fails a benchmark, like a test.
+
 Other results:
 
 - "Failed NAME: it ran longer than 10 seconds." The test timed out.
@@ -110,6 +128,12 @@ Run them in a Godot binary that isn't in the PATH:
 
 ```sh
 gd++ test --engine ~/godot/bin/godot
+```
+
+Time the benchmarks of one class:
+
+```sh
+gd++ test --bench --run 'PathTest.*'
 ```
 
 Look for memory errors while the tests run:

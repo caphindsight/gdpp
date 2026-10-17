@@ -1,0 +1,4 @@
+input.gd++:6:1: Annotations @bench and @async can't be used together.
+ 6 | @async
+   | ^^^^^^
+Hint: gd++ test --bench calls a benchmark in a loop, on a new object of its class, in the tree.

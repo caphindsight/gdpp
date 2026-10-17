@@ -477,6 +477,21 @@ func takes_damage() {
 - It takes no parameters, and returns nothing.
 - See `gd++ man tests`.
 
+# @bench
+
+```gd++
+@bench
+func counts_potions() {
+  total += inv->count(string_name "potion");
+}
+```
+
+- Makes the function a benchmark, which `gd++ test --bench` calls in a loop, on a new object of the class, in the tree, and times.
+- `@bench(N)` makes it run at least N calls at a time, e.g. `@bench(1000)`.
+- Only in a `@test` class. See `gd++ man classes`.
+- It takes no parameters, and returns nothing.
+- See "Benchmarks" in `gd++ man tests`.
+
 # @trace and @profile
 
 ```gd++
@@ -526,12 +541,13 @@ A function with the name of a virtual function of the base class, without @overr
 @thread_safe with @onthread
 @async with @onthread, @deferred, @thread_safe, @rpc or @profile
 @test with any annotation but @async
+@bench with any other annotation
 ```
 
 - `@trace`, `@game_only` and `@editor_only` combine with all of them, and `@profile` with all but `@async`.
 - `@game_only` doesn't combine with `@editor_only`.
 - Each annotation can be used once per function.
-- Only `@override`, `@virtual`, `@rpc`, `@onthread`, `@async`, `@trace` and `@profile` take arguments.
+- Only `@override`, `@virtual`, `@rpc`, `@onthread`, `@async`, `@bench`, `@trace` and `@profile` take arguments.
 
 # Enums in signatures
 

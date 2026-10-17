@@ -100,3 +100,4 @@ type SizedVirtual struct
 field SizedVirtual.Name string
 field SizedVirtual.Params []string
 field SizedVirtual.Return string
+field Declaration.Benches []string

@@ -17,7 +17,17 @@
 			<description>
 			</description>
 		</method>
+		<method name="lengths_fast">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
 		<method name="lengths_match">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="sums_fast">
 			<return type="void" />
 			<description>
 			</description>

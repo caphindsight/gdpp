@@ -131,6 +131,7 @@ type Declaration struct {
 	Traits        []string // For classes: the traits it implements itself, without those of its bases.
 	Signals       []Signal // For classes and externs: their own signals, which on blocks connect to.
 	Tests         []string // For classes: the names of their tests, which gd++ test runs.
+	Benches       []string // For classes: the names of their benchmarks, which gd++ test --bench runs.
 	Test          bool     // For classes: whether @test makes it a class of tests, which only gd++ test registers.
 }
 

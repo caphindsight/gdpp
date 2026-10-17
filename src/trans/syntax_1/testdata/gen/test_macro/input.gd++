@@ -1,4 +1,4 @@
-// Tests that macros and templates of another file generate in a class, and invocations in a test.
+// Tests and benchmarks that macros and templates of another file generate in a class, and invocations in a test.
 @test
 class_name Sums
 extends Node
@@ -6,6 +6,8 @@ extends Node
 invoke sum_test(sums_small, [1, 2, 3], 6)
 invoke equal_test(lengths_match, String("abc").length(), 3)
 invoke frame_test(frames_pass)
+invoke sum_bench(sums_fast, [4, 5], 100)
+invoke equal_bench(lengths_fast, String("ab").length(), 2)
 
 @test
 

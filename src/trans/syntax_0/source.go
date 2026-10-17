@@ -183,6 +183,20 @@ func (u *unit) classDefs(w *writer, c *classModel) {
 		w.ln("\treturn gdpp::create<%s>().ptr();", c.name)
 		w.ln("}")
 	}
+	if slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.bench > 0 }) {
+		// gd++ test --bench runs a benchmark with it: it returns the calls and their time in usec, or nothing for no such benchmark.
+		w.ln("")
+		w.ln("PackedInt64Array %s::_gdpp_bench(const StringName &p_name) {", c.name)
+		for _, f := range c.funcs {
+			if f.bench > 0 {
+				w.ln("\tif (p_name == GDPP_STRING_NAME(%q)) {", f.f.Name)
+				w.ln("\t\treturn gdpp::bench(this, &%s::%s, %d);", c.name, f.f.Name, f.bench)
+				w.ln("\t}")
+			}
+		}
+		w.ln("\treturn {};")
+		w.ln("}")
+	}
 	// The methods of @factory.
 	for _, role := range factoryRoles {
 		name, ok := c.factory[role]
@@ -907,6 +921,9 @@ func (u *unit) bindings(w *writer, c *classModel) {
 	}
 	if c.test && !c.abstract {
 		w.ln("\tClassDB::bind_static_method(get_class_static(), %s, &%s::_gdpp_create);", method("_gdpp_create"), c.name)
+	}
+	if slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.bench > 0 }) {
+		w.ln("\tClassDB::bind_method(%s, &%s::_gdpp_bench);", method("_gdpp_bench", "name"), c.name)
 	}
 	for _, role := range factoryRoles {
 		name, ok := c.factory[role]

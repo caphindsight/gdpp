@@ -5,7 +5,8 @@ This tutorial adds tests to a game, and runs them on every change:
 - a Godot to run them in,
 - a first test, in a class of tests,
 - tests that wait for signals,
-- running some tests, or all of them on a build machine.
+- running some tests, or all of them on a build machine,
+- benchmarks, which time code.
 
 It assumes a project that builds, as in `gd++ man tour`.
 
@@ -152,3 +153,38 @@ gd++ build res://... --ship --for l.x64 w.x64
 - Release builds don't compile `@test` classes, so the shipped libraries don't contain them.
 
 See `gd++ man ship`.
+
+# 6. Time code with benchmarks
+
+A benchmark is a `@bench` function, in a `@test` class. Add one to `WalletTest`:
+
+```gd++
+var w: Wallet
+
+on ready {
+  w = wallet(0);
+}
+
+@bench
+func pays_often() {
+  w->set_coins(10);
+  assert w->pay(4);
+}
+```
+
+```sh
+gd++ test --bench
+```
+
+```out
+[•] Benchmarking res://.
+[•] Benched WalletTest.pays_often: 12.4 ns per call, 96774000 calls.
+[•] All 1 benchmark passed.
+```
+
+- `gd++ test --bench` runs the benchmarks, and no tests. It builds with `--opt`, so it times optimized code.
+- It calls each benchmark in a loop, on one new object, until the calls take about a second. `on ready` sets up the data, and isn't timed.
+- `@bench(1000)` makes it average at least 1000 calls, e.g. for a slow function.
+- Keep what a benchmark computes, e.g. in a variable of the class: the compiler may drop work whose result nothing uses.
+
+See "Benchmarks" in `gd++ man tests`.

@@ -1,0 +1,4 @@
+input.gd++:4:1: Class A has no @test, so it can't have @bench functions.
+ 4 | @bench
+   | ^^^^^^
+Hint: Benchmarks go in @test classes, which only gd++ test registers. Move the benchmark to one, or add @test to the class.

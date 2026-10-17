@@ -19,10 +19,13 @@ class Sums : public Node {
 
 public:
 	static Node *_gdpp_create();
+	PackedInt64Array _gdpp_bench(const StringName &p_name);
 	void sums_small();
 	void lengths_match();
 	gdpp::Async<void> frames_pass();
 	gdpp::Coroutine<void> _gdpp_body_frames_pass();
+	void sums_fast();
+	void lengths_fast();
 	void increments();
 	static String tests();
 

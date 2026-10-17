@@ -112,6 +112,74 @@ func TestTestReportQuiet(t *testing.T) {
 	}
 }
 
+func TestTestReportBench(t *testing.T) {
+	withTTY(t, false)
+	withQuiet(t, false)
+	withBuildFS(t)
+	var ran int
+	var failed []string
+	logs := captureStderr(t, func() {
+		r := testReport{timeout: 2.5, bench: true}
+		for _, line := range []string{
+			testMarker + "start T.adds 0",
+			testMarker + "pass T.adds 1000000 400000",
+			testMarker + "start T.sorts 0",
+			testMarker + "pass T.sorts 1200000 1",
+			testMarker + "start T.checks 0",
+			"ERROR: Failed GD++ assertion: `ok`.",
+			testMarker + "fail T.checks 3 1",
+			testMarker + "start T.gone 0",
+			testMarker + "missing T.gone 0",
+		} {
+			r.line(line)
+		}
+		r.done(LoadPackage(Cwd()), []gdppTest{{Name: "T.adds"}, {Name: "T.sorts"}, {Name: "T.checks"}, {Name: "T.gone"}})
+		ran, failed = r.ran, r.failed
+	})
+	want := "" +
+		"[$] Running task: running T.adds...\n" +
+		"[-] Task succeeded: running T.adds\n" +
+		"[-] Benched T.adds: 2.50 µs per call, 400000 calls.\n" +
+		"[$] Running task: running T.sorts...\n" +
+		"[-] Task succeeded: running T.sorts\n" +
+		"[-] Benched T.sorts: 1.20 s per call, 1 call.\n" +
+		"[$] Running task: running T.checks...\n" +
+		"[-] Task succeeded: running T.checks\n" +
+		"[x] Failed T.checks in 0.0 ms.\n" +
+		"    ERROR: Failed GD++ assertion: `ok`.\n" +
+		"[$] Running task: running T.gone...\n" +
+		"[-] Task succeeded: running T.gone\n" +
+		"[x] Failed T.gone: the library has no such benchmark.\n"
+	if logs != want || ran != 4 || strings.Join(failed, ", ") != "T.checks, T.gone" {
+		t.Errorf("logs = %q, ran = %d, failed = %q, want %q, 4, T.checks, T.gone", logs, ran, failed, want)
+	}
+}
+
+func TestFormatNsec(t *testing.T) {
+	for nsec, want := range map[float64]string{0.25: "0.2 ns", 12.34: "12.3 ns", 4560: "4.56 µs", 2500000: "2.5 ms", 1250000000: "1.25 s"} {
+		if got := formatNsec(nsec); got != want {
+			t.Errorf("formatNsec(%v) = %q, want %q", nsec, got, want)
+		}
+	}
+}
+
+// With bench, gdppTests returns only the benchmarks, without the tests.
+func TestGdppTestsBench(t *testing.T) {
+	files := []gdppFile{{Decls: []trans.Declaration{
+		{Name: "B", Kind: trans.ClassDecl, Test: true, Tests: []string{"works"}, Benches: []string{"runs"}},
+		{Name: "A", Kind: trans.ClassDecl, Test: true, Tests: []string{"one", "two"}},
+	}}}
+	for bench, want := range map[bool]string{false: "A.one A.two B.works", true: "B.runs"} {
+		var got []string
+		for _, test := range gdppTests(files, bench) {
+			got = append(got, test.Name)
+		}
+		if strings.Join(got, " ") != want {
+			t.Errorf("gdppTests(bench = %v) = %q, want %q", bench, got, want)
+		}
+	}
+}
+
 // withTestsFS installs withBuildFS's project, with GD++ files with tests in
 // res://src/pkg, and returns its package.
 func withTestsFS(t *testing.T) Package {

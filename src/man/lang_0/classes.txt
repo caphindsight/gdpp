@@ -520,7 +520,7 @@ class_name InventoryTest
 extends Node
 ```
 
-- The class holds tests, `@test` functions, and their helpers.
+- The class holds tests, `@test` functions, benchmarks, `@bench` functions, and their helpers.
 - Only `gd++ test` registers it, and release builds don't compile it.
 - It must extend `Node`.
 - Only other `@test` classes may use it.

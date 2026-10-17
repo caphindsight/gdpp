@@ -1,0 +1,27 @@
+// Benchmarks are methods of @test classes: gd++ test --bench calls each one in a loop, on a new object, in the tree.
+// @bench takes the least number of calls. A class can have both tests and benchmarks.
+@test
+class_name PathTest
+extends Node
+
+var total: int
+
+@bench
+func adds() {
+  total += 1;
+}
+
+@bench(1000)
+func doubles() {
+  total = total * 2 + 1;
+}
+
+@bench(0x10)
+func halves() {
+  total /= 2;
+}
+
+@test
+func starts_empty() {
+  assert total == 0;
+}

@@ -78,6 +78,9 @@ func _score() -> int
   - Scripts use the class's `@factory` methods for the same.
   - `@factory_scene` declares methods that load the scene ahead of time, and drop it.
 
+@test
+  Make the class a class of tests: it holds `@test` and `@bench` functions, and their helpers. Only `gd++ test` registers it, and release builds don't compile it. It must extend `Node`. See `gd++ man tests`.
+
 @singleton
   Make the package create the class's one object, which Godot knows by the class's name, and GD++ code gets with `get_singleton()`. A node is an orphan node, outside the scene tree. See "@singleton" in `gd++ man classes`.
 
@@ -162,6 +165,12 @@ func _score() -> int
 
 @editor_only
   Run the function only in the editor, never in the game. Only in a `@tool` class. See `gd++ man classes`.
+
+@test
+  Make the function a test, which `gd++ test` runs. Only in a `@test` class. It takes no parameters, returns nothing, and takes no other annotation but `@async`. See `gd++ man tests`.
+
+@bench and @bench(N)
+  Make the function a benchmark, which `gd++ test --bench` calls in a loop, and times. With N, a positive integer, at least N calls at a time. Only in a `@test` class. It takes no parameters, returns nothing, and takes no other annotation. See "Benchmarks" in `gd++ man tests`.
 
 @recycle
   Only on an `on ready` block, or an `@override func _ready()`, in a `@pool` class: run it each time an object gets ready, not only the first time. See "Getting ready again" in `gd++ man pools`.

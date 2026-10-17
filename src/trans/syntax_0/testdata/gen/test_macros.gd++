@@ -17,3 +17,16 @@ template equal_test(name, a, b) {
 macro frame_test(name) {
   gd.func { name = name, annotations = { "@test", "@async" }, body = "add_child(create Node); await get_tree()->process_frame;" }
 }
+
+// A benchmark that sums numbers, with the least number of calls.
+macro sum_bench(name, numbers, calls) {
+  gd.func { name = name, annotations = { { "@bench", calls } }, body = "int64_t sum = " .. gd.join(numbers, " + ") .. "; assert sum > 0;" }
+}
+
+// A benchmark that compares two expressions.
+template equal_bench(name, a, b) {
+  @bench
+  func ${name}() {
+    assert ${a} == ${b};
+  }
+}

@@ -92,7 +92,7 @@ func runGdppSteps(docs bool) (classes []gdppClass, generated bool) {
 	names := loadGodotNames(pkg, func() { generated = true })
 	files := listGdppFiles(p, pkg, 0)
 	classes = transpilePackage(pkg, files, names, BuildOptions{NoDoc: !docs})
-	generateRegisterTypes(pkg, classes, len(gdppTests(files)) > 0)
+	generateRegisterTypes(pkg, classes, len(gdppTests(files, false)) > 0)
 	return classes, generated
 }
 
@@ -243,7 +243,7 @@ func TestTranspilePackageRegistration(t *testing.T) {
 
 func TestTranspilePackageSizedVirtuals(t *testing.T) {
 	m := withGdppFS(t, map[string]string{
-		"mob.gd++": "class_name Mob\nextends Node\n\n@override\nfunc _process(delta: float) -> void {}\n\n@override\nfunc _hit(shape: int, force: float) -> int {\n  return shape;\n}\n",
+		"mob.gd++":  "class_name Mob\nextends Node\n\n@override\nfunc _process(delta: float) -> void {}\n\n@override\nfunc _hit(shape: int, force: float) -> int {\n  return shape;\n}\n",
 		"boss.gd++": "class_name Boss\nextends Mob\n\n@override\nfunc _hit(shape: int, force: float) -> int {\n  return shape + 1;\n}\n",
 	})
 	m.nodes["/games/my_game/.gd++cache/spec/4.3/extension_api.json"].data = []byte(`{"classes": [{"name": "Node", "methods": [

@@ -1,0 +1,4 @@
+input.gd++:6:12: The @bench function works can't take parameters.
+ 6 | func works(times: int) {
+   |            ^^^^^
+Hint: gd++ test --bench calls it without arguments. For a benchmark per value, have a macro generate them.

@@ -127,7 +127,8 @@ type funcModel struct {
 	final, super, private              bool        // With @override("final"), "super" on @override or @virtual, and @virtual("private").
 	noscript                           bool        // With "noscript" on @virtual or @override: a C++ virtual function, which scripts can't override.
 	isPrivate                          bool        // With @private: a private method, which isn't bound.
-	test                               bool        // With @test: a test, which gd++ test runs.
+	test                               bool        // With @test or @bench: a test or a benchmark, which gd++ test runs.
+	bench                              int64       // With @bench: the least number of calls of the benchmark, at least 1. Else 0.
 	engine                             bool        // An @override of an engine virtual function: see engineSignature.
 	calls                              *funcModel  // Called as the whole body: for "super", the bound function with the body, for the caller of a @virtual function, that function.
 	deferral                           string      // "deferred", "thread_safe", "onthread" or "async" with that annotation, else empty.
@@ -353,7 +354,7 @@ func (u *unit) declarations() ([]meta.Declaration, error) {
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ClassDecl, Base: baseName(c.Extends), Icon: icon,
 				Abstract: hasAnnotation(c, "abstract"), Singleton: hasAnnotation(c, "singleton"), Tool: hasAnnotation(c, "tool"), GameOnly: hasAnnotation(c, "game_only"), EditorOnly: editorOnly(c), Async: usesAsync(c), Gpu: usesGpuTypes(c) || usesGpuNames(u.src),
 				Virtuals: classVirtuals(c, false), NoscriptVirtuals: classVirtuals(c, true), Notifications: ownNotifications(c.Members), Traits: typeNamesOf(c.Implements), Signals: ownSignals(c.Members),
-				Tests: classTests(c), Test: hasAnnotation(c, "test")})
+				Tests: classTests(c, "test"), Benches: classTests(c, "bench"), Test: hasAnnotation(c, "test")})
 		case s.extern != nil:
 			decls = append(decls, meta.Declaration{Name: s.name, Kind: meta.ExternDecl, Base: baseName(s.extern.Extends), Signals: ownSignals(s.extern.Members)})
 		case s.trait != nil:
@@ -401,42 +402,52 @@ func (u *unit) useNoTestClass(c *Class) error {
 	return nil
 }
 
-// classTests returns the names of c's @test functions.
-func classTests(c *Class) []string {
+// classTests returns the names of c's functions with the annotation name: test or bench.
+func classTests(c *Class, name string) []string {
 	var names []string
 	for _, m := range c.Members {
-		if m.Func != nil && slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == "test" }) {
+		if m.Func != nil && slices.ContainsFunc(m.Func.Annotations, func(a *Annotation) bool { return a.Name == name }) {
 			names = append(names, m.Func.Name)
 		}
 	}
 	return names
 }
 
-// checkTest reports what's wrong with f, a @test function of the class named owner, with the annotations a, t among
-// them. The runner of tests creates an object of the class, adds it to the tree, and calls f. So the class is a @test
-// class, which can be created, and f takes no parameters, and no other annotation than @async.
-func (u *unit) checkTest(f *Func, owner string, t *Annotation, a map[string]*Annotation) error {
+// checkTest reports what's wrong with f, a @test or @bench function of the class named owner, with the annotations a,
+// t among them, and returns the least number of calls of a benchmark: @bench's argument, or 1. The runner of tests
+// creates an object of the class, adds it to the tree, and calls f: once for a test, in a loop for a benchmark. So the
+// class is a @test class, which can be created, and f takes no parameters, and no other annotation than @async on a test.
+func (u *unit) checkTest(f *Func, owner string, t *Annotation, a map[string]*Annotation) (int64, error) {
 	class := u.symbols[owner].class
+	noun, run, hint := "test", "gd++ test", "gd++ test calls a test on a new object of its class, in the tree. It only takes @async, to await."
+	if t.Name == "bench" {
+		noun, run, hint = "benchmark", "gd++ test --bench", "gd++ test --bench calls a benchmark in a loop, on a new object of its class, in the tree."
+	}
 	for _, other := range f.Annotations {
-		if a[other.Name] == other && other.Name != "test" && other.Name != "async" {
-			return u.errorAt(other.Pos, len(other.Name)+1, fmt.Sprintf("Annotations @test and @%s can't be used together.", other.Name),
-				"gd++ test calls a test on a new object of its class, in the tree. It only takes @async, to await.")
+		if a[other.Name] == other && other.Name != t.Name && (t.Name == "bench" || other.Name != "async") {
+			return 0, u.errorAt(other.Pos, len(other.Name)+1, fmt.Sprintf("Annotations @%s and @%s can't be used together.", t.Name, other.Name), hint)
 		}
 	}
-	switch {
-	case len(t.Args) > 0:
-		return u.errorAt(t.Pos, len(t.Name)+1, "Annotation @test takes no arguments.", "")
-	case len(f.Params) > 0:
-		return u.errorAt(f.Params[0].Pos, len(f.Params[0].Name), fmt.Sprintf("The @test function %s can't take parameters.", f.Name),
-			"gd++ test calls it without arguments. For a test per value, have a macro generate them.")
-	case !hasAnnotation(class, "test"):
-		return u.errorAt(t.Pos, len(t.Name)+1, fmt.Sprintf("Class %s has no @test, so it can't have @test functions.", owner),
-			"Tests go in @test classes, which only gd++ test registers. Move the test to one, or add @test to the class.")
-	case hasAnnotation(class, "abstract"):
-		return u.errorAt(t.Pos, len(t.Name)+1, fmt.Sprintf("The abstract class %s can't have @test functions.", owner),
-			"gd++ test calls a test on a new object of its class. Move the test to a subclass.")
+	calls := int64(1)
+	if t.Name == "bench" && len(t.Args) > 0 {
+		calls, _ = strconv.ParseInt(t.Args[0].Value, 0, 64)
 	}
-	return nil
+	switch {
+	case t.Name == "test" && len(t.Args) > 0:
+		return 0, u.errorAt(t.Pos, len(t.Name)+1, "Annotation @test takes no arguments.", "")
+	case len(t.Args) > 1 || calls <= 0:
+		return 0, u.errorAt(t.Args[0].Pos, len(t.Args[0].Value), "Annotation @bench takes the least number of calls, a positive integer, e.g. @bench(1000).", "")
+	case len(f.Params) > 0:
+		return 0, u.errorAt(f.Params[0].Pos, len(f.Params[0].Name), fmt.Sprintf("The @%s function %s can't take parameters.", t.Name, f.Name),
+			run+" calls it without arguments. For a "+noun+" per value, have a macro generate them.")
+	case !hasAnnotation(class, "test"):
+		return 0, u.errorAt(t.Pos, len(t.Name)+1, fmt.Sprintf("Class %s has no @test, so it can't have @%s functions.", owner, t.Name),
+			fmt.Sprintf("%ss go in @test classes, which only gd++ test registers. Move the %s to one, or add @test to the class.", strings.ToUpper(noun[:1])+noun[1:], noun))
+	case hasAnnotation(class, "abstract"):
+		return 0, u.errorAt(t.Pos, len(t.Name)+1, fmt.Sprintf("The abstract class %s can't have @%s functions.", owner, t.Name),
+			fmt.Sprintf("%s calls a %s on a new object of its class. Move the %s to a subclass.", run, noun, noun))
+	}
+	return calls, nil
 }
 
 // usesAsync reports whether class c uses Async: has an @onthread or @async function or on block, an Async type in a signature, or
@@ -1434,7 +1445,7 @@ func cppString(s string) string {
 
 var identRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
-var knownAnnotations = []string{"abstract", "async", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_color_no_alpha", "export_custom", "export_dir", "export_enum",
+var knownAnnotations = []string{"abstract", "async", "bench", "bitfield", "const", "deferred", "editor_only", "export", "export_category", "export_color_no_alpha", "export_custom", "export_dir", "export_enum",
 	"export_exp_easing", "export_file", "export_file_path", "export_flags", "export_flags_2d_navigation", "export_flags_2d_physics", "export_flags_2d_render", "export_flags_3d_navigation",
 	"export_flags_3d_physics", "export_flags_3d_render", "export_flags_avoidance", "export_global_dir", "export_global_file", "export_group", "export_multiline", "export_node_path",
 	"export_placeholder", "export_range", "export_storage", "export_subgroup", "export_tool_button", "factory", "factory_pool", "factory_scene", "factory_shader", "game_only", "global", "grid", "group", "icon", "noprofile", "notrace", "onready",
@@ -1458,7 +1469,7 @@ func (u *unit) annotations(list []*Annotation, kind string, allowed ...string) (
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s can't be used on %s.", a.Name, kind), "")
 		case found[a.Name] != nil:
 			return nil, u.errorAt(a.Pos, len(a.Name)+1, fmt.Sprintf("Annotation @%s is used twice.", a.Name), "")
-		case len(a.Args) > 0 && !slices.Contains([]string{"async", "export_category", "export_custom", "export_enum", "export_exp_easing", "export_file", "export_file_path", "export_flags",
+		case len(a.Args) > 0 && !slices.Contains([]string{"async", "bench", "export_category", "export_custom", "export_enum", "export_exp_easing", "export_file", "export_file_path", "export_flags",
 			"export_global_file", "export_group", "export_node_path", "export_placeholder", "export_tool_button", "export_range", "export_subgroup", "factory", "factory_pool", "factory_scene", "factory_shader", "grid", "group", "icon", "onthread", "override", "pool", "profile", "recycle", "rpc", "scene", "shader", "tool", "trace",
 			"virtual"}, a.Name) || a.Name == "recycle" && len(a.Args) > 0 && kind != "a ctor block" && kind != "a dtor block":
 			return nil, u.errorAt(a.Args[0].Pos, len(a.Args[0].Value), fmt.Sprintf("Annotation @%s takes no arguments.", a.Name), "")
@@ -1543,7 +1554,7 @@ func (u *unit) debugOn(a *Annotation, class string) (bool, error) {
 
 // buildFunc checks f, a function of the class or extern named owner.
 func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
-	allowed := []string{"async", "const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "private", "profile", "recycle", "rpc", "static",
+	allowed := []string{"async", "bench", "const", "deferred", "editor_only", "game_only", "noprofile", "notrace", "onthread", "override", "private", "profile", "recycle", "rpc", "static",
 		"test", "thread_safe", "trace", "virtual"}
 	if ext {
 		allowed = []string{"const", "deferred", "noprofile", "notrace", "profile", "rpc", "static", "thread_safe", "trace"}
@@ -1632,12 +1643,18 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 		return nil, err
 	}
 	m.notrace, m.noprofile = a["notrace"] != nil, a["noprofile"] != nil
-	if t := a["test"]; t != nil {
-		if err := u.checkTest(f, owner, t, a); err != nil {
-			return nil, err
+	for _, name := range []string{"test", "bench"} {
+		if t := a[name]; t != nil {
+			calls, err := u.checkTest(f, owner, t, a)
+			if err != nil {
+				return nil, err
+			}
+			if name == "bench" {
+				m.bench = calls
+			}
+			// A test isn't traced or profiled, since it isn't part of the game.
+			m.test, m.notrace, m.noprofile = true, true, true
 		}
-		// A test isn't traced or profiled, since it isn't part of the game.
-		m.test, m.notrace, m.noprofile = true, true, true
 	}
 	for _, name := range []string{"deferred", "thread_safe", "onthread", "async"} {
 		if a[name] != nil {
@@ -1679,7 +1696,11 @@ func (u *unit) buildFunc(f *Func, owner string, ext bool) (*funcModel, error) {
 	}
 	switch {
 	case m.test && !m.ret.void:
-		return nil, u.errorAt(f.Return.Pos, len(f.Return.Name), fmt.Sprintf("The @test function %s must return void.", f.Name), "Drop the return type: tests return nothing.")
+		name, noun := "test", "tests"
+		if m.bench > 0 {
+			name, noun = "bench", "benchmarks"
+		}
+		return nil, u.errorAt(f.Return.Pos, len(f.Return.Name), fmt.Sprintf("The @%s function %s must return void.", name, f.Name), "Drop the return type: "+noun+" return nothing.")
 	case ext && f.Body != nil:
 		return nil, u.errorAt(f.Body.Pos, 1, "Extern functions can't have a body.", "Externs only declare what another package defines.")
 	case m.detached && !m.ret.void:

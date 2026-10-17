@@ -297,11 +297,10 @@ func preparePackage(p Project, pkg Package, bindArgs []string, o BuildOptions) (
 // buildExtension compiles the package into GDExtension libraries for
 // targets, and generates its .gdextension file. With testing, for gd++ test,
 // the libraries also register the @test classes and the runner of tests. It
-// returns the package's tests.
-func buildExtension(p Project, pkg Package, o BuildOptions, targets []string, testing bool) []gdppTest {
+// returns the package's GD++ files.
+func buildExtension(p Project, pkg Package, o BuildOptions, targets []string, testing bool) []gdppFile {
 	// The first build's arguments, so the full build finds the generated bindings up to date.
 	files, classes := preparePackage(p, pkg, o.sconsArgs(targets[0]), o)
-	tests := gdppTests(files)
 	generateRegisterTypes(pkg, classes, testing)
 	for _, target := range targets {
 		// With several targets, the task names the one it builds.
@@ -312,7 +311,7 @@ func buildExtension(p Project, pkg Package, o BuildOptions, targets []string, te
 		Exec("Building "+name+"...", pkg.BuildCache, "scons", o.sconsArgs(target)...)
 	}
 	generateGdextension(pkg, classes)
-	return tests
+	return files
 }
 
 // generateBuildCache syncs the package's bindings and API spec into its build

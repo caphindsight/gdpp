@@ -28,10 +28,11 @@ gd++ test
 
 - A test is a function with `@test`, in a class with `@test`: no registration, no main function, no extra files.
 - `gd++ test` builds the package and runs its tests. See `gd++ man test`.
+- A benchmark, a function with `@bench`, times code. See "Benchmarks" below.
 
 # @test classes
 
-A class with `@test` holds tests, and the helpers they share:
+A class with `@test` holds tests, benchmarks, and the helpers they share:
 
 ```gd++
 @test
@@ -123,6 +124,78 @@ func timer_times_out() {
 
 See `gd++ man async`.
 
+# Benchmarks
+
+A benchmark is a function with `@bench`, in a `@test` class. `gd++ test --bench` times it:
+
+```gd++
+@test
+class_name InventoryBench
+extends Node
+
+var inv: Inventory
+var total: int
+
+on ready {
+  inv = create Inventory;
+  add_child(inv);
+  inv->add(string_name "potion", 99);
+}
+
+@bench
+func counts_potions() {
+  total += inv->count(string_name "potion");
+}
+```
+
+```sh
+gd++ test --bench
+```
+
+```out
+[•] Benchmarking res://.
+[•] Benched InventoryBench.counts_potions: 41.7 ns per call, 28767000 calls.
+[•] All 1 benchmark passed.
+```
+
+- `gd++ test --bench` runs the benchmarks, and no tests. Plain `gd++ test` runs the tests, and no benchmarks.
+- It builds with `--opt` by default, to time optimized code. `--noopt` or `--small` overrides it.
+- It's still a debug build, since release builds have no `@test` classes. So `assert` checks, and debug checks of Godot's own code run too.
+- A benchmark takes no parameters, and returns nothing. Without `->`, it returns `void`.
+- It takes no other annotation, not even `@async` or `@test`.
+- Its class can't be `@abstract`.
+- Its full name is `CLASS.NAME`, like a test's. `--run` and the paths of files select benchmarks like tests.
+- Macros and templates generate benchmarks like tests, with `@bench`. See "Tests from macros" below.
+
+For each benchmark, `gd++ test --bench`:
+
+1. creates a new object of its class, and adds it to the tree, like for a test. So `on ready` blocks and variable initializers set up its data, and aren't timed.
+2. calls the benchmark in a loop, in batches. It sizes each batch from the time per call so far, until a batch runs for at least 1 second.
+3. shows the time per call, and the number of calls, of that last batch.
+4. frees the object.
+
+So:
+
+- All calls work on the same object: what one call changes, the next one sees.
+- The compiler may drop work whose result nothing uses. Keep results, e.g. add them to a variable of the class, like `total` above.
+- A failed assertion fails the benchmark, and ends it.
+- The package's `test_timeout` applies to each benchmark, like to a test. A benchmark runs for 1 to 3 seconds, or longer if one call takes long.
+
+# @bench(N)
+
+`@bench(N)` makes every batch at least N calls, e.g. for code that takes long, or whose time varies from call to call:
+
+```gd++
+@bench(1000)
+func sorts_inventory() {
+  inv->sort();
+}
+```
+
+- N is a positive integer.
+- Without it, a slow benchmark may run a single call per batch. With `@bench(1000)`, its time is the average of at least 1000 calls.
+- Take a timeout into account: 1000 calls of 20 ms are 20 seconds, which fails with the default `test_timeout`. See `gd++ man packages`.
+
 # Tests from macros
 
 Macros generate tests with `gd.func` and `"@test"`, and templates by writing them:
@@ -147,13 +220,15 @@ invoke equal_test(lengths_match, String("abc").length(), 3)
 invoke sum_test(sums_small, [1, 2, 3], 6)
 ```
 
+- Benchmarks the same way: `"@bench"`, or `{ "@bench", 1000 }` for `@bench(1000)`.
+
 See `gd++ man templates` and `gd++ man macros`.
 
 # How tests run
 
 - `gd++ test` runs a headless Godot, without a window or sound, in the project.
 - The scene tree has the project's autoloads, and the package's `@singleton` classes, but not the main scene.
-- Tests run one at a time, one per frame, sorted by name.
+- Tests run one at a time, one per frame, sorted by name. So do benchmarks.
 - Each test's output, e.g. from `gd::print`, is shown only if it fails.
 - `@trace` and `@profile` leave tests out, also those of the class.
 - See `gd++ man test` for which tests run, and which Godot runs them.
@@ -165,6 +240,7 @@ A `@test` class is a class like any other, with its tests as plain methods:
 - Its header and source file are in `#ifdef DEBUG_ENABLED`.
 - Its source file goes in the build cache's `gdpp/test` directory, which release builds don't compile.
 - Its static method `_gdpp_create` makes the objects that `gd++ test` runs tests on, like `create`.
+- With benchmarks, its method `_gdpp_bench` runs one of them in batches, by name. It calls the benchmark through a pointer, which the compiler can't inline.
 - `gd++ test` registers it, and the runtime's runner of tests, a class named after the package's prefix, e.g. `FooTests`. `gd++ build` registers neither.
 
 `gd++ trans FILE` prints them. See `gd++ man generated`.

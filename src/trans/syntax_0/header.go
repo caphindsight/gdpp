@@ -402,6 +402,9 @@ func (u *unit) classDecl(w *writer, c *classModel) {
 	if c.test && !c.abstract {
 		public = append(public, "static Node *_gdpp_create();")
 	}
+	if slices.ContainsFunc(c.funcs, func(f *funcModel) bool { return f.bench > 0 }) {
+		public = append(public, "PackedInt64Array _gdpp_bench(const StringName &p_name);")
+	}
 	if len(c.allTraits) > 0 {
 		public = append(public, fmt.Sprintf("static void _gdpp_traits(gdpp::TraitsOf<%s>);", c.name))
 		if !c.refCounted {
