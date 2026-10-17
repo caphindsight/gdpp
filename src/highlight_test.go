@@ -37,7 +37,7 @@ func TestHighlightCode(t *testing.T) {
 			Styled("destroy", CodeKeyword) + " b; " + Styled("Image", CodeType) + "::" + Styled("create", CodeFunction) + "(" + Styled("1", CodeLiteral) + ");"},
 		{"gd++", "call(string_name \"f\"); string_name = 1;", Styled("call", CodeFunction) + "(" + Styled("string_name", CodeKeyword) + " " +
 			Styled("\"f\"", CodeLiteral) + "); string_name = " + Styled("1", CodeLiteral) + ";"},
-		{"gd++", "assert x > 0;", Styled("assert", CodeKeyword) + " x > " + Styled("0", CodeLiteral) + ";"},
+		{"gd++", "assert x > 0; assert -a == b;", Styled("assert", CodeKeyword) + " x > " + Styled("0", CodeLiteral) + "; " + Styled("assert", CodeKeyword) + " -a == b;"},
 		{"gd++", "shader f(n: int) -> float { return a[index(id)] + index; }", Styled("shader", CodeKeyword) + " " + Styled("f", CodeFunction) + "(n: " +
 			Styled("int", CodeType) + ") -> " + Styled("float", CodeType) + " { " + Styled("return", CodeKeyword) + " a[" + Styled("index", CodeKeyword) + "(" +
 			Styled("id", CodeKeyword) + ")] + index; }"},

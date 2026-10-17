@@ -696,8 +696,8 @@ func closing(ts []lexer.Token, open int) int {
 	return len(ts)
 }
 
-// assertTarget matches an assertion at ts[i], `assert cond;`, where assert starts a statement and cond starts like an
-// expression, so `s.assert(x);` and `assert = 1;` aren't assertions. A line after a preprocessor directive starts a
+// assertTarget matches an assertion at ts[i], `assert cond;`, where assert starts a statement and cond isn't empty, so
+// `s.assert(x);` and `assert;` aren't assertions. A line after a preprocessor directive starts a
 // statement too, e.g. after the #line directives around what a macro generates. It returns the index where cond
 // starts and the index of the ';'.
 func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
@@ -709,12 +709,8 @@ func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
 		!(isPunct(ts[p], ":") && (p == 0 || !isPunct(ts[p-1], ":"))) && !(ts[p].Type == tokIdent && ts[p].Value == "else") && !afterDirective(ts, i) {
 		return
 	}
-	cond = skipSpace(ts, i+1)
-	if cond == len(ts) || !isOneOf(ts[cond], "Ident", "Number", "String", "Char") && !isPunct(ts[cond], "(") &&
-		!((isPunct(ts[cond], "!") || isPunct(ts[cond], "*") || isPunct(ts[cond], "&")) && cond+1 < len(ts) && !isPunct(ts[cond+1], "=")) {
-		return
-	}
 	// The condition ends at the first ';' outside of brackets, e.g. not one in a lambda.
+	cond = skipSpace(ts, i+1)
 	for j, depth := cond, 0; j < len(ts) && depth >= 0; j++ {
 		switch {
 		case isPunct(ts[j], "(") || isPunct(ts[j], "[") || isPunct(ts[j], "{"):
@@ -722,7 +718,7 @@ func assertTarget(ts []lexer.Token, i int) (cond, semi int, ok bool) {
 		case isPunct(ts[j], ")") || isPunct(ts[j], "]") || isPunct(ts[j], "}"):
 			depth--
 		case depth == 0 && isPunct(ts[j], ";"):
-			return cond, j, true
+			return cond, j, j > cond
 		}
 	}
 	return

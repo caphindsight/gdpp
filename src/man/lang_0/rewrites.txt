@@ -64,7 +64,7 @@ Rewrites only happen in C++ code, never in comments or strings. Each applies in 
 - `create`, `destroy` and `queue_destroy`: only when a name follows them, and they aren't members. Elsewhere they're left alone, e.g. in `Image::create(...)`, or a call of your own function `create(5)`.
 - `as`: only when a value comes before it and a type after it.
 - `callable`: only when a name, a string, `[` or `(` follows it, and it isn't a member. In `callable(...)`, only when a name or `[` follows the `)`. And not when the name is called, e.g. `callable f(1)`. Elsewhere it's left alone, e.g. in `Callable callable = f;` or `callable.call()`.
-- `assert`, `assert_void` and `assert_val`: only where they start a statement, followed by a condition and a `;`. The condition must start with a name, a literal, `(`, `!`, `*` or `&`. Elsewhere they're left alone, e.g. in `s.assert(x);` or `assert = 1;`.
+- `assert`, `assert_void` and `assert_val`: only where they start a statement, followed by a condition and a `;`. The condition is everything up to the next `;` outside of brackets. Elsewhere they're left alone, e.g. in `s.assert(x);`.
 
 Avoid the names of all rewrites as names in your C++ code.
 
