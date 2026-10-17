@@ -399,14 +399,14 @@ In a package with GD++ classes, `__register_types__.cpp` also:
 - includes the GD++ runtime,
 - calls `gdpp::uninitialize()` when the library is unloaded. It waits for the package's running tasks, and removes the engine's hooks into the package's code, e.g. signal connections. So the editor doesn't call the old code after a hot reload.
 - registers the class of tasks first, e.g. `FooAsync`, if the package's GD++ classes use `Async`. The GD++ runtime defines it.
-- registers the class of GPU arrays, e.g. `FooGpuArray`, and the internal class of the textures that shaders return, e.g. `FooGpuTexture`, if the package's GD++ classes have shaders or GPU arrays. The runtime header of shaders defines them.
+- registers the class of GPU arrays, e.g. `FooGpuArray`, and the internal classes of the textures that shaders return, on the GPU and in memory, e.g. `FooGpuTexture` and `FooCpuTexture`, if the package's GD++ classes have shaders or GPU arrays. The runtime header of shaders defines them.
 - records the traits of each class right after registering it, with `gdpp::register_traits`, which calls its `_gdpp_traits`. `gdpp::uninitialize()` forgets them.
 
 `SConstruct` defines, for all the package's C++:
 
 - `GDPP_ASYNC_CLASS` as the class of tasks' name,
 - `GDPP_QUIT_TIMEOUT_USEC` as the package's `quit_timeout`,
-- `GDPP_GPU_ARRAY_CLASS` and `GDPP_GPU_TEXTURE_CLASS` as the names of the class of GPU arrays and the class of textures,
+- `GDPP_GPU_ARRAY_CLASS`, `GDPP_GPU_TEXTURE_CLASS` and `GDPP_CPU_TEXTURE_CLASS` as the names of the class of GPU arrays and the classes of textures,
 - `GDPP_GPU_FORCE_CPU`, with `gd++ build --nogpu`, which runs shaders on the CPU.
 
 See `gd++ man async`.

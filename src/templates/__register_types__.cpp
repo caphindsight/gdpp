@@ -93,6 +93,7 @@ static void gdpp_initialize(ModuleInitializationLevel p_level) {
 {{- if .GpuRuntime}}
 	GDREGISTER_CLASS(gdpp::GDPP_GPU_ARRAY_CLASS);
 	GDREGISTER_INTERNAL_CLASS(gdpp::GDPP_GPU_TEXTURE_CLASS);
+	GDREGISTER_INTERNAL_CLASS(gdpp::GDPP_CPU_TEXTURE_CLASS);
 {{- end}}
 {{- range .SceneClasses}}
 	gdpp_register_class<{{.}}>();

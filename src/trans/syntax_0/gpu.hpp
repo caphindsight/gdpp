@@ -37,6 +37,11 @@
 #if defined(GODOT_VERSION_MAJOR) && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 #define GDPP_GPU_ASYNC
 #endif
+// GDPP_GPU_CPU_TEXTURE is defined where GDPP_CPU_TEXTURE_CLASS works: with Godot 4.7 or later, whose Texture2D lets
+// it answer get_image().
+#if defined(GODOT_VERSION_MAJOR) && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 7))
+#define GDPP_GPU_CPU_TEXTURE
+#endif
 // GDPP_GPU_ASYNC_NEEDED is the error for an @async shader without GDPP_GPU_ASYNC.
 #define GDPP_GPU_ASYNC_NEEDED "@async shaders need Godot 4.4 or later, whose RenderingDevice reads data back without waiting for the GPU."
 
@@ -1207,13 +1212,17 @@ enum class GpuFormat {
 };
 
 // GDPP_GPU_ARRAY_CLASS is the name of the package's class of GPU arrays, e.g. FooGpuArray: its prefix and GpuArray.
-// GDPP_GPU_TEXTURE_CLASS is the name of its internal class of textures that GD++ creates, e.g. FooGpuTexture. The
-// package registers both if it has @gpu functions, and the build defines these macros.
+// GDPP_GPU_TEXTURE_CLASS and GDPP_CPU_TEXTURE_CLASS are the names of its internal classes of textures that GD++
+// creates, on the GPU and without one, e.g. FooGpuTexture and FooCpuTexture. The package registers all three if it
+// has @gpu functions, and the build defines these macros.
 #ifndef GDPP_GPU_ARRAY_CLASS
 #define GDPP_GPU_ARRAY_CLASS GdppGpuArray
 #endif
 #ifndef GDPP_GPU_TEXTURE_CLASS
 #define GDPP_GPU_TEXTURE_CLASS GdppGpuTexture
+#endif
+#ifndef GDPP_CPU_TEXTURE_CLASS
+#define GDPP_CPU_TEXTURE_CLASS GdppCpuTexture
 #endif
 // gpu_array_class is the name of the package's class of GPU arrays, as a string, e.g. "FooGpuArray".
 inline constexpr const char *gpu_array_class = GDPP_STRINGIFY(GDPP_GPU_ARRAY_CLASS);
@@ -1972,6 +1981,9 @@ private:
 			r_compiled.pipeline = p_device.rd->compute_pipeline_create(r_compiled.shader);
 		}
 		r_compiled.ok = r_compiled.pipeline.is_valid();
+		if (!r_compiled.ok) {
+			ERR_PRINT(vformat("Kernel %s failed to compile for the GPU, so it runs on the CPU.", name));
+		}
 	}
 };
 
@@ -2411,7 +2423,66 @@ protected:
 	static void _bind_methods() {}
 };
 
+// GDPP_CPU_TEXTURE_CLASS is the package's internal class of the textures that GD++ creates without a GPU: a Texture2D
+// whose pixels GD++ keeps in memory, where kernels on the CPU read and write them as they are, and get_image() reads
+// them. It copies them to the RenderingServer, which draws them, once a kernel wrote them: --headless's ignores that.
+// Scripts see a Texture2D. Before Godot 4.7, GD++ makes ImageTextures instead.
+class GDPP_CPU_TEXTURE_CLASS : public Texture2D {
+	GDPP_GDCLASS(GDPP_CPU_TEXTURE_CLASS, Texture2D)
+
+public:
+	std::shared_ptr<glsl::Pixels> pixels = std::make_shared<glsl::Pixels>();
+	GpuFormat format = GpuFormat::rgba8;
+	RID rid; // The RenderingServer's copy of the pixels.
+
+	~GDPP_CPU_TEXTURE_CLASS() {
+		if (rid.is_valid()) {
+			RenderingServer::get_singleton()->free_rid(rid);
+		}
+	}
+
+	// make returns a new texture of p_format, with p_pixels.
+	static Ref<GDPP_CPU_TEXTURE_CLASS> make(std::shared_ptr<glsl::Pixels> p_pixels, GpuFormat p_format) {
+		Ref<GDPP_CPU_TEXTURE_CLASS> texture;
+		texture.instantiate();
+		texture->pixels = std::move(p_pixels);
+		texture->format = p_format;
+		texture->rid = RenderingServer::get_singleton()->texture_2d_create(gpu::image_from_pixels(*texture->pixels, p_format));
+		return texture;
+	}
+
+	// upload copies the pixels to the RenderingServer, once a kernel wrote them.
+	void upload() const { RenderingServer::get_singleton()->texture_2d_update(rid, gpu::image_from_pixels(*pixels, format), 0); }
+
+#ifdef GDPP_GPU_CPU_TEXTURE
+	RID _get_rid() const override { return rid; }
+	int32_t _get_width() const override { return pixels->width; }
+	int32_t _get_height() const override { return pixels->height; }
+	Image::Format _get_format() const override { return gpu::info(format).final; }
+	bool _has_alpha() const override { return gpu::info(format).channels == 4; }
+	// _get_image waits for the runs of @async calls, which may write the pixels.
+	Ref<Image> _get_image() const override {
+		gpu::cpu_queue().drain();
+		return gpu::image_from_pixels(*pixels, format);
+	}
+#endif
+
+protected:
+	static void _bind_methods() {}
+};
+
 namespace gpu {
+
+// texture_from_pixels returns a new texture of p_format, with p_pixels, which a kernel on the CPU returned: without a
+// GPU, a GDPP_CPU_TEXTURE_CLASS, and else an ImageTexture, which kernels on the GPU can write too.
+inline Ref<Texture2D> texture_from_pixels(std::shared_ptr<Pixels> p_pixels, GpuFormat p_format) {
+#ifdef GDPP_GPU_CPU_TEXTURE
+	if (!main_device()) {
+		return GDPP_CPU_TEXTURE_CLASS::make(std::move(p_pixels), p_format);
+	}
+#endif
+	return ImageTexture::create_from_image(image_from_pixels(*p_pixels, p_format));
+}
 
 // texture_usage is how the textures that GD++ creates are used: sampled, e.g. by materials, written by kernels, read
 // back and updated, and cleared, which needs CAN_COPY_TO.
@@ -2438,16 +2509,16 @@ inline RID create_texture(Device &p_device, Vector2i p_size, RenderingDevice::Da
 } // namespace gpu
 
 // gpu_texture returns a new texture of p_size and p_format, which kernels write and materials draw: a Texture2DRD on
-// the GPU, and an ImageTexture without one. All its pixels are zero.
+// the GPU, and else what texture_from_pixels returns. All its pixels are zero.
 inline Ref<Texture2D> gpu_texture(Vector2i p_size, GpuFormat p_format) {
 	p_size = Vector2i(std::max(p_size.x, 1), std::max(p_size.y, 1));
 	gpu::Device *d = gpu::main_device();
 	if (!d) {
-		glsl::Pixels pixels;
-		pixels.width = p_size.x;
-		pixels.height = p_size.y;
-		pixels.data.resize(size_t(p_size.x) * size_t(p_size.y));
-		return ImageTexture::create_from_image(gpu::image_from_pixels(pixels, p_format));
+		std::shared_ptr<glsl::Pixels> pixels = std::make_shared<glsl::Pixels>();
+		pixels->width = p_size.x;
+		pixels->height = p_size.y;
+		pixels->data.resize(size_t(p_size.x) * size_t(p_size.y));
+		return gpu::texture_from_pixels(pixels, p_format);
 	}
 	Ref<GDPP_GPU_TEXTURE_CLASS> texture;
 	texture.instantiate();
@@ -2636,12 +2707,25 @@ inline sampler2D sampled(const Ref<Image> &p_image) {
 	return sampler2D{ pixels_from_image(p_image) };
 }
 inline sampler2D sampled(const Ref<Texture2D> &p_texture) {
+	if (Ref<GDPP_CPU_TEXTURE_CLASS> cpu = p_texture; cpu.is_valid()) {
+		return sampler2D{ cpu->pixels };
+	}
 	return sampler2D{ pixels_from_image(p_texture.is_valid() ? p_texture->get_image() : Ref<Image>()) };
 }
 
 // writable returns a written texture on the CPU, from a Texture2D[p_format], which it updates once the kernel is
-// done: a Texture2DRD's texture on the GPU, or an ImageTexture.
+// done: a GDPP_CPU_TEXTURE_CLASS, whose pixels the kernel writes, a Texture2DRD's texture on the GPU, or an
+// ImageTexture.
 inline image2D writable(const Ref<Texture2D> &p_texture, GpuFormat p_format) {
+	if (Ref<GDPP_CPU_TEXTURE_CLASS> cpu = p_texture; cpu.is_valid()) {
+		struct Update {
+			Ref<GDPP_CPU_TEXTURE_CLASS> texture;
+			~Update() { texture->upload(); }
+		};
+		std::shared_ptr<Update> update = std::make_shared<Update>();
+		update->texture = cpu;
+		return image2D{ std::shared_ptr<Pixels>(update, cpu->pixels.get()) }; // It updates once the last copy is gone.
+	}
 	struct WriteBack : Pixels {
 		Ref<Texture2D> texture;
 		GpuFormat format;
@@ -2977,6 +3061,8 @@ public:
 			b.image = it->get_image()->duplicate();
 			b.image->convert(info(p_format).image);
 			b.write_back = it;
+		} else if (Ref<GDPP_CPU_TEXTURE_CLASS>(p_texture).is_valid()) {
+			// Only without a GPU, so the kernel runs on the CPU, which writes its pixels.
 		} else {
 			ERR_PRINT(vformat("Kernel %s writes a texture, which must be a Texture2DRD or an ImageTexture.", kernel.name));
 			failed = true;
@@ -3058,7 +3144,7 @@ public:
 			dispatch(*d, waits(), nullptr, texture.ptr());
 			return texture;
 		}
-		return ImageTexture::create_from_image(image_from_pixels(*cpu_pixels(p_make), p_format));
+		return texture_from_pixels(cpu_pixels(p_make), p_format);
 	}
 
 	// run runs a kernel that returns nothing: it writes its GPU arrays and textures. It waits for the GPU only with
@@ -3183,7 +3269,7 @@ public:
 		}
 		std::shared_ptr<Pixels> pixels = new_pixels();
 		auto finish = [p, pixels, p_format] {
-			p->set(ImageTexture::create_from_image(image_from_pixels(*pixels, p_format)));
+			p->set(texture_from_pixels(pixels, p_format));
 			p->done();
 		};
 		on_cpu(p_make, pixel_store(pixels), finish);

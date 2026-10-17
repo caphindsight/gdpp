@@ -549,7 +549,10 @@ Then shaders run on the CPU, with the same results, but slower:
 
 - GD++ compiles each shader's body as C++ too, into the library.
 - The CPU runs the workgroups on Godot's `WorkerThreadPool`, all at once, and the cells of each workgroup one after another.
-- GPU arrays are arrays in memory, and textures are `ImageTexture`s.
+- GPU arrays are arrays in memory.
+- Textures that shaders return, or that `gpu_texture` makes, are `Texture2D`s whose pixels GD++ keeps in memory. Shaders read and write those pixels with no conversion, and `get_image()` reads them, even with `--headless`. GD++ copies them to the RenderingServer after each write, to draw them.
+  - That needs Godot 4.7 or later. Before, they're `ImageTexture`s, whose `get_image()` doesn't see shaders' writes with `--headless`.
+  - With a GPU, a shader that failed to compile returns an `ImageTexture` too, since other shaders may write it on the GPU.
 - Float results can differ in their last bits.
 
 On the CPU, calls keep the order that the GPU would:

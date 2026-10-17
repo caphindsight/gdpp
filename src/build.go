@@ -360,6 +360,7 @@ func generateBuildCache(p Project, pkg Package) {
 		"TestsClass":      pkg.TestsClass(),
 		"GpuArrayClass":   pkg.GpuArrayClass(),
 		"GpuTextureClass": pkg.GpuTextureClass(),
+		"CpuTextureClass": pkg.CpuTextureClass(),
 		"QuitTimeout":     int64(math.Round(pkg.QuitTimeout() * 1e6)),
 	})
 }
@@ -458,6 +459,7 @@ func generateRegisterTypes(pkg Package, gdpp []gdppClass, testing bool) {
 		Check(err, "Failed to find the GD++ runtime header of shaders")
 		added[pkg.GpuArrayClass()] = "GpuArray types"
 		added[pkg.GpuTextureClass()] = "the textures that shaders create"
+		added[pkg.CpuTextureClass()] = "the textures that shaders create without a GPU"
 	}
 	for name, what := range added {
 		Assert(!slices.Contains(classes, name), "Class %s is declared in %s, but GD++ adds a class of that name for %s. Set another prefix with `gd++ init %s --prefix NAME`.",

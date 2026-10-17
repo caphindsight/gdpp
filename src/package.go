@@ -87,6 +87,12 @@ func (pkg Package) GpuTextureClass() string {
 	return pkg.Prefix() + "GpuTexture"
 }
 
+// CpuTextureClass returns the name of the package's internal class of the
+// textures that shaders create without a GPU, e.g. FooCpuTexture.
+func (pkg Package) CpuTextureClass() string {
+	return pkg.Prefix() + "CpuTexture"
+}
+
 // ResPath returns the res:// path of the package's root, e.g. res://addons/foo.
 func (pkg Package) ResPath() string {
 	if rel := relPath(GetProjectRoot(pkg.Root), pkg.Root); rel != "." {
