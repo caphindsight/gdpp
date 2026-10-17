@@ -651,6 +651,37 @@ T cast(const U &p_value) {
 template <typename T, typename U>
 T cast(const Weak<U> &p_value) { return cast<T>(Gd<U>(p_value.ptr())); }
 
+// type_string gives the PROPERTY_HINT_TYPE_STRING form of the element type T of a typed collection, e.g. "24/34:Node".
+template <typename T>
+String type_string() {
+	if constexpr (std::is_base_of_v<Object, T>) {
+		PropertyHint hint = std::is_base_of_v<Node, T> ? PROPERTY_HINT_NODE_TYPE : PROPERTY_HINT_RESOURCE_TYPE;
+		return vformat("%d/%d:%s", int(Variant::OBJECT), int(hint), T::get_class_static());
+	} else {
+		return vformat("%d:", int(GetTypeInfo<T>::VARIANT_TYPE));
+	}
+}
+
+// node_elements<T> gives the hint of the typed collection T if it holds nodes. The editor and scenes only treat
+// elements as nodes with PROPERTY_HINT_TYPE_STRING, not with the hint that godot-cpp gives.
+template <typename T>
+struct node_elements {
+	// The PROPERTY_HINT_TYPE_STRING hint string, or empty if T holds no nodes.
+	static String hint_string() { return String(); }
+};
+template <typename T>
+struct node_elements<TypedArray<T>> {
+	// The PROPERTY_HINT_TYPE_STRING hint string, or empty if T isn't a node.
+	static String hint_string() { return std::is_base_of_v<Node, T> ? type_string<T>() : String(); }
+};
+template <typename K, typename V>
+struct node_elements<TypedDictionary<K, V>> {
+	// The PROPERTY_HINT_TYPE_STRING hint string, or empty if neither K nor V is a node.
+	static String hint_string() {
+		return std::is_base_of_v<Node, K> || std::is_base_of_v<Node, V> ? type_string<K>() + ";" + type_string<V>() : String();
+	}
+};
+
 // info returns the PropertyInfo of a value of type T named p_name, as bindings expose it.
 template <typename T>
 PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DEFAULT,
@@ -662,6 +693,9 @@ PropertyInfo info(const StringName &p_name, uint32_t p_usage = PROPERTY_USAGE_DE
 		if constexpr (T::is_class() && T::is_node()) {
 			result.hint = PROPERTY_HINT_NODE_TYPE;
 		}
+	} else if (String elements = node_elements<T>::hint_string(); !elements.is_empty()) {
+		result.hint = PROPERTY_HINT_TYPE_STRING;
+		result.hint_string = elements;
 	}
 	if (p_hint != PROPERTY_HINT_NONE || !p_hint_string.is_empty()) {
 		result.hint = p_hint;

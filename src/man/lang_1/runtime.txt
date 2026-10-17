@@ -156,7 +156,7 @@ The code that GD++ generates uses these. Your code rarely needs them:
 
 - `gdpp::gpu::Kernel` and `gdpp::gpu::Call` run a shader, on the GPU or on the CPU. `gdpp::glsl` holds GLSL's types and built-ins in C++, for shaders' bodies on the CPU. The runtime header of shaders, `gd++/syntax_1_gpu.hpp`, defines them, and only files that use shaders or GPU arrays include it.
 
-- `gdpp::info<T>(name, ...)` returns the `PropertyInfo` of a value of type T, for bindings. A `Gd` of a node class gets a node-type hint, so the inspector only accepts nodes of that class.
+- `gdpp::info<T>(name, ...)` returns the `PropertyInfo` of a value of type T, for bindings. A `Gd` of a node class gets a node-type hint, so the inspector only accepts nodes of that class. A typed `Array` or `Dictionary` of nodes gets the same hint for its elements, so the inspector picks nodes for them, and scenes save them as node paths.
 - `gdpp::add_property_category(class, name)` adds an inspector category, for `@export_category`.
 - `gdpp::rpc_config<T>(node, method, ...)` configures an RPC, for `@rpc`. It fails to compile if `T` doesn't extend `Node`.
 - `gdpp::call_thread_safe(node, method, args...)` calls a method with `call_thread_safe`, for `@thread_safe`. It fails to compile if the node's class doesn't extend `Node`.
