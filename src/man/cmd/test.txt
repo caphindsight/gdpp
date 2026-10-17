@@ -32,6 +32,7 @@ For tests themselves, see `gd++ man tests`.
   - An engine dependency is Godot's source code. The first `gd++ test` compiles it, which takes a while: a headless editor for this machine.
   - It compiles a copy, in `res://.gd++cache/godot/NAME`, and reuses the binary after.
   - `gd++ rm` of the engine deletes the copy too.
+- Without an engine setting, the `godot` binary in the PATH.
 - `--engine NAME` runs another engine dependency instead.
 - `--engine PATH` runs a Godot binary instead, e.g. your own build, or the Godot that you have installed. It needs no engine setting, and nothing is downloaded or compiled.
 - A Godot that runs tests must load the package's library: the same Godot version as the package's spec, or a newer one.
@@ -51,7 +52,7 @@ PATH...
   Run the tests in this Godot.
   - A value with a path separator, `/` or `\`, is a Godot binary, e.g. `./godot` or `/usr/bin/godot`.
   - Anything else is an engine dependency in the project's cache, e.g. `4.7.2-stable`, which `gd++ test` compiles the first time.
-  - Default: the package's engine.
+  - Default: the package's engine, or else the `godot` binary in the PATH.
 
 --timeout SECONDS
   Fail an `@async` test that runs longer than this. Default: the package's `test_timeout` setting, or else 10. See `gd++ man packages`.
@@ -105,10 +106,10 @@ Run the tests of one file, and only those of one class:
 gd++ test tests.gd++ --run 'PlayerTest.*'
 ```
 
-Run them in the Godot that you have installed:
+Run them in a Godot binary that isn't in the PATH:
 
 ```sh
-gd++ test --engine "$(which godot)"
+gd++ test --engine ~/godot/bin/godot
 ```
 
 Look for memory errors while the tests run:
@@ -119,7 +120,7 @@ gd++ test --asan
 
 # Errors
 
-- "Package PKG has no Godot engine to run its tests, set one with `gd++ init PKG --update --engine NAME`, or name a Godot binary with --engine PATH."
+- "Package PKG has no Godot engine to run its tests, and there's no godot in the PATH. Set one with `gd++ init PKG --update --engine NAME`, or name a Godot binary with --engine PATH."
 - "Missing Godot engine NAME, run `gd++ fetch --missing` to fix this."
 - "Invalid arguments: PATH is not a file." The binary that `--engine` names doesn't exist.
 - "Invalid arguments: gd++ test cannot use --ship, since release builds have no tests."

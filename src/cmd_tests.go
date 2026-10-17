@@ -15,14 +15,14 @@ import (
 // CmdTest builds the packages its paths name, like CmdBuild does for this
 // machine in debug mode, and runs their tests in a headless Godot: the binary
 // that --engine names, or else an engine dependency, which it compiles the
-// first time. Its builds also register the @test classes, which hold the
+// first time, or else the godot in the PATH. Its builds also register the @test classes, which hold the
 // tests. A GD++ file's path runs only the tests it declares. Each test shows
 // as a task while it runs, then as a line with its result, followed by its
 // output if it failed.
 type CmdTest struct {
 	Paths   []string `arg:"positional" placeholder:"PATH" help:"run the tests of the packages containing these paths, or only those of these GD++ files; PATH/... runs those of all packages inside PATH, e.g. res://... the whole project [default: ..., all packages in the current directory]"`
 	Names   []string `arg:"--run" placeholder:"NAME" help:"run only the tests with these names, CLASS.NAME, which may have wildcards, e.g. 'Player.*'"`
-	Engine  string   `arg:"--engine" placeholder:"NAME|PATH" help:"run the tests in this Godot engine of the project's cache, or in this Godot binary if it has a path separator, e.g. ./godot [default: the package's engine]"`
+	Engine  string   `arg:"--engine" placeholder:"NAME|PATH" help:"run the tests in this Godot engine of the project's cache, or in this Godot binary if it has a path separator, e.g. ./godot [default: the package's engine, or else godot in the PATH]"`
 	Timeout *float64 `arg:"--timeout" placeholder:"SECONDS" help:"fail an @async test that runs longer than this [default: the package's test_timeout, or 10]"`
 	BuildOptions
 }
@@ -111,7 +111,7 @@ func (c *CmdTest) selected(tests []gdppTest, pkg Package, files map[Path][]Path)
 
 // godot returns the Godot binary that runs pkg's tests: the one --engine
 // names, or else the engine dependency that --engine or the package names,
-// compiled the first time.
+// compiled the first time, or else the godot in the PATH.
 func (c *CmdTest) godot(p Project, pkg Package) Path {
 	if strings.ContainsAny(c.Engine, `/\`) {
 		bin := ParsePath(c.Engine)
@@ -121,8 +121,12 @@ func (c *CmdTest) godot(p Project, pkg Package) Path {
 	name := c.Engine
 	if name == "" {
 		name = pkg.Config.Engine
-		Assert(name != "", "Package %s has no Godot engine to run its tests, set one with `gd++ init %s --update --engine NAME`, or name a Godot binary with --engine PATH.",
+	}
+	if name == "" {
+		bin, err := exec.LookPath("godot")
+		Assert(err == nil, "Package %s has no Godot engine to run its tests, and there's no godot in the PATH. Set one with `gd++ init %s --update --engine NAME`, or name a Godot binary with --engine PATH.",
 			pkg.Root.ToString(), pkg.Root.ToString())
+		return ParsePath(bin)
 	}
 	return compileEngine(p, name, c.Jobs)
 }

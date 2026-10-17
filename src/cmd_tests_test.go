@@ -5,6 +5,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -135,6 +136,15 @@ func TestTestGodotPath(t *testing.T) {
 	if got := (&CmdTest{Engine: "./a.gd++"}).godot(LoadProject(Cwd()), pkg); got != pkg.Root.Cd("a.gd++") {
 		t.Errorf("godot = %s, want res://src/pkg/a.gd++", got.ToString())
 	}
+	// Without an engine, the godot in the PATH.
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "godot"), nil, 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	if got, want := (&CmdTest{}).godot(LoadProject(Cwd()), pkg), NewPath(filepath.Join(dir, "godot")); got != want {
+		t.Errorf("godot = %s, want %s", got.ToString(), want.ToString())
+	}
 }
 
 func TestTestGodotErrors(t *testing.T) {
@@ -143,7 +153,7 @@ func TestTestGodotErrors(t *testing.T) {
 		engine string
 		want   string
 	}{
-		"no_engine":      {CmdTest{}, "", "Package res://src/pkg has no Godot engine to run its tests, set one with `gd++ init res://src/pkg --update --engine NAME`, or name a Godot binary with --engine PATH."},
+		"no_engine":      {CmdTest{}, "", "Package res://src/pkg has no Godot engine to run its tests, and there's no godot in the PATH. Set one with `gd++ init res://src/pkg --update --engine NAME`, or name a Godot binary with --engine PATH."},
 		"missing_engine": {CmdTest{}, "4.7", "Missing Godot engine 4.7, run `gd++ fetch --missing` to fix this."},
 		"missing_flag":   {CmdTest{Engine: "4.8"}, "4.7", "Missing Godot engine 4.8, run `gd++ fetch --missing` to fix this."},
 		"missing_binary": {CmdTest{Engine: "bin/godot"}, "", "Invalid arguments: res://src/pkg/bin/godot is not a file."},
@@ -152,6 +162,7 @@ func TestTestGodotErrors(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("GDPP_FAIL_HELPER") == "1" {
 				isTTY = false
+				t.Setenv("PATH", "")
 				pkg := withTestsFS(t)
 				pkg.Config.Engine = tc.engine
 				tc.c.godot(LoadProject(Cwd()), pkg)

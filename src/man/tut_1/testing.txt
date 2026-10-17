@@ -11,10 +11,10 @@ It assumes a project that builds, as in `gd++ man tour`.
 
 # 1. Choose a Godot for the tests
 
-`gd++ test` runs tests in a headless Godot: without a window or sound. Either name the Godot you have installed:
+`gd++ test` runs tests in a headless Godot: without a window or sound. Either use the Godot you have installed: without an engine setting, `gd++ test` runs the `godot` binary in the PATH.
 
 ```sh
-gd++ test --engine "$(which godot)"
+gd++ test
 ```
 
 Or have `gd++` download Godot's source, and compile it for the tests, once:

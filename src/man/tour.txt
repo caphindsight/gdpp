@@ -130,7 +130,7 @@ func starts_at_full_speed() {
 Run it in the Godot that you have installed:
 
 ```sh
-gd++ test --engine "$(which godot)"
+gd++ test
 ```
 
 - `gd++ test` builds the package, and runs its tests in a headless Godot.
