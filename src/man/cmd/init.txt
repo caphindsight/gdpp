@@ -92,7 +92,7 @@ See `gd++ man packages`.
   How many seconds the package's tasks may still run after the game starts quitting, before it exits anyway, e.g. `2.5`. Default: `1`. See "When the game quits" in `gd++ man async`.
 
 --test-timeout SECONDS
-  How many seconds `gd++ test` lets an `@async` test of the package run, before it fails it, e.g. `30`. Default: `10`. See `gd++ man test`.
+  How many seconds `gd++ test` lets a test of the package run, before it fails it, e.g. `30`. Default: `10`. See `gd++ man test`.
 
 --hotreload
   Make the editor reload the package's library when a build changes it. The default.

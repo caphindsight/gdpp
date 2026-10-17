@@ -2235,19 +2235,18 @@ private:
 #endif
 
 // GDPP_TESTS_CLASS runs the package's tests, as the main loop of the Godot that gd++ test starts:
-// `godot --headless --path ROOT --script RUNNER -- [--gdpp-timeout SECONDS] CLASS.NAME...`, where the script RUNNER only
+// `godot --headless --path ROOT --script RUNNER -- CLASS.NAME...`, where the script RUNNER only
 // extends this class. A test is a bound method of a @test class, a Node, without parameters, which returns an Async if
 // it's @async. The runner runs one test per frame, on a new object of its class in the tree, which it frees after. The
 // class's static _gdpp_create makes the object, like create does: for a @scene class, an instance of its scene. The
 // runner prints a line to stdout when each test starts and ends, which gd++ reads, and quits with exit code 1 if a
-// test failed: an assertion failed while it ran, or it timed out.
+// test failed: an assertion failed while it ran. gd++ kills Godot when a test times out.
 class GDPP_TESTS_CLASS : public SceneTree {
 	GDPP_GDCLASS(GDPP_TESTS_CLASS, SceneTree)
 
 	PackedStringArray names; // The tests to run, in order, e.g. "Player.takes_damage".
 	int64_t next = 0; // The index of the test that runs, or runs next.
 	bool failed = false;
-	uint64_t timeout = 10000000; // How long an @async test may run, in usec.
 	Node *test = nullptr; // The object of the test that runs, or null.
 	Variant task; // The Async of an @async test that runs.
 	uint64_t start = 0; // When the test started, in usec.
@@ -2294,17 +2293,10 @@ public:
 	void _initialize() override {
 		// Tests start from an empty tree, with the autoloads, but without the main scene.
 		unload_current_scene();
-		PackedStringArray args = OS::get_singleton()->get_cmdline_user_args();
-		for (int64_t i = 0; i < args.size(); i++) {
-			if (args[i] == "--gdpp-timeout" && i + 1 < args.size()) {
-				timeout = static_cast<uint64_t>(args[++i].to_float() * 1000000);
-			} else {
-				names.push_back(args[i]);
-			}
-		}
+		names = OS::get_singleton()->get_cmdline_user_args();
 	}
 
-	// _process starts a test, or finishes one that's done, or quits after the last one.
+	// _process starts a test, or finishes an @async one that's done, or quits after the last one.
 	bool _process(double p_delta) override {
 		if (test == nullptr && next == names.size()) {
 			quit(failed ? 1 : 0);
@@ -2312,8 +2304,6 @@ public:
 			run();
 		} else if (task.call(GDPP_STRING_NAME("is_done"))) {
 			finish(failed_assertions.load() == failures ? "pass" : "fail");
-		} else if (Time::get_singleton()->get_ticks_usec() - start > timeout) {
-			finish("timeout");
 		}
 		return false;
 	}

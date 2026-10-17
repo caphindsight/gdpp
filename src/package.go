@@ -110,7 +110,7 @@ func (pkg Package) QuitTimeout() float64 {
 	return 1
 }
 
-// TestTimeout returns how many seconds an @async test of the package may run
+// TestTimeout returns how many seconds a test of the package may run
 // before gd++ test fails it.
 func (pkg Package) TestTimeout() float64 {
 	if pkg.Config.TestTimeout != nil {

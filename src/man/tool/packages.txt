@@ -89,7 +89,7 @@ quit_timeout (optional, default 1)
   - See "When the game quits" in `gd++ man async`.
 
 test_timeout (optional, default 10)
-  How many seconds `gd++ test` lets an `@async` test of the package run, before it fails it, e.g. `30`.
+  How many seconds `gd++ test` lets a test of the package run, before it fails it, e.g. `30`.
   - It must be positive.
   - `gd++ test --timeout` overrides it.
   - It doesn't change builds: changing it rebuilds nothing.

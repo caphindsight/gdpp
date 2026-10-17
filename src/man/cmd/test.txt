@@ -55,7 +55,7 @@ PATH...
   - Default: the package's engine, or else the `godot` binary in the PATH.
 
 --timeout SECONDS
-  Fail an `@async` test that runs longer than this. Default: the package's `test_timeout` setting, or else 10. See `gd++ man packages`.
+  Fail a test that runs longer than this. Godot is stopped, and the other tests run in a new one. Default: the package's `test_timeout` setting, or else 10. See `gd++ man packages`.
 
 --opt, --small, --noopt, --doc, --nodoc, --nowarn, --nogpu, -j N, --cc COMPILER, --asan, --ubsan, --tsan, --macro-timeout SECONDS, --trace GROUP..., --profile GROUP..., --print, --period SECONDS, --fps FPS
   Build like `gd++ build` does with them. See `gd++ man build`. Debug builds only: tests can't run in release builds, so there's no `--ship`.
@@ -82,7 +82,7 @@ First the build, as `gd++ build` logs it. Then, for each package, a line per tes
 
 Other results:
 
-- "Failed NAME: it ran longer than 10 seconds." An `@async` test timed out.
+- "Failed NAME: it ran longer than 10 seconds." The test timed out.
 - "Failed NAME: Godot exited while it ran." Godot crashed, or quit. Its output follows.
 - "Godot exited before it ran N of the M tests of PKG, after this output." Godot didn't get to the tests, e.g. because it failed to load the library. Its output follows.
 

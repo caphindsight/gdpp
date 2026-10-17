@@ -28,7 +28,7 @@ type CmdInit struct {
 	Std         string   `arg:"--std" placeholder:"STD" help:"the package's C++ standard, e.g. c++20"`
 	Prefix      string   `arg:"--prefix" placeholder:"NAME" help:"the prefix of the classes GD++ adds to the package, e.g. Foo for FooAsync [default: the package directory's name in PascalCase]"`
 	QuitTimeout *float64 `arg:"--quit-timeout" placeholder:"SECONDS" help:"how long the package's tasks may still run after the game started quitting, before it exits anyway [default: 1]"`
-	TestTimeout *float64 `arg:"--test-timeout" placeholder:"SECONDS" help:"how long gd++ test lets an @async test of the package run, before it fails it [default: 10]"`
+	TestTimeout *float64 `arg:"--test-timeout" placeholder:"SECONDS" help:"how long gd++ test lets a test of the package run, before it fails it [default: 10]"`
 	HotReload   bool     `arg:"--hotreload" help:"make the editor reload the package's library when it changes (default)"`
 	NoHotReload bool     `arg:"--nohotreload" help:"make the editor load the package's library only once, e.g. to work around Godot crashing on reload"`
 	MacroDepth  *int     `arg:"--macro-depth" placeholder:"LEVELS" help:"how deeply the package's macro and template invocations may nest [default: 64]"`

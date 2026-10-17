@@ -5,6 +5,7 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,7 +35,7 @@ func reportTests(t *testing.T, quiet bool, names []string, lines ...string) (log
 }
 
 func TestTestReport(t *testing.T) {
-	logs, ran, failed := reportTests(t, false, []string{"T.adds", "T.subtracts", "T.waits", "T.crashes"},
+	logs, ran, failed := reportTests(t, false, []string{"T.adds", "T.subtracts", "T.crashes"},
 		"Godot Engine v4.7.2",
 		testMarker+"start T.adds 0",
 		"added",
@@ -42,8 +43,6 @@ func TestTestReport(t *testing.T) {
 		testMarker+"start T.subtracts 0",
 		"ERROR: Failed GD++ assertion: `x == 1`.",
 		testMarker+"fail T.subtracts 1250000",
-		testMarker+"start T.waits 0",
-		testMarker+"timeout T.waits 2500000",
 		testMarker+"start T.crashes 0",
 		"Segmentation fault",
 	)
@@ -55,15 +54,36 @@ func TestTestReport(t *testing.T) {
 		"[-] Task succeeded: running T.subtracts\n" +
 		"[x] Failed T.subtracts in 1.25 s.\n" +
 		"    ERROR: Failed GD++ assertion: `x == 1`.\n" +
-		"[$] Running task: running T.waits...\n" +
-		"[-] Task succeeded: running T.waits\n" +
-		"[x] Failed T.waits: it ran longer than 2.5 seconds.\n" +
 		"[$] Running task: running T.crashes...\n" +
 		"[-] Task succeeded: running T.crashes\n" +
 		"[x] Failed T.crashes: Godot exited while it ran.\n" +
 		"    Segmentation fault\n"
-	if logs != want || ran != 4 || strings.Join(failed, ", ") != "T.subtracts, T.waits, T.crashes" {
-		t.Errorf("logs = %q, ran = %d, failed = %q, want %q, 4, T.subtracts, T.waits, T.crashes", logs, ran, failed, want)
+	if logs != want || ran != 3 || strings.Join(failed, ", ") != "T.subtracts, T.crashes" {
+		t.Errorf("logs = %q, ran = %d, failed = %q, want %q, 3, T.subtracts, T.crashes", logs, ran, failed, want)
+	}
+}
+
+// A test that blocks Godot's main thread, without output, times out: watch kills the runner.
+func TestTestReportTimeout(t *testing.T) {
+	withTTY(t, false)
+	withQuiet(t, false)
+	withBuildFS(t)
+	var killed bool
+	logs := captureStderr(t, func() {
+		r := testReport{timeout: 0.2}
+		cmd := exec.Command("sh", "-c", `printf '\037gdpp-test start T.a 0\n\037gdpp-test pass T.a 1\n\037gdpp-test start T.loops 0\nlooping\n'; exec sleep 10`)
+		killed = r.watch(cmd, NewPath(cmd.Path))
+	})
+	want := "" +
+		"[$] Running task: running T.a...\n" +
+		"[-] Task succeeded: running T.a\n" +
+		"[-] Passed T.a in 0.0 ms.\n" +
+		"[$] Running task: running T.loops...\n" +
+		"[-] Task succeeded: running T.loops\n" +
+		"[x] Failed T.loops: it ran longer than 0.2 seconds.\n" +
+		"    looping\n"
+	if logs != want || !killed {
+		t.Errorf("logs = %q, killed = %v, want %q, true", logs, killed, want)
 	}
 }
 
