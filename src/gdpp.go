@@ -48,16 +48,25 @@ func listGdppFiles(p Project, pkg Package, macroTimeout int) []gdppFile {
 	var files []gdppFile
 	for _, rel := range packageFiles(p, pkg, gdppExtensions...) {
 		file := pkg.Root.Cd(rel)
-		src := file.ReadString()
-		macros, err := trans.ListMacros(file.ToString(), src, pkg.Config.Syntax)
-		files = append(files, gdppFile{File: file, Rel: rel, Src: src, Macros: macros, Err: err})
+		files = append(files, gdppFile{File: file, Rel: rel, Src: file.ReadString()})
 	}
-	// Macros may generate classes, so listing those needs every file's macros.
-	for i, f := range files {
-		if f.Err == nil {
+	parallelFor(len(files), func(i int) {
+		f := &files[i]
+		f.Macros, f.Err = trans.ListMacros(f.File.ToString(), f.Src, pkg.Config.Syntax)
+	})
+	// Macros may generate classes, so listing those needs every file's macros. The results are stored once all are
+	// done, since macroDeps reads the files.
+	decls, errs := make([][]trans.Declaration, len(files)), make([]error, len(files))
+	parallelFor(len(files), func(i int) {
+		if f := files[i]; f.Err == nil {
 			opts := packageOptions(pkg, macroDeps(files, f.Rel))
 			opts.MacroTimeout = macroTimeout
-			files[i].Decls, files[i].Err = trans.ListClasses(f.File.ToString(), f.Src, opts, pkg.Config.Syntax)
+			decls[i], errs[i] = trans.ListClasses(f.File.ToString(), f.Src, opts, pkg.Config.Syntax)
+		}
+	})
+	for i := range files {
+		if files[i].Err == nil {
+			files[i].Decls, files[i].Err = decls[i], errs[i]
 		}
 	}
 	return files
@@ -523,17 +532,13 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 		write(namesHeader, projectNames.header)
 	}
 	nonRuntime, implementers := nonRuntimeClasses(pkg, fileDecls(files)), traitImplementers(files)
-	check := func(text string, err error) string {
-		if err != nil {
-			FailWithText(err)
-		}
-		return text
-	}
 	copies := map[string]string{} // How #line names each GD++ file: by its copy, see below.
 	for _, f := range files {
 		copies[f.File.ToString()] = sourcesDirName + "/" + f.Rel
 	}
-	for _, f := range files {
+	generated, errs := make([][]trans.File, len(files)), make([]error, len(files))
+	parallelFor(len(files), func(i int) {
+		f := files[i]
 		// #line names the GD++ file's copy, relative to the build cache, where SCons runs, like it names C++ sources.
 		// So do the templates of other files, whose C++ code keeps its lines.
 		opts := packageOptions(pkg, packageDeps(files, names, spec, f.Rel, nonRuntime))
@@ -548,22 +553,19 @@ func transpilePackage(pkg Package, files []gdppFile, names []godotName, o BuildO
 			}
 		}
 		opts = o.transOptions(opts)
-		name := f.File.ToString()
-		generated, err := trans.Generate(name, f.Src, opts, syntax)
-		if err != nil {
-			FailWithText(err)
+		opts.Docs = o.docs()
+		generated[i], errs[i] = trans.Generate(f.File.ToString(), f.Src, opts, syntax)
+	})
+	for i, f := range files {
+		if errs[i] != nil {
+			FailWithText(errs[i])
 		}
-		for _, gen := range generated {
+		for _, gen := range generated[i] {
 			// The sources of @test classes go in gdpp/test, which release builds don't compile.
 			if name, ok := strings.CutSuffix(gen.Name, ".cpp"); ok && slices.ContainsFunc(f.Decls, func(d trans.Declaration) bool { return d.Name == name && d.Test }) {
 				gen.Name = "test/" + gen.Name
 			}
 			write(gen.Name, gen.Text)
-		}
-		for _, d := range f.Decls {
-			if o.docs() && d.Kind == trans.ClassDecl {
-				write("doc_classes/"+d.Name+".xml", check(trans.DocumentClass(name, f.Src, d.Name, opts, syntax)))
-			}
 		}
 	}
 	classes := gdppClasses(files)

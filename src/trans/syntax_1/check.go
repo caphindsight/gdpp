@@ -2,12 +2,14 @@ package syntax_1
 
 import (
 	"cmp"
+	"crypto/sha256"
 	"fmt"
 	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -228,6 +230,27 @@ func parseExpanded(filename, src string, opts meta.Options) (*File, *expander, e
 		}
 	}
 	return file, x, nil
+}
+
+// depFiles caches the results of parseDep, by a hash of its arguments: each file of a package parses the files of
+// the same traits and structs.
+var depFiles sync.Map // [sha256.Size]byte → *depFile
+
+// depFile is a result of parseDep.
+type depFile struct {
+	once sync.Once
+	file *File
+	err  error
+}
+
+// parseDep returns the file of dependency d, a trait or struct, expanded with the macros that it sees, and opts.
+// The result is shared, so callers must not change it.
+func parseDep(d meta.Dependency, opts meta.Options) (*File, error) {
+	opts.Dependencies, opts.SourceName = d.Macros, d.SourceName
+	v, _ := depFiles.LoadOrStore(sha256.Sum256(fmt.Appendf(nil, "%q %q %#v", d.File, d.Source, opts)), &depFile{})
+	f := v.(*depFile)
+	f.once.Do(func() { f.file, _, f.err = parseExpanded(d.File, d.Source, opts) })
+	return f.file, f.err
 }
 
 // parseUnit parses src, expands its macros and templates with those of the dependencies in opts, and indexes the
@@ -847,9 +870,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 			// Its own file reports its errors, so here a broken file counts as a trait without functions. The file is
 			// expanded with the macros that it sees, since they may generate the trait, or its functions.
 			s.depTrait, s.traitSource = &Trait{Name: d.Name}, cmp.Or(d.SourceName, d.File)
-			traitOpts := opts
-			traitOpts.Dependencies = d.Macros
-			if f, _, err := parseExpanded(d.File, d.Source, traitOpts); err == nil {
+			if f, err := parseDep(d, opts); err == nil {
 				if i := slices.IndexFunc(fileTraits(f), func(t *Trait) bool { return t.Name == d.Name }); i >= 0 {
 					s.depTrait = fileTraits(f)[i]
 				}
@@ -858,9 +879,7 @@ func newUnit(filename, src string, opts meta.Options) (*unit, error) {
 		if d.Kind == meta.Struct && d.Source != "" {
 			// Like a trait's, for the fields that shaders see.
 			s.depStruct = &Struct{Name: d.Name}
-			structOpts := opts
-			structOpts.Dependencies = d.Macros
-			if f, _, err := parseExpanded(d.File, d.Source, structOpts); err == nil {
+			if f, err := parseDep(d, opts); err == nil {
 				if i := slices.IndexFunc(fileStructs(f), func(st *Struct) bool { return st.Name == d.Name }); i >= 0 {
 					s.depStruct = fileStructs(f)[i]
 				}

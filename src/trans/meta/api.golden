@@ -101,3 +101,4 @@ field SizedVirtual.Name string
 field SizedVirtual.Params []string
 field SizedVirtual.Return string
 field Declaration.Benches []string
+field Options.Docs bool

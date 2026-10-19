@@ -64,13 +64,19 @@ func ListClasses(filename, src string, opts meta.Options) ([]meta.Declaration, e
 	return u.declarations()
 }
 
-// Generate returns the C++ files for the GD++ source src, in the order of its declarations.
+// Generate returns the C++ files for the GD++ source src, in the order of its declarations, then with opts.Docs
+// the documentation of its classes.
 func Generate(filename, src string, opts meta.Options) ([]meta.File, error) {
 	u, err := newUnit(filename, src, opts)
 	if err != nil {
 		return nil, err
 	}
-	var files []meta.File
+	var files, docs []meta.File
+	if opts.Docs { // Before generating code, so the docs see the unit like DocumentClass does.
+		for _, c := range u.classes {
+			docs = append(docs, meta.File{Name: "doc_classes/" + c.name + ".xml", Text: u.document(c)})
+		}
+	}
 	for _, s := range u.sortedSymbols() {
 		d := u.only(s)
 		if s.class == nil && s.strukt == nil {
@@ -85,7 +91,7 @@ func Generate(filename, src string, opts meta.Options) ([]meta.File, error) {
 		}
 		files = append(files, meta.File{Name: s.name + ".h", Text: header}, meta.File{Name: s.name + ".cpp", Text: source})
 	}
-	return files, nil
+	return append(files, docs...), nil
 }
 
 // only returns a copy of the unit that generates just the declaration s, as if the file's other declarations

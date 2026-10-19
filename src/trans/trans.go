@@ -145,7 +145,8 @@ func DocumentBuiltinClasses(opts Options, syntax int) ([]File, error) {
 	return f.builtinDocs(opts), nil
 }
 
-// Generate returns the C++ files for the GD++ file, in the order of its declarations.
+// Generate returns the C++ files for the GD++ file, in the order of its declarations, then with opts.Docs the
+// documentation of its classes.
 func Generate(name, src string, opts Options, syntax int) ([]File, error) {
 	f, err := get(syntax)
 	if err != nil {

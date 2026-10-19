@@ -162,13 +162,15 @@ type Options struct {
 	CppStandard   string       // The package's C++ standard, e.g. "c++17", which macros see. Default: none.
 	MacroTimeout  int          // The seconds that one macro or template invocation may run. Default: 0, 20 seconds.
 	MacroDepth    int          // How deeply macro and template invocations may nest. Default: 0, 64 levels.
+	Docs          bool         // Whether Generate also returns each class's Godot XML documentation. Default: false.
 	// For each trait of the package, by name: the package's classes that implement it, themselves or through a base,
 	// which the inspector offers for exported variables of the trait's type. Default: none, only the file's own classes.
 	Implementers map[string][]string
 }
 
 // File is a generated C++ file. Each declaration of a GD++ file gets a header, named "<Name>.h", and each class
-// also a source, named "<Name>.cpp". Stable: additive changes only.
+// also a source, named "<Name>.cpp". With Options.Docs, each class also gets its documentation, named
+// "doc_classes/<Name>.xml". Stable: additive changes only.
 type File struct {
 	Name string //
 	Text string //

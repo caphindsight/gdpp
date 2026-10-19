@@ -1,6 +1,10 @@
 package syntax_0
 
-import "testing"
+import (
+	"testing"
+
+	"gd++/trans/meta"
+)
 
 func TestNodePath(t *testing.T) {
 	cases := []struct {
@@ -62,5 +66,20 @@ func TestCppString(t *testing.T) {
 		if got := cppString(in); got != want {
 			t.Errorf("cppString(%q) = %s, want %s", in, got, want)
 		}
+	}
+}
+
+func TestParseDep(t *testing.T) {
+	d := meta.Dependency{Name: "Greeter", Kind: meta.Trait, File: "greeter.gd++", Source: "trait Greeter {\n  extends Node\n  func greet() -> void\n}\n"}
+	first, err := parseDep(d, meta.Options{})
+	if err != nil || len(fileTraits(first)) != 1 {
+		t.Fatalf("parseDep: %v", err)
+	}
+	if again, _ := parseDep(d, meta.Options{SourceName: "other.gd++"}); again != first {
+		t.Error("parseDep parsed the same dependency again, for a file with another SourceName.")
+	}
+	d.Source = "trait Greeter {\n  extends Node\n  func wave() -> void\n}\n"
+	if changed, _ := parseDep(d, meta.Options{}); changed == first || fileTraits(changed)[0].Members[0].Func.Name != "wave" {
+		t.Error("parseDep returned a cached file for a changed source.")
 	}
 }

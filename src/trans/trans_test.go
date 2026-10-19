@@ -27,6 +27,11 @@ func TestDispatch(t *testing.T) {
 			if _, err := DocumentClass(name, src, "Enemy", opts, syntax); err == nil || err.Error() != "There is no class Enemy in player.gd++." {
 				t.Errorf("DocumentClass of a missing class: %v", err)
 			}
+			docOpts := opts
+			docOpts.Docs = true
+			if files, err := Generate(name, src, docOpts, syntax); err != nil || len(files) != 3 || files[2] != (File{Name: "doc_classes/Player.xml", Text: doc}) {
+				t.Errorf("Generate with Docs: %v\n%+v", err, files)
+			}
 			runtime, text, err := RuntimeHeader(syntax)
 			if err != nil || runtime != fmt.Sprintf("gd++/syntax_%d.hpp", syntax) || !strings.Contains(text, "namespace gdpp") {
 				t.Errorf("RuntimeHeader: %q, %v", runtime, err)

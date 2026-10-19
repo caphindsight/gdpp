@@ -4,9 +4,11 @@ package main
 
 import (
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/BurntSushi/toml"
 
@@ -93,4 +95,26 @@ func encodeToml(v any) string {
 	var b strings.Builder
 	Check(toml.NewEncoder(&b).Encode(v), "Failed to encode the config")
 	return b.String()
+}
+
+// parallelFor calls f(i) for each i in [0, n), on up to GOMAXPROCS
+// goroutines. f must not log or fail: it stores its results, e.g. errors, for
+// the caller to report afterwards.
+func parallelFor(n int, f func(i int)) {
+	var wg sync.WaitGroup
+	next := make(chan int)
+	for range runtime.GOMAXPROCS(0) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range next {
+				f(i)
+			}
+		}()
+	}
+	for i := range n {
+		next <- i
+	}
+	close(next)
+	wg.Wait()
 }
