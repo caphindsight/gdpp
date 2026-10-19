@@ -71,6 +71,9 @@ else:
     # godot-cpp's headers refuse to compile with a sanitizer unless its macro is defined.
     macros = {"address": "ASAN_ENABLED", "undefined": "UBSAN_ENABLED", "thread": "TSAN_ENABLED"}
     env.Append(CPPDEFINES=[macros[s] for s in sanitizers.split(",") if s])
+    # MinGW's COFF objects are limited to 2^16 sections, which large sources exceed.
+    if env["platform"] == "windows" and not env.get("is_msvc", False):
+        env.Append(CCFLAGS=["-Wa,-mbig-obj"])
 {{- if .Color}}
     # GD++ pipes the output, so colors must be forced; $( $) keeps the flag out of
     # the build signature, so it doesn't trigger rebuilds.
