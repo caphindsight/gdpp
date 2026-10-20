@@ -15,7 +15,7 @@ AddOption("--gdpp-sanitize", dest="gdpp_sanitize", type="string", default="", he
 # With --gdpp-nogpu, shaders run on the CPU.
 AddOption("--gdpp-nogpu", dest="gdpp_nogpu", action="store_true", help="run shaders on the CPU")
 
-package_root = ".."
+package_root = {{printf "%q" .PackageRoot}}
 # Copies of the package's GD++ and C/C++ files, which GD++ syncs before each build, so errors show the compiled code.
 sources_root = "package"
 project_root = {{printf "%q" .ProjectRoot}}

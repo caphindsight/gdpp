@@ -17,6 +17,7 @@ func withCleanFS(t *testing.T, cwd string) *memFS {
 	tree["/games/my_game/"+packageFileName] = testRmPackage
 	tree["/games/my_game/.gd++build/a.o"] = ""
 	tree["/games/my_game/src/pkg/.gd++build/a.o"] = ""
+	tree["/games/my_game/src/pkg/.gd++build/agent_1/a.o"] = ""
 	tree["/games/my_game/src/pkg/main.cpp"] = ""
 	withQuiet(t, false)
 	withTTY(t, false)

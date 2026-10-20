@@ -13,9 +13,12 @@ import (
 // package root gets a generated <id>.gdextension file and its .uid file.
 // Debug builds are godot-cpp dev builds with debug symbols and hot reload;
 // release builds use link-time optimization. The build parameters are logged
-// once, before the packages are built. With --clean, packages with a build
-// cache are cleaned first like `gd++ clean --bin` does. Each package's hidden
-// directories get a .gdignore file, if missing.
+// once, before the packages are built. With --id, each package builds in the
+// build cache .gd++build/ID, so that builds with different IDs can run at the
+// same time. With --clean, packages with a build cache first lose its files
+// and their libraries, like `gd++ clean --bin` does, but not the caches of
+// other build IDs. Each package's hidden directories get a .gdignore file,
+// if missing.
 type CmdBuild struct {
 	Paths    []string `arg:"positional" placeholder:"PATH" help:"build the packages containing these paths; PATH/... builds all packages inside PATH, e.g. res://... the whole project [default: ..., all packages in the current directory]"`
 	For      []string `arg:"--for" placeholder:"PLATFORM.ARCH" help:"build for each of these targets, e.g. windows.x86_64 or w.x64; platforms: windows|win|w, linux|lin|l, macos|mac|m; archs: x86_32|x32, x86_64|x64, arm64|a64 [default: this machine]"`
@@ -38,14 +41,14 @@ func (c *CmdBuild) Run() {
 	var pkgs []Package
 	for _, root := range roots {
 		Assert(GetProjectRoot(root) == p.Root, "Invalid arguments: all packages must be in one Godot project.")
-		pkgs = append(pkgs, LoadPackage(root))
+		pkgs = append(pkgs, c.loadPackage(root))
 	}
 	SyncExportPresets(p)
 	gdpp := slices.ContainsFunc(pkgs, func(pkg Package) bool { return len(packageFiles(p, pkg, gdppExtensions...)) > 0 })
 	LogInfo("Build parameters: %s.", c.describe(targets, gdpp))
 	for _, pkg := range pkgs {
 		if c.Clean && pkg.BuildCache.Exists() {
-			cleanPackage(pkg.Root, true)
+			cleanCache(pkg, true)
 		}
 		pkg.HideInGodot()
 		buildExtension(p, pkg, c.BuildOptions, targets, false)

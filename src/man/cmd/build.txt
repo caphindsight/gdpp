@@ -5,7 +5,7 @@ gd++ build: compile packages
 ```sh
 gd++ build [PATH...] [--for PLATFORM.ARCH...] [-w] [-p PLATFORM] [--arch ARCH]
            [--ship] [--opt | --small | --noopt] [--doc | --nodoc] [--nowarn] [--nogpu] [-j N] [--clean]
-           [--cc COMPILER] [--asan] [--ubsan] [--tsan] [--macro-timeout SECONDS]
+           [--cc COMPILER] [--asan] [--ubsan] [--tsan] [--id ID] [--macro-timeout SECONDS]
            [--trace GROUP...] [--profile GROUP... [--print [--period SECONDS] [--fps FPS]]]
 ```
 
@@ -109,6 +109,15 @@ PATH...
 --clean
   Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files. The build starts from scratch.
   - Skips packages without a build cache: they build from scratch anyway.
+  - Keeps the caches of other build IDs, the `ID` directories in `.gd++build`. With `--id`, deletes only `.gd++build/ID`.
+
+--id ID
+  Build in the build cache `.gd++build/ID` instead of `.gd++build`.
+  - Builds with different IDs never share a cache, so they can run at the same time, e.g. one per terminal or AI agent.
+  - The first build with a new ID starts from scratch: it compiles godot-cpp and all the code again.
+  - The libraries and the `.gdextension` file still go to the package root, whatever the ID. Parallel builds of one package overwrite each other's.
+  - `gd++ clean` deletes `.gd++build` with every ID's cache in it.
+  - See "Parallel builds" in `gd++ man build-cache`.
 
 Rules:
 
@@ -117,6 +126,7 @@ Rules:
 - Not `--asan` with `--tsan`.
 - `--cc` must build for every target.
 - Group names are made of letters, digits and underscores.
+- Build IDs are made of letters, digits, `_` and `-`, and aren't names the build cache uses: `build`, `gdpp`, `godot-cpp`, `package` or `SConstruct`.
 - `--print` needs `--profile`. `--period` and `--fps` need `--print`.
 
 # Output
@@ -217,6 +227,12 @@ Start over after a strange build error:
 gd++ build --clean
 ```
 
+Build in a cache of your own, while another build runs in the same package:
+
+```sh
+gd++ build --id agent-1
+```
+
 # Errors
 
 - "Missing Godot C++ bindings NAME, run `gd++ fetch --missing` to fix this." The package's dependencies aren't in the project.
@@ -224,6 +240,8 @@ gd++ build --clean
 - "Failed to detect the platform, use --platform to choose one." GD++ doesn't support this machine's platform or architecture. Name the target.
 - "Invalid arguments: \"x\" is not a valid target, use PLATFORM.ARCH, e.g. windows.x86_64 or w.x64."
 - "Invalid arguments: \"a-b\" is not a valid group name." A `--trace` or `--profile` group isn't a valid name.
+- "Invalid arguments: \"a/b\" is not a valid build ID, use letters, digits, _ and -."
+- "Invalid arguments: build ID \"gdpp\" is reserved." The build cache has an entry of that name.
 - "Invalid arguments: --print needs --profile.", "--period needs --print." and "--fps needs --print." The option does nothing without the other one.
 - "Invalid arguments: --period must be positive."
 - "Invalid arguments: --asan and --tsan cannot be used together."

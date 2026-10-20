@@ -23,7 +23,8 @@ const (
 	// Engines compiled for gd++ test live here, inside the ephemeral directory.
 	engineBuildsDirName = "godot"
 
-	// A package's build cache, at the package root.
+	// A package's build cache, at the package root. `gd++ build --id ID`
+	// builds in .gd++build/ID instead.
 	packageBuildCacheDirName = ".gd++build"
 
 	// Defaults for the optional keys in .gd++pkg.

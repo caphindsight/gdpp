@@ -1,6 +1,6 @@
 Build caches: the .gd++build directory
 
-Every package has a build cache: the directory `.gd++build` at its root.
+Every package has a build cache: the directory `.gd++build` at its root. `gd++ build --id ID` builds in `.gd++build/ID` instead.
 
 - Builds happen there.
 - It keeps everything builds can reuse, so the next build only compiles what changed.
@@ -10,6 +10,7 @@ Every package has a build cache: the directory `.gd++build` at its root.
 
 ```
 my_package/.gd++build/
+  ID/                       the build cache of gd++ build --id ID, laid out like this one
   build.toml                the package settings of the last sync
   godot-cpp/                a copy of the package's bindings
   extension_api.json        a copy of the package's API spec
@@ -84,6 +85,23 @@ Facts:
 - So switching between debug and release, or between targets, doesn't recompile everything.
 - Object files keep their source's extension, e.g. `package/src/util.cpp.os` on Linux. So `foo.c` and `foo.cpp` don't clash.
 - godot-cpp is compiled into `build/godot-cpp`, once per kind of build.
+
+# Parallel builds
+
+Two builds must never share a build cache: SCons and the generated files would clash. `--id` gives a build a cache of its own:
+
+```sh
+gd++ build --id agent-1    # builds in .gd++build/agent-1
+gd++ test --id agent-2     # builds in .gd++build/agent-2
+```
+
+- `.gd++build/ID` is a complete build cache, laid out like `.gd++build` itself: its own copies of the dependencies, its own generated C++ and object files. The first build with a new ID is slow.
+- Builds with different IDs can run at the same time, e.g. one per terminal or AI agent, even in one package. A build without an ID runs in `.gd++build` itself, beside them.
+- The libraries and the `.gdextension` file still land in the package root, whatever the ID. Parallel builds of one package overwrite each other's: the last one to finish wins.
+- A build cleans only its own cache, e.g. when the package settings changed or with `--clean`: the files of `.gd++build`, or `.gd++build/ID`. The other IDs' caches stay.
+- `gd++ clean` deletes `.gd++build` with every ID's cache in it.
+- `gd++ doc` and `gd++ trans` always use `.gd++build`.
+- IDs are made of letters, digits, `_` and `-`, and aren't names the cache uses: `build`, `gdpp`, `godot-cpp`, `package` or `SConstruct`.
 
 # Cleaning
 

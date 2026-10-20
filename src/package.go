@@ -18,7 +18,43 @@ type Package struct {
 	Root       Path
 	Id         string // name of the root directory
 	Config     PackageConfig
-	BuildCache Path // <root>/.gd++build
+	BuildCache Path // <root>/.gd++build, or <root>/.gd++build/ID with --id
+}
+
+// buildCache returns the build cache of the package at root for build ID id:
+// .gd++build, or .gd++build/ID.
+func buildCache(root Path, id string) Path {
+	return root.Cd(path.Join(packageBuildCacheDirName, id))
+}
+
+// reservedBuildIds are the entries of a build cache that would clash with a
+// build ID's cache: its directories, and its files without an extension.
+var reservedBuildIds = []string{"build", "gdpp", "godot-cpp", "package", "SConstruct"}
+
+// cacheGarbage returns what cleaning the build cache at cache deletes: its
+// entries, except its .gdignore and the caches of build IDs inside it, the
+// directories named like a valid build ID.
+func cacheGarbage(cache Path) []Path {
+	if !cache.IsDir() {
+		return nil
+	}
+	var paths []Path
+	for _, entry := range cache.readDir() {
+		if name := entry.Name(); name != gdignoreFileName && !(entry.IsDir() && isBuildId(name)) {
+			paths = append(paths, cache.Cd(name))
+		}
+	}
+	return paths
+}
+
+// cleanCache deletes cacheGarbage of the package's build cache, and with bin
+// its libraries like cleanPackage does, saying so if there is any.
+func cleanCache(pkg Package, bin bool) {
+	garbage := cacheGarbage(pkg.BuildCache)
+	if bin {
+		garbage = append(garbage, packageBins(pkg.Root)...)
+	}
+	removeGarbage(pkg.Root, garbage)
 }
 
 // PackageConfig holds the settings from a package's .gd++pkg.
@@ -228,7 +264,7 @@ func hiddenDir(s string) string {
 // whether it wrote any.
 func (pkg Package) HideInGodot() bool {
 	changed := false
-	for _, dir := range append([]Path{pkg.BuildCache}, pkg.HiddenDirs()...) {
+	for _, dir := range append([]Path{pkg.Root.Cd(packageBuildCacheDirName)}, pkg.HiddenDirs()...) {
 		if dir.IsDir() && dir.IgnoreInGodot() {
 			LogInfo("Created %s.", dir.Cd(gdignoreFileName).ToString())
 			changed = true
@@ -292,7 +328,7 @@ func LoadPackage(p Path) Package {
 		Root:       root,
 		Id:         root.Name(),
 		Config:     config,
-		BuildCache: root.Cd(packageBuildCacheDirName),
+		BuildCache: buildCache(root, ""),
 	}
 }
 
@@ -315,10 +351,17 @@ func packageGarbage(root Path, bin bool) []Path {
 		paths = append(paths, cache)
 	}
 	if bin {
-		for _, child := range root.Ls() {
-			if packageBinRegexp.MatchString(child.Name()) {
-				paths = append(paths, child)
-			}
+		paths = append(paths, packageBins(root)...)
+	}
+	return paths
+}
+
+// packageBins returns the libraries and .gdextension (.uid) files in root.
+func packageBins(root Path) []Path {
+	var paths []Path
+	for _, child := range root.Ls() {
+		if packageBinRegexp.MatchString(child.Name()) {
+			paths = append(paths, child)
 		}
 	}
 	return paths
@@ -328,7 +371,12 @@ var packageBinRegexp = regexp.MustCompile(`^(lib.+\.(dll|so|dylib)|.+\.gdextensi
 
 // cleanPackage deletes packageGarbage, saying so if there is any.
 func cleanPackage(root Path, bin bool) {
-	garbage := packageGarbage(root, bin)
+	removeGarbage(root, packageGarbage(root, bin))
+}
+
+// removeGarbage deletes garbage as a task cleaning the package at root, if
+// there is any.
+func removeGarbage(root Path, garbage []Path) {
 	if len(garbage) == 0 {
 		return
 	}

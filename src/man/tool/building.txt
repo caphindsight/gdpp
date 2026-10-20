@@ -31,7 +31,7 @@ Godot loads them from there, so the classes show up in the editor right away.
 For each package, `gd++`:
 
 1. Checks that the package's bindings and spec are in the project's caches.
-2. Syncs the build cache, `.gd++build`: copies the bindings and the spec into it, if they changed. If the package's settings changed since the last build (id, bindings, spec, syntax, C++ standard, prefix or quit timeout), it first cleans the package. See `gd++ man build-cache`.
+2. Syncs the build cache, `.gd++build`, or `.gd++build/ID` with `--id`: copies the bindings and the spec into it, if they changed. If the package's settings changed since the last build (id, bindings, spec, syntax, C++ standard, prefix or quit timeout), it first cleans the cache and the package's libraries. See `gd++ man build-cache`.
 3. Writes the build script, `SConstruct`, into the build cache. It lists the package's C and C++ sources.
 4. Copies the package's GD++ and C/C++ files into the build cache, and compiles the copies. So compiler errors show the compiled code, even if you edit a file during the build.
 5. If the package has GD++ files: finds out what godot-cpp declares, and transpiles each GD++ file into C++.

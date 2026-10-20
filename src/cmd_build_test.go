@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -89,6 +90,7 @@ func TestGenerateBuildCache(t *testing.T) {
 	}
 	sconstruct := after["SConstruct"]
 	for _, want := range []string{
+		`package_root = ".."`,
 		`project_root = "../../.."`,
 		`env.Append(CPPDEFINES=[("GDPP_ASYNC_CLASS", "PkgAsync")])`,
 		`env.Append(CPPDEFINES=[("GDPP_QUIT_TIMEOUT_USEC", 1000000)])`,
@@ -361,6 +363,62 @@ func TestGenerateBuildCacheGdpp(t *testing.T) {
 	}
 }
 
+// With --id, a package builds in .gd++build/ID, and cleaning on a changed or
+// missing config leaves the other build caches alone, whether the build has
+// an ID or not.
+func TestBuildId(t *testing.T) {
+	m := withBuildFS(t)
+	m.nodes["/games/my_game/src/pkg/.gd++build/other"] = &memNode{dir: true}
+	m.nodes["/games/my_game/src/pkg/.gd++build/other/a.o"] = &memNode{}
+	m.nodes["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"] = &memNode{}
+	pkg := BuildOptions{Id: "agent-1"}.loadPackage(Cwd())
+	if want := NewPath("/games/my_game/src/pkg/.gd++build/agent-1"); pkg.BuildCache != want {
+		t.Errorf("BuildCache = %s, want %s", pkg.BuildCache.ToString(), want.ToString())
+	}
+	if cache := (BuildOptions{}).loadPackage(Cwd()).BuildCache; cache != NewPath("/games/my_game/src/pkg/.gd++build") {
+		t.Errorf("BuildCache = %s, want .gd++build", cache.ToString())
+	}
+	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), pkg) })
+	tree := m.tree()
+	for _, file := range []string{".gd++build/agent-1/build.toml", ".gd++build/agent-1/SConstruct", ".gd++build/.gdignore", ".gd++build/godot-cpp/stale.cpp", ".gd++build/other/a.o"} {
+		if _, ok := tree["/games/my_game/src/pkg/"+file]; !ok {
+			t.Errorf("%s is missing", file)
+		}
+	}
+	// A new cache starts from scratch, libraries included, like any first sync.
+	if _, ok := tree["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"]; ok {
+		t.Errorf("libpkg.linux.debug.x86_64.so was not deleted")
+	}
+	if got := tree["/games/my_game/src/pkg/.gd++build/agent-1/SConstruct"]; !strings.Contains(got, `package_root = "../.."`) || !strings.Contains(got, `project_root = "../../../.."`) {
+		t.Errorf("SConstruct = %s\nwant package_root ../.. and project_root ../../../..", got)
+	}
+
+	// The default cache's first sync deletes its files, but keeps the ID caches and .gdignore.
+	m.nodes["/games/my_game/src/pkg/.gd++build/SConstruct"] = &memNode{data: []byte("stale")}
+	m.nodes["/games/my_game/src/pkg/.gd++build/.sconf_temp"] = &memNode{dir: true}
+	m.nodes["/games/my_game/src/pkg/.gd++build/.sconf_temp/x"] = &memNode{}
+	captureStderr(t, func() { generateBuildCache(LoadProject(Cwd()), LoadPackage(Cwd())) })
+	tree = m.tree()
+	for _, file := range []string{".gd++build/godot-cpp/stale.cpp", ".gd++build/.sconf_temp/x"} {
+		if _, ok := tree["/games/my_game/src/pkg/"+file]; ok {
+			t.Errorf("%s was not deleted", file)
+		}
+	}
+	// Every entry a build writes must be garbage, so reservedBuildIds is complete.
+	cache := NewPath("/games/my_game/src/pkg/.gd++build")
+	garbage := cacheGarbage(cache)
+	for _, entry := range cache.readDir() {
+		if name := entry.Name(); name != gdignoreFileName && name != "agent-1" && name != "other" && !slices.Contains(garbage, cache.Cd(name)) {
+			t.Errorf("%s is not cache garbage, add it to reservedBuildIds", name)
+		}
+	}
+	for _, file := range []string{".gd++build/agent-1/build.toml", ".gd++build/other/a.o", ".gd++build/.gdignore", ".gd++build/build.toml"} {
+		if _, ok := tree["/games/my_game/src/pkg/"+file]; !ok {
+			t.Errorf("%s is missing", file)
+		}
+	}
+}
+
 func TestBuildInvalidArgs(t *testing.T) {
 	// A compiler that can't build for windows on this machine.
 	hostCC := map[bool]string{true: "clang", false: "msvc"}[hostPlatform == "windows"]
@@ -380,6 +438,8 @@ func TestBuildInvalidArgs(t *testing.T) {
 		"macro timeout": {CmdBuild{BuildOptions: BuildOptions{DebugOptions: DebugOptions{MacroTimeout: -1}}}, "--macro-timeout cannot be negative"},
 		"tsan":          {CmdBuild{BuildOptions: BuildOptions{Asan: true, Tsan: true}}, "--asan and --tsan cannot be used together"},
 		"cc":            {CmdBuild{BuildOptions: BuildOptions{CC: "icc"}}, "--cc must be one of gcc, clang, msvc, clang-cl"},
+		"id":            {CmdBuild{BuildOptions: BuildOptions{Id: "a/b"}}, `"a/b" is not a valid build ID, use letters, digits, _ and -`},
+		"reserved id":   {CmdBuild{BuildOptions: BuildOptions{Id: "gdpp"}}, `build ID "gdpp" is reserved`},
 		"ccmac":         {CmdBuild{For: []string{"l.x64", "m.a64"}, BuildOptions: BuildOptions{CC: "gcc"}}, "--cc gcc cannot build for macos"},
 		"cclinux":       {CmdBuild{Platform: "linux", BuildOptions: BuildOptions{CC: "msvc"}}, "--cc msvc cannot build for linux"},
 		"cchost":        {CmdBuild{Windows: true, BuildOptions: BuildOptions{CC: hostCC}}, "--cc " + hostCC + " cannot build for windows on this machine"},

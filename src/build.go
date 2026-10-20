@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -48,7 +49,24 @@ type BuildOptions struct {
 	Ubsan  bool   `arg:"--ubsan" help:"detect undefined behavior with UndefinedBehaviorSanitizer"`
 	Tsan   bool   `arg:"--tsan" help:"detect data races with ThreadSanitizer"`
 	CC     string `arg:"--cc" placeholder:"gcc|clang|msvc|clang-cl" help:"compile with this C++ compiler; for Windows, gcc and clang are MinGW-w64's [default: godot-cpp's for the target]"`
+	Id     string `arg:"--id" placeholder:"ID" help:"build in the build cache .gd++build/ID instead of .gd++build, so that builds with different IDs can run at the same time"`
 	DebugOptions
+}
+
+var buildIdRegexp = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+// isBuildId reports whether id is a valid build ID: letters, digits, _ and
+// -, and not a reserved name.
+func isBuildId(id string) bool {
+	return buildIdRegexp.MatchString(id) && !slices.Contains(reservedBuildIds, id)
+}
+
+// loadPackage reads the package at root, with the build cache that --id
+// names.
+func (o BuildOptions) loadPackage(root Path) Package {
+	pkg := LoadPackage(root)
+	pkg.BuildCache = buildCache(root, o.Id)
+	return pkg
 }
 
 // DebugOptions are the options of the build and trans commands that turn on
@@ -105,6 +123,8 @@ func (o BuildOptions) validate() {
 	Assert(!o.Asan || !o.Tsan, "Invalid arguments: --asan and --tsan cannot be used together.")
 	Assert(o.Jobs >= 0, "Invalid arguments: --jobs cannot be negative.")
 	Assert(o.CC == "" || compilers[o.CC] != nil, "Invalid arguments: --cc must be one of gcc, clang, msvc, clang-cl.")
+	Assert(o.Id == "" || buildIdRegexp.MatchString(o.Id), "Invalid arguments: %q is not a valid build ID, use letters, digits, _ and -.", o.Id)
+	Assert(!slices.Contains(reservedBuildIds, o.Id), "Invalid arguments: build ID %q is reserved.", o.Id)
 	o.DebugOptions.validate()
 }
 
@@ -318,8 +338,9 @@ func buildExtension(p Project, pkg Package, o BuildOptions, targets []string, te
 // cache, and writes the generated files there. The cache's build.toml records
 // the package's id and config, except classes, which only affect the generated
 // files, and hidden directories, which don't affect the build; if they changed, e.g. because the package was
-// moved or its dependencies changed, the package is cleaned like `gd++ clean
-// --bin` does and synced again.
+// moved or its dependencies changed, the cache's files and the libraries are
+// deleted like `gd++ clean --bin` does, but not the caches of other build
+// IDs, and the cache is synced again.
 func generateBuildCache(p Project, pkg Package) {
 	dep := func(cache ProjectDepCache, name string) Path {
 		Assert(cache.Has(name), "Missing %s %s, run `gd++ fetch --missing` to fix this.", cache.Desc, name)
@@ -338,8 +359,10 @@ func generateBuildCache(p Project, pkg Package) {
 	}{pkg.Id, config})
 	if !state.IsFile() || state.ReadString() != stateText {
 		// Cleaned first, so an interrupted sync isn't taken for a finished one.
-		cleanPackage(pkg.Root, true)
-		cache.CreateDirectory()
+		cleanCache(pkg, true)
+		if !cache.Exists() {
+			cache.CreateDirectory()
+		}
 		s := Silence()
 		t := LogTask("Syncing dependencies for %s...", name)
 		bind.Sync(cache.Cd("godot-cpp"))
@@ -353,6 +376,7 @@ func generateBuildCache(p Project, pkg Package) {
 		"Id":              pkg.Id,
 		"CppStandard":     pkg.Config.CppStandard,
 		"Color":           isTTY,
+		"PackageRoot":     relPath(cache, pkg.Root),
 		"ProjectRoot":     relPath(cache, p.Root),
 		"Sources":         cppSources(p, pkg),
 		"AsyncClass":      pkg.AsyncClass(),

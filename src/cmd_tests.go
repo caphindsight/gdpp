@@ -51,7 +51,7 @@ func (c *CmdTest) Run() {
 	var pkgs []Package
 	for _, root := range roots {
 		Assert(GetProjectRoot(root) == p.Root, "Invalid arguments: all packages must be in one Godot project.")
-		pkgs = append(pkgs, LoadPackage(root))
+		pkgs = append(pkgs, c.loadPackage(root))
 	}
 	files := c.files()
 	SyncExportPresets(p)
