@@ -30,7 +30,7 @@ This
   The current class's name, like `Self` in Rust: `Gd<This> copy = create This;` or `This::MAX_HEALTH`. A macro that GD++ defines before the class's code and undefines after it. It works in function bodies and in `decl` and `impl` blocks, but not in `@global` blocks.
 
 gd
-  Short for `UtilityFunctions`, Godot's global functions: `gd::print`, `gd::randf`, `gd::clamp`, `gd::lerp`, `gd::is_instance_valid` and so on. See `gd++ man runtime`.
+  Short for `UtilityFunctions`, Godot's global functions: `gd::print`, `gd::randf`, `gd::clamp`, `gd::lerp` and so on. See `gd++ man runtime`.
 
 # decl blocks
 

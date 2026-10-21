@@ -43,7 +43,7 @@ See `gd++ man debugging`.
 - Generated code spells most of them with `gdpp::`, e.g. `gdpp::Async`, the namespace where the runtime defines them. So a name of yours can't hide them there.
 
 gd
-  An alias of `UtilityFunctions`, Godot's global functions, at global scope: `gd::print("Hello")`, `gd::push_error("Oops")`, `gd::randi_range(1, 6)`, `gd::lerp(a, b, 0.5)`, `gd::is_instance_valid(obj)`, and all the others of GDScript's global scope. `gd++ doc UtilityFunctions` lists them.
+  An alias of `UtilityFunctions`, Godot's global functions, at global scope: `gd::print("Hello")`, `gd::push_error("Oops")`, `gd::randi_range(1, 6)`, `gd::lerp(a, b, 0.5)`, and most others of GDScript's global scope. `gd++ doc UtilityFunctions` lists them.
 
 float64_t
   A name for `double`, the C++ type of Godot's `float`, to match `int64_t`.
