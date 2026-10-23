@@ -1,1 +1,6 @@
 /.gd++build/**
+/lib*.dll
+/lib*.so
+/lib*.dylib
+/*.gdextension
+/*.gdextension.uid
