@@ -15,9 +15,10 @@ import (
 // release builds use link-time optimization. The build parameters are logged
 // once, before the packages are built. With --id, each package builds in the
 // build cache .gd++build/ID, so that builds with different IDs can run at the
-// same time. With --clean, packages with a build cache first lose its files
-// and their libraries, like `gd++ clean --bin` does, but not the caches of
-// other build IDs. Each package's hidden directories get a .gdignore file,
+// same time. With --clean, packages with a build cache first lose its files,
+// like `gd++ clean` does, but not the caches of other build IDs. The
+// libraries and .gdextension files are never deleted, only overwritten by a
+// successful build. Each package's hidden directories get a .gdignore file,
 // if missing.
 type CmdBuild struct {
 	Paths    []string `arg:"positional" placeholder:"PATH" help:"build the packages containing these paths; PATH/... builds all packages inside PATH, e.g. res://... the whole project [default: ..., all packages in the current directory]"`
@@ -26,7 +27,7 @@ type CmdBuild struct {
 	Windows  bool     `arg:"-w" help:"shorthand for --platform=windows"`
 	Arch     string   `arg:"--arch" placeholder:"x86_32|x86_64|arm64" help:"the target CPU architecture [default: this one]"`
 	BuildOptions
-	Clean bool `arg:"--clean" help:"clean the build caches and libraries first, so the build starts from scratch"`
+	Clean bool `arg:"--clean" help:"clean the build caches first, so the build starts from scratch"`
 }
 
 func (c *CmdBuild) Run() {
@@ -48,7 +49,7 @@ func (c *CmdBuild) Run() {
 	LogInfo("Build parameters: %s.", c.describe(targets, gdpp))
 	for _, pkg := range pkgs {
 		if c.Clean && pkg.BuildCache.Exists() {
-			cleanCache(pkg, true)
+			cleanCache(pkg)
 		}
 		pkg.HideInGodot()
 		buildExtension(p, pkg, c.BuildOptions, targets, false)

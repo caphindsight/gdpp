@@ -107,7 +107,8 @@ PATH...
   Run N compile jobs at once. Default: one per CPU core, minus one.
 
 --clean
-  Clean each package first, like `gd++ clean --bin`: delete its build cache, libraries and `.gdextension` files. The build starts from scratch.
+  Clean each package first, like `gd++ clean`: delete its build cache. The build starts from scratch.
+  - Keeps the libraries and `.gdextension` files. A build never deletes them, it only overwrites them once it succeeds.
   - Skips packages without a build cache: they build from scratch anyway.
   - Keeps the caches of other build IDs, the `ID` directories in `.gd++build`. With `--id`, deletes only `.gd++build/ID`.
 
@@ -115,7 +116,7 @@ PATH...
   Build in the build cache `.gd++build/ID` instead of `.gd++build`.
   - Builds with different IDs never share a cache, so they can run at the same time, e.g. one per terminal or AI agent.
   - The first build with a new ID starts from scratch: it compiles godot-cpp and all the code again.
-  - The libraries and the `.gdextension` file still go to the package root, whatever the ID. Parallel builds of one package overwrite each other's.
+  - The libraries and the `.gdextension` file still go to the package root, whatever the ID. Parallel builds of one package overwrite each other's, when they succeed.
   - `gd++ clean` deletes `.gd++build` with every ID's cache in it.
   - See "Parallel builds" in `gd++ man build-cache`.
 

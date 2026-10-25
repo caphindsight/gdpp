@@ -97,8 +97,8 @@ gd++ test --id agent-2     # builds in .gd++build/agent-2
 
 - `.gd++build/ID` is a complete build cache, laid out like `.gd++build` itself: its own copies of the dependencies, its own generated C++ and object files. The first build with a new ID is slow.
 - Builds with different IDs can run at the same time, e.g. one per terminal or AI agent, even in one package. A build without an ID runs in `.gd++build` itself, beside them.
-- The libraries and the `.gdextension` file still land in the package root, whatever the ID. Parallel builds of one package overwrite each other's: the last one to finish wins.
-- A build cleans only its own cache, e.g. when the package settings changed or with `--clean`: the files of `.gd++build`, or `.gd++build/ID`. The other IDs' caches stay.
+- The libraries and the `.gdextension` file still land in the package root, whatever the ID. Parallel builds of one package overwrite each other's: the last one to succeed wins.
+- A build cleans only its own cache, e.g. when the package settings changed or with `--clean`: the files of `.gd++build`, or `.gd++build/ID`. The other IDs' caches stay, and so do the libraries and the `.gdextension` file: only `gd++ clean --bin` deletes them.
 - `gd++ clean` deletes `.gd++build` with every ID's cache in it.
 - `gd++ doc` and `gd++ trans` always use `.gd++build`.
 - IDs are made of letters, digits, `_` and `-`, and aren't names the cache uses: `build`, `gdpp`, `godot-cpp`, `package` or `SConstruct`.
@@ -109,7 +109,7 @@ gd++ test --id agent-2     # builds in .gd++build/agent-2
 gd++ clean                 # the build caches of the packages in the current directory
 gd++ clean --bin           # also their libraries and .gdextension files
 gd++ clean res://...       # every package's build cache
-gd++ build --clean         # clean with --bin, then build
+gd++ build --clean         # clean, then build
 ```
 
 Clean when:

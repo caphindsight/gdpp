@@ -213,7 +213,8 @@ func TestGenerateBuildCacheState(t *testing.T) {
 		t.Errorf("libpkg.linux.debug.x86_64.so was deleted")
 	}
 
-	// Other config: cleaned, libraries included, and synced again.
+	// Other config: the cache is cleaned and synced again, but the libraries and .gdextension files stay.
+	m.nodes["/games/my_game/src/pkg/pkg.gdextension"] = &memNode{}
 	m.nodes["/games/my_game/.gd++cache/spec/4.4/extension_api.json"] = &memNode{data: []byte("{4.4}")}
 	m.nodes["/games/my_game/.gd++cache/spec/4.4"] = &memNode{dir: true}
 	m.nodes["/games/my_game/src/pkg/.gd++pkg"].data = []byte(strings.Replace(buildPkgConfig, `spec = "4.3"`, `spec = "4.4"`, 1))
@@ -229,9 +230,12 @@ func TestGenerateBuildCacheState(t *testing.T) {
 	if got := tree["/games/my_game/src/pkg/.gd++build/godot-cpp/SConstruct"]; got != "edited" {
 		t.Errorf("godot-cpp/SConstruct = %q, want %q", got, "edited")
 	}
-	for _, file := range []string{".gd++build/a.o", "libpkg.linux.debug.x86_64.so"} {
-		if _, ok := tree["/games/my_game/src/pkg/"+file]; ok {
-			t.Errorf("%s was not deleted", file)
+	if _, ok := tree["/games/my_game/src/pkg/.gd++build/a.o"]; ok {
+		t.Errorf("a.o was not deleted")
+	}
+	for _, file := range []string{"libpkg.linux.debug.x86_64.so", "pkg.gdextension"} {
+		if _, ok := tree["/games/my_game/src/pkg/"+file]; !ok {
+			t.Errorf("%s was deleted", file)
 		}
 	}
 }
@@ -385,9 +389,9 @@ func TestBuildId(t *testing.T) {
 			t.Errorf("%s is missing", file)
 		}
 	}
-	// A new cache starts from scratch, libraries included, like any first sync.
-	if _, ok := tree["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"]; ok {
-		t.Errorf("libpkg.linux.debug.x86_64.so was not deleted")
+	// A new cache starts from scratch, but the libraries stay.
+	if _, ok := tree["/games/my_game/src/pkg/libpkg.linux.debug.x86_64.so"]; !ok {
+		t.Errorf("libpkg.linux.debug.x86_64.so was deleted")
 	}
 	if got := tree["/games/my_game/src/pkg/.gd++build/agent-1/SConstruct"]; !strings.Contains(got, `package_root = "../.."`) || !strings.Contains(got, `project_root = "../../../.."`) {
 		t.Errorf("SConstruct = %s\nwant package_root ../.. and project_root ../../../..", got)

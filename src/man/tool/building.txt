@@ -249,7 +249,8 @@ gd++ build res://...
 gd++ build --clean
 ```
 
-- Deletes the package's build cache and libraries first, like `gd++ clean --bin`.
+- Deletes the package's build cache first, like `gd++ clean`.
+- Keeps the libraries and `.gdextension` files: a build never deletes them, it only overwrites them once it succeeds.
 - Helps when something in the build cache went wrong.
 - Slow: it compiles godot-cpp again.
 

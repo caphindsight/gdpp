@@ -47,14 +47,11 @@ func cacheGarbage(cache Path) []Path {
 	return paths
 }
 
-// cleanCache deletes cacheGarbage of the package's build cache, and with bin
-// its libraries like cleanPackage does, saying so if there is any.
-func cleanCache(pkg Package, bin bool) {
-	garbage := cacheGarbage(pkg.BuildCache)
-	if bin {
-		garbage = append(garbage, packageBins(pkg.Root)...)
-	}
-	removeGarbage(pkg.Root, garbage)
+// cleanCache deletes cacheGarbage of the package's build cache, saying so if
+// there is any. It keeps the libraries and .gdextension files: a build only
+// overwrites them, once it succeeds.
+func cleanCache(pkg Package) {
+	removeGarbage(pkg.Root, cacheGarbage(pkg.BuildCache))
 }
 
 // PackageConfig holds the settings from a package's .gd++pkg.

@@ -338,9 +338,9 @@ func buildExtension(p Project, pkg Package, o BuildOptions, targets []string, te
 // cache, and writes the generated files there. The cache's build.toml records
 // the package's id and config, except classes, which only affect the generated
 // files, and hidden directories, which don't affect the build; if they changed, e.g. because the package was
-// moved or its dependencies changed, the cache's files and the libraries are
-// deleted like `gd++ clean --bin` does, but not the caches of other build
-// IDs, and the cache is synced again.
+// moved or its dependencies changed, the cache's files are deleted like
+// `gd++ clean` does, but not the libraries, the .gdextension files or the
+// caches of other build IDs, and the cache is synced again.
 func generateBuildCache(p Project, pkg Package) {
 	dep := func(cache ProjectDepCache, name string) Path {
 		Assert(cache.Has(name), "Missing %s %s, run `gd++ fetch --missing` to fix this.", cache.Desc, name)
@@ -359,7 +359,7 @@ func generateBuildCache(p Project, pkg Package) {
 	}{pkg.Id, config})
 	if !state.IsFile() || state.ReadString() != stateText {
 		// Cleaned first, so an interrupted sync isn't taken for a finished one.
-		cleanCache(pkg, true)
+		cleanCache(pkg)
 		if !cache.Exists() {
 			cache.CreateDirectory()
 		}
