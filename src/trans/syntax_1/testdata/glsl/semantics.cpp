@@ -2,7 +2,7 @@
 
 #include <gd++/syntax_1_gpu.hpp>
 #include <cstdio>
-using namespace gdpp::glsl;
+GDPP_GLSL_USING;
 int fails = 0;
 #define CHECK(c) do { if (!(c)) { std::printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); fails++; } } while (0)
 bool near(float a, float b) { return std::fabs(a - b) < 1e-5f; }
@@ -32,6 +32,11 @@ int main() {
 	CHECK(near(length(vec3(3, 4, 0)), 5.0f));
 	CHECK(all(lessThan(ivec2(1, 2), ivec2(2, 3))) && !any(glsl_not(bvec2(true, true))));
 	CHECK(abs(-3) == 3 && sign(-2.5f) == -1.0f);
+	// Mixed float and double arguments: libc++ and MSVC overload the C library's math functions as templates in the
+	// global namespace, which once made these calls ambiguous.
+	CHECK(near(pow(max(0.0, cos(0.0f)), 18.0), 1.0f));
+	CHECK(near(pow(2.0f, 3.0), 8.0f) && near(fma(2.0f, 3.0f, 1.0), 7.0f) && near(sqrt(4), 2.0f));
+	CHECK(!isnan(1.0f) && isinf(std::numeric_limits<float>::infinity()));
 	CHECK(near(smoothstep(0.0, 1.0, 0.5), 0.5f));
 	CHECK(step(0.5, vec2(0.2, 0.8)) == vec2(0.0, 1.0));
 	CHECK(near(float_from_half(half_from_float(1.5f)), 1.5f));

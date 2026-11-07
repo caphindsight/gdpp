@@ -4,7 +4,7 @@
 
 namespace _gdpp_gpu_Doubler {
 
-using namespace gdpp::glsl;
+GDPP_GLSL_USING;
 
 #line 2 "input.gd++"
 const float K = 2.0;

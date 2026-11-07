@@ -4,7 +4,7 @@
 
 namespace _gdpp_gpu_Swarm {
 
-using namespace gdpp::glsl;
+GDPP_GLSL_USING;
 
 struct Boid {
 	vec2 position;

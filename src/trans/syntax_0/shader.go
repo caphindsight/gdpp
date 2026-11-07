@@ -625,7 +625,7 @@ func (u *unit) shaderDefs(w *writer, c *classModel) {
 	w.ln("")
 	w.ln("namespace %s {", shaderNamespace(c))
 	w.ln("")
-	w.ln("using namespace gdpp::glsl;")
+	w.ln("GDPP_GLSL_USING;")
 	for _, s := range gpuStructs {
 		// The struct's copy, with GLSL types, and what the runtime needs to convert the struct to it.
 		decl := strings.TrimRight(strings.TrimSuffix(glslToCpp(glslStruct(s), structs), "};"), " ")

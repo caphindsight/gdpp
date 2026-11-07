@@ -4,7 +4,7 @@
 
 namespace _gdpp_gpu_Particles {
 
-using namespace gdpp::glsl;
+GDPP_GLSL_USING;
 
 struct Bounds {
 	vec3 lo;

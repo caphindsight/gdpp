@@ -6,7 +6,7 @@
 
 namespace _gdpp_gpu_Filters {
 
-using namespace gdpp::glsl;
+GDPP_GLSL_USING;
 
 struct Wave {
 	float amplitude;

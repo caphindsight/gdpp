@@ -4,7 +4,7 @@
 
 namespace _gdpp_gpu_Filters {
 
-using namespace gdpp::glsl;
+GDPP_GLSL_USING;
 
 #line 2 "shader_library.gd++"
 

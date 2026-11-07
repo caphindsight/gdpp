@@ -4,7 +4,7 @@
 
 namespace _gdpp_gpu_Spin {
 
-using namespace gdpp::glsl;
+GDPP_GLSL_USING;
 
 #line 1 "input.gd++"
 

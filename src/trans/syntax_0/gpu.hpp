@@ -1194,6 +1194,18 @@ inline ivec2 imageSize(const image2D &p_image) {
 
 } // namespace gdpp::glsl
 
+// GDPP_GLSL_USING opens gdpp::glsl in the generated code. A using-directive alone would leave the C library's math
+// functions visible beside GLSL's, and libc++ and MSVC overload them as templates in the global namespace, which makes
+// calls like pow(x, 2.0) ambiguous. The using-declarations hide them: unqualified lookup stops at the namespace's own
+// names. They list every built-in that <math.h> or <stdlib.h> also declares.
+#define GDPP_GLSL_USING                                                                                             \
+	using namespace gdpp::glsl;                                                                                     \
+	using gdpp::glsl::abs, gdpp::glsl::acos, gdpp::glsl::acosh, gdpp::glsl::asin, gdpp::glsl::asinh, gdpp::glsl::atan, \
+			gdpp::glsl::atanh, gdpp::glsl::ceil, gdpp::glsl::cos, gdpp::glsl::cosh, gdpp::glsl::exp, gdpp::glsl::exp2,  \
+			gdpp::glsl::floor, gdpp::glsl::fma, gdpp::glsl::isinf, gdpp::glsl::isnan, gdpp::glsl::log, gdpp::glsl::log2, \
+			gdpp::glsl::modf, gdpp::glsl::pow, gdpp::glsl::round, gdpp::glsl::sin, gdpp::glsl::sinh, gdpp::glsl::sqrt,   \
+			gdpp::glsl::tan, gdpp::glsl::tanh, gdpp::glsl::trunc
+
 namespace gdpp {
 
 // GpuFormat is the format of an Image or a Texture2D that a kernel writes, e.g. Texture2D[rgba8] in GD++.
