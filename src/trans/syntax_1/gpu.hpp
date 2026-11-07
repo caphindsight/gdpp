@@ -3070,6 +3070,20 @@ public:
 		bindings.push_back(b);
 	}
 
+	// pixel_store returns the store of a kernel's run on the CPU that puts what the body returns into p_pixels.
+	static auto pixel_store(std::shared_ptr<Pixels> p_pixels) {
+		return [p_pixels](int64_t p_index, const auto &p_value) {
+			vec4 &px = p_pixels->data[size_t(p_index)];
+			if constexpr (is_vec<std::decay_t<decltype(p_value)>>::value) {
+				for (int i = 0; i < components<std::decay_t<decltype(p_value)>>::value; i++) {
+					px.data[i] = float(p_value.data[i]);
+				}
+			} else {
+				px.x = float(p_value);
+			}
+		};
+	}
+
 	// Results. Each runs the kernel: on the GPU, unless it runs on the CPU, where it calls p_make to make the kernel's
 	// C++ code with the arguments.
 
@@ -3372,20 +3386,6 @@ private:
 		pixels->height = int(std::max<int64_t>(grid.size[1], 1));
 		pixels->data.resize(size_t(pixels->width) * size_t(pixels->height), vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		return pixels;
-	}
-
-	// pixel_store returns the store of a kernel's run on the CPU that puts what the body returns into p_pixels.
-	static auto pixel_store(std::shared_ptr<Pixels> p_pixels) {
-		return [p_pixels](int64_t p_index, const auto &p_value) {
-			vec4 &px = p_pixels->data[size_t(p_index)];
-			if constexpr (is_vec<std::decay_t<decltype(p_value)>>::value) {
-				for (int i = 0; i < components<std::decay_t<decltype(p_value)>>::value; i++) {
-					px.data[i] = float(p_value.data[i]);
-				}
-			} else {
-				px.x = float(p_value);
-			}
-		};
 	}
 
 	// image_from_bytes returns the Image of p_format and p_size from the bytes of the texture that a kernel wrote.
