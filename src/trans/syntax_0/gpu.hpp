@@ -994,6 +994,52 @@ A bitfieldReverse(const A &p_a) {
 	},
 			p_a);
 }
+template <typename A>
+A bitfieldExtract(const A &p_value, int p_offset, int p_bits) {
+	return map([=](auto p_x) {
+		using T = decltype(p_x);
+		if (p_bits == 0) return T(0);
+		uint v = uint(p_x) << (32 - p_offset - p_bits);
+		return std::is_signed_v<T> ? T(bit_cast<int>(v) >> (32 - p_bits)) : T(v >> (32 - p_bits));
+	},
+			p_value);
+}
+template <typename A>
+A bitfieldInsert(const A &p_base, const A &p_insert, int p_offset, int p_bits) {
+	return zip<A>([=](auto p_b, auto p_i) {
+		if (p_bits == 0) return p_b;
+		uint mask = (~0u >> (32 - p_bits)) << p_offset;
+		return decltype(p_b)((uint(p_b) & ~mask) | ((uint(p_i) << p_offset) & mask));
+	},
+			p_base, p_insert);
+}
+
+// The extended-integer built-ins compute their results before they set their out parameters, which may alias their
+// inputs, as in GLSL.
+template <typename A>
+A uaddCarry(const A &p_x, const A &p_y, A &p_carry) {
+	A sum = zip<A>([](uint p_a, uint p_b) { return p_a + p_b; }, p_x, p_y);
+	p_carry = zip<A>([](uint p_a, uint p_b) { return uint(p_a + p_b < p_a); }, p_x, p_y);
+	return sum;
+}
+template <typename A>
+A usubBorrow(const A &p_x, const A &p_y, A &p_borrow) {
+	A difference = zip<A>([](uint p_a, uint p_b) { return p_a - p_b; }, p_x, p_y);
+	p_borrow = zip<A>([](uint p_a, uint p_b) { return uint(p_a < p_b); }, p_x, p_y);
+	return difference;
+}
+template <typename A>
+void umulExtended(const A &p_x, const A &p_y, A &p_msb, A &p_lsb) {
+	A msb = zip<A>([](uint p_a, uint p_b) { return uint((uint64_t(p_a) * p_b) >> 32); }, p_x, p_y);
+	p_lsb = zip<A>([](uint p_a, uint p_b) { return p_a * p_b; }, p_x, p_y);
+	p_msb = msb;
+}
+template <typename A>
+void imulExtended(const A &p_x, const A &p_y, A &p_msb, A &p_lsb) {
+	A msb = zip<A>([](int p_a, int p_b) { return bit_cast<int>(uint(uint64_t(int64_t(p_a) * p_b) >> 32)); }, p_x, p_y);
+	p_lsb = zip<A>([](int p_a, int p_b) { return bit_cast<int>(uint(uint64_t(int64_t(p_a) * p_b))); }, p_x, p_y);
+	p_msb = msb;
+}
 
 // half_from_float and float_from_half convert between floats and 16-bit floats, as packHalf2x16 and RGBA16F do.
 inline uint16_t half_from_float(float p_f) {

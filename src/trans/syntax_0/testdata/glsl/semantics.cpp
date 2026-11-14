@@ -49,6 +49,22 @@ int main() {
 	vec3 f = ivec3(1, 2, 3); // ints convert to floats implicitly, as in GLSL.
 	CHECK(f == vec3(1.0, 2.0, 3.0));
 	CHECK(findMSB(8) == 3 && findLSB(8) == 3 && bitCount(7u) == 3);
+	CHECK(bitfieldExtract(0xf0u, 4, 4) == 0xfu && bitfieldExtract(0xf0, 4, 4) == -1 && bitfieldExtract(5, 0, 0) == 0);
+	CHECK(bitfieldInsert(0xffu, 0u, 4, 4) == 0x0fu && bitfieldInsert(0, -1, 0, 32) == -1);
+	uint carry, msb, lsb;
+	CHECK(uaddCarry(0xffffffffu, 2u, carry) == 1u && carry == 1u);
+	CHECK(usubBorrow(1u, 2u, carry) == 0xffffffffu && carry == 1u);
+	umulExtended(0x80000000u, 4u, msb, lsb);
+	CHECK(msb == 2u && lsb == 0u);
+	ivec2 imsb, ilsb;
+	imulExtended(ivec2(-1, 0x40000000), ivec2(2, 8), imsb, ilsb);
+	CHECK(imsb == ivec2(-1, 2) && ilsb == ivec2(-2, 0));
+	uvec2 x(0xffffffffu, 1u);
+	uaddCarry(x, uvec2(1u), x); // Out parameters can alias inputs.
+	CHECK(x == uvec2(1u, 0u));
+	uint m = 0x80000000u;
+	umulExtended(m, 4u, msb, m);
+	CHECK(msb == 2u && m == 0u);
 	std::printf(fails ? "FAILED\n" : "OK\n");
 	return fails;
 }
