@@ -213,6 +213,7 @@ struct _gdpp_shader_step {
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
 			"\tSim sim;\n"
+			"\tint _gdpp_length_ps;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) buffer _gdpp_Buffer1 {\n"
 			"\tParticle ps[];\n"
@@ -272,7 +273,7 @@ struct _gdpp_shader_step {
   }
   ps[id] = p;
 }
-#line 276 "Particles.cpp"
+#line 277 "Particles.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Particles.step", glsl, { 64, 1, 1 }, true, true, false);
 		return kernel;
@@ -297,6 +298,7 @@ struct _gdpp_shader_lives {
 			"};\n"
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
+			"\tint _gdpp_length_ps;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) buffer _gdpp_Buffer1 {\n"
 			"\tParticle ps[];\n"
@@ -325,7 +327,7 @@ struct _gdpp_shader_lives {
 			"float _gdpp_body(int id) {\n"
 			"#line 52 \"input.gd++\"\n"
 			"\n"
-			"  return ps[id].life;\n"
+			"  return id < _gdpp_length_ps ? ps[id].life : 0.0;\n"
 			"\n"
 			"}\n"
 			"void main() {\n"
@@ -342,9 +344,9 @@ struct _gdpp_shader_lives {
 	}
 #line 52 "input.gd++"
 	float body(Id id) const {
-  return ps[id].life;
+  return id < ps.length() ? ps[id].life : 0.0;
 }
-#line 348 "Particles.cpp"
+#line 350 "Particles.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Particles.lives", glsl, { 64, 1, 1 }, true, true, false);
 		return kernel;
@@ -401,7 +403,7 @@ void Particles::reset(int64_t count) {
   first[0].life = 2.0;
   particles.write(first, 0);
 
-#line 405 "Particles.cpp"
+#line 407 "Particles.cpp"
 }
 
 void Particles::update(const Sim &sim) {
@@ -409,7 +411,7 @@ void Particles::update(const Sim &sim) {
 
   step(particles.size(), sim, particles);
 
-#line 413 "Particles.cpp"
+#line 415 "Particles.cpp"
 }
 
 gdpp::GpuArray<Particle> Particles::get_particles() const {

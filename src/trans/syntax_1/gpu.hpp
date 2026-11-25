@@ -3071,8 +3071,10 @@ public:
 		std::vector<uint8_t> cpu_bytes = to_cpu(e, packed);
 		Binding b;
 		b.kind = Binding::BUFFER;
-		b.bytes = gpu_layout(info(e), cpu_bytes.data(), int64_t(cpu_bytes.size()) / info(e).cpu_stride);
+		int64_t count = int64_t(cpu_bytes.size()) / info(e).cpu_stride;
+		b.bytes = gpu_layout(info(e), cpu_bytes.data(), count);
 		bindings.push_back(b);
+		put(int(count)); // The GLSL's length() of the array.
 	}
 	// A GPU array, which the kernel reads and writes.
 	template <typename G>
@@ -3084,6 +3086,7 @@ public:
 			b.holder = p_array.ptr();
 		}
 		bindings.push_back(b);
+		put(int(p_array ? p_array.ptr()->count : 0)); // The GLSL's length() of the array.
 	}
 	// An image or texture, which the kernel samples.
 	void sampler(const Ref<Image> &p_image) {

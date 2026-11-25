@@ -127,6 +127,7 @@ struct _gdpp_shader_fill {
 			"layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
+			"\tint _gdpp_length_values;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) buffer _gdpp_Buffer1 {\n"
 			"\tfloat values[];\n"
@@ -165,7 +166,7 @@ struct _gdpp_shader_fill {
 	void body(Id id) const {
   values[id] = float(id);
 }
-#line 169 "Baker.cpp"
+#line 170 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Baker.fill", glsl, { 64, 1, 1 }, true, true, false);
 		return kernel;
@@ -215,7 +216,7 @@ struct _gdpp_shader_heights {
 	float body(Id id) const {
   return float(id.x);
 }
-#line 219 "Baker.cpp"
+#line 220 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Baker.heights", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
@@ -230,6 +231,7 @@ struct _gdpp_shader_scale {
 			"layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
+			"\tint _gdpp_length_values;\n"
 			"\tfloat k;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) restrict readonly buffer _gdpp_Buffer1 {\n"
@@ -273,7 +275,7 @@ struct _gdpp_shader_scale {
 	float body(Id id) const {
   return values[id] * k;
 }
-#line 277 "Baker.cpp"
+#line 279 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Baker.scale", glsl, { 64, 1, 1 }, false, true, false);
 		return kernel;
@@ -325,7 +327,7 @@ struct _gdpp_shader_seed {
 	int body(Id id) const {
   return int(id) % 2;
 }
-#line 329 "Baker.cpp"
+#line 331 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Baker.seed", glsl, { 64, 1, 1 }, true, true, false);
 		return kernel;
@@ -375,7 +377,7 @@ struct _gdpp_shader_blank {
 	vec4 body(Id id) const {
   return vec4(0.0);
 }
-#line 379 "Baker.cpp"
+#line 381 "Baker.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Baker.blank", glsl, { 8, 8, 1 }, true, true, false);
 		return kernel;

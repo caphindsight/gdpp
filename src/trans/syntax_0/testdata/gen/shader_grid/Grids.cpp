@@ -78,6 +78,7 @@ struct _gdpp_shader_ramp {
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint count;\n"
 			"\tfloat scale;\n"
+			"\tint _gdpp_length_values;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) restrict readonly buffer _gdpp_Buffer1 {\n"
 			"\tfloat values[];\n"
@@ -120,7 +121,7 @@ struct _gdpp_shader_ramp {
 	float body(Id id) const {
   return values[index(id)] * scale + float(count);
 }
-#line 124 "Grids.cpp"
+#line 125 "Grids.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Grids.ramp", glsl, { 128, 1, 1 }, false, true, false);
 		return kernel;
@@ -172,7 +173,7 @@ struct _gdpp_shader_volume {
 	float body(Id id) const {
   return float(id.x + id.y + id.z);
 }
-#line 176 "Grids.cpp"
+#line 177 "Grids.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Grids.volume", glsl, { 4, 4, 4 }, false, true, false);
 		return kernel;

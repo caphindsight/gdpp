@@ -64,6 +64,7 @@ struct _gdpp_shader_apply {
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
 			"\tFilterSettings settings;\n"
+			"\tint _gdpp_length_values;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) restrict readonly buffer _gdpp_Buffer1 {\n"
 			"\tfloat values[];\n"
@@ -120,7 +121,7 @@ struct _gdpp_shader_apply {
   }
   return v + settings.offset.x + settings.wave.amplitude * sin(settings.wave.phase.x);
 }
-#line 124 "Filters.cpp"
+#line 125 "Filters.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Filters.apply", glsl, { 64, 1, 1 }, false, true, false);
 		return kernel;

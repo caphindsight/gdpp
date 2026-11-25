@@ -50,7 +50,7 @@ shader step(n: int, sim: Sim, ps: GpuArray[Particle]) -> void {
 }
 
 shader lives(n: int, ps: GpuArray[Particle]) -> PackedFloat32Array {
-  return ps[id].life;
+  return id < ps.length() ? ps[id].life : 0.0;
 }
 
 func reset(count: int) -> void {

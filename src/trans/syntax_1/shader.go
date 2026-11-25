@@ -734,6 +734,7 @@ func glslString(s string) string {
 
 // glsl returns the GLSL of shader f of class c: its parameters, bound like gdpp::gpu::Call binds them, the class's
 // shader blocks, its body, and main, which runs the body for each cell of the grid and stores what it returns.
+// Arrays' length() reads a uniform, since Metal has no GLSL length() of buffers, and buffers can be longer than arrays.
 func (u *unit) glsl(c *classModel, f *funcModel) string {
 	g := f.gpu
 	var sb strings.Builder
@@ -747,12 +748,22 @@ func (u *unit) glsl(c *classModel, f *funcModel) string {
 	}
 	ln("layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {")
 	ln("\t%s %s;", g.params[g.grid].glsl, g.params[g.grid].p.Name) // First, as gdpp::gpu::Call puts it.
+	var arrays []string
 	for _, p := range g.params {
-		if p.kind == "uniform" {
+		switch p.kind {
+		case "uniform":
 			ln("\t%s %s;", p.glsl, p.p.Name)
+		case "buffer", "array": // Its length, which gdpp::gpu::Call puts in its place.
+			ln("\tint _gdpp_length_%s;", p.p.Name)
+			arrays = append(arrays, p.p.Name)
 		}
 	}
 	ln("};")
+	lengths := func(code string) string { return code }
+	if len(arrays) > 0 {
+		re := regexp.MustCompile(`(^|[^.\w])(` + strings.Join(arrays, "|") + `)\s*\.\s*length\s*\(\s*\)`)
+		lengths = func(code string) string { return re.ReplaceAllString(code, "${1}_gdpp_length_$2") }
+	}
 	binding := 1
 	for _, p := range g.params {
 		switch p.kind {
@@ -787,7 +798,7 @@ func (u *unit) glsl(c *classModel, f *funcModel) string {
 	ln("}")
 	for _, lib := range u.shaderBlocks(c) {
 		ln("#line %d %q", lib.b.TextPos.Line, lib.file)
-		ln("%s", lib.b.Text)
+		ln("%s", lengths(lib.b.Text))
 	}
 	ret := g.ret.glsl
 	if ret == "" {
@@ -795,7 +806,7 @@ func (u *unit) glsl(c *classModel, f *funcModel) string {
 	}
 	ln("%s _gdpp_body(%s id) {", ret, id)
 	ln("#line %d %q", g.s.Body.TextPos.Line, source)
-	ln("%s", g.s.Body.Text)
+	ln("%s", lengths(g.s.Body.Text))
 	ln("}")
 	ln("void main() {")
 	grid := g.params[g.grid].p.Name

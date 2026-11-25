@@ -39,6 +39,7 @@ struct _gdpp_shader_spin {
 			"layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
+			"\tint _gdpp_length_points;\n"
 			"\tfloat angle;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) restrict readonly buffer _gdpp_Buffer1 {\n"
@@ -92,7 +93,7 @@ struct _gdpp_shader_spin {
 	vec2 body(Id id) const {
     return rotate(points[id], wrap_angle(angle));
 }
-#line 96 "Spin.cpp"
+#line 97 "Spin.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Spin.spin", glsl, { 64, 1, 1 }, false, true, false);
 		return kernel;
@@ -107,6 +108,7 @@ struct _gdpp_shader_reduce {
 			"layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
+			"\tint _gdpp_length_values;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) buffer _gdpp_Buffer1 {\n"
 			"\tfloat values[];\n"

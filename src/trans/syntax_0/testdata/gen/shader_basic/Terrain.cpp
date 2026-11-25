@@ -43,6 +43,7 @@ struct _gdpp_shader_scale {
 			"layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;\n"
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tint n;\n"
+			"\tint _gdpp_length_values;\n"
 			"\tfloat k;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) restrict readonly buffer _gdpp_Buffer1 {\n"
@@ -102,7 +103,7 @@ struct _gdpp_shader_scale {
 	float body(Id id) const {
   return values[id] * k;
 }
-#line 106 "Terrain.cpp"
+#line 107 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Terrain.scale", glsl, { 256, 1, 1 }, false, true, false);
 		return kernel;
@@ -170,7 +171,7 @@ struct _gdpp_shader_noise {
 	float body(Id id) const {
   return hash(ivec2(vec2(id) / cell));
 }
-#line 174 "Terrain.cpp"
+#line 175 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Terrain.noise", glsl, { 8, 8, 1 }, false, true, false);
 		return kernel;
@@ -185,6 +186,7 @@ struct _gdpp_shader_paint {
 			"layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;\n"
 			"layout(set = 0, binding = 0, std140) uniform _gdpp_Uniforms {\n"
 			"\tivec2 size;\n"
+			"\tint _gdpp_length_heights;\n"
 			"\tvec4 tint;\n"
 			"};\n"
 			"layout(set = 0, binding = 1, std430) buffer _gdpp_Buffer1 {\n"
@@ -251,7 +253,7 @@ struct _gdpp_shader_paint {
   Ray r = Ray{vec3(0.0), vec3(0.0, 1.0, 0.0)};
   imageStore(target, id, c * heights[index(id)] + vec4(r.dir, 0.0));
 }
-#line 255 "Terrain.cpp"
+#line 257 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Terrain.paint", glsl, { 8, 8, 1 }, true, true, false);
 		return kernel;
@@ -321,7 +323,7 @@ struct _gdpp_shader_grow {
 	vec3 body(Id id) const {
   return texelFetch(image, id.swizzle<'x', 'y'>(), 0).swizzle<'x', 'y', 'z'>();
 }
-#line 325 "Terrain.cpp"
+#line 327 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Terrain.grow", glsl, { 4, 4, 4 }, true, true, false);
 		return kernel;
@@ -387,7 +389,7 @@ struct _gdpp_shader_blank {
 	vec4 body(Id id) const {
   return vec4(0.0);
 }
-#line 391 "Terrain.cpp"
+#line 393 "Terrain.cpp"
 	static gdpp::gpu::Kernel &_gdpp_kernel() {
 		static gdpp::gpu::Kernel kernel("Terrain.blank", glsl, { 8, 8, 1 }, true, true, false);
 		return kernel;
@@ -424,7 +426,7 @@ gdpp::Gd<Image> Terrain::noise(const Vector2i &size, double cell) {
 double Terrain::_gdpp_default_noise_cell() {
 #line 26 "input.gd++"
 	return 8.0;
-#line 428 "Terrain.cpp"
+#line 430 "Terrain.cpp"
 }
 
 void Terrain::paint(const Vector2i &size, const gdpp::GpuArray<float> &heights, const gdpp::Gd<Texture2D> &src, const gdpp::Gd<Texture2D> &target, const Color &tint) {
